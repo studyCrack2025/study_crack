@@ -72,6 +72,64 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
   );
 }
 
+function HomeLoadingPanel({ tabBarHtml = '' }) {
+  return (
+    <div className="app-shell">
+      <div className="app-frame">
+        <div className="screen app-screen app-content">
+          <div className="home-dashboard home-container">
+            <div className="home-content">
+              <div className="home-user-loading">
+                <div className="analysis-loading-orbit" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </div>
+                <div>
+                  <b>계정 정보를 불러오는 중입니다</b>
+                  <p>저장된 성적, 구독 상태, 목표 대학을 확인하고 있어요.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
+      </div>
+    </div>
+  );
+}
+
+function reportStatusText(status = 'idle', hasItem = false) {
+  if (status === 'loading') return '불러오는 중';
+  if (status === 'error') return '확인 필요';
+  return hasItem ? '생성됨' : '대기 중';
+}
+
+function HomeReportPreviewCard({ proReports = [], proReportsStatus = 'idle', weeklyReports = [], weeklyReportsStatus = 'idle' }) {
+  const latestWeekly = weeklyReports[0] || null;
+  const latestPro = proReports[0] || null;
+  return (
+    <section className="card home-report-preview-card home-insight-card premium-panel">
+      <div className="home-card-head">
+        <p className="analysis-title">리포트 미리보기</p>
+        <span className="home-mini-badge">학습 기록 기반</span>
+      </div>
+      <div className="home-report-preview-grid">
+        <button type="button" className="home-report-preview-item" data-action="goto" data-target="weekly">
+          <span>주간 리포트</span>
+          <b>{latestWeekly?.title || latestWeekly?.weekId || '이번 주 학습 요약'}</b>
+          <small>{reportStatusText(weeklyReportsStatus, Boolean(latestWeekly))}</small>
+        </button>
+        <button type="button" className="home-report-preview-item pro" data-action="goto" data-target="report">
+          <span>PRO 리포트</span>
+          <b>{latestPro?.key ? `${latestPro.key} 전략 리포트` : '상위권 전략 리포트'}</b>
+          <small>{reportStatusText(proReportsStatus, Boolean(latestPro))}</small>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function HomeScreen(ctx) {
   const {
     dimmed = false,
@@ -95,6 +153,8 @@ export function HomeScreen(ctx) {
     rankingProgress = 0,
     rankTier = 'bronze',
     rankTierLabel = 'BRONZE',
+    proReports = [],
+    proReportsStatus = 'idle',
     showStudyBreakdown = false,
     studyTimerRunning = false,
     todayPlannerItems = [],
@@ -102,8 +162,16 @@ export function HomeScreen(ctx) {
     todayPlannerSubjectSummary = [],
     todayPlannerTotalMinutes = 0,
     todayRecord = null,
-    todayStudySeconds = 0
+    todayStudySeconds = 0,
+    weeklyReports = [],
+    weeklyReportsStatus = 'idle',
+    userLoadStatus = 'idle',
+    hasClientSession = () => false
   } = ctx;
+
+  const sessionActive = typeof hasClientSession === 'function' && hasClientSession();
+  const profileReady = userLoadStatus === 'ready' || !sessionActive;
+  if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} />;
 
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .72s cubic-bezier(.22,1,.36,1)';
   const trackStyle = {
@@ -123,7 +191,7 @@ export function HomeScreen(ctx) {
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`}>
+        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="home">
           <div className="home-dashboard home-container">
             <div className="home-content">
               <div className="home-header">
@@ -137,7 +205,7 @@ export function HomeScreen(ctx) {
                 <div className="home-greeting-bubble">
                   <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="크랙이" />
                   <div className="home-greeting-speech">
-                    <p className="home-greeting">안녕하세요, {(user && user.name) || '지민'}님 👋</p>
+                    <p className="home-greeting">안녕하세요, {(user && user.name) || '회원'}님 👋</p>
                     <p className="home-sub">오늘도 크랙한 하루 되세요!</p>
                   </div>
                 </div>
@@ -180,9 +248,6 @@ export function HomeScreen(ctx) {
                     />
                   ))}
                 </div>
-                <button className="pro-top-btn home-pro-below-card-btn" data-action="goto" data-target="proElite">
-                  <span>{canAccessPro ? 'PRO LOUNGE 입장' : 'PRO 리포트 미리보기'}</span>
-                </button>
                 <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
               </div>
 
@@ -256,6 +321,13 @@ export function HomeScreen(ctx) {
                     </>
                   )}
                 </button>
+
+                <HomeReportPreviewCard
+                  proReports={proReports}
+                  proReportsStatus={proReportsStatus}
+                  weeklyReports={weeklyReports}
+                  weeklyReportsStatus={weeklyReportsStatus}
+                />
 
                 <button
                   type="button"

@@ -12,10 +12,10 @@ import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
 import { renderScoreEditModal } from '../screens/profile/renderers.js';
-import { createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
+import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -369,6 +369,11 @@ function MobileApp() {
     [getFileApiBinding]
   );
 
+  const uploadProfileImage = useCallback(
+    (file) => uploadMobileFile({ ...getFileApiBinding(), file, folder: 'profile' }),
+    [getFileApiBinding]
+  );
+
   // 플래너 진입/날짜 변경 시 날짜 스트립을 선택 날짜로 가로 센터링.
   // planner가 JSX(React 트리)라 스트립 노드가 재렌더 간 유지되므로 센터링이 정착한다.
   // useLayoutEffect에서 동기 실행: commit 직후 layout이 준비되고 paint 전이라 깜빡임이 없으며,
@@ -394,7 +399,8 @@ function MobileApp() {
       upgradePromptTarget: label,
       lockedFeatureTarget: target,
       lockedFeatureTier: required,
-      lockedFeatureLabel: label
+      lockedFeatureLabel: label,
+      ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {})
     });
     nav.goto('lockedFeature');
     return false;
@@ -416,6 +422,7 @@ function MobileApp() {
         inner: String(inner || ''),
         withTab,
         dimmed,
+        screen: state.screen,
         tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
       }),
     // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).
@@ -486,6 +493,7 @@ function MobileApp() {
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
+    uploadProfileImage,
     uploadWeeklyCheckFiles,
     ensureCoachingSubjectRows: () => {
       const current = stateRef.current;
@@ -643,8 +651,13 @@ function MobileApp() {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
+    setState({ userLoadStatus: 'loading' });
     fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
-      if (cancelled || !userData) return;
+      if (cancelled) return;
+      if (!userData) {
+        setState({ userLoadStatus: 'error' });
+        return;
+      }
       const role = String(userData.role || 'student').toLowerCase();
       if (role && role !== 'student') {
         blockNonStudentMobileSession(role);
@@ -654,7 +667,9 @@ function MobileApp() {
         try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
       }
       const patch = mapUserToStatePatch(userData, stateRef.current);
-      if (Object.keys(patch).length) setState(patch);
+      setState({ ...patch, userLoadStatus: 'ready' });
+    }).catch(() => {
+      if (!cancelled) setState({ userLoadStatus: 'error' });
     });
     return () => {
       cancelled = true;

@@ -73,7 +73,7 @@ export function PlannerScreen(ctx) {
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`}>
+        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
           <div className="planner-screen">
             <div className="planner-head">
               <h3>{plannerMonthLabel} {selectedPlannerDate}일 ({selectedPlannerWeekday})</h3>

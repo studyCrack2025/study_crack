@@ -36,6 +36,23 @@ function scoreMetric(raw) {
   return { std, pct, grade };
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderScoreInfoCard({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
+  const rawText = raw || '-';
+  const stdText = std || '-';
+  const pctText = pct || '-';
+  const gradeText = grade || '-';
+  return `<article class="score-info-subject-card"><div><b>${escapeHtml(subject)}</b><strong>${escapeHtml(rawText)}${rawText !== '-' ? '점' : ''}</strong></div><dl><div><dt>표준</dt><dd>${escapeHtml(stdText)}</dd></div><div><dt>백분위</dt><dd>${escapeHtml(pctText)}</dd></div><div><dt>등급</dt><dd>${escapeHtml(gradeText)}</dd></div></dl></article>`;
+}
+
 // 현재 입력 성적 기준 평균 점수(원본 liveCurrentScore).
 function computeLiveCurrentScore(scores = {}) {
   return Math.round(
@@ -449,10 +466,13 @@ export function buildScoreInfoDerived(state = {}) {
     ];
     const scoreInfoDetailList = rows
       .map(([subject, item, type]) => {
-        if (type === 'grade-only') {
-          return `<div class="score-info-detail-row"><b>${subject}</b><span>${item?.raw || '-'}</span><span>${item?.std || '-'}</span><span>${item?.pct || '-'}</span><span>${item?.grd || '-'}</span></div>`;
-        }
-        return `<div class="score-info-detail-row"><b>${subject}</b><span>${item?.raw || '-'}</span><span>${item?.std || '-'}</span><span>${item?.pct || '-'}</span><span>${item?.grd || '-'}</span></div>`;
+        return renderScoreInfoCard({
+          subject,
+          raw: type === 'grade-only' ? '' : item?.raw,
+          std: item?.std,
+          pct: item?.pct,
+          grade: item?.grd
+        });
       })
       .join('');
     return { scoreInfoDetailList };
@@ -480,17 +500,17 @@ export function buildScoreInfoDerived(state = {}) {
         if (type === 'grade-only') {
           const englishGrade = Number(ses.english || 0)
             || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
-          return `<div class="score-info-detail-row"><b>${subject}</b><span>-</span><span>-</span><span>-</span><span>${englishGrade || '-'}</span></div>`;
+          return renderScoreInfoCard({ subject, grade: englishGrade || '-' });
         }
         const m = scoreMetric(raw);
         const rawText = Number(raw) > 0 ? raw : '-';
         const stdText = Number(raw) > 0 ? m.std : '-';
         const pctText = Number(raw) > 0 ? m.pct : '-';
         const grdText = Number(raw) > 0 ? m.grade : '-';
-        return `<div class="score-info-detail-row"><b>${subject}</b><span>${rawText}</span><span>${stdText}</span><span>${pctText}</span><span>${grdText}</span></div>`;
+        return renderScoreInfoCard({ subject, raw: rawText, std: stdText, pct: pctText, grade: grdText });
       })
       .join('') +
-    `<div class="score-info-detail-row"><b>한국사</b><span>-</span><span>-</span><span>-</span><span>${ses.history ? Math.max(1, Number(ses.history) || 1) : '-'}</span></div>`;
+    renderScoreInfoCard({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '-' });
 
   return { scoreInfoDetailList };
 }

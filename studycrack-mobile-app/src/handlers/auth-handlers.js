@@ -155,7 +155,8 @@ function buildSocialAuthUrl(ctx, provider) {
     response_type: 'code',
     client_id: clientId,
     redirect_uri: callbackUrl,
-    state
+    state,
+    auth_type: 'reauthenticate'
   })}`;
 }
 

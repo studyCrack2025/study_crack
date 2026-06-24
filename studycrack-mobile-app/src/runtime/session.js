@@ -83,9 +83,10 @@ export function mapUserToStatePatch(userData, base = {}) {
   const userPatch = { ...(base.user || {}) };
   if (userData.role) userPatch.role = userData.role;
   if (userData.name) userPatch.name = userData.name;
-  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt'].forEach((key) => {
+  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName'].forEach((key) => {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];
   });
+  if (userData.tutorInfo && typeof userData.tutorInfo === 'object') userPatch.tutorInfo = userData.tutorInfo;
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;

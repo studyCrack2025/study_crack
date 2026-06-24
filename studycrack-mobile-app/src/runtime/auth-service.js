@@ -52,10 +52,24 @@ function clearPreviousSession() {
   clearMobileAuthArtifacts();
 }
 
+function clearMobileSocialArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
+  const keys = ['socialReturnUrl', 'socialEntry', 'socialState', 'socialLinkMode'];
+  try {
+    const storage = win?.localStorage || globalThis.localStorage;
+    keys.forEach((key) => storage?.removeItem?.(key));
+  } catch (_) {}
+  try {
+    const storage = win?.sessionStorage || globalThis.sessionStorage;
+    keys.forEach((key) => storage?.removeItem?.(key));
+  } catch (_) {}
+}
+
 export function clearMobileAuthArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
   try { getUserPool() && getUserPool().getCurrentUser() && getUserPool().getCurrentUser().signOut(); } catch (_) {}
+  clearMobileSocialArtifacts(win);
   if (win && typeof win.clearClientSession === 'function') {
     try { win.clearClientSession(); } catch (_) {}
+    clearMobileSocialArtifacts(win);
     return;
   }
   try {
@@ -71,6 +85,10 @@ export function clearMobileAuthArtifacts(win = typeof window !== 'undefined' ? w
       'accessToken',
       'idToken',
       'token',
+      'socialReturnUrl',
+      'socialEntry',
+      'socialState',
+      'socialLinkMode',
       'tutorialStatus',
       'pending_tutorial',
       'tutorial_completed',

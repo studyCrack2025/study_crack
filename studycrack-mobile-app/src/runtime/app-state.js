@@ -48,6 +48,7 @@ export function createInitialAppState() {
     drawerOpen: false,
     // user/plan
     user: DEFAULT_USER,
+    userLoadStatus: 'idle',
     userTier: '', // 백엔드 get_user의 computedTier(쿠키 세션 시 채워짐, 미인증은 빈값=데모)
     selectedPlan: DEFAULT_USER.plan,
     checkoutPlan: 'Standard',
@@ -178,6 +179,8 @@ export function createInitialAppState() {
     phoneChangeStep: 'input',
     phoneChangeSending: false,
     myProfileEditOpen: false,
+    profileDetailModalOpen: false,
+    profilePhotoUploading: false,
     myProfileNameDraft: '',
     myProfilePhoneDraft: '',
     myProfilePhoneCodeDraft: '',
