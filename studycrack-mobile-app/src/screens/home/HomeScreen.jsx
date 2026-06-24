@@ -1,6 +1,8 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
+import { renderCalendarSheet } from '../../components/calendar-sheet.js';
 import {
+  countUnreadNotifications,
   defaultFormatHms,
   defaultFormatMinutesLabel,
   defaultScoreTierClass,
@@ -166,11 +168,18 @@ export function HomeScreen(ctx) {
     weeklyReports = [],
     weeklyReportsStatus = 'idle',
     userLoadStatus = 'idle',
+    notiList = [],
+    calendarNearestDdayLabel = '',
     hasClientSession = () => false
   } = ctx;
 
+  const unreadCount = countUnreadNotifications(notiList);
+  const calendarSheetHtml = renderCalendarSheet(ctx);
+
   const sessionActive = typeof hasClientSession === 'function' && hasClientSession();
-  const profileReady = userLoadStatus === 'ready' || !sessionActive;
+  // 'ready'는 실데이터 병합 완료, 'error'는 네트워크/CORS 실패라 더 기다리지 않고 보유 데이터로 렌더(무한 로딩 방지).
+  // 인증 만료는 별도 가드가 로그인 화면으로 이동시키므로 여기서 로딩에 머물지 않는다.
+  const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
   if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} />;
 
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .72s cubic-bezier(.22,1,.36,1)';
@@ -186,7 +195,9 @@ export function HomeScreen(ctx) {
   const universityModalHtml = renderUniversityModal(ctx);
   const breakdownHtml = renderStudyBreakdown(ctx);
   const overlaysHtml =
-    renderStudySubjectSheet(ctx) + renderNotificationModal(ctx) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+    renderStudySubjectSheet(ctx) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+  // 알림 시트는 app-frame 직속에 둬야 스크롤 컨테이너(.app-screen)가 아닌 고정 프레임 기준으로 하단에 붙는다.
+  const notifSheetHtml = renderNotificationModal(ctx);
 
   return (
     <div className="app-shell">
@@ -196,11 +207,10 @@ export function HomeScreen(ctx) {
             <div className="home-content">
               <div className="home-header">
                 <div className="home-top-icons">
-                  <button
-                    className="top-icon-btn"
-                    data-action="openNotificationModal"
-                    dangerouslySetInnerHTML={{ __html: icon('bell', false) }}
-                  />
+                  <button type="button" className="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정">
+                    <span className="home-calendar-btn-icon" dangerouslySetInnerHTML={{ __html: icon('calendar', false) }} />
+                    {calendarNearestDdayLabel ? <span className="home-calendar-dday">{calendarNearestDdayLabel}</span> : null}
+                  </button>
                 </div>
                 <div className="home-greeting-bubble">
                   <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="크랙이" />
@@ -353,6 +363,17 @@ export function HomeScreen(ctx) {
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          className="home-notif-fab"
+          data-action="openNotificationModal"
+          aria-label={unreadCount ? `알림 ${unreadCount}건` : '알림'}
+        >
+          <span className="home-notif-fab-icon" dangerouslySetInnerHTML={{ __html: icon('bell', false) }} />
+          {unreadCount ? <span className="home-notif-fab-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
+        </button>
+        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: notifSheetHtml }} />
+        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: calendarSheetHtml }} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>

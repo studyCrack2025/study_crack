@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   activeTab: 'activeTab',
+  admissionCalendar: 'admissionCalendar',
   examScoresByType: 'examScoresByType',
   notifications: 'notifications',
   plannerItems: 'plannerItems',

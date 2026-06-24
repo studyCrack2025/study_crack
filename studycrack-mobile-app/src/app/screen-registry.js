@@ -3,6 +3,7 @@ import { renderAppShell } from '../components/app-shell.js';
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
+import { AuthLoginScreen, AuthSignupScreen } from '../screens/auth/AuthScreens.jsx';
 import {
   renderAddUniversityScreen,
   renderAnalysisScreen,
@@ -109,6 +110,8 @@ export const MOBILE_SCREEN_RENDERER_NAMES = [
 // 미등록 화면은 기존 문자열 renderer 경로로 폴백한다(점진 이관).
 export const MOBILE_SCREEN_COMPONENTS = {
   analysis: AnalysisScreen,
+  authLogin: AuthLoginScreen,
+  authSignup: AuthSignupScreen,
   home: HomeScreen,
   planner: PlannerScreen
 };

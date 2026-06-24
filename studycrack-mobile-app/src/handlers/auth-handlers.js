@@ -68,34 +68,39 @@ function formatSignupPhoneForDb(phone) {
 }
 
 function readSignupFields(ctx) {
+  const previous = ctx.signupForm || {};
+  const read = (selector, key) => {
+    const input = query(ctx, selector);
+    return input ? input.value : (previous[key] || '');
+  };
   return {
-    email: getInputValue(ctx, '[data-field="signupEmail"]').trim(),
-    emailCode: getInputValue(ctx, '[data-field="signupEmailCode"]').trim(),
-    password: getInputValue(ctx, '[data-field="signupPassword"]'),
-    passwordConfirm: getInputValue(ctx, '[data-field="signupPasswordConfirm"]'),
-    name: getInputValue(ctx, '[data-field="signupName"]').trim(),
-    gender: getInputValue(ctx, '[data-field="signupGender"]'),
-    birthdate: getInputValue(ctx, '[data-field="signupBirthdate"]'),
-    phoneRaw: getInputValue(ctx, '[data-field="signupPhone"]').trim(),
-    phoneCode: getInputValue(ctx, '[data-field="signupPhoneCode"]').trim(),
-    referral: getInputValue(ctx, '[data-field="signupReferral"]').trim(),
-    referralEtc: getInputValue(ctx, '[data-field="signupReferralEtc"]').trim(),
-    promoCode: getInputValue(ctx, '[data-field="signupPromoCode"]').trim()
+    email: read('[data-field="signupEmail"]', 'email').trim(),
+    emailCode: read('[data-field="signupEmailCode"]', 'emailCode').trim(),
+    password: read('[data-field="signupPassword"]', 'password'),
+    passwordConfirm: read('[data-field="signupPasswordConfirm"]', 'passwordConfirm'),
+    name: read('[data-field="signupName"]', 'name').trim(),
+    gender: read('[data-field="signupGender"]', 'gender'),
+    birthdate: read('[data-field="signupBirthdate"]', 'birthdate'),
+    phoneRaw: read('[data-field="signupPhone"]', 'phoneRaw').trim(),
+    phoneCode: read('[data-field="signupPhoneCode"]', 'phoneCode').trim(),
+    referral: read('[data-field="signupReferral"]', 'referral').trim(),
+    referralEtc: read('[data-field="signupReferralEtc"]', 'referralEtc').trim(),
+    promoCode: read('[data-field="signupPromoCode"]', 'promoCode').trim()
   };
 }
 
-function getSignupTerms(ctx) {
-  const required = queryAll(ctx, '[data-signup-term-required]');
-  const marketing = query(ctx, '[data-signup-term="marketing"]');
+function getSignupTerms(termValues = {}) {
   return {
-    allRequired: required.length > 0 && required.every((item) => item.checked),
-    marketingAgreed: marketing?.checked === true
+    allRequired: ['standard', 'service', 'privacy', 'refund'].every((key) => termValues[key] === true),
+    marketingAgreed: termValues.marketing === true
   };
 }
 
 function readSignupTermValues(ctx) {
+  const previous = ctx.signupTerms || {};
   return ['standard', 'service', 'privacy', 'refund', 'marketing'].reduce((acc, key) => {
-    acc[key] = query(ctx, `[data-signup-term="${key}"]`)?.checked === true;
+    const input = query(ctx, `[data-signup-term="${key}"]`);
+    acc[key] = input ? input.checked === true : previous[key] === true;
     return acc;
   }, {});
 }
@@ -221,6 +226,7 @@ export function createAuthHandlers(ctx) {
     setSignupError = noop,
     setSignupForm = noop,
     setSignupSmsSending = noop,
+    setSignupStep = noop,
     setSignupSubmitting = noop,
     setSignupTerms = noop,
     setSignupVerifiedEmail = noop,
@@ -233,7 +239,7 @@ export function createAuthHandlers(ctx) {
     const termValues = readSignupTermValues(ctx);
     setSignupForm(fields);
     setSignupTerms(termValues);
-    return { fields, termValues, terms: getSignupTerms(ctx) };
+    return { fields, termValues, terms: getSignupTerms(termValues) };
   }
 
   return {
@@ -350,6 +356,7 @@ export function createAuthHandlers(ctx) {
     toggleSignupAllTerms({ actionEl }) {
       const { fields } = captureSignupState();
       const checked = actionEl?.checked === true;
+      setSignupError('');
       setSignupForm(fields);
       setSignupTerms({
         standard: checked,
@@ -365,6 +372,7 @@ export function createAuthHandlers(ctx) {
       const { fields, termValues } = captureSignupState();
       const key = actionEl?.getAttribute?.('data-signup-term');
       if (!key) return false;
+      setSignupError('');
       setSignupForm(fields);
       setSignupTerms({ ...termValues, [key]: actionEl?.checked === true });
       return true;
@@ -373,6 +381,48 @@ export function createAuthHandlers(ctx) {
     openSignupTermsModal({ actionEl }) {
       captureSignupState();
       setOpenTermsType(actionEl?.getAttribute?.('data-terms-type') || 'standard');
+      return true;
+    },
+
+    previousNativeSignupStep({ event }) {
+      prevent(event);
+      captureSignupState();
+      setSignupError('');
+      setSignupStep((step) => Math.max(1, Number(step || 1) - 1));
+      return true;
+    },
+
+    nextNativeSignupStep({ event }) {
+      prevent(event);
+      const { fields, terms } = captureSignupState();
+      const step = Number(ctx.signupStep || 1);
+      const phone = normalizeCognitoPhone(fields.phoneRaw);
+      if (step === 1 && !terms.allRequired) {
+        setSignupError('필수 약관에 모두 동의해주세요.');
+        return false;
+      }
+      if (step === 2) {
+        if (!fields.name || !fields.gender || !fields.birthdate) {
+          setSignupError('이름, 성별, 생년월일을 모두 입력해주세요.');
+          return false;
+        }
+        if (!phone || ctx.signupVerifiedPhone !== phone) {
+          setSignupError('전화번호 인증을 완료해주세요.');
+          return false;
+        }
+      }
+      if (step === 3) {
+        if (!isValidEmail(fields.email)) {
+          setSignupError('이메일 형식을 확인해주세요.');
+          return false;
+        }
+        if (ctx.signupVerifiedEmail !== fields.email) {
+          setSignupError('이메일 인증을 완료해주세요.');
+          return false;
+        }
+      }
+      setSignupError('');
+      setSignupStep(Math.min(4, step + 1));
       return true;
     },
 

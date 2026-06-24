@@ -5,8 +5,9 @@ import {
   DEFAULT_USER,
   FIXED_TODAY_DATE
 } from '../constants/mock-data.js';
-import { STORAGE_KEYS, readString, safeParse } from '../state/storage.js';
+import { STORAGE_KEYS, readArray, readString, safeParse } from '../state/storage.js';
 import { normalizePlannerItems } from '../state/planner-storage.js';
+import { normalizePersonalEvent } from '../constants/admission-calendar.js';
 
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
 export const MAIN_TAB_SCREENS = ['home', 'analysis', 'strategy', 'planner', 'my'];
@@ -112,6 +113,7 @@ export function createInitialAppState() {
     signupEmailSending: false,
     signupSmsSending: false,
     signupSubmitting: false,
+    signupStep: 1,
     signupError: '',
     signupVerifiedEmail: '',
     signupVerifiedPhone: '',
@@ -172,6 +174,14 @@ export function createInitialAppState() {
     notiStatus: 'idle', // idle | loading | ready | empty | error
     openFaq: '',
     notifModalOpen: false,
+    // 수험 일정 캘린더(Phase 5): 공식 일정은 확정 전까지 비고, 개인 일정만 동작.
+    personalEvents: [], // 개인 일정 배열(localStorage 보존, 추후 백엔드 동기화)
+    calendarSheetOpen: false,
+    calendarSelectedDate: FIXED_TODAY_DATE, // 시트에서 선택된 날짜(YYYY-MM-DD)
+    calendarMonthAnchor: `${FIXED_TODAY_DATE.slice(0, 7)}-01`, // 월간 그리드 기준(해당 월 1일)
+    calendarEventFormOpen: false,
+    calendarEventEditId: null, // 수정 중인 개인 일정 id(null이면 신규)
+    calendarEventDraft: null, // { title, date, endDate, category, note }
     // mypage/계정
     logoutModalOpen: false,
     withdrawModalOpen: false,
@@ -226,6 +236,9 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   const savedNotifications = safeParse(STORAGE_KEYS.notifications, null, storage);
   const savedStudyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
   const savedSubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
+  const savedEvents = readArray(STORAGE_KEYS.admissionCalendar, [], storage)
+    .map((e) => normalizePersonalEvent(e))
+    .filter(Boolean);
   const savedPlan = readString(STORAGE_KEYS.selectedPlan, '', storage);
   const savedTarget = readString(STORAGE_KEYS.selectedUniversity, '', storage);
   const savedTab = readString(STORAGE_KEYS.activeTab, '', storage);
@@ -237,6 +250,7 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
     notifications: { ...state.notifications, ...(isPlainObject(savedNotifications) ? savedNotifications : {}) },
     studyRecords: Array.isArray(savedStudyRecords) ? savedStudyRecords : state.studyRecords,
     studySubjectRecords: Array.isArray(savedSubjectRecords) ? savedSubjectRecords : state.studySubjectRecords,
+    personalEvents: savedEvents,
     selectedPlan: savedPlan || state.selectedPlan,
     targetMajor: savedTarget || state.targetMajor,
     tab: savedTab || state.tab

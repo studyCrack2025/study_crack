@@ -1,3 +1,4 @@
+export * from './admission-calendar.js';
 export * from './assets.js';
 export * from './mock-data.js';
 export * from './options.js';

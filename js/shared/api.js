@@ -279,11 +279,15 @@ async function apiFetch(url, options = {}) {
                 // retry가 또 401이면 아래 만료 처리로 fallthrough
             }
             // refresh 실패 또는 refresh 성공했는데 retry도 401 → 진짜 세션 만료
+            // 만료 오류는 code/status를 보존해 호출처(모바일 부트스트랩 등)가 권한 부족과 구분해 분기한다.
+            const expiredError = new Error('Auth expired');
+            expiredError.code = 'AUTH_EXPIRED';
+            expiredError.status = response.status;
             if (isPublicRoute(window.location.pathname)) {
-                return Promise.reject(new Error('Auth expired'));
+                return Promise.reject(expiredError);
             }
             redirectToLogin('expired');
-            return Promise.reject(new Error('Auth expired'));
+            return Promise.reject(expiredError);
         }
 
         let errorMessage = `서버 통신 오류 (상태 코드: ${response.status})`;
@@ -293,7 +297,10 @@ async function apiFetch(url, options = {}) {
         } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
     } catch (error) {
-        console.error('API 통신 실패:', error);
+        // 예상된 인증 만료는 호출처에서 조용히 처리하므로 불필요한 오류 로그를 남기지 않는다.
+        if (!error || error.code !== 'AUTH_EXPIRED') {
+            console.error('API 통신 실패:', error);
+        }
         throw error;
     }
 }

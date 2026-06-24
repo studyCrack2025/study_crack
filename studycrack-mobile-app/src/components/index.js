@@ -1,5 +1,6 @@
 export * from './app-bar.js';
 export * from './app-shell.js';
+export * from './calendar-sheet.js';
 export * from './grade-buttons.js';
 export * from './icon.js';
 export * from './mascot-bubble.js';

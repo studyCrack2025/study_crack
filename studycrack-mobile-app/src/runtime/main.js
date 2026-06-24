@@ -196,6 +196,25 @@ async function blockNonStudentMobileSession(role) {
   window.location.replace(getRoleLoginPath(role));
 }
 
+// 인증 만료 시 모바일 로그인 화면으로 보내는 경로. 현재 pathname 기준이되 비정상 경로는 정적 경로로 폴백.
+function getMobileExpiredLoginPath() {
+  const path = (typeof window !== 'undefined' && window.location && window.location.pathname) || '/studycrack-mobile.html';
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/studycrack-mobile.html?screen=authLogin';
+  return `${path}?screen=authLogin`;
+}
+
+// 인증 만료 단일 종료 가드: alert 없이 모바일 세션을 정리하고 로그인 화면으로 1회만 이동한다.
+// 동시 다발 401/403이 발생해도 replace는 한 번만 수행된다.
+let mobileSessionExpiring = false;
+function expireMobileSessionSilently() {
+  if (typeof window === 'undefined' || mobileSessionExpiring) return;
+  mobileSessionExpiring = true;
+  try {
+    clearMobileAuthArtifacts(window);
+  } catch (_error) {}
+  window.location.replace(getMobileExpiredLoginPath());
+}
+
 function filterTabItemsForTier() {
   return TAB_ITEMS;
 }
@@ -632,6 +651,7 @@ function MobileApp() {
   useEffect(() => { safeStringifySet(STORAGE_KEYS.notifications, state.notifications); }, [state.notifications]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords); }, [state.studyRecords]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords); }, [state.studySubjectRecords]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.admissionCalendar, state.personalEvents); }, [state.personalEvents]);
   useEffect(() => {
     // 문자열 키는 원본과 동일하게 raw 저장(readString과 짝).
     const ls = globalThis.localStorage;
@@ -668,8 +688,14 @@ function MobileApp() {
       }
       const patch = mapUserToStatePatch(userData, stateRef.current);
       setState({ ...patch, userLoadStatus: 'ready' });
-    }).catch(() => {
-      if (!cancelled) setState({ userLoadStatus: 'error' });
+    }).catch((error) => {
+      if (cancelled) return;
+      // 인증 만료: alert 없이 세션 정리 후 모바일 로그인 화면으로 1회만 이동.
+      if (error && error.code === 'AUTH_EXPIRED') {
+        expireMobileSessionSilently();
+        return;
+      }
+      setState({ userLoadStatus: 'error' });
     });
     return () => {
       cancelled = true;
