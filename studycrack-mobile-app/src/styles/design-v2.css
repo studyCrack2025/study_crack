@@ -993,6 +993,8 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .calendar-nearest-main p{margin:3px 0 0;font-size:12px;color:#475569;}
 .calendar-nearest-empty{justify-content:center;border-style:dashed;border-color:#CBD5E1;background:#F8FAFC;}
 .calendar-nearest-empty p{margin:0;font-size:13px;color:#64748B;}
+.calendar-sync-note{margin:0 0 10px;padding:9px 11px;border:1px solid #D8E6FF;border-radius:11px;background:#F8FBFF;color:#526176;font-size:12px;font-weight:800;line-height:1.4;}
+.calendar-sync-note.error{border-color:#FECACA;background:#FEF2F2;color:#B91C1C;}
 .calendar-month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .calendar-month-nav b{font-size:15px;font-weight:800;color:#26304A;}
 .calendar-nav-btn{width:36px;height:36px;border-radius:10px;border:1px solid #E2E8F4;background:#fff;font-size:20px;line-height:1;color:#475569;}

@@ -3,6 +3,7 @@ import { ANALYSIS_PROFILES, ANALYSIS_RECOMMENDED, ANALYSIS_SEARCH_SEED } from '.
 import {
   computeDday,
   eventCoversDate,
+  eventMarksDateInGrid,
   formatDdayLabel,
   getNearestUpcomingEvent,
   getOfficialAdmissionEvents,
@@ -556,7 +557,7 @@ export function buildCalendarDerived(state = {}) {
   for (let i = 0; i < firstWeekday; i += 1) calendarMonthCells.push({ blank: true, key: `b${i}` });
   for (let day = 1; day <= daysInMonth; day += 1) {
     const ymd = `${year}-${pad2(month)}-${pad2(day)}`;
-    const dayEvents = calendarEvents.filter((e) => eventCoversDate(e, ymd));
+    const dayMarks = calendarEvents.filter((e) => eventMarksDateInGrid(e, ymd));
     calendarMonthCells.push({
       blank: false,
       key: ymd,
@@ -564,8 +565,8 @@ export function buildCalendarDerived(state = {}) {
       day,
       isToday: ymd === today,
       isSelected: ymd === selected,
-      hasEvents: dayEvents.length > 0,
-      eventDots: dayEvents.slice(0, 3).map((e) => ({ category: e.category, source: e.source }))
+      hasEvents: dayMarks.length > 0,
+      eventDots: dayMarks.slice(0, 3).map((e) => ({ category: e.category, source: e.source }))
     });
   }
 
