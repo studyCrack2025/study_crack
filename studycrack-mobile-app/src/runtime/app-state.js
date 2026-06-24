@@ -112,6 +112,7 @@ export function createInitialAppState() {
     signupEmailSending: false,
     signupSmsSending: false,
     signupSubmitting: false,
+    signupStep: 1,
     signupError: '',
     signupVerifiedEmail: '',
     signupVerifiedPhone: '',

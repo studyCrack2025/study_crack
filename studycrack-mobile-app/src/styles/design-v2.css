@@ -356,6 +356,29 @@ input,select,textarea{font-size:16px !important;}
 .signup-error{padding:10px 12px;border-radius:12px;background:#FEF2F2;border:1px solid #FECACA;}
 .signup-login-link{margin:2px 0 0;text-align:center;color:#64748B;font-size:13px;}
 .signup-submit-btn:disabled{opacity:.62;}
+.signup-heading{display:grid;gap:5px;text-align:center;}
+.signup-heading .signup-title{margin:0;}
+.signup-heading > span{font-size:13px;color:#64748B;font-weight:700;}
+.signup-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;position:relative;padding:4px 0 2px;}
+.signup-progress::before{content:"";position:absolute;left:11%;right:11%;top:19px;height:2px;background:#E2E8F0;z-index:0;}
+.signup-progress-item{position:relative;z-index:1;display:grid;justify-items:center;gap:5px;color:#94A3B8;}
+.signup-progress-item span{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;border:2px solid #E2E8F0;background:#FFFFFF;font-size:12px;font-weight:900;}
+.signup-progress-item b{font-size:11px;line-height:1.2;text-align:center;white-space:nowrap;}
+.signup-progress-item.active,.signup-progress-item.done{color:var(--primary-dark);}
+.signup-progress-item.active span{border-color:var(--primary);background:#EEF4FF;box-shadow:0 0 0 4px rgba(76,121,238,.09);}
+.signup-progress-item.done span{border-color:var(--primary);background:var(--primary);color:#FFFFFF;}
+.signup-stage{display:grid;gap:12px;animation:signupStageIn 280ms var(--ease-enter) both;}
+.signup-stage-head{display:grid;gap:5px;padding:3px 2px;}
+.signup-stage-head > span{font-size:11px;color:var(--primary-dark);font-weight:900;}
+.signup-stage-head h2{margin:0;color:#0F172A;font-size:19px;line-height:1.35;letter-spacing:0;}
+.signup-stage-head p{margin:0;color:#64748B;font-size:13px;line-height:1.5;font-weight:700;}
+.signup-stage-actions{display:grid;grid-template-columns:1fr;gap:8px;}
+.signup-stage-actions:has(.btn-secondary){grid-template-columns:minmax(92px,.42fr) minmax(0,1fr);}
+.signup-stage-actions .btn,.signup-stage-actions .signup-submit{min-height:48px;border-radius:14px;}
+.auth-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;}
+.auth-button-spinner{width:16px;height:16px;border-radius:999px;border:2px solid rgba(255,255,255,.42);border-top-color:#FFFFFF;animation:authButtonSpin .72s linear infinite;}
+@keyframes signupStageIn{from{opacity:.001;transform:translate3d(10px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes authButtonSpin{to{transform:rotate(360deg);}}
 .planner-add-page{padding:0 0 120px;}
 .planner-add-form{margin-top:12px;display:grid;gap:12px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:16px;}
 .planner-add-form h4{margin:0;font-size:18px;color:#0F172A;}
@@ -884,8 +907,8 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-result-gauge i,.home-goal-linked-card .track i,.home-ranking-progress i,.progress > span,.track i,.fill,.analysis-v2-progress .progress-base,.analysis-v2-progress .progress-range,.analysis-v2-progress .dot,.analysis-v2-progress .trend-arrow,.analysis-v2-bar,.analysis-v2-bar-proj-box,.analysis-v2-vert-item .bar,.analysis-v2-sim-item .mini-track i,.score-info-subject-card strong{transition-duration:var(--motion-slow) !important;transition-timing-function:var(--ease-enter) !important;}
 .analysis-v2-bar{transform-origin:bottom center;}
 .analysis-v2-bar-item:hover .analysis-v2-bar{transform:translate3d(0,-2px,0) scale(1.015);}
-.home-modal-overlay,.planner-sheet-overlay,.coach-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay{animation:overlayFadeIn var(--motion-base) ease both;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
-.home-modal,.planner-sheet,.coach-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
+.home-modal-overlay,.planner-sheet-overlay,.coach-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay,.find-email-modal-backdrop{animation:overlayFadeIn var(--motion-base) ease both;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.home-modal,.planner-sheet,.coach-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
 .planner-sheet,.coach-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
 .side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
