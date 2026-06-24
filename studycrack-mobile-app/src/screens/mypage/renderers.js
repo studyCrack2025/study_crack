@@ -264,6 +264,7 @@ export function renderMyPageScreen(ctx) {
         <p class="my-section-title">서비스</p>
         <button class="my-row" data-action="goto" data-target="notificationSettings">알림 설정 <span>${icon('chevron', false)}</span></button>
         <button class="my-row" data-action="goto" data-target="customerSupport">고객센터 <span>${icon('chevron', false)}</span></button>
+        <button class="my-row" data-action="goto" data-target="notificationList">알림 <span>${icon('chevron', false)}</span></button>
         <button class="my-row" data-action="goto" data-target="settingsMain">설정 <span>${icon('chevron', false)}</span></button>
       </div>
     </div>`, true);
@@ -284,6 +285,33 @@ export function renderNotificationSettingsScreen(ctx) {
   ];
 
   return layout(appbar('알림 설정', true) + `<div class="card notify-card">${rows.map(([key, title, desc]) => `<button class="notify-row" data-action="toggleNotification" data-notify-key="${key}"><div><b>${title}</b><p>${desc}</p></div><span class="notify-switch ${notifications[key] ? 'on' : ''}"><i></i></span></button>`).join('')}</div>`, false);
+}
+
+// 알림 목록 화면(전체): 홈 알림 팝오버의 '전체 보기'/마이페이지 진입 대상.
+export function renderNotificationListScreen(ctx) {
+  const {
+    appbar,
+    layout,
+    notiList = [],
+    notiStatus = 'idle'
+  } = ctx;
+
+  const itemsHtml = Array.isArray(notiList) && notiList.length
+    ? notiList
+        .map((n) => {
+          const date = formatQnaDate(n.createdAt);
+          return `<div class="noti-list-row ${n.isRead ? '' : 'is-unread'}"><div class="noti-list-main"><b>${escapeHtml(n.title || '알림')}</b><p>${escapeHtml(n.body || n.message || '')}</p></div>${date ? `<span class="noti-list-date">${escapeHtml(date)}</span>` : ''}</div>`;
+        })
+        .join('')
+    : `<div class="noti-list-empty"><p>${
+        notiStatus === 'loading'
+          ? '알림을 불러오는 중...'
+          : notiStatus === 'error'
+            ? '알림을 불러오지 못했습니다.'
+            : '받은 알림이 없습니다.'
+      }</p></div>`;
+
+  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>`, false);
 }
 
 export function renderCustomerSupportScreen(ctx) {

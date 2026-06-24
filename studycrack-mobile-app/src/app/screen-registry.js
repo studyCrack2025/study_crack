@@ -14,6 +14,7 @@ import {
   renderHomeScreen,
   renderMyPageScreen,
   renderNotificationSettingsScreen,
+  renderNotificationListScreen,
   renderCustomerSupportScreen,
   renderSettingsMainScreen,
   renderSettingsTermsPickerScreen,
@@ -97,6 +98,7 @@ export const MOBILE_SCREEN_RENDERER_NAMES = [
   'paymentComplete',
   'my',
   'notificationSettings',
+  'notificationList',
   'customerSupport',
   'settingsMain',
   'settingsTermsPicker',
@@ -145,6 +147,7 @@ export function createMobileScreenRenderers(ctx = {}) {
     // screen id는 메인 탭/원본 런타임과 동일하게 'my'(레지스트리 camelCase 'myPage'에서 정정).
     my: renderMyPageScreen,
     notificationSettings: renderNotificationSettingsScreen,
+    notificationList: renderNotificationListScreen,
     splash: renderSplashScreen,
     on1: renderOn1Screen,
     on2: renderOn2Screen,

@@ -206,18 +206,18 @@ export function HomeScreen(ctx) {
           <div className="home-dashboard home-container">
             <div className="home-content">
               <div className="home-header">
-                <div className="home-top-icons">
-                  <button type="button" className="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정">
-                    <span className="home-calendar-btn-icon" dangerouslySetInnerHTML={{ __html: icon('calendar', false) }} />
-                    {calendarNearestDdayLabel ? <span className="home-calendar-dday">{calendarNearestDdayLabel}</span> : null}
-                  </button>
-                </div>
                 <div className="home-greeting-bubble">
                   <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="크랙이" />
                   <div className="home-greeting-speech">
                     <p className="home-greeting">안녕하세요, {(user && user.name) || '회원'}님 👋</p>
                     <p className="home-sub">오늘도 크랙한 하루 되세요!</p>
                   </div>
+                </div>
+                <div className="home-top-icons">
+                  <button type="button" className="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정">
+                    <span className="home-calendar-btn-icon" dangerouslySetInnerHTML={{ __html: icon('calendar', false) }} />
+                    {calendarNearestDdayLabel ? <span className="home-calendar-dday">{calendarNearestDdayLabel}</span> : null}
+                  </button>
                 </div>
               </div>
 

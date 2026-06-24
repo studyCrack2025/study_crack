@@ -723,11 +723,11 @@ input,select,textarea{font-size:16px !important;}
 .plan-console-selector button.active{border-color:#BFD3F8;box-shadow:0 0 0 3px rgba(76,121,238,.08);}
 @media (max-width:390px){.locked-feature-actions{grid-template-columns:1fr;}.analysis-chart-badge{white-space:normal;text-align:right;}.analysis-v2-chart-area{min-height:430px;--bar-height:320px;}}
 .home-content{gap:14px;}
-.home-header{margin:0;}
-.home-top-icons{margin:0 0 4px;}
+.home-header{margin:0;display:flex;align-items:center;gap:10px;}
+.home-top-icons{margin:0;flex:0 0 auto;}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
-.home-greeting-bubble{margin:0;align-items:center;}
-.home-greeting-cracky{width:48px;height:48px;transform:none;margin:0;}
+.home-greeting-bubble{margin:0;flex:1 1 auto;min-width:0;align-items:center;}
+.home-greeting-cracky{width:62px;height:62px;transform:none;margin:0;}
 .home-greeting-speech{transform:none;border:1px solid #DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .home-greeting-speech:before{border-color:transparent #FFFFFF transparent transparent;}
 .home-greeting{font-size:18px;color:#26304A;letter-spacing:0;}
@@ -945,22 +945,38 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
   .profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}
 }
 
-/* ── Phase 4: 홈 알림 FAB + 바텀시트 (계획 §홈 알림) ──────────────────────────
-   우상단 bell 제거 후 탭바 위 우하단 플로팅 버튼 + 하단에서 올라오는 알림 시트. */
+/* ── Phase 4: 홈 알림 FAB + 팝오버 (계획 §홈 알림) ──────────────────────────
+   탭바 위 우하단 플로팅 버튼 + 버튼 위로 뜨는 부분 팝오버(전체 보기/항목 클릭 시 알림 목록 화면). */
 .home-notif-fab{position:absolute;right:16px;bottom:calc(78px + 16px + env(safe-area-inset-bottom));z-index:60;width:52px;height:52px;border-radius:999px;border:1px solid var(--primary-dark);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(52,78,143,.28);}
 .home-notif-fab .home-notif-fab-icon{display:flex;align-items:center;justify-content:center;width:24px;height:24px;}
 .home-notif-fab .home-notif-fab-icon svg{width:22px;height:22px;stroke:#fff;}
 .home-notif-fab-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#EF4444;color:#fff;font-size:11px;font-weight:800;line-height:20px;text-align:center;border:2px solid #fff;}
-.notif-sheet{max-height:70dvh;display:flex;flex-direction:column;overflow:hidden;border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;}
-.notif-sheet-handle{flex:0 0 auto;width:40px;height:4px;border-radius:999px;background:#CBD5E1;margin:4px auto 10px;}
-.notif-sheet-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
-.notif-sheet-head .home-modal-title{margin:0;}
-.notif-sheet .pro-notif-list{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;gap:10px;margin:0;padding-right:2px;}
-.notif-sheet .pro-notif-item{padding:12px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
-.notif-sheet .pro-notif-item.pro-notif-unread{border-color:var(--primary);background:#EEF4FF;}
-.notif-sheet .pro-notif-item b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
-.notif-sheet .pro-notif-item p{margin:0;font-size:12px;color:#475569;line-height:1.45;}
-.notif-sheet .pro-notif-empty{padding:28px 12px;text-align:center;color:#64748B;font-size:13px;}
+/* 팝오버: FAB 바로 위(우하단)에 앵커 */
+.notif-popover-overlay{position:absolute;inset:0;z-index:70;background:transparent;}
+.notif-popover{position:absolute;right:16px;bottom:calc(78px + 16px + 52px + 12px + env(safe-area-inset-bottom));width:min(320px,calc(100% - 32px));max-height:50dvh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #DDE7F6;border-radius:16px;background:#FFFFFF;box-shadow:0 14px 32px rgba(15,23,42,.22);transform-origin:bottom right;animation:notifPopoverIn 200ms var(--ease-enter) both;}
+.notif-popover:after{content:"";position:absolute;right:18px;bottom:-7px;width:14px;height:14px;background:#FFFFFF;border-right:1px solid #DDE7F6;border-bottom:1px solid #DDE7F6;transform:rotate(45deg);}
+@keyframes notifPopoverIn{from{opacity:.001;transform:translate3d(0,8px,0) scale(.96);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
+.notif-popover-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #EEF2F7;}
+.notif-popover-head b{font-size:15px;color:#26304A;}
+.notif-popover-head .qna-modal-close{width:28px;height:28px;font-size:18px;}
+.notif-popover-list{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;}
+.notif-popover-item{text-align:left;padding:12px 14px;border:0;border-bottom:1px solid #F1F5F9;background:transparent;}
+.notif-popover-item:last-child{border-bottom:0;}
+.notif-popover-item.pro-notif-unread{background:#F5F8FF;}
+.notif-popover-item b{display:block;font-size:13.5px;color:#0F172A;margin-bottom:3px;}
+.notif-popover-item p{margin:0;font-size:12px;color:#64748B;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.notif-popover-empty{padding:26px 14px;text-align:center;color:#64748B;font-size:13px;}
+.notif-popover-all{flex:0 0 auto;padding:12px 14px;border:0;border-top:1px solid #EEF2F7;background:#F8FAFC;color:var(--primary-dark);font-size:13px;font-weight:700;text-align:center;}
+/* 알림 목록 화면 */
+.noti-list-card{display:flex;flex-direction:column;padding:0;overflow:hidden;}
+.noti-list-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid #F1F5F9;}
+.noti-list-row:last-child{border-bottom:0;}
+.noti-list-row.is-unread{background:#F5F8FF;}
+.noti-list-main{flex:1 1 auto;min-width:0;}
+.noti-list-main b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
+.noti-list-main p{margin:0;font-size:12.5px;color:#475569;line-height:1.45;}
+.noti-list-date{flex:0 0 auto;font-size:11px;color:#94A3B8;}
+.noti-list-empty{padding:40px 16px;text-align:center;color:#64748B;font-size:13px;}
 
 /* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
 .home-top-icons{display:flex;justify-content:flex-end;}
