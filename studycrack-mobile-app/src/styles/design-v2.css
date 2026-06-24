@@ -980,10 +980,12 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 
 /* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
 .home-top-icons{display:flex;justify-content:flex-end;}
-.home-calendar-btn{position:relative;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:999px;border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
+.home-calendar-btn{position:relative;display:inline-flex;align-items:center;gap:7px;min-width:104px;max-width:132px;height:48px;padding:0 10px;border-radius:14px;border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-calendar-btn-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;}
 .home-calendar-btn-icon svg{width:18px;height:18px;stroke:var(--primary-dark);}
-.home-calendar-dday{font-size:12px;font-weight:800;color:var(--primary-dark);letter-spacing:.01em;}
+.home-calendar-copy{display:grid;gap:1px;min-width:0;text-align:left;}
+.home-calendar-dday{font-size:12px;line-height:1.15;font-weight:900;color:var(--primary-dark);letter-spacing:0;}
+.home-calendar-summary{display:block;max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;font-weight:800;color:#64748B;letter-spacing:0;}
 /* 캘린더 시트 */
 .calendar-sheet{max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;}
 .calendar-sheet-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
