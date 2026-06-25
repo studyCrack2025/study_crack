@@ -83,7 +83,12 @@ function renderEventForm(ctx) {
       <button type="button" class="btn btn-secondary" data-action="closeCalendarEventForm" ${calendarSaving ? 'disabled' : ''}>취소</button>
       <button type="button" class="btn btn-primary" data-action="saveCalendarEvent" ${calendarSaving ? 'disabled' : ''}>${calendarSaving ? '저장 중...' : '저장'}</button>
     </div>`;
-  return renderModal({ panelClass: 'calendar-event-modal', dismissAction: 'closeCalendarEventForm', body });
+  return renderModal({
+    overlayClass: 'calendar-event-overlay',
+    panelClass: 'calendar-event-modal',
+    dismissAction: 'closeCalendarEventForm',
+    body
+  });
 }
 
 // 수험 일정 바텀시트(다가오는 일정 + 월간 캘린더 + 선택일 목록 + 내 일정 추가).

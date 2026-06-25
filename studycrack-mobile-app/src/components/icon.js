@@ -14,6 +14,8 @@ export function renderIcon(name, primary) {
     chevron: `<svg viewBox="0 0 24 24" class="${c}"><path d="M9 6l6 6-6 6"/></svg>`,
     chat: `<svg viewBox="0 0 24 24" class="${c}"><path d="M4 5h16v11H8l-4 4z"/></svg>`,
     check: `<svg viewBox="0 0 24 24" class="${c}"><path d="M20 6L9 17l-5-5"/></svg>`,
+    plus: `<svg viewBox="0 0 24 24" class="${c}"><path d="M12 5v14M5 12h14"/></svg>`,
+    shield: `<svg viewBox="0 0 24 24" class="${c}"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
     bolt: `<svg viewBox="0 0 24 24" class="${c}"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg>`
   };
   return map[name] || map.chart;

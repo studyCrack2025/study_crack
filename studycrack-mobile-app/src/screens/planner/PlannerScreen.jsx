@@ -143,9 +143,9 @@ export function PlannerScreen(ctx) {
             </div>
 
             <div className="planner-bottom-space" />
-            <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
           </div>
         </div>
+        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>
