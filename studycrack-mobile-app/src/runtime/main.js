@@ -225,15 +225,16 @@ function buildScoreSelectionPatch(scoreExamType, current) {
   const scoreExamKey = scoreExamTypeToKey(scoreExamType);
   const mapped = mapExamDataToScorePatch(current.user?.quantitative?.[scoreExamKey], current);
   if (mapped) {
+    // 분석 결과를 즉시 비우지 않고 갱신 대기로 둔다(stale-while-revalidate).
+    // 동기적으로 []로 덮으면 재요청 응답 전까지 홈 카드가 라이브/0점으로 추락해 플리커가 발생한다.
     return {
       scoreExamType,
       scoreExamKey,
       ...mapped,
-      analysisResults: [],
-      analysisSimulations: [],
-      analysisApiStatus: 'idle'
+      analysisApiStatus: 'loading'
     };
   }
+  // 선택한 시험에 입력 성적이 없으면 이전 시험의 분석 결과를 비우고 빈 상태로 둔다(잘못된 stale 점수 방지).
   const blankScoreState = createBlankScoreState();
   return {
     scoreExamType,
