@@ -32,7 +32,9 @@ const timerOps = createTimerOps();
 
 // 제스처(드래그) 트랜지언트 상태 ref. 리스너 재부착·재렌더에도 진행 중 제스처가 유지되도록 모듈 레벨.
 const touchStartXRef = { current: null };
+const touchStartYRef = { current: null };
 const touchLastXRef = { current: null };
+const touchLastYRef = { current: null };
 const touchTargetRef = { current: '' };
 const touchCardRef = { current: null };
 const suppressClickUntilRef = { current: 0 };
@@ -278,7 +280,9 @@ function createInitialAppStateWithScreenParam() {
     ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
     : base;
   if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home' };
-  return param ? { ...sessionSafeBase, screen: param } : sessionSafeBase;
+  return param
+    ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
+    : sessionSafeBase;
 }
 
 function MobileApp() {
@@ -489,7 +493,9 @@ function MobileApp() {
     syncLiveStudyTimerUi: timerOps.syncLiveStudyTimerUi,
     // 홈 슬라이더 드래그 제스처(원본 1:1). touch ref는 모듈 레벨, slider 상태는 DOM 조회.
     touchStartXRef,
+    touchStartYRef,
     touchLastXRef,
+    touchLastYRef,
     touchTargetRef,
     touchCardRef,
     suppressClickUntilRef,

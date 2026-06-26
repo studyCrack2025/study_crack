@@ -7,7 +7,17 @@ export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
   'closeDrawer',
   'openScoreEdit',
   'closeScoreEdit',
-  'setScoreEditGrade'
+  'setScoreEditGrade',
+  'openCalendarSheet',
+  'closeCalendarSheet',
+  'selectCalendarDate',
+  'calendarPrevMonth',
+  'calendarNextMonth',
+  'openCalendarEventForm',
+  'closeCalendarEventForm',
+  'setPlannerCalendarMode',
+  'openPlannerCalendar',
+  'closePlannerCalendar'
 ]);
 
 export function getActionElement(event, selector = '[data-action]') {

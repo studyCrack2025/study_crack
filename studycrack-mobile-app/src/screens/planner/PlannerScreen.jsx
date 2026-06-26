@@ -50,11 +50,13 @@ export function PlannerScreen(ctx) {
     dimmed = false,
     icon = () => '',
     tabBarHtml = '',
+    plannerCalendarMode,
+    plannerCalendarMonthCells,
     plannerCalendarOpen,
+    plannerCalendarWeekDates,
     plannerEditIndex,
     plannerEditItem,
     plannerFeedback = {},
-    plannerMonthDays,
     plannerMonthLabel = '',
     plannerViewDonutGradient,
     plannerViewHour = 0,
@@ -67,7 +69,17 @@ export function PlannerScreen(ctx) {
   } = ctx;
 
   const overlaysHtml =
-    renderCalendarSheet({ plannerCalendarOpen, selectedPlannerDate, plannerMonthLabel, plannerMonthDays }) +
+    renderCalendarSheet({
+      plannerCalendarMode,
+      plannerCalendarMonthCells,
+      plannerCalendarOpen,
+      plannerCalendarWeekDates,
+      plannerMonthLabel,
+      plannerViewHour,
+      plannerViewItems,
+      plannerViewMinute,
+      selectedPlannerDate
+    }) +
     renderEditSheet({ plannerEditIndex, plannerEditItem });
 
   return (

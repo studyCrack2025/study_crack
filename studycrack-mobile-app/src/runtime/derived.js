@@ -93,6 +93,37 @@ export function buildPlannerDerived(state = {}) {
   const selectedPlannerWeekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, Number(selectedDate) || 1).getDay()];
 
   const plannerItemsByDate = groupPlannerByDate(plannerItems);
+  const selectedDayNumber = Math.max(1, Math.min(plannerMonthDays, Number(selectedDate) || 1));
+  const plannerCalendarWeekStart = Math.max(1, selectedDayNumber - new Date(todayYear, todayMonth - 1, selectedDayNumber).getDay());
+  const plannerCalendarWeekDates = Array.from({ length: 7 }, (_, idx) => {
+    const day = plannerCalendarWeekStart + idx;
+    if (day > plannerMonthDays) return { day: '', weekday: WEEKDAY_LABELS[idx], empty: true, count: 0, minutes: 0 };
+    const items = plannerItemsByDate[String(day)] || [];
+    return {
+      day: String(day),
+      weekday: WEEKDAY_LABELS[idx],
+      empty: false,
+      count: items.length,
+      minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
+    };
+  });
+  const firstPlannerWeekday = new Date(todayYear, todayMonth - 1, 1).getDay();
+  const plannerCalendarMonthCells = [
+    ...Array.from({ length: firstPlannerWeekday }, (_, idx) => ({ key: `blank-${idx}`, blank: true })),
+    ...Array.from({ length: plannerMonthDays }, (_, idx) => {
+      const day = String(idx + 1);
+      const items = plannerItemsByDate[day] || [];
+      return {
+        key: day,
+        day,
+        blank: false,
+        isSelected: selectedPlannerDate === day,
+        isToday: FIXED_TODAY_DATE.endsWith(`-${day.padStart(2, '0')}`),
+        count: items.length,
+        minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
+      };
+    })
+  ];
 
   const plannerViewItems = plannerItemsByDate[selectedPlannerDate] || [];
   const plannerViewMinutes = plannerViewItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
@@ -129,6 +160,9 @@ export function buildPlannerDerived(state = {}) {
 
   return {
     plannerWeekDates,
+    plannerCalendarWeekDates,
+    plannerCalendarMonthCells,
+    plannerItemsByDate,
     plannerMonthDays,
     plannerMonthLabel,
     selectedPlannerDate,

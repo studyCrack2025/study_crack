@@ -88,6 +88,7 @@ export function createInitialAppState() {
     // planner
     selectedDate: String(Number(FIXED_TODAY_DATE.split('-')[2])),
     plannerCalendarOpen: false,
+    plannerCalendarMode: 'week',
     plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '' },
     plannerItems: DEFAULT_PLANNER_ITEMS,
     plannerEditIndex: null,

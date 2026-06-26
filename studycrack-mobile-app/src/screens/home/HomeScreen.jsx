@@ -1,7 +1,11 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
-import { formatCompactCalendarTitle } from '../../constants/admission-calendar.js';
-import { renderCalendarSheet } from '../../components/calendar-sheet.js';
+import {
+  CALENDAR_CATEGORIES,
+  PERSONAL_CALENDAR_CATEGORIES,
+  formatCompactCalendarTitle,
+  getCalendarCategoryMeta
+} from '../../constants/admission-calendar.js';
 import {
   countUnreadNotifications,
   defaultFormatHms,
@@ -108,6 +112,175 @@ function reportStatusText(status = 'idle', hasItem = false) {
   return hasItem ? '생성됨' : '대기 중';
 }
 
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function formatDateLabel(ymd) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return '';
+  const [y, m, d] = ymd.split('-').map(Number);
+  const weekday = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+  return `${y}년 ${m}월 ${d}일 (${weekday})`;
+}
+
+function periodLabel(event) {
+  if (!event?.endDate || event.endDate === event.date) return '';
+  return ` · ${event.date} ~ ${event.endDate}`;
+}
+
+function CalendarEventRow({ event }) {
+  const meta = getCalendarCategoryMeta(event.category);
+  const editable = event.source === 'personal';
+  return (
+    <div
+      className={`calendar-event-row ${editable ? 'is-editable' : ''}`}
+      data-action={editable ? 'openCalendarEventForm' : undefined}
+      data-event-id={editable ? event.id : undefined}
+    >
+      <span className="calendar-event-dot" style={{ background: meta.color }} />
+      <div className="calendar-event-main">
+        <b>{event.title}</b>
+        {event.note ? <p>{event.note}</p> : null}
+        <small>{meta.label}{periodLabel(event)}</small>
+      </div>
+      {editable ? <span className="calendar-event-chev" aria-hidden="true">›</span> : <span className="calendar-event-tag">공식</span>}
+    </div>
+  );
+}
+
+function CalendarMonthCell({ cell }) {
+  if (cell.blank) return <span className="calendar-cell calendar-cell-blank" />;
+  const dots = (cell.eventDots || []).map((dot, idx) => (
+    <i key={idx} style={{ background: getCalendarCategoryMeta(dot.category).color }} />
+  ));
+  const cls = ['calendar-cell'];
+  if (cell.isToday) cls.push('is-today');
+  if (cell.isSelected) cls.push('is-selected');
+  return (
+    <button type="button" className={cls.join(' ')} data-action="selectCalendarDate" data-date={cell.ymd}>
+      <i className="calendar-cell-day">{cell.day}</i>
+      <span className="calendar-cell-dots">{dots}</span>
+    </button>
+  );
+}
+
+function CalendarEventForm(ctx) {
+  const {
+    calendarEventFormOpen = false,
+    calendarEventEditId = null,
+    calendarEventDraft = null,
+    calendarSaving = false
+  } = ctx;
+  if (!calendarEventFormOpen) return null;
+  const draft = calendarEventDraft || {};
+  return (
+    <div className="home-modal-overlay calendar-event-overlay" data-action="closeCalendarEventForm">
+      <div className="home-modal calendar-event-modal" data-action="noopModal">
+        <div className="calendar-form-head">
+          <div>
+            <span>MY SCHEDULE</span>
+            <p className="home-modal-title">{calendarEventEditId ? '내 일정 수정' : '내 일정 추가'}</p>
+          </div>
+          <button type="button" className="qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button>
+        </div>
+        <div className="calendar-form-fields">
+          <label>일정 제목</label>
+          <input className="planner-input calendar-form-title" data-calendar-field="title" maxLength="60" defaultValue={draft.title || ''} placeholder="예: 수시 원서 접수 마감" />
+          <div className="calendar-form-date-grid">
+            <div>
+              <label>시작일</label>
+              <input className="planner-input" type="date" data-calendar-field="date" defaultValue={draft.date || ''} />
+            </div>
+            <div>
+              <label>종료일</label>
+              <input className="planner-input" type="date" data-calendar-field="endDate" defaultValue={draft.endDate || ''} />
+            </div>
+          </div>
+          <label>분류</label>
+          <select className="planner-input calendar-form-select" data-calendar-field="category" defaultValue={draft.category || 'personal'}>
+            {PERSONAL_CALENDAR_CATEGORIES.map((key) => (
+              <option value={key} key={key}>{(CALENDAR_CATEGORIES[key] || {}).label || key}</option>
+            ))}
+          </select>
+          <label>메모</label>
+          <textarea className="planner-input calendar-form-note" data-calendar-field="note" maxLength="300" defaultValue={draft.note || ''} placeholder="준비물, 장소, 확인할 내용을 적어두세요." />
+        </div>
+        <div className="support-btns calendar-form-actions">
+          {calendarEventEditId ? (
+            <button type="button" className="btn btn-secondary calendar-delete-btn" data-action="deleteCalendarEvent" data-event-id={calendarEventEditId} disabled={calendarSaving}>삭제</button>
+          ) : null}
+          <button type="button" className="btn btn-secondary" data-action="closeCalendarEventForm" disabled={calendarSaving}>취소</button>
+          <button type="button" className="btn btn-primary" data-action="saveCalendarEvent" disabled={calendarSaving}>{calendarSaving ? '저장 중...' : '저장'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarSheet(ctx) {
+  const {
+    calendarSheetOpen = false,
+    calendarMonthLabel = '',
+    calendarMonthCells = [],
+    calendarWeekdays = WEEKDAYS,
+    calendarNearestEvent = null,
+    calendarNearestDdayLabel = '',
+    calendarSelectedDate = '',
+    calendarSelectedEvents = [],
+    calendarSyncStatus = 'idle'
+  } = ctx;
+  if (!calendarSheetOpen) return <>{CalendarEventForm(ctx)}</>;
+  const addDisabled = calendarSyncStatus === 'loading';
+  return (
+    <>
+      <div className="planner-sheet-overlay calendar-sheet-overlay" data-action="closeCalendarSheet">
+        <div className="planner-sheet calendar-sheet" data-action="noopModal">
+          <div className="notif-sheet-handle" aria-hidden="true" />
+          <div className="notif-sheet-head calendar-sheet-head">
+            <div>
+              <span>ADMISSION CALENDAR</span>
+              <p className="home-modal-title">다가오는 일정</p>
+            </div>
+            <button type="button" className="qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button>
+          </div>
+          <div className="calendar-sheet-scroll">
+            {calendarSyncStatus === 'loading' ? <p className="calendar-sync-note">내 일정을 동기화하고 있어요.</p> : null}
+            {calendarSyncStatus === 'error' ? <p className="calendar-sync-note error">내 일정을 불러오지 못했습니다. 잠시 후 다시 열어주세요.</p> : null}
+            {calendarNearestEvent ? (
+              <div className="calendar-nearest">
+                <span className="calendar-nearest-dday">{calendarNearestDdayLabel}</span>
+                <div className="calendar-nearest-main">
+                  <b>{calendarNearestEvent.title}</b>
+                  <p>{formatDateLabel(calendarNearestEvent.date)} · {getCalendarCategoryMeta(calendarNearestEvent.category).label}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="calendar-nearest calendar-nearest-empty"><p>다가오는 일정이 없어요. 아래에서 일정을 추가해보세요.</p></div>
+            )}
+            <div className="calendar-month-nav">
+              <button type="button" className="calendar-nav-btn" data-action="calendarPrevMonth" aria-label="이전 달">‹</button>
+              <b>{calendarMonthLabel}</b>
+              <button type="button" className="calendar-nav-btn" data-action="calendarNextMonth" aria-label="다음 달">›</button>
+            </div>
+            <div className="calendar-weekdays">{calendarWeekdays.map((w) => <span key={w}>{w}</span>)}</div>
+            <div className="calendar-grid">{calendarMonthCells.map((cell) => <CalendarMonthCell cell={cell} key={cell.key || cell.ymd} />)}</div>
+            <div className="calendar-selected">
+              <div className="calendar-selected-head">
+                <b>{formatDateLabel(calendarSelectedDate)}</b>
+                <button type="button" className="btn btn-primary mini" data-action="openCalendarEventForm" disabled={addDisabled}>+ 내 일정 추가</button>
+              </div>
+              <div className="calendar-selected-list">
+                {calendarSelectedEvents.length
+                  ? calendarSelectedEvents.map((event) => <CalendarEventRow event={event} key={event.id} />)
+                  : <p className="calendar-empty">이 날짜에 등록된 일정이 없어요.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {CalendarEventForm(ctx)}
+    </>
+  );
+}
+
 function HomeReportPreviewCard({ proReports = [], proReportsStatus = 'idle', weeklyReports = [], weeklyReportsStatus = 'idle' }) {
   const latestWeekly = weeklyReports[0] || null;
   const latestPro = proReports[0] || null;
@@ -177,7 +350,6 @@ export function HomeScreen(ctx) {
   } = ctx;
 
   const unreadCount = countUnreadNotifications(notiList);
-  const calendarSheetHtml = renderCalendarSheet(ctx);
 
   const sessionActive = typeof hasClientSession === 'function' && hasClientSession();
   // 'ready'는 실데이터 병합 완료, 'error'는 네트워크/CORS 실패라 더 기다리지 않고 보유 데이터로 렌더(무한 로딩 방지).
@@ -387,7 +559,7 @@ export function HomeScreen(ctx) {
           {unreadCount ? <span className="home-notif-fab-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
         </button>
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: notifSheetHtml }} />
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: calendarSheetHtml }} />
+        <CalendarSheet {...ctx} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>
