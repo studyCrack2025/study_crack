@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import {
@@ -27,6 +28,17 @@ import {
 
 function UniversityCard({ item, plannerBadges, scoreTierClass }) {
   const scorePct = Math.min((item.score / 250) * 100, 100);
+  // 점수 출처 상태별 표기. pending(분석 대기)은 0점 대신 스켈레톤, empty(성적 없음)는 안내 문구.
+  const status = item.scoreStatus || 'confirmed';
+  const pending = status === 'pending';
+  const empty = status === 'empty';
+  const noScore = pending || empty;
+  const scoreLabel =
+    status === 'confirmed' ? (item.scoreUpdating ? '갱신 중…' : 'AI 점수')
+      : status === 'live' ? '예상 점수'
+        : pending ? '분석 중' : '성적 입력 필요';
+  const scoreValue = empty ? '—' : `${item.score}점`;
+  const gapValue = noScore ? '—' : `${item.gap}점`;
   return (
     <button
       className="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3"
@@ -41,9 +53,9 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
           <p className="home-result-major">{item.major}</p>
           <span className="home-result-state">{item.rank}</span>
         </div>
-        <div className="home-result-score">
-          <strong>{item.score}점</strong>
-          <small>AI 점수</small>
+        <div className={`home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}`}>
+          {pending ? <strong className="home-score-skeleton" aria-label="분석 중" /> : <strong>{scoreValue}</strong>}
+          <small>{scoreLabel}</small>
         </div>
       </div>
       <div className="home-result-gauge">
@@ -59,13 +71,13 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       </div>
       <div className="kpi-row score-row">
         <div className="kpi-item">
-          <b>{item.score}점</b>현재 점수
+          <b>{noScore ? '—' : scoreValue}</b>현재 점수
         </div>
         <div className="kpi-item">
           <b>{item.cut}점</b>합격 컷
         </div>
         <div className="kpi-item danger">
-          <b>{item.gap}점</b>부족 점수
+          <b>{gapValue}</b>부족 점수
         </div>
       </div>
       <div className="home-planner-badges chip-row">
@@ -79,24 +91,60 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
   );
 }
 
-function HomeLoadingPanel({ tabBarHtml = '' }) {
+// 인사말은 이름 길이에 따라 한 줄을 넘기지 않도록 폰트 크기를 동적 축소한다(줄바꿈 방지).
+// CSS로 지정된 크기에서 시작해, 내용이 박스를 넘으면 하한(12px)까지 0.5px씩 줄인다.
+function HomeGreeting({ name = '회원' }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof window === 'undefined') return undefined;
+    const fit = () => {
+      el.style.fontSize = '';
+      let size = parseFloat(window.getComputedStyle(el).fontSize) || 18;
+      const min = 12;
+      let guard = 0;
+      while (el.scrollWidth > el.clientWidth + 1 && size > min && guard < 24) {
+        size -= 0.5;
+        el.style.fontSize = `${size}px`;
+        guard += 1;
+      }
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [name]);
+  return (
+    <p className="home-greeting home-greeting-fit" ref={ref}>안녕하세요, {name}님 👋</p>
+  );
+}
+
+// 로그인 직후 홈 진입 로딩: 단순 스피너 대신 홈 레이아웃 스켈레톤을 보여
+// 체감 로딩을 줄이고 실데이터 도착 시 레이아웃 점프(CLS)를 방지한다.
+function HomeLoadingPanel({ tabBarHtml = '', crackySrc = CRACKY_SRC }) {
   return (
     <div className="app-shell">
       <div className="app-frame">
         <div className="screen app-screen app-content">
           <div className="home-dashboard home-container">
-            <div className="home-content">
-              <div className="home-user-loading">
-                <div className="analysis-loading-orbit" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                </div>
-                <div>
-                  <b>계정 정보를 불러오는 중입니다</b>
-                  <p>저장된 성적, 구독 상태, 목표 대학을 확인하고 있어요.</p>
+            <div className="home-content home-skeleton" aria-busy="true" aria-label="홈 화면을 불러오는 중입니다">
+              <div className="home-skeleton-header">
+                <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="" aria-hidden="true" />
+                <div className="home-skeleton-speech">
+                  <span className="home-skeleton-line w70" />
+                  <span className="home-skeleton-line w45" />
                 </div>
               </div>
+              <div className="home-skeleton-card lg">
+                <div className="home-skeleton-row">
+                  <span className="home-skeleton-line w50" />
+                  <span className="home-skeleton-pill" />
+                </div>
+                <span className="home-skeleton-gauge" />
+                <div className="home-skeleton-kpis"><span /><span /><span /></div>
+              </div>
+              <div className="home-skeleton-card sm" />
+              <div className="home-skeleton-card sm" />
+              <p className="home-skeleton-note">저장된 성적과 목표 대학을 불러오고 있어요</p>
             </div>
           </div>
         </div>
@@ -176,7 +224,7 @@ function CalendarEventForm(ctx) {
       <div className="home-modal calendar-event-modal" data-action="noopModal">
         <div className="calendar-form-head">
           <div>
-            <span>MY SCHEDULE</span>
+            <span>내 일정</span>
             <p className="home-modal-title">{calendarEventEditId ? '내 일정 수정' : '내 일정 추가'}</p>
           </div>
           <button type="button" className="qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button>
@@ -236,8 +284,8 @@ function CalendarSheet(ctx) {
           <div className="notif-sheet-handle" aria-hidden="true" />
           <div className="notif-sheet-head calendar-sheet-head">
             <div>
-              <span>ADMISSION CALENDAR</span>
-              <p className="home-modal-title">다가오는 일정</p>
+              <span>입시 캘린더</span>
+              <p className="home-modal-title">수험 일정</p>
             </div>
             <button type="button" className="qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button>
           </div>
@@ -355,7 +403,7 @@ export function HomeScreen(ctx) {
   // 'ready'는 실데이터 병합 완료, 'error'는 네트워크/CORS 실패라 더 기다리지 않고 보유 데이터로 렌더(무한 로딩 방지).
   // 인증 만료는 별도 가드가 로그인 화면으로 이동시키므로 여기서 로딩에 머물지 않는다.
   const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
-  if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} />;
+  if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} crackySrc={crackySrc} />;
 
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const trackStyle = {
@@ -384,7 +432,7 @@ export function HomeScreen(ctx) {
                 <div className="home-greeting-bubble">
                   <img loading="lazy" decoding="async" src={crackySrc} className="home-greeting-cracky" alt="크랙이" />
                   <div className="home-greeting-speech">
-                    <p className="home-greeting">안녕하세요, {(user && user.name) || '회원'}님 👋</p>
+                    <HomeGreeting name={(user && user.name) || '회원'} />
                     <p className="home-sub">오늘도 크랙한 하루 되세요!</p>
                   </div>
                 </div>

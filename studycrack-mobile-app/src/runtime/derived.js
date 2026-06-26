@@ -179,8 +179,11 @@ export function buildPlannerDerived(state = {}) {
 // 홈 대학 KPI 카드(원본 homeTargets). planner-by-date처럼 home/analysis derived 공유.
 // 원본은 profile을 계산하되 결과 객체엔 쓰지 않으므로(점수=liveCurrentScore, cut=100) 동일하게 생략.
 function computeHomeTargets(state = {}) {
-  const { scores = {}, targetMajor = '', homeTargetList = [], analysisResults = [] } = state;
+  const { scores = {}, targetMajor = '', homeTargetList = [], analysisResults = [], analysisApiStatus = 'idle' } = state;
   const liveCurrentScore = computeLiveCurrentScore(scores);
+  const hasLiveScore = Number.isFinite(liveCurrentScore) && liveCurrentScore > 0;
+  // 분석 결과가 아직 도착 전(idle/loading)이면 0을 "확정 점수"처럼 보여주지 않고 pending 상태로 표기.
+  const analysisPending = analysisApiStatus === 'loading' || analysisApiStatus === 'idle';
   const orderedHomeTargetMajors = Array.from(
     new Set([...(targetMajor ? [targetMajor] : []), ...(homeTargetList || [])])
   ).filter(Boolean);
@@ -188,12 +191,18 @@ function computeHomeTargets(state = {}) {
     const serverItem = findTargetItem(analysisResults, major);
     const serverScore = Number(serverItem?.converted_score);
     const hasServerScore = Number.isFinite(serverScore);
-    const score = hasServerScore ? Math.round(serverScore) : Number(liveCurrentScore || computeLiveCurrentScore(scores));
+    // 점수 출처: 서버 환산점수(confirmed) > 입력 성적 기반 라이브(live) > 미확정(pending) / 빈값(empty)
+    const score = hasServerScore ? Math.round(serverScore) : hasLiveScore ? Number(liveCurrentScore) : 0;
+    const scoreStatus = hasServerScore ? 'confirmed' : hasLiveScore ? 'live' : analysisPending ? 'pending' : 'empty';
+    // confirmed 값이 떠 있는 동안 재요청 중이면 갱신 표시(이전 값 유지, 0점 추락 방지).
+    const scoreUpdating = analysisApiStatus === 'loading' && hasServerScore;
     const cut = 100;
     const gap = score - cut;
     return {
       major,
       score,
+      scoreStatus,
+      scoreUpdating,
       cut,
       gap: gap > 0 ? `+${gap}` : String(gap),
       rank: serverItem?.status || (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전'),

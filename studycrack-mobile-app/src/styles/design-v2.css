@@ -121,6 +121,24 @@ input,select,textarea{font-size:16px !important;}
 .home-user-loading > div:last-child{display:grid;gap:5px;}
 .home-user-loading b{font-size:18px;line-height:1.35;font-weight:900;}
 .home-user-loading p{margin:0;font-size:13px;line-height:1.5;color:#64748B;font-weight:800;}
+/* 2026-06-27: 로그인 직후 홈 로딩 스켈레톤(홈 레이아웃 placeholder). analysisSk shimmer 재사용. */
+.home-skeleton{display:flex;flex-direction:column;gap:14px;padding-top:6px;}
+.home-skeleton-header{display:flex;align-items:center;gap:10px;}
+.home-skeleton-speech{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #DDE7F6;border-radius:16px;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-skeleton-line,.home-skeleton-pill,.home-skeleton-gauge,.home-skeleton-kpis span{background:linear-gradient(90deg,#E8EEF7,#F4F8FE,#E8EEF7);background-size:200% 100%;animation:analysisSk 1.3s linear infinite;border-radius:999px;}
+.home-skeleton-line{height:13px;}
+.home-skeleton-line.w70{width:70%;}
+.home-skeleton-line.w45{width:45%;}
+.home-skeleton-line.w50{width:50%;}
+.home-skeleton-card{border:1px solid #E6ECF6;border-radius:18px;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.05);}
+.home-skeleton-card.lg{display:flex;flex-direction:column;gap:14px;padding:18px;min-height:200px;}
+.home-skeleton-card.sm{height:96px;}
+.home-skeleton-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.home-skeleton-pill{width:54px;height:20px;border-radius:999px;}
+.home-skeleton-gauge{width:100%;height:14px;border-radius:999px;}
+.home-skeleton-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.home-skeleton-kpis span{height:48px;border-radius:12px;}
+.home-skeleton-note{margin:2px 0 0;text-align:center;font-size:12.5px;font-weight:800;color:#8A97AC;}
 .home-report-preview-card{display:grid;gap:12px;}
 .home-report-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .home-report-preview-item{min-width:0;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:14px;padding:12px;text-align:left;display:grid;gap:5px;font-family:inherit;}
@@ -329,6 +347,8 @@ input,select,textarea{font-size:16px !important;}
 .planner-empty-day p{margin:0;font-size:12.5px;color:#64748B;line-height:1.5;}
 /* 모바일 자체 로그인 입력/에러 (Phase B) */
 .auth-input{margin:0;}
+.auth-unified-card h1{margin:14px 0 0;text-align:center;font-size:25px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.02em;}
+.auth-unified-card .auth-title{margin:7px 0 16px;text-align:center;font-size:15px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
 .auth-unified-card .planner-input{border-color:#DDE7F6;background:#F8FBFF;border-radius:13px;height:48px;}
 .auth-error{margin:0;color:#dc2626;font-size:13px;font-weight:700;line-height:1.45;}
 .signup-page{padding:0 0 120px;}
@@ -731,6 +751,9 @@ input,select,textarea{font-size:16px !important;}
 .home-greeting-speech{transform:none;border:1px solid #DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .home-greeting-speech:before{border-color:transparent #FFFFFF transparent transparent;}
 .home-greeting{font-size:18px;color:#26304A;letter-spacing:0;}
+/* 인사말 한 줄 고정: JS fit이 박스 폭 기준 overflow를 측정해 폰트를 축소(이름이 길어도 줄바꿈 금지). */
+.home-greeting-speech{min-width:0;}
+.home-greeting-fit{white-space:nowrap;overflow:hidden;max-width:100%;}
 .home-sub{color:#64748B;font-weight:700;}
 .home-section{display:grid;gap:10px;margin:0;}
 .home-analysis-criteria{margin:0;padding:12px 13px;border-color:#DDE7F6;background:#FFFFFF;box-shadow:0 5px 14px rgba(52,78,143,.05);}
@@ -744,6 +767,10 @@ input,select,textarea{font-size:16px !important;}
 .home-result-score{padding-right:26px;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:14px;padding:9px 34px 9px 10px;min-width:98px;}
 .home-result-score strong{font-size:22px;color:#26304A;}
 .home-result-score small{font-weight:800;color:#64748B;}
+/* 2026-06-27: 환산점수 미확정 상태(분석 중) 표기 — 0점 플리커 대신 스켈레톤/안내. */
+.home-result-score.is-pending strong{color:#94A3B8;}
+.home-result-score.is-updating small{color:var(--primary-dark);}
+.home-score-skeleton{display:block;width:62px;height:22px;margin-left:auto;border-radius:8px;background:linear-gradient(90deg,#E8EEF7,#F4F8FE,#E8EEF7);background-size:200% 100%;animation:analysisSk 1.3s linear infinite;}
 .home-univ-remove{top:12px;right:12px;background:#F8FBFF;border:1px solid #DDE7F6;color:#64748B;}
 .kpi-row.score-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
 .kpi-row.score-row .kpi-item{display:grid;gap:3px;border:1px solid #E3EAF6;background:#F8FBFF;border-radius:12px;padding:9px 7px;text-align:center;color:#64748B;font-size:10.5px;font-weight:800;line-height:1.25;}
@@ -1030,6 +1057,16 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .calendar-form-note{min-height:64px;resize:vertical;}
 .calendar-form-actions{display:flex;gap:8px;}
 .calendar-form-actions .calendar-delete-btn{margin-right:auto;color:#DC2626;}
+/* 2026-06-27: 캘린더 시트/폼 헤더·메모·추가 버튼을 전 폭에서 적용. 기존 규칙이 @media(max-width:360px)에만 있어 일반 폰(>360px)에서 누락되던 문제 수정. */
+.notif-sheet-handle{width:42px;height:4px;border-radius:999px;background:#E2E8F0;margin:2px auto 12px;}
+.notif-sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.notif-sheet-head > div{min-width:0;}
+.calendar-sheet-head span,.calendar-form-head span{display:block;margin-bottom:4px;font-size:10px;font-weight:900;letter-spacing:.06em;color:var(--primary-dark);}
+.calendar-sheet-head .home-modal-title,.calendar-form-head .home-modal-title{font-size:18px;font-weight:900;color:#26304A;}
+.notif-sheet-head .qna-modal-close,.calendar-form-head .qna-modal-close{flex:0 0 auto;align-self:flex-start;width:30px;height:30px;display:flex;align-items:center;justify-content:center;margin:-2px -4px 0 0;}
+.calendar-form-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #E8EEF9;}
+.calendar-form-note{padding:12px 14px;line-height:1.5;min-height:84px;resize:none;}
+.calendar-selected-head .btn{width:auto;flex:0 0 auto;min-width:0;min-height:38px;padding:0 15px;font-size:12.5px;border-radius:999px;white-space:nowrap;}
 
 /* 2026-06-26: 모바일 전역 폭·레이어 안정화 */
 .app-frame,.app-screen,.app-content,.home-dashboard,.home-content,.analysis-v2,.planner-screen,.coach-page,.my-stack,.plan-console-page,.payment-console-page{min-width:0;max-width:100%;}

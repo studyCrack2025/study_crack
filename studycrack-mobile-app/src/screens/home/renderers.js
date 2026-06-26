@@ -45,12 +45,22 @@ export function defaultFormatMinutesLabel(minutes) {
 
 function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
   const scorePct = Math.min((item.score / 250) * 100, 100);
+  // JSX UniversityCard와 동일한 점수 상태 표기(0점 플리커 방지).
+  const status = item.scoreStatus || 'confirmed';
+  const pending = status === 'pending';
+  const empty = status === 'empty';
+  const noScore = pending || empty;
+  const scoreLabel = status === 'confirmed' ? (item.scoreUpdating ? '갱신 중…' : 'AI 점수')
+    : status === 'live' ? '예상 점수' : pending ? '분석 중' : '성적 입력 필요';
+  const scoreValue = empty ? '—' : `${item.score}점`;
+  const gapValue = noScore ? '—' : `${item.gap}점`;
+  const scoreInner = pending ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong>' : `<strong>${scoreValue}</strong>`;
   return `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-univ-remove" data-action="removeAnalysisTarget" data-target-major="${item.major}">✕</span>
-          <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score"><strong>${item.score}점</strong><small>AI 점수</small></div></div>
+          <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}">${scoreInner}<small>${scoreLabel}</small></div></div>
           <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
-          <div class="kpi-row score-row"><div class="kpi-item"><b>${item.score}점</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${item.gap}점</b>부족 점수</div></div>
+          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`;
 }
