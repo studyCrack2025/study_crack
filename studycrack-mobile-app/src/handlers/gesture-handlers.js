@@ -30,6 +30,10 @@ function getTouchClientX(event) {
   return event?.touches?.[0]?.clientX ?? event?.changedTouches?.[0]?.clientX;
 }
 
+function getTouchClientY(event) {
+  return event?.touches?.[0]?.clientY ?? event?.changedTouches?.[0]?.clientY;
+}
+
 function findNearestHomeCard(ctx, slider) {
   const cards = Array.from(slider?.querySelectorAll?.('.slider-card') || []);
   if (!slider || !cards.length) return 0;
@@ -45,7 +49,9 @@ function findNearestHomeCard(ctx, slider) {
 
 function resetGestureState(ctx, previousTarget = '') {
   setRefValue(ctx.touchStartXRef, null);
+  setRefValue(ctx.touchStartYRef, null);
   setRefValue(ctx.touchLastXRef, null);
+  setRefValue(ctx.touchLastYRef, null);
   setRefValue(ctx.touchTargetRef, '');
   if (!(previousTarget === 'home' && ctx.screen === 'home')) ctx.setHomeDragOffset?.(0);
   if (!(previousTarget === 'score' && ctx.isIOSSafari?.())) {
@@ -76,7 +82,7 @@ export function createGestureHandlers(ctx) {
     waitAndSyncHomeSliderDom = noop
   } = ctx;
 
-  function startGesture(target, clientX) {
+  function startGesture(target, clientX, clientY = null) {
     if (typeof clientX !== 'number') return false;
     if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
       setRefValue(ctx.touchTargetRef, '');
@@ -90,12 +96,14 @@ export function createGestureHandlers(ctx) {
       }
       setRefValue(ctx.touchTargetRef, 'home');
       setRefValue(ctx.touchStartXRef, clientX);
+      setRefValue(ctx.touchStartYRef, clientY);
       return true;
     }
     if (target?.closest?.('.score-journey-scroll')) {
       const card = target.closest('.score-journey-card');
       setRefValue(ctx.touchTargetRef, 'score');
       setRefValue(ctx.touchStartXRef, clientX);
+      setRefValue(ctx.touchStartYRef, clientY);
       setRefValue(ctx.touchCardRef, card);
       if (ctx.screen === 'ob5' && card) {
         card.dataset.dragStartX = String(clientX);
@@ -106,17 +114,22 @@ export function createGestureHandlers(ctx) {
     }
     setRefValue(ctx.touchTargetRef, '');
     setRefValue(ctx.touchStartXRef, null);
+    setRefValue(ctx.touchStartYRef, null);
     return false;
   }
 
-  function moveGesture(clientX) {
+  function moveGesture(clientX, clientY = null) {
     const startX = getRefValue(ctx.touchStartXRef);
     if (typeof startX !== 'number' || typeof clientX !== 'number') return false;
     setRefValue(ctx.touchLastXRef, clientX);
+    if (typeof clientY === 'number') setRefValue(ctx.touchLastYRef, clientY);
     const delta = clientX - startX;
+    const startY = getRefValue(ctx.touchStartYRef);
+    const deltaY = typeof startY === 'number' && typeof clientY === 'number' ? clientY - startY : 0;
     const touchTarget = getRefValue(ctx.touchTargetRef, '');
 
     if (touchTarget === 'home') {
+      if (Math.abs(delta) < 8 || Math.abs(delta) < Math.abs(deltaY) * 1.1) return false;
       if (ctx.screen === 'home') {
         const { track, activeIndex = 0, total = 0 } = getHomeSliderState();
         if (!track || !total) return false;
@@ -155,19 +168,30 @@ export function createGestureHandlers(ctx) {
     return false;
   }
 
-  function endGesture(clientX) {
+  function endGesture(clientX, clientY = null) {
     const startX = getRefValue(ctx.touchStartXRef);
     if (typeof startX !== 'number' || typeof clientX !== 'number') return false;
     const touchTarget = getRefValue(ctx.touchTargetRef, '');
     const delta = clientX - startX;
+    const startY = getRefValue(ctx.touchStartYRef);
+    const endY = typeof clientY === 'number' ? clientY : getRefValue(ctx.touchLastYRef);
+    const deltaY = typeof startY === 'number' && typeof endY === 'number' ? endY - startY : 0;
     setRefValue(ctx.touchStartXRef, null);
+    setRefValue(ctx.touchStartYRef, null);
     setRefValue(ctx.touchLastXRef, null);
+    setRefValue(ctx.touchLastYRef, null);
     if (!(touchTarget === 'home' && ctx.screen === 'home')) setHomeDragOffset(0);
     if (!(touchTarget === 'score' && isIOSSafari())) {
       if (ctx.screen !== 'ob5') setScoreDragOffset(0);
     }
 
     const swipeThreshold = touchTarget === 'home' ? 22 : 26;
+    if (touchTarget === 'home' && Math.abs(delta) < Math.abs(deltaY) * 1.1) {
+      setRefValue(ctx.touchTargetRef, '');
+      setRefValue(ctx.touchCardRef, null);
+      restoreIfUnexpectedTopJump();
+      return true;
+    }
     if (Math.abs(delta) < swipeThreshold) {
       if (touchTarget === 'home' && ctx.screen === 'home') {
         const slider = query(ctx, '.home-kpi-slider');
@@ -236,26 +260,29 @@ export function createGestureHandlers(ctx) {
 
   function attachGestureListeners(targetDocument = getDocument(ctx)) {
     if (!targetDocument?.addEventListener) return noop;
-    const onNativeTouchStart = (event) => startGesture(event.target, getTouchClientX(event));
-    const onNativeTouchMove = (event) => moveGesture(getTouchClientX(event));
-    const onNativeTouchEnd = (event) => endGesture(getTouchClientX(event));
+    const onNativeTouchStart = (event) => startGesture(event.target, getTouchClientX(event), getTouchClientY(event));
+    const onNativeTouchMove = (event) => {
+      const handled = moveGesture(getTouchClientX(event), getTouchClientY(event));
+      if (handled && getRefValue(ctx.touchTargetRef, '') === 'home') event.preventDefault?.();
+    };
+    const onNativeTouchEnd = (event) => endGesture(getTouchClientX(event), getTouchClientY(event));
     const onNativeTouchCancel = () => cancelGesture();
     const onPointerDown = (event) => {
       if (event.pointerType !== 'mouse' || event.button !== 0) return;
-      startGesture(event.target, event.clientX);
+      startGesture(event.target, event.clientX, event.clientY);
     };
     const onPointerMove = (event) => {
-      if (event.pointerType === 'mouse') moveGesture(event.clientX);
+      if (event.pointerType === 'mouse') moveGesture(event.clientX, event.clientY);
     };
     const onPointerUp = (event) => {
-      if (event.pointerType === 'mouse') endGesture(event.clientX);
+      if (event.pointerType === 'mouse') endGesture(event.clientX, event.clientY);
     };
     const onPointerCancel = (event) => {
       if (event.pointerType === 'mouse') cancelGesture();
     };
 
     targetDocument.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
-    targetDocument.addEventListener('touchmove', onNativeTouchMove, { passive: true, capture: true });
+    targetDocument.addEventListener('touchmove', onNativeTouchMove, { passive: false, capture: true });
     targetDocument.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
     targetDocument.addEventListener('touchcancel', onNativeTouchCancel, { passive: true, capture: true });
     targetDocument.addEventListener('pointerdown', onPointerDown, true);

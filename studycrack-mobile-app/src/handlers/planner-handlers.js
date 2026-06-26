@@ -103,6 +103,7 @@ export function createPlannerHandlers(ctx) {
     setExpandedBreakdownSubject = noop,
     setNotifModalOpen = noop,
     setPlannerCalendarOpen = noop,
+    setPlannerCalendarMode = noop,
     setPlannerDraft = noop,
     setPlannerEditIndex = noop,
     setPlannerItems = noop,
@@ -136,12 +137,21 @@ export function createPlannerHandlers(ctx) {
       return true;
     },
 
+    setPlannerCalendarMode({ actionEl }) {
+      const mode = getData(actionEl, 'planner-calendar-mode');
+      if (!['day', 'week', 'month'].includes(mode)) return false;
+      preserveY(() => setPlannerCalendarMode(mode));
+      return true;
+    },
+
     selectPlannerDate({ actionEl }) {
       const date = getData(actionEl, 'planner-date');
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
+      if (!actionEl?.closest?.('.planner-calendar-sheet')) {
+        afterSafariViewportStable(() => setPlannerCalendarOpen(false));
+      }
       requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;
