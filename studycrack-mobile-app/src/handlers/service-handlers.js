@@ -146,10 +146,7 @@ export function createServiceHandlers(ctx) {
     selectPlan({ actionEl }) {
       const plan = getData(actionEl, 'plan');
       if (!plan) return false;
-      if (ctx.isIOSSafari?.()) {
-        togglePlanDom(ctx, plan);
-        return true;
-      }
+      togglePlanDom(ctx, plan);
       setCheckoutPlan(plan);
       return true;
     },
@@ -157,19 +154,19 @@ export function createServiceHandlers(ctx) {
     selectDuration({ actionEl }) {
       const duration = getData(actionEl, 'duration');
       if (!duration) return false;
-      if (ctx.isIOSSafari?.()) {
-        toggleDurationDom(ctx, duration);
-        return true;
-      }
+      toggleDurationDom(ctx, duration);
       setDuration(duration);
       return true;
     },
 
     openWebPayment() {
       const params = new URLSearchParams({ source: 'mobile_app' });
-      const tier = String(checkoutPlan || '').trim().toLowerCase();
+      const selectedPlan = getDocument(ctx)?.body?.dataset?.checkoutPlan || checkoutPlan;
+      const selectedDuration = getDocument(ctx)?.body?.dataset?.selectedDuration || duration;
+      const tier = String(selectedPlan || '').trim().toLowerCase();
       if (['basic', 'starter', 'standard', 'pro'].includes(tier)) params.set('plan', tier);
-      if (duration) params.set('duration', String(duration));
+      const effectiveDuration = tier === 'starter' ? '1회' : tier === 'basic' ? '4주' : selectedDuration;
+      if (effectiveDuration) params.set('duration', String(effectiveDuration));
       const target = `/payment?${params.toString()}`;
       if (win?.location?.assign) win.location.assign(target);
       else if (win?.location) win.location.href = target;

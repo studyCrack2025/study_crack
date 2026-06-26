@@ -96,7 +96,6 @@ export function renderPlannerScreen(ctx) {
 export function renderPlannerAddScreen(ctx) {
   const {
     appbar,
-    canSubmitPlanner = false,
     layout,
     plannerContentRef,
     plannerCustomMinutesRef,
@@ -106,6 +105,10 @@ export function renderPlannerAddScreen(ctx) {
 
   const plannerContent = plannerContentRef?.current || '';
   const customMinutes = plannerCustomMinutesRef?.current || '';
+  const selectedMinutes = plannerDraft.durationChoice === 'custom'
+    ? Number(customMinutes)
+    : Number(plannerDraft.durationChoice);
+  const canSubmitPlanner = Boolean(plannerDraft.subject && String(plannerContent).trim() && selectedMinutes > 0);
 
   return layout(
     `<div class="planner-screen">

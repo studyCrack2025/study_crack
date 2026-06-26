@@ -241,12 +241,18 @@ export function createGestureHandlers(ctx) {
     const onNativeTouchEnd = (event) => endGesture(getTouchClientX(event));
     const onNativeTouchCancel = () => cancelGesture();
     const onPointerDown = (event) => {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
       startGesture(event.target, event.clientX);
     };
-    const onPointerMove = (event) => moveGesture(event.clientX);
-    const onPointerUp = (event) => endGesture(event.clientX);
-    const onPointerCancel = () => cancelGesture();
+    const onPointerMove = (event) => {
+      if (event.pointerType === 'mouse') moveGesture(event.clientX);
+    };
+    const onPointerUp = (event) => {
+      if (event.pointerType === 'mouse') endGesture(event.clientX);
+    };
+    const onPointerCancel = (event) => {
+      if (event.pointerType === 'mouse') cancelGesture();
+    };
 
     targetDocument.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
     targetDocument.addEventListener('touchmove', onNativeTouchMove, { passive: true, capture: true });

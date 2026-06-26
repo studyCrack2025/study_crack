@@ -191,6 +191,7 @@ export function renderHomeView(ctx) {
     analysisTargetList = [],
     breakdownDetailMap = {},
     breakdownSubjects = [],
+    canAccessBasic = false,
     canAccessPro = false,
     canAccessStandard = false,
     crackySrc = CRACKY_SRC,
@@ -234,7 +235,7 @@ export function renderHomeView(ctx) {
     weeklyReportsStatus = 'idle'
   } = ctx;
 
-  const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .72s cubic-bezier(.22,1,.36,1)';
+  const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const universityCards = homeTargets.map((item) => renderUniversityCard({ item, plannerBadges, scoreTierClass })).join('');
   const indicators = [...homeTargets, { add: true }].map((_, idx) => `<i class="${idx === homeSlideIndex ? 'active' : ''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('');
   const timerDisabled = studyTimerRunning ? 'disabled' : '';
@@ -258,8 +259,8 @@ export function renderHomeView(ctx) {
     <div class="section home-section">
       <div class="home-analysis-criteria"><div><b>지원학과 AI 점수</b></div><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select></div>
       <div class="home-kpi-slider">
-        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
-        ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><b>+ 대학 추가</b><p>추천/검색으로 추가</p></button></div>
+        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" data-home-slide-index="${homeSlideIndex}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
+        ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><span class="home-add-univ-icon">${icon('plus', false)}</span><span class="home-add-univ-copy"><b>목표 대학 추가</b><p>대학과 학과를 검색해 AI 분석에 추가하세요.</p></span><span class="home-add-univ-action">검색하기</span></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
       ${renderUniversityModal({ analysisRecommended, analysisSearchList, analysisSearchTerm, analysisTargetList, universityModalOpen })}
@@ -271,9 +272,9 @@ export function renderHomeView(ctx) {
         <button type="button" class="home-breakdown-toggle" data-action="toggleStudyBreakdown">${showStudyBreakdown ? '접기' : '펼쳐보기'}</button>
         ${renderStudyBreakdown({ breakdownDetailMap, breakdownSubjects, expandedBreakdownSubject, formatHms, showStudyBreakdown, todaySubjectsWithTimer })}
       </div>
-      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessStandard ? '' : 'is-locked'}" data-action="goto" data-target="planner">
-        <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessStandard ? '' : '<span class="home-goal-plan-badge">Standard부터</span>'}</div>
-        ${canAccessStandard && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessStandard ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">주간 플래너와 학습 코칭을 연결해 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Standard 기능 보기</span>`}
+      <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessBasic ? '' : 'is-locked'}" data-action="goto" data-target="planner">
+        <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessBasic ? '' : '<span class="home-goal-plan-badge">Basic부터</span>'}</div>
+        ${canAccessBasic && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessBasic ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Basic 기능 보기</span>`}
       </button>
       ${renderHomeReportPreview({ proReports, proReportsStatus, weeklyReports, weeklyReportsStatus })}
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">

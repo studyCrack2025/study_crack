@@ -134,8 +134,8 @@ function buildDefaultCoachingSubjects(derived = {}) {
 const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
 const SCREEN_REQUIREMENTS = {
   strategy: 'standard',
-  planner: 'standard',
-  plannerAdd: 'standard',
+  planner: 'basic',
+  plannerAdd: 'basic',
   weekly: 'standard',
   report: 'pro',
   reportDetail: 'pro',
@@ -284,6 +284,8 @@ function createInitialAppStateWithScreenParam() {
 function MobileApp() {
   const [state, setState] = useReducer(reducer, undefined, createInitialAppStateWithScreenParam);
   const stateRef = useRef(state);
+  const plannerContentRef = useRef('');
+  const plannerCustomMinutesRef = useRef('');
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -469,6 +471,7 @@ function MobileApp() {
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
     expireMobileSessionSilently,
+    canAccessBasic: canAccessTier(state, 'basic'),
     canUseScoreSimulation: canUseScoreSimulation(state),
     canUseReverseProjection: canUseReverseProjection(state),
     // 비-setter 스크롤 연산(원본 1:1). preserveScroll은 추가 payload 인자를 무시한다.
@@ -490,6 +493,8 @@ function MobileApp() {
     touchTargetRef,
     touchCardRef,
     suppressClickUntilRef,
+    plannerContentRef,
+    plannerCustomMinutesRef,
     isIOSSafari: scrollOps.isIOSSafari,
     getHomeSliderState: () => getHomeSliderState(),
     updatePossibleUnivSlider,

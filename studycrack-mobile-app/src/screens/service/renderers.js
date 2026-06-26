@@ -212,39 +212,20 @@ function planDisplayName(plan = '') {
   return plan === 'Pro' ? 'PRO' : String(plan || '').toUpperCase();
 }
 
-function renderPlanCard({ meta, plan, selectedPlan }) {
-  const active = selectedPlan === plan;
-  const badge = plan === 'Standard' ? '<span class="badge">핵심 추천</span>' : plan === 'Pro' ? '<span class="badge">프리미엄</span>' : plan === 'Starter' ? '<span class="badge muted">1회 진단</span>' : '<span class="badge muted">입문</span>';
-  const features = meta.features;
-  const original = meta.originalPrice ? `<span class="original">${escapeHtml(meta.originalPrice)}</span>` : '';
-
-  return `<button class="plan-card mobile-plan-card ${plan.toLowerCase()} ${active ? 'active' : ''}" data-action="selectPlan" data-plan="${plan}"><div class="plan-head"><div><span class="plan-kicker">${escapeHtml(meta.desc)}</span><h4>${planDisplayName(plan)}</h4></div>${badge}</div><div class="plan-price-row">${original}<b>${escapeHtml(meta.weeklyPrice || meta.introPrice)}</b><em>${escapeHtml(meta.billingNote || meta.payPrice)}</em></div><ul>${features.slice(0, 5).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul></button>`;
-}
-
 function requiredTierLabel(tier = '') {
-  return String(tier).toLowerCase() === 'pro' ? 'PRO' : 'STANDARD';
+  const normalized = String(tier).toLowerCase();
+  if (normalized === 'pro') return 'PRO';
+  if (normalized === 'basic') return 'BASIC';
+  return 'STANDARD';
 }
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
-const PLAN_CAPABILITIES = [
-  ['score', '합격 분석', ['Basic', 'Starter', 'Standard', 'Pro']],
-  ['planner', '플래너 피드백', ['Starter', 'Standard', 'Pro']],
-  ['weekly', '주간 관리', ['Standard', 'Pro']],
-  ['report', '전략 리포트', ['Pro']]
-];
 
 function planBadgeText(plan = '') {
   if (plan === 'Basic') return '분석 입문';
   if (plan === 'Starter') return '1회 진단';
   if (plan === 'Standard') return '주간 관리';
   return '프리미엄';
-}
-
-function planAccessText(plan = 'Standard') {
-  const labels = PLAN_CAPABILITIES
-    .filter(([, , plans]) => plans.includes(plan))
-    .map(([, label]) => label);
-  return labels.join(' · ');
 }
 
 function renderPlanSelector({ checkoutPlan = 'Standard', planMeta = PLAN_META }) {
@@ -254,26 +235,24 @@ function renderPlanSelector({ checkoutPlan = 'Standard', planMeta = PLAN_META })
   }).join('')}</div>`;
 }
 
-function renderPlanCapabilityGrid(plan = 'Standard') {
-  return `<div class="plan-capability-grid">${PLAN_CAPABILITIES.map(([key, label, plans]) => {
-    const enabled = plans.includes(plan);
-    return `<div class="plan-capability ${enabled ? 'enabled' : 'locked'}" data-capability="${key}"><span>${enabled ? '제공' : '상위 플랜'}</span><b>${label}</b></div>`;
-  }).join('')}</div>`;
-}
-
-function renderSelectedPlanDetail({ checkoutPlan = 'Standard', ctaLabel = '결제하기', ctaAction = 'goto', ctaTarget = 'payment', planMeta = PLAN_META, showCta = true }) {
+function renderSelectedPlanDetail({ checkoutPlan = 'Standard', ctaLabel = '', ctaAction = 'goto', ctaTarget = 'payment', icon = defaultIcon, planMeta = PLAN_META, showCta = true }) {
   const activePlan = planMeta[checkoutPlan] || planMeta.Standard;
   const original = activePlan.originalPrice ? `<span class="plan-console-original">${escapeHtml(activePlan.originalPrice)}</span>` : '';
   const ctaAttrs = ctaAction === 'goto' ? `data-action="goto" data-target="${ctaTarget}"` : `data-action="${ctaAction}"`;
   const features = activePlan.features || [];
-  const visibleFeatures = features.slice(0, 4);
-  const hiddenCount = Math.max(0, features.length - visibleFeatures.length);
-  const hiddenFeature = hiddenCount ? `<span class="plan-console-more">+${hiddenCount}개 추가 혜택</span>` : '';
-  return `<section class="card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}"><div class="plan-console-head"><div><span class="plan-console-badge">${planBadgeText(checkoutPlan)}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.desc || '')}</p></div><div class="plan-console-price">${original}<b>${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}</b><em>${escapeHtml(activePlan.billingNote || activePlan.weeklyPrice || '')}</em></div></div><div class="plan-console-summary"><div><span>핵심 결과</span><b>${escapeHtml(activePlan.complete || activePlan.desc || '')}</b></div><div><span>열리는 기능</span><b>${escapeHtml(planAccessText(checkoutPlan))}</b></div></div><div class="plan-console-features">${visibleFeatures.map((item) => `<span>${escapeHtml(item)}</span>`).join('')}${hiddenFeature}</div>${renderPlanCapabilityGrid(checkoutPlan)}${showCta ? `<button class="btn btn-primary plan-console-cta" ${ctaAttrs}>${ctaLabel}</button>` : ''}</section>`;
-}
-
-function renderPaymentFlow({ checkoutPlan = 'Standard', duration = '4주' }) {
-  return `<div class="card payment-flow-card"><div><span>1</span><b>플랜 확인</b><p>${planDisplayName(checkoutPlan)} 선택</p></div><div><span>2</span><b>기간 확인</b><p>${escapeHtml(duration)} 기준</p></div><div><span>3</span><b>웹 결제</b><p>본인 확인 후 진행</p></div></div>`;
+  const audience = activePlan.audience || [];
+  const benefitIcons = ['chat', 'target', 'chart', 'calendar', 'check'];
+  const buttonLabel = ctaLabel || `${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}로 시작하기`;
+  return `<section class="card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}">
+    <div class="plan-console-head">
+      <div class="plan-console-title"><span class="plan-console-badge">${planBadgeText(checkoutPlan)}</span><h3>${planDisplayName(checkoutPlan)}</h3><p>${escapeHtml(activePlan.complete || activePlan.desc || '')}</p></div>
+      <span class="plan-console-visual">${icon('calendar', false)}</span>
+    </div>
+    <div class="plan-console-price">${original}<div><b>${escapeHtml(activePlan.payPrice || activePlan.introPrice || '')}</b><em>${escapeHtml(activePlan.weeklyPrice || activePlan.billingNote || '')}</em></div></div>
+    <div class="plan-console-benefits">${features.slice(0, 5).map((item, index) => `<div class="plan-benefit-row"><span>${icon(benefitIcons[index] || 'check', false)}</span><div><b>${escapeHtml(item)}</b><p>${index === 0 ? escapeHtml(activePlan.desc || '') : '선택한 플랜에서 바로 이용할 수 있어요.'}</p></div></div>`).join('')}</div>
+    ${showCta ? `<button class="btn btn-primary plan-console-cta" ${ctaAttrs}>${buttonLabel}<span>${icon('chevron', false)}</span></button><p class="plan-secure-note">${icon('shield', false)} 안전한 결제 · 언제든 해지 가능</p>` : ''}
+    ${audience.length ? `<div class="plan-audience"><b>이런 학생에게 추천해요</b>${audience.map((item) => `<p>${icon('check', false)}<span>${escapeHtml(item)}</span></p>`).join('')}</div>` : ''}
+  </section>`;
 }
 
 function renderLockedFeaturePreview(target = '') {
@@ -452,17 +431,18 @@ export function renderProIntroScreen(ctx) {
   const {
     appbar,
     checkoutPlan = 'Standard',
+    icon = defaultIcon,
     layout,
     planMeta = PLAN_META,
     upgradePromptTarget = '',
     upgradePromptTier = ''
   } = ctx;
-  const requiredPlan = upgradePromptTier === 'pro' ? 'PRO' : upgradePromptTier === 'standard' ? 'STANDARD' : '';
+  const requiredPlan = upgradePromptTier ? requiredTierLabel(upgradePromptTier) : '';
   const upgradeNotice = requiredPlan
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('StudyCrack 요금제', true) + `<section class="plan-console-page">${upgradeNotice}<div class="mobile-plan-hero plan-console-hero"><span class="plan-hero-kicker">플랜 안내</span><h3>필요한 관리 강도에 맞춰 선택하세요</h3><p>웹 결제 페이지의 상품 구성을 모바일에서도 같은 기준으로 보여줍니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '선택한 플랜 결제하기' })}<div class="card plan-console-note"><b>플랜 차이</b><p>Basic은 분석 중심, Starter는 1회 플래너 진단, Standard는 주간 관리, PRO는 심화 전략 리포트까지 포함합니다.</p></div></section>`, false);
+  return layout(appbar('플랜 선택', true) + `<section class="plan-console-page">${upgradeNotice}${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta })}</section>`, false);
 }
 
 export function renderPaymentScreen(ctx) {
@@ -470,10 +450,14 @@ export function renderPaymentScreen(ctx) {
     appbar,
     checkoutPlan = 'Standard',
     duration = '4주',
+    icon = defaultIcon,
     layout,
     planMeta = PLAN_META
   } = ctx;
-  return layout(appbar('결제', true) + `<section class="payment-console-page"><div class="mobile-payment-hero plan-console-hero"><span class="plan-hero-kicker">결제 플랜</span><h3>결제 전 플랜 구성을 확인하세요</h3><p>최종 결제와 본인 확인은 기존 웹 결제 페이지에서 안전하게 이어집니다.</p></div>${renderPlanSelector({ checkoutPlan, planMeta })}<div class="payment-option-block"><b>결제 기간</b><div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div></div>${renderPaymentFlow({ checkoutPlan, duration })}${renderSelectedPlanDetail({ checkoutPlan, planMeta, ctaLabel: '웹 결제 페이지로 이동', ctaAction: 'openWebPayment' })}<div class="card payment-safe-card"><b>안전 결제 안내</b><p>선택한 플랜과 기간 정보를 웹 결제 페이지에 전달하고, 전화번호 확인과 NICEPAY 인증은 웹에서 동일하게 진행됩니다.</p></div></section>`, false);
+  const durationControl = ['Standard', 'Pro'].includes(checkoutPlan)
+    ? `<div class="payment-option-block"><b>결제 기간</b><div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div></div>`
+    : `<div class="payment-fixed-term"><span>결제 단위</span><b>${checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>`;
+  return layout(appbar('결제 플랜 확인', true) + `<section class="payment-console-page">${renderPlanSelector({ checkoutPlan, planMeta })}${durationControl}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta, ctaLabel: '웹 결제로 계속하기', ctaAction: 'openWebPayment' })}</section>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {

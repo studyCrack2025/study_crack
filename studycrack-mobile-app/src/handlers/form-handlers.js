@@ -235,10 +235,29 @@ export function createFormHandlers(ctx) {
     if (!field) return { handled: Boolean(coachAnswer || coachPlan || coachActual) };
     if (field === 'plannerContent' && ctx.plannerContentRef) {
       ctx.plannerContentRef.current = target.value;
+      const draft = ctx.plannerDraft || {};
+      const customMinutes = String(ctx.plannerCustomMinutesRef?.current || '').trim();
+      const minutesValid = draft.durationChoice === 'custom'
+        ? Number(customMinutes) > 0
+        : Number(draft.durationChoice) > 0;
+      const submit = query(ctx, '.planner-sheet-submit');
+      const canSubmit = Boolean(draft.subject && String(target.value || '').trim() && minutesValid);
+      if (submit) {
+        submit.disabled = !canSubmit;
+        submit.classList?.toggle?.('disabled', !canSubmit);
+      }
       return { handled: true, field };
     }
     if (field === 'plannerCustomMinutes' && ctx.plannerCustomMinutesRef) {
       ctx.plannerCustomMinutesRef.current = target.value;
+      const draft = ctx.plannerDraft || {};
+      const content = String(ctx.plannerContentRef?.current || '').trim();
+      const submit = query(ctx, '.planner-sheet-submit');
+      const canSubmit = Boolean(draft.subject && content && Number(target.value) > 0);
+      if (submit) {
+        submit.disabled = !canSubmit;
+        submit.classList?.toggle?.('disabled', !canSubmit);
+      }
       return { handled: true, field };
     }
     if (field === 'findEmailPhone') {

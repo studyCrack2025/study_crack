@@ -137,6 +137,7 @@ export function HomeScreen(ctx) {
   const {
     dimmed = false,
     tabBarHtml = '',
+    canAccessBasic = false,
     canAccessPro = false,
     canAccessStandard = false,
     crackySrc = CRACKY_SRC,
@@ -184,7 +185,7 @@ export function HomeScreen(ctx) {
   const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
   if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} />;
 
-  const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .72s cubic-bezier(.22,1,.36,1)';
+  const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const trackStyle = {
     '--home-slide-card-width': '100%',
     '--home-slide-gap': '12px',
@@ -240,7 +241,11 @@ export function HomeScreen(ctx) {
                   </select>
                 </div>
                 <div className="home-kpi-slider">
-                  <div className={`home-kpi-track anchor-volatile ${homeSlideMotion}`} style={trackStyle}>
+                  <div
+                    className={`home-kpi-track anchor-volatile ${homeSlideMotion}`}
+                    data-home-slide-index={homeSlideIndex}
+                    style={trackStyle}
+                  >
                     {homeTargets.map((item) => (
                       <UniversityCard key={item.major} item={item} plannerBadges={plannerBadges} scoreTierClass={scoreTierClass} />
                     ))}
@@ -248,8 +253,12 @@ export function HomeScreen(ctx) {
                       className="university-card-slide university-card card slider-card home-add-univ-card"
                       data-action="openAnalysisSearchFromHome"
                     >
-                      <b>+ 대학 추가</b>
-                      <p>추천/검색으로 추가</p>
+                      <span className="home-add-univ-icon" dangerouslySetInnerHTML={{ __html: icon('plus', false) }} />
+                      <span className="home-add-univ-copy">
+                        <b>목표 대학 추가</b>
+                        <p>대학과 학과를 검색해 AI 분석에 추가하세요.</p>
+                      </span>
+                      <span className="home-add-univ-action">검색하기</span>
                     </button>
                   </div>
                 </div>
@@ -300,15 +309,15 @@ export function HomeScreen(ctx) {
                 </div>
 
                 <button
-                  className={`card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessStandard ? '' : 'is-locked'}`}
+                  className={`card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessBasic ? '' : 'is-locked'}`}
                   data-action="goto"
                   data-target="planner"
                 >
                   <div className="home-goal-title-row">
                     <p className="analysis-title">오늘 공부 목표</p>
-                    {!canAccessStandard && <span className="home-goal-plan-badge">Standard부터</span>}
+                    {!canAccessBasic && <span className="home-goal-plan-badge">Basic부터</span>}
                   </div>
-                  {canAccessStandard && todayPlannerItems.length ? (
+                  {canAccessBasic && todayPlannerItems.length ? (
                     <>
                       <div className="goal-compact">
                         <b>{todayPlannerProgress}%</b>
@@ -324,15 +333,15 @@ export function HomeScreen(ctx) {
                         ))}
                       </div>
                     </>
-                  ) : canAccessStandard ? (
+                  ) : canAccessBasic ? (
                     <>
                       <p className="sub">오늘 계획을 추가해보세요</p>
                       <span className="home-goal-empty-cta">플래너로 이동</span>
                     </>
                   ) : (
                     <>
-                      <p className="sub">주간 플래너와 학습 코칭을 연결해 공부 목표를 관리할 수 있어요.</p>
-                      <span className="home-goal-empty-cta">Standard 기능 보기</span>
+                      <p className="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p>
+                      <span className="home-goal-empty-cta">Basic 기능 보기</span>
                     </>
                   )}
                 </button>

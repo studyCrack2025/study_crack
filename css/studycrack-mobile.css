@@ -28,9 +28,9 @@ html, body {
   overflow: auto;
 }
 body {
-  font-family: "Paperlogy", "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   word-break: keep-all;
   -webkit-font-smoothing: antialiased;
 }
