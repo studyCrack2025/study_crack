@@ -179,21 +179,36 @@ export function buildPlannerDerived(state = {}) {
 // 홈 대학 KPI 카드(원본 homeTargets). planner-by-date처럼 home/analysis derived 공유.
 // 원본은 profile을 계산하되 결과 객체엔 쓰지 않으므로(점수=liveCurrentScore, cut=100) 동일하게 생략.
 function computeHomeTargets(state = {}) {
-  const { scores = {}, targetMajor = '', homeTargetList = [], analysisResults = [], analysisApiStatus = 'idle' } = state;
-  const liveCurrentScore = computeLiveCurrentScore(scores);
-  const hasLiveScore = Number.isFinite(liveCurrentScore) && liveCurrentScore > 0;
+  const {
+    targetMajor = '',
+    homeTargetList = [],
+    analysisResults = [],
+    analysisApiStatus = 'idle',
+    lastAnalysisSnapshot = null,
+    scoreExamKey = '',
+    scoreExamType = ''
+  } = state;
+  // 홈 AI 점수는 서버 환산점수(converted_score)만 표시한다. 대학과 무관한 라이브 점수로 폴백하면
+  // 비동기 로드 중 서버↔라이브↔0이 뒤바뀌어 "점수가 그때그때 다르고 0으로 리셋"되는 불안정이 생긴다(웹엔 없는 현상).
+  // 재요청 중에는 examMode가 일치하는 직전 확정 스냅샷으로 폴백해 확정 점수를 유지하고, 없으면 분석중 스켈레톤을 보인다.
+  const currentExamMode = scoreExamKey || scoreExamTypeToKey(scoreExamType);
+  const snapshotResults =
+    lastAnalysisSnapshot && lastAnalysisSnapshot.examMode === currentExamMode
+      ? lastAnalysisSnapshot.analysisResults || []
+      : [];
+  const resultsForLookup = analysisResults.length ? analysisResults : snapshotResults;
   // 분석 결과가 아직 도착 전(idle/loading)이면 0을 "확정 점수"처럼 보여주지 않고 pending 상태로 표기.
   const analysisPending = analysisApiStatus === 'loading' || analysisApiStatus === 'idle';
   const orderedHomeTargetMajors = Array.from(
     new Set([...(targetMajor ? [targetMajor] : []), ...(homeTargetList || [])])
   ).filter(Boolean);
   return orderedHomeTargetMajors.map((major) => {
-    const serverItem = findTargetItem(analysisResults, major);
+    const serverItem = findTargetItem(resultsForLookup, major);
     const serverScore = Number(serverItem?.converted_score);
     const hasServerScore = Number.isFinite(serverScore);
-    // 점수 출처: 서버 환산점수(confirmed) > 입력 성적 기반 라이브(live) > 미확정(pending) / 빈값(empty)
-    const score = hasServerScore ? Math.round(serverScore) : hasLiveScore ? Number(liveCurrentScore) : 0;
-    const scoreStatus = hasServerScore ? 'confirmed' : hasLiveScore ? 'live' : analysisPending ? 'pending' : 'empty';
+    // 점수 출처: 서버 환산점수(confirmed) > 미확정(pending: 분석 대기) / 빈값(empty: 결과 없음)
+    const score = hasServerScore ? Math.round(serverScore) : 0;
+    const scoreStatus = hasServerScore ? 'confirmed' : analysisPending ? 'pending' : 'empty';
     // confirmed 값이 떠 있는 동안 재요청 중이면 갱신 표시(이전 값 유지, 0점 추락 방지).
     const scoreUpdating = analysisApiStatus === 'loading' && hasServerScore;
     const cut = 100;

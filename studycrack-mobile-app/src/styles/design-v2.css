@@ -92,6 +92,9 @@ input,select,textarea{font-size:16px !important;}
 @keyframes homeSlidePrev{from{transform:translateX(calc(var(--home-slide-x) - 24%));opacity:.82;}to{transform:translateX(var(--home-slide-x));opacity:1;}}
 .home-kpi-slider .slider-card{flex:0 0 var(--home-slide-card-width,100%) !important;flex-basis:var(--home-slide-card-width,100%) !important;flex-shrink:0 !important;min-width:var(--home-slide-card-width,100%) !important;max-width:var(--home-slide-card-width,100%) !important;width:var(--home-slide-card-width,100%) !important;margin-right:0;min-height:0;box-sizing:border-box;overflow:hidden;}
 .home-kpi-slider .home-kpi-card.slider-card{flex:0 0 var(--home-slide-card-width,100%) !important;flex-basis:var(--home-slide-card-width,100%) !important;flex-shrink:0 !important;max-width:var(--home-slide-card-width,100%) !important;min-width:var(--home-slide-card-width,100%) !important;width:var(--home-slide-card-width,100%) !important;}
+/* 1지망/그 이후 대학 카드 높이를 균등화. 카드가 grid라 flex stretch만으론 안 맞아 트랙 높이(가장 큰 카드)에 명시적으로 맞춘다. */
+.home-kpi-track{align-items:stretch;}
+.home-kpi-slider .slider-card.home-result-card-v3{height:100%;}
 .university-card-slide{width:100% !important;min-width:100% !important;max-width:100% !important;flex:0 0 100% !important;box-sizing:border-box;}
 .university-card{width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;}
 .university-card *{box-sizing:border-box;}
