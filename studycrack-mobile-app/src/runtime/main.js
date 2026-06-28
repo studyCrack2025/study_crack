@@ -17,7 +17,7 @@ import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap }
 import { buildDerivedContext } from './derived.js';
 import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
-import { buildScoreSignature, buildUniversityCards, examKeyOf, mergeScoreCache, normalizeServerResults } from './score-store.js';
+import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, examKeyOf, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
@@ -454,6 +454,33 @@ function MobileApp() {
       examKeyOf(state),
       state.scoreFetchStatus
     ),
+    // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
+    // 분석 선택 대학(targetMajor)은 분석 전용 — homeTargets(homeTargetList)와 분리되어 홈 순서에 영향 없음.
+    ...(() => {
+      const examKey = examKeyOf(state);
+      const targets = uniqueTargetList(state.homeTargetList || []);
+      const selectedMajor = targets.includes(state.targetMajor)
+        ? state.targetMajor
+        : targets[0] || state.targetMajor || '';
+      const view = buildAnalysisScoreView(selectedMajor, state.scoreCache, examKey, state.scoreFetchStatus);
+      return {
+        analysisSelected: { ...(derivedCtx.analysisSelected || {}), score: view.score },
+        analysisScoreView: view,
+        analysisStatus: view.status,
+        analysisStatusColor: view.color,
+        analysisGaugeColor: view.color,
+        analysisGaugeFill: view.pct,
+        gaugeCurrent: view.score,
+        gaugeCurrentPct: view.pct,
+        gaugeTarget: view.score,
+        gaugeTargetPct: view.pct,
+        gaugePassPct: 40,
+        gaugeSafePct: 60,
+        analysisSimulationTargets: buildSimulationTargets(targets, state.scoreCache, examKey),
+        analysisMajorOptions: targets,
+        normalizedTargetMajor: selectedMajor
+      };
+    })(),
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),

@@ -97,6 +97,7 @@ export function renderSummaryMode(ctx) {
     canUseReverseProjection = canAccessStandard,
     analysisStatus = '',
     analysisStatusColor = '#4c79ee',
+    analysisScoreView = null,
     gaugeCurrent = 0,
     gaugeCurrentPct = 0,
     gaugePassPct = 40,
@@ -109,6 +110,8 @@ export function renderSummaryMode(ctx) {
     targetMajor = ''
   } = ctx;
   const score = Number(analysisSelected.score || 0);
+  // 점수 출처 상태(서버 캐시). pending이면 스켈레톤, 결과없음이면 안내(홈과 동일 정책).
+  const scoreView = analysisScoreView || { pending: false, hasScore: true, score };
   const remaining = Math.max(0, 150 - score);
   const location = score >= 150 ? '현재 위치: 합격 안정권 진입' : (score >= 100 ? '현재 위치: 합격권 진입 전' : '현재 위치: 합격권까지 거리 있음');
   const hasSimulation = canUseScoreSimulation && analysisSimRows.length > 0;
@@ -132,12 +135,15 @@ export function renderSummaryMode(ctx) {
             </select>
             <div class="analysis-v2-summary-top">
               <div>
-                <p class="analysis-v2-univ">${targetMajor}</p>
+                <p class="analysis-v2-univ">${normalizedTargetMajor || targetMajor}</p>
                 <p class="analysis-v2-label">합격 가능성 진단</p>
               </div>
               <div class="analysis-v2-score-wrap">
-                <span class="analysis-v2-verdict ${scoreTierClass(score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span>
-                <strong>${score}점</strong><small>AI 점수</small>
+                ${scoreView.pending
+                  ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong><small>분석 중</small>'
+                  : scoreView.hasScore
+                    ? `<span class="analysis-v2-verdict ${scoreTierClass(score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${score}점</strong><small>AI 점수</small>`
+                    : '<strong>—</strong><small>성적 입력 필요</small>'}
               </div>
             </div>
             <div class="analysis-v2-infographic"><span class="icon">📍</span><div><b>${location}</b><p>목표까지 ${remaining > 0 ? `-${remaining}점` : '달성 완료'}</p></div></div>
