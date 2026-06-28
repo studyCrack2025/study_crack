@@ -1206,3 +1206,58 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .plan-console-head h3{font-size:28px;}
 .plan-console-price b{font-size:22px;}
 }
+
+/* 2026-06-27: analysis tab final responsive containment. */
+.analysis-stale-note.error{border-color:#FECACA;background:#FEF2F2;color:#991B1B;}
+.analysis-stale-note.error i{background:#EF4444;}
+.analysis-v2,.analysis-v2 *{box-sizing:border-box;}
+.analysis-v2{width:100%;min-width:0;max-width:100%;overflow-x:hidden;}
+.analysis-v2 > .card,.analysis-v2-summary,.analysis-v2-before-after,.analysis-v2-gauge-change,.analysis-v2-sim,.analysis-v2-compare-card,.analysis-v2-cta,.analysis-exam-picker,.analysis-v2-tabs,.analysis-loading-panel,.analysis-stale-note{width:100%;min-width:0;max-width:100%;overflow:hidden;}
+.analysis-v2-summary-control,.analysis-v2-summary-top,.analysis-v2-infographic,.analysis-chart-head,.ob-total-compare,.score-journey-total,.analysis-v2-sim-item,.analysis-exam-picker{min-width:0;}
+.analysis-v2-summary-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px;}
+.analysis-v2-summary-control > div,.analysis-v2-summary-top > div,.analysis-v2-infographic > div,.analysis-v2-sim-item .left,.analysis-chart-head h3,.analysis-exam-picker > div{min-width:0;}
+.analysis-v2-univ,.analysis-v2-summary-control span,.analysis-v2-infographic b,.analysis-v2-infographic p,.analysis-v2-sim-item small,.analysis-v2-sim-item strong,.analysis-chart-head h3,.analysis-exam-picker span{overflow-wrap:anywhere;word-break:keep-all;}
+.analysis-dropdown,.analysis-v2-target-select,.analysis-exam-picker .planner-input{width:100%;min-width:0;max-width:100%;}
+.analysis-v2-score-wrap{flex:0 0 auto;min-width:82px;max-width:38%;text-align:right;}
+.analysis-v2-score-wrap strong{font-size:clamp(24px,8vw,34px)!important;line-height:1.05;}
+.analysis-v2-verdict{display:inline-flex;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.analysis-v2-gauge-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;}
+.analysis-v2-gauge-meta span{min-width:0;text-align:center;font-size:clamp(9px,2.7vw,11px);white-space:normal;line-height:1.25;}
+.score-journey-card,.score-journey-scroll,.score-journey-track{width:100%;min-width:0;max-width:100%;overflow:hidden;}
+.score-journey-track{display:flex!important;width:200%!important;}
+.score-journey-col{flex:0 0 50%!important;min-width:50%!important;max-width:50%!important;padding-inline:clamp(0px,1.8vw,8px);}
+.score-journey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.score-journey-grid .bubble,.score-target-panel,.score-journey-empty-panel{min-width:0;max-width:100%;overflow:hidden;}
+.score-journey-grid b,.score-target-panel b,.score-journey-total b{font-size:clamp(18px,6vw,26px);}
+.score-journey-grid span,.score-target-panel span,.score-journey-total span{overflow-wrap:anywhere;}
+.score-simulation-chart-wrap{width:100%;min-width:0;max-width:100%;overflow:hidden;}
+/* 합격 가능성 막대 차트: 대학 수가 많아도 줄바꿈→우측 잘림이 생기지 않도록 단일 행 가로 스크롤로 처리.
+   (설계 의도 "옆으로 밀어 더 많은 대학 보기 →"와 동일.) 대학이 적으면 폭을 채워 분산, 많으면 스크롤. */
+.analysis-v2-chart-area{width:100%;min-width:0;max-width:100%;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;--bar-height:clamp(260px,82vw,340px);min-height:calc(var(--bar-height) + 108px);padding-inline:6px;}
+.analysis-v2-bars{left:6px!important;right:auto!important;width:max-content!important;min-width:calc(100% - 12px)!important;display:flex!important;flex-wrap:nowrap!important;grid-template-columns:none!important;justify-content:space-evenly!important;align-items:flex-end!important;gap:clamp(8px,2.4vw,14px)!important;overflow:visible!important;padding-inline:0!important;}
+.analysis-v2-bar-item{flex:0 0 auto!important;width:auto!important;min-width:clamp(60px,17vw,84px)!important;max-width:120px!important;padding:30px 4px 0!important;}
+.analysis-v2-bar-item .score{font-size:clamp(15px,5vw,20px)!important;}
+.analysis-v2-bar-wrap{width:100%;min-width:0;max-width:100%;justify-content:center;}
+.analysis-v2-bar{width:clamp(24px,9vw,42px)!important;}
+.analysis-v2-bar-item p{width:100%;max-width:100%;min-height:42px;max-height:42px;font-size:clamp(9px,2.8vw,11px);line-height:1.25;overflow-wrap:anywhere;}
+.analysis-v2-bar-proj{width:min(96px,calc(100vw - 56px));max-width:96px;font-size:9px;white-space:normal;line-height:1.15;}
+.analysis-v2-bar-proj-box{max-width:100%;}
+.analysis-v2-sim-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;}
+.analysis-v2-sim-item > b{white-space:nowrap;font-size:clamp(14px,4.2vw,18px);}
+.analysis-efficiency-pill{max-width:min(96px,72vw);}
+@media (max-width:340px){
+.analysis-v2-summary{padding:14px!important;gap:12px;}
+.analysis-v2-summary-control{grid-template-columns:1fr;}
+.analysis-add-link-btn{justify-self:start;}
+.analysis-v2-summary-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;}
+.analysis-v2-score-wrap{max-width:92px;min-width:72px;}
+.analysis-v2-infographic{padding:10px;gap:8px;}
+.analysis-v2-tabs{gap:6px;}
+.analysis-v2-tab{font-size:12px;padding-inline:8px;}
+.analysis-v2-compare-card{padding:14px!important;}
+.analysis-v2-chart-area{--bar-height:250px;min-height:352px;}
+.analysis-v2-bar-item{min-width:clamp(50px,15vw,68px)!important;padding:26px 3px 0!important;}
+.analysis-v2-bar{width:24px!important;}
+.score-journey-segment button{font-size:11px;padding-inline:8px;}
+.score-journey-grid{grid-template-columns:1fr;}
+}

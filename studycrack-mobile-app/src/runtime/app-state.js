@@ -77,6 +77,7 @@ export function createInitialAppState() {
     analysisResults: [],
     analysisSimulations: [],
     analysisApiStatus: 'idle',
+    analysisApiError: '',
     lastAnalysisSnapshot: null,
     addingUniversity: false,
     // 홈 슬라이더/드래그

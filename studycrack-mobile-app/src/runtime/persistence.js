@@ -203,6 +203,23 @@ function normalizeSimulationResults(payload) {
   return (Array.isArray(payload) ? payload : []).filter((item) => item && item.univ && item.major);
 }
 
+async function readApiError(responseOrError, fallback = '분석 결과를 불러오지 못했습니다.') {
+  if (!responseOrError) return { message: fallback, status: 0, code: '' };
+  if (responseOrError instanceof Error) {
+    return {
+      message: responseOrError.message || fallback,
+      status: responseOrError.status || 0,
+      code: responseOrError.code || ''
+    };
+  }
+  const body = await responseOrError.json?.().catch(() => null);
+  return {
+    message: body?.error || body?.message || fallback,
+    status: responseOrError.status || 0,
+    code: body?.code || ''
+  };
+}
+
 export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targetList, userScores, examMode } = {}) {
   if (typeof apiFetch !== 'function' || !analysisApiUrl || !userScores) return null;
   const targetUnivs = toAnalysisTargetPayload(targetList);
@@ -221,17 +238,27 @@ export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targ
 
   let analysisResults = [];
   let simulationResults = [];
+  let analysisError = null;
+  let simulationError = null;
 
   if (analysisRes.status === 'fulfilled' && analysisRes.value?.ok) {
     const data = await analysisRes.value.json().catch(() => null);
     analysisResults = normalizeAnalysisResults(data);
+  } else if (analysisRes.status === 'fulfilled') {
+    analysisError = await readApiError(analysisRes.value);
+  } else {
+    analysisError = await readApiError(analysisRes.reason);
   }
   if (simulationRes.status === 'fulfilled' && simulationRes.value?.ok) {
     const data = await simulationRes.value.json().catch(() => null);
     simulationResults = normalizeSimulationResults(data);
+  } else if (simulationRes.status === 'fulfilled') {
+    simulationError = await readApiError(simulationRes.value, '시뮬레이션 결과를 불러오지 못했습니다.');
+  } else {
+    simulationError = await readApiError(simulationRes.reason, '시뮬레이션 결과를 불러오지 못했습니다.');
   }
 
-  return { analysisResults, simulationResults };
+  return { analysisResults, simulationResults, analysisError, simulationError };
 }
 
 function normalizeProReports(payload) {

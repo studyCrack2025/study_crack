@@ -14,6 +14,15 @@ function examBasisLabel(scoreExamType = '') {
   return label ? `${label} 기준` : '선택 시험 기준';
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function renderAddUniversityCard({ analysisTargetList = [], name }) {
   const added = analysisTargetList.includes(name);
   return `<div class="add-univ-card">
@@ -283,6 +292,7 @@ export function renderAnalysisScreen(ctx) {
     canAccessStandard = false,
     canUseScoreSimulation = canAccessStandard,
     analysisApiStatus = 'idle',
+    analysisApiError = '',
     isAnalyzing = false,
     layout
   } = ctx;
@@ -291,7 +301,10 @@ export function renderAnalysisScreen(ctx) {
     ? '<div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div>'
     : '';
   const stalePanel = analysisApiStatus === 'stale'
-    ? '<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.</span></div></div>'
+    ? `<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>${escapeHtml(analysisApiError || '새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.')}</span></div></div>`
+    : '';
+  const errorPanel = analysisApiError && ['error', 'empty'].includes(analysisApiStatus)
+    ? `<div class="analysis-stale-note error"><i aria-hidden="true"></i><div><b>분석 결과를 불러오지 못했습니다</b><span>${escapeHtml(analysisApiError)}</span></div></div>`
     : '';
 
   return layout(
@@ -305,6 +318,7 @@ export function renderAnalysisScreen(ctx) {
 
         ${loadingPanel}
         ${stalePanel}
+        ${errorPanel}
 
         <div class="analysis-v2-tabs">
           <button class="analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}" data-action="setAnalysisMode" data-analysis-mode="summary">전략 요약</button>
