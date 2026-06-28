@@ -225,9 +225,25 @@ function compactTargetLabel(name = '') {
 }
 
 function findTargetItem(list = [], targetMajor = '') {
-  const normalized = String(targetMajor || '').replace(/\s+/g, '');
-  if (!normalized) return null;
-  return (list || []).find((item) => targetFullName(item).replace(/\s+/g, '') === normalized) || null;
+  const norm = (value) => String(value || '').replace(/\s+/g, '');
+  const target = norm(targetMajor);
+  if (!target || !Array.isArray(list)) return null;
+  // 1) 정확 일치(univ+major 결합) 우선.
+  const exact = list.find((item) => norm(targetFullName(item)) === target);
+  if (exact) return exact;
+  // 2) 부분 포함 허용: 백엔드가 대학/학과명을 정규화해 입력 문자열과 미세하게 달라도
+  //    (예: 입력 "서울대학교 경영학과" vs 응답 major "경영") 환산점수가 누락되지 않도록 한다.
+  //    대학명이 타겟에 포함되고, 남은 학과 부분이 서로 포함관계면 동일 대상으로 본다.
+  return (
+    list.find((item) => {
+      const univ = norm(item.univ);
+      const major = norm(item.major);
+      if (!univ || !target.includes(univ)) return false;
+      if (!major) return true;
+      const rest = target.replace(univ, '');
+      return !rest || rest.includes(major) || major.includes(rest);
+    }) || null
+  );
 }
 
 const SIM_SUBJECT_ORDER = ['kor', 'math', 'inq1', 'inq2'];

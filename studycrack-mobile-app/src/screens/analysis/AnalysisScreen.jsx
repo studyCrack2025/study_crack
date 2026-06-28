@@ -16,12 +16,14 @@ export function AnalysisScreen(ctx) {
     dimmed = false,
     isAnalyzing = false,
     analysisApiStatus = 'idle',
+    analysisApiError = '',
     scoreExamType = '',
     tabBarHtml = ''
   } = ctx;
 
   const effectiveMode = canUseScoreSimulation ? analysisMode : 'summary';
   const isStale = analysisApiStatus === 'stale';
+  const hasAnalysisError = Boolean(analysisApiError) && ['error', 'stale', 'empty'].includes(analysisApiStatus);
   const modeBodyHtml = effectiveMode === 'summary'
     ? renderSummaryMode(ctx)
     : renderSimulationMode(ctx);
@@ -66,7 +68,17 @@ export function AnalysisScreen(ctx) {
                 <i aria-hidden="true" />
                 <div>
                   <b>이전 분석 결과를 먼저 보여드리고 있어요</b>
-                  <span>새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.</span>
+                  <span>{analysisApiError || '새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.'}</span>
+                </div>
+              </div>
+            )}
+
+            {hasAnalysisError && !isStale && (
+              <div className="analysis-stale-note error" role="status" aria-live="polite">
+                <i aria-hidden="true" />
+                <div>
+                  <b>분석 결과를 불러오지 못했습니다</b>
+                  <span>{analysisApiError}</span>
                 </div>
               </div>
             )}

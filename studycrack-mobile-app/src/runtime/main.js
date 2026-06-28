@@ -231,7 +231,8 @@ function buildScoreSelectionPatch(scoreExamType, current) {
       scoreExamType,
       scoreExamKey,
       ...mapped,
-      analysisApiStatus: 'loading'
+      analysisApiStatus: 'loading',
+      analysisApiError: ''
     };
   }
   // 선택한 시험에 입력 성적이 없으면 이전 시험의 분석 결과를 비우고 빈 상태로 둔다(잘못된 stale 점수 방지).
@@ -244,7 +245,8 @@ function buildScoreSelectionPatch(scoreExamType, current) {
     scoreEditState: blankScoreState,
     analysisResults: [],
     analysisSimulations: [],
-    analysisApiStatus: 'empty'
+    analysisApiStatus: 'empty',
+    analysisApiError: '선택한 시험에 입력된 성적이 없습니다.'
   };
 }
 
@@ -850,31 +852,42 @@ function MobileApp() {
     if (!userScores || !targetList.length) {
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
       if (!hasPrevious && state.analysisApiStatus !== 'empty') {
-        setState({ analysisApiStatus: 'empty' });
+        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '' });
       } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
-        setState({ analysisApiStatus: 'stale' });
+        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '' });
       }
       return undefined;
     }
 
     let cancelled = false;
-    setState({ analysisApiStatus: 'loading' });
+    setState({ analysisApiStatus: 'loading', analysisApiError: '' });
     fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
       if (cancelled || !payload) return;
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = payload.simulationResults || [];
+      const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
+      const analysisError = payload.analysisError || null;
+      const nextStatus = analysisResults.length
+        ? 'ready'
+        : analysisError
+          ? (hasPrevious ? 'stale' : 'error')
+          : 'empty';
       setState({
         analysisResults,
         analysisSimulations,
         lastAnalysisSnapshot: analysisResults.length
           ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
-        analysisApiStatus: analysisResults.length ? 'ready' : 'empty'
+        analysisApiStatus: nextStatus,
+        analysisApiError: analysisError?.message || (analysisResults.length ? '' : '')
       });
-    }).catch(() => {
+    }).catch((error) => {
       if (!cancelled) {
         const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-        setState({ analysisApiStatus: hasPrevious ? 'stale' : 'error' });
+        setState({
+          analysisApiStatus: hasPrevious ? 'stale' : 'error',
+          analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.'
+        });
       }
     });
     return () => {
@@ -892,6 +905,14 @@ function MobileApp() {
 
   const onClick = useCallback(
     (event) => {
+      // 스와이프 제스처 직후의 ghost click 무시. gesture-handlers가 인식된 스와이프 끝에
+      // suppressClickUntilRef를 세팅하지만 onClick이 이를 읽지 않아, 홈 대학 카드 좌/우 스와이프가
+      // selectUniversity 클릭으로 새어 분석 화면으로 이동하던 문제를 막는다.
+      if (Date.now() < suppressClickUntilRef.current) {
+        event.preventDefault?.();
+        event.stopPropagation?.();
+        return;
+      }
       events.dispatchAction(event);
     },
     [events]
