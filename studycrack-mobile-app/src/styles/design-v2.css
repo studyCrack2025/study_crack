@@ -95,6 +95,9 @@ input,select,textarea{font-size:16px !important;}
 /* 1지망/그 이후 대학 카드 높이를 균등화. 카드가 grid라 flex stretch만으론 안 맞아 트랙 높이(가장 큰 카드)에 명시적으로 맞춘다. */
 .home-kpi-track{align-items:stretch;}
 .home-kpi-slider .slider-card.home-result-card-v3{height:100%;}
+/* css/studycrack-mobile.css의 `.home-content .card + .card{margin-top:16px}`가 가로 슬라이더 카드(2번째+)에
+   새어들어 카드가 아래로 가라앉고 overflow:hidden 슬라이더 바닥에서 잘리던 문제 차단. */
+.home-kpi-track > .card,.home-kpi-track > .slider-card{margin-top:0 !important;}
 .university-card-slide{width:100% !important;min-width:100% !important;max-width:100% !important;flex:0 0 100% !important;box-sizing:border-box;}
 .university-card{width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;}
 .university-card *{box-sizing:border-box;}
@@ -327,6 +330,36 @@ input,select,textarea{font-size:16px !important;}
 .analysis-v2-sim-item.focus{background:#EFF6FF;border-color:var(--primary);box-shadow:0 0 0 3px rgba(76,121,238,.12);}
 .analysis-v2-sim-item .sim-detail{font-size:12px;color:var(--primary-dark);font-weight:700;}
 .analysis-v2-tab.locked{color:#94A3B8;}
+/* 2026-06-28: 시뮬레이션 합격가능성 = 세로 게이지 리스트(절대배치 막대 차트 대체, 가로 잘림/줄바꿈 원천 제거) */
+.analysis-sim-chart{display:flex;flex-direction:column;gap:12px;}
+.analysis-sim-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;font-weight:800;color:#64748B;}
+.analysis-sim-legend span{display:inline-flex;align-items:center;gap:5px;}
+.analysis-sim-legend span::before{content:"";width:9px;height:9px;border-radius:3px;background:#CBD5E1;}
+.analysis-sim-legend .pass::before{background:#F59E0B;}
+.analysis-sim-legend .safe::before{background:#10B981;}
+.analysis-sim-legend .max::before{background:#8B5CF6;}
+.analysis-sim-gauge-list{display:flex;flex-direction:column;gap:10px;}
+.analysis-sim-gauge-row{display:flex;flex-direction:column;gap:9px;width:100%;min-width:0;text-align:left;padding:13px 14px;border:1px solid #E2E8F0;border-radius:16px;background:#fff;font-family:inherit;}
+.analysis-sim-gauge-row.active{border-color:var(--primary);background:#F4F8FF;box-shadow:0 6px 16px rgba(52,78,143,.10);}
+.analysis-sim-gauge-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.analysis-sim-gauge-univ{min-width:0;font-size:14px;font-weight:800;color:#26304A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.analysis-sim-gauge-score{flex:0 0 auto;font-size:20px;font-weight:900;color:#26304A;}
+.analysis-sim-gauge-score small{font-size:12px;font-weight:800;color:#64748B;margin-left:2px;}
+.analysis-sim-gauge-track{position:relative;height:12px;border-radius:999px;background:#EEF2F7;}
+.analysis-sim-gauge-fill{position:absolute;left:0;top:0;height:100%;border-radius:999px;background:linear-gradient(90deg,#6F8FD9,var(--primary-dark));}
+.analysis-sim-gauge-row.tier-low .analysis-sim-gauge-fill{background:linear-gradient(90deg,#FCA5A5,#F87171);}
+.analysis-sim-gauge-row.tier-high .analysis-sim-gauge-fill{background:linear-gradient(90deg,#A78BFA,#7C3AED);}
+.analysis-sim-gauge-proj{position:absolute;top:0;height:100%;border-radius:999px;border:1px dashed #F59E0B;background:repeating-linear-gradient(45deg,rgba(245,158,11,.45),rgba(245,158,11,.45) 4px,rgba(245,158,11,.16) 4px,rgba(245,158,11,.16) 8px);}
+.analysis-sim-gauge-cut{position:absolute;top:-3px;width:2px;height:18px;border-radius:2px;transform:translateX(-50%);}
+.analysis-sim-gauge-cut.pass{background:#F59E0B;}
+.analysis-sim-gauge-cut.safe{background:#10B981;}
+.analysis-sim-gauge-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.analysis-sim-gauge-status{font-size:11px;font-weight:900;padding:3px 9px;border-radius:999px;background:#EEF2F7;color:#64748B;}
+.analysis-sim-gauge-status.tier-low{background:#FEF2F2;color:#DC2626;}
+.analysis-sim-gauge-status.tier-mid{background:#EFF6FF;color:var(--primary-dark);}
+.analysis-sim-gauge-status.tier-high{background:#F5F3FF;color:#7C3AED;}
+.analysis-sim-gauge-delta{font-size:11px;font-weight:900;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px;padding:3px 9px;}
+.analysis-sim-chart-foot{margin:2px 0 0;font-size:11.5px;font-weight:700;color:#94A3B8;}
 .analysis-v2-locked{display:grid;gap:12px;}
 .analysis-v2-locked .btn{width:100%;}
 .planner-item-main b,.planner-item-main p{transition:color .15s ease,text-decoration-color .15s ease;}

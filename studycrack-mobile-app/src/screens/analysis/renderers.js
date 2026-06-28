@@ -169,30 +169,41 @@ export function renderSummaryMode(ctx) {
         `;
 }
 
-function renderSimulationBar(ctx, item) {
+// 대학별 합격가능성 세로 게이지 행. 절대배치 막대 차트(가로 잘림·줄바꿈 문제)를 대체.
+// 0~250 가로 게이지에 현재 점수 채움 + 합격컷(100)/안정컷(150) 마커 + (선택 시) +상승분 델타.
+function renderSimulationGauge(ctx, item) {
   const {
     analysisBarProjectionTarget = '',
     analysisRecommendedRow = null,
-    analysisRecommendedSubjectScore = 0,
     analysisSimMax = 0,
-    scoreTierClass = defaultScoreTierClass,
     targetMajor = ''
   } = ctx;
   const { label, score, major: full } = item;
   const maxScore = 250;
-  const scoreRatio = Math.max(0, Math.min(score / maxScore, 1));
-  const heightPercent = scoreRatio * 100;
-  const color = score <= 100 ? '#fa8072' : score <= 150 ? '#2563eb' : '#8b5cf6';
-  const shouldProject = analysisBarProjectionTarget === full;
-  const projectionGain = shouldProject ? Math.max(0, Math.min(analysisSimMax, maxScore - score)) : null;
-  const projectionScore = projectionGain !== null ? Math.min(maxScore, score + projectionGain) : null;
-  const projectedPercent = projectionScore ? Math.max(0, Math.min(100, (projectionScore / maxScore) * 100)) : heightPercent;
-  const projectionHeight = projectionScore ? Math.max(0, projectedPercent - heightPercent) : 0;
-  const recommendedText = analysisRecommendedRow ? `${Math.round(analysisRecommendedSubjectScore + analysisRecommendedRow.gainNum)}점 (${analysisRecommendedRow.subject} 1점 상승 시 +${Math.round(analysisRecommendedRow.gainNum)}점)` : '';
-  const projection = projectionScore ? `<span class="analysis-v2-bar-proj analysis-efficiency-pill ${shouldProject ? 'pop' : ''}" style="bottom:${Math.max(0, (100 - projectionScore / maxScore * 100))}%">${recommendedText}</span>` : '';
-  const projectionBox = projectionScore && projectionHeight > 0 ? `<span class="analysis-v2-bar-proj-box" style="bottom:${heightPercent}%;height:${projectionHeight}%"></span>` : '';
-  const tier = scoreTierClass(score);
-  return `<button class="analysis-v2-bar-item ${targetMajor === full ? 'active' : ''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}"><b class="score ${tier}">${score}</b><div class="analysis-v2-bar-wrap"><i class="analysis-v2-bar ${tier}" style="height:${heightPercent}%;background:${color}"></i>${projectionBox}${projection}</div><p>${label}</p></button>`;
+  const pct = Math.max(0, Math.min((score / maxScore) * 100, 100));
+  const tier = score <= 100 ? 'low' : score <= 150 ? 'mid' : 'high';
+  const statusLabel = score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전';
+  const isActive = analysisBarProjectionTarget === full || targetMajor === full;
+  const projectionGain = analysisBarProjectionTarget === full ? Math.max(0, Math.min(analysisSimMax, maxScore - score)) : 0;
+  const projPct = projectionGain > 0 ? Math.max(0, Math.min(((score + projectionGain) / maxScore) * 100, 100)) : pct;
+  const projWidth = Math.max(0, projPct - pct);
+  const recommendedText = projectionGain > 0 && analysisRecommendedRow
+    ? `${analysisRecommendedRow.subject} +1점 시 +${Math.round(analysisRecommendedRow.gainNum)}점`
+    : '';
+  const projFill = projWidth > 0 ? `<i class="analysis-sim-gauge-proj" style="left:${pct}%;width:${projWidth}%"></i>` : '';
+  const deltaPill = projectionGain > 0
+    ? `<span class="analysis-sim-gauge-delta">+${Math.round(projectionGain)}점${recommendedText ? ` · ${recommendedText}` : ''}</span>`
+    : '';
+  return `<button type="button" class="analysis-sim-gauge-row tier-${tier} ${isActive ? 'active' : ''}" data-action="simulateBarGain" data-target-major="${full}" data-base-score="${score}">
+    <div class="analysis-sim-gauge-top"><b class="analysis-sim-gauge-univ">${label}</b><span class="analysis-sim-gauge-score">${score}<small>점</small></span></div>
+    <div class="analysis-sim-gauge-track">
+      <i class="analysis-sim-gauge-fill" style="width:${pct}%"></i>
+      ${projFill}
+      <span class="analysis-sim-gauge-cut pass" style="left:40%"></span>
+      <span class="analysis-sim-gauge-cut safe" style="left:60%"></span>
+    </div>
+    <div class="analysis-sim-gauge-meta"><span class="analysis-sim-gauge-status tier-${tier}">${statusLabel}</span>${deltaPill}</div>
+  </button>`;
 }
 
 export function renderSimulationMode(ctx) {
@@ -227,16 +238,13 @@ export function renderSimulationMode(ctx) {
   }
 
   return `
-          <div class="analysis-v2-compare-card">
+          <div class="card analysis-sim-chart">
             <div class="analysis-chart-head"><h3>합격 가능성 위치 (0~250점)</h3><span class="analysis-chart-badge">${basisLabel}</span></div>
-            <p class="score-simulation-chart-hint">옆으로 밀어 더 많은 대학 보기 →</p>
-            <div class="score-simulation-chart-wrap"><div class="analysis-v2-chart-area">
-              <div class="analysis-v2-guide-line pass"><span class="label">합격선 100</span></div>
-              <div class="analysis-v2-guide-line safe"><span class="label">안정선 150</span></div>
-              <div class="analysis-v2-bars">
-                ${analysisSimulationTargets.map((item) => renderSimulationBar(ctx, item)).join('')}
-              </div>
-            </div></div>
+            <div class="analysis-sim-legend"><span class="pass">합격컷 100</span><span class="safe">안정컷 150</span><span class="max">만점 250</span></div>
+            <div class="analysis-sim-gauge-list">
+              ${analysisSimulationTargets.map((item) => renderSimulationGauge(ctx, item)).join('')}
+            </div>
+            <p class="analysis-sim-chart-foot">대학을 탭하면 추천 과목 1점 상승 시 예상 위치를 보여줘요.</p>
           </div>
 
           <div class="card analysis-v2-sim">

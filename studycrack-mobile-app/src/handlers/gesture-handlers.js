@@ -130,18 +130,12 @@ export function createGestureHandlers(ctx) {
 
     if (touchTarget === 'home') {
       if (Math.abs(delta) < 8 || Math.abs(delta) < Math.abs(deltaY) * 1.1) return false;
-      if (ctx.screen === 'home') {
-        const { track, activeIndex = 0, total = 0 } = getHomeSliderState();
-        if (!track || !total) return false;
-        const max = total - 1;
-        const overscrolling = (activeIndex === 0 && delta > 0) || (activeIndex === max && delta < 0);
-        const clamped = clamp(delta * (overscrolling ? 0.35 : 0.92), -118, 118);
-        track.style.setProperty('--home-slide-x', `calc(-${activeIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${clamped}px)`);
-        track.style.setProperty('--home-slide-transition', '0s');
-        return true;
-      }
-      const atFirst = ctx.homeSlideIndex === 0;
-      const atLast = ctx.homeSlideIndex === (ctx.homeTargets || []).length;
+      // 단일 출처: 드래그 오프셋을 state(homeDragOffset)로만 반영한다. JSX 트랙 style이
+      // homeSlideIndex + homeDragOffset로 transform을 계산하므로 DOM 직접 조회/CSS 변수 주입이 불필요하고,
+      // 그 둘이 React 재렌더와 충돌해 생기던 desync(스와이프 먹통/탭 왕복 후 멈춤)를 제거한다.
+      const max = (ctx.homeTargets || []).length;
+      const atFirst = ctx.homeSlideIndex <= 0;
+      const atLast = ctx.homeSlideIndex >= max;
       const overscrolling = (atFirst && delta > 0) || (atLast && delta < 0);
       setHomeDragOffset(clamp(delta * (overscrolling ? 0.35 : 0.92), -118, 118));
       return true;
@@ -180,7 +174,9 @@ export function createGestureHandlers(ctx) {
     setRefValue(ctx.touchStartYRef, null);
     setRefValue(ctx.touchLastXRef, null);
     setRefValue(ctx.touchLastYRef, null);
-    if (!(touchTarget === 'home' && ctx.screen === 'home')) setHomeDragOffset(0);
+    // 홈 드래그 오프셋은 제스처 종료 시 항상 0으로 되돌린다(state 단일 출처).
+    // 작은 스와이프/세로 우세 제스처면 offset 0 → 현재 카드로 자연 스냅백(JSX 트랜지션).
+    if (touchTarget === 'home') setHomeDragOffset(0);
     if (!(touchTarget === 'score' && isIOSSafari())) {
       if (ctx.screen !== 'ob5') setScoreDragOffset(0);
     }
@@ -193,14 +189,6 @@ export function createGestureHandlers(ctx) {
       return true;
     }
     if (Math.abs(delta) < swipeThreshold) {
-      if (touchTarget === 'home' && ctx.screen === 'home') {
-        const slider = query(ctx, '.home-kpi-slider');
-        const nearest = findNearestHomeCard(ctx, slider);
-        requestAnimationFrame(() => {
-          const current = Number(slider?.querySelector?.('.home-kpi-track')?.dataset.homeSlideIndex || 0);
-          setHomeSlideDom(nearest, nearest > current ? 'motion-next' : 'motion-prev');
-        });
-      }
       setRefValue(ctx.touchTargetRef, '');
       return true;
     }
@@ -210,15 +198,8 @@ export function createGestureHandlers(ctx) {
     markStableScrollPosition();
 
     if (touchTarget === 'home') {
-      if (ctx.screen === 'home') {
-        const { activeIndex = 0, total = 0 } = getHomeSliderState();
-        const next = delta < 0 ? Math.min(activeIndex + 1, Math.max(0, total - 1)) : Math.max(activeIndex - 1, 0);
-        setHomeSlideDom(next, next > activeIndex ? 'motion-next' : 'motion-prev');
-        setRefValue(ctx.touchTargetRef, '');
-        setRefValue(ctx.touchCardRef, null);
-        restoreIfUnexpectedTopJump();
-        return true;
-      }
+      // 커밋도 state 단일 출처. 현재 homeSlideIndex(state) 기준으로 다음 인덱스를 계산한다.
+      // (DOM의 getHomeSliderState가 인디케이터를 못 읽으면 total=0→인덱스 0 고정되던 버그 제거.)
       setHomeSlideIndex((prev) => {
         const next = delta < 0 ? Math.min(prev + 1, (ctx.homeTargets || []).length) : Math.max(prev - 1, 0);
         if (next === prev) return prev;
