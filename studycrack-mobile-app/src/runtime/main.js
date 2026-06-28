@@ -17,6 +17,7 @@ import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap }
 import { buildDerivedContext } from './derived.js';
 import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
+import { buildScoreSignature, buildUniversityCards, examKeyOf, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
@@ -445,6 +446,14 @@ function MobileApp() {
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
     // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
     ...derivedCtx,
+    // [환산점수 단일 출처] 홈 대학 카드는 homeTargetList(고정 순서) + scoreCache(서버 점수)에서만 만든다.
+    // targetMajor로 재정렬하던 computeHomeTargets 경로를 대체 → 1~3지망 순서 섞임/라이브·0 폴백 제거.
+    homeTargets: buildUniversityCards(
+      uniqueTargetList(state.homeTargetList || []),
+      state.scoreCache,
+      examKeyOf(state),
+      state.scoreFetchStatus
+    ),
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
@@ -900,6 +909,48 @@ function MobileApp() {
     state.scoreExamKey,
     state.scoreExamType,
     state.targetMajor,
+    state.user?.quantitative
+  ]);
+
+  // [환산점수 단일 출처] scoreCache 채우기. homeTargetList(고정 순서)+examKey로 시그니처를 만들어
+  // 동일 시그니처면 재요청하지 않고(중복/churn 제거), 응답은 응답 시점의 최신 시그니처와 일치할 때만
+  // 캐시에 머지한다(레이스/구버전 응답 폐기). 시험 전환은 examKey만 바뀔 뿐 기존 캐시를 지우지 않는다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const examKey = examKeyOf(state);
+    const userScores = state.user?.quantitative?.[examKey] || state.user?.quantitative?.active;
+    const targetList = uniqueTargetList(state.homeTargetList || []);
+    if (!userScores || !targetList.length) return undefined;
+    const signature = buildScoreSignature(examKey, targetList);
+    const settled = stateRef.current.scoreFetchStatus === 'ready' || stateRef.current.scoreFetchStatus === 'loading';
+    if (stateRef.current.scoreFetchSignature === signature && settled) return undefined;
+
+    let cancelled = false;
+    setState({ scoreFetchStatus: 'loading', scoreFetchSignature: signature });
+    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode: examKey })
+      .then((payload) => {
+        if (cancelled || !payload) return;
+        const latest = buildScoreSignature(examKeyOf(stateRef.current), uniqueTargetList(stateRef.current.homeTargetList || []));
+        if (latest !== signature) return; // 최신 선택과 불일치한 응답 폐기
+        const merged = normalizeServerResults(payload.analysisResults || [], payload.simulationResults || []);
+        const hasAny = Object.keys(merged).length > 0;
+        setState({
+          scoreCache: hasAny ? mergeScoreCache(stateRef.current.scoreCache, examKey, merged) : stateRef.current.scoreCache,
+          scoreFetchStatus: hasAny ? 'ready' : 'empty'
+        });
+      })
+      .catch(() => {
+        if (!cancelled && stateRef.current.scoreFetchSignature === signature) setState({ scoreFetchStatus: 'error' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    getAnalysisApiBinding,
+    state.homeTargetList,
+    state.scoreExamKey,
+    state.scoreExamType,
     state.user?.quantitative
   ]);
 

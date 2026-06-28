@@ -360,6 +360,12 @@ input,select,textarea{font-size:16px !important;}
 .analysis-sim-gauge-status.tier-high{background:#F5F3FF;color:#7C3AED;}
 .analysis-sim-gauge-delta{font-size:11px;font-weight:900;color:#B45309;background:#FFFBEB;border:1px solid #FDE68A;border-radius:999px;padding:3px 9px;}
 .analysis-sim-chart-foot{margin:2px 0 0;font-size:11.5px;font-weight:700;color:#94A3B8;}
+/* 2026-06-28: 분석 요약 "가능한 대학"을 가로 슬라이더→세로 스택으로 전환(우측 오버플로우 제거, DOM-direct 슬라이드 폐기) */
+.possible-univ-slider{overflow:visible !important;min-height:0 !important;}
+.possible-univ-track{display:flex !important;flex-direction:column !important;transform:none !important;width:100% !important;max-width:100% !important;gap:10px !important;}
+.possible-univ-card{flex:0 0 auto !important;width:100% !important;max-width:100% !important;min-width:0 !important;padding:0 !important;margin:0 !important;}
+.possible-univ-card > .card{margin:0 !important;}
+.possible-univ-nav{display:none !important;}
 .analysis-v2-locked{display:grid;gap:12px;}
 .analysis-v2-locked .btn{width:100%;}
 .planner-item-main b,.planner-item-main p{transition:color .15s ease,text-decoration-color .15s ease;}
