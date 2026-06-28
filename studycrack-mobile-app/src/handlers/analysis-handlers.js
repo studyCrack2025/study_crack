@@ -146,15 +146,7 @@ export function createAnalysisHandlers(ctx) {
     setHomeSlide({ actionEl }) {
       const index = Number(getData(actionEl, 'slide-index'));
       if (Number.isNaN(index)) return false;
-      if (ctx.screen === 'home' && ctx.isIOSSafari?.()) {
-        const slider = getDocument(ctx)?.querySelector?.('.home-kpi-slider');
-        if (slider && slider.dataset.homeSliderReady !== '1') ctx.waitAndSyncHomeSliderDom?.();
-      }
-      if (ctx.screen === 'home' && typeof ctx.setHomeSlideDom === 'function') {
-        const { activeIndex = 0 } = ctx.getHomeSliderState?.() || {};
-        ctx.setHomeSlideDom(index, index > activeIndex ? 'motion-next' : 'motion-prev');
-        return true;
-      }
+      // 인디케이터 점 클릭도 슬라이더와 동일하게 state 단일 출처로 커밋(DOM 역산 setHomeSlideDom 제거).
       setHomeDragOffset(0);
       markStableScrollPosition();
       setHomeSlideIndex((prev) => {
