@@ -85,6 +85,43 @@ export function normalizeServerResults(analysisResults = [], simulationResults =
   return merged;
 }
 
+function compactLabel(name) {
+  return String(name || '').replace('대학교', '대').replace('학부', '').replace('학과', '');
+}
+
+// 분석 시뮬레이션 게이지 리스트용 타겟(서버 캐시 전용, 타겟 리스트 고정 순서). 점수 없는 대학은 제외.
+export function buildSimulationTargets(targetUniversities = [], scoreCache = {}, examKey = '') {
+  return (targetUniversities || [])
+    .filter(Boolean)
+    .map((name) => {
+      const entry = selectScoreEntry(scoreCache, examKey, name);
+      const numeric = entry ? Number(entry.score) : NaN;
+      if (!Number.isFinite(numeric)) return null;
+      const score = Math.round(numeric);
+      return { major: name, label: compactLabel(name), score, cut: 100, gap: score - 100 };
+    })
+    .filter(Boolean);
+}
+
+// 분석 요약의 선택 대학 점수 뷰(서버 캐시 전용). 라이브/mock 폴백 없음.
+export function buildAnalysisScoreView(selectedMajor = '', scoreCache = {}, examKey = '', fetchStatus = 'idle') {
+  const entry = selectScoreEntry(scoreCache, examKey, selectedMajor);
+  const numeric = entry ? Number(entry.score) : NaN;
+  const hasScore = Number.isFinite(numeric);
+  const score = hasScore ? Math.round(numeric) : 0;
+  const pct = Math.min((score / 250) * 100, 100);
+  const status = (entry && entry.status) || (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전');
+  const color = (entry && entry.color) || (score >= 150 ? '#22C55E' : score >= 100 ? '#2563EB' : '#F97316');
+  return {
+    hasScore,
+    pending: !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle'),
+    score,
+    pct,
+    status,
+    color
+  };
+}
+
 // 기존 캐시에 한 시험의 결과를 머지한 새 scoreCache 반환(불변 업데이트).
 export function mergeScoreCache(scoreCache = {}, examKey = '', mergedEntries = {}) {
   return {
