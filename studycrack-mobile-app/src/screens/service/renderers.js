@@ -376,8 +376,9 @@ export function renderReportScreen(ctx) {
        <div class="card report-list"><p class="sub">이전 보고서</p>
          ${statusText}
        </div>
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div>${renderProRequestModal(ctx)}`,
-    true
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div>`,
+    true,
+    renderProRequestModal(ctx)
   );
 }
 
@@ -402,7 +403,7 @@ export function renderProEliteScreen(ctx) {
       }).join('')
       : '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>');
 
-  return layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>발행된 프리미엄 전략 리포트를 확인하세요.</p></div><div class="pro-elite-list">${reportList}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div>${renderProRequestModal(ctx)}</div>`, false);
+  return layout(appbar('PRO EXCLUSIVE', true) + `<div class="pro-elite-page"><div class="pro-elite-hero"><span class="pro-elite-badge">TOP 1%</span><h3>상위 1%를 위한<br/>중장기 집중 맞춤 솔루션</h3><p>발행된 프리미엄 전략 리포트를 확인하세요.</p></div><div class="pro-elite-list">${reportList}</div><div class="pro-elite-request-bottom"><button class="pro-request-btn" data-action="openProRequestModal"><i class="spark">✦</i><span>전략 리포트 요청하기</span></button></div></div>`, false, renderProRequestModal(ctx));
 }
 
 export function renderTutorScreen(ctx) {
@@ -424,7 +425,7 @@ export function renderTutorScreen(ctx) {
         }).join('')
         : '<div class="coach-empty">아직 남긴 질문이 없습니다.</div>';
 
-  return layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="tutor-qna-page"><div class="card qna-intro-card"><p class="sub">텍스트 기반 질의응답</p><h3>학습 고민을 남기면 튜터가 답변해요</h3><button class="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div class="qna-list compact">${statusNode}</div>${renderQnaComposerModal(ctx)}</div>`, false);
+  return layout(appbar('SKY튜터 1:1 피드백', true) + `<div class="tutor-qna-page"><div class="card qna-intro-card"><p class="sub">텍스트 기반 질의응답</p><h3>학습 고민을 남기면 튜터가 답변해요</h3><button class="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div class="qna-list compact">${statusNode}</div></div>`, false, renderQnaComposerModal(ctx));
 }
 
 export function renderProIntroScreen(ctx) {

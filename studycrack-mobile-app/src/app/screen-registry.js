@@ -47,8 +47,8 @@ import {
   renderWeeklyScreen
 } from '../screens/index.js';
 
-function defaultLayout(inner, withTab = false) {
-  return renderAppShell({ inner: String(inner || ''), withTab });
+function defaultLayout(inner, withTab = false, overlays = '') {
+  return renderAppShell({ inner: String(inner || ''), withTab, overlays: String(overlays || '') });
 }
 
 function defaultAppbar(title = '', showBack = false) {
