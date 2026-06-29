@@ -48,7 +48,7 @@ function renderGradeSelect(field, selected = '') {
 
 function renderGradeSegment(field, selected = '') {
   const key = field === 'v2e-english' ? 'english' : 'history';
-  return `<div class="score-grade-segment" role="group" aria-label="등급 선택">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button type="button" class="${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}">${n}</button>`).join('')}</div>`;
+  return `<span class="score-grade-label">등급 선택 (1~9)</span><div class="score-grade-segment" role="group" aria-label="등급 선택">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button type="button" class="${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}">${n}</button>`).join('')}</div>`;
 }
 
 function renderRawMetric(raw) {

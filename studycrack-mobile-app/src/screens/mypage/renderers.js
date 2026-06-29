@@ -132,8 +132,12 @@ function renderProfileDetailModal(ctx) {
       <div class="profile-photo-copy"><strong>${escapeHtml(displayName(user))}</strong><span>${escapeHtml(displayPlanStatus(selectedPlan))}</span></div>
     </div>
     <div class="profile-photo-actions">
-      <input class="profile-photo-input" type="file" accept="image/*" data-profile-photo-input/>
-      <button type="button" class="btn btn-secondary" data-action="saveProfilePhoto" ${profilePhotoUploading ? 'disabled' : ''}>${profilePhotoUploading ? '업로드 중' : '사진 저장'}</button>
+      <label class="profile-photo-pick">
+        <input class="profile-photo-input" type="file" accept="image/*" data-profile-photo-input/>
+        <svg class="profile-photo-pick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span class="profile-photo-pick-text">사진 선택</span>
+      </label>
+      <button type="button" class="btn btn-primary profile-photo-save" data-action="saveProfilePhoto" ${profilePhotoUploading ? 'disabled' : ''}>${profilePhotoUploading ? '업로드 중…' : '사진 저장'}</button>
     </div>
     <section class="profile-detail-section">
       <div class="profile-detail-row"><span>이름</span><strong>${escapeHtml(displayName(user))}</strong></div>
@@ -144,8 +148,12 @@ function renderProfileDetailModal(ctx) {
       ${subRows}
     </section>
     ${renderTutorInfo(user, selectedPlan)}
-    <section class="profile-detail-section">
-      <div class="profile-detail-actions"><button type="button" class="btn btn-secondary" data-action="openMyProfileEdit">이름 변경</button><button type="button" class="btn btn-secondary" data-action="openPhoneChangeModal">${user?.phone ? '전화번호 변경' : '전화번호 등록'}</button><button type="button" class="btn btn-secondary" data-action="goto" data-target="accountInfo">소셜 로그인 관리</button></div>
+    <section class="profile-detail-section profile-detail-actions-section">
+      <div class="profile-detail-actions">
+        <button type="button" class="profile-action-row" data-action="openMyProfileEdit"><span>이름 변경</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
+        <button type="button" class="profile-action-row" data-action="openPhoneChangeModal"><span>${user?.phone ? '전화번호 변경' : '전화번호 등록'}</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
+        <button type="button" class="profile-action-row" data-action="goto" data-target="accountInfo"><span>소셜 로그인 관리</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
+      </div>
     </section>`;
   return renderModal({ panelClass: 'profile-detail-modal', dismissAction: 'closeProfileDetailModal', body });
 }
@@ -288,30 +296,60 @@ export function renderNotificationSettingsScreen(ctx) {
 }
 
 // 알림 목록 화면(전체): 홈 알림 팝오버의 '전체 보기'/마이페이지 진입 대상.
+const NOTI_PAGE_SIZE = 8;
+
 export function renderNotificationListScreen(ctx) {
   const {
     appbar,
     layout,
     notiList = [],
-    notiStatus = 'idle'
+    notiStatus = 'idle',
+    notiPage = 0,
+    notiExpandedId = ''
   } = ctx;
 
-  const itemsHtml = Array.isArray(notiList) && notiList.length
-    ? notiList
-        .map((n) => {
-          const date = formatQnaDate(n.createdAt);
-          return `<div class="noti-list-row ${n.isRead ? '' : 'is-unread'}"><div class="noti-list-main"><b>${escapeHtml(n.title || '알림')}</b><p>${escapeHtml(n.body || n.message || '')}</p></div>${date ? `<span class="noti-list-date">${escapeHtml(date)}</span>` : ''}</div>`;
-        })
-        .join('')
-    : `<div class="noti-list-empty"><p>${
-        notiStatus === 'loading'
-          ? '알림을 불러오는 중...'
-          : notiStatus === 'error'
-            ? '알림을 불러오지 못했습니다.'
-            : '받은 알림이 없습니다.'
-      }</p></div>`;
+  const list = Array.isArray(notiList) ? notiList : [];
+  if (!list.length) {
+    const emptyText = notiStatus === 'loading'
+      ? '알림을 불러오는 중...'
+      : notiStatus === 'error'
+        ? '알림을 불러오지 못했습니다.'
+        : '받은 알림이 없습니다.';
+    return layout(appbar('알림', true) + `<div class="card noti-list-card"><div class="noti-list-empty"><p>${emptyText}</p></div></div>`, false);
+  }
 
-  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>`, false);
+  const totalPages = Math.max(1, Math.ceil(list.length / NOTI_PAGE_SIZE));
+  const page = Math.min(Math.max(0, notiPage), totalPages - 1);
+  const start = page * NOTI_PAGE_SIZE;
+  const pageItems = list.slice(start, start + NOTI_PAGE_SIZE);
+
+  const itemsHtml = pageItems
+    .map((n, idx) => {
+      const id = String(n.id || n.notificationId || `${start + idx}`);
+      const expanded = notiExpandedId === id;
+      const date = formatQnaDate(n.createdAt);
+      const fullBody = escapeHtml(n.body || n.message || '');
+      return `<button type="button" class="noti-list-row ${n.isRead ? '' : 'is-unread'} ${expanded ? 'is-open' : ''}" data-action="toggleNotiDetail" data-noti-id="${escapeHtml(id)}">
+        <span class="noti-list-dot" aria-hidden="true"></span>
+        <span class="noti-list-main">
+          <b>${escapeHtml(n.title || '알림')}</b>
+          <p class="noti-list-body ${expanded ? 'is-full' : ''}">${fullBody || '내용이 없습니다.'}</p>
+          ${date ? `<span class="noti-list-date">${escapeHtml(date)}</span>` : ''}
+        </span>
+        <span class="noti-list-chev" aria-hidden="true">${expanded ? '▴' : '▾'}</span>
+      </button>`;
+    })
+    .join('');
+
+  const pager = totalPages > 1
+    ? `<div class="noti-pager">
+        <button type="button" class="noti-pager-btn" data-action="notiPrevPage" ${page === 0 ? 'disabled' : ''}>이전</button>
+        <span class="noti-pager-count">${page + 1} / ${totalPages}</span>
+        <button type="button" class="noti-pager-btn" data-action="notiNextPage" ${page >= totalPages - 1 ? 'disabled' : ''}>다음</button>
+      </div>`
+    : '';
+
+  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>${pager}`, false);
 }
 
 export function renderCustomerSupportScreen(ctx) {

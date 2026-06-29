@@ -950,16 +950,20 @@ function MobileApp() {
     const targetList = uniqueTargetList(state.homeTargetList || []);
     if (!userScores || !targetList.length) return undefined;
     const signature = buildScoreSignature(examKey, targetList);
-    const settled = stateRef.current.scoreFetchStatus === 'ready' || stateRef.current.scoreFetchStatus === 'loading';
+    // 같은 시그니처를 이미 받았거나(ready/empty) 받는 중(loading)이면 재요청하지 않는다. error만 재시도.
+    const status = stateRef.current.scoreFetchStatus;
+    const settled = status === 'ready' || status === 'loading' || status === 'empty';
     if (stateRef.current.scoreFetchSignature === signature && settled) return undefined;
 
-    let cancelled = false;
+    // cancelled 플래그를 쓰지 않는다. cleanup 취소 + 재실행 스킵 조합이 in-flight 응답을 잃어버려
+    // (초기 3월 로딩이 멈춰 6월→3월 전환해야만 뜨던 버그) 발생했다. staleness는 아래 토큰 가드로만 판정한다.
     setState({ scoreFetchStatus: 'loading', scoreFetchSignature: signature });
     fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode: examKey })
       .then((payload) => {
-        if (cancelled || !payload) return;
+        if (!payload) return;
+        // 응답 적용은 응답 시점의 최신 시그니처와 일치할 때만(구버전/레이스 폐기).
         const latest = buildScoreSignature(examKeyOf(stateRef.current), uniqueTargetList(stateRef.current.homeTargetList || []));
-        if (latest !== signature) return; // 최신 선택과 불일치한 응답 폐기
+        if (latest !== signature) return;
         const merged = normalizeServerResults(payload.analysisResults || [], payload.simulationResults || []);
         const hasAny = Object.keys(merged).length > 0;
         setState({
@@ -968,11 +972,9 @@ function MobileApp() {
         });
       })
       .catch(() => {
-        if (!cancelled && stateRef.current.scoreFetchSignature === signature) setState({ scoreFetchStatus: 'error' });
+        if (stateRef.current.scoreFetchSignature === signature) setState({ scoreFetchStatus: 'error' });
       });
-    return () => {
-      cancelled = true;
-    };
+    return undefined;
   }, [
     getAnalysisApiBinding,
     state.homeTargetList,

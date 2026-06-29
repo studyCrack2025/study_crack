@@ -119,6 +119,7 @@ export function createServiceHandlers(ctx) {
     setCoachingTrend = noop,
     setDrawerOpen = noop,
     setDuration = noop,
+    setField = noop,
     setHistory = noop,
     setNotifModalOpen = noop,
     setProRequestModalOpen = noop,
@@ -235,10 +236,32 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    // 알림 팝오버 항목/전체 보기 → 알림 목록 화면으로 이동(팝오버는 닫음).
+    // 알림 팝오버 항목/전체 보기 → 알림 목록 화면으로 이동(팝오버는 닫음). 페이지/펼침 초기화.
     openNotificationList() {
       setNotifModalOpen(false);
+      setField('notiPage', 0);
+      setField('notiExpandedId', '');
       goto?.('notificationList');
+      return true;
+    },
+
+    // 알림 내역 페이지네이션(8개씩) + 펼쳐 본문 보기.
+    notiNextPage() {
+      const total = (ctx.notiList || []).length;
+      const maxPage = Math.max(0, Math.ceil(total / 8) - 1);
+      preserveScrollAfterStateChange(() => setField('notiPage', Math.min(maxPage, (ctx.notiPage || 0) + 1)));
+      return true;
+    },
+
+    notiPrevPage() {
+      preserveScrollAfterStateChange(() => setField('notiPage', Math.max(0, (ctx.notiPage || 0) - 1)));
+      return true;
+    },
+
+    toggleNotiDetail({ actionEl }) {
+      const id = getData(actionEl, 'noti-id');
+      if (!id) return false;
+      preserveScrollAfterStateChange(() => setField('notiExpandedId', ctx.notiExpandedId === id ? '' : id));
       return true;
     },
 
