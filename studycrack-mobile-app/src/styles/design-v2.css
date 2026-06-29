@@ -390,7 +390,10 @@ input,select,textarea{font-size:16px !important;}
 /* 모바일 자체 로그인 입력/에러 (Phase B) */
 .auth-input{margin:0;}
 .auth-unified-card h1{margin:14px 0 0;text-align:center;font-size:25px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.02em;}
-.auth-unified-card .auth-title{margin:7px 0 16px;text-align:center;font-size:15px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
+/* 로고 이미지가 브랜드 워드마크를 담으므로 중복 텍스트 제거. 태그라인만 남겨 여백을 정리. */
+.auth-unified-card .auth-title{margin:16px 0 18px;text-align:center;font-size:15px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
+/* 이미지 로드 실패 시 폴백 워드마크도 단정하게. */
+.auth-logo-fallback{font-size:26px;font-weight:900;letter-spacing:-0.03em;color:var(--primary-dark);}
 .auth-unified-card .planner-input{border-color:#DDE7F6;background:#F8FBFF;border-radius:13px;height:48px;}
 .auth-error{margin:0;color:#dc2626;font-size:13px;font-weight:700;line-height:1.45;}
 .signup-page{padding:0 0 120px;}
@@ -661,9 +664,12 @@ input,select,textarea{font-size:16px !important;}
 .score-onepage-metric span{border-radius:10px;background:#EEF4FF;color:var(--primary-dark);padding:6px 5px;font-size:10px;font-weight:900;line-height:1;text-align:center;}
 .score-input-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
 .score-subject-card .planner-input{height:42px;margin:0;border-color:#DDE7F6;background:#F8FBFF;}
-.score-grade-segment{display:grid;grid-template-columns:repeat(5,minmax(28px,1fr));gap:4px;padding:4px;border:1px solid #DDE7F6;border-radius:14px;background:#F8FBFF;}
-.score-grade-segment button{height:30px;border:none;border-radius:10px;background:transparent;color:#64748B;font-family:inherit;font-size:12px;font-weight:900;}
-.score-grade-segment button.active{background:var(--primary-dark);color:#FFFFFF;box-shadow:0 5px 10px rgba(52,78,143,.18);}
+/* 영어/한국사 등급 선택: 1~9를 한 줄 균등 분할(5+4 불균형 제거). 터치 타깃 확대·선택 상태 명확화. */
+.score-grade-label{display:block;margin:2px 0 6px;font-size:11.5px;font-weight:800;color:#64748B;}
+.score-grade-segment{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;padding:4px;border:1px solid #DDE7F6;border-radius:13px;background:#F1F5FD;}
+.score-grade-segment button{height:40px;min-width:0;border:none;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:13px;font-weight:800;transition:background .12s ease,color .12s ease;}
+.score-grade-segment button:active{background:#E2EAF8;}
+.score-grade-segment button.active{background:var(--primary-dark);color:#FFFFFF;box-shadow:0 4px 10px rgba(52,78,143,.22);}
 .score-field-hint{margin:0;padding:8px 9px;border-radius:11px;background:#FFF7ED;color:#C2410C;font-size:11px;line-height:1.35;font-weight:800;}
 .score-onepage-actions{position:sticky;bottom:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:center;padding:12px;background:rgba(246,248,254,.98);border-top:1px solid #DDE7F6;}
 .score-onepage-actions .btn{height:44px;border-radius:14px;}
@@ -870,15 +876,26 @@ input,select,textarea{font-size:16px !important;}
 .profile-photo-copy{display:grid;gap:5px;min-width:0;}
 .profile-photo-copy strong{font-size:20px;line-height:1.2;color:#26304A;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .profile-photo-copy span{width:max-content;max-width:100%;border:1px solid #D8E6FF;background:#EEF4FF;color:var(--primary-dark);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;}
-.profile-photo-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;margin:10px 0 12px;}
-.profile-photo-input{min-width:0;width:100%;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:13px;padding:10px;font-family:inherit;font-size:12px;color:#526176;box-sizing:border-box;}
-.profile-photo-actions .btn{min-height:42px;border-radius:13px;white-space:nowrap;}
+/* 사진 변경: raw file input 대신 숨긴 input + 스타일 라벨 버튼(웹 톤). */
+.profile-photo-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;margin:12px 0 14px;}
+.profile-photo-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.profile-photo-pick{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:1px solid #C9D8F2;border-radius:13px;background:#F1F5FD;color:var(--primary-dark);font-size:13px;font-weight:800;cursor:pointer;}
+.profile-photo-pick:active{background:#E2EAF8;}
+.profile-photo-pick-icon{width:17px;height:17px;flex:0 0 auto;}
+.profile-photo-save{min-height:44px;border-radius:13px;white-space:nowrap;}
+.profile-photo-actions .btn{min-height:44px;border-radius:13px;white-space:nowrap;}
 .profile-detail-section{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid #DDE7F6;background:#FFFFFF;border-radius:16px;}
 .profile-detail-row{display:grid;grid-template-columns:74px minmax(0,1fr);gap:10px;align-items:center;}
 .profile-detail-row span{font-size:12px;color:#64748B;font-weight:900;}
 .profile-detail-row strong{min-width:0;font-size:13px;color:#26304A;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.profile-detail-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
-.profile-detail-actions .btn{min-height:42px;border-radius:13px;padding:0 8px;font-size:12px;}
+/* 계정 액션: 웹 설정 리스트 톤의 행(라벨 + chevron). 비좁은 3버튼 대체. */
+.profile-detail-actions-section{padding:6px 4px;}
+.profile-detail-actions{display:flex;flex-direction:column;}
+.profile-action-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:0 8px;border:none;border-bottom:1px solid #EEF2F9;background:transparent;color:#26304A;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;text-align:left;}
+.profile-action-row:last-child{border-bottom:0;}
+.profile-action-row:active{background:#F4F8FF;}
+.profile-action-row i{flex:0 0 auto;display:inline-flex;color:#B6C2D6;}
+.profile-action-row i svg{width:18px;height:18px;}
 .profile-tutor-card{grid-template-columns:auto minmax(0,1fr);align-items:center;background:#F8FBFF;}
 .profile-tutor-photo{width:52px;height:52px;border-radius:17px;display:grid;place-items:center;overflow:hidden;background:#EEF4FF;color:var(--primary-dark);font-weight:900;border:1px solid #D8E6FF;}
 .profile-tutor-photo img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -1038,14 +1055,24 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .notif-popover-all{flex:0 0 auto;padding:12px 14px;border:0;border-top:1px solid #EEF2F7;background:#F8FAFC;color:var(--primary-dark);font-size:13px;font-weight:700;text-align:center;}
 /* 알림 목록 화면 */
 .noti-list-card{display:flex;flex-direction:column;padding:0;overflow:hidden;}
-.noti-list-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid #F1F5F9;}
+/* 알림 내역: 8개씩 페이지네이션 + 클릭 시 본문 펼침. 행은 버튼이라 접근성/탭 동작 일관. */
+.noti-list-row{display:flex;align-items:flex-start;gap:11px;width:100%;padding:14px;border:none;border-bottom:1px solid #F1F5F9;background:transparent;text-align:left;cursor:pointer;font-family:inherit;}
 .noti-list-row:last-child{border-bottom:0;}
 .noti-list-row.is-unread{background:#F5F8FF;}
-.noti-list-main{flex:1 1 auto;min-width:0;}
-.noti-list-main b{display:block;font-size:14px;color:#0F172A;margin-bottom:4px;}
-.noti-list-main p{margin:0;font-size:12.5px;color:#475569;line-height:1.45;}
-.noti-list-date{flex:0 0 auto;font-size:11px;color:#94A3B8;}
+.noti-list-row.is-open{background:#F8FBFF;}
+.noti-list-dot{flex:0 0 auto;width:8px;height:8px;margin-top:6px;border-radius:999px;background:#CBD5E1;}
+.noti-list-row.is-unread .noti-list-dot{background:var(--primary);}
+.noti-list-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.noti-list-main b{display:block;font-size:14px;font-weight:800;color:#0F172A;}
+.noti-list-body{margin:0;font-size:12.5px;color:#475569;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;}
+.noti-list-body.is-full{-webkit-line-clamp:unset;white-space:pre-wrap;}
+.noti-list-date{font-size:11px;color:#94A3B8;font-weight:700;}
+.noti-list-chev{flex:0 0 auto;align-self:center;font-size:12px;color:#94A3B8;}
 .noti-list-empty{padding:40px 16px;text-align:center;color:#64748B;font-size:13px;}
+.noti-pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
+.noti-pager-btn{min-width:72px;height:40px;border-radius:12px;border:1px solid #DDE7F6;background:#FFFFFF;color:var(--primary-dark);font-size:13px;font-weight:800;font-family:inherit;}
+.noti-pager-btn:disabled{opacity:.4;color:#94A3B8;}
+.noti-pager-count{font-size:13px;font-weight:800;color:#475569;min-width:54px;text-align:center;}
 
 /* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
 .home-top-icons{display:flex;justify-content:flex-end;}

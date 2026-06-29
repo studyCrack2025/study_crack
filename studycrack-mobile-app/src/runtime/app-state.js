@@ -181,6 +181,8 @@ export function createInitialAppState() {
     notifications: DEFAULT_NOTIFICATIONS,
     notiList: [], // 서버 알림 목록(student_get_notifications). 미인증/로딩 전 빈 배열.
     notiStatus: 'idle', // idle | loading | ready | empty | error
+    notiPage: 0, // 알림 내역 페이지(8개씩)
+    notiExpandedId: '', // 펼쳐 본문을 보여줄 알림 id
     openFaq: '',
     notifModalOpen: false,
     // 수험 일정 캘린더(Phase 5): 공식 일정은 확정 전까지 비고, 개인 일정만 동작.
