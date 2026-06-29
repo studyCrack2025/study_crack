@@ -175,6 +175,7 @@ export function createInitialAppState() {
     scoreEditState: DEFAULT_SCORE_EDIT_STATE,
     scoreEditOpen: false,
     scoreEditStep: 1,
+    scoreSubjectSaving: false, // 과목별 저장 중 플래그(성적 입력 스텝퍼)
     scoreExamType: '3월 모의고사',
     scoreExamKey: 'mar',
     // 알림/FAQ

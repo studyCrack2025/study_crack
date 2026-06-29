@@ -302,6 +302,60 @@ function persistUser(ctx, patch) {
   return user;
 }
 
+// 과목별 저장: 현재 step 한 과목의 quantitative 조각만 만든다(기존 다른 과목 값은 유지·머지).
+function buildSubjectQuantitative(step, values) {
+  if (step === 1) {
+    const raw = Number(values.koreanCommon || 0) + Number(values.koreanElective || 0);
+    return { kor: { opt: values.koreanType || '', common: Number(values.koreanCommon || 0), elective: Number(values.koreanElective || 0), raw } };
+  }
+  if (step === 2) {
+    const raw = Number(values.mathCommon || 0) + Number(values.mathElective || 0);
+    return { math: { opt: values.mathType || '', common: Number(values.mathCommon || 0), elective: Number(values.mathElective || 0), raw } };
+  }
+  if (step === 3) return { eng: { grd: Number(values.english || 0) } };
+  if (step === 4) return { hist: { grd: Number(values.history || 0) } };
+  if (step === 5) return { inq1: { name: values.inquiry1Subject || '', raw: Number(values.inquiry1Score || 0) } };
+  if (step === 6) return { inq2: { name: values.inquiry2Subject || '', raw: Number(values.inquiry2Score || 0) } };
+  return {};
+}
+
+// 현재 과목만 검증. 통과 시 '' 반환, 실패 시 안내 문구.
+function validateScoreSubject(step, values) {
+  if (step === 1) {
+    if (!String(values.koreanCommon).trim() || !String(values.koreanElective).trim()) return '국어 공통/선택 원점수를 모두 입력해주세요.';
+    if (Number(values.koreanCommon) > 76 || Number(values.koreanElective) > 24) return '국어 점수를 정확히 입력해주세요.';
+  }
+  if (step === 2) {
+    if (!String(values.mathCommon).trim() || !String(values.mathElective).trim()) return '수학 공통/선택 원점수를 모두 입력해주세요.';
+    if (Number(values.mathCommon) > 74 || Number(values.mathElective) > 26) return '수학 점수를 정확히 입력해주세요.';
+  }
+  if (step === 3 && !Number(values.english || 0)) return '영어 등급을 선택해주세요.';
+  if (step === 4 && !Number(values.history || 0)) return '한국사 등급을 선택해주세요.';
+  if (step === 5) {
+    if (isInvalidRequiredSelectValue(values.inquiry1Subject) || !String(values.inquiry1Score).trim()) return '탐구 1 과목과 원점수를 입력해주세요.';
+    if (Number(values.inquiry1Score) > 50) return '탐구 1 원점수를 정확히 입력해주세요.';
+  }
+  if (step === 6) {
+    if (isInvalidRequiredSelectValue(values.inquiry2Subject) || !String(values.inquiry2Score).trim()) return '탐구 2 과목과 원점수를 입력해주세요.';
+    if (Number(values.inquiry2Score) > 50) return '탐구 2 원점수를 정확히 입력해주세요.';
+  }
+  return '';
+}
+
+// 모달 진입 시 저장된 quantitative[examKey]로 입력 초안을 채운다(재진입 시 기존 값 보임).
+function seedScoreEditFromQuant(quant) {
+  const q = quant || {};
+  const numStr = (v) => (Number(v || 0) ? String(Number(v)) : '');
+  return {
+    korean: { type: q.kor?.opt || '', common: numStr(q.kor?.common), elective: numStr(q.kor?.elective) },
+    math: { type: q.math?.opt || '', common: numStr(q.math?.common), elective: numStr(q.math?.elective) },
+    english: q.eng?.grd ? String(q.eng.grd) : '',
+    history: q.hist?.grd ? String(q.hist.grd) : '',
+    inquiry1: { subject: q.inq1?.name || '', score: numStr(q.inq1?.raw) },
+    inquiry2: { subject: q.inq2?.name || '', score: numStr(q.inq2?.raw) }
+  };
+}
+
 function syncIOSSafariQualDomState(ctx, values) {
   ctx.setObSchoolName?.(values.obSchoolName);
   ctx.setObGradeStatus?.(values.obGradeStatus);
@@ -354,7 +408,9 @@ export function createProfileHandlers(ctx) {
     setProfileDetailModalOpen = noop,
     setProfilePhotoUploading = noop,
     setScoreEditOpen = noop,
+    setScoreEditState = noop,
     setScoreEditStep = noop,
+    setScoreSubjectSaving = noop,
     setScoreExamKey = noop,
     setScores = noop,
     setTargetMajor = noop,
@@ -379,8 +435,53 @@ export function createProfileHandlers(ctx) {
 
   return {
     openScoreEdit() {
+      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+      const quant = ctx.user?.quantitative?.[examKey];
+      if (quant) setScoreEditState(() => seedScoreEditFromQuant(quant));
       setScoreEditOpen(true);
       setScoreEditStep(1);
+      return true;
+    },
+
+    // 레일 칩으로 과목 점프(현재 과목 초안은 보존).
+    scoreStepGoto({ actionEl }) {
+      const next = Number(getData(actionEl, 'step') || 1);
+      if (!(next >= 1 && next <= 6)) return false;
+      patchCurrentScoreStep(ctx);
+      setScoreEditStep(Math.min(6, Math.max(1, next)));
+      return true;
+    },
+
+    // 현재 과목 1개만 검증→즉시 반영(다음 과목으로 이동·캐시 갱신). 서버 영속은 백그라운드.
+    // 서버 저장을 await하지 않아야 응답 지연/실패가 입력 흐름(다음 과목)을 막지 않는다.
+    saveScoreSubject() {
+      if (ctx.scoreSubjectSaving) return false;
+      const step = Number(ctx.scoreEditStep || 1);
+      patchCurrentScoreStep(ctx);
+      const values = readScoreEditValues(ctx);
+      const error = validateScoreSubject(step, values);
+      if (error) {
+        alert(error);
+        return false;
+      }
+      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+      const piece = buildSubjectQuantitative(step, values);
+      const existingExam = ctx.user?.quantitative?.[examKey] || {};
+      const nextQuantitative = { ...(ctx.user?.quantitative || {}), [examKey]: { ...existingExam, ...piece } };
+
+      // 즉시 반영: user.quantitative 갱신(→ 점수 캐시 fetch 트리거) + 로컬 저장 + 다음 과목 이동.
+      setScoreExamKey(examKey);
+      setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
+      persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
+      if (step < 6) setScoreEditStep(step + 1);
+
+      // 서버 영속은 백그라운드(실패해도 입력은 유지, 안내만). 다음 분석 fetch에서 자연 동기화.
+      Promise.resolve()
+        .then(() => persistQuantitative(nextQuantitative))
+        .then((result) => {
+          if (result && result.ok === false) alert('성적은 저장됐지만 서버 반영이 지연되고 있어요. 잠시 후 자동으로 다시 반영됩니다.');
+        })
+        .catch(() => {});
       return true;
     },
 
@@ -430,6 +531,7 @@ export function createProfileHandlers(ctx) {
     },
 
     scoreStepPrev() {
+      patchCurrentScoreStep(ctx);
       setScoreEditStep((value) => Math.max(1, value - 1));
       return true;
     },

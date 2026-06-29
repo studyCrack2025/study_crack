@@ -73,36 +73,106 @@ function subjectHint(missing, text) {
   return missing ? `<p class="score-field-hint">${text}</p>` : '';
 }
 
+const SCORE_STEPS = [
+  { step: 1, key: 'korean', name: '국어' },
+  { step: 2, key: 'math', name: '수학' },
+  { step: 3, key: 'english', name: '영어' },
+  { step: 4, key: 'history', name: '한국사' },
+  { step: 5, key: 'inquiry1', name: '탐구 1' },
+  { step: 6, key: 'inquiry2', name: '탐구 2' }
+];
+
+function isSubjectSaved(q, key) {
+  if (!q) return false;
+  if (key === 'korean') return Number(q.kor?.common || 0) + Number(q.kor?.elective || 0) > 0;
+  if (key === 'math') return Number(q.math?.common || 0) + Number(q.math?.elective || 0) > 0;
+  if (key === 'english') return Number(q.eng?.grd || 0) > 0;
+  if (key === 'history') return Number(q.hist?.grd || 0) > 0;
+  if (key === 'inquiry1') return Boolean(q.inq1?.name) && Number(q.inq1?.raw || 0) > 0;
+  if (key === 'inquiry2') return Boolean(q.inq2?.name) && Number(q.inq2?.raw || 0) > 0;
+  return false;
+}
+
+function renderRawSubjectPanel({ title, selField, options, commonField, electiveField, commonMax, electiveMax, sub }) {
+  const raw = Number(sub.common || 0) + Number(sub.elective || 0);
+  return `<div class="score-step-panel">
+    <div class="score-step-panel-head"><b>${title}</b><span>선택 과목 + 공통/선택 원점수</span></div>
+    <label class="score-field-label">선택 과목</label>
+    <select class="planner-input" data-field="${selField}">${options}</select>
+    <label class="score-field-label">원점수</label>
+    <div class="score-input-grid">${renderScoreNumberInput(commonField, sub.common, `공통 (0~${commonMax})`, commonMax)}${renderScoreNumberInput(electiveField, sub.elective, `선택 (0~${electiveMax})`, electiveMax)}</div>
+    ${renderRawMetric(raw)}
+  </div>`;
+}
+
+function renderGradeSubjectPanel({ title, field, value }) {
+  return `<div class="score-step-panel">
+    <div class="score-step-panel-head"><b>${title}</b><span>절대평가 · 등급만 선택</span></div>
+    ${renderGradeSegment(field, value)}
+    ${value
+      ? `<div class="score-step-confirm"><span class="score-step-check">✓</span>${title} ${escapeHtml(String(value))}등급으로 입력됐어요</div>`
+      : '<div class="score-step-warn">아래에서 등급을 선택해 주세요</div>'}
+  </div>`;
+}
+
+function renderInquirySubjectPanel({ title, subjField, scoreField, inq }) {
+  return `<div class="score-step-panel">
+    <div class="score-step-panel-head"><b>${title}</b><span>탐구 과목 + 원점수</span></div>
+    <label class="score-field-label">탐구 과목</label>
+    <select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select>
+    <label class="score-field-label">원점수</label>
+    ${renderScoreNumberInput(scoreField, inq.score, '0~50', 50)}
+    ${renderRawMetric(inq.score)}
+  </div>`;
+}
+
 export function renderScoreEditModal(ctx = {}) {
   const state = ctx.scoreEditState || {};
   const korean = state.korean || {};
   const math = state.math || {};
   const inquiry1 = state.inquiry1 || {};
   const inquiry2 = state.inquiry2 || {};
-  const koreanRaw = Number(korean.common || 0) + Number(korean.elective || 0);
-  const mathRaw = Number(math.common || 0) + Number(math.elective || 0);
-  const missing = {
-    korean: isMissingValue(korean.common) || isMissingValue(korean.elective),
-    math: isMissingValue(math.common) || isMissingValue(math.elective),
-    english: isMissingValue(state.english),
-    history: isMissingValue(state.history),
-    inquiry1: isMissingValue(inquiry1.subject) || isMissingValue(inquiry1.score),
-    inquiry2: isMissingValue(inquiry2.subject) || isMissingValue(inquiry2.score)
-  };
-  const missingCount = [
-    korean.common,
-    korean.elective,
-    math.common,
-    math.elective,
-    state.english,
-    state.history,
-    inquiry1.subject,
-    inquiry1.score,
-    inquiry2.subject,
-    inquiry2.score
-  ].filter(isMissingValue).length;
-  const statusText = missingCount ? `필수 ${missingCount}개 남음` : '필수 입력 완료';
-  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-onepage-modal" data-action="noopModal"><div class="score-onepage-head"><div><p class="home-modal-title">성적 전체 입력</p><p class="sub">모든 과목을 한 화면에서 입력하고 저장합니다.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div><div class="score-onepage-status ${missingCount ? 'pending' : 'complete'}"><span>${statusText}</span><b>국어·수학은 공통/선택 점수를 모두 입력해주세요.</b></div><div class="score-onepage-body"><section class="score-subject-card major ${missing.korean ? 'missing' : ''}"><div class="score-subject-head"><div><span>국어</span><b>${rawScoreLabel(koreanRaw)}</b></div>${renderRawMetric(koreanRaw)}</div><select class="planner-input" data-field="v2e-korean-type"><option value="화법과작문" ${korean.type === '화법과작문' ? 'selected' : ''}>화법과작문</option><option value="언어와매체" ${korean.type === '언어와매체' ? 'selected' : ''}>언어와매체</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-korean-common', korean.common, '공통 원점수', 76)}${renderScoreNumberInput('v2e-korean-elective', korean.elective, '선택 원점수', 24)}</div>${subjectHint(missing.korean, '공통/선택 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card major ${missing.math ? 'missing' : ''}"><div class="score-subject-head"><div><span>수학</span><b>${rawScoreLabel(mathRaw)}</b></div>${renderRawMetric(mathRaw)}</div><select class="planner-input" data-field="v2e-math-type"><option value="확률과통계" ${math.type === '확률과통계' ? 'selected' : ''}>확률과통계</option><option value="미적분" ${math.type === '미적분' ? 'selected' : ''}>미적분</option><option value="기하" ${math.type === '기하' ? 'selected' : ''}>기하</option></select><div class="score-input-grid">${renderScoreNumberInput('v2e-math-common', math.common, '공통 원점수', 74)}${renderScoreNumberInput('v2e-math-elective', math.elective, '선택 원점수', 26)}</div>${subjectHint(missing.math, '공통/선택 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card compact ${missing.english ? 'missing' : ''}"><div class="score-subject-head"><div><span>영어</span><b>${state.english ? `${escapeHtml(state.english)}등급` : '미입력'}</b></div></div>${renderGradeSegment('v2e-english', state.english)}${subjectHint(missing.english, '영어 등급을 선택해주세요.')}</section><section class="score-subject-card compact ${missing.history ? 'missing' : ''}"><div class="score-subject-head"><div><span>한국사</span><b>${state.history ? `${escapeHtml(state.history)}등급` : '미입력'}</b></div></div>${renderGradeSegment('v2e-history', state.history)}${subjectHint(missing.history, '한국사 등급을 선택해주세요.')}</section><section class="score-subject-card ${missing.inquiry1 ? 'missing' : ''}"><div class="score-subject-head"><div><span>탐구 1</span><b>${rawScoreLabel(inquiry1.score)}</b></div>${renderRawMetric(inquiry1.score)}</div><select class="planner-input" data-field="v2e-inq1-subject">${renderInquiryOptions(inquiry1.subject)}</select>${renderScoreNumberInput('v2e-inq1-score', inquiry1.score, '원점수', 50)}${subjectHint(missing.inquiry1, '과목과 원점수를 모두 입력해주세요.')}</section><section class="score-subject-card ${missing.inquiry2 ? 'missing' : ''}"><div class="score-subject-head"><div><span>탐구 2</span><b>${rawScoreLabel(inquiry2.score)}</b></div>${renderRawMetric(inquiry2.score)}</div><select class="planner-input" data-field="v2e-inq2-subject">${renderInquiryOptions(inquiry2.subject)}</select>${renderScoreNumberInput('v2e-inq2-score', inquiry2.score, '원점수', 50)}${subjectHint(missing.inquiry2, '과목과 원점수를 모두 입력해주세요.')}</section></div><div class="score-onepage-actions"><div class="score-save-status"><b>${statusText}</b><span>${missingCount ? '저장 전 누락 항목을 확인해주세요.' : '이 성적으로 분석 기준을 갱신할 수 있어요.'}</span></div><button class="btn btn-primary" data-action="saveScoreEdit">성적 저장</button></div></div></div>`;
+  const step = Math.min(6, Math.max(1, Number(ctx.scoreEditStep || 1)));
+  const saving = Boolean(ctx.scoreSubjectSaving);
+  const examKey = ctx.scoreExamKey || '';
+  const quant = (ctx.user && ctx.user.quantitative && ctx.user.quantitative[examKey]) || {};
+  const doneCount = SCORE_STEPS.filter((s) => isSubjectSaved(quant, s.key)).length;
+  const progressPct = Math.round((doneCount / SCORE_STEPS.length) * 100);
+
+  const rail = SCORE_STEPS.map((s) => {
+    const on = s.step === step;
+    const done = isSubjectSaved(quant, s.key);
+    return `<button type="button" class="score-step-chip ${on ? 'active' : ''} ${done ? 'done' : ''}" data-action="scoreStepGoto" data-step="${s.step}">${done ? '<span class="score-step-check">✓</span>' : ''}${s.name}</button>`;
+  }).join('');
+
+  let panel = '';
+  if (step === 1) {
+    panel = renderRawSubjectPanel({ title: '국어', selField: 'v2e-korean-type', options: `<option value="화법과작문" ${korean.type === '화법과작문' ? 'selected' : ''}>화법과작문</option><option value="언어와매체" ${korean.type === '언어와매체' ? 'selected' : ''}>언어와매체</option>`, commonField: 'v2e-korean-common', electiveField: 'v2e-korean-elective', commonMax: 76, electiveMax: 24, sub: korean });
+  } else if (step === 2) {
+    panel = renderRawSubjectPanel({ title: '수학', selField: 'v2e-math-type', options: `<option value="확률과통계" ${math.type === '확률과통계' ? 'selected' : ''}>확률과통계</option><option value="미적분" ${math.type === '미적분' ? 'selected' : ''}>미적분</option><option value="기하" ${math.type === '기하' ? 'selected' : ''}>기하</option>`, commonField: 'v2e-math-common', electiveField: 'v2e-math-elective', commonMax: 74, electiveMax: 26, sub: math });
+  } else if (step === 3) {
+    panel = renderGradeSubjectPanel({ title: '영어', field: 'v2e-english', value: state.english });
+  } else if (step === 4) {
+    panel = renderGradeSubjectPanel({ title: '한국사', field: 'v2e-history', value: state.history });
+  } else if (step === 5) {
+    panel = renderInquirySubjectPanel({ title: '탐구 1', subjField: 'v2e-inq1-subject', scoreField: 'v2e-inq1-score', inq: inquiry1 });
+  } else {
+    panel = renderInquirySubjectPanel({ title: '탐구 2', subjField: 'v2e-inq2-subject', scoreField: 'v2e-inq2-score', inq: inquiry2 });
+  }
+
+  const isLast = step === 6;
+  const primaryLabel = saving ? '저장 중…' : isLast ? '저장하고 완료' : '저장하고 다음';
+
+  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-stepper-modal" data-action="noopModal">
+    <div class="score-onepage-head"><div><p class="home-modal-title">성적 입력</p><p class="sub">과목을 선택해 하나씩 입력하고 저장해요.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
+    <div class="score-stepper-progress"><div class="score-stepper-bar"><i style="width:${progressPct}%"></i></div><span>${doneCount} / ${SCORE_STEPS.length} 저장됨</span></div>
+    <div class="score-step-rail">${rail}</div>
+    <div class="score-stepper-body">${panel}</div>
+    <div class="score-stepper-actions">
+      <button type="button" class="btn btn-secondary score-step-nav" data-action="scoreStepPrev" ${step === 1 ? 'disabled' : ''}>이전</button>
+      <button type="button" class="btn btn-primary score-step-save" data-action="saveScoreSubject" ${saving ? 'disabled' : ''}>${primaryLabel}</button>
+    </div>
+  </div></div>`;
 }
 
 export function renderRankingScreen(ctx) {
