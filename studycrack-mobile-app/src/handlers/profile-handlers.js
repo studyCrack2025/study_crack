@@ -1,8 +1,9 @@
 import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
 import { scoreExamTypeToKey } from '../runtime/persistence.js';
+import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
 
-const MBTI_STRATEGY_VALUES = ['plan', 'solo', 'weak_first', 'feedback'];
+const MBTI_QUESTION_COUNT = MBTI_QUESTIONS.length;
 const KAKAO_SUPPORT_URL = 'http://pf.kakao.com/_wxjxcgn';
 
 function noop() {}
@@ -392,6 +393,7 @@ export function createProfileHandlers(ctx) {
     setMbtiAnswers = noop,
     setMbtiModalOpen = noop,
     setMbtiResult = noop,
+    setMbtiStep = noop,
     setMyProfileEditOpen = noop,
     setMyProfileNameDraft = noop,
     setMyProfilePhoneCodeDraft = noop,
@@ -890,7 +892,9 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
+    // 결과가 이미 있으면 결과부터, 없으면 인트로부터 연다.
     openMbtiModal() {
+      setMbtiStep(ctx.mbtiResult ? 'result' : 'intro');
       setMbtiModalOpen(true);
       return true;
     },
@@ -900,18 +904,54 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    setMbti({ actionEl }) {
-      const question = getData(actionEl, 'mbti-q');
-      const value = getData(actionEl, 'mbti-v');
-      if (!question) return false;
-      setMbtiAnswers((prev) => ({ ...prev, [question]: value }));
+    startMbti() {
+      setMbtiAnswers(() => new Array(MBTI_QUESTION_COUNT).fill(0));
+      setMbtiStep(0);
       return true;
     },
 
-    completeMbti() {
-      const yesCount = Object.values(ctx.mbtiAnswers || {}).filter((value) => MBTI_STRATEGY_VALUES.includes(value)).length;
-      setMbtiResult(yesCount >= 3 ? '전략형 집중러' : '균형형 실행러');
-      setMbtiModalOpen(false);
+    retryMbti() {
+      setMbtiAnswers(() => new Array(MBTI_QUESTION_COUNT).fill(0));
+      setMbtiStep(0);
+      return true;
+    },
+
+    answerMbti({ actionEl }) {
+      const step = Number(getData(actionEl, 'mbti-step'));
+      const choice = Number(getData(actionEl, 'mbti-choice'));
+      if (!(step >= 0 && step < MBTI_QUESTION_COUNT) || ![1, 2].includes(choice)) return false;
+      setMbtiAnswers((prev) => {
+        const next = Array.isArray(prev) && prev.length === MBTI_QUESTION_COUNT ? [...prev] : new Array(MBTI_QUESTION_COUNT).fill(0);
+        next[step] = choice;
+        return next;
+      });
+      return true;
+    },
+
+    mbtiPrev() {
+      const step = Number(ctx.mbtiStep);
+      if (step > 0) setMbtiStep(step - 1);
+      return true;
+    },
+
+    mbtiNext() {
+      const step = Number(ctx.mbtiStep);
+      const answers = Array.isArray(ctx.mbtiAnswers) ? ctx.mbtiAnswers : [];
+      if (!answers[step]) return false;
+      if (step < MBTI_QUESTION_COUNT - 1) {
+        setMbtiStep(step + 1);
+        return true;
+      }
+      // 마지막 문항 → 코드 산출·저장·결과 표시.
+      const code = computeMbtiCode(answers);
+      setMbtiResult(code);
+      setMbtiStep('result');
+      const nextQualitative = { ...(ctx.user?.qualitative || {}), mbti: code };
+      setUser((prevUser) => ({ ...prevUser, qualitative: nextQualitative }));
+      persistUser({ ...ctx, localStorage: storage }, { qualitative: nextQualitative });
+      Promise.resolve()
+        .then(() => persistQualitative(nextQualitative))
+        .catch(() => {});
       return true;
     },
 

@@ -999,8 +999,9 @@ input,select,textarea{font-size:16px !important;}
 
 /* Motion refinement layer */
 :root{--motion-fast:160ms;--motion-base:240ms;--motion-slow:420ms;--motion-page:360ms;--ease-standard:cubic-bezier(.22,.61,.36,1);--ease-enter:cubic-bezier(.16,1,.3,1);--ease-exit:cubic-bezier(.4,0,.2,1);--ease-spring:cubic-bezier(.2,.85,.28,1.08);}
-.app-screen{animation:mobileScreenEnter var(--motion-page) var(--ease-enter) both;will-change:opacity,transform;}
-.app-screen[data-screen="home"],.app-screen[data-screen="analysis"],.app-screen[data-screen="planner"]{animation-duration:300ms;}
+/* 진입 애니메이션은 JSX(React) 화면에만 — React는 노드를 보존해 1회만 재생. 문자열 화면은 매 setState마다
+   innerHTML 전체 교체로 노드가 재생성돼 애니메이션이 재생되며 화면이 깜빡인다(모달 열 때마다 번쩍). */
+.app-screen[data-screen="home"],.app-screen[data-screen="analysis"],.app-screen[data-screen="planner"]{animation:mobileScreenEnter 300ms var(--ease-enter) both;will-change:opacity,transform;}
 @keyframes mobileScreenEnter{from{opacity:.001;transform:translate3d(0,10px,0) scale(.997);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 .card,.home-insight-card,.home-result-card-v3,.home-add-univ-card,.planner-item,.analysis-v2-head,.analysis-v2-card,.analysis-v2-compare-card,.score-info-card,.score-info-hero,.mobile-account-card,.my-menu-card,.support-direct-card,.support-qna-card,.faq-card,.settings-list,.notify-card,.plan-console-detail,.payment-safe-card,.locked-feature-preview-wrap{transition:transform var(--motion-base) var(--ease-standard),box-shadow var(--motion-base) var(--ease-standard),border-color var(--motion-base) var(--ease-standard),background-color var(--motion-base) var(--ease-standard),opacity var(--motion-base) ease;}
 button,.btn,.top-icon-btn,.my-row,.notify-row,.faq-row,.analysis-v2-tab,.analysis-search-row,.analysis-rec-card,.planner-input,.ob1-pill,.plan-console-selector button,.tabbar button{transition:transform var(--motion-fast) var(--ease-standard),background-color var(--motion-fast) ease,color var(--motion-fast) ease,border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,opacity var(--motion-fast) ease,filter var(--motion-fast) ease;}
@@ -1021,14 +1022,18 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-modal,.planner-sheet,.coach-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
 .planner-sheet,.coach-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
 .side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
+/* 문자열 화면 모달은 매 렌더 재생성되므로 entrance 애니메이션을 끈다(깜빡임 방지). 배치/블러는 유지. */
+.app-screen-overlays > *{animation:none !important;}
+.app-screen-overlays > * > *{animation:none !important;}
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes surfaceLiftIn{from{opacity:.001;transform:translate3d(0,12px,0) scale(.985);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes bottomSheetIn{from{opacity:.001;transform:translate3d(0,28px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 @keyframes drawerSlideIn{from{opacity:.001;transform:translate3d(-18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
-.home-content > *,.analysis-v2 > *,.planner-screen > *,.my-stack > *,.account-info-page > *,.score-info-page > *,.qual-form-page > *,.plan-console-page > *,.payment-console-page > *,.locked-feature-page > *{animation:contentRiseIn 340ms var(--ease-enter) both;}
-.home-content > *:nth-child(2),.analysis-v2 > *:nth-child(2),.planner-screen > *:nth-child(2),.my-stack > *:nth-child(2),.account-info-page > *:nth-child(2),.score-info-page > *:nth-child(2),.qual-form-page > *:nth-child(2),.plan-console-page > *:nth-child(2),.payment-console-page > *:nth-child(2),.locked-feature-page > *:nth-child(2){animation-delay:35ms;}
-.home-content > *:nth-child(3),.analysis-v2 > *:nth-child(3),.planner-screen > *:nth-child(3),.my-stack > *:nth-child(3),.account-info-page > *:nth-child(3),.score-info-page > *:nth-child(3),.qual-form-page > *:nth-child(3),.plan-console-page > *:nth-child(3),.payment-console-page > *:nth-child(3),.locked-feature-page > *:nth-child(3){animation-delay:70ms;}
-.home-content > *:nth-child(n+4),.analysis-v2 > *:nth-child(n+4),.planner-screen > *:nth-child(n+4),.my-stack > *:nth-child(n+4),.account-info-page > *:nth-child(n+4),.score-info-page > *:nth-child(n+4),.qual-form-page > *:nth-child(n+4),.plan-console-page > *:nth-child(n+4),.payment-console-page > *:nth-child(n+4),.locked-feature-page > *:nth-child(n+4){animation-delay:95ms;}
+/* contentRiseIn은 JSX(React) 화면 콘텐츠에만 적용 — 문자열 화면(.my-stack 등)에 두면 매 렌더 재생되어 깜빡인다. */
+.home-content > *,.analysis-v2 > *,.planner-screen > *{animation:contentRiseIn 340ms var(--ease-enter) both;}
+.home-content > *:nth-child(2),.analysis-v2 > *:nth-child(2),.planner-screen > *:nth-child(2){animation-delay:35ms;}
+.home-content > *:nth-child(3),.analysis-v2 > *:nth-child(3),.planner-screen > *:nth-child(3){animation-delay:70ms;}
+.home-content > *:nth-child(n+4),.analysis-v2 > *:nth-child(n+4),.planner-screen > *:nth-child(n+4){animation-delay:95ms;}
 @keyframes contentRiseIn{from{opacity:.001;transform:translate3d(0,8px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 .home-breakdown-detail,.home-breakdown-detail-row,.qna-list-row,.score-info-subject-card,.home-report-preview-item,.planner-item,.mobile-social-row,.profile-detail-section{animation:contentRiseIn 280ms var(--ease-enter) both;}
 .locked-preview{transition:filter 420ms var(--ease-standard),opacity 420ms ease,transform 420ms var(--ease-enter);}
@@ -1354,3 +1359,60 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .score-journey-segment button{font-size:11px;padding-inline:8px;}
 .score-journey-grid{grid-template-columns:1fr;}
 }
+
+/* 학습 성향 MBTI 36문항 설문 모달 */
+.mbti-survey-modal{width:calc(100vw - 24px);max-width:440px;max-height:90vh;display:flex;flex-direction:column;padding:18px;overflow:auto;border-radius:20px;background:#FFFFFF;box-sizing:border-box;}
+.mbti-survey-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.mbti-survey-section{font-size:11px;font-weight:900;letter-spacing:.04em;color:var(--primary-dark);background:#EEF4FF;border:1px solid #D8E6FF;border-radius:999px;padding:5px 11px;}
+.mbti-survey-eyebrow{display:block;font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--primary-dark);margin-bottom:6px;}
+.mbti-survey-intro{display:flex;flex-direction:column;gap:12px;text-align:center;padding:8px 4px;}
+.mbti-survey-intro .home-modal-title{font-size:22px;}
+.mbti-survey-lead{margin:0;font-size:13.5px;line-height:1.6;color:#475569;font-weight:700;}
+.mbti-survey-points{margin:4px 0 8px;padding:0;list-style:none;display:grid;gap:8px;text-align:left;}
+.mbti-survey-points li{position:relative;padding-left:22px;font-size:12.5px;line-height:1.5;color:#526176;font-weight:700;}
+.mbti-survey-points li:before{content:"✓";position:absolute;left:0;top:0;color:#0F7B55;font-weight:900;}
+.mbti-survey-start{height:50px;border-radius:14px;font-weight:900;}
+.mbti-survey-close-link{border:none;background:transparent;color:#94A3B8;font-size:13px;font-weight:800;font-family:inherit;padding:4px;}
+.mbti-survey-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.mbti-survey-bar{flex:1 1 auto;height:6px;border-radius:999px;background:#E2EAF6;overflow:hidden;}
+.mbti-survey-bar i{display:block;height:100%;border-radius:999px;background:var(--primary-dark);transition:width .3s ease;}
+.mbti-survey-progress span{flex:0 0 auto;font-size:12px;font-weight:900;color:#475569;}
+.mbti-survey-qtext{margin:0 0 16px;font-size:18px;font-weight:900;line-height:1.45;color:#1F2A44;}
+.mbti-survey-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.mbti-survey-choice{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:14px 15px;border:1.5px solid #DDE7F6;border-radius:15px;background:#F8FBFF;color:#26304A;font-family:inherit;font-size:14px;font-weight:700;line-height:1.4;text-align:left;cursor:pointer;transition:border-color .12s,background .12s;}
+.mbti-survey-choice:active{background:#EEF4FF;}
+.mbti-survey-choice.selected{border-color:var(--primary);background:#EEF4FF;box-shadow:0 6px 16px rgba(52,78,143,.12);}
+.mbti-survey-choice-mark{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#E2EAF8;color:var(--primary-dark);font-size:13px;font-weight:900;}
+.mbti-survey-choice.selected .mbti-survey-choice-mark{background:var(--primary-dark);color:#fff;}
+.mbti-survey-nav{display:flex;gap:8px;}
+.mbti-survey-nav .btn{flex:1 1 auto;width:auto;height:48px;border-radius:14px;font-weight:900;}
+.mbti-survey-nav .mbti-survey-prev{flex:0 0 auto;min-width:84px;}
+/* MBTI 결과 */
+.mbti-survey-result{display:flex;flex-direction:column;gap:10px;text-align:center;}
+.mbti-result-code{font-size:40px;font-weight:900;letter-spacing:.1em;color:var(--primary-dark);line-height:1;margin-top:4px;}
+.mbti-result-name{font-size:18px;font-weight:900;color:#1F2A44;}
+.mbti-result-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:2px 0;}
+.mbti-result-tag{font-size:11.5px;font-weight:800;color:var(--primary-dark);background:#EEF4FF;border:1px solid #D8E6FF;border-radius:999px;padding:5px 10px;}
+.mbti-result-desc{margin:4px 0;font-size:13px;line-height:1.6;color:#475569;font-weight:700;}
+.mbti-result-traits{margin:0;padding:0;list-style:none;display:grid;gap:7px;text-align:left;}
+.mbti-result-traits li{position:relative;padding:10px 12px 10px 32px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;font-size:13px;font-weight:800;color:#334155;}
+.mbti-result-traits li:before{content:"★";position:absolute;left:12px;top:10px;color:#F59E0B;}
+.mbti-result-subjects{margin-top:6px;padding:13px;border:1px solid #DDE7F6;border-radius:14px;background:#F8FBFF;text-align:left;}
+.mbti-result-subjects-label{margin:0 0 8px;font-size:12px;font-weight:900;color:var(--primary-dark);}
+.mbti-result-subject-list{display:flex;flex-wrap:wrap;gap:6px;}
+.mbti-result-subject{font-size:12px;font-weight:800;color:#26304A;background:#FFFFFF;border:1px solid #DDE7F6;border-radius:999px;padding:6px 11px;}
+/* 마이페이지 학습 유형 카드 */
+.my-mbti-card{display:grid;gap:10px;}
+.my-mbti-card.empty{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer;font-family:inherit;}
+.my-mbti-empty-copy .sub{margin:2px 0 0;}
+.my-mbti-empty-cta{flex:0 0 auto;align-self:center;padding:9px 14px;border-radius:11px;background:var(--primary-dark);color:#fff;font-size:13px;font-weight:900;}
+.my-mbti-head{display:flex;align-items:center;justify-content:space-between;}
+.my-mbti-retry{border:1px solid #DDE7F6;background:#F8FBFF;color:var(--primary-dark);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;font-family:inherit;}
+.my-mbti-main{display:flex;align-items:center;gap:14px;}
+.my-mbti-code{flex:0 0 auto;font-size:28px;font-weight:900;letter-spacing:.06em;color:var(--primary-dark);}
+.my-mbti-name-wrap{min-width:0;display:grid;gap:6px;}
+.my-mbti-name-wrap b{font-size:16px;font-weight:900;color:#1F2A44;}
+.my-mbti-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.my-mbti-tag{font-size:11px;font-weight:800;color:#526176;background:#F1F5FD;border-radius:999px;padding:3px 9px;}
+.my-mbti-desc{margin:0;font-size:12.5px;line-height:1.55;color:#64748B;font-weight:700;}
+.ob-mbti-name{margin:2px 0 0;font-size:15px;font-weight:900;color:#1F2A44;}

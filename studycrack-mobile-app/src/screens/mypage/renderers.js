@@ -2,6 +2,7 @@ import { renderModal } from '../../components/modal.js';
 import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { renderTermsModal } from '../../components/terms-modal.js';
 import { TERMS_CONTENT } from '../../constants/terms.js';
+import { MBTI_LETTER_LABELS, getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
 
 function defaultIcon() {
   return '';
@@ -245,6 +246,21 @@ function renderSupportQnaList({ qnaHistory = [], qnaStatus = 'idle' }) {
   }).join('');
 }
 
+// 학습 유형(MBTI) 카드. 저장된 코드가 있으면 실제 프로필을, 없으면 검사 유도를 보여준다.
+function renderMyMbtiCard(mbtiResult) {
+  const code = normalizeMbtiCode(mbtiResult);
+  if (!code) {
+    return `<button type="button" class="card my-mbti-card empty" data-action="openMbtiModal"><div class="my-mbti-empty-copy"><p class="analysis-title">학습 유형 진단</p><p class="sub">36문항으로 나의 학습 성향 코드를 확인해보세요.</p></div><span class="my-mbti-empty-cta">검사하기</span></button>`;
+  }
+  const profile = getMbtiProfile(code);
+  const tags = profile.code.split('').map((letter) => `<span class="my-mbti-tag">${MBTI_LETTER_LABELS[letter] || letter}</span>`).join('');
+  return `<div class="card my-mbti-card">
+    <div class="my-mbti-head"><p class="analysis-title">내 학습 유형</p><button type="button" class="my-mbti-retry" data-action="openMbtiModal">다시 검사</button></div>
+    <div class="my-mbti-main"><span class="my-mbti-code">${profile.code}</span><div class="my-mbti-name-wrap"><b>${profile.name}</b><div class="my-mbti-tags">${tags}</div></div></div>
+    <p class="my-mbti-desc">${profile.desc}</p>
+  </div>`;
+}
+
 export function renderMyPageScreen(ctx) {
   const {
     appbar,
@@ -258,10 +274,10 @@ export function renderMyPageScreen(ctx) {
   const sub = buildSubscriptionSummary(user, selectedPlan);
   const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
-  const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}`;
+  const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}${renderMbtiModal(ctx)}`;
   return layout(appbar('마이페이지', false) + `<div class="my-stack">
       <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
-      ${mbtiResult ? `<div class="card" style="border:2px solid #2563EB;background:#EFF6FF;"><p class="analysis-title">진단 결과</p><p style="margin:6px 0 2px;font-size:30px;font-weight:900;letter-spacing:.08em;color:#1D4ED8;text-shadow:0 6px 18px rgba(37,99,235,.18);">CSDR</p><p class="sub" style="margin:0 0 12px;font-size:12px;color:#1E40AF;">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>` : ''}
+      ${renderMyMbtiCard(mbtiResult)}
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
 
