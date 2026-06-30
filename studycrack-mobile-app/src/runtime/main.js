@@ -283,7 +283,7 @@ function createInitialAppStateWithScreenParam() {
   const sessionSafeBase = hasSession
     ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
     : base;
-  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home' };
+  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home', tab: 'home' };
   return param
     ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
     : sessionSafeBase;
@@ -294,6 +294,8 @@ function MobileApp() {
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
+  const scoreFetchRetryRef = useRef(0);
+  const scoreFetchSignatureRef = useRef('');
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -937,9 +939,19 @@ function MobileApp() {
       ...(state.analysisTargetList || []),
       ...(state.homeTargetList || [])
     ]);
+    if (state.userLoadStatus !== 'ready') {
+      if (state.scoreFetchStatus !== 'loading') {
+        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
+      }
+      return undefined;
+    }
     if (!userScores || !targetList.length) {
+      scoreFetchRetryRef.current = 0;
+      scoreFetchSignatureRef.current = '';
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
-      const scorePatch = stateRef.current.scoreFetchStatus === 'loading' ? { scoreFetchStatus: 'empty' } : {};
+      const scorePatch = stateRef.current.scoreFetchStatus === 'loading'
+        ? { scoreFetchStatus: 'empty', scoreFetchSignature: '' }
+        : { scoreFetchSignature: '' };
       if (!hasPrevious && state.analysisApiStatus !== 'empty') {
         setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '', ...scorePatch });
       } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
@@ -949,10 +961,33 @@ function MobileApp() {
     }
 
     const scoreSignature = buildScoreSignature(examMode, targetList);
+    const apiBinding = getAnalysisApiBinding();
+    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
+      if (scoreFetchRetryRef.current >= 10) {
+        setState({ analysisApiStatus: 'error', analysisApiError: '분석 API 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
+        return undefined;
+      }
+      const timer = globalThis.setTimeout?.(() => {
+        scoreFetchRetryRef.current += 1;
+        setState({ scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+      }, 250);
+      return () => {
+        if (timer) globalThis.clearTimeout?.(timer);
+      };
+    }
+    scoreFetchRetryRef.current = 0;
+    scoreFetchSignatureRef.current = scoreSignature;
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
-    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
-      if (!payload) return;
+    fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
+      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (!payload) {
+        const timer = globalThis.setTimeout?.(() => {
+          setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+        }, 250);
+        if (!timer) setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+        return;
+      }
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = payload.simulationResults || [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
@@ -978,6 +1013,7 @@ function MobileApp() {
         scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
+      if (scoreFetchSignatureRef.current !== scoreSignature) return;
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',
@@ -990,9 +1026,11 @@ function MobileApp() {
     getAnalysisApiBinding,
     state.analysisTargetList,
     state.homeTargetList,
+    state.scoreFetchRetryTick,
     state.scoreExamKey,
     state.scoreExamType,
     state.targetMajor,
+    state.userLoadStatus,
     state.user?.quantitative
   ]);
 

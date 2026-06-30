@@ -84,6 +84,7 @@ export function createInitialAppState() {
     scoreCache: {},
     scoreFetchStatus: 'idle', // 현재 시그니처의 fetch 상태: idle|loading|ready|empty|error
     scoreFetchSignature: '', // 마지막으로 적용된 (examKey::targetList) 시그니처
+    scoreFetchRetryTick: 0,
     // 분석 화면에서 보고 있는 대학 index(홈 슬라이더 index와 분리 — 홈 순서에 영향 없음).
     analysisSelectedIndex: 0,
     addingUniversity: false,
