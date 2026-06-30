@@ -197,6 +197,19 @@ function readScoreEditValues(ctx) {
   };
 }
 
+function rawValidScores(max) {
+  const out = new Set([0]);
+  for (let v = 2; v <= max - 2; v += 1) out.add(v);
+  if (max >= 2) out.add(max);
+  return out;
+}
+
+function isValidRawScore(value, max) {
+  if (!String(value ?? '').trim()) return false;
+  const n = Number(value);
+  return Number.isInteger(n) && rawValidScores(max).has(n);
+}
+
 function updateScoreEditState(ctx, values) {
   ctx.setScoreEditState?.((prev = {}) => ({
     ...prev,
@@ -249,10 +262,10 @@ function patchCurrentScoreStep(ctx) {
 }
 
 function isScoreStepOverLimit(step, state = {}) {
-  return (step === 1 && (Number(state.korean?.common || 0) > 76 || Number(state.korean?.elective || 0) > 24))
-    || (step === 2 && (Number(state.math?.common || 0) > 74 || Number(state.math?.elective || 0) > 26))
-    || (step === 5 && Number(state.inquiry1?.score || 0) > 50)
-    || (step === 6 && Number(state.inquiry2?.score || 0) > 50);
+  return (step === 1 && (!isValidRawScore(state.korean?.common, 76) || !isValidRawScore(state.korean?.elective, 24)))
+    || (step === 2 && (!isValidRawScore(state.math?.common, 74) || !isValidRawScore(state.math?.elective, 26)))
+    || (step === 5 && !isValidRawScore(state.inquiry1?.score, 50))
+    || (step === 6 && !isValidRawScore(state.inquiry2?.score, 50));
 }
 
 function hasRequiredScoreMissing(values) {
@@ -324,21 +337,21 @@ function buildSubjectQuantitative(step, values) {
 function validateScoreSubject(step, values) {
   if (step === 1) {
     if (!String(values.koreanCommon).trim() || !String(values.koreanElective).trim()) return '국어 공통/선택 원점수를 모두 입력해주세요.';
-    if (Number(values.koreanCommon) > 76 || Number(values.koreanElective) > 24) return '국어 점수를 정확히 입력해주세요.';
+    if (!isValidRawScore(values.koreanCommon, 76) || !isValidRawScore(values.koreanElective, 24)) return '국어 점수를 정확히 입력해주세요.';
   }
   if (step === 2) {
     if (!String(values.mathCommon).trim() || !String(values.mathElective).trim()) return '수학 공통/선택 원점수를 모두 입력해주세요.';
-    if (Number(values.mathCommon) > 74 || Number(values.mathElective) > 26) return '수학 점수를 정확히 입력해주세요.';
+    if (!isValidRawScore(values.mathCommon, 74) || !isValidRawScore(values.mathElective, 26)) return '수학 점수를 정확히 입력해주세요.';
   }
   if (step === 3 && !Number(values.english || 0)) return '영어 등급을 선택해주세요.';
   if (step === 4 && !Number(values.history || 0)) return '한국사 등급을 선택해주세요.';
   if (step === 5) {
     if (isInvalidRequiredSelectValue(values.inquiry1Subject) || !String(values.inquiry1Score).trim()) return '탐구 1 과목과 원점수를 입력해주세요.';
-    if (Number(values.inquiry1Score) > 50) return '탐구 1 원점수를 정확히 입력해주세요.';
+    if (!isValidRawScore(values.inquiry1Score, 50)) return '탐구 1 원점수를 정확히 입력해주세요.';
   }
   if (step === 6) {
     if (isInvalidRequiredSelectValue(values.inquiry2Subject) || !String(values.inquiry2Score).trim()) return '탐구 2 과목과 원점수를 입력해주세요.';
-    if (Number(values.inquiry2Score) > 50) return '탐구 2 원점수를 정확히 입력해주세요.';
+    if (!isValidRawScore(values.inquiry2Score, 50)) return '탐구 2 원점수를 정확히 입력해주세요.';
   }
   return '';
 }

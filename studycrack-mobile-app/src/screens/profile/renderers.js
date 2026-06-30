@@ -39,7 +39,12 @@ function scoreMetric(raw) {
 }
 
 function renderInquiryOptions(selected = '') {
-  return `<option value="">과목 선택</option>${INQUIRY_SUBJECTS.map((subject) => `<option value="${subject}" ${selected === subject ? 'selected' : ''}>${subject}</option>`).join('')}`;
+  // DB에 저장된 과목명이 표준 목록과 미세하게 달라도(예: '물리Ⅰ' vs '물리학Ⅰ') 드롭다운에 표시되도록
+  // 목록에 없는 저장값은 별도 옵션으로 선두에 추가한다.
+  const saved = String(selected || '').trim();
+  const inList = INQUIRY_SUBJECTS.includes(saved);
+  const extra = saved && !inList ? `<option value="${escapeHtml(saved)}" selected>${escapeHtml(saved)}</option>` : '';
+  return `<option value="" ${saved ? '' : 'selected'}>과목 선택</option>${extra}${INQUIRY_SUBJECTS.map((subject) => `<option value="${escapeHtml(subject)}" ${saved === subject ? 'selected' : ''}>${escapeHtml(subject)}</option>`).join('')}`;
 }
 
 function renderGradeSelect(field, selected = '') {
@@ -48,7 +53,10 @@ function renderGradeSelect(field, selected = '') {
 
 function renderGradeSegment(field, selected = '') {
   const key = field === 'v2e-english' ? 'english' : 'history';
-  return `<span class="score-grade-label">등급 선택 (1~9)</span><div class="score-grade-segment" role="group" aria-label="등급 선택">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<button type="button" class="${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}">${n}</button>`).join('')}</div>`;
+  const cards = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    .map((n) => `<button type="button" class="score-grade-card ${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}"><b>${n}</b><span>등급</span></button>`)
+    .join('');
+  return `<span class="score-grade-label">해당 등급을 선택하세요</span><div class="score-grade-grid" role="group" aria-label="등급 선택">${cards}</div>`;
 }
 
 function renderRawMetric(raw) {
@@ -71,6 +79,32 @@ function isMissingValue(value) {
 
 function subjectHint(missing, text) {
   return missing ? `<p class="score-field-hint">${text}</p>` : '';
+}
+
+// 휠(스와이프) 점수 피커. 한 항목 높이(px) — main.js 초기화 effect와 동일해야 한다.
+export const SCORE_WHEEL_ITEM_H = 40;
+
+// 원점수에서 실제로 불가능한 점수를 제외한 유효 점수 목록. 수능 문항이 2·3점 혼합이라
+// 1점(최소 문항=2)과 만점-1(한 문항만 틀리면 최소 2점 손실)은 받을 수 없다 → 제외.
+function rawValidScores(max) {
+  const out = [0];
+  for (let v = 2; v <= max - 2; v += 1) out.push(v);
+  if (max >= 2) out.push(max);
+  return out;
+}
+
+function renderScoreWheel({ field, values, selected, suffix = '', emptyLabel = '' }) {
+  const list = emptyLabel ? ['', ...values] : values.slice();
+  let selIdx = list.findIndex((v) => String(v) === String(selected ?? ''));
+  if (selIdx < 0) selIdx = 0;
+  const items = list
+    .map((v, i) => {
+      const label = v === '' ? emptyLabel : `${v}${suffix}`;
+      return `<div class="score-wheel-item ${i === selIdx ? 'is-selected' : ''}" data-value="${escapeHtml(String(v))}">${label}</div>`;
+    })
+    .join('');
+  const selectedValue = list[selIdx] ?? '';
+  return `<div class="score-wheel-wrap"><div class="score-wheel-band" aria-hidden="true"></div><div class="score-wheel-fade top" aria-hidden="true"></div><div class="score-wheel-fade bottom" aria-hidden="true"></div><div class="score-wheel" data-wheel-field="${field}" data-wheel-index="${selIdx}" role="listbox" aria-label="점수 선택">${items}</div><input type="hidden" data-field="${field}" value="${escapeHtml(String(selectedValue))}"/></div>`;
 }
 
 const SCORE_STEPS = [
@@ -100,7 +134,8 @@ function renderRawSubjectPanel({ title, selField, options, commonField, elective
     <label class="score-field-label">선택 과목</label>
     <select class="planner-input" data-field="${selField}">${options}</select>
     <label class="score-field-label">원점수</label>
-    <div class="score-input-grid">${renderScoreNumberInput(commonField, sub.common, `공통 (0~${commonMax})`, commonMax)}${renderScoreNumberInput(electiveField, sub.elective, `선택 (0~${electiveMax})`, electiveMax)}</div>
+    <div class="score-wheel-grid"><div class="score-wheel-field"><span>공통</span>${renderScoreWheel({ field: commonField, values: rawValidScores(commonMax), selected: sub.common, suffix: '점', emptyLabel: '미입력' })}</div><div class="score-wheel-field"><span>선택</span>${renderScoreWheel({ field: electiveField, values: rawValidScores(electiveMax), selected: sub.elective, suffix: '점', emptyLabel: '미입력' })}</div></div>
+    <p class="score-wheel-help">문항 배점상 나올 수 없는 1점과 만점보다 1점 낮은 점수는 제외했어요.</p>
     ${renderRawMetric(raw)}
   </div>`;
 }
@@ -121,7 +156,8 @@ function renderInquirySubjectPanel({ title, subjField, scoreField, inq }) {
     <label class="score-field-label">탐구 과목</label>
     <select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select>
     <label class="score-field-label">원점수</label>
-    ${renderScoreNumberInput(scoreField, inq.score, '0~50', 50)}
+    <div class="score-wheel-single">${renderScoreWheel({ field: scoreField, values: rawValidScores(50), selected: inq.score, suffix: '점', emptyLabel: '미입력' })}</div>
+    <p class="score-wheel-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 선택지에서 제외됩니다.</p>
     ${renderRawMetric(inq.score)}
   </div>`;
 }
@@ -139,10 +175,11 @@ export function renderScoreEditModal(ctx = {}) {
   const doneCount = SCORE_STEPS.filter((s) => isSubjectSaved(quant, s.key)).length;
   const progressPct = Math.round((doneCount / SCORE_STEPS.length) * 100);
 
+  // 비클릭 진행 표시(과목 칩 버튼 제거 — '저장하고 다음'으로만 이동). 현재 단계 강조 + 저장 완료 체크.
   const rail = SCORE_STEPS.map((s) => {
     const on = s.step === step;
     const done = isSubjectSaved(quant, s.key);
-    return `<button type="button" class="score-step-chip ${on ? 'active' : ''} ${done ? 'done' : ''}" data-action="scoreStepGoto" data-step="${s.step}">${done ? '<span class="score-step-check">✓</span>' : ''}${s.name}</button>`;
+    return `<span class="score-step-dot ${on ? 'active' : ''} ${done ? 'done' : ''}" aria-current="${on ? 'step' : 'false'}">${done && !on ? '✓' : s.name}</span>`;
   }).join('');
 
   let panel = '';

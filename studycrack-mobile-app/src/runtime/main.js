@@ -11,7 +11,7 @@ import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
-import { renderScoreEditModal } from '../screens/profile/renderers.js';
+import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
@@ -484,15 +484,14 @@ function MobileApp() {
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
-    layout: (inner, withTab, overlays = '') =>
-      renderAppShell({
-        inner: String(inner || ''),
-        withTab,
-        overlays: String(overlays || ''),
-        dimmed,
-        screen: state.screen,
-        tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
-      }),
+    // 셸 조각을 분리 반환한다(MobileApp이 배경/오버레이/탭바를 각각 dangerouslySetInnerHTML div로 렌더).
+    // 모달 상태만 바뀌면 inner(__html)가 그대로라 React가 배경 DOM을 건드리지 않아 배경 깜빡임이 없다.
+    layout: (inner, withTab, overlays = '') => ({
+      __mobileShell: true,
+      inner: String(inner || ''),
+      withTab: Boolean(withTab),
+      overlays: String(overlays || '')
+    }),
     // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).
     dimmed,
     tabBarHtml: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems }),
@@ -701,6 +700,58 @@ function MobileApp() {
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
 
+  useEffect(() => {
+    if (!state.scoreEditOpen) return undefined;
+    const doc = globalThis.document;
+    if (!doc?.querySelectorAll) return undefined;
+    const raf = globalThis.requestAnimationFrame || ((fn) => fn());
+    const syncWheel = (wheel) => {
+      if (!wheel?.querySelectorAll) return;
+      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
+      if (!items.length) return;
+      const maxIndex = items.length - 1;
+      const index = Math.max(0, Math.min(maxIndex, Math.round((wheel.scrollTop || 0) / SCORE_WHEEL_ITEM_H)));
+      const item = items[index];
+      const value = item?.getAttribute?.('data-value') ?? '';
+      wheel.dataset.wheelIndex = String(index);
+      items.forEach((el, i) => {
+        el.classList.toggle('is-selected', i === index);
+        el.setAttribute('aria-selected', i === index ? 'true' : 'false');
+      });
+      const input = wheel.parentElement?.querySelector?.(`input[data-field="${wheel.getAttribute('data-wheel-field')}"]`);
+      if (input) input.value = value;
+    };
+    const wheels = Array.from(doc.querySelectorAll('.score-wheel'));
+    wheels.forEach((wheel) => {
+      const index = Number(wheel.getAttribute('data-wheel-index') || 0);
+      raf(() => {
+        wheel.scrollTop = Math.max(0, index) * SCORE_WHEEL_ITEM_H;
+        syncWheel(wheel);
+      });
+    });
+    const onScroll = (event) => {
+      if (event.target?.classList?.contains?.('score-wheel')) syncWheel(event.target);
+    };
+    const onClick = (event) => {
+      const item = event.target?.closest?.('.score-wheel-item');
+      if (!item) return;
+      const wheel = item.closest?.('.score-wheel');
+      if (!wheel) return;
+      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
+      const index = items.indexOf(item);
+      if (index < 0) return;
+      wheel.scrollTo?.({ top: index * SCORE_WHEEL_ITEM_H, behavior: 'smooth' });
+      if (!wheel.scrollTo) wheel.scrollTop = index * SCORE_WHEEL_ITEM_H;
+      syncWheel(wheel);
+    };
+    doc.addEventListener('scroll', onScroll, true);
+    doc.addEventListener('click', onClick, true);
+    return () => {
+      doc.removeEventListener('scroll', onScroll, true);
+      doc.removeEventListener('click', onClick, true);
+    };
+  }, [state.scoreEditOpen, state.scoreEditStep]);
+
   // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
   useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.plannerItems, state.plannerItems); }, [state.plannerItems]);
@@ -888,18 +939,20 @@ function MobileApp() {
     ]);
     if (!userScores || !targetList.length) {
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
+      const scorePatch = stateRef.current.scoreFetchStatus === 'loading' ? { scoreFetchStatus: 'empty' } : {};
       if (!hasPrevious && state.analysisApiStatus !== 'empty') {
-        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '' });
+        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '', ...scorePatch });
       } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
-        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '' });
+        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '', ...scorePatch });
       }
       return undefined;
     }
 
-    let cancelled = false;
-    setState({ analysisApiStatus: 'loading', analysisApiError: '' });
+    const scoreSignature = buildScoreSignature(examMode, targetList);
+    setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
+    // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
     fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
-      if (cancelled || !payload) return;
+      if (!payload) return;
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = payload.simulationResults || [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
@@ -909,6 +962,10 @@ function MobileApp() {
         : analysisError
           ? (hasPrevious ? 'stale' : 'error')
           : 'empty';
+      // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
+      // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
+      const merged = normalizeServerResults(analysisResults, analysisSimulations);
+      const hasScores = Object.keys(merged).length > 0;
       setState({
         analysisResults,
         analysisSimulations,
@@ -916,20 +973,19 @@ function MobileApp() {
           ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
         analysisApiStatus: nextStatus,
-        analysisApiError: analysisError?.message || (analysisResults.length ? '' : '')
+        analysisApiError: analysisError?.message || (analysisResults.length ? '' : ''),
+        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
+        scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
-      if (!cancelled) {
-        const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-        setState({
-          analysisApiStatus: hasPrevious ? 'stale' : 'error',
-          analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.'
-        });
-      }
+      const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
+      setState({
+        analysisApiStatus: hasPrevious ? 'stale' : 'error',
+        analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.',
+        scoreFetchStatus: stateRef.current.scoreFetchSignature === scoreSignature ? 'error' : stateRef.current.scoreFetchStatus
+      });
     });
-    return () => {
-      cancelled = true;
-    };
+    return undefined;
   }, [
     getAnalysisApiBinding,
     state.analysisTargetList,
@@ -940,49 +996,7 @@ function MobileApp() {
     state.user?.quantitative
   ]);
 
-  // [환산점수 단일 출처] scoreCache 채우기. homeTargetList(고정 순서)+examKey로 시그니처를 만들어
-  // 동일 시그니처면 재요청하지 않고(중복/churn 제거), 응답은 응답 시점의 최신 시그니처와 일치할 때만
-  // 캐시에 머지한다(레이스/구버전 응답 폐기). 시험 전환은 examKey만 바뀔 뿐 기존 캐시를 지우지 않는다.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const examKey = examKeyOf(state);
-    const userScores = state.user?.quantitative?.[examKey] || state.user?.quantitative?.active;
-    const targetList = uniqueTargetList(state.homeTargetList || []);
-    if (!userScores || !targetList.length) return undefined;
-    const signature = buildScoreSignature(examKey, targetList);
-    // 같은 시그니처를 이미 받았거나(ready/empty) 받는 중(loading)이면 재요청하지 않는다. error만 재시도.
-    const status = stateRef.current.scoreFetchStatus;
-    const settled = status === 'ready' || status === 'loading' || status === 'empty';
-    if (stateRef.current.scoreFetchSignature === signature && settled) return undefined;
-
-    // cancelled 플래그를 쓰지 않는다. cleanup 취소 + 재실행 스킵 조합이 in-flight 응답을 잃어버려
-    // (초기 3월 로딩이 멈춰 6월→3월 전환해야만 뜨던 버그) 발생했다. staleness는 아래 토큰 가드로만 판정한다.
-    setState({ scoreFetchStatus: 'loading', scoreFetchSignature: signature });
-    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode: examKey })
-      .then((payload) => {
-        if (!payload) return;
-        // 응답 적용은 응답 시점의 최신 시그니처와 일치할 때만(구버전/레이스 폐기).
-        const latest = buildScoreSignature(examKeyOf(stateRef.current), uniqueTargetList(stateRef.current.homeTargetList || []));
-        if (latest !== signature) return;
-        const merged = normalizeServerResults(payload.analysisResults || [], payload.simulationResults || []);
-        const hasAny = Object.keys(merged).length > 0;
-        setState({
-          scoreCache: hasAny ? mergeScoreCache(stateRef.current.scoreCache, examKey, merged) : stateRef.current.scoreCache,
-          scoreFetchStatus: hasAny ? 'ready' : 'empty'
-        });
-      })
-      .catch(() => {
-        if (stateRef.current.scoreFetchSignature === signature) setState({ scoreFetchStatus: 'error' });
-      });
-    return undefined;
-  }, [
-    getAnalysisApiBinding,
-    state.homeTargetList,
-    state.scoreExamKey,
-    state.scoreExamType,
-    state.user?.quantitative
-  ]);
+  // (scoreCache는 위 단일 분석 fetch effect가 함께 채운다 — 홈/분석 동일 출처. 별도 home fetch 제거.)
 
   const onClick = useCallback(
     (event) => {
@@ -1020,8 +1034,45 @@ function MobileApp() {
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
   }
 
-  const html = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
-  return React.createElement('div', { ...wrapperProps, dangerouslySetInnerHTML: { __html: html } });
+  const rendered = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
+  // 셸 조각이 분리된 경우(문자열 화면): app-shell/app-frame을 React 노드로 두고 배경/오버레이/탭바를
+  // 각각 독립 dangerouslySetInnerHTML div로 렌더한다. React는 __html 문자열이 바뀐 div만 갱신하므로,
+  // 모달 상태만 변할 때 배경(inner) DOM은 그대로 유지된다 → 어떤 모달도 배경을 새로고침하지 않는다.
+  if (rendered && rendered.__mobileShell) {
+    const tabBarHtml = rendered.withTab
+      ? renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
+      : '';
+    return React.createElement(
+      'div',
+      wrapperProps,
+      React.createElement(
+        'div',
+        { className: 'app-shell' },
+        React.createElement(
+          'div',
+          { className: 'app-frame' },
+          React.createElement('div', {
+            key: 'screen',
+            className: `screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`,
+            'data-screen': state.screen,
+            dangerouslySetInnerHTML: { __html: rendered.inner }
+          }),
+          React.createElement('div', {
+            key: 'overlays',
+            className: 'app-screen-overlays',
+            style: { display: 'contents' },
+            dangerouslySetInnerHTML: { __html: rendered.overlays }
+          }),
+          React.createElement('div', {
+            key: 'tabbar',
+            style: { display: 'contents' },
+            dangerouslySetInnerHTML: { __html: tabBarHtml }
+          })
+        )
+      )
+    );
+  }
+  return React.createElement('div', { ...wrapperProps, dangerouslySetInnerHTML: { __html: String(rendered || '') } });
 }
 
 const rootEl = document.getElementById('root') || document.body;

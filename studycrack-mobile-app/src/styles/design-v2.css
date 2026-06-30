@@ -389,9 +389,8 @@ input,select,textarea{font-size:16px !important;}
 .planner-empty-day p{margin:0;font-size:12.5px;color:#64748B;line-height:1.5;}
 /* 모바일 자체 로그인 입력/에러 (Phase B) */
 .auth-input{margin:0;}
-.auth-unified-card h1{margin:14px 0 0;text-align:center;font-size:25px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.02em;}
-/* 로고 이미지가 브랜드 워드마크를 담으므로 중복 텍스트 제거. 태그라인만 남겨 여백을 정리. */
-.auth-unified-card .auth-title{margin:16px 0 18px;text-align:center;font-size:15px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
+.auth-unified-card h1,.auth-wordmark{margin:12px 0 0;text-align:center;font-size:26px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.03em;line-height:1.1;}
+.auth-unified-card .auth-title{margin:8px 0 18px;text-align:center;font-size:14.5px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
 /* 이미지 로드 실패 시 폴백 워드마크도 단정하게. */
 .auth-logo-fallback{font-size:26px;font-weight:900;letter-spacing:-0.03em;color:var(--primary-dark);}
 .auth-unified-card .planner-input{border-color:#DDE7F6;background:#F8FBFF;border-radius:13px;height:48px;}
@@ -649,10 +648,11 @@ input,select,textarea{font-size:16px !important;}
 .score-stepper-bar{flex:1 1 auto;height:6px;border-radius:999px;background:#E2EAF6;overflow:hidden;}
 .score-stepper-bar i{display:block;height:100%;border-radius:999px;background:var(--primary-dark);transition:width .3s ease;}
 .score-stepper-progress span{flex:0 0 auto;font-size:12px;font-weight:900;color:#475569;}
-.score-step-rail{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px 12px;}
-.score-step-chip{display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 13px;border-radius:999px;border:1px solid #DDE7F6;background:#FFFFFF;color:#64748B;font-family:inherit;font-size:13px;font-weight:800;}
-.score-step-chip.done{border-color:#BBE7D2;background:#E6F7EF;color:#0F7B55;}
-.score-step-chip.active{border:1.5px solid var(--primary);background:#EEF4FF;color:var(--primary-dark);}
+.score-step-rail{display:flex;gap:5px;padding:10px 16px 12px;}
+/* 비클릭 진행 표시 dot — 클릭 과목 칩 제거('저장하고 다음'만으로 이동). */
+.score-step-dot{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;height:30px;padding:0 4px;border-radius:999px;border:1px solid #E2EAF6;background:#FFFFFF;color:#94A3B8;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.score-step-dot.done{border-color:#BBE7D2;background:#E6F7EF;color:#0F7B55;flex:0 0 30px;}
+.score-step-dot.active{flex:1.6 1 0;border:1.5px solid var(--primary);background:#EEF4FF;color:var(--primary-dark);font-size:12px;}
 .score-step-check{display:inline-flex;font-size:11px;font-weight:900;}
 .score-stepper-body{flex:1 1 auto;overflow:auto;padding:4px 16px 8px;box-sizing:border-box;}
 .score-step-panel{display:flex;flex-direction:column;gap:9px;padding:16px;border:1px solid #DDE7F6;border-radius:18px;background:#FFFFFF;box-shadow:0 6px 16px rgba(52,78,143,.06);}
@@ -687,13 +687,31 @@ input,select,textarea{font-size:16px !important;}
 .score-onepage-metric{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-width:none;}
 .score-onepage-metric span{border-radius:10px;background:#EEF4FF;color:var(--primary-dark);padding:6px 5px;font-size:10px;font-weight:900;line-height:1;text-align:center;}
 .score-input-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+.score-wheel-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0;}
+.score-wheel-single{display:grid;max-width:180px;margin:0 auto;width:100%;}
+.score-wheel-field{display:grid;gap:7px;min-width:0;}
+.score-wheel-field > span{font-size:11px;font-weight:900;color:#526176;text-align:center;}
+.score-wheel-wrap{position:relative;height:120px;min-width:0;border:1px solid #DDE7F6;border-radius:16px;background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.78);}
+.score-wheel{height:120px;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;padding:40px 0;touch-action:pan-y;-webkit-overflow-scrolling:touch;}
+.score-wheel::-webkit-scrollbar{display:none;}
+.score-wheel-item{height:40px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;color:#94A3B8;font-size:15px;font-weight:800;line-height:1;transition:transform .16s ease,color .16s ease,font-size .16s ease;}
+.score-wheel-item.is-selected{color:#26304A;font-size:22px;font-weight:950;transform:scale(1.04);}
+.score-wheel-band{position:absolute;left:9px;right:9px;top:40px;height:40px;border-radius:12px;background:#EEF4FF;border:1px solid #C8D8F7;pointer-events:none;}
+.score-wheel-fade{position:absolute;left:0;right:0;height:36px;z-index:2;pointer-events:none;}
+.score-wheel-fade.top{top:0;background:linear-gradient(180deg,#FFFFFF 10%,rgba(255,255,255,0));}
+.score-wheel-fade.bottom{bottom:0;background:linear-gradient(0deg,#FFFFFF 10%,rgba(255,255,255,0));}
+.score-wheel-help{margin:0;padding:8px 10px;border-radius:11px;background:#F8FBFF;color:#64748B;font-size:11px;line-height:1.35;font-weight:800;}
 .score-subject-card .planner-input{height:42px;margin:0;border-color:#DDE7F6;background:#F8FBFF;}
 /* 영어/한국사 등급 선택: 1~9를 한 줄 균등 분할(5+4 불균형 제거). 터치 타깃 확대·선택 상태 명확화. */
-.score-grade-label{display:block;margin:2px 0 6px;font-size:11.5px;font-weight:800;color:#64748B;}
-.score-grade-segment{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;padding:4px;border:1px solid #DDE7F6;border-radius:13px;background:#F1F5FD;}
-.score-grade-segment button{height:40px;min-width:0;border:none;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:13px;font-weight:800;transition:background .12s ease,color .12s ease;}
-.score-grade-segment button:active{background:#E2EAF8;}
-.score-grade-segment button.active{background:var(--primary-dark);color:#FFFFFF;box-shadow:0 4px 10px rgba(52,78,143,.22);}
+.score-grade-label{display:block;margin:2px 0 8px;font-size:12px;font-weight:800;color:#475569;}
+/* 영어/한국사 등급: 3x3 카드 그리드(큰 터치 타깃, 명확한 선택). 기존 9버튼 단일 행 대체. */
+.score-grade-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.score-grade-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:56px;border:1.5px solid #DDE7F6;border-radius:14px;background:#F8FBFF;color:#475569;font-family:inherit;cursor:pointer;transition:border-color .12s,background .12s,transform .08s;}
+.score-grade-card b{font-size:20px;font-weight:900;line-height:1;color:#26304A;}
+.score-grade-card span{font-size:10.5px;font-weight:800;color:#94A3B8;}
+.score-grade-card:active{transform:scale(.97);}
+.score-grade-card.active{border-color:var(--primary);background:var(--primary-dark);box-shadow:0 6px 14px rgba(52,78,143,.22);}
+.score-grade-card.active b,.score-grade-card.active span{color:#FFFFFF;}
 .score-field-hint{margin:0;padding:8px 9px;border-radius:11px;background:#FFF7ED;color:#C2410C;font-size:11px;line-height:1.35;font-weight:800;}
 .score-onepage-actions{position:sticky;bottom:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:center;padding:12px;background:rgba(246,248,254,.98);border-top:1px solid #DDE7F6;}
 .score-onepage-actions .btn{height:44px;border-radius:14px;}
@@ -819,7 +837,7 @@ input,select,textarea{font-size:16px !important;}
 .home-top-icons{margin:0;flex:0 0 auto;}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-greeting-bubble{margin:0;flex:1 1 auto;min-width:0;align-items:center;}
-.home-greeting-cracky{width:62px;height:62px;transform:none;margin:0;}
+.home-greeting-cracky{width:80px;height:80px;transform:none;margin:0;flex:0 0 auto;}
 .home-greeting-speech{transform:none;border:1px solid #DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .home-greeting-speech:before{border-color:transparent #FFFFFF transparent transparent;}
 .home-greeting{font-size:18px;color:#26304A;letter-spacing:0;}
@@ -1234,7 +1252,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .payment-fixed-term span{font-size:12px;color:#64748B;font-weight:800;}
 .payment-fixed-term b{font-size:14px;color:#26304A;}
 @media (max-width:360px){
-.home-greeting-cracky{width:48px;height:48px;}
+.home-greeting-cracky{width:62px;height:62px;}
 .home-greeting-speech{min-width:0;padding:10px;}
 .home-greeting{font-size:15px;}
 .home-greeting-speech .home-sub{display:none;}
