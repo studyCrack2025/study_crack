@@ -1,5 +1,6 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
 import { renderMbtiModal } from '../../components/mbti-modal.js';
+import { MBTI_LETTER_LABELS, getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
 import { scoreTierClass as defaultScoreTierClass } from '../../components/score-journey.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import { CRACKY_HI_SRC, CRACKY_SRC, STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
@@ -31,8 +32,11 @@ function renderBubble(text, crackySrc = CRACKY_SRC) {
 }
 
 function renderMbtiResultCard(mbtiResult) {
-  if (!mbtiResult) return '';
-  return '<div class="card ob-card ob-mbti-result"><p class="analysis-title">진단 결과</p><p class="ob-mbti-code">CSDR</p><p class="sub ob-mbti-desc">(컨셉형, 직관령, 분석형, 루틴)</p><button class="btn btn-secondary" disabled>맞춤 공부법 PDF 준비 중</button></div>';
+  const code = normalizeMbtiCode(mbtiResult);
+  if (!code) return '';
+  const profile = getMbtiProfile(code);
+  const keywords = profile.code.split('').map((letter) => MBTI_LETTER_LABELS[letter] || letter).join(', ');
+  return `<div class="card ob-card ob-mbti-result"><p class="analysis-title">진단 결과</p><p class="ob-mbti-code">${profile.code}</p><p class="ob-mbti-name">${profile.name}</p><p class="sub ob-mbti-desc">(${keywords})</p></div>`;
 }
 
 export function renderSplashScreen(ctx) {
@@ -159,15 +163,15 @@ export function renderOb2Screen(ctx) {
 }
 
 export function renderOb3Screen(ctx) {
-  const { mbtiAnswers, mbtiDone, mbtiModalOpen, mbtiResult } = ctx;
+  const { mbtiAnswers, mbtiModalOpen, mbtiResult, mbtiStep } = ctx;
 
   const body = `<div class="card ob-card">
-         <p class="analysis-title">학습 MBTI 검사</p>
-         <p class="sub">4문항으로 빠르게 진단해요.</p>
-         <button class="btn btn-secondary" data-action="openMbtiModal">MBTI 시작하기</button>
+         <p class="analysis-title">학습 성향 진단</p>
+         <p class="sub">36문항으로 나의 학습 유형을 진단해요.</p>
+         <button class="btn btn-secondary" data-action="openMbtiModal">진단 시작하기</button>
          ${renderMbtiResultCard(mbtiResult)}
        </div>
-       ${renderMbtiModal({ mbtiModalOpen, mbtiAnswers, mbtiDone })}`;
+       ${renderMbtiModal({ mbtiModalOpen, mbtiStep, mbtiAnswers, mbtiResult })}`;
 
   return renderOnboardingScreen(ctx, {
     step: 3,

@@ -484,10 +484,11 @@ function MobileApp() {
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
-    layout: (inner, withTab) =>
+    layout: (inner, withTab, overlays = '') =>
       renderAppShell({
         inner: String(inner || ''),
         withTab,
+        overlays: String(overlays || ''),
         dimmed,
         screen: state.screen,
         tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })

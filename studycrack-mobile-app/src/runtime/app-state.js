@@ -148,9 +148,10 @@ export function createInitialAppState() {
       marketing: false
     },
     openTermsType: '',
-    // 온보딩/MBTI
+    // 온보딩/MBTI(36문항 학습 성향 설문). mbtiStep: 'intro' | 0..35 | 'result'. mbtiAnswers: 길이36 배열(1=a,2=b).
     mbtiModalOpen: false,
-    mbtiAnswers: { q1: '', q2: '', q3: '', q4: '' },
+    mbtiStep: 'intro',
+    mbtiAnswers: [],
     mbtiResult: '',
     ob2SkippedNoScore: false,
     strongSubject: '',
