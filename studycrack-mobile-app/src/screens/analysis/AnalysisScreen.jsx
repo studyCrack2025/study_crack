@@ -1,18 +1,13 @@
 import {
   renderAnalysisSearchModal,
-  renderSimulationMode,
-  renderSummaryMode
+  renderUnifiedAnalysis
 } from './renderers.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
 
-// analysis 화면의 React-트리(JSX) 버전. 탭/상단 shell은 React 노드로 유지하고,
-// 아직 JSX로 풀지 않은 세부 요약·시뮬레이션·검색 모달은 기존 문자열 renderer를 leaf로 임베드한다.
-// 이렇게 하면 analysisMode 전환 시 화면 컨테이너와 탭 DOM은 유지되고, 나머지는 기존 동작을 보존한다.
+// analysis 화면의 React-트리(JSX) 버전. 상단 shell은 React 노드로 유지하고,
+// 아직 JSX로 풀지 않은 통합 분석 카드와 검색 모달은 기존 문자열 renderer를 leaf로 임베드한다.
 export function AnalysisScreen(ctx) {
   const {
-    analysisMode = 'summary',
-    canAccessStandard = false,
-    canUseScoreSimulation = canAccessStandard,
     dimmed = false,
     isAnalyzing = false,
     analysisApiStatus = 'idle',
@@ -21,12 +16,9 @@ export function AnalysisScreen(ctx) {
     tabBarHtml = ''
   } = ctx;
 
-  const effectiveMode = canUseScoreSimulation ? analysisMode : 'summary';
   const isStale = analysisApiStatus === 'stale';
   const hasAnalysisError = Boolean(analysisApiError) && ['error', 'stale', 'empty'].includes(analysisApiStatus);
-  const modeBodyHtml = effectiveMode === 'summary'
-    ? renderSummaryMode(ctx)
-    : renderSimulationMode(ctx);
+  const analysisBodyHtml = renderUnifiedAnalysis(ctx);
   const searchModalHtml = renderAnalysisSearchModal(ctx);
 
   return (
@@ -97,25 +89,7 @@ export function AnalysisScreen(ctx) {
               </select>
             </div>
 
-            <div className="analysis-v2-tabs">
-              <button
-                className={`analysis-v2-tab ${effectiveMode === 'summary' ? 'active' : ''}`}
-                data-action="setAnalysisMode"
-                data-analysis-mode="summary"
-              >
-                전략 요약
-              </button>
-              <button
-                className={`analysis-v2-tab ${effectiveMode === 'simulation' ? 'active' : ''} ${canUseScoreSimulation ? '' : 'locked'}`}
-                data-action={canUseScoreSimulation ? 'setAnalysisMode' : 'goto'}
-                data-analysis-mode="simulation"
-                data-target={canUseScoreSimulation ? undefined : 'proIntro'}
-              >
-                점수 상승 시뮬레이션
-              </button>
-            </div>
-
-            <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: modeBodyHtml }} />
+            <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: analysisBodyHtml }} />
             <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: searchModalHtml }} />
           </section>
         </div>
