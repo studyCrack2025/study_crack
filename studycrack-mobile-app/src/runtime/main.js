@@ -11,7 +11,7 @@ import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
-import { renderScoreEditModal } from '../screens/profile/renderers.js';
+import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
@@ -484,15 +484,14 @@ function MobileApp() {
     // 렌더 helper (실제 컴포넌트 주입)
     icon: renderIcon,
     appbar: (title, showBack) => renderAppBar({ title, showBack }),
-    layout: (inner, withTab, overlays = '') =>
-      renderAppShell({
-        inner: String(inner || ''),
-        withTab,
-        overlays: String(overlays || ''),
-        dimmed,
-        screen: state.screen,
-        tabBar: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
-      }),
+    // 셸 조각을 분리 반환한다(MobileApp이 배경/오버레이/탭바를 각각 dangerouslySetInnerHTML div로 렌더).
+    // 모달 상태만 바뀌면 inner(__html)가 그대로라 React가 배경 DOM을 건드리지 않아 배경 깜빡임이 없다.
+    layout: (inner, withTab, overlays = '') => ({
+      __mobileShell: true,
+      inner: String(inner || ''),
+      withTab: Boolean(withTab),
+      overlays: String(overlays || '')
+    }),
     // JSX 화면이 셸을 직접 조립할 때 쓰는 raw 값(문자열 leaf로 임베드).
     dimmed,
     tabBarHtml: renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems }),
@@ -700,6 +699,58 @@ function MobileApp() {
   // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
+
+  useEffect(() => {
+    if (!state.scoreEditOpen) return undefined;
+    const doc = globalThis.document;
+    if (!doc?.querySelectorAll) return undefined;
+    const raf = globalThis.requestAnimationFrame || ((fn) => fn());
+    const syncWheel = (wheel) => {
+      if (!wheel?.querySelectorAll) return;
+      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
+      if (!items.length) return;
+      const maxIndex = items.length - 1;
+      const index = Math.max(0, Math.min(maxIndex, Math.round((wheel.scrollTop || 0) / SCORE_WHEEL_ITEM_H)));
+      const item = items[index];
+      const value = item?.getAttribute?.('data-value') ?? '';
+      wheel.dataset.wheelIndex = String(index);
+      items.forEach((el, i) => {
+        el.classList.toggle('is-selected', i === index);
+        el.setAttribute('aria-selected', i === index ? 'true' : 'false');
+      });
+      const input = wheel.parentElement?.querySelector?.(`input[data-field="${wheel.getAttribute('data-wheel-field')}"]`);
+      if (input) input.value = value;
+    };
+    const wheels = Array.from(doc.querySelectorAll('.score-wheel'));
+    wheels.forEach((wheel) => {
+      const index = Number(wheel.getAttribute('data-wheel-index') || 0);
+      raf(() => {
+        wheel.scrollTop = Math.max(0, index) * SCORE_WHEEL_ITEM_H;
+        syncWheel(wheel);
+      });
+    });
+    const onScroll = (event) => {
+      if (event.target?.classList?.contains?.('score-wheel')) syncWheel(event.target);
+    };
+    const onClick = (event) => {
+      const item = event.target?.closest?.('.score-wheel-item');
+      if (!item) return;
+      const wheel = item.closest?.('.score-wheel');
+      if (!wheel) return;
+      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
+      const index = items.indexOf(item);
+      if (index < 0) return;
+      wheel.scrollTo?.({ top: index * SCORE_WHEEL_ITEM_H, behavior: 'smooth' });
+      if (!wheel.scrollTo) wheel.scrollTop = index * SCORE_WHEEL_ITEM_H;
+      syncWheel(wheel);
+    };
+    doc.addEventListener('scroll', onScroll, true);
+    doc.addEventListener('click', onClick, true);
+    return () => {
+      doc.removeEventListener('scroll', onScroll, true);
+      doc.removeEventListener('click', onClick, true);
+    };
+  }, [state.scoreEditOpen, state.scoreEditStep]);
 
   // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
   useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
@@ -983,8 +1034,45 @@ function MobileApp() {
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
   }
 
-  const html = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
-  return React.createElement('div', { ...wrapperProps, dangerouslySetInnerHTML: { __html: html } });
+  const rendered = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
+  // 셸 조각이 분리된 경우(문자열 화면): app-shell/app-frame을 React 노드로 두고 배경/오버레이/탭바를
+  // 각각 독립 dangerouslySetInnerHTML div로 렌더한다. React는 __html 문자열이 바뀐 div만 갱신하므로,
+  // 모달 상태만 변할 때 배경(inner) DOM은 그대로 유지된다 → 어떤 모달도 배경을 새로고침하지 않는다.
+  if (rendered && rendered.__mobileShell) {
+    const tabBarHtml = rendered.withTab
+      ? renderTabBar({ tab: state.tab, dimmed, icon: renderIcon, items: visibleTabItems })
+      : '';
+    return React.createElement(
+      'div',
+      wrapperProps,
+      React.createElement(
+        'div',
+        { className: 'app-shell' },
+        React.createElement(
+          'div',
+          { className: 'app-frame' },
+          React.createElement('div', {
+            key: 'screen',
+            className: `screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`,
+            'data-screen': state.screen,
+            dangerouslySetInnerHTML: { __html: rendered.inner }
+          }),
+          React.createElement('div', {
+            key: 'overlays',
+            className: 'app-screen-overlays',
+            style: { display: 'contents' },
+            dangerouslySetInnerHTML: { __html: rendered.overlays }
+          }),
+          React.createElement('div', {
+            key: 'tabbar',
+            style: { display: 'contents' },
+            dangerouslySetInnerHTML: { __html: tabBarHtml }
+          })
+        )
+      )
+    );
+  }
+  return React.createElement('div', { ...wrapperProps, dangerouslySetInnerHTML: { __html: String(rendered || '') } });
 }
 
 const rootEl = document.getElementById('root') || document.body;
