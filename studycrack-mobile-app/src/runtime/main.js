@@ -888,18 +888,20 @@ function MobileApp() {
     ]);
     if (!userScores || !targetList.length) {
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
+      const scorePatch = stateRef.current.scoreFetchStatus === 'loading' ? { scoreFetchStatus: 'empty' } : {};
       if (!hasPrevious && state.analysisApiStatus !== 'empty') {
-        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '' });
+        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '', ...scorePatch });
       } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
-        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '' });
+        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '', ...scorePatch });
       }
       return undefined;
     }
 
-    let cancelled = false;
-    setState({ analysisApiStatus: 'loading', analysisApiError: '' });
+    const scoreSignature = buildScoreSignature(examMode, targetList);
+    setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
+    // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
     fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
-      if (cancelled || !payload) return;
+      if (!payload) return;
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = payload.simulationResults || [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
@@ -909,6 +911,10 @@ function MobileApp() {
         : analysisError
           ? (hasPrevious ? 'stale' : 'error')
           : 'empty';
+      // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
+      // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
+      const merged = normalizeServerResults(analysisResults, analysisSimulations);
+      const hasScores = Object.keys(merged).length > 0;
       setState({
         analysisResults,
         analysisSimulations,
@@ -916,20 +922,19 @@ function MobileApp() {
           ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
         analysisApiStatus: nextStatus,
-        analysisApiError: analysisError?.message || (analysisResults.length ? '' : '')
+        analysisApiError: analysisError?.message || (analysisResults.length ? '' : ''),
+        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
+        scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
-      if (!cancelled) {
-        const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-        setState({
-          analysisApiStatus: hasPrevious ? 'stale' : 'error',
-          analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.'
-        });
-      }
+      const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
+      setState({
+        analysisApiStatus: hasPrevious ? 'stale' : 'error',
+        analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.',
+        scoreFetchStatus: stateRef.current.scoreFetchSignature === scoreSignature ? 'error' : stateRef.current.scoreFetchStatus
+      });
     });
-    return () => {
-      cancelled = true;
-    };
+    return undefined;
   }, [
     getAnalysisApiBinding,
     state.analysisTargetList,
@@ -940,49 +945,7 @@ function MobileApp() {
     state.user?.quantitative
   ]);
 
-  // [환산점수 단일 출처] scoreCache 채우기. homeTargetList(고정 순서)+examKey로 시그니처를 만들어
-  // 동일 시그니처면 재요청하지 않고(중복/churn 제거), 응답은 응답 시점의 최신 시그니처와 일치할 때만
-  // 캐시에 머지한다(레이스/구버전 응답 폐기). 시험 전환은 examKey만 바뀔 뿐 기존 캐시를 지우지 않는다.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const examKey = examKeyOf(state);
-    const userScores = state.user?.quantitative?.[examKey] || state.user?.quantitative?.active;
-    const targetList = uniqueTargetList(state.homeTargetList || []);
-    if (!userScores || !targetList.length) return undefined;
-    const signature = buildScoreSignature(examKey, targetList);
-    // 같은 시그니처를 이미 받았거나(ready/empty) 받는 중(loading)이면 재요청하지 않는다. error만 재시도.
-    const status = stateRef.current.scoreFetchStatus;
-    const settled = status === 'ready' || status === 'loading' || status === 'empty';
-    if (stateRef.current.scoreFetchSignature === signature && settled) return undefined;
-
-    // cancelled 플래그를 쓰지 않는다. cleanup 취소 + 재실행 스킵 조합이 in-flight 응답을 잃어버려
-    // (초기 3월 로딩이 멈춰 6월→3월 전환해야만 뜨던 버그) 발생했다. staleness는 아래 토큰 가드로만 판정한다.
-    setState({ scoreFetchStatus: 'loading', scoreFetchSignature: signature });
-    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode: examKey })
-      .then((payload) => {
-        if (!payload) return;
-        // 응답 적용은 응답 시점의 최신 시그니처와 일치할 때만(구버전/레이스 폐기).
-        const latest = buildScoreSignature(examKeyOf(stateRef.current), uniqueTargetList(stateRef.current.homeTargetList || []));
-        if (latest !== signature) return;
-        const merged = normalizeServerResults(payload.analysisResults || [], payload.simulationResults || []);
-        const hasAny = Object.keys(merged).length > 0;
-        setState({
-          scoreCache: hasAny ? mergeScoreCache(stateRef.current.scoreCache, examKey, merged) : stateRef.current.scoreCache,
-          scoreFetchStatus: hasAny ? 'ready' : 'empty'
-        });
-      })
-      .catch(() => {
-        if (stateRef.current.scoreFetchSignature === signature) setState({ scoreFetchStatus: 'error' });
-      });
-    return undefined;
-  }, [
-    getAnalysisApiBinding,
-    state.homeTargetList,
-    state.scoreExamKey,
-    state.scoreExamType,
-    state.user?.quantitative
-  ]);
+  // (scoreCache는 위 단일 분석 fetch effect가 함께 채운다 — 홈/분석 동일 출처. 별도 home fetch 제거.)
 
   const onClick = useCallback(
     (event) => {

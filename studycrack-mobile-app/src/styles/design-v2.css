@@ -389,9 +389,8 @@ input,select,textarea{font-size:16px !important;}
 .planner-empty-day p{margin:0;font-size:12.5px;color:#64748B;line-height:1.5;}
 /* 모바일 자체 로그인 입력/에러 (Phase B) */
 .auth-input{margin:0;}
-.auth-unified-card h1{margin:14px 0 0;text-align:center;font-size:25px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.02em;}
-/* 로고 이미지가 브랜드 워드마크를 담으므로 중복 텍스트 제거. 태그라인만 남겨 여백을 정리. */
-.auth-unified-card .auth-title{margin:16px 0 18px;text-align:center;font-size:15px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
+.auth-unified-card h1,.auth-wordmark{margin:12px 0 0;text-align:center;font-size:26px;font-weight:900;color:var(--primary-dark);letter-spacing:-0.03em;line-height:1.1;}
+.auth-unified-card .auth-title{margin:8px 0 18px;text-align:center;font-size:14.5px;font-weight:700;color:#64748B;letter-spacing:-0.01em;}
 /* 이미지 로드 실패 시 폴백 워드마크도 단정하게. */
 .auth-logo-fallback{font-size:26px;font-weight:900;letter-spacing:-0.03em;color:var(--primary-dark);}
 .auth-unified-card .planner-input{border-color:#DDE7F6;background:#F8FBFF;border-radius:13px;height:48px;}
@@ -819,7 +818,7 @@ input,select,textarea{font-size:16px !important;}
 .home-top-icons{margin:0;flex:0 0 auto;}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-greeting-bubble{margin:0;flex:1 1 auto;min-width:0;align-items:center;}
-.home-greeting-cracky{width:62px;height:62px;transform:none;margin:0;}
+.home-greeting-cracky{width:80px;height:80px;transform:none;margin:0;flex:0 0 auto;}
 .home-greeting-speech{transform:none;border:1px solid #DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .home-greeting-speech:before{border-color:transparent #FFFFFF transparent transparent;}
 .home-greeting{font-size:18px;color:#26304A;letter-spacing:0;}
@@ -1234,7 +1233,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .payment-fixed-term span{font-size:12px;color:#64748B;font-weight:800;}
 .payment-fixed-term b{font-size:14px;color:#26304A;}
 @media (max-width:360px){
-.home-greeting-cracky{width:48px;height:48px;}
+.home-greeting-cracky{width:62px;height:62px;}
 .home-greeting-speech{min-width:0;padding:10px;}
 .home-greeting{font-size:15px;}
 .home-greeting-speech .home-sub{display:none;}

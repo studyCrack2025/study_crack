@@ -103,6 +103,7 @@ export function AuthLoginScreen(ctx) {
       <div className="auth-screen">
         <div className="card auth-unified-card">
           <Logo src={studycrackLogoSrc} />
+          <h1 className="auth-wordmark">StudyCrack</h1>
           <p className="auth-title">합격 전략을 시작해볼까요?</p>
           <input className="planner-input auth-input" data-field="loginEmail" type="email" inputMode="email" autoComplete="username" placeholder="이메일" />
           <input className="planner-input auth-input" data-login-password type="password" autoComplete="current-password" placeholder="비밀번호" />
