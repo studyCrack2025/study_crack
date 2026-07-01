@@ -71,6 +71,11 @@ jobs:
             --exclude "*" --include "*.html" \
             --cache-control "no-cache, no-store, must-revalidate"
 
+          # 중첩 clean URL은 확장자 없는 object도 함께 배포한다.
+          aws s3 cp promotion/kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01 \
+            --content-type "text/html; charset=utf-8" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
           # 버전 쿼리 붙는 정적 자산은 장기 캐시
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
             --exclude "*" --include "js/*" --include "css/*" \
