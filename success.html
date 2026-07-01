@@ -198,8 +198,10 @@
             const method = urlParams.get('method') || 'card';
             const amount = parseInt(urlParams.get('amount') || '0', 10);
             const orderId = urlParams.get('orderId') || '';
+            const source = (urlParams.get('source') || '').toLowerCase();
 
             const isVbankReady = status === 'vbank_ready';
+            const isKccPromo = status === 'promo' && source === 'kcc01';
 
             // 2. DOM 요소
             const badge   = document.getElementById('tierBadge');
@@ -271,7 +273,18 @@
             badge.style.background = config.color;
             topLine.style.background = config.color;
 
-            if (isVbankReady) {
+            if (isKccPromo) {
+                icon.className = 'fas fa-trophy receipt-icon';
+                icon.style.color = '#f59e0b';
+                badge.innerText = 'StudyCrack × KCC';
+                badge.style.background = '#1d4ed8';
+                topLine.style.background = 'linear-gradient(90deg,#2453d6,#b91c1c)';
+                title.innerHTML = '특별 프로젝트<br>신청이 완료되었습니다!';
+                desc.innerHTML = 'STANDARD 1개월 이용권이 지급되었습니다.<br>연고전 프로젝트 안내와 팀 미션은 순차적으로 안내됩니다.';
+                btn.innerText = '기초조사서 작성하기';
+                btn.href = '/survey';
+                btn.style.background = '#1d4ed8';
+            } else if (isVbankReady) {
                 // 가상계좌 발급 — 입금 전 상태
                 icon.className = 'fas fa-piggy-bank receipt-icon';
                 icon.style.color = '#3b82f6';
