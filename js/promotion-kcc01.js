@@ -139,7 +139,17 @@
             card.classList.toggle('selected', selected);
             card.setAttribute('aria-pressed', selected ? 'true' : 'false');
         });
+        renderModalTeamState();
         renderClaimState();
+    }
+
+    function renderModalTeamState() {
+        document.querySelectorAll('[data-consent-team]').forEach((btn) => {
+            const selected = btn.dataset.consentTeam === selectedTeam;
+            btn.classList.toggle('selected', selected);
+            btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        });
+        updateSubmitState();
     }
 
     function renderClaimState() {
@@ -221,14 +231,22 @@
         const submitBtn = document.getElementById('submitClaimBtn');
         if (!modal || !contentConsent || !submitBtn) return;
 
-        contentConsent.addEventListener('change', () => {
-            submitBtn.disabled = !contentConsent.checked;
+        document.querySelectorAll('[data-consent-team]').forEach((btn) => {
+            btn.addEventListener('click', () => selectTeam(btn.dataset.consentTeam));
         });
+        contentConsent.addEventListener('change', updateSubmitState);
         submitBtn.addEventListener('click', submitClaim);
         modal.querySelectorAll('[data-close-modal]').forEach((btn) => btn.addEventListener('click', closeConsentModal));
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeConsentModal();
         });
+    }
+
+    function updateSubmitState() {
+        const contentConsent = document.getElementById('contentConsent');
+        const submitBtn = document.getElementById('submitClaimBtn');
+        if (!submitBtn) return;
+        submitBtn.disabled = !selectedTeam || !contentConsent || !contentConsent.checked;
     }
 
     function openConsentModal() {
@@ -243,6 +261,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '동의하고 혜택 받기';
         }
+        renderModalTeamState();
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('modal-open');
@@ -330,7 +349,7 @@
                 alert('이미 지급받은 프로모션입니다.');
                 return;
             }
-            window.location.href = `/success?tier=standard&status=promo&source=${encodeURIComponent(PROJECT_ID)}`;
+            window.location.href = `/success?tier=standard&status=promo&source=${encodeURIComponent(PROJECT_ID)}&team=${encodeURIComponent(selectedTeam)}`;
         } catch (error) {
             if (error && error.code === 'AUTH_EXPIRED') {
                 redirectToClaimLogin('로그인이 만료되었습니다. 다시 로그인하면 신청을 이어갈 수 있습니다.');
@@ -339,8 +358,8 @@
             const msg = error && error.message ? error.message : '신청 처리 중 오류가 발생했습니다.';
             alert(msg);
             if (submitBtn) {
-                submitBtn.disabled = !contentConsent.checked;
                 submitBtn.textContent = '동의하고 혜택 받기';
+                updateSubmitState();
             }
         }
     }
