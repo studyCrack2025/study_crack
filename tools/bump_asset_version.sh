@@ -9,6 +9,7 @@ fi
 
 VER="$1"
 
-perl -pi -e 's{(href="/css/[^"?]+\.css)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g; s{(src="/js/[^"?]+\.js)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g' *.html
+find . -name '*.html' -print0 \
+  | xargs -0 perl -pi -e 's{(href="/css/[^"?]+\.css)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g; s{(src="/js/[^"?]+\.js)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g'
 
 echo "Updated local /css and /js asset query version to: $VER"
