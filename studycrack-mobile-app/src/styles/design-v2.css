@@ -1,6 +1,4 @@
-/* design-v2.css — 모바일 앱 V2 재디자인 스타일(home/analysis/planner/onboarding 등).
-   원본 런타임 js/studycrack-mobile.js 의 인라인 designV2StyleTag(<style> 주입)에서 추출.
-   외부 css/studycrack-mobile.css(V1) 뒤에 로드되어 동일 specificity에서 우선합니다. */
+/* design-v2.css — 모바일 앱 V2 재디자인 스타일(home/analysis/planner/onboarding 등). */
 
 html,body{touch-action:manipulation;overscroll-behavior:none;}
 .app-shell,.app-frame,.app-screen{min-height:100dvh;}
@@ -1059,8 +1057,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .analysis-v2.loading .card::before,.analysis-eta-loading .skeleton{animation-duration:1.35s;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important;}}
 
-/* ── Phase 3: 모바일 모달 레이아웃 공통화 (계획 §공통 모달 규칙) ───────────────
-   app frame 기준 공통 폭/safe-area/내부 스크롤. 개별 viewport 직접 계산(100vw-…) 제거. */
+/* 모바일 모달 공통 레이아웃. */
 :root{--mobile-modal-width:min(calc(100% - 24px),520px);}
 .home-modal-overlay,.terms-modal-backdrop{padding-inline:12px;padding-block:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-bottom));box-sizing:border-box;}
 .home-modal,.profile-detail-modal,.score-onepage-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal{width:var(--mobile-modal-width);max-width:100%;box-sizing:border-box;}
@@ -1078,8 +1075,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
   .profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}
 }
 
-/* ── Phase 4: 홈 알림 FAB + 팝오버 (계획 §홈 알림) ──────────────────────────
-   탭바 위 우하단 플로팅 버튼 + 버튼 위로 뜨는 부분 팝오버(전체 보기/항목 클릭 시 알림 목록 화면). */
+/* 홈 알림 FAB + 팝오버. */
 .home-notif-fab{position:absolute;right:16px;bottom:calc(78px + 16px + env(safe-area-inset-bottom));z-index:60;width:52px;height:52px;border-radius:999px;border:1px solid var(--primary-dark);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(52,78,143,.28);}
 .home-notif-fab .home-notif-fab-icon{display:flex;align-items:center;justify-content:center;width:24px;height:24px;}
 .home-notif-fab .home-notif-fab-icon svg{width:22px;height:22px;stroke:#fff;}
@@ -1121,7 +1117,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .noti-pager-btn:disabled{opacity:.4;color:#94A3B8;}
 .noti-pager-count{font-size:13px;font-weight:800;color:#475569;min-width:54px;text-align:center;}
 
-/* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
+/* 수험 일정 캘린더. */
 .home-top-icons{display:flex;justify-content:flex-end;}
 .home-calendar-btn{position:relative;display:inline-flex;align-items:center;gap:7px;min-width:104px;max-width:132px;height:48px;padding:0 10px;border-radius:14px;border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-calendar-btn-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;}
@@ -1377,6 +1373,52 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .score-journey-segment button{font-size:11px;padding-inline:8px;}
 .score-journey-grid{grid-template-columns:1fr;}
 }
+
+/* 2026-07-01: analysis unified report. */
+.analysis-unified{display:grid;gap:12px;min-width:0;width:100%;}
+.analysis-control-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding:16px!important;border-radius:20px!important;background:#FFFFFF!important;border:1px solid #E5ECF8!important;box-shadow:0 8px 22px rgba(52,78,143,.07)!important;}
+.analysis-control-card h4,.analysis-section-head h4,.analysis-reverse-card h4{margin:3px 0 0;font-size:18px;line-height:1.25;color:#172033;font-weight:950;letter-spacing:0;}
+.analysis-control-card p,.analysis-reverse-card p{margin:5px 0 0;font-size:12px;line-height:1.45;color:#7A879C;font-weight:750;}
+.analysis-card-eyebrow{display:inline-flex;width:max-content;max-width:100%;border-radius:999px;background:#EEF4FF;color:var(--primary-dark);padding:5px 8px;font-size:10.5px;line-height:1;font-weight:950;}
+.analysis-control-card .analysis-v2-target-select{grid-column:1 / -1;height:46px;margin:0;border-radius:15px;background:#F8FBFF;border:1px solid #DDE7F6;font-size:13px!important;font-weight:850;color:#26304A;}
+.analysis-result-card{display:grid;gap:16px;padding:18px!important;border-radius:24px!important;border:1px solid #E5ECF8!important;background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%)!important;box-shadow:0 10px 26px rgba(52,78,143,.08)!important;overflow:visible!important;}
+.analysis-result-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0;}
+.analysis-target-label{display:block;max-width:100%;font-size:13px;line-height:1.35;color:#526176;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.analysis-score-line{display:flex;align-items:flex-end;gap:7px;margin-top:6px;min-width:0;}
+.analysis-score-line strong{font-size:42px;line-height:.95;color:#101828;font-weight:950;letter-spacing:0;}
+.analysis-score-line .home-score-skeleton{display:inline-block;width:84px;height:38px;border-radius:13px;}
+.analysis-score-line em{font-style:normal;font-size:12px;line-height:1.2;color:#94A3B8;font-weight:900;padding-bottom:4px;}
+.analysis-status-pill{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:30px;max-width:92px;border:1px solid #DDE7F6;border-radius:999px;background:#FFFFFF;padding:0 10px;font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.analysis-gap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+.analysis-gap-grid div{display:grid;gap:3px;padding:10px 7px;border-radius:15px;background:#FFFFFF;border:1px solid #E3EAF6;text-align:center;min-width:0;}
+.analysis-gap-grid span{font-size:10px;color:#94A3B8;font-weight:950;line-height:1.2;}
+.analysis-gap-grid b{font-size:13px;color:#26304A;font-weight:950;line-height:1.15;white-space:nowrap;}
+.analysis-range-chart{position:relative;height:18px;margin:8px 3px 0;border-radius:999px;background:#EAF0F8;box-shadow:inset 0 1px 2px rgba(52,78,143,.08);}
+.analysis-range-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--primary-dark);transition:width .7s cubic-bezier(.22,1,.36,1);}
+.analysis-range-projected{position:absolute;top:0;bottom:0;border-radius:0 999px 999px 0;background:linear-gradient(90deg,rgba(76,121,238,.35),rgba(52,78,143,.62));transition:left .7s cubic-bezier(.22,1,.36,1),width .7s cubic-bezier(.22,1,.36,1);}
+.analysis-range-cut{position:absolute;top:-6px;width:2px;height:30px;background:rgba(15,23,42,.28);transform:translateX(-1px);}
+.analysis-range-cut b{position:absolute;top:-22px;left:50%;transform:translateX(-50%);padding:4px 6px;border-radius:999px;background:#FFFFFF;border:1px solid #E3EAF6;color:#64748B;font-size:10px;font-weight:950;white-space:nowrap;}
+.analysis-range-caption{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:-3px;color:#7A879C;font-size:11px;font-weight:850;}
+.analysis-range-caption span:nth-child(2){text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--primary-dark);}
+.analysis-boost-card{display:grid;gap:13px;padding:16px!important;border-radius:22px!important;border:1px solid #E5ECF8!important;background:#FFFFFF!important;box-shadow:0 8px 22px rgba(52,78,143,.07)!important;}
+.analysis-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.analysis-section-head > div{min-width:0;}
+.analysis-section-head > b{flex:0 0 auto;border-radius:999px;background:#F0FDF4;color:#047857;padding:7px 9px;font-size:11px;font-weight:950;white-space:nowrap;}
+.analysis-boost-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.analysis-boost-chip{min-width:0;min-height:58px;border:1px solid #E3EAF6;border-radius:17px;background:#F8FBFF;color:#26304A;padding:9px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;align-items:center;text-align:left;font-family:inherit;}
+.analysis-boost-chip span{min-width:0;font-size:13px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.analysis-boost-chip b{font-size:13px;font-weight:950;color:var(--primary-dark);}
+.analysis-boost-chip em{grid-column:1 / -1;width:max-content;border-radius:999px;background:#DBEAFE;color:var(--primary-dark);padding:3px 6px;font-style:normal;font-size:9.5px;font-weight:950;}
+.analysis-boost-chip.active{border-color:#9DB8FF;background:#EEF4FF;box-shadow:0 0 0 3px rgba(76,121,238,.09);}
+.analysis-boost-locked,.analysis-boost-empty{display:grid;gap:10px;padding:13px;border-radius:16px;background:#F8FBFF;border:1px dashed #CBD5E1;color:#64748B;font-size:12px;font-weight:850;line-height:1.45;}
+.analysis-reverse-card{display:grid;gap:14px;padding:16px!important;border-radius:22px!important;border:1px solid #E5ECF8!important;background:#FFFFFF!important;box-shadow:0 8px 22px rgba(52,78,143,.07)!important;}
+.analysis-reverse-card.locked{background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%)!important;}
+.analysis-reverse-head{display:grid;gap:2px;}
+.analysis-reverse-plan{display:grid;gap:8px;}
+.analysis-reverse-plan div{display:grid;gap:4px;padding:12px;border-radius:16px;background:#F8FBFF;border:1px solid #E3EAF6;}
+.analysis-reverse-plan span{font-size:10.5px;color:#94A3B8;font-weight:950;}
+.analysis-reverse-plan b{font-size:14px;color:#26304A;font-weight:950;line-height:1.35;}
+@media (max-width:340px){.analysis-control-card{grid-template-columns:1fr;}.analysis-add-link-btn{justify-self:start;}.analysis-score-line strong{font-size:35px;}.analysis-gap-grid{grid-template-columns:1fr;}.analysis-boost-chips{grid-template-columns:1fr;}.analysis-section-head{display:grid;}.analysis-section-head > b{justify-self:start;}.analysis-range-caption span:nth-child(2){white-space:normal;line-height:1.25;}}
 
 /* 학습 성향 MBTI 36문항 설문 모달 */
 .mbti-survey-modal{width:calc(100vw - 24px);max-width:440px;max-height:90vh;display:flex;flex-direction:column;padding:18px;overflow:auto;border-radius:20px;background:#FFFFFF;box-sizing:border-box;}

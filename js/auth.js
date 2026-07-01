@@ -90,8 +90,7 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken, options = {}) {
-    // LOCAL: cross-site SameSite=Lax 쿠키가 후속 요청에 안 실리므로 쿠키 등록 의미 없음.
-    // refreshToken을 localStorage에만 보관해 tryRefreshToken의 body 기반 refresh 경로로 위임. (active/260603 §Phase 1)
+    // 로컬 프리뷰에서는 서버 세션 등록을 생략하고 클라이언트 fallback을 사용한다.
     if (IS_LOCAL) {
         localStorage.setItem('refreshToken', refreshToken);
         return false;
@@ -186,7 +185,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 401/403 시 refresh+retry. 401 즉시 sign-out 방지가 목적. 정책: docs/security/architecture-notes.md §3
+        // 인증 오류 시 세션 갱신 후 한 번 재시도한다.
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
@@ -195,7 +194,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
-            // 401/403 처리 정책: docs/security/architecture-notes.md §3
+            // 인증 오류 처리.
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
@@ -339,7 +338,7 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
 
     if (eventType === 'login') {
         // 모바일 앱 등에서 ?returnUrl=로 복귀 지점 전달 시 우선 이동.
-        // open-redirect 방지: 동일 출처 절대경로(/...)만 허용 — //, http(s):, 백슬래시 차단. (보안: §docs/security)
+        // open-redirect 방지: 동일 출처 절대경로(/...)만 허용한다.
         let returnUrl = null;
         try {
             const raw = new URLSearchParams(window.location.search).get('returnUrl');
@@ -598,7 +597,7 @@ async function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda)
+// [Part C] 전화번호 인증
 // ==========================================
 let phoneTimerInterval;
 
@@ -1010,7 +1009,7 @@ function handleSignIn() {
     }
 
     // 계정 전환 안전 — 이전 사용자의 cognito SDK 세션 + 클라이언트 상태 사전 제거.
-    // (admin_login.html과 동일 패턴. 상세: docs/security/architecture-notes.md §4)
+    // 관리자 로그인과 같은 방식으로 계정 정보를 확인한다.
     const prevCognitoUser = userPool.getCurrentUser();
     if (prevCognitoUser) prevCognitoUser.signOut();
     clearClientSession();
@@ -1029,7 +1028,7 @@ function handleSignIn() {
             const refreshToken = result.getRefreshToken().getToken();
             timing.mark('cognito_success');
 
-            // 새 서버 쿠키 교체는 registerRefreshCookie가 처리한다. 상세: docs/security/architecture-notes.md §6
+            // 새 서버 세션 교체는 registerRefreshCookie가 처리한다.
             setAccessToken(accessToken);
             setIdToken(idTokenJwt);
             localStorage.setItem('userEmail', email);
@@ -1072,9 +1071,7 @@ function handleSignIn() {
 
 // ==========================================
 // [Part F-2] 튜터 전용 로그인
-// 관리자(admin_login)는 cognito:groups로 역할을 판정하지만, 튜터 역할은 DynamoDB(TBL_TUTORS)에
-// 있으므로 get_login_profile로 role을 확인해 튜터만 통과시킨다.
-// 비튜터(학생/관리자/미확인)는 방금 발급한 세션을 정리하고 알맞은 로그인 페이지로 돌려보낸다.
+// 서버에서 role을 확인해 튜터 계정만 통과시킨다.
 // ==========================================
 function handleTutorSignIn() {
     const timing = createAuthTiming('tutor_login');

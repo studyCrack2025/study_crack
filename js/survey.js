@@ -31,9 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 쿠키 기반 인증 — 페이지 로드 시 at 쿠키 갱신.
-    // LOCAL은 SameSite=Lax 크로스-사이트 쿠키 제약으로 silent_refresh가 항상 401 → skip.
-    // dev/prod는 cookie-only 부트스트랩 시점을 위해 그대로 호출.
+    // 페이지 로드 시 세션 상태를 갱신한다.
     if (typeof IS_LOCAL === 'undefined' || !IS_LOCAL) {
         await tryRefreshToken();
     }

@@ -75,10 +75,7 @@ function mapTargetUnivs(targetUnivs = []) {
   return Array.from(new Set(targetUnivs.map(formatTargetUniv).filter(Boolean))).slice(0, 5);
 }
 
-// 백엔드 userData → 모듈 state 병합 패치.
-// R1: 웹 소비처와 동일 필드명(data.name/computedTier) 사용 + UI가 실제 읽는 state 필드로 매핑.
-//   - name      → user.name      (마이 카드가 user?.name 사용)
-//   - computedTier → selectedPlan(표시) + userTier(원시, 후속 게이팅용). 마이 등급 배지가 selectedPlan 사용.
+// 사용자 응답을 모바일 state 필드로 병합한다.
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {};
@@ -89,7 +86,7 @@ export function mapUserToStatePatch(userData, base = {}) {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];
   });
   if (userData.tutorInfo && typeof userData.tutorInfo === 'object') userPatch.tutorInfo = userData.tutorInfo;
-  // 구독 정보: 백엔드 get_user_analysis가 내려주는 축약 필드를 마이페이지 카드/상세 모달이 읽도록 병합.
+  // 구독 정보는 마이페이지 카드/상세 모달 표시값으로 병합한다.
   if (userData.currentSubscription && typeof userData.currentSubscription === 'object') {
     userPatch.currentSubscription = userData.currentSubscription;
   }

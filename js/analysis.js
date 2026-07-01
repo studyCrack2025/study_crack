@@ -643,7 +643,7 @@ function applySimTierLock() {
     }
 }
 
-// [유틸] DynamoDB JSON 파서
+// [유틸] 서버 응답 JSON 파서
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
@@ -1131,12 +1131,10 @@ function _swipeHintBump(container, peek = 28, durationMs = 700) {
 }
 
 async function maybeShowSwipeHint(selector, hintKey) {
-    const debug = (() => { try { return !!localStorage.getItem('DEV_LOG_SWIPE_HINT'); } catch { return false; } })();
     const mobile = _swipeHintIsMobile();
     const hinted = _swipeHintAlreadyShown(hintKey);
     const el = document.querySelector(selector);
     const scrollable = _swipeHintScrollable(el);
-    if (debug) console.log('[swipeHint]', { selector, hintKey, mobile, hinted, scrollable, elFound: !!el });
     if (!mobile) return;
     if (hinted) return;
     if (!el) return;
@@ -1145,19 +1143,6 @@ async function maybeShowSwipeHint(selector, hintKey) {
     _swipeHintShowChevron(el);
     if (!SWIPE_HINT_PREFERS_REDUCED) await _swipeHintBump(el);
 }
-
-// 디버그: 콘솔에서 모든 swipeHint 플래그 리셋 (재검증용)
-window.resetSwipeHints = function () {
-    try {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k && k.startsWith('swipeHint_')) keys.push(k);
-        }
-        keys.forEach(k => localStorage.removeItem(k));
-        console.log(`[swipeHint] reset ${keys.length} keys:`, keys);
-    } catch (e) { console.error(e); }
-};
 
 // 탭별 1순위 surface 매핑
 const SWIPE_HINT_SURFACES = {
@@ -2217,7 +2202,7 @@ function formatKoDate(date, withTime = false) {
     return `${m}월 ${d}일 (${dow}) ${h}:${min}`;
 }
 
-// PRO 4주 멤버십의 격주 2회차 스케줄 산출. 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §3
+// PRO 4주 멤버십의 격주 2회차 스케줄 산출.
 // 입력: paymentDate (Date 또는 Date-parsable)
 // 반환: { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd } — 비정상 입력이면 null
 function computeProSchedule(paymentDate) {

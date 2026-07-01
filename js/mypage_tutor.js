@@ -925,7 +925,7 @@ window.requestTutorWithdrawal = function() {
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                // 쿠키 갱신 후 탈퇴 요청. 인증 플로우: docs/security/architecture-notes.md §4
+                // 세션 갱신 후 탈퇴 요청.
                 const refreshToken = result.getRefreshToken().getToken();
                 await fetch(CONFIG.api.auth, {
                     method: 'POST',
@@ -1158,7 +1158,7 @@ window.submitUrgentRequest = async function() {
     btn.disabled = true;
 
     try {
-        // 백엔드(Lambda)의 업데이트 로직을 호출 (학생의 urgentStatus 필드를 업데이트한다고 가정)
+        // 서버에 긴급 상태 업데이트를 요청한다.
         await apiFetch(TUTOR_API_URL, {
             method: 'POST',
             body: JSON.stringify({

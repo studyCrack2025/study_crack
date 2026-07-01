@@ -32,9 +32,8 @@ const DEFAULT_SCORE_EDIT_STATE = {
   inquiry2: { subject: '', score: '' }
 };
 
-// 모놀리식 App()의 useState 초기값을 단일 객체로 모은 런타임 상태 컨테이너 초기값.
-// 인벤토리: docs/exec-plans/active/260613_phase7_app_state_inventory.md
-// studyRecords/studySubjectRecords 등 localStorage 하이드레이션은 후속 effect 단계에서 채운다.
+// 모바일 런타임 상태 컨테이너 초기값.
+// localStorage 하이드레이션은 후속 effect 단계에서 채운다.
 export function createInitialAppState() {
   return {
     // 앱/내비
@@ -50,7 +49,7 @@ export function createInitialAppState() {
     // user/plan
     user: DEFAULT_USER,
     userLoadStatus: 'idle',
-    userTier: '', // 백엔드 get_user의 computedTier(쿠키 세션 시 채워짐, 미인증은 빈값=데모)
+    userTier: '',
     selectedPlan: DEFAULT_USER.plan,
     checkoutPlan: 'Standard',
     upgradePromptTier: '',
@@ -84,6 +83,7 @@ export function createInitialAppState() {
     scoreCache: {},
     scoreFetchStatus: 'idle', // 현재 시그니처의 fetch 상태: idle|loading|ready|empty|error
     scoreFetchSignature: '', // 마지막으로 적용된 (examKey::targetList) 시그니처
+    scoreFetchRetryTick: 0,
     // 분석 화면에서 보고 있는 대학 index(홈 슬라이더 index와 분리 — 홈 순서에 영향 없음).
     analysisSelectedIndex: 0,
     addingUniversity: false,
@@ -181,14 +181,14 @@ export function createInitialAppState() {
     scoreExamKey: 'mar',
     // 알림/FAQ
     notifications: DEFAULT_NOTIFICATIONS,
-    notiList: [], // 서버 알림 목록(student_get_notifications). 미인증/로딩 전 빈 배열.
+    notiList: [],
     notiStatus: 'idle', // idle | loading | ready | empty | error
     notiPage: 0, // 알림 내역 페이지(8개씩)
     notiExpandedId: '', // 펼쳐 본문을 보여줄 알림 id
     openFaq: '',
     notifModalOpen: false,
-    // 수험 일정 캘린더(Phase 5): 공식 일정은 확정 전까지 비고, 개인 일정만 동작.
-    personalEvents: [], // 개인 일정 배열(localStorage 보존, 추후 백엔드 동기화)
+    // 수험 일정 캘린더.
+    personalEvents: [],
     calendarSheetOpen: false,
     calendarSelectedDate: FIXED_TODAY_DATE, // 시트에서 선택된 날짜(YYYY-MM-DD)
     calendarMonthAnchor: `${FIXED_TODAY_DATE.slice(0, 7)}-01`, // 월간 그리드 기준(해당 월 1일)

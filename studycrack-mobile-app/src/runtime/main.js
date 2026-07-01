@@ -269,11 +269,8 @@ function reducer(state, patch) {
   return { ...state, ...patch };
 }
 
-// Phase 7 런타임 셸 (모델 a): 분리 renderer는 문자열을 반환하고, React는
-// state 컨테이너 보관 + ctx 조립 + kernel 렌더 + data-action dispatch만 담당.
-// 현재 연결: 상태 컨테이너 전체 + 내비게이션(goto/back/tab) + 전체 action dispatch(미연결 연산은 no-op).
-// 미연결: 화면별 derived view-model, localStorage 영속/타이머/스크롤/제스처 effect(후속 단계).
-// 프리뷰/디자인 점검용: URL ?screen=<id>로 초기 화면 지정(파라미터 있을 때만 override).
+// 모바일 런타임 셸.
+// URL ?screen=<id>는 프리뷰/디자인 점검 시 초기 화면 지정에만 사용한다.
 // 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
 function createInitialAppStateWithScreenParam() {
   const base = hydrateAppState(createInitialAppState());
@@ -283,7 +280,7 @@ function createInitialAppStateWithScreenParam() {
   const sessionSafeBase = hasSession
     ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
     : base;
-  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home' };
+  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home', tab: 'home' };
   return param
     ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
     : sessionSafeBase;
@@ -294,6 +291,8 @@ function MobileApp() {
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
+  const scoreFetchRetryRef = useRef(0);
+  const scoreFetchSignatureRef = useRef('');
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -499,16 +498,13 @@ function MobileApp() {
     goto: nav.goto,
     back: nav.back,
     beforeGoto,
-    // 백엔드 결합 기반(B1): window.CONFIG(js/config.js)에서 엔드포인트 주입.
-    // auth-handlers의 find_email/비번재설정이 실제 백엔드를 치도록. 미설정 시 핸들러는 graceful no-op.
+    // window.CONFIG에서 API URL을 주입한다. 미설정 시 핸들러는 graceful no-op.
     authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
     analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || '',
     apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
     canAccessStandard: canAccessTier(state, 'standard'),
     canAccessPro: canAccessTier(state, 'pro'),
-    // 백엔드 결합 B2(쿠키 세션 공유): 웹 js/shared/api.js의 검증된 단일 출처를 재사용.
-    // apiFetch는 credentials:'include'(쿠키)+401 silent_refresh+만료 시 /login 리다이렉트를 모두 처리.
-    // hasClientSession으로 로그인 여부 판단(실데이터 vs 데모). 미로드 시 graceful no-op.
+    // 공용 API/session helper를 재사용한다. 미로드 시 graceful no-op.
     apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
     userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || '',
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
@@ -595,42 +591,13 @@ function MobileApp() {
 
   const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);
 
-  // HTML fallback timer가 새 런타임을 정상 부팅으로 인식하도록 원본과 같은 플래그를 세운다.
+  // HTML fallback timer가 정상 부팅을 인식하도록 플래그를 세운다.
   useEffect(() => {
     markAppBooted();
   }, []);
 
-  // [임시·dev 스모크] window.apiFetch를 1회 래핑해 모든 /api 호출 결과를 window.__scDiag에 기록.
-  // 로그인 후 콘솔에서 window.__scDiag만 보면 엔드포인트별 200/실패가 한눈에 보인다. 실데이터 확정 후 제거.
-  // 이 페이지 window에만 영향(웹 페이지와 분리). 로드 effect보다 먼저 정의돼 패치가 선행된다.
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.apiFetch !== 'function' || window.__scDiagPatched) return undefined;
-    window.__scDiagPatched = true;
-    window.__scDiag = [];
-    const orig = window.apiFetch;
-    window.apiFetch = async (url, options) => {
-      let type = '';
-      try {
-        type = JSON.parse(options?.body || '{}').type || '';
-      } catch (_e) {
-        /* body 없음/비JSON */
-      }
-      const api = String(url).split('/api/')[1] || String(url);
-      try {
-        const res = await orig(url, options);
-        window.__scDiag.push({ api, type, status: res?.status, ok: !!res?.ok });
-        return res;
-      } catch (error) {
-        window.__scDiag.push({ api, type, error: String((error && error.message) || error) });
-        throw error;
-      }
-    };
-    return undefined;
-  }, []);
-
   // 초기 진입 흐름: splash를 잠깐 노출한 뒤 이동.
-  // R2(쿠키 세션 공유): 이미 로그인된(쿠키 세션) 사용자는 온보딩 건너뛰고 바로 홈(실데이터)으로,
-  // 미로그인은 기존처럼 소개 화면(on1)으로.
+  // 이미 로그인된 사용자는 바로 홈으로, 미로그인은 소개 화면으로 이동한다.
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
     const loggedIn =
@@ -772,8 +739,7 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 쿠키 세션이 있으면 사용자 데이터를 가져와 mock 위에 병합(1회).
-  // 미인증/실패 시 데모(mock) 유지 — 순수 가산. apiFetch/세션 판별은 웹 단일 출처(window).
+  // 세션이 있으면 사용자 데이터를 1회 병합하고, 실패 시 데모 상태를 유지한다.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
@@ -882,7 +848,7 @@ function MobileApp() {
     };
   }, [getQnaApiBinding]);
 
-  // 알림(R6): 쿠키 세션이 있으면 student_get_notifications로 실제 알림 로드(미인증은 빈 목록=데모).
+  // 세션이 있으면 알림을 로드한다.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
@@ -899,7 +865,7 @@ function MobileApp() {
     };
   }, [getNotiApiBinding]);
 
-  // 알림 읽음 처리(R6b): 모달이 열리고 미읽음이 있으면 낙관적 업데이트 + 서버 일괄 읽음(notiId='all').
+  // 알림 패널을 열면 미읽음 상태를 갱신한다.
   useEffect(() => {
     if (!state.notifModalOpen) return undefined;
     if (typeof window === 'undefined') return undefined;
@@ -937,9 +903,19 @@ function MobileApp() {
       ...(state.analysisTargetList || []),
       ...(state.homeTargetList || [])
     ]);
+    if (state.userLoadStatus !== 'ready') {
+      if (state.scoreFetchStatus !== 'loading') {
+        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
+      }
+      return undefined;
+    }
     if (!userScores || !targetList.length) {
+      scoreFetchRetryRef.current = 0;
+      scoreFetchSignatureRef.current = '';
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
-      const scorePatch = stateRef.current.scoreFetchStatus === 'loading' ? { scoreFetchStatus: 'empty' } : {};
+      const scorePatch = stateRef.current.scoreFetchStatus === 'loading'
+        ? { scoreFetchStatus: 'empty', scoreFetchSignature: '' }
+        : { scoreFetchSignature: '' };
       if (!hasPrevious && state.analysisApiStatus !== 'empty') {
         setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '', ...scorePatch });
       } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
@@ -949,10 +925,33 @@ function MobileApp() {
     }
 
     const scoreSignature = buildScoreSignature(examMode, targetList);
+    const apiBinding = getAnalysisApiBinding();
+    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
+      if (scoreFetchRetryRef.current >= 10) {
+        setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
+        return undefined;
+      }
+      const timer = globalThis.setTimeout?.(() => {
+        scoreFetchRetryRef.current += 1;
+        setState({ scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+      }, 250);
+      return () => {
+        if (timer) globalThis.clearTimeout?.(timer);
+      };
+    }
+    scoreFetchRetryRef.current = 0;
+    scoreFetchSignatureRef.current = scoreSignature;
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
-    fetchMobileTargetAnalysis({ ...getAnalysisApiBinding(), targetList, userScores, examMode }).then((payload) => {
-      if (!payload) return;
+    fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
+      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (!payload) {
+        const timer = globalThis.setTimeout?.(() => {
+          setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+        }, 250);
+        if (!timer) setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
+        return;
+      }
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = payload.simulationResults || [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
@@ -978,6 +977,7 @@ function MobileApp() {
         scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
+      if (scoreFetchSignatureRef.current !== scoreSignature) return;
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',
@@ -990,9 +990,11 @@ function MobileApp() {
     getAnalysisApiBinding,
     state.analysisTargetList,
     state.homeTargetList,
+    state.scoreFetchRetryTick,
     state.scoreExamKey,
     state.scoreExamType,
     state.targetMajor,
+    state.userLoadStatus,
     state.user?.quantitative
   ]);
 

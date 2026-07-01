@@ -1,4 +1,4 @@
-// 모바일 자체 인증 서비스. 세부 인증 사양은 docs/exec-plans/active/260623_mobile_native_auth.md 참조.
+// 모바일 자체 인증 서비스.
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 
 function getConfig() {

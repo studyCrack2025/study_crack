@@ -216,7 +216,6 @@ export function createAnalysisHandlers(ctx) {
       const subject = getData(actionEl, 'sim-subject');
       if (!subject) return false;
       setAnalysisHighlightedSubject(subject);
-      timeout(() => setAnalysisHighlightedSubject(''), 550);
       return true;
     },
 

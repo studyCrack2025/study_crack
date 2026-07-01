@@ -662,7 +662,7 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 /* ============================================================
    [7] 기능 5: PRO EXCLUSIVE
    ============================================================ */
-/* PRO EXCLUSIVE 섹션 — light theme 통일 (모바일/PC 일관). 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §4. 보관함(report-list-container/report-item)은 의도적으로 dark 유지 */
+/* PRO EXCLUSIVE 섹션 — light theme 통일. 보관함(report-list-container/report-item)은 의도적으로 dark 유지 */
 .pro-theme { background: #f9f9fb; padding: 40px; border-radius: 16px; color: #2c2c2c; border: 0; box-shadow: none; position: relative; overflow: hidden; }
 .pro-theme::before { display: none; }
 .pro-header { position: relative; z-index: 1; margin-bottom: 30px; text-align: center; }

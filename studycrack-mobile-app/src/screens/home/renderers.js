@@ -156,7 +156,7 @@ export function countUnreadNotifications(notiList = []) {
   return notiList.reduce((sum, n) => (n && !n.isRead ? sum + 1 : sum), 0);
 }
 
-// 알림 팝오버(Phase 4 → 개선): 바텀시트 대신 우하단 FAB 위로 뜨는 부분 팝오버.
+// 알림 팝오버: 우하단 FAB 위로 뜨는 부분 팝오버.
 // 최근 알림 미리보기를 보여주고, 항목/전체 보기 클릭 시 알림 목록 화면(notificationList)으로 이동.
 // 하위호환: 옛 시그니처(boolean notifModalOpen)도 허용.
 const NOTIF_POPOVER_PREVIEW_COUNT = 4;
