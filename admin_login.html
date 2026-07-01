@@ -154,7 +154,7 @@
             document.getElementById('adminPassword').value = '';
         }
 
-        // 관리자 인증 후처리. 단계별 동작/약점 상세: docs/security/architecture-notes.md §4
+        // 관리자 인증 후처리.
         async function processAdminSuccess(authResult) {
             const accessToken = authResult.getAccessToken().getJwtToken();
             const idToken = authResult.getIdToken().getJwtToken();

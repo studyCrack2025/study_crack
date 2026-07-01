@@ -1,4 +1,4 @@
-// 인라인 SVG 아이콘. 원본 js/studycrack-mobile.js의 i(name, primary)와 1:1 동일.
+// 인라인 SVG 아이콘.
 export function renderIcon(name, primary) {
   const c = primary ? 'icon primary' : 'icon';
   const map = {

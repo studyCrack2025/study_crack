@@ -8,6 +8,8 @@ StudyCrack은 수험생과 튜터를 연결해 데이터 기반 입시 분석, �
 
 - 이 문서는 공개 배포 기준으로 작성되며, 비밀키/토큰/내부 식별자/운영 계정 정보는 포함하지 않습니다.
 - 상세 운영 절차(배포 파이프라인, 내부 장애 대응 절차 등)는 내부 문서에서 관리합니다.
+- JS/HTML/CSS 주석도 공개 표면으로 간주합니다. 인프라 토폴로지, 서버 함수명, 인증 내부 흐름, 데이터베이스 종류/테이블명, 결제 검증 세부 로직, 비즈니스 알고리즘 설명을 코드 주석에 남기지 않습니다.
+- 코드 주석은 XSS/CSRF/PII 차단 의도처럼 사용자를 보호하는 방어 목적 설명만 짧게 남깁니다.
 
 ---
 
@@ -19,10 +21,9 @@ StudyCrack은 수험생과 튜터를 연결해 데이터 기반 입시 분석, �
 - Chart.js, PDF.js, html2pdf.js
 
 ### Backend
-- AWS Serverless (API Gateway, Lambda)
-- AWS Cognito (인증/인가)
-- AWS DynamoDB (데이터 저장)
-- AWS S3 (파일 스토리지)
+- Managed serverless API
+- Managed authentication
+- Managed database and file storage
 
 ### Integrations
 - 결제 게이트웨이 연동

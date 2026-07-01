@@ -568,8 +568,7 @@ export async function saveMobileQna({ apiFetch, qnaApiUrl, title, content } = {}
   }
 }
 
-// 알림(R6): /api/noti student_get_notifications 로드(qna/리포트와 동일 패턴).
-// 응답 { notifications: [{ notiId, title, body|message, type, isRead, createdAt }] } 정규화.
+// 알림 응답을 모바일 표시 모델로 정규화한다.
 export function normalizeNotifications(payload) {
   const list = Array.isArray(payload?.notifications)
     ? payload.notifications
@@ -599,7 +598,7 @@ export async function fetchMobileNotifications({ apiFetch, notiApiUrl } = {}) {
   return normalizeNotifications(data);
 }
 
-// 알림 읽음 처리(R6b): student_read_notification. notiId='all'이면 전체 읽음(백엔드 지원).
+// 알림 읽음 처리.
 export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId = 'all' } = {}) {
   if (typeof apiFetch !== 'function' || !notiApiUrl) return { ok: false };
   try {
@@ -613,9 +612,8 @@ export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId
   }
 }
 
-// ── 개인 수험 일정(admissionCalendar) — UserCore 연동 ────────────────────────
-// 공식 일정은 프론트 정적 데이터라 개인 일정만 서버와 동기화한다.
-// localStorage는 미로그인 로컬 프리뷰에서만 사용하고 로그인 사용자는 서버 응답을 단일 기준으로 삼는다.
+// ── 개인 수험 일정(admissionCalendar) ─────────────────────────────────────
+// 로그인 사용자는 서버 응답을 단일 기준으로 삼고, localStorage는 로컬 프리뷰에서만 사용한다.
 export async function fetchMobileAdmissionCalendar({ apiFetch, userApiUrl } = {}) {
   if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {

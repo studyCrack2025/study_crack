@@ -36,6 +36,7 @@ studycrack-mobile-app/src/README.md
 
 # 7. 기타 지금은 안쓰는 파일 및 폴더들
 black/
+js/studycrack-mobile.js
 
 # 8. 로컬 개발용 mock 데이터 (절대 커밋 금지)
 js/dev-mock.local.js

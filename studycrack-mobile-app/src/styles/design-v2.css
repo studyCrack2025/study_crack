@@ -1,6 +1,4 @@
-/* design-v2.css — 모바일 앱 V2 재디자인 스타일(home/analysis/planner/onboarding 등).
-   원본 런타임 js/studycrack-mobile.js 의 인라인 designV2StyleTag(<style> 주입)에서 추출.
-   외부 css/studycrack-mobile.css(V1) 뒤에 로드되어 동일 specificity에서 우선합니다. */
+/* design-v2.css — 모바일 앱 V2 재디자인 스타일(home/analysis/planner/onboarding 등). */
 
 html,body{touch-action:manipulation;overscroll-behavior:none;}
 .app-shell,.app-frame,.app-screen{min-height:100dvh;}
@@ -1059,8 +1057,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .analysis-v2.loading .card::before,.analysis-eta-loading .skeleton{animation-duration:1.35s;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important;}}
 
-/* ── Phase 3: 모바일 모달 레이아웃 공통화 (계획 §공통 모달 규칙) ───────────────
-   app frame 기준 공통 폭/safe-area/내부 스크롤. 개별 viewport 직접 계산(100vw-…) 제거. */
+/* 모바일 모달 공통 레이아웃. */
 :root{--mobile-modal-width:min(calc(100% - 24px),520px);}
 .home-modal-overlay,.terms-modal-backdrop{padding-inline:12px;padding-block:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-bottom));box-sizing:border-box;}
 .home-modal,.profile-detail-modal,.score-onepage-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal{width:var(--mobile-modal-width);max-width:100%;box-sizing:border-box;}
@@ -1078,8 +1075,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
   .profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}
 }
 
-/* ── Phase 4: 홈 알림 FAB + 팝오버 (계획 §홈 알림) ──────────────────────────
-   탭바 위 우하단 플로팅 버튼 + 버튼 위로 뜨는 부분 팝오버(전체 보기/항목 클릭 시 알림 목록 화면). */
+/* 홈 알림 FAB + 팝오버. */
 .home-notif-fab{position:absolute;right:16px;bottom:calc(78px + 16px + env(safe-area-inset-bottom));z-index:60;width:52px;height:52px;border-radius:999px;border:1px solid var(--primary-dark);background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(52,78,143,.28);}
 .home-notif-fab .home-notif-fab-icon{display:flex;align-items:center;justify-content:center;width:24px;height:24px;}
 .home-notif-fab .home-notif-fab-icon svg{width:22px;height:22px;stroke:#fff;}
@@ -1121,7 +1117,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .noti-pager-btn:disabled{opacity:.4;color:#94A3B8;}
 .noti-pager-count{font-size:13px;font-weight:800;color:#475569;min-width:54px;text-align:center;}
 
-/* ── Phase 5: 수험 일정 캘린더 (계획 §수험 일정 캘린더) ────────────────────── */
+/* 수험 일정 캘린더. */
 .home-top-icons{display:flex;justify-content:flex-end;}
 .home-calendar-btn{position:relative;display:inline-flex;align-items:center;gap:7px;min-width:104px;max-width:132px;height:48px;padding:0 10px;border-radius:14px;border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-calendar-btn-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;}

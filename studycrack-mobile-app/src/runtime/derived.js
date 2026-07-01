@@ -74,7 +74,7 @@ function computeLiveCurrentScore(scores = {}) {
   );
 }
 
-// 플래너 화면 derived (원본 js/studycrack-mobile.js 플래너 계산 블록과 동일).
+// 플래너 화면 derived.
 export function buildPlannerDerived(state = {}) {
   const { plannerItems = [], selectedDate = '14', plannerEditIndex = null } = state;
 
@@ -283,8 +283,8 @@ function buildServerSimRows(simulation) {
     .filter(Boolean);
 }
 
-// 홈 화면 derived (원본 js/studycrack-mobile.js 홈 계산 블록과 동일).
-// liveStudySeconds: 라이브 타이머 ref의 현재값(원본 todayStudySeconds = 저장값 + liveStudySeconds).
+// 홈 화면 derived.
+// liveStudySeconds: 라이브 타이머 ref의 현재값.
 // 매초 interval은 DOM을 직접 갱신하고, 재렌더 시 표시/랭킹/진행률 일관성을 위해 여기서 더한다.
 export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   const {
@@ -381,7 +381,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   };
 }
 
-// 분석 화면 derived (원본 js/studycrack-mobile.js 분석 계산 블록과 동일).
+// 분석 화면 derived.
 export function buildAnalysisDerived(state = {}) {
   const {
     scores = {},

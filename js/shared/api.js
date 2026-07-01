@@ -1,8 +1,5 @@
-// js/shared/api.js — 인증/세션 처리 단일 모듈 (apiFetch/redirectToLogin/clearClientSession).
-// 인증 정책 상세: docs/security/architecture-notes.md §3
-
-// bfcache 차단 — 로그아웃 후 뒤로가기 시 페이지가 통째로 메모리 복원되면 세션 상태가 stale로 살아나는 사고 방지.
-// HTTP Cache-Control: no-store는 bfcache를 막지 못함(별개 캐시). pageshow에서 보호 페이지 세션을 재검증한다.
+// js/shared/api.js — shared API/session helpers.
+// bfcache 복원 시 stale 세션 노출을 막기 위해 페이지 세션을 재검증한다.
 const PAGE_SESSION_USER_ID = typeof window !== 'undefined'
     ? (localStorage.getItem('userId') || '')
     : '';
@@ -13,8 +10,7 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// ─── 공개 경로 정의 (비로그인 사용자가 정상 접근하는 페이지) ──────────────────
-// 공개 경로에서 401이 발생해도 강제 로그인 페이지로 튕기지 않는다. 호출처가 알아서 분기.
+// Public routes are handled by their own callers.
 const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
@@ -53,21 +49,17 @@ function enforceClientSessionOnPageShow(event) {
     }
 }
 
-// ─── 세션 정리 ────────────────────────────────────────────────────────────
-// localStorage는 화이트리스트 키만 삭제 — checkoutData(결제 진행 중 데이터) 등 다른 키는 보존.
-// sessionStorage는 통째로 clear (현행 동작 유지).
+// 세션 정리. 결제 진행 데이터처럼 세션 외 localStorage 값은 보존한다.
 const SESSION_KEYS_LOCAL = [
     'refreshToken', 'userId', 'userEmail', 'userRole', 'userName', 'userTier',
     'authProvider', 'accessToken', 'token',
-    // 잔존 시 다른 사용자 로그인 시 혼선 가능 — 함께 정리
+    // 잔존 시 다른 사용자 로그인 혼선 가능.
     'tutorialStatus', 'pending_tutorial', 'tutorial_completed', 'tutorNameAlias'
 ];
 
 function clearClientSession() {
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
-    // Cognito SDK localStorage 키 prefix 일괄 정리 — cognitoUser.signOut()이 누락하는 잔여 키 차단.
-    // Cognito SDK는 `CognitoIdentityServiceProvider.{clientId}.{username}.{idToken|accessToken|refreshToken|userData|clockDrift}`,
-    // `CognitoIdentityServiceProvider.{clientId}.LastAuthUser` 등을 저장한다. 잔여 시 다음 로그인이 이전 사용자로 들어가는 사고 발생.
+    // SDK 잔여 세션 키까지 정리해 계정 전환 혼선을 막는다.
     try {
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -79,11 +71,10 @@ function clearClientSession() {
     sessionStorage.clear();
 }
 
-// 레거시 이름 alias — 기존 호출처(shared/api.js를 직접 import한 admin_detail 등) 호환.
+// Legacy alias.
 const clearSharedClientSession = clearClientSession;
 
-// ─── 역할 기반 로그인 경로 ─────────────────────────────────────────────────
-// 역할별 전용 로그인 페이지로 분리 — 세션 만료/미인증 redirect 시 알맞은 입구로 보낸다.
+// 역할별 로그인 경로.
 function getRoleLoginPath() {
     const role = localStorage.getItem('userRole');
     if (role === 'admin') return '/admin/login';
@@ -91,14 +82,13 @@ function getRoleLoginPath() {
     return '/login';
 }
 
-// 레거시 이름 alias.
+// Legacy alias.
 const getLoginRedirectPath = getRoleLoginPath;
 
-// ─── 로그인 페이지로 이동 (세션 정리 + reason 전달 + 이중 alert 차단) ─────────
-// reason: 'expired' | 'unauthorized' | 'manual'
+// 로그인 페이지로 이동.
 let _redirectingToLogin = false;
 function redirectToLogin(reason) {
-    if (_redirectingToLogin) return; // 동시 다발 호출 시 한 번만
+    if (_redirectingToLogin) return;
     _redirectingToLogin = true;
 
     const r = reason || 'expired';
@@ -108,12 +98,12 @@ function redirectToLogin(reason) {
     try { sessionStorage.setItem('session_redirect_reason', r); } catch (_) {}
     const path = getRoleLoginPath();
     clearClientSession();
-    // clearClientSession 내부 sessionStorage.clear가 reason도 지우므로 재설정.
+    // 세션 정리 뒤 이동 사유를 다시 기록한다.
     try { sessionStorage.setItem('session_redirect_reason', r); } catch (_) {}
     window.location.replace(path);
 }
 
-// ─── Bearer 토큰 (레거시 호환) ────────────────────────────────────────────
+// Legacy bearer-token compatibility.
 function getSharedBearerToken() {
     return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
 }
@@ -158,7 +148,6 @@ function getSharedPayloadFromToken(token) {
 }
 
 async function clearServerSessionCookies() {
-    // LOCAL: 서버측에 박힌 쿠키가 애초에 없으므로 호출 자체가 불필요. (active/260603 §Phase 1)
     if (IS_LOCAL) return;
     try {
         await fetch(CONFIG.api.auth, {
@@ -168,7 +157,7 @@ async function clearServerSessionCookies() {
             body: JSON.stringify({ type: 'logout' })
         });
     } catch (_) {
-        // 네트워크 실패 시에도 클라이언트 세션 정리는 계속 진행한다.
+        // 클라이언트 세션 정리는 계속 진행한다.
     }
 }
 
@@ -178,15 +167,13 @@ async function performClientLogout(redirectPath) {
     window.location.replace(redirectPath || getRoleLoginPath());
 }
 
-// ─── silent_refresh 싱글톤 락 ──────────────────────────────────────────────
+// Refresh request single-flight guard.
 let _sharedRefreshPromise = null;
 
 function tryRefreshToken() {
     if (_sharedRefreshPromise) return _sharedRefreshPromise;
 
     const p = (async () => {
-        // LOCAL: silent_refresh는 rt 쿠키 의존이라 SameSite 제약으로 불가.
-        // localStorage.refreshToken을 직접 body로 보내는 'refresh_token' 핸들러 사용. (active/260603 §Phase 1)
         if (IS_LOCAL) {
             const rt = localStorage.getItem('refreshToken');
             if (!rt) return false;
@@ -218,7 +205,6 @@ function tryRefreshToken() {
                 return syncTokensFromAuthResponse(data);
             }
 
-            // auth.js를 로드하지 않은 페이지(admin_detail 등)에서도 동작하도록 localStorage refreshToken fallback 직접 처리
             const fallbackRt = localStorage.getItem('refreshToken');
             if (!fallbackRt) return false;
 
@@ -245,7 +231,7 @@ function tryRefreshToken() {
     return _sharedRefreshPromise;
 }
 
-// ─── 단일 표준 apiFetch ──────────────────────────────────────────────────
+// Shared API wrapper.
 async function apiFetch(url, options = {}) {
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
@@ -260,7 +246,6 @@ async function apiFetch(url, options = {}) {
 
         if (response.ok) return response;
 
-        // 401/403 처리 정책: docs/security/architecture-notes.md §3
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken();
             if (refreshed) {
@@ -276,10 +261,7 @@ async function apiFetch(url, options = {}) {
                     const errBody = await retryRes.json().catch(() => ({}));
                     throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
                 }
-                // retry가 또 401이면 아래 만료 처리로 fallthrough
             }
-            // refresh 실패 또는 refresh 성공했는데 retry도 401 → 진짜 세션 만료
-            // 만료 오류는 code/status를 보존해 호출처(모바일 부트스트랩 등)가 권한 부족과 구분해 분기한다.
             const expiredError = new Error('Auth expired');
             expiredError.code = 'AUTH_EXPIRED';
             expiredError.status = response.status;
@@ -297,7 +279,7 @@ async function apiFetch(url, options = {}) {
         } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
     } catch (error) {
-        // 예상된 인증 만료는 호출처에서 조용히 처리하므로 불필요한 오류 로그를 남기지 않는다.
+        // 예상된 인증 만료는 호출처에서 조용히 처리한다.
         if (!error || error.code !== 'AUTH_EXPIRED') {
             console.error('API 통신 실패:', error);
         }
@@ -305,7 +287,7 @@ async function apiFetch(url, options = {}) {
     }
 }
 
-// ─── 공유 URL 상수 (admin_detail.html 등 auth.js 미탑재 페이지용) ──────────
+// Shared URL constants.
 const ADMIN_API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;

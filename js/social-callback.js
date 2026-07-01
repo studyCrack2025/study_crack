@@ -459,7 +459,7 @@
     }
     const callbackUrl = CONFIG.social.callbackUrl;
 
-    // 3. Lambda에 code 전달 → provider 토큰 교환 (purpose 포함)
+    // 3. 서버에 인증 code 전달.
     try {
         statusMsg.textContent = statePurpose === 'delete_reauth' ? '본인 확인 중입니다...' : '계정 정보를 확인하고 있습니다...';
 
@@ -493,7 +493,7 @@
         }
 
         if (!res.ok) {
-            console.error('[SocialCallback] Lambda error response:', { status: res.status, requiresTerms: result.requiresTerms === true });
+            console.warn('[SocialCallback] Request failed:', { status: res.status });
             if (res.status === 409) {
                 showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
@@ -538,12 +538,9 @@
     } catch (e) {
         console.error('[SocialCallback] Unhandled error:', {
             name: e.name,
-            message: e.message,
-            stack: e.stack
+            message: e.message
         });
-        // TypeError: Failed to fetch → CORS 또는 네트워크 문제
-        // SyntaxError → Lambda가 JSON이 아닌 응답 반환
-        const hint = e.name === 'TypeError' ? ' (네트워크/CORS 문제 의심)' : e.name === 'SyntaxError' ? ' (서버 응답 파싱 실패)' : '';
+        const hint = e.name === 'TypeError' ? ' (네트워크 문제 의심)' : e.name === 'SyntaxError' ? ' (서버 응답 파싱 실패)' : '';
         showError(`인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.${hint}`);
     }
 })();

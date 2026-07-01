@@ -544,7 +544,7 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 티어별 결제 금액 (UI 표시용). 실제 정가 검증은 Payment Lambda의 computeExpectedAmount가 수행.
+// 티어별 결제 금액 (UI 표시용). 최종 결제 금액은 서버에서 검증한다.
 const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
