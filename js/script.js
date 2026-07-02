@@ -5,6 +5,7 @@
    ========================================= */
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
+const KCC_EVENT_HIDE_UNTIL_KEY = 'kccEventBannerHideUntil';
 
 // 점수 상승 시뮬레이션 토글
 function toggleScoreUp(btnEl) {
@@ -52,6 +53,49 @@ function closeModal(type) {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
+}
+
+function initKccEventBanner() {
+    const modal = document.getElementById('kccEventBanner-modal');
+    if (!modal) return;
+
+    let hideUntil = 0;
+    try {
+        hideUntil = Number(localStorage.getItem(KCC_EVENT_HIDE_UNTIL_KEY) || 0);
+    } catch (_) {
+        hideUntil = 0;
+    }
+    if (hideUntil && Date.now() < hideUntil) return;
+
+    const close = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    };
+
+    const open = () => {
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    };
+
+    document.getElementById('kccEventClose')?.addEventListener('click', close);
+    document.getElementById('kccEventHide3Days')?.addEventListener('click', () => {
+        try {
+            localStorage.setItem(KCC_EVENT_HIDE_UNTIL_KEY, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+        } catch (_) {
+            /* localStorage 차단 환경에서는 현재 세션 닫기만 수행 */
+        }
+        close();
+    });
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) close();
+    });
+    modal.querySelector('.kcc-event-cta')?.addEventListener('click', () => {
+        document.body.style.overflow = 'auto';
+    });
+
+    window.setTimeout(open, 450);
 }
 
 window.onclick = function(event) {
@@ -339,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectCourse('basic', true);
     initPptCardSlider();
     initEffectsSlider();
+    initKccEventBanner();
 
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {
