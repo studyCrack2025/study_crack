@@ -80,23 +80,25 @@
       </div>
       <div class="kcc-scoreboard" aria-label="연고전 프로젝트 요약">
         <div class="scoreboard-top">
-          <span>SUMMER RIVALRY</span>
-          <strong>2026</strong>
+          <span>PROJECT MATCH</span>
+          <strong>StudyCrack × KCC</strong>
         </div>
         <div class="scoreboard-teams">
           <div class="scoreboard-team yonsei">
-            <b>YONSEI</b>
-            <span>팀 미션</span>
+            <small>YONSEI BLUE</small>
+            <b>연세대 팀</b>
+            <span>목표 설계형 튜터링</span>
           </div>
           <div class="scoreboard-vs">VS</div>
           <div class="scoreboard-team korea">
-            <b>KOREA</b>
-            <span>랭킹 승부</span>
+            <small>KOREA CRIMSON</small>
+            <b>고려대 팀</b>
+            <span>실행 밀착형 튜터링</span>
           </div>
         </div>
         <div class="scoreboard-prize">
           <i class="fas fa-trophy"></i>
-          <p>우승 팀에게는 연고대 공식 굿즈까지</p>
+          <p>무료 밀착 튜터링 · 팀 미션 · 우승 팀 공식 굿즈</p>
         </div>
       </div>
     </section>
@@ -126,16 +128,22 @@
       </div>
       <div class="team-grid">
         <button class="team-card team-yonsei" type="button" data-team="yonsei" aria-pressed="false">
+          <span class="team-ribbon">YONSEI BLUE</span>
+          <span class="team-check" aria-hidden="true"><i class="fas fa-check"></i></span>
           <span class="team-mark">Y</span>
           <small>연세대 팀</small>
-          <strong>푸른 전략으로<br>흐름을 잡는 팀</strong>
+          <strong>목표를 설계하고<br>흐름을 만드는 팀</strong>
           <em>연세대 현역 선배 튜터링</em>
+          <span class="team-chips" aria-hidden="true"><span>전략 설계</span><span>주간 미션</span><span>흐름 관리</span></span>
         </button>
         <button class="team-card team-korea" type="button" data-team="korea" aria-pressed="false">
+          <span class="team-ribbon">KOREA CRIMSON</span>
+          <span class="team-check" aria-hidden="true"><i class="fas fa-check"></i></span>
           <span class="team-mark">K</span>
           <small>고려대 팀</small>
-          <strong>붉은 집중력으로<br>승부를 거는 팀</strong>
+          <strong>실행력을 끌어올려<br>끝까지 밀어붙이는 팀</strong>
           <em>고려대 현역 선배 튜터링</em>
+          <span class="team-chips" aria-hidden="true"><span>실행 점검</span><span>랭킹 승부</span><span>집중 관리</span></span>
         </button>
       </div>
       <div class="claim-panel" id="claimPanel">
@@ -168,12 +176,12 @@
         <p>참여할 팀을 선택해주세요</p>
         <div class="modal-team-buttons">
           <button type="button" class="modal-team-btn modal-team-btn--yonsei" data-consent-team="yonsei" aria-pressed="false">
-            <span>Y</span>
-            <strong>연세대 팀</strong>
+            <span class="modal-team-initial">Y</span>
+            <span class="modal-team-copy"><strong>연세대 팀</strong><em>목표 설계형</em></span>
           </button>
           <button type="button" class="modal-team-btn modal-team-btn--korea" data-consent-team="korea" aria-pressed="false">
-            <span>K</span>
-            <strong>고려대 팀</strong>
+            <span class="modal-team-initial">K</span>
+            <span class="modal-team-copy"><strong>고려대 팀</strong><em>실행 밀착형</em></span>
           </button>
         </div>
       </div>
