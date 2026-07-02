@@ -536,9 +536,6 @@ function loadExamData() {
     
     setVal('foreignName', d.foreign?.name); setVal('foreignGrd', d.foreign?.grd);
 
-    // 6월 모평은 예상 등급컷 기반 추정치 — 선택 시 주의 문구 노출 (3월/5월은 공식 데이터라 숨김)
-    const junNotice = document.getElementById('junEstimateNotice');
-    if (junNotice) junNotice.classList.toggle('hidden', month !== 'jun');
 }
 
 // ============================================================
