@@ -208,7 +208,7 @@
 
     function redirectToClaimLogin(message = '튜터링 신청을 위해 로그인이 필요합니다.') {
         const teamParam = selectedTeam ? `&team=${encodeURIComponent(selectedTeam)}` : '';
-        const returnUrl = `/promotion/kcc01?claim=1${teamParam}`;
+        const returnUrl = `/promotion_kcc01?claim=1${teamParam}`;
         if (typeof clearClientSession === 'function') clearClientSession();
         alert(message);
         window.location.href = `/login?returnUrl=${encodeURIComponent(returnUrl)}`;

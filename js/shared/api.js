@@ -11,8 +11,8 @@ if (typeof window !== 'undefined') {
 }
 
 // Public routes are handled by their own callers.
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo'];
-const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile', '/promotion/'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion_kcc01'];
+const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {
     const p = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
