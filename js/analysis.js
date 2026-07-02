@@ -1782,9 +1782,6 @@ async function updateAnalysisUI() {
                 </select>
             </div>
         </div>
-        <div id="junEstimateNoticeAnalysis" style="${currentExamMode === 'jun' ? '' : 'display:none;'} margin:0 0 16px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:8px 12px; font-size:0.85rem; line-height:1.5;">
-            ⚠️ 6월 모의평가 기준 분석은 <b>예상 등급컷 기반 추정치</b>입니다. 실제 성적표와 다를 수 있습니다.
-        </div>
         <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
             <div style="padding:60px; text-align:center; color:#3b82f6;">
                 <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -1854,9 +1851,6 @@ function renderSideQuanDetail(examKey) {
     };
 
     let html = '';
-    if (examKey === 'jun') {
-        html += '<div style="margin-bottom:8px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:6px 10px; font-size:0.78rem; line-height:1.4;">⚠️ 6월 모평은 예상 등급컷 기반 추정치입니다. 실제와 다를 수 있습니다.</div>';
-    }
     html += '<div class="score-list">';
     html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
     html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);

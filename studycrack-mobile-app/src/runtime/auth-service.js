@@ -42,7 +42,7 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
       return true;
     }
   } catch (_) {
-    // 폴백: refreshToken localStorage 보관(웹과 동일)
+    // 제한 환경에서는 기존 클라이언트 세션 경로로 폴백한다.
   }
   try { localStorage.setItem('refreshToken', refreshToken); } catch (_) {}
   return false;

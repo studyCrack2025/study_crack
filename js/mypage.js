@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // 1. 로그인 여부 확인 (쿠키 기반 — userId 존재 + at 쿠키 갱신)
+    // 1. 로그인 여부 확인
     if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
         if (!refreshed) {
@@ -162,7 +162,7 @@ function initCognitoAndFetchData() {
 
     cognitoUser = userPool.getCurrentUser();
 
-    // 쿠키 기반 인증 — userId가 있으면 데이터 조회 (at 쿠키는 이미 갱신됨)
+    // 세션이 유효하면 데이터 조회.
     const userId = localStorage.getItem('userId');
     if (userId) {
         fetchUserData(userId);

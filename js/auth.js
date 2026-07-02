@@ -1,7 +1,7 @@
 // js/auth.js
 
 // ==========================================
-// [메모리 저장소] accessToken - XSS 탈취 방지
+// 토큰 노출면 축소용 클라이언트 상태.
 // ==========================================
 let _accessToken = sessionStorage.getItem('accessToken') || null;
 function getAccessToken() { return _accessToken; }
@@ -16,7 +16,7 @@ function clearAccessToken() {
 }
 
 // ==========================================
-// [메모리 저장소] idToken - XSS 탈취 방지
+// 토큰 노출면 축소용 클라이언트 상태.
 // ==========================================
 let _idToken = sessionStorage.getItem('idToken') || null;
 function getIdToken() { return _idToken; }
@@ -30,7 +30,6 @@ function clearIdToken() {
     sessionStorage.removeItem('idToken');
 }
 
-// API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
 const AUTH_URL = CONFIG.api.auth;
 
@@ -720,10 +719,8 @@ function startTimer(duration, displayId, intervalVar) {
 // ==========================================
 
 // ------------------------------------------
-// [공유] 가입 자동 로그인 — 학생/튜터 공통
-// 가입 직후 Cognito 인증 → 토큰 set → rt 쿠키 등록 → resolveUserIdentity('signup').
-// 최종 역할/라우팅(/welcome vs /mypage/tutor)은 resolveUserIdentity→handleRoleSuccess가
-// DB role 기준으로 결정한다. 여기서 userRole을 하드코딩하지 않는다(역할 혼선 방지).
+// [공유] 가입 직후 후속 처리 — 학생/튜터 공통.
+// 역할은 서버 응답 기준으로만 확정한다.
 // ------------------------------------------
 function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
     const authData = { Username: email, Password: password };
@@ -738,7 +735,6 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
             localStorage.setItem('userId', authResult.getIdToken().payload.sub);
             localStorage.setItem('userEmail', email);
 
-            // refreshToken 쿠키 등록과 identity 조회를 병렬화해 가입 직후 대기 시간을 줄임
             const cookiePromise = registerRefreshCookie(refreshToken);
             markPostLoginIdentitySkip();
 
@@ -975,7 +971,7 @@ async function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 백엔드 쿠키 삭제 응답을 반드시 기다림 — 안 그러면 다음 로그인 시 이전 at 쿠키 잔존 위험
+    // 서버 세션 종료 완료 후 클라이언트 상태를 정리한다.
     if (typeof clearServerSessionCookies === 'function') {
         await clearServerSessionCookies();
     } else {
@@ -1119,7 +1115,7 @@ function handleTutorSignIn() {
                 throw error;
             });
 
-            // DB role 검증 — 튜터만 통과 (역할 근거: get_login_profile의 role)
+            // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
                 timing.mark('identity_start');
@@ -1137,7 +1133,6 @@ function handleTutorSignIn() {
                 timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
 
-            // join: 라우팅/세션정리 전에 rt 쿠키 등록 완료 보장 (양 경로 안전)
             await cookiePromise.catch(() => {});
 
             if (role !== 'tutor') {

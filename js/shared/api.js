@@ -103,7 +103,7 @@ function redirectToLogin(reason) {
     window.location.replace(path);
 }
 
-// Legacy bearer-token compatibility.
+// 기존 클라이언트 세션 호환.
 function getSharedBearerToken() {
     return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken') || localStorage.getItem('token');
 }
