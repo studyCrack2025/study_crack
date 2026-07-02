@@ -52,6 +52,7 @@
 
     let selectedTeam = '';
     let alreadyClaimed = false;
+    let loginVerified = false;
 
     document.addEventListener('DOMContentLoaded', async () => {
         setupHeader();
@@ -178,28 +179,42 @@
 
     async function loadPromotionStatus() {
         if (!hasClientSession()) {
+            loginVerified = false;
             renderClaimState();
             return;
         }
         try {
-            await tryRefreshToken();
+            const refreshed = await tryRefreshToken();
+            if (!refreshed && !sessionStorage.getItem('accessToken') && !localStorage.getItem('accessToken') && !localStorage.getItem('token')) {
+                loginVerified = false;
+                renderClaimState();
+                return;
+            }
             const res = await apiFetch(USER_API_URL, {
                 method: 'POST',
                 body: JSON.stringify({ type: 'get_user_payment' })
             });
             const data = await res.json();
             const claim = data && data.promotionClaims && data.promotionClaims[PROJECT_ID];
+            loginVerified = true;
             alreadyClaimed = !!claim;
             renderClaimState();
         } catch (error) {
-            if (error && error.code === 'AUTH_EXPIRED') return;
+            if (error && error.code === 'AUTH_EXPIRED') {
+                loginVerified = false;
+                renderClaimState();
+                return;
+            }
             renderClaimState();
         }
     }
 
-    function handleClaimClick() {
+    async function handleClaimClick() {
         if (alreadyClaimed || !selectedTeam) return;
-        if (!hasClientSession()) {
+        if (hasClientSession() && !loginVerified) {
+            await loadPromotionStatus();
+        }
+        if (!loginVerified) {
             redirectToClaimLogin();
             return;
         }
