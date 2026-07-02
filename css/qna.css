@@ -51,6 +51,7 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; }
 .badge-consulting { background: #eff4ff; color: #4c79ee; }
 .badge-payment { background: #fef2f2; color: #dc2626; }
+.badge-data_error { background: #fff7ed; color: #b45309; }
 .badge-system { background: #f0fdf4; color: #16a34a; }
 .badge-etc { background: #f1f5f9; color: #64748b; }
 

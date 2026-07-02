@@ -202,6 +202,7 @@
 
     // innerHTML 대신 안전한 DOM 조작 (XSS 방지)
     function showError(msg) {
+        clearSocialReturnState();
         statusMsg.textContent = '';
         const span = document.createElement('span');
         span.style.color = '#dc2626';
@@ -214,6 +215,31 @@
         statusMsg.appendChild(document.createElement('br'));
         statusMsg.appendChild(document.createElement('br'));
         statusMsg.appendChild(link);
+    }
+
+    function getSafeSocialReturnUrl() {
+        let value = '';
+        let entry = '';
+        try {
+            value = sessionStorage.getItem('socialReturnUrl') || localStorage.getItem('socialReturnUrl') || '';
+            entry = sessionStorage.getItem('socialEntry') || localStorage.getItem('socialEntry') || '';
+        } catch (_) {
+            value = '';
+            entry = '';
+        }
+        if (entry !== 'mobile') return '';
+        if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '';
+        if (value.startsWith('/social-callback')) return '';
+        return value;
+    }
+
+    function clearSocialReturnState() {
+        try {
+            sessionStorage.removeItem('socialReturnUrl');
+            sessionStorage.removeItem('socialEntry');
+            localStorage.removeItem('socialReturnUrl');
+            localStorage.removeItem('socialEntry');
+        } catch (_) {}
     }
 
     function setPendingSignupModalVisible(visible) {
@@ -328,12 +354,15 @@
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
         }
 
+        const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
+        clearSocialReturnState();
+
         if (isLinkMode) {
-            window.location.href = '/mypage';
+            window.location.href = socialReturnUrl || '/mypage';
             return;
         }
 
-        window.location.href = isNewUser ? '/welcome' : '/';
+        window.location.href = socialReturnUrl || (isNewUser ? '/welcome' : '/');
     }
 
     window.closePendingSocialSignupTermsModal = function() {
@@ -392,6 +421,7 @@
     if (errorParam) {
         showError('소셜 로그인이 취소되었습니다.');
         sessionStorage.removeItem('socialState');
+        clearSocialReturnState();
         return;
     }
 
@@ -408,6 +438,7 @@
 
     if (!savedState || savedState !== returnedState) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
+        clearSocialReturnState();
         return;
     }
 
@@ -420,6 +451,7 @@
     }
     const provider = stateParts[1];
     const statePurpose = stateParts[2] || '';
+    const startedFromMobile = statePurpose === 'mobile';
 
     if (!['google', 'naver'].includes(provider)) {
         showError('지원하지 않는 로그인 방식입니다.');
@@ -427,7 +459,7 @@
     }
     const callbackUrl = CONFIG.social.callbackUrl;
 
-    // 3. Lambda에 code 전달 → provider 토큰 교환 (purpose 포함)
+    // 3. 서버에 인증 code 전달.
     try {
         statusMsg.textContent = statePurpose === 'delete_reauth' ? '본인 확인 중입니다...' : '계정 정보를 확인하고 있습니다...';
 
@@ -440,7 +472,7 @@
                 provider,
                 code,
                 redirectUri: callbackUrl,
-                ...(statePurpose && { purpose: statePurpose })
+                ...(statePurpose === 'delete_reauth' && { purpose: statePurpose })
             })
         });
 
@@ -461,7 +493,7 @@
         }
 
         if (!res.ok) {
-            console.error('[SocialCallback] Lambda error response:', { status: res.status, requiresTerms: result.requiresTerms === true });
+            console.warn('[SocialCallback] Request failed:', { status: res.status });
             if (res.status === 409) {
                 showError(result.error || '이미 동일 이메일로 가입된 계정이 있습니다. 기존 이메일/비밀번호로 로그인해 주세요.');
             } else {
@@ -480,6 +512,7 @@
         // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
         if (isLinkMode && result.isNewUser) {
             const prevUserId = localStorage.getItem('userId');
+            const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
 
             const confirmed = confirm(
                 '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
@@ -488,13 +521,15 @@
 
             if (!confirmed) {
                 if (prevUserId) localStorage.setItem('userId', prevUserId);
-                window.location.href = '/mypage';
+                clearSocialReturnState();
+                window.location.href = socialReturnUrl || '/mypage';
                 return;
             }
 
             localStorage.setItem('userId', result.userId);
             localStorage.setItem('userRole', 'student');
-            window.location.href = '/welcome';
+            clearSocialReturnState();
+            window.location.href = socialReturnUrl || '/welcome';
             return;
         }
 
@@ -503,12 +538,9 @@
     } catch (e) {
         console.error('[SocialCallback] Unhandled error:', {
             name: e.name,
-            message: e.message,
-            stack: e.stack
+            message: e.message
         });
-        // TypeError: Failed to fetch → CORS 또는 네트워크 문제
-        // SyntaxError → Lambda가 JSON이 아닌 응답 반환
-        const hint = e.name === 'TypeError' ? ' (네트워크/CORS 문제 의심)' : e.name === 'SyntaxError' ? ' (서버 응답 파싱 실패)' : '';
+        const hint = e.name === 'TypeError' ? ' (네트워크 문제 의심)' : e.name === 'SyntaxError' ? ' (서버 응답 파싱 실패)' : '';
         showError(`인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.${hint}`);
     }
 })();

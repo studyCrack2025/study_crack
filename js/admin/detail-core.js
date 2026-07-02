@@ -44,8 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // 페이지 이동 후 메모리 토큰 복원
-    // Cognito SDK가 localStorage에 세션을 자동 저장하므로 getSession()으로 복원 가능
+    // 페이지 이동 후 세션 복원.
     tryRefreshToken().then((ok) => {
         if (!ok) {
             forceAdminRelogin("세션이 만료되었습니다. 다시 로그인해주세요.");

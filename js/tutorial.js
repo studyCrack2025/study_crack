@@ -435,7 +435,7 @@ async function _nextStepCore() {
         tutorialData.examMonth = examMonth;
 
         // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시.
-        // 6월 모평 데이터 미준비(JUN_NOT_READY) 시 사용자 알림 후 3월 학평으로 전환해 재시도.
+        // 선택 시험 데이터 로딩 실패 시 사용자 알림 후 3월 학평으로 전환해 재시도.
         let korConv, mathConv, inq1Conv, inq2Conv;
         try {
             [korConv, mathConv, inq1Conv, inq2Conv] = await Promise.all([
@@ -446,7 +446,7 @@ async function _nextStepCore() {
             ]);
         } catch (e) {
             if (e && e.code === 'JUN_NOT_READY') {
-                alert(e.message || '6월 모평 데이터는 시험 후 준비됩니다. 3월 학평 기준으로 진행할게요.');
+                alert(e.message || '6월 모평 데이터를 불러오지 못했습니다. 3월 학평 기준으로 진행할게요.');
                 examMonth = 'mar';
                 tutorialData.examMonth = 'mar';
                 const sel = document.getElementById('tutExamMonth');
@@ -1788,17 +1788,6 @@ async function endTutorial() {
     }
 }
 
-async function downloadMBTIReport(mbtiResult) {
-    try {
-        const response = await fetch(CONFIG.api.user, buildAuthenticatedFetchOptions({
-            method: 'POST',
-            body: JSON.stringify({ type: 'update_mbti_promo', data: { targetUserId: 'me', promoCode: 'TUTORIAL', mbtiResult } })
-        }));
-        const result = await response.json();
-        if (result.success && result.downloadUrl) window.open(result.downloadUrl, '_blank');
-    } catch (e) { /* silent */ }
-}
-
 async function convertScore(month, subject, score, opt, subName, common, elective) {
     if (!score || score <= 0) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
@@ -1809,9 +1798,9 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
             const data = await res.json();
             if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
         } else if (res.status === 503 && month === 'jun') {
-            // 6월 모평 데이터 미준비 — 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
+            // 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
             const body = await res.json().catch(() => ({}));
-            const err = new Error(body.error || '6월 모평 데이터는 시험 후 준비됩니다.');
+            const err = new Error(body.error || '6월 모평 데이터를 불러오지 못했습니다.');
             err.code = body.code || 'JUN_NOT_READY';
             throw err;
         }

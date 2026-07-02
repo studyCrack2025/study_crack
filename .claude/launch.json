@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static",
+      "runtimeExecutable": "/Users/i_taeyori/.nvm/versions/node/v22.20.0/bin/node",
+      "runtimeArgs": ["/Users/i_taeyori/Downloads/Team Study Cracked/study_crack_web/tools/static-preview.mjs"],
+      "port": 8123
+    }
+  ]
+}

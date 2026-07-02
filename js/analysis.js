@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 💡 메시지 5개로 분할
         const tutMsgs = [
             'Basic 등급 이상에서 사용 가능합니다. 현재 점수를 통해 각 대학에서 본인의 현재 위치를 알려줍니다.',
-            'Standard 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
+            'Basic 등급 이상에서 사용 가능합니다. 현재 점수와 각 대학의 반영비를 통해 어떤 과목을 공부하는 가장 효율적인지를 보여줍니다.',
             'Standard 등급 이상에서 사용 가능합니다. SKY 출신 선생님들이 목표대학 합격을 위해 매주 어떻게 공부를 해야하는지 플래너를 검토해줍니다.',
             'PRO 등급 이상에서 사용 가능합니다. 현재 학습 상황과 고민을 작성하여 1:1 맞춤형 프리미엄 전략 리포트를 요청할 수 있습니다.',
             '담당 컨설턴트가 데이터를 기반으로 분석한 최종 리포트를 2주마다 제공받아, 목표 대학 합격률을 극대화할 수 있습니다.'
@@ -600,13 +600,17 @@ function syncMobileHeight() {
     if (wrapper && wrapper.style.height) wrapper.style.height = '';
 }
 
-function getStandardLockOverlayHTML(featureName) {
+function canUseScoreSimulationTier() {
+    return ['trial', 'basic', 'starter', 'standard', 'pro'].includes(currentUserTier);
+}
+
+function getTierLockOverlayHTML(featureName, tierLabel = 'Standard') {
     return `
         <div style="background: white; padding: 30px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border: 1px solid #e2e8f0; width: 90%; max-width: 320px; box-sizing: border-box;">
             <i class="fas fa-lock" style="font-size: 2.5rem; color: #7c9eef; margin-bottom: 15px;"></i>
-            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">Standard 멤버십 전용</h3>
+            <h3 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.25rem; word-break: keep-all;">${tierLabel} 멤버십 전용</h3>
             <p style="color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; word-break: keep-all;">
-                ${featureName}은(는)<br><strong style="color:#4c79ee;">Standard 등급 이상</strong>부터 이용 가능합니다.
+                ${featureName}은(는)<br><strong style="color:#4c79ee;">${tierLabel} 등급 이상</strong>부터 이용 가능합니다.
             </p>
             <button onclick="location.href='/payment'" style="width: 100%; padding: 14px 0; background: #4c79ee; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; word-break: keep-all;">
                 🚀 멤버십 알아보기
@@ -614,12 +618,15 @@ function getStandardLockOverlayHTML(featureName) {
         </div>`;
 }
 
+function getStandardLockOverlayHTML(featureName) {
+    return getTierLockOverlayHTML(featureName, 'Standard');
+}
+
 function applySimTierLock() {
     const container = document.querySelector('.sim-container-new') || document.getElementById('sol-sim');
     if (!container) return;
 
-    // 💡 수정됨: 'trial'을 잠금 대상에서 제외 ('free', 'basic'만 잠금)
-    if (['free', 'basic'].includes(currentUserTier)) {
+    if (!canUseScoreSimulationTier()) {
         container.style.position = 'relative';
         container.style.minHeight = '400px'; // 모달 위치 통일용 강제 고정
         if (container.querySelector('.sim-tier-lock-overlay')) return;
@@ -627,17 +634,16 @@ function applySimTierLock() {
         const overlay = document.createElement('div');
         overlay.className = 'sim-tier-lock-overlay';
         overlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(200, 217, 255, 0.82); backdrop-filter: blur(6px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; border-radius: 12px;";
-        overlay.innerHTML = getStandardLockOverlayHTML('점수 상승 시뮬레이션');
+        overlay.innerHTML = getTierLockOverlayHTML('점수 상승 시뮬레이션', 'Basic');
         container.appendChild(overlay);
     } else {
-        // 💡 추가됨: 'trial', 'standard', 'pro' 일 경우 자물쇠 원상복구(해제)
         container.style.minHeight = 'auto';
         const existingOverlay = container.querySelector('.sim-tier-lock-overlay');
         if (existingOverlay) existingOverlay.remove();
     }
 }
 
-// [유틸] DynamoDB JSON 파서
+// [유틸] 서버 응답 JSON 파서
 function parseDynamoItem(item) {
     if (item === undefined || item === null) return null;
     if (typeof item !== 'object') return item;
@@ -1125,12 +1131,10 @@ function _swipeHintBump(container, peek = 28, durationMs = 700) {
 }
 
 async function maybeShowSwipeHint(selector, hintKey) {
-    const debug = (() => { try { return !!localStorage.getItem('DEV_LOG_SWIPE_HINT'); } catch { return false; } })();
     const mobile = _swipeHintIsMobile();
     const hinted = _swipeHintAlreadyShown(hintKey);
     const el = document.querySelector(selector);
     const scrollable = _swipeHintScrollable(el);
-    if (debug) console.log('[swipeHint]', { selector, hintKey, mobile, hinted, scrollable, elFound: !!el });
     if (!mobile) return;
     if (hinted) return;
     if (!el) return;
@@ -1139,19 +1143,6 @@ async function maybeShowSwipeHint(selector, hintKey) {
     _swipeHintShowChevron(el);
     if (!SWIPE_HINT_PREFERS_REDUCED) await _swipeHintBump(el);
 }
-
-// 디버그: 콘솔에서 모든 swipeHint 플래그 리셋 (재검증용)
-window.resetSwipeHints = function () {
-    try {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k && k.startsWith('swipeHint_')) keys.push(k);
-        }
-        keys.forEach(k => localStorage.removeItem(k));
-        console.log(`[swipeHint] reset ${keys.length} keys:`, keys);
-    } catch (e) { console.error(e); }
-};
 
 // 탭별 1순위 surface 매핑
 const SWIPE_HINT_SURFACES = {
@@ -1187,8 +1178,8 @@ function checkMbtiReport(data) {
     if (!mbti) { container.innerHTML = ''; return; }
     
     container.innerHTML = `
-        <button onclick="downloadMbtiReport('${mbti}')" id="mbtiDownBtn" class="btn-go-survey" style="background-color: #10b981; color: white; border: none; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기
+        <button type="button" id="mbtiDownBtn" class="btn-go-survey" disabled aria-disabled="true" style="background-color: #cbd5e1; color: #64748b; border: none; box-shadow: none; cursor: not-allowed;">
+            <i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 준비 중
         </button>`;
 }
 
@@ -1209,39 +1200,6 @@ function getUserMbti(data) {
         decoded += String.fromCharCode(code);
     }
     return /^[A-Z]{4}$/i.test(decoded) ? decoded.toUpperCase() : '';
-}
-
-async function downloadMbtiReport(mbtiType) {
-    const mbti = String(mbtiType || '').trim().toUpperCase();
-    if (!/^[A-Z]{4}$/.test(mbti)) {
-        alert("MBTI 결과를 확인할 수 없습니다.");
-        return;
-    }
-
-    const btn = document.getElementById('mbtiDownBtn');
-    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 발급 중...`; btn.disabled = true; }
-
-    const newWindow = window.open('about:blank', '_blank');
-
-    try {
-        const res = await apiFetch(REPORT_API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'get_mbti_pdf_url', mbtiType: mbti })
-        });
-        const data = await res.json();
-        
-        if (res.ok && data.success && data.downloadUrl) {
-            newWindow.location.href = data.downloadUrl;
-        } else {
-            newWindow.close();
-            alert(data.error || "보고서 발급에 실패했습니다.");
-        }
-    } catch (e) {
-        newWindow.close();
-        alert("서버 통신 오류가 발생했습니다.");
-    } finally {
-        if (btn) { btn.innerHTML = `<i class="fas fa-file-download"></i> [${escapeHtml(mbti)}] 보고서 다운받기`; btn.disabled = false; }
-    }
 }
 
 // [추가] 메인 탭 좌우 스와이프 동적 안내 헬퍼 함수
@@ -1824,9 +1782,6 @@ async function updateAnalysisUI() {
                 </select>
             </div>
         </div>
-        <div id="junEstimateNoticeAnalysis" style="${currentExamMode === 'jun' ? '' : 'display:none;'} margin:0 0 16px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:8px 12px; font-size:0.85rem; line-height:1.5;">
-            ⚠️ 6월 모의평가 기준 분석은 <b>예상 등급컷 기반 추정치</b>입니다. 실제 성적표와 다를 수 있습니다.
-        </div>
         <div id="analysisCardsContainer" style="display: flex; flex-direction: column; gap: 20px;">
             <div style="padding:60px; text-align:center; color:#3b82f6;">
                 <i class="fas fa-spinner fa-spin fa-2x"></i>
@@ -1896,9 +1851,6 @@ function renderSideQuanDetail(examKey) {
     };
 
     let html = '';
-    if (examKey === 'jun') {
-        html += '<div style="margin-bottom:8px; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:6px; padding:6px 10px; font-size:0.78rem; line-height:1.4;">⚠️ 6월 모평은 예상 등급컷 기반 추정치입니다. 실제와 다를 수 있습니다.</div>';
-    }
     html += '<div class="score-list">';
     html += makeRow('국어', d.kor); html += makeRow('수학', d.math); html += makeRow('영어', d.eng);
     html += makeRow('탐구1', d.inq1); html += makeRow('탐구2', d.inq2);
@@ -2010,8 +1962,8 @@ function initSimulation() {
     const chartArea = document.getElementById('simChartArea');
     if (!chartArea) return;
 
-    if (!['trial', 'standard', 'pro'].includes(currentUserTier)) {
-        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Standard 멤버십 이상 전용 기능입니다.</div>`;
+    if (!canUseScoreSimulationTier()) {
+        chartArea.innerHTML = `<div style="width:100%; height:100%; min-height: 260px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-weight:600; font-size:1.1rem;">Basic 멤버십 이상 전용 기능입니다.</div>`;
         renderDetailedSimCard(); // 블러 뒤에 나타날 타겟 CTA 렌더링 호출
         return;
     }
@@ -2244,7 +2196,7 @@ function formatKoDate(date, withTime = false) {
     return `${m}월 ${d}일 (${dow}) ${h}:${min}`;
 }
 
-// PRO 4주 멤버십의 격주 2회차 스케줄 산출. 사양: docs/exec-plans/active/260602_pro_report_schedule_ux.md §3
+// PRO 4주 멤버십의 격주 2회차 스케줄 산출.
 // 입력: paymentDate (Date 또는 Date-parsable)
 // 반환: { R1Deadline, R1Release, R2Deadline, R2Release, subscriptionEnd } — 비정상 입력이면 null
 function computeProSchedule(paymentDate) {

@@ -6,6 +6,11 @@ credentials.json
 # 2. 너무 무거운 의존성 폴더 (올릴 필요 없음)
 node_modules/
 
+# 2-1. 빌드 산출물 (모바일 앱 Vite 빌드 검증용 dist; 실제 배포 산출물 경로는 HTML 스위치 시 별도 확정)
+studycrack-mobile-app/dist/
+# 2-1-1. Vite 의존성 최적화 캐시 (빌드 시 생성, 커밋 금지)
+studycrack-mobile-app/.vite/
+
 # 3. 환경변수 및 설정파일
 .env
 serve.json
@@ -25,9 +30,13 @@ CLAUDE.md
 AGENTS.md
 ARCHITECTURE.md
 docs/
+# 모바일 앱 모듈 구조 안내 문서(내부용, 공개 레포 비노출)
+studycrack-mobile-app/README.md
+studycrack-mobile-app/src/README.md
 
 # 7. 기타 지금은 안쓰는 파일 및 폴더들
 black/
+js/studycrack-mobile.js
 
 # 8. 로컬 개발용 mock 데이터 (절대 커밋 금지)
 js/dev-mock.local.js

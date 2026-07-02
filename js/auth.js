@@ -1,7 +1,7 @@
 // js/auth.js
 
 // ==========================================
-// [메모리 저장소] accessToken - XSS 탈취 방지
+// 토큰 노출면 축소용 클라이언트 상태.
 // ==========================================
 let _accessToken = sessionStorage.getItem('accessToken') || null;
 function getAccessToken() { return _accessToken; }
@@ -16,7 +16,7 @@ function clearAccessToken() {
 }
 
 // ==========================================
-// [메모리 저장소] idToken - XSS 탈취 방지
+// 토큰 노출면 축소용 클라이언트 상태.
 // ==========================================
 let _idToken = sessionStorage.getItem('idToken') || null;
 function getIdToken() { return _idToken; }
@@ -30,7 +30,6 @@ function clearIdToken() {
     sessionStorage.removeItem('idToken');
 }
 
-// API URL 변경 (Gateway 사용)
 const USER_API_URL = CONFIG.api.user;
 const AUTH_URL = CONFIG.api.auth;
 
@@ -90,8 +89,7 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken, options = {}) {
-    // LOCAL: cross-site SameSite=Lax 쿠키가 후속 요청에 안 실리므로 쿠키 등록 의미 없음.
-    // refreshToken을 localStorage에만 보관해 tryRefreshToken의 body 기반 refresh 경로로 위임. (active/260603 §Phase 1)
+    // 로컬 프리뷰에서는 서버 세션 등록을 생략하고 클라이언트 fallback을 사용한다.
     if (IS_LOCAL) {
         localStorage.setItem('refreshToken', refreshToken);
         return false;
@@ -186,7 +184,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             headers.Authorization = `Bearer ${bearerToken}`;
         }
 
-        // 401/403 시 refresh+retry. 401 즉시 sign-out 방지가 목적. 정책: docs/security/architecture-notes.md §3
+        // 인증 오류 시 세션 갱신 후 한 번 재시도한다.
         const fetchIdentity = async (requestType) => {
             const doFetch = () => fetch(USER_API_URL, {
                 method: 'POST',
@@ -195,7 +193,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 body: JSON.stringify({ type: requestType })
             });
             let res = await doFetch();
-            // 401/403 처리 정책: docs/security/architecture-notes.md §3
+            // 인증 오류 처리.
             if (res.status === 401 || res.status === 403) {
                 const refreshed = await tryRefreshToken();
                 if (refreshed) {
@@ -338,13 +336,24 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     }
 
     if (eventType === 'login') {
+        // 모바일 앱 등에서 ?returnUrl=로 복귀 지점 전달 시 우선 이동.
+        // open-redirect 방지: 동일 출처 절대경로(/...)만 허용한다.
+        let returnUrl = null;
+        try {
+            const raw = new URLSearchParams(window.location.search).get('returnUrl');
+            const decoded = raw ? decodeURIComponent(raw) : '';
+            if (decoded && decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) returnUrl = decoded;
+        } catch (_) { /* 파싱 실패 시 기본 라우팅 */ }
+
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
-            window.location.replace('/mypage/tutor');
+            window.location.replace(returnUrl || '/mypage/tutor');
         } else {
             alert("로그인 성공!");
-            // 튜토리얼 미완료 학생은 /tutorial로 직행
-            if (localStorage.getItem('tutorial_completed') !== 'true') {
+            if (returnUrl) {
+                window.location.replace(returnUrl);
+            } else if (localStorage.getItem('tutorial_completed') !== 'true') {
+                // 튜토리얼 미완료 학생은 /tutorial로 직행
                 window.location.replace('/tutorial');
             } else {
                 window.location.replace('/');
@@ -587,7 +596,7 @@ async function handleVerify() {
 }
 
 // ==========================================
-// [Part C] 전화번호 인증 (Lambda)
+// [Part C] 전화번호 인증
 // ==========================================
 let phoneTimerInterval;
 
@@ -710,10 +719,8 @@ function startTimer(duration, displayId, intervalVar) {
 // ==========================================
 
 // ------------------------------------------
-// [공유] 가입 자동 로그인 — 학생/튜터 공통
-// 가입 직후 Cognito 인증 → 토큰 set → rt 쿠키 등록 → resolveUserIdentity('signup').
-// 최종 역할/라우팅(/welcome vs /mypage/tutor)은 resolveUserIdentity→handleRoleSuccess가
-// DB role 기준으로 결정한다. 여기서 userRole을 하드코딩하지 않는다(역할 혼선 방지).
+// [공유] 가입 직후 후속 처리 — 학생/튜터 공통.
+// 역할은 서버 응답 기준으로만 확정한다.
 // ------------------------------------------
 function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
     const authData = { Username: email, Password: password };
@@ -728,7 +735,6 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
             localStorage.setItem('userId', authResult.getIdToken().payload.sub);
             localStorage.setItem('userEmail', email);
 
-            // refreshToken 쿠키 등록과 identity 조회를 병렬화해 가입 직후 대기 시간을 줄임
             const cookiePromise = registerRefreshCookie(refreshToken);
             markPostLoginIdentitySkip();
 
@@ -965,7 +971,7 @@ async function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 백엔드 쿠키 삭제 응답을 반드시 기다림 — 안 그러면 다음 로그인 시 이전 at 쿠키 잔존 위험
+    // 서버 세션 종료 완료 후 클라이언트 상태를 정리한다.
     if (typeof clearServerSessionCookies === 'function') {
         await clearServerSessionCookies();
     } else {
@@ -999,7 +1005,7 @@ function handleSignIn() {
     }
 
     // 계정 전환 안전 — 이전 사용자의 cognito SDK 세션 + 클라이언트 상태 사전 제거.
-    // (admin_login.html과 동일 패턴. 상세: docs/security/architecture-notes.md §4)
+    // 관리자 로그인과 같은 방식으로 계정 정보를 확인한다.
     const prevCognitoUser = userPool.getCurrentUser();
     if (prevCognitoUser) prevCognitoUser.signOut();
     clearClientSession();
@@ -1018,7 +1024,7 @@ function handleSignIn() {
             const refreshToken = result.getRefreshToken().getToken();
             timing.mark('cognito_success');
 
-            // 새 서버 쿠키 교체는 registerRefreshCookie가 처리한다. 상세: docs/security/architecture-notes.md §6
+            // 새 서버 세션 교체는 registerRefreshCookie가 처리한다.
             setAccessToken(accessToken);
             setIdToken(idTokenJwt);
             localStorage.setItem('userEmail', email);
@@ -1061,9 +1067,7 @@ function handleSignIn() {
 
 // ==========================================
 // [Part F-2] 튜터 전용 로그인
-// 관리자(admin_login)는 cognito:groups로 역할을 판정하지만, 튜터 역할은 DynamoDB(TBL_TUTORS)에
-// 있으므로 get_login_profile로 role을 확인해 튜터만 통과시킨다.
-// 비튜터(학생/관리자/미확인)는 방금 발급한 세션을 정리하고 알맞은 로그인 페이지로 돌려보낸다.
+// 서버에서 role을 확인해 튜터 계정만 통과시킨다.
 // ==========================================
 function handleTutorSignIn() {
     const timing = createAuthTiming('tutor_login');
@@ -1111,7 +1115,7 @@ function handleTutorSignIn() {
                 throw error;
             });
 
-            // DB role 검증 — 튜터만 통과 (역할 근거: get_login_profile의 role)
+            // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
                 timing.mark('identity_start');
@@ -1129,7 +1133,6 @@ function handleTutorSignIn() {
                 timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
 
-            // join: 라우팅/세션정리 전에 rt 쿠키 등록 완료 보장 (양 경로 안전)
             await cookiePromise.catch(() => {});
 
             if (role !== 'tutor') {
@@ -1223,7 +1226,8 @@ window.handleSocialLogin = function(provider) {
     } else if (provider === 'naver') {
         authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
             response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
+            redirect_uri: callbackUrl, state,
+            auth_type: 'reauthenticate'
         });
     } else {
         buttons.forEach(btn => { btn.disabled = false; });

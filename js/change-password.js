@@ -3,7 +3,7 @@
 let cognitoUser = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 로그인 여부 확인 (쿠키 기반)
+    // 1. 로그인 여부 확인
     if (!localStorage.getItem('userId')) {
         alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
         window.location.href = '/login';
