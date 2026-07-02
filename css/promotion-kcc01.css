@@ -13,12 +13,13 @@ body { background:#fff; color:#1e293b; font-family:"Paperlogy", system-ui, -appl
 .kcc-benefit-chip i { color:#f59e0b; }
 .kcc-scoreboard { position:relative; border:1px solid #dbe5f4; border-radius:18px; background:#fff; padding:28px; box-shadow:0 18px 46px rgba(30,41,59,.1); overflow:hidden; }
 .kcc-scoreboard::before { content:""; position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(90deg,#3157d4 0%,#3157d4 48%,#d22a3a 52%,#d22a3a 100%); }
-.kcc-scoreboard::after { content:""; position:absolute; left:28px; right:28px; top:88px; height:1px; background:#e8eef8; }
+.kcc-scoreboard::after { content:""; position:absolute; left:28px; right:28px; top:94px; height:1px; background:#e8eef8; }
 .scoreboard-top { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:16px; color:#64748b; font-size:.78rem; font-weight:900; letter-spacing:0; }
-.scoreboard-top strong { color:#1e293b; font-size:1rem; letter-spacing:0; }
+.scoreboard-top span { display:inline-flex; align-items:center; min-height:34px; padding:0 12px; border-radius:999px; background:#eff6ff; color:#3157d4; font-size:.88rem; font-weight:900; }
+.scoreboard-top strong { display:inline-flex; align-items:center; min-height:34px; padding:0 12px; border-radius:999px; background:#fff7ed; color:#b45309; font-size:.88rem; font-weight:900; letter-spacing:0; white-space:nowrap; }
 .scoreboard-teams { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr); gap:14px; align-items:center; margin:34px 0 24px; }
 .scoreboard-team { min-height:176px; display:flex; flex-direction:column; justify-content:center; padding:24px 18px; border:1px solid #e2eaf8; border-radius:14px; background:#f8fbff; color:#1e293b; text-align:center; box-shadow:0 8px 24px rgba(76,121,238,.06); }
-.scoreboard-team small { color:#64748b; font-size:.72rem; font-weight:900; letter-spacing:0; }
+.scoreboard-team small { color:#64748b; font-size:.8rem; font-weight:900; letter-spacing:0; }
 .scoreboard-team b { margin-top:12px; font-size:1.55rem; letter-spacing:0; }
 .scoreboard-team span { margin-top:8px; color:#475569; font-size:.95rem; font-weight:800; opacity:1; }
 .scoreboard-team.yonsei { border-top:4px solid #3157d4; background:linear-gradient(180deg,#f8fbff 0%,#eef4ff 100%); }
