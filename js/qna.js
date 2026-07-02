@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. 질문 폼 제출 핸들러
     const form = document.getElementById('qnaForm');
     if (form) form.addEventListener('submit', handleQnaSubmit);
+    applyQnaPrefillFromUrl();
 
     // window.onclick 덮어쓰기 방지 -> addEventListener 사용
     window.addEventListener('click', function(event) {
@@ -57,6 +58,33 @@ function closeLocalModal(id) {
 function openQnaModal() { openLocalModal('qna-modal'); }
 function closeQnaModal() { closeLocalModal('qna-modal'); }
 function closeDetailModal() { closeLocalModal('qna-detail-modal'); }
+
+function applyQnaPrefillFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    if (!category) return;
+
+    const categoryEl = document.getElementById('qCategory');
+    const titleEl = document.getElementById('qTitle');
+    const contentEl = document.getElementById('qContent');
+    if (!categoryEl || !titleEl || !contentEl) return;
+
+    const hasCategory = Array.from(categoryEl.options).some(option => option.value === category);
+    if (hasCategory) categoryEl.value = category;
+
+    const title = params.get('title');
+    if (title) titleEl.value = title;
+
+    const source = params.get('source');
+    const sourceLabel = {
+        analysis: '나만의 솔루션/분석 화면',
+        survey: '기초조사서/성적 입력 화면'
+    }[source] || '스터디크랙 서비스 화면';
+
+    contentEl.placeholder = `${sourceLabel}에서 이상하게 보인 데이터와 상황을 적어주세요.\n예) 어느 모의고사, 어떤 대학/학과, 어떤 점수나 등급이 이상했는지`;
+    openQnaModal();
+    contentEl.focus();
+}
 
 /* =========================================
    [API] 질문 목록 불러오기
@@ -221,6 +249,7 @@ function getCategoryName(key) {
     const map = { 
         'consulting': '입시 컨설팅', 
         'payment': '결제/환불', 
+        'data_error': '데이터 오류 신고',
         'system': '시스템 오류', 
         'etc': '기타' 
     };
