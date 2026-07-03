@@ -263,6 +263,7 @@ header#site-header.scrolled .nav-links a.nav-promo-link { background:#fff7ed; co
 .mobile-nav-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #94a3b8; padding: 4px; line-height: 1; }
 .mobile-nav-links { display: flex; flex-direction: column; padding: 8px 0 32px; flex: 1; }
 .mobile-nav-links a { display: flex; align-items: center; padding: 14px 24px; font-size: 15px; font-weight: 600; color: var(--text); border-bottom: 1px solid #f8fafc; text-decoration: none; transition: background .15s; }
+.mobile-nav-links a.nav-promo-link { width:auto; min-height:auto; justify-content:flex-start; padding:14px 24px 14px 21px; border:0; border-left:3px solid #f59e0b; border-bottom:1px solid #f8fafc; border-radius:0; background:linear-gradient(90deg,rgba(251,191,36,.12),rgba(255,255,255,0) 58%); color:#b45309; font-size:15px; font-weight:800; box-shadow:none; }
 .mobile-nav-links a:active { background: #f1f5f9; }
 .mobile-nav-links a.mnl-btn { margin: 12px 20px 4px; padding: 13px 20px; background: var(--primary); color: #fff; border-radius: 8px; border-bottom: none; justify-content: center; font-size: 14px; font-weight: 700; }
 .mobile-nav-links a.mnl-btn-logout { background: #f1f5f9; color: #64748b; }
