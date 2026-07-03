@@ -613,7 +613,7 @@ export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId
 }
 
 // ── 개인 수험 일정(admissionCalendar) ─────────────────────────────────────
-// 로그인 사용자는 서버 응답을 단일 기준으로 삼고, localStorage는 로컬 프리뷰에서만 사용한다.
+// 로그인 사용자는 서버 응답을 단일 기준으로 삼고, localStorage는 미로그인 로컬 점검에서만 사용한다.
 export async function fetchMobileAdmissionCalendar({ apiFetch, userApiUrl } = {}) {
   if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {

@@ -1,7 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-// V2 재디자인 스타일(원본 designV2StyleTag 추출). 빌드 시 별도 CSS 자산으로 산출되어
-// 프리뷰/런타임 HTML이 외부 V1 CSS 뒤에 로드한다.
+// V2 재디자인 스타일. 빌드 시 HTML 셸의 기본 모바일 CSS 뒤에 로드된다.
 import '../styles/design-v2.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
@@ -270,7 +269,7 @@ function reducer(state, patch) {
 }
 
 // 모바일 런타임 셸.
-// URL ?screen=<id>는 프리뷰/디자인 점검 시 초기 화면 지정에만 사용한다.
+// URL ?screen=<id>는 로컬/디자인 점검 시 초기 화면 지정에만 사용한다.
 // 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
 function createInitialAppStateWithScreenParam() {
   const base = hydrateAppState(createInitialAppState());
