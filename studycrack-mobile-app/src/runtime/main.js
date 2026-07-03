@@ -1,7 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-// V2 재디자인 스타일(원본 designV2StyleTag 추출). 빌드 시 별도 CSS 자산으로 산출되어
-// 프리뷰/런타임 HTML이 외부 V1 CSS 뒤에 로드한다.
+// V2 재디자인 스타일. 빌드 시 HTML 셸의 기본 모바일 CSS 뒤에 로드된다.
 import '../styles/design-v2.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
@@ -15,7 +14,7 @@ import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/ren
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, examKeyOf, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
@@ -251,6 +250,17 @@ function buildScoreSelectionPatch(scoreExamType, current) {
   };
 }
 
+function resolveAnalysisExamMode(state = {}) {
+  const explicitKey = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
+  if (explicitKey && explicitKey !== 'active') return explicitKey;
+  const quantitative = state.user?.quantitative || {};
+  return ['jun', 'may', 'mar', 'apr', 'jul', 'sep', 'oct', 'csat']
+    .find((examKey) => {
+      const item = quantitative[examKey];
+      return item && typeof item === 'object' && (item.kor || item.math || item.eng || item.inq1 || item.inq2);
+    }) || explicitKey || 'mar';
+}
+
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
   return Boolean(
@@ -270,7 +280,7 @@ function reducer(state, patch) {
 }
 
 // 모바일 런타임 셸.
-// URL ?screen=<id>는 프리뷰/디자인 점검 시 초기 화면 지정에만 사용한다.
+// URL ?screen=<id>는 로컬/디자인 점검 시 초기 화면 지정에만 사용한다.
 // 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
 function createInitialAppStateWithScreenParam() {
   const base = hydrateAppState(createInitialAppState());
@@ -293,6 +303,7 @@ function MobileApp() {
   const plannerCustomMinutesRef = useRef('');
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
+  const simulationFetchSignatureRef = useRef('');
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -456,8 +467,8 @@ function MobileApp() {
     // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
     // 분석 선택 대학(targetMajor)은 분석 전용 — homeTargets(homeTargetList)와 분리되어 홈 순서에 영향 없음.
     ...(() => {
-      const examKey = examKeyOf(state);
-      const targets = uniqueTargetList(state.homeTargetList || []);
+      const examKey = resolveAnalysisExamMode(state);
+      const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);
       const selectedMajor = targets.includes(state.targetMajor)
         ? state.targetMajor
         : targets[0] || state.targetMajor || '';
@@ -896,7 +907,7 @@ function MobileApp() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const examMode = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
+    const examMode = resolveAnalysisExamMode(state);
     const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
     const targetList = uniqueTargetList([
       state.targetMajor,
@@ -941,6 +952,7 @@ function MobileApp() {
     }
     scoreFetchRetryRef.current = 0;
     scoreFetchSignatureRef.current = scoreSignature;
+    simulationFetchSignatureRef.current = '';
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
     fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
@@ -953,7 +965,7 @@ function MobileApp() {
         return;
       }
       const analysisResults = payload.analysisResults || [];
-      const analysisSimulations = payload.simulationResults || [];
+      const analysisSimulations = [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       const analysisError = payload.analysisError || null;
       const nextStatus = analysisResults.length
@@ -963,7 +975,7 @@ function MobileApp() {
           : 'empty';
       // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
       // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
-      const merged = normalizeServerResults(analysisResults, analysisSimulations);
+      const merged = normalizeServerResults(analysisResults);
       const hasScores = Object.keys(merged).length > 0;
       setState({
         analysisResults,
@@ -998,7 +1010,69 @@ function MobileApp() {
     state.user?.quantitative
   ]);
 
-  // (scoreCache는 위 단일 분석 fetch effect가 함께 채운다 — 홈/분석 동일 출처. 별도 home fetch 제거.)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    if (!canUseScoreSimulation(state)) {
+      simulationFetchSignatureRef.current = '';
+      return undefined;
+    }
+    if (state.userLoadStatus !== 'ready' || state.analysisApiStatus !== 'ready') return undefined;
+
+    const examMode = resolveAnalysisExamMode(state);
+    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
+    const targetList = uniqueTargetList([
+      state.targetMajor,
+      ...(state.analysisTargetList || []),
+      ...(state.homeTargetList || [])
+    ]);
+    if (!userScores || !targetList.length || !(state.analysisResults || []).length) return undefined;
+
+    const scoreSignature = buildScoreSignature(examMode, targetList);
+    const simulationSignature = `sim::${scoreSignature}`;
+    if (simulationFetchSignatureRef.current === simulationSignature) return undefined;
+
+    const apiBinding = getAnalysisApiBinding();
+    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
+
+    simulationFetchSignatureRef.current = simulationSignature;
+    fetchMobileScoreSimulation({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
+      if (simulationFetchSignatureRef.current !== simulationSignature) return;
+      const simulationResults = payload?.simulationResults || [];
+      const currentAnalysisResults = stateRef.current.analysisResults || [];
+      const merged = normalizeServerResults(currentAnalysisResults, simulationResults);
+      const hasScores = Object.keys(merged).length > 0;
+      setState({
+        analysisSimulations: simulationResults,
+        lastAnalysisSnapshot: currentAnalysisResults.length
+          ? {
+              examMode,
+              targetList,
+              analysisResults: currentAnalysisResults,
+              analysisSimulations: simulationResults,
+              updatedAt: Date.now()
+            }
+          : stateRef.current.lastAnalysisSnapshot,
+        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache
+      });
+    });
+    return undefined;
+  }, [
+    getAnalysisApiBinding,
+    state.analysisApiStatus,
+    state.analysisResults,
+    state.analysisTargetList,
+    state.homeTargetList,
+    state.scoreExamKey,
+    state.scoreExamType,
+    state.targetMajor,
+    state.userLoadStatus,
+    state.userTier,
+    state.selectedPlan,
+    state.user?.quantitative
+  ]);
+
+  // scoreCache는 기본 분석 fetch가 채우고, Basic 이상 시뮬레이션 fetch가 같은 캐시에 보강한다.
 
   const onClick = useCallback(
     (event) => {
