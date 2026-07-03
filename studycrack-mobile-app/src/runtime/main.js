@@ -467,8 +467,8 @@ function MobileApp() {
     // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
     // 분석 선택 대학(targetMajor)은 분석 전용 — homeTargets(homeTargetList)와 분리되어 홈 순서에 영향 없음.
     ...(() => {
-      const examKey = examKeyOf(state);
-      const targets = uniqueTargetList(state.homeTargetList || []);
+      const examKey = resolveAnalysisExamMode(state);
+      const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);
       const selectedMajor = targets.includes(state.targetMajor)
         ? state.targetMajor
         : targets[0] || state.targetMajor || '';
