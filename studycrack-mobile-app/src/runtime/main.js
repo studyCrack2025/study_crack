@@ -16,7 +16,7 @@ import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap }
 import { buildDerivedContext } from './derived.js';
 import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
-import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, examKeyOf, mergeScoreCache, normalizeServerResults } from './score-store.js';
+import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
@@ -495,7 +495,7 @@ function MobileApp() {
     homeTargets: buildUniversityCards(
       uniqueTargetList(state.homeTargetList || []),
       state.scoreCache,
-      examKeyOf(state),
+      resolveAnalysisExamMode(state),
       state.scoreFetchStatus
     ),
     // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
