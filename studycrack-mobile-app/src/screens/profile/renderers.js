@@ -222,11 +222,11 @@ export function renderRankingScreen(ctx) {
   } = ctx;
   const rows = rankingMock[rankingPeriod] || [];
 
-  return layout(appbar('공부 랭킹', true) + `<section class="ranking-theme"><div class="ranking-page"><p class="ranking-subtitle">오늘의 공부 몰입도를 확인해보세요</p>
+  return layout(appbar('공부 랭킹', true) + `<section class="ranking-theme"><div class="ranking-page"><div class="ranking-hero"><span>STUDY RANKING</span><h3>오늘의 공부 랭킹</h3><p>공부 시간과 연속 기록으로 나의 위치를 확인해보세요.</p></div>
+      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-emblem small bronze"><strong>2</strong><small>일</small></span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
       <div class="ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
       <div class="card ranking-podium-card"><div class="ranking-podium">${rows.slice(0, 3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx === 0 ? 'first' : idx === 1 ? 'second' : 'third'}">${idx === 0 ? '<span class="podium-crown">👑</span>' : '<span class="podium-crown">✦</span>'}<span class="tier-emblem ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small><i class="podium-block">${idx + 1}</i></div>`).join('')}</div></div>
       <div class="card ranking-list-card">${rows.slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx + 4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
-      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-emblem small bronze"><strong>2</strong><small>일</small></span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
     </div></section>`, true);
 }
 

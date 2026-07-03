@@ -60,7 +60,7 @@ function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}">${scoreInner}<small>${scoreLabel}</small></div></div>
           <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
-          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
+          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`;
 }

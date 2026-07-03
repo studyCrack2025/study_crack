@@ -73,9 +73,6 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
         <div className="kpi-item">
           <b>{noScore ? '—' : scoreValue}</b>현재 점수
         </div>
-        <div className="kpi-item">
-          <b>{item.cut}점</b>합격 컷
-        </div>
         <div className="kpi-item danger">
           <b>{gapValue}</b>부족 점수
         </div>

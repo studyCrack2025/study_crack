@@ -82,7 +82,7 @@ function renderReverseProjectionCard({
   const safeGap = Math.max(0, 150 - currentScore);
   if (!canUseReverseProjection) {
     return `<div class="card analysis-reverse-card locked">
-      <div><span class="analysis-card-eyebrow">Standard 역산</span><h4>안정권까지 가장 적은 조합</h4><p>최소 노력 대비 도달 성적은 Standard 이상에서 확인할 수 있어요.</p></div>
+      <div><span class="analysis-card-eyebrow">Standard Exclusive</span><h4>안정권까지 도달하려면 최소 몇점?</h4><p>최소 노력 대비 도달 성적은 Standard 이상에서 확인할 수 있어요.</p></div>
       <button type="button" class="btn btn-secondary mini" data-action="goto" data-target="proIntro">Standard 기능 보기</button>
     </div>`;
   }
@@ -95,7 +95,7 @@ function renderReverseProjectionCard({
     ? '현재 점수로도 안정권 기준을 넘고 있어요.'
     : `안정권까지 ${safeGap}점 남았습니다.`;
   return `<div class="card analysis-reverse-card">
-    <div class="analysis-reverse-head"><span class="analysis-card-eyebrow">Standard 역산</span><h4>최소 노력 대비 합격 도달 성적</h4><p>${lead}</p></div>
+    <div class="analysis-reverse-head"><span class="analysis-card-eyebrow">Standard Exclusive</span><h4>안정권까지 도달하려면 최소 몇점?</h4><p>${lead}</p></div>
     <div class="analysis-reverse-plan">
       <div><span>추천 조합</span><b>${ranked.map((row, index) => `${escapeHtml(row.subject)} +${index === 0 ? 4 : index === 1 ? 3 : 1}`).join(' / ')}</b></div>
       <div><span>예상 도달</span><b>${weeks}</b></div>
@@ -132,7 +132,6 @@ export function renderUnifiedAnalysis(ctx) {
   const projectedPct = Math.min((projectedScore / 250) * 100, 100);
   const projectedWidth = Math.max(0, projectedPct - currentPct);
   const gapToPass = Math.max(0, 100 - currentScore);
-  const gapToSafe = Math.max(0, 150 - currentScore);
   const targetLabel = normalizedTargetMajor || targetMajor || '희망 대학';
   const basisLabel = examBasisLabel(scoreExamType);
   const statusText = scoreView.pending ? '분석 중' : scoreView.hasScore ? analysisStatus : '성적 필요';
@@ -166,7 +165,6 @@ export function renderUnifiedAnalysis(ctx) {
         </div>
         <div class="analysis-gap-grid">
           <div><span>합격컷까지</span><b>${gapToPass ? `+${gapToPass}점` : '도달'}</b></div>
-          <div><span>안정권까지</span><b>${gapToSafe ? `+${gapToSafe}점` : '도달'}</b></div>
           <div><span>예상 변화</span><b>${scoreView.hasScore ? `${projectedScore}점` : '—'}</b></div>
         </div>
         <div class="analysis-range-chart" aria-label="환산점수 그래프">
