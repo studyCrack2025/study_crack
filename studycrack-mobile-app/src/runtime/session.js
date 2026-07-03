@@ -96,6 +96,9 @@ export function mapUserToStatePatch(userData, base = {}) {
   if (userData.gracePeriodUntil !== undefined && userData.gracePeriodUntil !== null) {
     userPatch.gracePeriodUntil = userData.gracePeriodUntil;
   }
+  if (typeof userData.univChangeRemaining === 'number') {
+    userPatch.univChangeRemaining = userData.univChangeRemaining;
+  }
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;

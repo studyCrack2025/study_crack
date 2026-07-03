@@ -160,13 +160,47 @@ function getEffectiveTier(state = {}) {
   return String(raw).toLowerCase();
 }
 
+function normalizeAccessTier(value) {
+  const tier = String(value || '').toLowerCase();
+  return tier === 'test' ? 'basic' : tier;
+}
+
+function parseAccessDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function pickActiveAccessSubscription(user = {}) {
+  const now = Date.now();
+  const pick = (sub) => {
+    if (!sub || sub.status !== 'active') return null;
+    const start = parseAccessDate(sub.startDate);
+    if (start && now < start.getTime()) return null;
+    const end = parseAccessDate(sub.endDate) || (start ? new Date(start.getTime() + 28 * 24 * 60 * 60 * 1000) : null);
+    if (end && now > end.getTime()) return null;
+    return sub;
+  };
+  return pick(user.currentSubscription) || pick(user.pendingSubscription);
+}
+
 function canAccessTier(state, requiredTier) {
   if (!requiredTier) return true;
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
 }
 
 function canUseScoreSimulation(state) {
-  return canAccessTier(state, 'basic');
+  const user = state?.user || {};
+  const activeSub = pickActiveAccessSubscription(user);
+  if (!activeSub) return false;
+  const tier = normalizeAccessTier(activeSub.tier);
+  if (tier === 'trial') {
+    const remaining = typeof user.univChangeRemaining === 'number' ? user.univChangeRemaining : 0;
+    const graceUntil = parseAccessDate(user.gracePeriodUntil);
+    if (remaining <= 0 && (!graceUntil || Date.now() > graceUntil.getTime())) return false;
+    return true;
+  }
+  return ['basic', 'starter', 'standard', 'pro'].includes(tier);
 }
 
 function canUseReverseProjection(state) {
@@ -1069,6 +1103,10 @@ function MobileApp() {
     state.userLoadStatus,
     state.userTier,
     state.selectedPlan,
+    state.user?.currentSubscription,
+    state.user?.pendingSubscription,
+    state.user?.gracePeriodUntil,
+    state.user?.univChangeRemaining,
     state.user?.quantitative
   ]);
 
