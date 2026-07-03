@@ -183,7 +183,7 @@ export function createInitialAppState() {
     notifications: DEFAULT_NOTIFICATIONS,
     notiList: [],
     notiStatus: 'idle', // idle | loading | ready | empty | error
-    notiPage: 0, // 알림 내역 페이지(8개씩)
+    notiPage: 0, // 알림 내역 페이지(5개씩)
     notiExpandedId: '', // 펼쳐 본문을 보여줄 알림 id
     openFaq: '',
     notifModalOpen: false,
