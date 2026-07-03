@@ -3,6 +3,8 @@ import { buildMobileWeeklyCheckPayload } from '../runtime/persistence.js';
 
 function noop() {}
 
+const NOTI_PAGE_SIZE = 5;
+
 function getWindow(ctx) {
   return ctx.window || globalThis.window || {};
 }
@@ -245,23 +247,23 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    // 알림 내역 페이지네이션(8개씩) + 펼쳐 본문 보기.
+    // 알림 내역 페이지네이션 + 펼쳐 본문 보기.
     notiNextPage() {
       const total = (ctx.notiList || []).length;
-      const maxPage = Math.max(0, Math.ceil(total / 8) - 1);
-      preserveScrollAfterStateChange(() => setField('notiPage', Math.min(maxPage, (ctx.notiPage || 0) + 1)));
+      const maxPage = Math.max(0, Math.ceil(total / NOTI_PAGE_SIZE) - 1);
+      setField('notiPage', Math.min(maxPage, (ctx.notiPage || 0) + 1));
       return true;
     },
 
     notiPrevPage() {
-      preserveScrollAfterStateChange(() => setField('notiPage', Math.max(0, (ctx.notiPage || 0) - 1)));
+      setField('notiPage', Math.max(0, (ctx.notiPage || 0) - 1));
       return true;
     },
 
     toggleNotiDetail({ actionEl }) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
-      preserveScrollAfterStateChange(() => setField('notiExpandedId', ctx.notiExpandedId === id ? '' : id));
+      setField('notiExpandedId', ctx.notiExpandedId === id ? '' : id);
       return true;
     },
 
