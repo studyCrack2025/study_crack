@@ -225,40 +225,54 @@ export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targ
   const targetUnivs = toAnalysisTargetPayload(targetList);
   if (!targetUnivs.length) return null;
 
-  const request = (type) =>
-    apiFetch(analysisApiUrl, {
-      method: 'POST',
-      body: JSON.stringify({ type, targetUnivs, userScores, examMode })
-    });
-
-  const [analysisRes, simulationRes] = await Promise.allSettled([
-    request('analyze_my_targets'),
-    request('simulate_score_rise')
-  ]);
-
   let analysisResults = [];
-  let simulationResults = [];
   let analysisError = null;
-  let simulationError = null;
 
-  if (analysisRes.status === 'fulfilled' && analysisRes.value?.ok) {
-    const data = await analysisRes.value.json().catch(() => null);
-    analysisResults = normalizeAnalysisResults(data);
-  } else if (analysisRes.status === 'fulfilled') {
-    analysisError = await readApiError(analysisRes.value);
-  } else {
-    analysisError = await readApiError(analysisRes.reason);
-  }
-  if (simulationRes.status === 'fulfilled' && simulationRes.value?.ok) {
-    const data = await simulationRes.value.json().catch(() => null);
-    simulationResults = normalizeSimulationResults(data);
-  } else if (simulationRes.status === 'fulfilled') {
-    simulationError = await readApiError(simulationRes.value, '시뮬레이션 결과를 불러오지 못했습니다.');
-  } else {
-    simulationError = await readApiError(simulationRes.reason, '시뮬레이션 결과를 불러오지 못했습니다.');
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode })
+    });
+    if (!response?.ok) {
+      analysisError = await readApiError(response);
+    } else {
+      const data = await response.json().catch(() => null);
+      analysisResults = normalizeAnalysisResults(data);
+    }
+  } catch (error) {
+    analysisError = await readApiError(error);
   }
 
-  return { analysisResults, simulationResults, analysisError, simulationError };
+  return { analysisResults, simulationResults: [], analysisError, simulationError: null };
+}
+
+export async function fetchMobileScoreSimulation({ apiFetch, analysisApiUrl, targetList, userScores, examMode } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl || !userScores) return null;
+  const targetUnivs = toAnalysisTargetPayload(targetList);
+  if (!targetUnivs.length) return null;
+
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode })
+    });
+    if (!response?.ok) {
+      return {
+        simulationResults: [],
+        simulationError: await readApiError(response, '시뮬레이션 결과를 불러오지 못했습니다.')
+      };
+    }
+    const data = await response.json().catch(() => null);
+    return {
+      simulationResults: normalizeSimulationResults(data),
+      simulationError: null
+    };
+  } catch (error) {
+    return {
+      simulationResults: [],
+      simulationError: await readApiError(error, '시뮬레이션 결과를 불러오지 못했습니다.')
+    };
+  }
 }
 
 function normalizeProReports(payload) {
