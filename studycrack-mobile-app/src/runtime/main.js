@@ -175,8 +175,10 @@ function pickActiveAccessSubscription(user = {}) {
   const now = Date.now();
   const pick = (sub) => {
     if (!sub || sub.status !== 'active') return null;
+    const tier = normalizeAccessTier(sub.tier);
     const start = parseAccessDate(sub.startDate);
     if (start && now < start.getTime()) return null;
+    if (tier === 'basic' || tier === 'starter') return sub;
     const end = parseAccessDate(sub.endDate) || (start ? new Date(start.getTime() + 28 * 24 * 60 * 60 * 1000) : null);
     if (end && now > end.getTime()) return null;
     return sub;
