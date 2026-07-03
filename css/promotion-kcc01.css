@@ -109,31 +109,98 @@ body { background:#fff; color:#1e293b; font-family:"Paperlogy", system-ui, -appl
 .term-body { margin-top:18px; max-height:60vh; overflow:auto; padding:20px; border:1px solid #e2e8f0; border-radius:16px; background:#f8fafc; color:#334155; line-height:1.72; white-space:pre-wrap; word-break:keep-all; }
 body.modal-open { overflow:hidden; }
 @media (max-width:900px) {
-  .kcc-page { padding:82px 16px 56px; }
-  .kcc-hero { grid-template-columns:1fr; gap:22px; padding:34px 0 24px; }
-  .kcc-scoreboard { border-radius:16px; padding:20px; }
-  .scoreboard-teams { grid-template-columns:1fr 52px 1fr; gap:8px; margin:24px 0; }
-  .scoreboard-team { min-height:150px; border-radius:12px; padding:18px 12px; }
-  .scoreboard-team b { font-size:1.35rem; }
-  .scoreboard-vs { width:52px; height:52px; font-size:.9rem; }
+  .kcc-page { padding:78px 16px 52px; }
+  .kcc-hero { grid-template-columns:1fr; gap:20px; padding:30px 0 22px; }
+  .kcc-eyebrow { margin-bottom:14px; padding:7px 11px; font-size:.8rem; }
+  .kcc-hero h1 { font-size:clamp(1.9rem,7vw,2.6rem); line-height:1.14; }
+  .kcc-lead { margin-top:16px; font-size:.98rem; line-height:1.62; }
+  .kcc-hero-actions { gap:10px; margin-top:24px; }
+  .kcc-primary-link { min-height:48px; padding:0 18px; font-size:.95rem; }
+  .kcc-benefit-chip { min-height:38px; padding:0 12px; font-size:.86rem; }
+  .kcc-scoreboard { border-radius:16px; padding:18px; box-shadow:0 12px 30px rgba(30,41,59,.08); }
+  .kcc-scoreboard::after { left:18px; right:18px; top:78px; }
+  .scoreboard-top { gap:10px; font-size:.72rem; }
+  .scoreboard-top span, .scoreboard-top strong { min-height:30px; padding:0 10px; font-size:.78rem; }
+  .scoreboard-teams { grid-template-columns:1fr 48px 1fr; gap:8px; margin:22px 0 18px; }
+  .scoreboard-team { min-height:132px; border-radius:12px; padding:16px 10px; }
+  .scoreboard-team small { font-size:.72rem; }
+  .scoreboard-team b { margin-top:9px; font-size:1.18rem; }
+  .scoreboard-team span { margin-top:7px; font-size:.8rem; }
+  .scoreboard-vs { width:48px; height:48px; font-size:.82rem; }
+  .scoreboard-prize { gap:10px; padding:13px 14px; font-size:.9rem; }
+  .scoreboard-prize i { font-size:1.16rem; }
   .kcc-flow { grid-template-columns:1fr; }
-  .kcc-team-section { padding:22px; border-radius:24px; margin-top:34px; }
+  .kcc-flow article { padding:18px; }
+  .kcc-flow span { width:32px; height:32px; }
+  .kcc-flow strong { margin-top:14px; font-size:1rem; }
+  .kcc-flow p { font-size:.9rem; }
+  .kcc-team-section { padding:20px; border-radius:18px; margin-top:30px; }
   .section-head { display:block; }
+  .section-head h2 { font-size:1.42rem; }
   .team-grid { grid-template-columns:1fr; }
-  .team-card { min-height:250px; border-radius:14px; }
+  .team-card { min-height:220px; gap:9px; padding:22px; border-radius:14px; }
+  .team-card::after { left:22px; right:22px; bottom:68px; }
+  .team-check { right:18px; top:18px; width:28px; height:28px; }
+  .team-mark { width:48px; height:48px; margin-top:6px; border-radius:12px; font-size:1.35rem; }
+  .team-card small { font-size:.84rem; }
+  .team-card strong { font-size:1.28rem; line-height:1.32; }
+  .team-card em { font-size:.9rem; }
+  .team-chips { padding-top:14px; }
+  .team-chips span { min-height:26px; padding:0 9px; font-size:.76rem; }
   .claim-panel { align-items:stretch; flex-direction:column; }
-  .claim-btn { width:100%; }
+  .claim-panel p { font-size:.9rem; }
+  .claim-btn { width:100%; min-height:48px; font-size:.95rem; }
   .kcc-detail { grid-template-columns:1fr; }
+  .detail-copy { padding:24px; border-radius:18px; }
+  .detail-copy h2 { font-size:1.48rem; }
+  .detail-copy p:last-child { font-size:.92rem; }
+  .benefit-list article { gap:12px; padding:17px 18px; border-radius:16px; font-size:.96rem; }
+  .benefit-list i { width:38px; height:38px; border-radius:12px; }
+  .kcc-modal { padding:26px 22px; border-radius:20px; }
+  .kcc-modal h2 { font-size:1.28rem; }
+  .modal-desc { font-size:.92rem; }
+  .modal-team-select { padding:14px; }
+  .modal-team-btn { min-height:76px; padding:12px; }
+  .modal-team-initial { width:36px; height:36px; font-size:.96rem; }
+  .modal-team-copy strong { font-size:.94rem; }
+  .modal-team-copy em { font-size:.76rem; }
+  .consent-row { gap:10px; padding:13px; }
+  .consent-row span { font-size:.9rem; }
+  .modal-note { font-size:.84rem; }
+  .modal-submit { min-height:50px; font-size:.95rem; }
 }
 @media (max-width:520px) {
-  .kcc-hero h1 { font-size:2.2rem; }
-  .kcc-lead { font-size:1rem; }
+  .kcc-page { padding:70px 12px 42px; }
+  .kcc-hero { padding:22px 0 18px; }
+  .kcc-eyebrow { font-size:.74rem; }
+  .kcc-hero h1 { font-size:1.78rem; line-height:1.18; }
+  .kcc-lead { font-size:.92rem; line-height:1.58; }
   .kcc-hero-actions { align-items:stretch; flex-direction:column; }
   .kcc-primary-link { width:100%; }
   .kcc-benefit-chip { justify-content:center; border-radius:14px; }
+  .scoreboard-top { align-items:flex-start; flex-direction:column; }
+  .scoreboard-teams { grid-template-columns:1fr 40px 1fr; gap:6px; margin:18px 0 16px; }
+  .scoreboard-team { min-height:114px; padding:13px 7px; }
+  .scoreboard-team b { font-size:1.04rem; }
+  .scoreboard-team span { font-size:.72rem; }
+  .scoreboard-vs { width:40px; height:40px; font-size:.72rem; }
+  .scoreboard-prize { align-items:flex-start; font-size:.84rem; }
+  .kcc-team-section { padding:16px; }
+  .section-head h2 { font-size:1.24rem; }
+  .team-card { min-height:204px; padding:18px; }
+  .team-card::after { left:18px; right:18px; bottom:62px; }
+  .team-ribbon { min-height:24px; font-size:.66rem; }
+  .team-mark { width:42px; height:42px; font-size:1.16rem; }
+  .team-card strong { font-size:1.14rem; }
+  .detail-copy { padding:20px; }
+  .detail-copy h2 { font-size:1.3rem; }
+  .benefit-list article { padding:15px; font-size:.9rem; }
+  .benefit-list i { width:34px; height:34px; border-radius:10px; }
   .consent-row { grid-template-columns:22px minmax(0,1fr); }
   .term-view-btn { grid-column:2; justify-self:start; }
   .modal-team-buttons { grid-template-columns:1fr; }
   .kcc-modal-backdrop { padding:16px; align-items:flex-end; }
-  .kcc-modal { max-height:88vh; padding:24px 20px; border-radius:22px 22px 18px 18px; }
+  .kcc-modal { max-height:88vh; padding:22px 18px; border-radius:22px 22px 18px 18px; }
+  .kcc-modal h2 { font-size:1.18rem; }
+  .term-body { padding:16px; font-size:.88rem; line-height:1.66; }
 }
