@@ -193,14 +193,15 @@ export function renderUnifiedAnalysis(ctx) {
   const scoreView = analysisScoreView || { pending: false, hasScore: true, score: Number(analysisSelected.score || 0) };
   const simMeta = firstSimulationMeta(analysisSimRows);
   const serverBaseScore = Number(simMeta?.baseUiScore);
-  const currentScore = clampScore(Number.isFinite(serverBaseScore) ? serverBaseScore : (scoreView.score ?? analysisSelected.score));
+  const rawBaseScore = Number.isFinite(serverBaseScore) ? serverBaseScore : Number(scoreView.score ?? analysisSelected.score ?? 0);
+  const currentScore = clampScore(rawBaseScore);
   const selectedBoost = canUseScoreSimulation ? selectedBoostRow(analysisSimRows, analysisHighlightedSubject, analysisSimRecommendedIndex) : null;
   const currentPct = Math.min((currentScore / 250) * 100, 100);
   const selectedGain = selectedBoost && scoreView.hasScore ? Math.max(0, Number(selectedBoost.gainNum || 0)) : 0;
-  const hasPreviewGain = selectedGain > 0 && currentScore < 250;
-  const previewEndScore = clampScore(currentScore + selectedGain);
-  const previewStartPct = Math.min(currentPct, 99);
-  const previewWidthPct = hasPreviewGain ? Math.max(1.8, Math.min(100 - previewStartPct, ((previewEndScore - currentScore) / 250) * 100)) : 0;
+  const rawAfterScore = rawBaseScore + selectedGain;
+  const previewScore = clampScore(rawAfterScore);
+  const previewPct = Math.min((previewScore / 250) * 100, 100);
+  const hasPreviewGain = selectedGain > 0 && previewScore > currentScore;
   const gapToPass = Math.max(0, 100 - currentScore);
   const targetLabel = normalizedTargetMajor || targetMajor || '희망 대학';
   const basisLabel = examBasisLabel(scoreExamType);
@@ -211,6 +212,11 @@ export function renderUnifiedAnalysis(ctx) {
       ? `${escapeHtml(selectedBoost.subject)} +1점은 아직 환산점수 변화가 없습니다.`
       : `${escapeHtml(selectedBoost.subject)} +1점 효과 ${escapeHtml(selectedBoost.gain)}`
     : '과목별 +1점이 대학 환산점수에 얼마나 반영되는지 비교합니다.';
+  const gaugeCaption = selectedBoost && scoreView.hasScore
+    ? hasPreviewGain
+      ? `${escapeHtml(selectedBoost.subject)} +1점 후 화면상 위치 ${Math.round(previewScore)}점`
+      : `${escapeHtml(selectedBoost.subject)} +1점 후에도 화면상 위치는 ${Math.round(currentScore)}점입니다.`
+    : projectedText;
   const statusStyle = scoreView.hasScore ? `style="color:${analysisStatusColor};border-color:${analysisStatusColor}"` : '';
   const gainBadgeText = selectedBoost && scoreView.hasScore
     ? selectedBoost.isEvaporation
@@ -248,13 +254,13 @@ export function renderUnifiedAnalysis(ctx) {
           <div class="analysis-main-gauge-top"><span>현재 위치</span><b>${escapeHtml(gainBadgeText)}</b></div>
           <div class="analysis-main-gauge" aria-label="환산점수 게이지">
             <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
-            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview" style="left:${previewStartPct}%;width:${previewWidthPct}%"></i>` : ''}
+            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview-dot" style="left:${previewPct}%"></i>` : ''}
             <span class="analysis-main-gauge-marker pass" style="left:40%"><i></i></span>
             <span class="analysis-main-gauge-marker safe" style="left:60%"><i></i></span>
           </div>
-          <div class="analysis-main-gauge-scale"><span>0</span><span class="pass">합격 100</span><span class="safe">안정 150</span><span>250</span></div>
+          <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="pass" style="left:40%">합격 100</span><span class="safe" style="left:60%">안정 150</span><span class="max">250</span></div>
         </div>
-        <div class="analysis-range-caption"><span>${projectedText}</span></div>
+        <div class="analysis-range-caption"><span>${gaugeCaption}</span></div>
       </div>
 
       <div class="card analysis-boost-card">
