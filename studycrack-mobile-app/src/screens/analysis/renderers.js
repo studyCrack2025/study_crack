@@ -54,30 +54,53 @@ function selectedBoostRow(rows = [], selectedSubject = '', recommendedIndex = -1
   if (!rows.length) return null;
   const bySubject = rows.find((row) => row.subject === selectedSubject);
   if (bySubject) return bySubject;
+  const best = [...rows].sort((a, b) => Number(b.gainNum || 0) - Number(a.gainNum || 0))[0];
+  if (best) return best;
   if (recommendedIndex >= 0 && rows[recommendedIndex]) return rows[recommendedIndex];
   return rows[0];
 }
 
-function renderBoostChips({ rows = [], selectedSubject = '', recommendedIndex = -1, canUseScoreSimulation = false }) {
+function rawNeededText(row = {}) {
+  if (row.rawNeeded && row.rawNeeded > 1) return `원점수 +${row.rawNeeded}점부터 변화`;
+  return '';
+}
+
+function simulationStatusText(row = {}, isBest = false) {
+  if (isBest && Number(row.gainNum || 0) > 0) return '가장 크게 반영';
+  if (Number(row.gainNum || 0) > 0) return '반영 있음';
+  return rawNeededText(row) || '변동 대기';
+}
+
+function sortedSimulationRows(rows = []) {
+  const maxGain = Math.max(...rows.map((row) => Number(row.gainNum || 0)), 0);
+  return [...rows]
+    .map((row) => ({ ...row, isBest: maxGain > 0 && Number(row.gainNum || 0) === maxGain }))
+    .sort((a, b) => {
+      const gainDelta = Number(b.gainNum || 0) - Number(a.gainNum || 0);
+      if (gainDelta !== 0) return gainDelta;
+      return Number(a.idx || 0) - Number(b.idx || 0);
+    });
+}
+
+function renderSimulationTable({ rows = [], selectedSubject = '', canUseScoreSimulation = false }) {
   if (!canUseScoreSimulation) {
     return `<div class="analysis-boost-locked"><b>Basic 이상에서 과목별 +1점 시뮬레이션이 열려요</b><button type="button" class="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button></div>`;
   }
   if (!rows.length) {
     return '<div class="analysis-boost-empty">시뮬레이션 결과를 불러오면 과목별 상승 효율이 표시됩니다.</div>';
   }
-  const activeRecommendedIndex = recommendedIndex >= 0 ? recommendedIndex : 0;
-  const maxGain = Math.max(...rows.map((row) => Number(row.gainNum || 0)), 1);
-  return `<div class="analysis-boost-list" role="list">${rows.map((row, index) => {
-    const active = (selectedSubject && selectedSubject === row.subject) || (!selectedSubject && index === activeRecommendedIndex);
-    const width = row.gainNum > 0 ? Math.max(6, Math.min(100, (row.gainNum / maxGain) * 100)) : 0;
-    const detail = row.isEvaporation
-      ? `+1점은 아직 환산점수에 반영되지 않아요${row.rawNeeded && row.rawNeeded > 1 ? ` · 원점수 +${row.rawNeeded}점부터 변화` : ''}`
-      : row.desc;
-    return `<button type="button" class="analysis-boost-row ${active ? 'active' : ''} ${row.isEvaporation ? 'is-flat' : ''}" data-action="highlightSimSubject" data-sim-subject="${escapeHtml(row.subject)}">
-      <span class="analysis-boost-row-main"><b>${escapeHtml(row.subject)}</b><em>${index === activeRecommendedIndex ? '추천' : row.isEvaporation ? '변동 대기' : '효율'}</em></span>
-      <span class="analysis-boost-row-score">${escapeHtml(row.gain)}</span>
-      <span class="analysis-boost-track"><i style="width:${width}%"></i></span>
-      <small>${escapeHtml(detail)}</small>
+  const sortedRows = sortedSimulationRows(rows);
+  const defaultSubject = sortedRows[0]?.subject || '';
+  const activeSubject = selectedSubject || defaultSubject;
+  return `<div class="analysis-sim-table" role="table" aria-label="과목별 1점 상승 효과">
+    <div class="analysis-sim-table-head" role="row"><span>과목</span><span>+1점 효과</span><span>판정</span></div>
+    ${sortedRows.map((row) => {
+    const active = activeSubject === row.subject;
+    const status = simulationStatusText(row, row.isBest);
+    return `<button type="button" class="analysis-sim-row ${row.isBest ? 'best' : ''} ${active ? 'active' : ''} ${row.isEvaporation ? 'is-flat' : ''}" data-action="highlightSimSubject" data-sim-subject="${escapeHtml(row.subject)}" role="row">
+      <span class="analysis-sim-subject" role="cell"><b>${escapeHtml(row.subject)}</b>${row.isBest ? '<em>최고 반영</em>' : ''}</span>
+      <span class="analysis-sim-effect" role="cell">${escapeHtml(row.gain)}</span>
+      <span class="analysis-sim-status" role="cell"><b>${escapeHtml(status)}</b><small>${escapeHtml(row.isEvaporation ? rawNeededText(row) || '현재 +1점으로는 변화 없음' : row.desc)}</small></span>
     </button>`;
   }).join('')}</div>`;
 }
@@ -173,6 +196,11 @@ export function renderUnifiedAnalysis(ctx) {
   const currentScore = clampScore(Number.isFinite(serverBaseScore) ? serverBaseScore : (scoreView.score ?? analysisSelected.score));
   const selectedBoost = canUseScoreSimulation ? selectedBoostRow(analysisSimRows, analysisHighlightedSubject, analysisSimRecommendedIndex) : null;
   const currentPct = Math.min((currentScore / 250) * 100, 100);
+  const selectedGain = selectedBoost && scoreView.hasScore ? Math.max(0, Number(selectedBoost.gainNum || 0)) : 0;
+  const hasPreviewGain = selectedGain > 0 && currentScore < 250;
+  const previewEndScore = clampScore(currentScore + selectedGain);
+  const previewStartPct = Math.min(currentPct, 99);
+  const previewWidthPct = hasPreviewGain ? Math.max(1.8, Math.min(100 - previewStartPct, ((previewEndScore - currentScore) / 250) * 100)) : 0;
   const gapToPass = Math.max(0, 100 - currentScore);
   const targetLabel = normalizedTargetMajor || targetMajor || '희망 대학';
   const basisLabel = examBasisLabel(scoreExamType);
@@ -184,6 +212,11 @@ export function renderUnifiedAnalysis(ctx) {
       : `${escapeHtml(selectedBoost.subject)} +1점 효과 ${escapeHtml(selectedBoost.gain)}`
     : '과목별 +1점이 대학 환산점수에 얼마나 반영되는지 비교합니다.';
   const statusStyle = scoreView.hasScore ? `style="color:${analysisStatusColor};border-color:${analysisStatusColor}"` : '';
+  const gainBadgeText = selectedBoost && scoreView.hasScore
+    ? selectedBoost.isEvaporation
+      ? '변동 대기'
+      : `+1점 효과 ${selectedBoost.gain}`
+    : '효과 대기';
   return `
     <div class="analysis-unified">
       <div class="card analysis-control-card">
@@ -211,17 +244,22 @@ export function renderUnifiedAnalysis(ctx) {
           <div><span>합격컷까지</span><b>${gapToPass ? `+${gapToPass}점` : '도달'}</b></div>
           <div><span>선택 과목 효과</span><b>${selectedBoost && scoreView.hasScore ? selectedBoost.gain : '—'}</b></div>
         </div>
-        <div class="analysis-range-chart" aria-label="환산점수 그래프">
-          <i class="analysis-range-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
-          <span class="analysis-range-cut pass" style="left:40%"><b>합격</b></span>
-          <span class="analysis-range-cut safe" style="left:60%"><b>안정</b></span>
+        <div class="analysis-main-gauge-wrap">
+          <div class="analysis-main-gauge-top"><span>현재 위치</span><b>${escapeHtml(gainBadgeText)}</b></div>
+          <div class="analysis-main-gauge" aria-label="환산점수 게이지">
+            <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
+            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview" style="left:${previewStartPct}%;width:${previewWidthPct}%"></i>` : ''}
+            <span class="analysis-main-gauge-marker pass" style="left:40%"><i></i></span>
+            <span class="analysis-main-gauge-marker safe" style="left:60%"><i></i></span>
+          </div>
+          <div class="analysis-main-gauge-scale"><span>0</span><span class="pass">합격 100</span><span class="safe">안정 150</span><span>250</span></div>
         </div>
-        <div class="analysis-range-caption"><span>0</span><span>${projectedText}</span><span>250</span></div>
+        <div class="analysis-range-caption"><span>${projectedText}</span></div>
       </div>
 
       <div class="card analysis-boost-card">
         <div class="analysis-section-head"><div><span class="analysis-card-eyebrow">점수 상승 시뮬레이션</span><h4>과목 1점이 어디에 가장 크게 반영될까요?</h4></div>${selectedBoost ? `<b>${escapeHtml(selectedBoost.subject)} ${escapeHtml(selectedBoost.gain)}</b>` : ''}</div>
-        ${renderBoostChips({ rows: analysisSimRows, selectedSubject: analysisHighlightedSubject, recommendedIndex: analysisSimRecommendedIndex, canUseScoreSimulation })}
+        ${renderSimulationTable({ rows: analysisSimRows, selectedSubject: analysisHighlightedSubject, canUseScoreSimulation })}
       </div>
 
       ${renderReverseProjectionCard({ analysisSimRows, canUseReverseProjection, currentScore, simMeta })}
