@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { removeTargetSlot, targetSlotsToList } from '../runtime/persistence.js';
 
 function noop() {}
 
@@ -97,6 +98,11 @@ export function createAnalysisHandlers(ctx) {
     setScoreDragOffset = noop,
     setScoreSlideMotion = noop,
     setTargetMajor = noop,
+    setTargetDeleteCandidate = noop,
+    setTargetDeleteError = noop,
+    setTargetDeleteModalOpen = noop,
+    setTargetDeleteSaving = noop,
+    setTargetUnivSlots = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
     persistTargetUnivs = noop,
@@ -252,7 +258,7 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
-    async removeAnalysisTarget({ actionEl }) {
+    removeAnalysisTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
       const homeTargetList = ctx.homeTargetList || [];
@@ -260,8 +266,48 @@ export function createAnalysisHandlers(ctx) {
         alert('최소 1개 대학은 유지해야 합니다.');
         return false;
       }
+      setTargetDeleteCandidate(major);
+      setTargetDeleteError('');
+      setTargetDeleteSaving(false);
+      setTargetDeleteModalOpen(true);
+      return true;
+    },
+
+    cancelTargetDelete() {
+      if (ctx.targetDeleteSaving) return true;
+      setTargetDeleteModalOpen(false);
+      setTargetDeleteCandidate('');
+      setTargetDeleteError('');
+      return true;
+    },
+
+    async confirmTargetDelete() {
+      if (ctx.targetDeleteSaving) return true;
+      const major = ctx.targetDeleteCandidate;
+      if (!major) return false;
+      const homeTargetList = ctx.homeTargetList || [];
+      if (homeTargetList.length <= 1) {
+        alert('최소 1개 대학은 유지해야 합니다.');
+        setTargetDeleteModalOpen(false);
+        setTargetDeleteCandidate('');
+        return false;
+      }
+      const nextSlots = removeTargetSlot(ctx.targetUnivSlots, major, homeTargetList);
+      const nextHome = targetSlotsToList(nextSlots);
       const nextAnalysis = (ctx.analysisTargetList || []).filter((value) => value !== major);
-      const nextHome = homeTargetList.filter((value) => value !== major);
+      if (!nextHome.length) {
+        alert('최소 1개 대학은 유지해야 합니다.');
+        return false;
+      }
+      setTargetDeleteSaving(true);
+      setTargetDeleteError('');
+      const result = await persistTargetUnivs(nextHome, nextSlots);
+      if (result && result.ok === false) {
+        setTargetDeleteSaving(false);
+        setTargetDeleteError(result.error || '목표 대학 저장에 실패했습니다.');
+        return false;
+      }
+      setTargetUnivSlots(nextSlots);
       setAnalysisTargetList(nextAnalysis);
       setHomeTargetList(() => {
         setHomeSlideIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, nextHome.length - 1))));
@@ -270,11 +316,9 @@ export function createAnalysisHandlers(ctx) {
       if (ctx.targetMajor === major) {
         setTargetMajor(nextAnalysis[0] || nextHome[0] || ctx.analysisRecommended?.[0] || '');
       }
-      const result = await persistTargetUnivs(nextHome);
-      if (result && result.ok === false) {
-        alert(result.error || '목표 대학 저장에 실패했습니다.');
-        return false;
-      }
+      setTargetDeleteSaving(false);
+      setTargetDeleteModalOpen(false);
+      setTargetDeleteCandidate('');
       return true;
     },
 

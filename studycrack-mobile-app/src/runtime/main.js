@@ -14,7 +14,7 @@ import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/ren
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, uploadMobileFile, uploadMobileWeeklyFiles } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
@@ -413,7 +413,7 @@ function MobileApp() {
   );
 
   const persistTargetUnivs = useCallback(
-    (targetList) => saveTargetUnivs({ ...getUserApiBinding(), targetList }),
+    (targetList, targetSlots) => saveTargetUnivs({ ...getUserApiBinding(), targetList, targetSlots }),
     [getUserApiBinding]
   );
 
@@ -620,14 +620,16 @@ function MobileApp() {
     addMajorToTargets: (major) => {
       if (!major) return false;
       const current = stateRef.current;
-      const nextAnalysis = uniqueTargetList([...(current.analysisTargetList || []), major]);
-      const nextHome = uniqueTargetList([...(current.homeTargetList || []), major]);
+      const nextSlots = upsertTargetSlot(current.targetUnivSlots, major);
+      const nextHome = targetSlotsToList(nextSlots);
+      const nextAnalysis = uniqueTargetList(nextHome);
       setState({
+        targetUnivSlots: nextSlots,
         analysisTargetList: nextAnalysis,
         homeTargetList: nextHome,
         targetMajor: current.targetMajor || major
       });
-      persistTargetUnivs(nextHome).then((result) => notifySaveFailure(result, '목표 대학 저장에 실패했습니다.'));
+      persistTargetUnivs(nextHome, nextSlots).then((result) => notifySaveFailure(result, '목표 대학 저장에 실패했습니다.'));
       return true;
     }
   };

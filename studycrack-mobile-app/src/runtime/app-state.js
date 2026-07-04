@@ -8,6 +8,7 @@ import {
 import { STORAGE_KEYS, readArray, readString, safeParse } from '../state/storage.js';
 import { normalizePlannerItems } from '../state/planner-storage.js';
 import { normalizePersonalEvent } from '../constants/admission-calendar.js';
+import { normalizeTargetUnivSlots } from './persistence.js';
 
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
 export const MAIN_TAB_SCREENS = ['home', 'analysis', 'strategy', 'planner', 'my'];
@@ -64,6 +65,11 @@ export function createInitialAppState() {
     // analysis/대학
     analysisTargetList: [...DEFAULT_TARGET_LIST],
     homeTargetList: [...DEFAULT_TARGET_LIST],
+    targetUnivSlots: normalizeTargetUnivSlots([], DEFAULT_TARGET_LIST),
+    targetDeleteModalOpen: false,
+    targetDeleteCandidate: '',
+    targetDeleteSaving: false,
+    targetDeleteError: '',
     analysisSearchOpen: false,
     analysisSearchTerm: '',
     analysisMode: 'summary',

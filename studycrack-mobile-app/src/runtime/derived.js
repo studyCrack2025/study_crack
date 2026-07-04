@@ -266,17 +266,26 @@ const SIM_SUBJECT_FALLBACK = { kor: '국어', math: '수학', inq1: '탐구1', i
 
 function buildServerSimRows(simulation) {
   const simData = simulation?.sim_data || {};
+  const baseUiScore = Number(simulation?.base_ui_score);
+  const hasBaseUiScore = Number.isFinite(baseUiScore);
   return SIM_SUBJECT_ORDER
     .map((key, idx) => {
       const item = simData[key];
       if (!item) return null;
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
+      const rawNeededMatch = String(item.msg || '').match(/원점수\s*\+(\d+)점\s*필요/);
       return {
+        key,
         subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
         gain: `+${rounded.toFixed(rounded >= 10 ? 0 : 1)}점`,
         desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
         gainNum: rounded,
+        baseUiScore: hasBaseUiScore ? baseUiScore : null,
+        rawNeeded: rawNeededMatch ? Number(rawNeededMatch[1]) : 1,
+        isEvaporation: rounded <= 0,
+        needsBacktrace: simulation?.needs_backtrace === true,
+        backtracePlan: simulation?.backtrace_plan || null,
         idx
       };
     })
