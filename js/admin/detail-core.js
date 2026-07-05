@@ -305,7 +305,7 @@ function renderData(s) {
         currentTier = calcTierFromLegacy(currentPaymentsData || []);
     }
 
-    renderTierBadge(currentTier);
+    renderTierBadge(currentTier, s);
 
     const specialBtn = document.getElementById('btn-special');
     if (['pro'].includes(currentTier)) specialBtn.style.display = 'inline-block';
@@ -335,7 +335,11 @@ function calcTierFromLegacy(payments) {
     return 'basic';
 }
 
-function renderTierBadge(tier) {
+function isKccPromotionStudent(studentItem) {
+    return Boolean(studentItem?.promotionClaimKcc01 || studentItem?.promotionClaims?.kcc01);
+}
+
+function renderTierBadge(tier, studentItem = null) {
     const area = document.getElementById('tierBadgeArea');
     let html = '';
     if (tier === 'pro') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #F59E0B, #FCD34D); border: 2px solid #F59E0B; color: #78350f;">PRO TIER</span>';
@@ -343,6 +347,9 @@ function renderTierBadge(tier) {
     else if (tier === 'starter') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA); border: 2px solid #8B5CF6; color: white;">STARTER TIER</span>';
     else if (tier === 'basic') html = '<span class="tier-badge" style="background: linear-gradient(135deg, #059669, #34D399); border: 2px solid #059669; color: white;">BASIC TIER</span>';
     else html = '<span class="tier-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">FREE USER</span>';
+    if (isKccPromotionStudent(studentItem)) {
+        html += '<span class="tier-badge" title="StudyCrack × KCC 프로젝트 혜택 지급 계정" style="display:block; width:max-content; margin:8px auto 0; background:#e0f2fe; color:#075985; border:1px solid #7dd3fc;">KCC 혜택</span>';
+    }
     area.innerHTML = html;
 }
 
