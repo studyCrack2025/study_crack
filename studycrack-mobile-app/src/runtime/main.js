@@ -297,6 +297,24 @@ function resolveAnalysisExamMode(state = {}) {
     }) || explicitKey || 'mar';
 }
 
+function buildRenderScoreCache(state = {}, examKey = '') {
+  const baseCache = state.scoreCache || {};
+  const snapshot = state.lastAnalysisSnapshot;
+  const snapshotMatches = snapshot && snapshot.examMode === examKey;
+  const analysisResults = (state.analysisResults || []).length
+    ? state.analysisResults
+    : snapshotMatches
+      ? snapshot.analysisResults || []
+      : [];
+  const analysisSimulations = (state.analysisSimulations || []).length
+    ? state.analysisSimulations
+    : snapshotMatches
+      ? snapshot.analysisSimulations || []
+      : [];
+  const merged = normalizeServerResults(analysisResults, analysisSimulations);
+  return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
+}
+
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
   return Boolean(
@@ -485,6 +503,8 @@ function MobileApp() {
   }, [nav]);
 
   const derivedCtx = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
+  const renderExamKey = resolveAnalysisExamMode(state);
+  const renderScoreCache = buildRenderScoreCache(state, renderExamKey);
   const baseCtx = {
     ...state,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
@@ -496,19 +516,19 @@ function MobileApp() {
     // targetMajor로 재정렬하던 computeHomeTargets 경로를 대체 → 1~3지망 순서 섞임/라이브·0 폴백 제거.
     homeTargets: buildUniversityCards(
       uniqueTargetList(state.homeTargetList || []),
-      state.scoreCache,
-      resolveAnalysisExamMode(state),
+      renderScoreCache,
+      renderExamKey,
       state.scoreFetchStatus
     ),
     // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
     // 분석 선택 대학(targetMajor)은 분석 전용 — homeTargets(homeTargetList)와 분리되어 홈 순서에 영향 없음.
     ...(() => {
-      const examKey = resolveAnalysisExamMode(state);
+      const examKey = renderExamKey;
       const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);
       const selectedMajor = targets.includes(state.targetMajor)
         ? state.targetMajor
         : targets[0] || state.targetMajor || '';
-      const view = buildAnalysisScoreView(selectedMajor, state.scoreCache, examKey, state.scoreFetchStatus);
+      const view = buildAnalysisScoreView(selectedMajor, renderScoreCache, examKey, state.scoreFetchStatus);
       return {
         analysisSelected: { ...(derivedCtx.analysisSelected || {}), score: view.score },
         analysisScoreView: view,
@@ -522,7 +542,7 @@ function MobileApp() {
         gaugeTargetPct: view.pct,
         gaugePassPct: 40,
         gaugeSafePct: 60,
-        analysisSimulationTargets: buildSimulationTargets(targets, state.scoreCache, examKey),
+        analysisSimulationTargets: buildSimulationTargets(targets, renderScoreCache, examKey),
         analysisMajorOptions: targets,
         normalizedTargetMajor: selectedMajor
       };
@@ -965,14 +985,15 @@ function MobileApp() {
     const scoreSignature = buildScoreSignature(examMode, targetList);
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
-      if (scoreFetchRetryRef.current >= 10) {
-        setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
-        return undefined;
-      }
+      const retryDelay = Math.min(1200, 250 + scoreFetchRetryRef.current * 100);
       const timer = globalThis.setTimeout?.(() => {
         scoreFetchRetryRef.current += 1;
+        if (scoreFetchRetryRef.current >= 40) {
+          setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
+          return;
+        }
         setState({ scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
-      }, 250);
+      }, retryDelay);
       return () => {
         if (timer) globalThis.clearTimeout?.(timer);
       };
