@@ -39,7 +39,7 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       : status === 'live' ? '예상 점수'
         : pending ? '분석 중' : '성적 입력 필요';
   const scoreValue = empty ? '—' : `${item.score}점`;
-  const gapValue = noScore ? '—' : `${item.gap}점`;
+  const gapValue = noScore ? '—' : Number(item.gap || 0) > 0 ? `-${item.gap}점` : '0점';
   return (
     <button
       className="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3"
@@ -538,10 +538,13 @@ export function HomeScreen(ctx) {
                   </div>
                   {canAccessBasic && todayPlannerItems.length ? (
                     <>
-                      <div className="goal-compact">
-                        <b>{todayPlannerProgress}%</b>
-                        <span>달성</span>
-                        <em>{formatMinutesLabel(todayPlannerTotalMinutes)}</em>
+                      <div className="home-goal-progress-head">
+                        <div className="goal-compact">
+                          <b>{todayPlannerProgress}%</b>
+                          <span>달성</span>
+                          <i>{studyTimerRunning ? '진행중' : '시작 전'}</i>
+                        </div>
+                        <em>목표 {formatMinutesLabel(todayPlannerTotalMinutes)}</em>
                       </div>
                       <div className="track">
                         <i style={{ width: `${todayPlannerProgress}%` }} />

@@ -53,7 +53,7 @@ function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
   const scoreLabel = status === 'confirmed' ? (item.scoreUpdating ? '갱신 중…' : 'AI 점수')
     : status === 'live' ? '예상 점수' : pending ? '분석 중' : '성적 입력 필요';
   const scoreValue = empty ? '—' : `${item.score}점`;
-  const gapValue = noScore ? '—' : `${item.gap}점`;
+  const gapValue = noScore ? '—' : Number(item.gap || 0) > 0 ? `-${item.gap}점` : '0점';
   const scoreInner = pending ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong>' : `<strong>${scoreValue}</strong>`;
   return `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-univ-remove" data-action="removeAnalysisTarget" data-target-major="${item.major}">✕</span>
@@ -303,7 +303,7 @@ export function renderHomeView(ctx) {
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessBasic ? '' : 'is-locked'}" data-action="goto" data-target="planner">
         <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessBasic ? '' : '<span class="home-goal-plan-badge">Basic부터</span>'}</div>
-        ${canAccessBasic && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessBasic ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Basic 기능 보기</span>`}
+        ${canAccessBasic && todayPlannerItems.length ? `<div class="home-goal-progress-head"><div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><i>${studyTimerRunning ? '진행중' : '시작 전'}</i></div><em>목표 ${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessBasic ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Basic 기능 보기</span>`}
       </button>
       ${renderHomeReportPreview({ proReports, proReportsStatus, weeklyReports, weeklyReportsStatus })}
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">
