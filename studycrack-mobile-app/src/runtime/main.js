@@ -14,7 +14,7 @@ import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/ren
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
@@ -554,6 +554,7 @@ function MobileApp() {
     // 공용 API/session helper를 재사용한다. 미로드 시 graceful no-op.
     apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
     userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || '',
+    notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || '',
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
     expireMobileSessionSilently,
@@ -913,18 +914,6 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getNotiApiBinding]);
-
-  // 알림 패널을 열면 미읽음 상태를 갱신한다.
-  useEffect(() => {
-    if (!state.notifModalOpen) return undefined;
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const current = stateRef.current.notiList || [];
-    if (!current.some((n) => !n.isRead)) return undefined;
-    setState({ notiList: current.map((n) => ({ ...n, isRead: true })) });
-    markMobileNotificationsRead({ ...getNotiApiBinding(), notiId: 'all' });
-    return undefined;
-  }, [state.notifModalOpen, getNotiApiBinding]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

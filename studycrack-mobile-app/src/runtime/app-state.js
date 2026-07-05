@@ -191,6 +191,7 @@ export function createInitialAppState() {
     notiStatus: 'idle', // idle | loading | ready | empty | error
     notiPage: 0, // 알림 내역 페이지(5개씩)
     notiExpandedId: '', // 펼쳐 본문을 보여줄 알림 id
+    notiDetailId: '', // 상세 모달로 열 알림 id
     openFaq: '',
     notifModalOpen: false,
     // 수험 일정 캘린더.

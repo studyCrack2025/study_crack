@@ -186,8 +186,10 @@ export function renderNotificationModal(ctx = {}) {
     ? notiList
         .slice(0, NOTIF_POPOVER_PREVIEW_COUNT)
         .map(
-          (n) =>
-            `<button type="button" class="notif-popover-item ${n.isRead ? '' : 'pro-notif-unread'}" data-action="openNotificationList"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body || n.message || '')}</p></button>`
+          (n, idx) => {
+            const id = String(n.notiId || n.id || n.notificationId || idx);
+            return `<button type="button" class="notif-popover-item ${n.isRead ? '' : 'pro-notif-unread'}" data-action="openNotificationList" data-noti-id="${escapeHtml(id)}"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body || n.message || '')}</p></button>`;
+          }
         )
         .join('')
     : `<div class="notif-popover-empty"><p>${
