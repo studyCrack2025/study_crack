@@ -80,7 +80,7 @@ export function AnalysisScreen(ctx) {
                 <b>분석 기준 시험</b>
                 <span>홈과 분석 결과가 같은 시험 기준으로 계산됩니다.</span>
               </div>
-              <select className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>
+              <select className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
                 {EXAM_OPTIONS.map((label) => (
                   <option value={label} key={label}>
                     {label}

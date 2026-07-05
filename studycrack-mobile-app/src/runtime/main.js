@@ -355,6 +355,7 @@ function MobileApp() {
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
+  const userFetchRetryRef = useRef(0);
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
   const simulationFetchSignatureRef = useRef('');
@@ -813,9 +814,26 @@ function MobileApp() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const userApiBinding = getUserApiBinding();
+    if (typeof userApiBinding.apiFetch !== 'function' || !userApiBinding.userApiUrl) {
+      const retryDelay = Math.min(1200, 250 + userFetchRetryRef.current * 100);
+      setState({ userLoadStatus: 'loading' });
+      const timer = globalThis.setTimeout?.(() => {
+        userFetchRetryRef.current += 1;
+        if (userFetchRetryRef.current >= 40) {
+          setState({ userLoadStatus: 'error' });
+          return;
+        }
+        setState({ userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1 });
+      }, retryDelay);
+      return () => {
+        if (timer) globalThis.clearTimeout?.(timer);
+      };
+    }
+    userFetchRetryRef.current = 0;
     let cancelled = false;
     setState({ userLoadStatus: 'loading' });
-    fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
+    fetchCurrentUser(userApiBinding).then((userData) => {
       if (cancelled) return;
       if (!userData) {
         setState({ userLoadStatus: 'error' });
@@ -843,7 +861,7 @@ function MobileApp() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [getUserApiBinding, state.userFetchRetryTick]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || state.userLoadStatus !== 'ready') return undefined;

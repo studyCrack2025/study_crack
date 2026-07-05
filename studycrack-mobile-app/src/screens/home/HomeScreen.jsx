@@ -451,7 +451,7 @@ export function HomeScreen(ctx) {
                   <div>
                     <b>지원학과 AI 점수</b>
                   </div>
-                  <select className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>
+                  <select className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
                     {EXAM_OPTIONS.map((label) => (
                       <option value={label} key={label}>
                         {label}
