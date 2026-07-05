@@ -274,7 +274,9 @@ function buildServerSimRows(simulation) {
       if (!item) return null;
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
+      const afterUiScore = Number(item.afterUiScore ?? item.after_ui_score);
       const rawNeededMatch = String(item.msg || '').match(/원점수\s*\+(\d+)점\s*필요/);
+      const rawNeeded = Number(item.rawNeeded ?? item.raw_needed ?? (rawNeededMatch ? Number(rawNeededMatch[1]) : 1)) || 1;
       return {
         key,
         subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
@@ -282,7 +284,9 @@ function buildServerSimRows(simulation) {
         desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
         gainNum: rounded,
         baseUiScore: hasBaseUiScore ? baseUiScore : null,
-        rawNeeded: rawNeededMatch ? Number(rawNeededMatch[1]) : 1,
+        afterUiScore: Number.isFinite(afterUiScore) ? afterUiScore : (hasBaseUiScore ? baseUiScore + rounded : null),
+        rawNeeded,
+        firstPositiveUiDiff: Number(item.firstPositiveUiDiff ?? item.first_positive_ui_diff ?? 0) || 0,
         isEvaporation: rounded <= 0,
         needsBacktrace: simulation?.needs_backtrace === true,
         backtracePlan: simulation?.backtrace_plan || null,
