@@ -117,20 +117,68 @@ export function parseTargetMajor(value) {
   return { univ: first || text, major: rest.join(' ') || text, date: null };
 }
 
-export function buildTargetUnivsPayload(targetList = [], nowIso = new Date().toISOString()) {
-  const unique = Array.from(new Set((targetList || []).map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 6);
-  return unique.map((item) => {
-    const parsed = parseTargetMajor(item);
-    return parsed ? { ...parsed, date: nowIso } : null;
-  });
+export function formatTargetSlot(slot) {
+  if (!slot || typeof slot !== 'object') return '';
+  const univ = String(slot.univ || '').trim();
+  const major = String(slot.major || '').trim();
+  if (!univ && !major) return '';
+  if (!univ) return major;
+  if (!major) return univ;
+  return major.includes(univ) ? major : `${univ} ${major}`.trim();
 }
 
-export function saveTargetUnivs({ apiFetch, userApiUrl, targetList } = {}) {
+export function normalizeTargetSlot(input, nowIso = new Date().toISOString()) {
+  if (!input) return null;
+  if (typeof input === 'string') {
+    const parsed = parseTargetMajor(input);
+    return parsed ? { ...parsed, date: parsed.date || nowIso } : null;
+  }
+  if (typeof input !== 'object') return null;
+  const univ = String(input.univ || '').trim();
+  const major = String(input.major || '').trim();
+  if (!univ && !major) return null;
+  return { univ, major, date: input.date || nowIso };
+}
+
+export function normalizeTargetUnivSlots(slots = [], fallbackList = [], nowIso = new Date().toISOString()) {
+  const source = Array.isArray(slots) && slots.length ? slots : fallbackList;
+  const normalized = Array.from({ length: 6 }, (_, idx) => normalizeTargetSlot(source?.[idx], nowIso));
+  return normalized;
+}
+
+export function targetSlotsToList(slots = []) {
+  return (Array.isArray(slots) ? slots : []).map(formatTargetSlot).filter(Boolean);
+}
+
+export function upsertTargetSlot(slots = [], targetText = '', nowIso = new Date().toISOString()) {
+  const normalized = normalizeTargetUnivSlots(slots, [], nowIso);
+  const nextSlot = normalizeTargetSlot(targetText, nowIso);
+  const nextLabel = formatTargetSlot(nextSlot);
+  if (!nextSlot || !nextLabel) return normalized;
+  if (normalized.some((slot) => formatTargetSlot(slot) === nextLabel)) return normalized;
+  const emptyIndex = normalized.findIndex((slot) => !slot);
+  if (emptyIndex < 0) return normalized;
+  normalized[emptyIndex] = nextSlot;
+  return normalized;
+}
+
+export function removeTargetSlot(slots = [], targetText = '', fallbackList = [], nowIso = new Date().toISOString()) {
+  const normalized = normalizeTargetUnivSlots(slots, fallbackList, nowIso);
+  const targetLabel = String(targetText || '').trim();
+  return normalized.map((slot) => (formatTargetSlot(slot) === targetLabel ? null : slot));
+}
+
+export function buildTargetUnivsPayload(targetList = [], nowIso = new Date().toISOString(), targetSlots = null) {
+  const slots = normalizeTargetUnivSlots(targetSlots || [], targetList, nowIso);
+  return slots;
+}
+
+export function saveTargetUnivs({ apiFetch, userApiUrl, targetList, targetSlots } = {}) {
   return postUserData({
     apiFetch,
     userApiUrl,
     type: 'update_target_univs',
-    data: buildTargetUnivsPayload(targetList)
+    data: buildTargetUnivsPayload(targetList, new Date().toISOString(), targetSlots)
   });
 }
 
@@ -225,40 +273,54 @@ export async function fetchMobileTargetAnalysis({ apiFetch, analysisApiUrl, targ
   const targetUnivs = toAnalysisTargetPayload(targetList);
   if (!targetUnivs.length) return null;
 
-  const request = (type) =>
-    apiFetch(analysisApiUrl, {
-      method: 'POST',
-      body: JSON.stringify({ type, targetUnivs, userScores, examMode })
-    });
-
-  const [analysisRes, simulationRes] = await Promise.allSettled([
-    request('analyze_my_targets'),
-    request('simulate_score_rise')
-  ]);
-
   let analysisResults = [];
-  let simulationResults = [];
   let analysisError = null;
-  let simulationError = null;
 
-  if (analysisRes.status === 'fulfilled' && analysisRes.value?.ok) {
-    const data = await analysisRes.value.json().catch(() => null);
-    analysisResults = normalizeAnalysisResults(data);
-  } else if (analysisRes.status === 'fulfilled') {
-    analysisError = await readApiError(analysisRes.value);
-  } else {
-    analysisError = await readApiError(analysisRes.reason);
-  }
-  if (simulationRes.status === 'fulfilled' && simulationRes.value?.ok) {
-    const data = await simulationRes.value.json().catch(() => null);
-    simulationResults = normalizeSimulationResults(data);
-  } else if (simulationRes.status === 'fulfilled') {
-    simulationError = await readApiError(simulationRes.value, '시뮬레이션 결과를 불러오지 못했습니다.');
-  } else {
-    simulationError = await readApiError(simulationRes.reason, '시뮬레이션 결과를 불러오지 못했습니다.');
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'analyze_my_targets', targetUnivs, userScores, examMode })
+    });
+    if (!response?.ok) {
+      analysisError = await readApiError(response);
+    } else {
+      const data = await response.json().catch(() => null);
+      analysisResults = normalizeAnalysisResults(data);
+    }
+  } catch (error) {
+    analysisError = await readApiError(error);
   }
 
-  return { analysisResults, simulationResults, analysisError, simulationError };
+  return { analysisResults, simulationResults: [], analysisError, simulationError: null };
+}
+
+export async function fetchMobileScoreSimulation({ apiFetch, analysisApiUrl, targetList, userScores, examMode } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl || !userScores) return null;
+  const targetUnivs = toAnalysisTargetPayload(targetList);
+  if (!targetUnivs.length) return null;
+
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'simulate_score_rise', targetUnivs, userScores, examMode })
+    });
+    if (!response?.ok) {
+      return {
+        simulationResults: [],
+        simulationError: await readApiError(response, '시뮬레이션 결과를 불러오지 못했습니다.')
+      };
+    }
+    const data = await response.json().catch(() => null);
+    return {
+      simulationResults: normalizeSimulationResults(data),
+      simulationError: null
+    };
+  } catch (error) {
+    return {
+      simulationResults: [],
+      simulationError: await readApiError(error, '시뮬레이션 결과를 불러오지 못했습니다.')
+    };
+  }
 }
 
 function normalizeProReports(payload) {
@@ -613,7 +675,7 @@ export async function markMobileNotificationsRead({ apiFetch, notiApiUrl, notiId
 }
 
 // ── 개인 수험 일정(admissionCalendar) ─────────────────────────────────────
-// 로그인 사용자는 서버 응답을 단일 기준으로 삼고, localStorage는 로컬 프리뷰에서만 사용한다.
+// 로그인 사용자는 서버 응답을 단일 기준으로 삼고, localStorage는 미로그인 로컬 점검에서만 사용한다.
 export async function fetchMobileAdmissionCalendar({ apiFetch, userApiUrl } = {}) {
   if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {

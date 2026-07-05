@@ -1,5 +1,11 @@
 // 세션이 있을 때만 사용자 데이터를 가져와 mock 위에 병합한다(미인증/실패 시 데모 유지).
-import { createBlankScoreState, mapExamDataToScorePatch, scoreExamKeyToLabel } from './persistence.js';
+import {
+  createBlankScoreState,
+  mapExamDataToScorePatch,
+  normalizeTargetUnivSlots,
+  scoreExamKeyToLabel,
+  targetSlotsToList
+} from './persistence.js';
 
 // 사용자 분석 데이터 호출. 성공 시 백엔드 userData 반환, 그 외 null.
 // 네트워크/CORS 실패는 throw 없이 null(데모 유지)하되, 인증 만료(AUTH_EXPIRED)는
@@ -31,7 +37,7 @@ const TIER_TO_PLAN_DISPLAY = {
   pro: 'Pro'
 };
 
-const EXAM_PRIORITY = ['active', 'jun', 'may', 'mar', 'apr', 'jul', 'sep', 'oct', 'csat'];
+const EXAM_PRIORITY = ['jun', 'may', 'mar', 'apr', 'jul', 'sep', 'oct', 'csat', 'active'];
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -96,6 +102,9 @@ export function mapUserToStatePatch(userData, base = {}) {
   if (userData.gracePeriodUntil !== undefined && userData.gracePeriodUntil !== null) {
     userPatch.gracePeriodUntil = userData.gracePeriodUntil;
   }
+  if (typeof userData.univChangeRemaining === 'number') {
+    userPatch.univChangeRemaining = userData.univChangeRemaining;
+  }
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;
@@ -113,13 +122,17 @@ export function mapUserToStatePatch(userData, base = {}) {
     patch.userTier = tier;
     patch.selectedPlan = TIER_TO_PLAN_DISPLAY[tier] || (base.selectedPlan || '');
   }
-  const explicitTargets = mapTargetUnivs(userData.targetUnivs);
+  const normalizedTargetSlots = normalizeTargetUnivSlots(userData.targetUnivs);
+  const explicitTargets = targetSlotsToList(normalizedTargetSlots);
   const targetList = explicitTargets.length ? explicitTargets : mapTargetUnivs(userData.qualitative?.targets || []);
   if (targetList.length) {
     userPatch.targetUniversity = targetList[0];
     patch.targetMajor = targetList[0];
     patch.homeTargetList = targetList;
     patch.analysisTargetList = targetList;
+    patch.targetUnivSlots = explicitTargets.length
+      ? normalizedTargetSlots
+      : normalizeTargetUnivSlots([], targetList);
     patch.selectedUniversityIndex = 0;
   }
   const mappedScore = mapQuantitativeToScores(userData.quantitative);

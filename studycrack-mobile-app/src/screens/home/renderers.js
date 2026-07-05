@@ -60,7 +60,7 @@ function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}">${scoreInner}<small>${scoreLabel}</small></div></div>
           <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
           <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
-          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item"><b>${item.cut}점</b>합격 컷</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
+          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`;
 }
@@ -79,6 +79,22 @@ export function renderUniversityModal(ctx) {
   const body = `<div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeUniversityModal">✕</button></div><div class="analysis-search-inline"><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><button type="button" class="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name) ? '추가됨' : '선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name) ? '추가됨' : '추가'}</span></button>`).join('')}</div>`;
 
   return renderModal({ dismissAction: 'closeUniversityModal', body });
+}
+
+export function renderTargetDeleteModal(ctx = {}) {
+  const {
+    targetDeleteCandidate = '',
+    targetDeleteError = '',
+    targetDeleteModalOpen = false,
+    targetDeleteSaving = false
+  } = ctx;
+  if (!targetDeleteModalOpen) return '';
+  const body = `<div class="target-delete-modal-head"><span>목표 대학</span><h3>목표 대학에서 삭제할까요?</h3><p><b>${escapeHtml(targetDeleteCandidate)}</b>을 홈과 분석 탭의 지원학과 목록에서 함께 삭제합니다.</p></div>${targetDeleteError ? `<p class="target-delete-error">${escapeHtml(targetDeleteError)}</p>` : ''}<div class="support-btns target-delete-actions"><button type="button" class="btn btn-secondary" data-action="cancelTargetDelete" ${targetDeleteSaving ? 'disabled' : ''}>취소</button><button type="button" class="btn btn-primary danger" data-action="confirmTargetDelete" ${targetDeleteSaving ? 'disabled' : ''}>${targetDeleteSaving ? '삭제 중...' : '삭제'}</button></div>`;
+  return renderModal({
+    dismissAction: targetDeleteSaving ? 'noopModal' : 'cancelTargetDelete',
+    panelClass: 'target-delete-modal',
+    body
+  });
 }
 
 export function renderStudyBreakdown(ctx) {
@@ -274,6 +290,7 @@ export function renderHomeView(ctx) {
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
       ${renderUniversityModal({ analysisRecommended, analysisSearchList, analysisSearchTerm, analysisTargetList, universityModalOpen })}
+      ${renderTargetDeleteModal(ctx)}
     </div>
     <div class="section home-section home-section-last">
       <div class="card home-study-summary study-summary-card home-insight-card premium-panel">

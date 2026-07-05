@@ -16,6 +16,7 @@ import {
   renderNotificationModal,
   renderStudyBreakdown,
   renderStudySubjectSheet,
+  renderTargetDeleteModal,
   renderUniversityModal
 } from './renderers.js';
 
@@ -72,9 +73,6 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       <div className="kpi-row score-row">
         <div className="kpi-item">
           <b>{noScore ? '—' : scoreValue}</b>현재 점수
-        </div>
-        <div className="kpi-item">
-          <b>{item.cut}점</b>합격 컷
         </div>
         <div className="kpi-item danger">
           <b>{gapValue}</b>부족 점수
@@ -416,9 +414,10 @@ export function HomeScreen(ctx) {
 
   // 스크롤/전환 무관 영역은 기존 문자열 renderer 재사용(leaf 임베드).
   const universityModalHtml = renderUniversityModal(ctx);
+  const targetDeleteModalHtml = renderTargetDeleteModal(ctx);
   const breakdownHtml = renderStudyBreakdown(ctx);
   const overlaysHtml =
-    renderStudySubjectSheet(ctx) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+    renderStudySubjectSheet(ctx) + targetDeleteModalHtml + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
   // 알림 시트는 app-frame 직속에 둬야 스크롤 컨테이너(.app-screen)가 아닌 고정 프레임 기준으로 하단에 붙는다.
   const notifSheetHtml = renderNotificationModal(ctx);
 

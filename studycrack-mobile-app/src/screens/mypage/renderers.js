@@ -250,12 +250,12 @@ function renderSupportQnaList({ qnaHistory = [], qnaStatus = 'idle' }) {
 function renderMyMbtiCard(mbtiResult) {
   const code = normalizeMbtiCode(mbtiResult);
   if (!code) {
-    return `<button type="button" class="card my-mbti-card empty" data-action="openMbtiModal"><div class="my-mbti-empty-copy"><p class="analysis-title">학습 유형 진단</p><p class="sub">36문항으로 나의 학습 성향 코드를 확인해보세요.</p></div><span class="my-mbti-empty-cta">검사하기</span></button>`;
+    return `<button type="button" class="card my-mbti-card empty" data-action="openMbtiModal"><div class="my-mbti-empty-copy"><span class="my-mbti-kicker">STUDY TYPE</span><p class="analysis-title">학습 유형 진단</p><p class="sub">36문항으로 나의 학습 성향 코드를 확인해보세요.</p></div><span class="my-mbti-empty-cta">검사하기</span></button>`;
   }
   const profile = getMbtiProfile(code);
   const tags = profile.code.split('').map((letter) => `<span class="my-mbti-tag">${MBTI_LETTER_LABELS[letter] || letter}</span>`).join('');
   return `<div class="card my-mbti-card">
-    <div class="my-mbti-head"><p class="analysis-title">내 학습 유형</p><button type="button" class="my-mbti-retry" data-action="openMbtiModal">다시 검사</button></div>
+    <div class="my-mbti-head"><div><span class="my-mbti-kicker">STUDY TYPE</span><p class="analysis-title">내 학습 유형</p></div><button type="button" class="my-mbti-retry" data-action="openMbtiModal">다시 검사</button></div>
     <div class="my-mbti-main"><span class="my-mbti-code">${profile.code}</span><div class="my-mbti-name-wrap"><b>${profile.name}</b><div class="my-mbti-tags">${tags}</div></div></div>
     <p class="my-mbti-desc">${profile.desc}</p>
   </div>`;
@@ -263,7 +263,6 @@ function renderMyMbtiCard(mbtiResult) {
 
 export function renderMyPageScreen(ctx) {
   const {
-    appbar,
     icon = defaultIcon,
     layout,
     mbtiResult,
@@ -275,7 +274,8 @@ export function renderMyPageScreen(ctx) {
   const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
   const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}${renderMbtiModal(ctx)}`;
-  return layout(appbar('마이페이지', false) + `<div class="my-stack">
+  return layout(`<div class="my-stack">
+      <header class="my-page-hero"><span>MY STUDYCRACK</span><h1>마이페이지</h1><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></header>
       <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
       ${renderMyMbtiCard(mbtiResult)}
       <div class="card my-menu-card">
@@ -311,7 +311,7 @@ export function renderNotificationSettingsScreen(ctx) {
 }
 
 // 알림 목록 화면(전체): 홈 알림 팝오버의 '전체 보기'/마이페이지 진입 대상.
-const NOTI_PAGE_SIZE = 8;
+const NOTI_PAGE_SIZE = 5;
 
 export function renderNotificationListScreen(ctx) {
   const {
