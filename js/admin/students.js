@@ -81,6 +81,7 @@ async function searchStudents() {
 
         students.forEach(s => {
             let statusBadge = getTierBadgeHTML(s);
+            const promotionBadge = getPromotionBadgeHTML(s);
             let tutorNameDisplay = s.tutorName ? `<span class="tutor-tag">👨‍🏫 ${escapeHtml(s.tutorName)}</span>` : '<span style="color:#94a3b8; font-size:0.8rem;">미배정</span>';
             let lastActive = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '-';
 
@@ -99,7 +100,7 @@ async function searchStudents() {
                     </div>
                 </td>
                 <td data-label="담당 튜터">${tutorNameDisplay}</td>
-                <td data-label="상태/등급">${statusBadge}</td>
+                <td data-label="상태/등급">${statusBadge}${promotionBadge}</td>
                 <td data-label="최근 활동"><span class="student-meta-text">결제: ${lastActive}</span></td>
                 <td data-label="관리 액션">
                     <div class="action-buttons">
@@ -124,7 +125,8 @@ function goToStudentDetail(targetUserId) {
 // 학생 등급을 텍스트로 반환 (CSV용)
 function getStudentTierText(s) {
     if (!s || !s.currentSubscription || s.currentSubscription.status !== 'active') return 'FREE';
-    return (s.currentSubscription.tier || 'FREE').toUpperCase();
+    const tier = (s.currentSubscription.tier || 'FREE').toUpperCase();
+    return isKccPromotionStudent(s) ? `${tier} (KCC)` : tier;
 }
 
 // CSV 컬럼 선택 모달 열기
@@ -372,6 +374,15 @@ function getTierBadgeHTML(studentItem) {
     else if (tier.includes('PRO')) return '<span style="color:#92400e; background:#fef3c7; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">PRO</span>';
     else if (tier.includes('STANDARD')) return '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
     else return '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
+}
+
+function isKccPromotionStudent(studentItem) {
+    return Boolean(studentItem?.promotionClaimKcc01 || studentItem?.promotionClaims?.kcc01);
+}
+
+function getPromotionBadgeHTML(studentItem) {
+    if (!isKccPromotionStudent(studentItem)) return '';
+    return '<span title="StudyCrack × KCC 프로젝트 혜택 지급 계정" style="display:inline-block; margin-left:6px; color:#075985; background:#e0f2fe; border:1px solid #7dd3fc; padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:800;">KCC 혜택</span>';
 }
 
 // ============================================================

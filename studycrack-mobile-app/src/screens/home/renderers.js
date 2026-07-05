@@ -81,6 +81,22 @@ export function renderUniversityModal(ctx) {
   return renderModal({ dismissAction: 'closeUniversityModal', body });
 }
 
+export function renderTargetDeleteModal(ctx = {}) {
+  const {
+    targetDeleteCandidate = '',
+    targetDeleteError = '',
+    targetDeleteModalOpen = false,
+    targetDeleteSaving = false
+  } = ctx;
+  if (!targetDeleteModalOpen) return '';
+  const body = `<div class="target-delete-modal-head"><span>목표 대학</span><h3>목표 대학에서 삭제할까요?</h3><p><b>${escapeHtml(targetDeleteCandidate)}</b>을 홈과 분석 탭의 지원학과 목록에서 함께 삭제합니다.</p></div>${targetDeleteError ? `<p class="target-delete-error">${escapeHtml(targetDeleteError)}</p>` : ''}<div class="support-btns target-delete-actions"><button type="button" class="btn btn-secondary" data-action="cancelTargetDelete" ${targetDeleteSaving ? 'disabled' : ''}>취소</button><button type="button" class="btn btn-primary danger" data-action="confirmTargetDelete" ${targetDeleteSaving ? 'disabled' : ''}>${targetDeleteSaving ? '삭제 중...' : '삭제'}</button></div>`;
+  return renderModal({
+    dismissAction: targetDeleteSaving ? 'noopModal' : 'cancelTargetDelete',
+    panelClass: 'target-delete-modal',
+    body
+  });
+}
+
 export function renderStudyBreakdown(ctx) {
   const {
     breakdownDetailMap = {},
@@ -274,6 +290,7 @@ export function renderHomeView(ctx) {
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
       ${renderUniversityModal({ analysisRecommended, analysisSearchList, analysisSearchTerm, analysisTargetList, universityModalOpen })}
+      ${renderTargetDeleteModal(ctx)}
     </div>
     <div class="section home-section home-section-last">
       <div class="card home-study-summary study-summary-card home-insight-card premium-panel">

@@ -117,20 +117,68 @@ export function parseTargetMajor(value) {
   return { univ: first || text, major: rest.join(' ') || text, date: null };
 }
 
-export function buildTargetUnivsPayload(targetList = [], nowIso = new Date().toISOString()) {
-  const unique = Array.from(new Set((targetList || []).map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 6);
-  return unique.map((item) => {
-    const parsed = parseTargetMajor(item);
-    return parsed ? { ...parsed, date: nowIso } : null;
-  });
+export function formatTargetSlot(slot) {
+  if (!slot || typeof slot !== 'object') return '';
+  const univ = String(slot.univ || '').trim();
+  const major = String(slot.major || '').trim();
+  if (!univ && !major) return '';
+  if (!univ) return major;
+  if (!major) return univ;
+  return major.includes(univ) ? major : `${univ} ${major}`.trim();
 }
 
-export function saveTargetUnivs({ apiFetch, userApiUrl, targetList } = {}) {
+export function normalizeTargetSlot(input, nowIso = new Date().toISOString()) {
+  if (!input) return null;
+  if (typeof input === 'string') {
+    const parsed = parseTargetMajor(input);
+    return parsed ? { ...parsed, date: parsed.date || nowIso } : null;
+  }
+  if (typeof input !== 'object') return null;
+  const univ = String(input.univ || '').trim();
+  const major = String(input.major || '').trim();
+  if (!univ && !major) return null;
+  return { univ, major, date: input.date || nowIso };
+}
+
+export function normalizeTargetUnivSlots(slots = [], fallbackList = [], nowIso = new Date().toISOString()) {
+  const source = Array.isArray(slots) && slots.length ? slots : fallbackList;
+  const normalized = Array.from({ length: 6 }, (_, idx) => normalizeTargetSlot(source?.[idx], nowIso));
+  return normalized;
+}
+
+export function targetSlotsToList(slots = []) {
+  return (Array.isArray(slots) ? slots : []).map(formatTargetSlot).filter(Boolean);
+}
+
+export function upsertTargetSlot(slots = [], targetText = '', nowIso = new Date().toISOString()) {
+  const normalized = normalizeTargetUnivSlots(slots, [], nowIso);
+  const nextSlot = normalizeTargetSlot(targetText, nowIso);
+  const nextLabel = formatTargetSlot(nextSlot);
+  if (!nextSlot || !nextLabel) return normalized;
+  if (normalized.some((slot) => formatTargetSlot(slot) === nextLabel)) return normalized;
+  const emptyIndex = normalized.findIndex((slot) => !slot);
+  if (emptyIndex < 0) return normalized;
+  normalized[emptyIndex] = nextSlot;
+  return normalized;
+}
+
+export function removeTargetSlot(slots = [], targetText = '', fallbackList = [], nowIso = new Date().toISOString()) {
+  const normalized = normalizeTargetUnivSlots(slots, fallbackList, nowIso);
+  const targetLabel = String(targetText || '').trim();
+  return normalized.map((slot) => (formatTargetSlot(slot) === targetLabel ? null : slot));
+}
+
+export function buildTargetUnivsPayload(targetList = [], nowIso = new Date().toISOString(), targetSlots = null) {
+  const slots = normalizeTargetUnivSlots(targetSlots || [], targetList, nowIso);
+  return slots;
+}
+
+export function saveTargetUnivs({ apiFetch, userApiUrl, targetList, targetSlots } = {}) {
   return postUserData({
     apiFetch,
     userApiUrl,
     type: 'update_target_univs',
-    data: buildTargetUnivsPayload(targetList)
+    data: buildTargetUnivsPayload(targetList, new Date().toISOString(), targetSlots)
   });
 }
 

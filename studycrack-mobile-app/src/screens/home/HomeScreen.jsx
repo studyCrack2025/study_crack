@@ -16,6 +16,7 @@ import {
   renderNotificationModal,
   renderStudyBreakdown,
   renderStudySubjectSheet,
+  renderTargetDeleteModal,
   renderUniversityModal
 } from './renderers.js';
 
@@ -413,9 +414,10 @@ export function HomeScreen(ctx) {
 
   // 스크롤/전환 무관 영역은 기존 문자열 renderer 재사용(leaf 임베드).
   const universityModalHtml = renderUniversityModal(ctx);
+  const targetDeleteModalHtml = renderTargetDeleteModal(ctx);
   const breakdownHtml = renderStudyBreakdown(ctx);
   const overlaysHtml =
-    renderStudySubjectSheet(ctx) + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+    renderStudySubjectSheet(ctx) + targetDeleteModalHtml + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
   // 알림 시트는 app-frame 직속에 둬야 스크롤 컨테이너(.app-screen)가 아닌 고정 프레임 기준으로 하단에 붙는다.
   const notifSheetHtml = renderNotificationModal(ctx);
 

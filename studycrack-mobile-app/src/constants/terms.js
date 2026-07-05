@@ -91,7 +91,7 @@ export const TERMS_CONTENT = {
 9. 이용자의 권리
 이용자는 언제든지 본인의 개인정보에 대해 열람, 수정, 삭제를 요청할 수 있습니다.
 10. 개인정보 보호 책임자
-- 책임자: 임태륭
+- 책임자: 임태룽
 - 문의처: contact@studycrack.co.kr`
   },
   service: {
