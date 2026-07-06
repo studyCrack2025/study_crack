@@ -183,20 +183,15 @@ export function renderUnifiedAnalysis(ctx) {
   const {
     analysisGaugeColor = '#4c79ee',
     analysisHighlightedSubject = '',
-    analysisMajorOptions = [],
     analysisSelected = {},
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
     analysisScoreView = null,
-    analysisStatus = '',
-    analysisStatusColor = '#4c79ee',
     canAccessStandard = false,
     canUseReverseProjection = canAccessStandard,
     canUseScoreSimulation = canAccessStandard,
-    normalizedTargetMajor = '',
     scoreExamType = '',
     scoreTierClass = defaultScoreTierClass,
-    targetMajor = ''
   } = ctx;
   const scoreView = analysisScoreView || { pending: false, hasScore: true, score: Number(analysisSelected.score || 0) };
   const simMeta = firstSimulationMeta(analysisSimRows);
@@ -214,24 +209,11 @@ export function renderUnifiedAnalysis(ctx) {
   const previewWidthPct = Math.max(0, previewPct - currentPct);
   const gapToPass = Math.max(0, 100 - currentScore);
   const gapToPassText = gapToPass ? `+${formatPoint(gapToPass)}점` : '도달';
-  const targetLabel = normalizedTargetMajor || targetMajor || '희망 대학';
-  const statusText = scoreView.pending ? '분석 중' : scoreView.hasScore ? analysisStatus : '성적 필요';
-  const scoreText = scoreView.pending ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong>' : scoreView.hasScore ? `<strong>${formatPoint(currentScore)}점</strong>` : '<strong>—</strong>';
-  const projectedText = selectedBoost && scoreView.hasScore
-    ? selectedBoost.isEvaporation
-      ? `${escapeHtml(selectedBoost.subject)} +1점은 아직 환산점수 변화가 없습니다.`
-      : `${escapeHtml(selectedBoost.subject)} +1점 효과 ${escapeHtml(selectedBoost.gain)}`
-    : '과목별 +1점이 대학 환산점수에 얼마나 반영되는지 비교합니다.';
-  const gaugeCaption = selectedBoost && scoreView.hasScore
-    ? hasPreviewGain
-      ? `${escapeHtml(selectedBoost.subject)} +1점 후 ${Math.round(currentScore)}점에서 ${Math.round(previewScore)}점까지 확장됩니다.`
-      : `${escapeHtml(selectedBoost.subject)} +1점 후에도 화면상 위치는 ${Math.round(currentScore)}점입니다.`
-    : projectedText;
-  const statusStyle = scoreView.hasScore ? `style="color:${analysisStatusColor};border-color:${analysisStatusColor}"` : '';
+  const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '현재 위치';
   const gainBadgeText = selectedBoost && scoreView.hasScore
     ? selectedBoost.isEvaporation
       ? '변동 대기'
-      : `+1점 효과 ${selectedBoost.gain}`
+      : '+1점 효과'
     : '효과 대기';
   const bestSubjectChip = selectedBoost && scoreView.hasScore ? `${escapeHtml(selectedBoost.subject)} ${escapeHtml(selectedBoost.gain)}` : '효과 대기';
   const passPct = 40;
@@ -243,13 +225,6 @@ export function renderUnifiedAnalysis(ctx) {
           <div>
             <h4>희망대학 분석</h4>
             <p>대학 분석 결과가 같은 시험 기준으로 계산됩니다.</p>
-            <div class="analysis-target-inline">
-              <select class="analysis-dropdown analysis-v2-target-select" data-field="analysisTargetMajor">
-                ${analysisMajorOptions.map((name) => `<option value="${escapeHtml(name)}" ${targetLabel === name ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
-                <option value="__add_university__">+ 대학 추가하기</option>
-              </select>
-              <button type="button" class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">추가</button>
-            </div>
           </div>
           <select class="analysis-exam-select planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select>
         </div>
@@ -258,7 +233,7 @@ export function renderUnifiedAnalysis(ctx) {
           <div><span>선택 과목 효과</span><b>${selectedBoost && scoreView.hasScore ? selectedBoost.gain : '—'}</b></div>
         </div>
         <div class="analysis-main-gauge-wrap ${scoreTierClass(currentScore)}">
-          <div class="analysis-main-gauge-top"><span>${scoreView.hasScore ? `${formatPoint(currentScore)}점` : '현재 위치'}</span><b>${escapeHtml(gainBadgeText)}</b></div>
+          <div class="analysis-main-gauge-top"><span>${escapeHtml(currentScoreText)}</span><b>${escapeHtml(gainBadgeText)}</b></div>
           <div class="analysis-main-gauge" aria-label="환산점수 게이지">
             <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
             ${hasPreviewGain ? `<i class="analysis-main-gauge-preview-fill" style="left:${currentPct}%;width:${previewWidthPct}%"></i><span class="analysis-main-gauge-preview-label" style="left:${Math.min(92, Math.max(18, previewPct))}%">+1점 효과</span>` : ''}
@@ -268,7 +243,6 @@ export function renderUnifiedAnalysis(ctx) {
           </div>
           <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="pass" style="left:${passPct}%">합격 100</span><span class="safe" style="left:${safePct}%">안정 150</span><span class="max">250</span></div>
         </div>
-        <div class="analysis-range-caption"><span>${gaugeCaption}</span></div>
       </div>
 
       <div class="card analysis-boost-card">
