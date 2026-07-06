@@ -213,6 +213,7 @@ export function renderUnifiedAnalysis(ctx) {
   const hasPreviewGain = selectedGain > 0 && previewScore > currentScore;
   const previewWidthPct = Math.max(0, previewPct - currentPct);
   const gapToPass = Math.max(0, 100 - currentScore);
+  const gapToPassText = gapToPass ? `+${formatPoint(gapToPass)}점` : '도달';
   const targetLabel = normalizedTargetMajor || targetMajor || '희망 대학';
   const statusText = scoreView.pending ? '분석 중' : scoreView.hasScore ? analysisStatus : '성적 필요';
   const scoreText = scoreView.pending ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong>' : scoreView.hasScore ? `<strong>${formatPoint(currentScore)}점</strong>` : '<strong>—</strong>';
@@ -242,25 +243,18 @@ export function renderUnifiedAnalysis(ctx) {
           <div>
             <h4>희망대학 분석</h4>
             <p>대학 분석 결과가 같은 시험 기준으로 계산됩니다.</p>
+            <div class="analysis-target-inline">
+              <select class="analysis-dropdown analysis-v2-target-select" data-field="analysisTargetMajor">
+                ${analysisMajorOptions.map((name) => `<option value="${escapeHtml(name)}" ${targetLabel === name ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+                <option value="__add_university__">+ 대학 추가하기</option>
+              </select>
+              <button type="button" class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">추가</button>
+            </div>
           </div>
           <select class="analysis-exam-select planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select>
         </div>
-        <div class="analysis-target-row">
-          <select class="analysis-dropdown analysis-v2-target-select" data-field="analysisTargetMajor">
-            ${analysisMajorOptions.map((name) => `<option value="${escapeHtml(name)}" ${targetLabel === name ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
-            <option value="__add_university__">+ 대학 추가하기</option>
-          </select>
-          <button type="button" class="analysis-add-link-btn" data-action="openAnalysisSearchFromHome">대학 추가</button>
-        </div>
-        <div class="analysis-result-main">
-          <div>
-            <span class="analysis-target-label">${escapeHtml(targetLabel)}</span>
-            <div class="analysis-score-line">${scoreText}<em>AI 환산점수</em></div>
-          </div>
-          <span class="analysis-status-pill ${scoreTierClass(currentScore)}" ${statusStyle}>${escapeHtml(statusText)}</span>
-        </div>
         <div class="analysis-gap-grid">
-          <div><span>합격컷까지</span><b>${gapToPass ? `+${gapToPass}점` : '도달'}</b></div>
+          <div><span>합격컷까지</span><b>${gapToPassText}</b></div>
           <div><span>선택 과목 효과</span><b>${selectedBoost && scoreView.hasScore ? selectedBoost.gain : '—'}</b></div>
         </div>
         <div class="analysis-main-gauge-wrap ${scoreTierClass(currentScore)}">
