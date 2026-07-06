@@ -27,7 +27,7 @@ function renderSignupVerifyStatus(done, label) {
 }
 
 function renderTermsLine({ checked = false, label, required = false, type }) {
-  return `<div class="auth-terms-check-row"><input type="checkbox" data-action="toggleSignupTerm" data-signup-term="${type}" ${required ? 'data-signup-term-required="true"' : ''} ${checked ? 'checked' : ''}/><span>${required ? '(필수)' : '(선택)'} ${label}</span><button type="button" class="auth-terms-view" data-action="openSignupTermsModal" data-terms-type="${type}">보기</button></div>`;
+  return `<div class="auth-terms-check-row"><input type="checkbox" data-action="toggleSignupTerm" data-signup-term="${type}" ${required ? 'data-signup-term-required="true"' : ''} ${checked ? 'checked' : ''}/><span>${required ? '(필수)' : '(선택)'} ${label}</span><button type="button" class="auth-terms-view" data-action="openSignupTermsModal" data-terms-type="${type}">전문보기</button></div>`;
 }
 
 function selected(current, value) {
