@@ -236,12 +236,12 @@ export function renderUnifiedAnalysis(ctx) {
           <div class="analysis-main-gauge-top"><span>${escapeHtml(currentScoreText)}</span><b>${escapeHtml(gainBadgeText)}</b></div>
           <div class="analysis-main-gauge" aria-label="환산점수 게이지">
             <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
-            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview-fill" style="left:${currentPct}%;width:${previewWidthPct}%"></i><span class="analysis-main-gauge-preview-label" style="left:${Math.min(92, Math.max(18, previewPct))}%">+1점 효과</span>` : ''}
+            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview-fill" style="left:${currentPct}%;width:${previewWidthPct}%"><em></em><em></em></i><span class="analysis-main-gauge-preview-label" style="left:${Math.min(92, Math.max(18, previewPct))}%">+1점 효과</span>` : ''}
             <span class="analysis-main-gauge-pin" style="left:${currentPct}%"><i></i></span>
             <span class="analysis-main-gauge-marker pass" style="left:${passPct}%"><i></i></span>
             <span class="analysis-main-gauge-marker safe" style="left:${safePct}%"><i></i></span>
           </div>
-          <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="pass" style="left:${passPct}%">합격 100</span><span class="safe" style="left:${safePct}%">안정 150</span><span class="max">250</span></div>
+          <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="fifty" style="left:20%">50</span><span class="pass" style="left:${passPct}%">합격 100</span><span class="safe" style="left:${safePct}%">안정 150</span><span class="max">250</span></div>
         </div>
       </div>
 

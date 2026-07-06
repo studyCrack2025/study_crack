@@ -1717,6 +1717,122 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 @media (max-width:430px){.analysis-v2{gap:18px;padding-inline:12px;}.analysis-v2-head .top-card-head{min-height:132px;padding:22px 24px;grid-template-columns:minmax(0,1fr) 58px;}.analysis-v2-head .top-card-head h3{font-size:32px;}.analysis-v2-head .top-card-head p{font-size:16px;margin-top:13px;}.analysis-v2-head .top-infographic{width:58px;height:58px;border-radius:20px;}.analysis-result-head{grid-template-columns:minmax(0,1fr) minmax(118px,142px);padding:22px 18px 20px;}.analysis-result-head h4{font-size:22px;}.analysis-result-head p{font-size:14px;}.analysis-exam-select{height:54px!important;font-size:16px!important;}.analysis-gap-grid{padding:22px 18px 9px;}.analysis-gap-grid span{font-size:13px;}.analysis-gap-grid b{font-size:24px;}.analysis-main-gauge-wrap{padding:0 18px 20px;}.analysis-main-gauge-scale{font-size:12px;}.analysis-boost-card{padding:22px 18px 24px!important;}.analysis-section-head h4{font-size:25px;}.analysis-section-head > b{font-size:14px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,1fr) 92px minmax(0,1.18fr);}.analysis-sim-row{min-height:80px;padding:16px 15px;border-radius:23px;}.analysis-sim-row.best{min-height:102px;padding:20px 16px;}.analysis-sim-subject b{font-size:20px;}.analysis-sim-effect{font-size:23px;}.analysis-sim-row.best .analysis-sim-effect{font-size:31px;}.analysis-sim-status b{font-size:15px;}.analysis-sim-status small{font-size:13px;}}
 @media (max-width:360px){.analysis-v2{gap:15px;padding-inline:10px;}.analysis-v2-head .top-card-head{min-height:116px;padding:19px 20px;grid-template-columns:minmax(0,1fr) 50px;}.analysis-v2-head .top-card-head h3{font-size:28px;}.analysis-v2-head .top-card-head p{font-size:13.5px;margin-top:10px;}.analysis-v2-head .top-infographic{width:50px;height:50px;border-radius:18px;}.analysis-result-head{grid-template-columns:1fr;padding:18px 15px 16px;}.analysis-exam-select{height:48px!important;font-size:14px!important;}.analysis-gap-grid{padding:18px 15px 8px;}.analysis-gap-grid span{font-size:12px;}.analysis-gap-grid b{font-size:20px;}.analysis-main-gauge-wrap{padding:0 15px 18px;}.analysis-main-gauge-top{height:21px;}.analysis-main-gauge-top span{font-size:14px;}.analysis-main-gauge{height:23px;}.analysis-main-gauge-preview-label{top:-28px;font-size:11px;padding:6px 10px;}.analysis-main-gauge-marker::before{top:-45px;height:42px;}.analysis-main-gauge-scale{font-size:10px;}.analysis-boost-card{padding:19px 15px 21px!important;}.analysis-section-head{grid-template-columns:1fr;}.analysis-section-head > b{justify-self:start;font-size:13px;}.analysis-section-head h4{font-size:22px;margin-top:11px;}.analysis-card-eyebrow{font-size:12px;padding:8px 12px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,.92fr) 72px minmax(0,1.08fr);gap:7px;}.analysis-sim-table-head{font-size:11px;}.analysis-sim-row{min-height:70px;padding:13px 11px;border-radius:20px;}.analysis-sim-row.best{min-height:88px;padding:16px 12px;}.analysis-sim-subject b{font-size:16px;}.analysis-sim-subject em{font-size:10px;padding:5px 7px;}.analysis-sim-effect{font-size:19px;}.analysis-sim-row.best .analysis-sim-effect{font-size:25px;}.analysis-sim-status b{font-size:12.5px;}.analysis-sim-status small{font-size:10.5px;}}
 
+/* 2026-07-07: home/analysis density normalization against the rest of the app. */
+.home-content,.analysis-v2{gap:12px;padding-inline:12px;padding-bottom:96px;}
+.home-header{grid-template-columns:minmax(0,1fr) minmax(92px,104px);gap:8px;}
+.home-greeting-cracky{width:48px;height:48px;}
+.home-greeting-speech{min-height:58px;padding:10px 12px;border-radius:18px;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-greeting-speech:before{left:-8px;top:22px;border-width:7px 9px 7px 0;}
+.home-greeting{font-size:15px;}
+.home-sub{font-size:11px;margin-top:4px;}
+.home-calendar-btn{height:58px;grid-template-columns:21px minmax(0,1fr);gap:7px;padding:0 10px;border-radius:18px;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-calendar-btn-icon{width:21px;height:21px;}
+.home-calendar-btn-icon svg{width:19px;height:19px;}
+.home-calendar-dday{font-size:13px;}
+.home-calendar-summary{font-size:10.5px;}
+.home-analysis-criteria{padding:13px 14px;border-radius:18px;grid-template-columns:minmax(0,1fr) minmax(112px,136px);box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-analysis-criteria b{font-size:17px;}
+.home-analysis-criteria select{height:42px!important;border-radius:14px!important;font-size:13px!important;}
+.home-result-card-v3,.home-add-univ-card{min-height:202px;border-radius:18px;padding:16px 14px;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-result-card-v3{gap:11px;}
+.home-result-major{font-size:16px;}
+.home-result-state{margin-top:7px;padding:5px 10px;font-size:11px;}
+.home-result-score{min-width:62px;padding:24px 10px 0 0;}
+.home-result-score strong{font-size:28px;}
+.home-result-score small{font-size:11px;margin-top:5px;}
+.home-univ-remove{top:14px;right:12px;width:28px;height:28px;font-size:17px;}
+.home-result-gauge{height:9px;margin:8px 0 10px;}
+.home-result-gauge .cut{top:-6px;height:17px;}
+.home-result-gauge .cut.pass::after,.home-result-gauge .cut.safe::after{top:17px;width:6px;height:6px;}
+.home-result-gauge-meta{font-size:10px;}
+.kpi-row.score-row{gap:8px;}
+.kpi-row.score-row .kpi-item{min-height:50px;border-radius:15px;font-size:11px;}
+.kpi-row.score-row .kpi-item b{font-size:16px;}
+.home-study-summary,.home-goal-linked-card,.home-report-preview-card{padding:15px 14px;border-radius:18px;gap:11px;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-card-head .analysis-title,.home-goal-title-row .analysis-title,.home-ranking-head .analysis-title{font-size:17px;}
+.home-mini-badge,.home-goal-plan-badge{padding:6px 9px;font-size:11px;}
+.premium-clock{padding:16px 10px;border-radius:16px;}
+.home-study-summary .timer{font-size:34px;}
+.timer-actions{gap:8px;}
+.timer-actions .mini{height:42px;border-radius:13px;font-size:14px;}
+.home-breakdown-toggle{height:40px;border-radius:13px;font-size:13px;}
+.home-goal-progress-head > em{font-size:12px;}
+.goal-compact b{font-size:27px;}
+.goal-compact span{font-size:14px;}
+.goal-compact i{padding:5px 8px;font-size:10.5px;}
+.home-goal-linked-card .track{height:9px;}
+.goal-tags span{padding:6px 9px;font-size:11.5px;}
+.home-report-preview-item{min-height:88px;border-radius:15px;padding:11px 10px;}
+.home-report-preview-item span{font-size:11.5px;}
+.home-report-preview-item b{font-size:14px;}
+.home-report-preview-item small{font-size:10.5px;}
+.home-notif-fab{width:52px;height:52px;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));}
+.analysis-v2{padding-top:12px;}
+.analysis-v2-head{border-radius:18px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
+.analysis-v2-head .top-card-head{min-height:92px;padding:16px 18px;grid-template-columns:minmax(0,1fr) 46px;gap:12px;}
+.analysis-v2-head .top-card-head h3{font-size:24px;}
+.analysis-v2-head .top-card-head p{margin-top:8px;font-size:13px;line-height:1.35;}
+.analysis-v2-head .top-infographic{width:46px;height:46px;border-radius:16px;}
+.analysis-result-card,.analysis-boost-card,.analysis-reverse-card{border-radius:18px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
+.analysis-result-head{grid-template-columns:minmax(0,1fr) minmax(108px,126px);gap:10px;padding:16px 14px 14px;}
+.analysis-result-head h4{font-size:18px;}
+.analysis-result-head p{margin-top:5px;font-size:12px;}
+.analysis-exam-select{height:42px!important;border-radius:14px!important;font-size:13px!important;padding-inline:11px!important;}
+.analysis-gap-grid{padding:16px 14px 8px;}
+.analysis-gap-grid span{font-size:11.5px;}
+.analysis-gap-grid b{font-size:20px;}
+.analysis-main-gauge-wrap{padding:0 14px 16px;}
+.analysis-main-gauge-top{height:20px;}
+.analysis-main-gauge-top span{font-size:13px;}
+.analysis-main-gauge{height:20px;}
+.analysis-main-gauge-preview-label{top:-25px;padding:5px 9px;font-size:10.5px;}
+.analysis-main-gauge-preview-fill::after{right:-17px;width:32px;height:20px;}
+.analysis-main-gauge-pin{width:20px;height:20px;border-width:4px;box-shadow:0 0 0 4px rgba(56,189,248,.22),0 7px 13px rgba(15,23,42,.18);}
+.analysis-main-gauge-marker{width:12px;height:12px;border-width:2px;}
+.analysis-main-gauge-marker::before{top:-38px;height:36px;width:1px;}
+.analysis-main-gauge-scale{height:20px;font-size:10.5px;}
+.analysis-boost-card{gap:14px;padding:16px 14px 18px!important;}
+.analysis-section-head{gap:8px;}
+.analysis-card-eyebrow{padding:7px 10px;font-size:11px;}
+.analysis-section-head h4{margin-top:9px;font-size:20px;line-height:1.25;}
+.analysis-section-head > b{padding:8px 10px;font-size:12px;}
+.analysis-sim-table{gap:9px;}
+.analysis-sim-table-head{grid-template-columns:minmax(0,1fr) 76px minmax(0,1.1fr);padding:0 6px;font-size:10.5px;}
+.analysis-sim-row{grid-template-columns:minmax(0,1fr) 76px minmax(0,1.1fr);min-height:62px;padding:12px 11px;border-radius:16px;}
+.analysis-sim-row.best{min-height:76px;padding:14px 12px;border-width:1.5px;box-shadow:0 0 0 3px rgba(76,121,238,.09),0 8px 18px rgba(76,121,238,.1);}
+.analysis-sim-subject b{font-size:14px;}
+.analysis-sim-subject em{padding:4px 6px;font-size:9.5px;}
+.analysis-sim-effect{font-size:17px;}
+.analysis-sim-row.best .analysis-sim-effect{font-size:22px;}
+.analysis-sim-status b{font-size:12px;}
+.analysis-sim-status small{font-size:10.5px;}
+@media (max-width:360px){.home-content,.analysis-v2{gap:10px;padding-inline:10px;}.home-header{grid-template-columns:1fr;}.home-greeting-cracky{width:44px;height:44px;}.home-greeting-speech{min-height:54px;padding:9px 11px;}.home-greeting{font-size:14px;}.home-calendar-btn{height:52px;}.home-analysis-criteria{grid-template-columns:1fr;padding:12px;}.home-analysis-criteria b{font-size:15px;}.home-result-card-v3,.home-add-univ-card{min-height:188px;padding:14px 12px;}.home-result-score strong{font-size:25px;}.home-study-summary .timer{font-size:30px;}.goal-compact b{font-size:24px;}.analysis-v2-head .top-card-head{min-height:84px;padding:14px 15px;grid-template-columns:minmax(0,1fr) 40px;}.analysis-v2-head .top-card-head h3{font-size:22px;}.analysis-v2-head .top-card-head p{font-size:12px;}.analysis-v2-head .top-infographic{width:40px;height:40px;border-radius:14px;}.analysis-result-head{grid-template-columns:1fr;padding:14px 12px 12px;}.analysis-exam-select{height:40px!important;}.analysis-gap-grid{padding:14px 12px 7px;}.analysis-gap-grid b{font-size:18px;}.analysis-main-gauge-wrap{padding:0 12px 14px;}.analysis-main-gauge{height:18px;}.analysis-main-gauge-marker::before{top:-34px;height:32px;}.analysis-boost-card{padding:14px 12px 16px!important;}.analysis-section-head h4{font-size:18px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,.95fr) 62px minmax(0,1.05fr);gap:6px;}.analysis-sim-row{min-height:58px;padding:11px 10px;}.analysis-sim-row.best{min-height:68px;padding:12px 10px;}.analysis-sim-effect{font-size:15px;}.analysis-sim-row.best .analysis-sim-effect{font-size:19px;}}
+
+/* 2026-07-07: analysis gauge reference alignment. */
+.analysis-main-gauge-wrap{gap:4px;padding-top:2px;}
+.analysis-main-gauge-top{position:relative;height:18px;}
+.analysis-main-gauge-top span{display:block;width:max-content;max-width:72px;font-size:12.5px;font-weight:950;color:#111827;}
+.analysis-main-gauge{height:19px;margin-top:1px;border-radius:999px;background:linear-gradient(90deg,#F3C6BF 0%,#F8E7D5 38%,#D8F2E1 60%,#C6ECFC 72%,#E9EEF8 100%);box-shadow:inset 0 3px 7px rgba(52,78,143,.15),0 6px 14px rgba(52,78,143,.07);overflow:visible;}
+.analysis-main-gauge::after{content:"";position:absolute;inset:1px;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,0));pointer-events:none;z-index:9;}
+.analysis-main-gauge-fill{top:0;bottom:0;height:100%;z-index:2;border-radius:999px;background:linear-gradient(90deg,#DE3939 0%,#E54A4A 100%)!important;box-shadow:0 1px 9px rgba(222,57,57,.18);}
+.analysis-main-gauge-preview-fill{top:0;bottom:0;height:100%;z-index:4;border-radius:0 999px 999px 0;background:linear-gradient(90deg,rgba(115,213,249,.9) 0%,rgba(96,201,245,.95) 100%);box-shadow:0 0 16px rgba(56,189,248,.28);overflow:visible;}
+.analysis-main-gauge-preview-fill::after{content:none;}
+.analysis-main-gauge-preview-fill em{position:absolute;top:50%;right:3px;width:18px;height:19px;background:rgba(75,190,236,.72);clip-path:polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,42% 50%);transform:translateY(-50%);}
+.analysis-main-gauge-preview-fill em + em{right:15px;opacity:.52;}
+.analysis-main-gauge-preview-label{top:-24px;padding:5px 9px;border-radius:999px;background:#EAF2FF;color:#2357D6;font-size:10.5px;font-weight:950;box-shadow:0 6px 14px rgba(52,78,143,.11);}
+.analysis-main-gauge-pin{top:50%;z-index:12;width:18px;height:18px;border:3px solid #FFFFFF;border-radius:50% 50% 50% 0;background:#405C86;box-shadow:0 0 0 4px rgba(56,189,248,.23),0 7px 13px rgba(15,23,42,.2);transform:translate(-50%,-68%) rotate(-45deg)!important;}
+.analysis-main-gauge-pin i{left:50%;top:50%;width:5px;height:5px;border-radius:999px;background:#FFFFFF;transform:translate(-50%,-50%) rotate(45deg);}
+.analysis-main-gauge-marker{top:50%;z-index:10;width:12px;height:12px;border:2px solid currentColor;background:#FFFFFF;box-shadow:0 2px 7px rgba(15,23,42,.12);transform:translate(-50%,-50%);}
+.analysis-main-gauge-marker.pass{color:#F59E0B;}
+.analysis-main-gauge-marker.safe{color:#10B981;}
+.analysis-main-gauge-marker::before{top:-35px;width:1px;height:34px;background:repeating-linear-gradient(to bottom,currentColor 0,currentColor 4px,transparent 4px,transparent 8px);opacity:.72;}
+.analysis-main-gauge-scale{position:relative;height:18px;font-size:10.5px;font-weight:950;color:#8A95A8;}
+.analysis-main-gauge-scale span{top:1px;line-height:1.15;}
+.analysis-main-gauge-scale .fifty{transform:translateX(-50%);}
+.analysis-main-gauge-scale .pass{color:#A46608;}
+.analysis-main-gauge-scale .safe{color:#047857;}
+@media (max-width:360px){.analysis-main-gauge-top{height:17px;}.analysis-main-gauge-top span{font-size:11.5px;}.analysis-main-gauge{height:17px;}.analysis-main-gauge-preview-fill em{width:16px;height:17px;}.analysis-main-gauge-preview-label{top:-23px;font-size:10px;padding:4px 8px;}.analysis-main-gauge-pin{width:17px;height:17px;}.analysis-main-gauge-marker::before{top:-31px;height:30px;}.analysis-main-gauge-scale{font-size:9.5px;}}
+
 /* 학습 성향 MBTI 36문항 설문 모달 */
 .mbti-survey-modal{width:calc(100vw - 24px);max-width:440px;max-height:90vh;display:flex;flex-direction:column;padding:18px;overflow:auto;border-radius:20px;background:#FFFFFF;box-sizing:border-box;}
 .mbti-survey-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
