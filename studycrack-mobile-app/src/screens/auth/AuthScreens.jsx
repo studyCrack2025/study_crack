@@ -128,7 +128,7 @@ export function AuthLoginScreen(ctx) {
             <span>|</span>
             <button className="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
           </div>
-          <button className="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+          <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
         </div>
         {findEmailModalOpen && <FindEmailModal foundEmailMasked={foundEmailMasked} />}
         {resetPasswordModalOpen && <ResetPasswordModal email={resetPasswordEmail} sending={resetPasswordSending} step={resetPasswordStep} />}

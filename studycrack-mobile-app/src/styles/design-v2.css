@@ -1869,6 +1869,36 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .find-email-result b{font-size:15px;color:#065F46;}
 @media (max-width:360px){.auth-screen{padding-inline:12px;}.signup-page{padding-inline:12px;}.auth-logo{width:118px;}.signup-form-card{padding:16px 14px 18px;}.auth-terms-check-row{font-size:12px;}.auth-terms-view{min-width:60px;font-size:11px;}.find-email-modal.auth-recovery-modal{padding:16px;border-radius:22px;}}
 
+/* 2026-07-07: login reference layout. */
+[data-screen="authLogin"]{background:radial-gradient(circle at 50% 12%,rgba(255,255,255,.96) 0%,rgba(255,255,255,.52) 22%,rgba(232,240,252,.72) 54%,#DFEAF8 100%)!important;}
+[data-screen="authLogin"] .auth-screen{position:relative;min-height:100%;align-content:center;padding:88px 14px 34px;}
+[data-screen="authLogin"] .auth-screen::after{content:"";position:absolute;right:42px;bottom:38px;width:34px;height:34px;background:rgba(255,255,255,.7);clip-path:polygon(50% 0,61% 35%,100% 50%,61% 65%,50% 100%,39% 65%,0 50%,39% 35%);filter:drop-shadow(0 4px 12px rgba(52,78,143,.12));pointer-events:none;}
+.auth-unified-card{position:relative;gap:14px;padding:112px 18px 26px;border-radius:26px;border:1px solid rgba(255,255,255,.92);background:rgba(255,255,255,.82);box-shadow:0 24px 54px rgba(52,78,143,.16),inset 0 1px 0 rgba(255,255,255,.95);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+[data-screen="authLogin"] .auth-logo-wrap{position:absolute;left:50%;top:-68px;width:136px;height:136px;display:grid;place-items:center;margin:0;padding:0;border-radius:999px;background:linear-gradient(180deg,#FFFFFF 0%,#EEF3FC 100%)!important;box-shadow:0 16px 30px rgba(52,78,143,.16),inset 0 1px 0 rgba(255,255,255,.96);transform:translateX(-50%);}
+[data-screen="authLogin"] .auth-logo-wrap::after{content:"";position:absolute;inset:10px;border-radius:999px;border:1px solid rgba(221,231,246,.86);box-shadow:inset 0 -8px 18px rgba(52,78,143,.06);}
+[data-screen="authLogin"] .auth-logo{position:relative;z-index:1;width:86px;max-width:none;}
+[data-screen="authLogin"] .auth-logo-fallback{position:relative;z-index:1;font-size:18px;}
+.auth-unified-card h1,.auth-wordmark{margin:0;text-align:center;font-size:31px;font-weight:950;color:#263F78;letter-spacing:0;line-height:1.08;}
+.auth-unified-card .auth-title{margin:4px 0 20px;text-align:center;font-size:17px;font-weight:850;color:#202838;letter-spacing:0;line-height:1.35;}
+.auth-unified-card .planner-input{height:58px;border-radius:15px;border:1px solid rgba(158,144,125,.42);background:rgba(255,255,255,.72);font-size:17px;font-weight:800;color:#1F2937;padding-inline:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);}
+.auth-unified-card .planner-input::placeholder{color:#AA8F58;font-weight:850;}
+.auth-submit{min-height:60px;border-radius:15px;background:linear-gradient(135deg,#6E93F0 0%,#1F4385 100%)!important;box-shadow:0 13px 22px rgba(31,67,133,.28);font-size:17px;font-weight:950;}
+.auth-divider{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px;margin:9px 0 3px;color:#8B94A4;font-size:13.5px;font-weight:850;}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;background:linear-gradient(90deg,transparent,#AEB7C8,#AEB7C8);}
+.auth-divider::after{background:linear-gradient(90deg,#AEB7C8,#AEB7C8,transparent);}
+.auth-sso-row{display:grid;gap:12px;}
+.auth-sso-btn{min-height:58px;border-radius:15px;border:1px solid rgba(158,144,125,.38);background:rgba(255,255,255,.82);color:#111827;font-size:16px;font-weight:950;box-shadow:0 8px 18px rgba(52,78,143,.055);}
+.auth-sso-btn.google{background:rgba(255,255,255,.86);}
+.auth-sso-btn.naver{border:none;background:#59C86A;color:#FFFFFF;box-shadow:0 10px 20px rgba(34,197,94,.22);}
+.auth-sso-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:19px;font-weight:950;background:#FFFFFF;color:#4285F4;box-shadow:none;}
+.auth-sso-btn.naver .auth-sso-icon{background:rgba(255,255,255,.17);color:#FFFFFF;}
+.auth-helper-row{margin:8px 0 8px;display:flex;justify-content:center;align-items:center;gap:16px;color:#C2C8D3;font-size:15px;font-weight:900;}
+.auth-helper-row .auth-link-btn{font-size:15px;color:#4B5568;font-weight:950;}
+.auth-signup-link{display:flex!important;align-items:center;justify-content:center;gap:5px;margin:8px auto 0;color:#111827!important;font-size:16px!important;font-weight:800!important;}
+.auth-signup-link b{color:#263F78;font-weight:950;}
+.auth-signup-link i{display:inline-grid;place-items:center;margin-left:2px;color:#263F78;font-size:34px;font-style:normal;line-height:.7;font-weight:500;}
+@media (max-width:360px){[data-screen="authLogin"] .auth-screen{padding-top:78px;}.auth-unified-card{padding:96px 15px 22px;border-radius:23px;}.auth-unified-card h1,.auth-wordmark{font-size:27px;}.auth-unified-card .auth-title{font-size:15px;margin-bottom:16px;}[data-screen="authLogin"] .auth-logo-wrap{top:-58px;width:116px;height:116px;}[data-screen="authLogin"] .auth-logo{width:74px;}.auth-unified-card .planner-input,.auth-submit,.auth-sso-btn{height:52px;min-height:52px;font-size:15px;}.auth-helper-row .auth-link-btn{font-size:14px;}.auth-signup-link{font-size:15px!important;}}
+
 /* 학습 성향 MBTI 36문항 설문 모달 */
 .mbti-survey-modal{width:calc(100vw - 24px);max-width:440px;max-height:90vh;display:flex;flex-direction:column;padding:18px;overflow:auto;border-radius:20px;background:#FFFFFF;box-sizing:border-box;}
 .mbti-survey-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
