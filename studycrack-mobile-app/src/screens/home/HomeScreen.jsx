@@ -59,23 +59,27 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
           <small>{scoreLabel}</small>
         </div>
       </div>
-      <div className="home-result-gauge">
-        <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
-        <span className="cut pass" style={{ left: '40%' }} />
-        <span className="cut safe" style={{ left: '60%' }} />
-      </div>
-      <div className="home-result-gauge-meta">
-        <span>0</span>
-        <span>합격컷 100</span>
-        <span>안정컷 150</span>
-        <span>MAX 250</span>
-      </div>
-      <div className="kpi-row score-row">
-        <div className="kpi-item">
-          <b>{noScore ? '—' : scoreValue}</b>현재 점수
+      <div className="home-result-gauge-panel">
+        <div className="home-result-gauge">
+          <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
+          <span className="cut pass" style={{ left: '40%' }} />
+          <span className="cut safe" style={{ left: '60%' }} />
         </div>
-        <div className="kpi-item danger">
-          <b>{gapValue}</b>부족 점수
+        <div className="home-result-gauge-meta">
+          <span>0</span>
+          <span>합격컷 100</span>
+          <span>안정컷 150</span>
+          <span>MAX 250</span>
+        </div>
+      </div>
+      <div className="home-result-kpi-panel">
+        <div className="kpi-row score-row">
+          <div className="kpi-item">
+            <b>{noScore ? '—' : scoreValue}</b>현재 점수
+          </div>
+          <div className="kpi-item danger">
+            <b>{gapValue}</b>부족 점수
+          </div>
         </div>
       </div>
       <div className="home-planner-badges chip-row">

@@ -198,24 +198,13 @@ export function renderUnifiedAnalysis(ctx) {
   const serverBaseScore = Number(simMeta?.baseUiScore);
   const rawBaseScore = Number.isFinite(serverBaseScore) ? serverBaseScore : Number(scoreView.score ?? analysisSelected.score ?? 0);
   const currentScore = clampScore(rawBaseScore);
-  const selectedBoost = canUseScoreSimulation ? selectedBoostRow(analysisSimRows, analysisHighlightedSubject, analysisSimRecommendedIndex) : null;
+  const bestBoost = canUseScoreSimulation ? selectedBoostRow(analysisSimRows, '', analysisSimRecommendedIndex) : null;
   const currentPct = Math.min((currentScore / 250) * 100, 100);
-  const selectedGain = selectedBoost && scoreView.hasScore ? Math.max(0, Number(selectedBoost.gainNum || 0)) : 0;
-  const serverAfterScore = Number(selectedBoost?.afterUiScore);
-  const rawAfterScore = Number.isFinite(serverAfterScore) ? Math.max(rawBaseScore, serverAfterScore) : rawBaseScore + selectedGain;
-  const previewScore = clampScore(rawAfterScore);
-  const previewPct = Math.min((previewScore / 250) * 100, 100);
-  const hasPreviewGain = selectedGain > 0 && previewScore > currentScore;
-  const previewWidthPct = Math.max(0, previewPct - currentPct);
   const gapToPass = Math.max(0, 100 - currentScore);
   const gapToPassText = gapToPass ? `+${formatPoint(gapToPass)}점` : '도달';
   const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '현재 위치';
-  const gainBadgeText = selectedBoost && scoreView.hasScore
-    ? selectedBoost.isEvaporation
-      ? '변동 대기'
-      : '+1점 효과'
-    : '효과 대기';
-  const bestSubjectChip = selectedBoost && scoreView.hasScore ? `${escapeHtml(selectedBoost.subject)} ${escapeHtml(selectedBoost.gain)}` : '효과 대기';
+  const maxEffectText = bestBoost && scoreView.hasScore ? bestBoost.gain : '—';
+  const bestSubjectChip = bestBoost && scoreView.hasScore ? `${escapeHtml(bestBoost.subject)} ${escapeHtml(bestBoost.gain)}` : '효과 대기';
   const passPct = 40;
   const safePct = 60;
   return `
@@ -230,13 +219,12 @@ export function renderUnifiedAnalysis(ctx) {
         </div>
         <div class="analysis-gap-grid">
           <div><span>합격컷까지</span><b>${gapToPassText}</b></div>
-          <div><span>선택 과목 효과</span><b>${selectedBoost && scoreView.hasScore ? selectedBoost.gain : '—'}</b></div>
+          <div><span>+원점수 1점 최대 효과</span><b>${maxEffectText}</b></div>
         </div>
         <div class="analysis-main-gauge-wrap ${scoreTierClass(currentScore)}">
-          <div class="analysis-main-gauge-top"><span>${escapeHtml(currentScoreText)}</span><b>${escapeHtml(gainBadgeText)}</b></div>
+          <div class="analysis-main-gauge-top"><span>${escapeHtml(currentScoreText)}</span></div>
           <div class="analysis-main-gauge" aria-label="환산점수 게이지">
             <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
-            ${hasPreviewGain ? `<i class="analysis-main-gauge-preview-fill" style="left:${currentPct}%;width:${previewWidthPct}%"><em></em><em></em></i><span class="analysis-main-gauge-preview-label" style="left:${Math.min(92, Math.max(18, previewPct))}%">+1점 효과</span>` : ''}
             <span class="analysis-main-gauge-pin" style="left:${currentPct}%"><i></i></span>
             <span class="analysis-main-gauge-marker pass" style="left:${passPct}%"><i></i></span>
             <span class="analysis-main-gauge-marker safe" style="left:${safePct}%"><i></i></span>
