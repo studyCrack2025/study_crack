@@ -484,6 +484,11 @@ function MobileApp() {
     plannerCenteredRef.current = true;
   }, [state.screen, state.selectedDate]);
 
+  useEffect(() => {
+    if (state.screen === 'home' || state.homeDragOffset === 0) return;
+    setState({ homeDragOffset: 0 });
+  }, [state.screen, state.homeDragOffset]);
+
   const dimmed = isTabbarDimmed(state);
   const visibleTabItems = filterTabItemsForTier();
 

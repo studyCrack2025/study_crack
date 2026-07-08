@@ -262,9 +262,11 @@ export function renderHomeView(ctx) {
     weeklyReportsStatus = 'idle'
   } = ctx;
 
+  const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);
+  const homeSlideGapPx = 12;
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const universityCards = homeTargets.map((item) => renderUniversityCard({ item, plannerBadges, scoreTierClass })).join('');
-  const indicators = [...homeTargets, { add: true }].map((_, idx) => `<i class="${idx === homeSlideIndex ? 'active' : ''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('');
+  const indicators = [...homeTargets, { add: true }].map((_, idx) => `<i class="${idx === safeHomeSlideIndex ? 'active' : ''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('');
   const timerDisabled = studyTimerRunning ? 'disabled' : '';
   const stopDisabled = studyTimerRunning ? '' : 'disabled';
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
@@ -286,7 +288,7 @@ export function renderHomeView(ctx) {
     <div class="section home-section">
       <div class="home-analysis-criteria"><div><b>지원학과 AI 점수</b></div><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select></div>
       <div class="home-kpi-slider">
-        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" data-home-slide-index="${homeSlideIndex}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
+        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" data-home-slide-index="${safeHomeSlideIndex}" style="--home-slide-card-width:100%;--home-slide-gap:${homeSlideGapPx}px;--home-slide-x:calc(-${safeHomeSlideIndex * 100}% - ${safeHomeSlideIndex * homeSlideGapPx}px + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
         ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><span class="home-add-univ-icon">${icon('plus', false)}</span><span class="home-add-univ-copy"><b>목표 대학 추가</b><p>대학과 학과를 검색해 AI 분석에 추가하세요.</p></span><span class="home-add-univ-action">검색하기</span></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>

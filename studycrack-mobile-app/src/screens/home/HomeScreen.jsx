@@ -407,11 +407,13 @@ export function HomeScreen(ctx) {
   const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
   if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} crackySrc={crackySrc} />;
 
+  const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);
+  const homeSlideGapPx = 12;
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const trackStyle = {
     '--home-slide-card-width': '100%',
-    '--home-slide-gap': '12px',
-    '--home-slide-x': `calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px)`,
+    '--home-slide-gap': `${homeSlideGapPx}px`,
+    '--home-slide-x': `calc(-${safeHomeSlideIndex * 100}% - ${safeHomeSlideIndex * homeSlideGapPx}px + ${homeDragOffset}px)`,
     '--home-slide-transition': slideTransition
   };
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
@@ -466,7 +468,7 @@ export function HomeScreen(ctx) {
                 <div className="home-kpi-slider">
                   <div
                     className={`home-kpi-track anchor-volatile ${homeSlideMotion}`}
-                    data-home-slide-index={homeSlideIndex}
+                    data-home-slide-index={safeHomeSlideIndex}
                     style={trackStyle}
                   >
                     {homeTargets.map((item) => (
@@ -489,7 +491,7 @@ export function HomeScreen(ctx) {
                   {[...homeTargets, { add: true }].map((_, idx) => (
                     <i
                       key={idx}
-                      className={idx === homeSlideIndex ? 'active' : ''}
+                      className={idx === safeHomeSlideIndex ? 'active' : ''}
                       data-action="setHomeSlide"
                       data-slide-index={idx}
                     />
