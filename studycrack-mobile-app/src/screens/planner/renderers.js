@@ -135,7 +135,7 @@ export function renderPlannerScreen(ctx) {
   } = ctx;
 
   return layout(
-    `<div class="planner-screen"><div class="planner-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${icon('calendar', false)}</button></div>
+    `<div class="planner-screen"><div class="card planner-title-card"><div class="top-card-head"><div><h3>플래너</h3><p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p></div><span class="top-infographic top-infographic-planner" aria-hidden="true">${icon('calendar', false)}</span></div></div><div class="planner-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${icon('calendar', false)}</button></div>
        ${renderDateStrip({ plannerWeekDates, selectedPlannerDate })}
        <div class="planner-section-title planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone === 'warn' ? '<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>' : ''}</div>${renderSubjectDonut({ plannerViewDonutGradient, plannerViewSubjectStats })}</div>
        <div class="card planner-premium-cta"><div class="planner-premium-copy"><span class="badge">SKY MENTOR</span><b>혼자 짠 플래너, 불안하신가요?</b><p>SKY 선생님이<br/>직접 이번 주 플래너를 짜드립니다.</p></div><button type="button" class="planner-premium-btn" data-action="startStandard">플래너 직접 받기</button></div>

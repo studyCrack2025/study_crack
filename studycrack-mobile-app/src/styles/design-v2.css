@@ -1094,6 +1094,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes surfaceLiftIn{from{opacity:.001;transform:translate3d(0,12px,0) scale(.985);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes bottomSheetIn{from{opacity:.001;transform:translate3d(0,28px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes modalPopIn{from{opacity:.001;transform:translate3d(0,10px,0) scale(.97);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes drawerSlideIn{from{opacity:.001;transform:translate3d(-18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 /* contentRiseIn은 JSX(React) 화면 콘텐츠에만 적용 — 문자열 화면(.my-stack 등)에 두면 매 렌더 재생되어 깜빡인다. */
 .home-content > *,.analysis-v2 > *,.planner-screen > *{animation:contentRiseIn 340ms var(--ease-enter) both;}
@@ -1132,7 +1133,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-notif-fab-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#EF4444;color:#fff;font-size:11px;font-weight:800;line-height:20px;text-align:center;border:2px solid #fff;}
 /* 팝오버: FAB 바로 위(우하단)에 앵커 */
 .notif-popover-overlay{position:absolute;inset:0;z-index:70;background:transparent;}
-.notif-popover{position:absolute;right:16px;bottom:calc(78px + 16px + 52px + 12px + env(safe-area-inset-bottom));width:min(320px,calc(100% - 32px));max-height:50dvh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #DDE7F6;border-radius:16px;background:#FFFFFF;box-shadow:0 14px 32px rgba(15,23,42,.22);transform-origin:bottom right;animation:notifPopoverIn 200ms var(--ease-enter) both;}
+.notif-popover{position:absolute;right:16px;bottom:calc(78px + 16px + 52px + 24px + env(safe-area-inset-bottom));width:min(320px,calc(100% - 32px));max-height:50dvh;display:flex;flex-direction:column;overflow:hidden;border:1px solid #DDE7F6;border-radius:16px;background:#FFFFFF;box-shadow:0 14px 32px rgba(15,23,42,.22);transform-origin:bottom right;animation:notifPopoverIn 200ms var(--ease-enter) both;}
 .notif-popover:after{content:"";position:absolute;right:18px;bottom:-7px;width:14px;height:14px;background:#FFFFFF;border-right:1px solid #DDE7F6;border-bottom:1px solid #DDE7F6;transform:rotate(45deg);}
 @keyframes notifPopoverIn{from{opacity:.001;transform:translate3d(0,8px,0) scale(.96);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 .notif-popover-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #EEF2F7;}
@@ -1148,7 +1149,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .notif-popover-all{flex:0 0 auto;padding:12px 14px;border:0;border-top:1px solid #EEF2F7;background:#F8FAFC;color:var(--primary-dark);font-size:13px;font-weight:700;text-align:center;}
 /* 알림 목록 화면 */
 .noti-list-card{display:flex;flex-direction:column;padding:0;overflow:hidden;}
-/* 알림 내역: 5개씩 페이지네이션 + 클릭 시 본문 펼침. 행은 버튼이라 접근성/탭 동작 일관. */
+/* 알림 내역: 7개씩 페이지네이션 + 클릭 시 상세 모달. 행은 버튼이라 접근성/탭 동작 일관. */
 .noti-list-row{display:flex;align-items:flex-start;gap:11px;width:100%;padding:14px;border:none;border-bottom:1px solid #F1F5F9;background:transparent;text-align:left;cursor:pointer;font-family:inherit;}
 .noti-list-row:last-child{border-bottom:0;}
 .noti-list-row.is-unread{background:#F5F8FF;}
@@ -1166,8 +1167,8 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .noti-pager-btn{min-width:72px;height:40px;border-radius:12px;border:1px solid #DDE7F6;background:#FFFFFF;color:var(--primary-dark);font-size:13px;font-weight:800;font-family:inherit;}
 .noti-pager-btn:disabled{opacity:.4;color:#94A3B8;}
 .noti-pager-count{font-size:13px;font-weight:800;color:#475569;min-width:54px;text-align:center;}
-.noti-detail-overlay{position:fixed;inset:0;z-index:110;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,23,42,.34);padding:16px 12px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;animation:overlayFadeIn 180ms ease both;}
-.noti-detail-modal{width:100%;max-width:430px;max-height:min(72dvh,560px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #DDE7F6;border-radius:22px;background:#FFFFFF;box-shadow:0 18px 44px rgba(15,23,42,.24);animation:bottomSheetIn 220ms var(--ease-enter) both;}
+.noti-detail-overlay{position:fixed;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.34);padding:20px 12px calc(96px + env(safe-area-inset-bottom));box-sizing:border-box;animation:overlayFadeIn 180ms ease both;}
+.noti-detail-modal{width:100%;max-width:430px;max-height:min(76dvh,600px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #DDE7F6;border-radius:22px;background:#FFFFFF;box-shadow:0 18px 44px rgba(15,23,42,.24);animation:modalPopIn 200ms var(--ease-enter) both;}
 .noti-detail-head{flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 14px;border-bottom:1px solid #EEF2F7;background:linear-gradient(180deg,#F8FBFF 0%,#FFFFFF 100%);}
 .noti-detail-head span{display:block;margin-bottom:4px;font-size:11px;font-weight:950;color:var(--primary-dark);}
 .noti-detail-head h4{margin:0;font-size:18px;line-height:1.35;color:#26304A;font-weight:950;word-break:keep-all;}
@@ -1768,7 +1769,23 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-report-preview-item span{font-size:11.5px;}
 .home-report-preview-item b{font-size:14px;}
 .home-report-preview-item small{font-size:10.5px;}
-.home-notif-fab{width:52px;height:52px;right:16px;bottom:calc(80px + env(safe-area-inset-bottom));}
+.home-notif-fab{width:52px;height:52px;right:16px;bottom:calc(104px + env(safe-area-inset-bottom));}
+.notif-popover{bottom:calc(104px + 52px + 12px + env(safe-area-inset-bottom));}
+.home-greeting{font-size:16px;}
+.home-sub{font-size:11.8px;}
+.planner-screen,.coach-page{display:grid;gap:12px;padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+.planner-title-card,.coach-title-card{border-radius:18px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
+.planner-title-card .top-card-head,.coach-title-card .top-card-head{min-height:78px;padding:12px 16px;grid-template-columns:minmax(0,1fr) 40px;gap:10px;}
+.planner-title-card .top-card-head h3,.coach-title-card .top-card-head h3{font-size:23px;line-height:1.15;color:#26304A;font-weight:950;}
+.planner-title-card .top-card-head p,.coach-title-card .top-card-head p{margin-top:5px;font-size:12.5px;line-height:1.32;color:#64748B;font-weight:800;}
+.top-infographic-planner,.top-infographic-coach{width:40px;height:40px;border-radius:14px;background:#EEF4FF;color:var(--primary-dark);box-shadow:inset 0 1px 0 rgba(255,255,255,.88);}
+.top-infographic-planner{display:grid;place-items:center;padding:0;}
+.top-infographic-coach{display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:8px 7px;}
+.top-infographic-planner svg{width:22px;height:22px;stroke:currentColor;}
+.locked-coach-page{padding:12px 12px calc(96px + env(safe-area-inset-bottom));}
+.locked-coach-page .locked-preview{filter:blur(.8px);opacity:.68;}
+.locked-feature-panel-inline{position:static;transform:none;border:1px solid #D8E6FF;border-radius:18px;background:#FFFFFF;box-shadow:0 12px 26px rgba(52,78,143,.12);}
+.locked-feature-panel-inline .locked-feature-actions{grid-template-columns:1fr;}
 .analysis-v2{padding-top:6px;}
 .analysis-v2-head{border-radius:18px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
 .analysis-v2-head .top-card-head{min-height:78px;padding:12px 16px;grid-template-columns:minmax(0,1fr) 40px;gap:10px;}
@@ -1808,7 +1825,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .analysis-sim-row.best .analysis-sim-effect{font-size:22px;}
 .analysis-sim-status b{font-size:12px;}
 .analysis-sim-status small{font-size:10.5px;}
-@media (max-width:360px){.home-content,.analysis-v2{gap:10px;padding-inline:10px;}.home-header{grid-template-columns:1fr;}.home-greeting-cracky{width:44px;height:44px;}.home-greeting-speech{min-height:54px;padding:9px 11px;}.home-greeting{font-size:14px;}.home-calendar-btn{height:52px;}.home-analysis-criteria{grid-template-columns:1fr;padding:12px;}.home-analysis-criteria b{font-size:15px;}.home-result-card-v3,.home-add-univ-card{min-height:188px;padding:14px 12px;}.home-result-score strong{font-size:25px;}.home-study-summary .timer{font-size:30px;}.goal-compact b{font-size:24px;}.analysis-v2-head .top-card-head{min-height:70px;padding:11px 14px;grid-template-columns:minmax(0,1fr) 36px;}.analysis-v2-head .top-card-head h3{font-size:21px;}.analysis-v2-head .top-card-head p{font-size:11.5px;}.analysis-v2-head .top-infographic{width:36px;height:36px;border-radius:13px;}.analysis-result-head{grid-template-columns:1fr;padding:14px 12px 12px;}.analysis-exam-select{height:40px!important;}.analysis-gap-grid{padding:14px 12px 7px;}.analysis-gap-grid b{font-size:18px;}.analysis-main-gauge-wrap{padding:0 12px 14px;}.analysis-main-gauge{height:18px;}.analysis-main-gauge-marker::before{top:-34px;height:32px;}.analysis-boost-card{padding:14px 12px 16px!important;}.analysis-section-head h4{font-size:18px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,.95fr) 62px minmax(0,1.05fr);gap:6px;}.analysis-sim-row{min-height:58px;padding:11px 10px;}.analysis-sim-row.best{min-height:68px;padding:12px 10px;}.analysis-sim-effect{font-size:15px;}.analysis-sim-row.best .analysis-sim-effect{font-size:19px;}}
+@media (max-width:360px){.home-content,.analysis-v2{gap:10px;padding-inline:10px;}.home-header{grid-template-columns:1fr;}.home-greeting-cracky{width:44px;height:44px;}.home-greeting-speech{min-height:54px;padding:9px 11px;}.home-greeting{font-size:15px;}.home-sub{font-size:11px;}.home-calendar-btn{height:52px;}.home-analysis-criteria{grid-template-columns:1fr;padding:12px;}.home-analysis-criteria b{font-size:15px;}.home-result-card-v3,.home-add-univ-card{min-height:188px;padding:14px 12px;}.home-result-score strong{font-size:25px;}.home-study-summary .timer{font-size:30px;}.goal-compact b{font-size:24px;}.analysis-v2-head .top-card-head,.planner-title-card .top-card-head,.coach-title-card .top-card-head{min-height:70px;padding:11px 14px;grid-template-columns:minmax(0,1fr) 36px;}.analysis-v2-head .top-card-head h3,.planner-title-card .top-card-head h3,.coach-title-card .top-card-head h3{font-size:21px;}.analysis-v2-head .top-card-head p,.planner-title-card .top-card-head p,.coach-title-card .top-card-head p{font-size:11.5px;}.analysis-v2-head .top-infographic,.top-infographic-planner,.top-infographic-coach{width:36px;height:36px;border-radius:13px;}.analysis-result-head{grid-template-columns:1fr;padding:14px 12px 12px;}.analysis-exam-select{height:40px!important;}.analysis-gap-grid{padding:14px 12px 7px;}.analysis-gap-grid b{font-size:18px;}.analysis-main-gauge-wrap{padding:0 12px 14px;}.analysis-main-gauge{height:18px;}.analysis-main-gauge-marker::before{top:-34px;height:32px;}.analysis-boost-card{padding:14px 12px 16px!important;}.analysis-section-head h4{font-size:18px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,.95fr) 62px minmax(0,1.05fr);gap:6px;}.analysis-sim-row{min-height:58px;padding:11px 10px;}.analysis-sim-row.best{min-height:68px;padding:12px 10px;}.analysis-sim-effect{font-size:15px;}.analysis-sim-row.best .analysis-sim-effect{font-size:19px;}}
 
 /* 2026-07-07: analysis gauge reference alignment. */
 .analysis-main-gauge-wrap{gap:4px;padding-top:2px;}

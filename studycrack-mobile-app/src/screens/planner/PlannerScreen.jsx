@@ -87,6 +87,20 @@ export function PlannerScreen(ctx) {
       <div className="app-frame">
         <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
           <div className="planner-screen">
+            <div className="card planner-title-card">
+              <div className="top-card-head">
+                <div>
+                  <h3>플래너</h3>
+                  <p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p>
+                </div>
+                <span
+                  className="top-infographic top-infographic-planner"
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: icon('calendar', false) }}
+                />
+              </div>
+            </div>
+
             <div className="planner-head">
               <h3>{plannerMonthLabel} {selectedPlannerDate}일 ({selectedPlannerWeekday})</h3>
               <button
