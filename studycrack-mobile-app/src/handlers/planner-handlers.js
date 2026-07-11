@@ -33,6 +33,33 @@ function getRefValue(ref, fallback = '') {
   return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
 }
 
+function toPlannerDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parsePlannerDate(value = FIXED_TODAY_DATE, fallback = FIXED_TODAY_DATE) {
+  const raw = String(value || '').trim();
+  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(FIXED_TODAY_DATE).split('-')[2]) || 1;
+  const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? raw
+    : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
+  const [year, month, day] = source.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addPlannerDays(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+function addPlannerMonths(date, months) {
+  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const maxDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
+}
+
 function mutateStudyRecord(records, today, elapsed) {
   const idx = records.findIndex((row) => row.date === today);
   if (idx >= 0) {
@@ -87,18 +114,19 @@ export function createPlannerHandlers(ctx) {
     afterSafariViewportStable = (fn) => fn?.(),
     centerPlannerDate = noop,
     goto,
+    plannerCalendarMode = 'week',
     plannerContentRef,
     plannerCustomMinutesRef,
     plannerDraft = {},
     plannerEditIndex = null,
     plannerEditItem = null,
-    plannerMonthDays = 31,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
     prompt = globalThis.prompt,
     requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
     selectedPlannerDate = '',
+    selectedPlannerDateKey = '',
     setActivePlannerItemId = noop,
     setActiveStudySubject = noop,
     setExpandedBreakdownSubject = noop,
@@ -124,6 +152,7 @@ export function createPlannerHandlers(ctx) {
 
   return {
     openPlannerAddPage() {
+      setPlannerCalendarOpen(false);
       goto?.('plannerAdd');
       return true;
     },
@@ -139,19 +168,21 @@ export function createPlannerHandlers(ctx) {
     },
 
     plannerCalendarPrevWeek() {
-      const current = Number(selectedPlannerDate) || Number(todayDate.split('-')[2]) || 1;
-      preserveY(() => setSelectedDate(String(Math.max(1, current - 7))));
+      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
+      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, -1) : addPlannerDays(current, -7);
+      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
       return true;
     },
 
     plannerCalendarNextWeek() {
-      const current = Number(selectedPlannerDate) || Number(todayDate.split('-')[2]) || 1;
-      preserveY(() => setSelectedDate(String(Math.min(Number(plannerMonthDays) || 31, current + 7))));
+      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
+      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, 1) : addPlannerDays(current, 7);
+      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
       return true;
     },
 
     plannerCalendarToday() {
-      preserveY(() => setSelectedDate(String(Number(todayDate.split('-')[2]) || 1)));
+      preserveY(() => setSelectedDate(todayDate));
       return true;
     },
 
@@ -219,7 +250,7 @@ export function createPlannerHandlers(ctx) {
         ...prev,
         {
           id: buildPlannerId(),
-          date: selectedPlannerDate,
+          date: selectedPlannerDateKey || selectedPlannerDate,
           subject: draft.subject,
           content,
           start: '--:--',

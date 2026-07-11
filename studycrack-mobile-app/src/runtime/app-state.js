@@ -100,7 +100,7 @@ export function createInitialAppState() {
     homeDragOffset: 0,
     scoreDragOffset: 0,
     // planner
-    selectedDate: String(Number(FIXED_TODAY_DATE.split('-')[2])),
+    selectedDate: FIXED_TODAY_DATE,
     plannerCalendarOpen: false,
     plannerCalendarMode: 'week',
     plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '' },

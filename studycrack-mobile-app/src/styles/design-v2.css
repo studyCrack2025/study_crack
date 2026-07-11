@@ -1422,6 +1422,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-segment{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border:1px solid #E5E7EB;border-radius:13px;background:#F1F2F5;}
 .planner-calendar-segment button{height:36px;border:none;border-radius:12px;background:transparent;color:#64748B;font-weight:900;}
 .planner-calendar-segment button.active{background:#fff;color:var(--primary-dark);box-shadow:0 5px 14px rgba(52,78,143,.12);}
+.planner-calendar-scroll{min-height:0;flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:12px;padding:0 0 14px;}
 .planner-calendar-day-panel{display:grid;gap:12px;}
 .planner-calendar-day-score{padding:16px;border:1px solid #DDE7F6;border-radius:18px;background:linear-gradient(135deg,#EFF6FF 0%,#FFFFFF 72%);}
 .planner-calendar-day-score span{font-size:12px;font-weight:900;color:var(--primary-dark);}
@@ -1434,14 +1435,14 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-agenda-item p{margin:2px 0 0;font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .planner-calendar-agenda-item strong{font-size:12px;color:var(--primary-dark);}
 .planner-calendar-empty{padding:18px;border:1px dashed #CBD5E1;border-radius:14px;background:#F8FAFC;text-align:center;color:#64748B;font-size:13px;font-weight:800;}
-.planner-calendar-week-panel{display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0 12px 12px;}
+.planner-calendar-week-panel{display:flex;flex:0 0 auto;flex-direction:column;min-height:0;overflow:hidden;padding:0 16px;}
 .planner-calendar-week-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 0 0 42px;border:1px solid rgba(15,23,42,.18);border-bottom:0;border-radius:16px 16px 0 0;background:#FFFFFF;overflow:hidden;}
 .planner-calendar-week-card{min-width:0;min-height:72px;padding:10px 2px;border:0;border-radius:0;background:transparent;color:#334155;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:inherit;}
 .planner-calendar-week-card small{font-size:13px;font-weight:850;color:#111827;}
 .planner-calendar-week-card b{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;font-size:23px;line-height:1;color:#111827;font-weight:900;}
 .planner-calendar-week-card.active b{background:linear-gradient(180deg,#E8EEFF 0%,#DDE7FF 100%);color:#4C63C7;}
 .planner-calendar-week-card.is-empty{opacity:.28;}
-.planner-calendar-time-grid{min-height:0;flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid rgba(15,23,42,.18);border-top:0;border-radius:0 0 16px 16px;background:#FFFFFF;}
+.planner-calendar-time-grid{min-height:0;max-height:250px;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid rgba(15,23,42,.18);border-top:0;border-radius:0 0 16px 16px;background:#FFFFFF;}
 .planner-calendar-time-row{display:grid;grid-template-columns:42px repeat(7,minmax(0,1fr));min-height:58px;}
 .planner-calendar-time-row span{display:flex;align-items:flex-start;justify-content:center;padding-top:10px;border-right:1px solid rgba(15,23,42,.28);color:#111827;font-size:12px;font-weight:800;white-space:nowrap;}
 .planner-calendar-time-cell{position:relative;min-width:0;border:0;border-right:1px solid rgba(15,23,42,.28);border-bottom:1px solid rgba(15,23,42,.28);background:#FFFFFF;font-family:inherit;}
@@ -1449,7 +1450,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-time-cell.active{background:linear-gradient(180deg,rgba(229,236,255,.72),rgba(244,247,255,.28));}
 .planner-calendar-time-cell em{position:relative;z-index:1;display:inline-flex;margin:10px 4px;padding:4px 6px;border-radius:8px;background:#FFFFFF;color:#26304A;font-size:11px;font-style:normal;font-weight:850;box-shadow:0 4px 9px rgba(52,78,143,.08);}
 .planner-calendar-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;margin-bottom:6px;font-size:11px;font-weight:900;color:#94A3B8;}
-.planner-calendar-month-panel{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.planner-calendar-month-panel{flex:0 0 auto;min-height:0;overflow:visible;padding:0 16px;}
 .planner-calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
 .planner-calendar-month-day{position:relative;min-height:42px;border:1px solid transparent;border-radius:12px;background:#F8FAFC;color:#334155;font-weight:900;font-family:inherit;}
 .planner-calendar-month-day b{font-size:13px;}
@@ -1458,6 +1459,26 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-month-day.active span{background:#fff;color:var(--primary-dark);}
 .planner-calendar-month-day.is-today:not(.active){border-color:#9DB8FF;background:#EFF6FF;}
 .planner-calendar-month-day.is-blank{visibility:hidden;}
+.planner-calendar-agenda-panel{margin:0 16px 0;padding:13px;border:1px solid #E0E8F6;border-radius:18px;background:linear-gradient(180deg,#F8FBFF 0%,#FFFFFF 100%);display:grid;gap:10px;box-shadow:0 8px 18px rgba(52,78,143,.06);}
+.planner-calendar-agenda-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.planner-calendar-agenda-head b{display:block;font-size:15px;line-height:1.25;color:#101827;font-weight:950;}
+.planner-calendar-agenda-head small{display:block;margin-top:3px;font-size:11.5px;color:#7B8798;font-weight:800;}
+.planner-calendar-agenda-head button{border:0;border-radius:999px;background:#DCEBFF;color:var(--primary-dark);padding:7px 10px;font-size:12px;font-weight:950;font-family:inherit;}
+.planner-calendar-plan-list{display:grid;gap:7px;max-height:132px;overflow:auto;-webkit-overflow-scrolling:touch;}
+.planner-calendar-plan-row{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px;border:1px solid #E5ECF6;border-radius:14px;background:#FFFFFF;text-align:left;font-family:inherit;}
+.planner-calendar-plan-icon{width:32px;height:32px;border-radius:11px;background:#EEF4FF;position:relative;}
+.planner-calendar-plan-icon::after{content:"";position:absolute;inset:11px;border-radius:999px;background:#4F6FEA;}
+.planner-calendar-plan-icon.math::after{background:#3B82F6;}
+.planner-calendar-plan-icon.kor::after{background:#8B5CF6;}
+.planner-calendar-plan-icon.eng::after{background:#14B8A6;}
+.planner-calendar-plan-icon.sci::after{background:#F97316;}
+.planner-calendar-plan-icon.etc::after{background:#64748B;}
+.planner-calendar-plan-row b{display:block;min-width:0;font-size:13px;line-height:1.3;color:#111827;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.planner-calendar-plan-row small{display:block;margin-top:2px;font-size:11px;line-height:1.25;color:#64748B;font-weight:800;}
+.planner-calendar-plan-row em{font-style:normal;font-size:11px;font-weight:950;color:var(--primary-dark);}
+.planner-calendar-plan-empty{padding:14px;border:1px dashed #CBD8EA;border-radius:14px;background:#FFFFFF;text-align:center;}
+.planner-calendar-plan-empty b{display:block;font-size:13px;color:#26304A;font-weight:950;}
+.planner-calendar-plan-empty small{display:block;margin-top:4px;font-size:11.5px;color:#7B8798;font-weight:800;}
 @media (max-width:360px){
 .calendar-form-date-grid{grid-template-columns:1fr;}
 .planner-calendar-week-panel{gap:4px;}

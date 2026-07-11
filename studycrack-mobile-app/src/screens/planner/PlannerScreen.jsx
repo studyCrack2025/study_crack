@@ -65,6 +65,7 @@ export function PlannerScreen(ctx) {
     plannerViewSubjectStats = [],
     plannerWeekDates = [],
     selectedPlannerDate = '',
+    selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
   } = ctx;
 
@@ -78,7 +79,8 @@ export function PlannerScreen(ctx) {
       plannerViewHour,
       plannerViewItems,
       plannerViewMinute,
-      selectedPlannerDate
+      selectedPlannerDate,
+      selectedPlannerDateKey
     }) +
     renderEditSheet({ plannerEditIndex, plannerEditItem });
 
@@ -113,12 +115,12 @@ export function PlannerScreen(ctx) {
             </div>
 
             <div className="planner-days planner-days-carousel planner-date-strip">
-              {plannerWeekDates.map(({ day, weekday, empty }, idx) => (
+              {plannerWeekDates.map(({ date, day, weekday, empty }, idx) => (
                 <button
-                  key={day || `empty-${idx}`}
-                  className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDate === day ? 'active' : ''}`}
+                  key={date || `empty-${idx}`}
+                  className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDateKey === date ? 'active' : ''}`}
                   data-action="selectPlannerDate"
-                  data-planner-date={day}
+                  data-planner-date={date || ''}
                   disabled={empty}
                 >
                   <small>{weekday}</small>

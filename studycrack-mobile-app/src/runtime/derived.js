@@ -16,11 +16,36 @@ import { scoreExamTypeToKey } from './persistence.js';
 
 const PLANNER_VIEW_PALETTE = { 국어: '#8B5CF6', 수학: '#3B82F6', 영어: '#14B8A6', 탐구: '#F97316', 기타: '#64748B' };
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+const LEGACY_PLANNER_YEAR_MONTH = '2026-07';
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parsePlannerDate(value = FIXED_TODAY_DATE) {
+  const raw = String(value || '').trim();
+  const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
+    ? raw
+    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(FIXED_TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
+  const [year, month, day] = source.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addPlannerDays(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+function normalizePlannerDateKey(value = FIXED_TODAY_DATE) {
+  return toDateKey(parsePlannerDate(value));
+}
 
 // 플래너 항목을 날짜별로 그룹(원본 plannerItemsByDate). planner/home derived 공유.
 function groupPlannerByDate(plannerItems = []) {
   return plannerItems.reduce((acc, item) => {
-    const dateKey = item.date || '14';
+    const dateKey = normalizePlannerDateKey(item.date);
     if (!acc[dateKey]) acc[dateKey] = [];
     acc[dateKey].push(item);
     return acc;
@@ -76,55 +101,57 @@ function computeLiveCurrentScore(scores = {}) {
 
 // 플래너 화면 derived.
 export function buildPlannerDerived(state = {}) {
-  const { plannerItems = [], selectedDate = '14', plannerEditIndex = null } = state;
+  const { plannerItems = [], selectedDate = FIXED_TODAY_DATE, plannerEditIndex = null } = state;
 
-  // "오늘" 앵커(FIXED_TODAY_DATE = 런타임 현재 날짜)에서 연/월/월 일수를 단일 출처로 파생한다.
-  const [todayYear, todayMonth] = FIXED_TODAY_DATE.split('-').map(Number);
-  const plannerMonthDays = new Date(todayYear, todayMonth, 0).getDate();
-  const plannerMonthLabel = `${todayYear}년 ${todayMonth}월`;
-
-  const selectedPlannerDate = selectedDate;
-  const selectedPlannerWeekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, Number(selectedDate) || 1).getDay()];
+  const selectedDateObject = parsePlannerDate(selectedDate);
+  const selectedPlannerDateKey = toDateKey(selectedDateObject);
+  const selectedYear = selectedDateObject.getFullYear();
+  const selectedMonth = selectedDateObject.getMonth() + 1;
+  const plannerMonthDays = new Date(selectedYear, selectedMonth, 0).getDate();
+  const plannerMonthLabel = `${selectedYear}년 ${selectedMonth}월`;
+  const selectedPlannerDate = String(selectedDateObject.getDate());
+  const selectedPlannerWeekday = WEEKDAY_LABELS[selectedDateObject.getDay()];
 
   const plannerItemsByDate = groupPlannerByDate(plannerItems);
-  const selectedDayNumber = Math.max(1, Math.min(plannerMonthDays, Number(selectedDate) || 1));
-  const plannerCalendarWeekStart = Math.max(1, selectedDayNumber - new Date(todayYear, todayMonth - 1, selectedDayNumber).getDay());
+  const plannerCalendarWeekStart = addPlannerDays(selectedDateObject, -selectedDateObject.getDay());
   const plannerWeekDates = Array.from({ length: 7 }, (_, idx) => {
-    const day = plannerCalendarWeekStart + idx;
-    if (day > plannerMonthDays) return { day: '', weekday: WEEKDAY_LABELS[idx], empty: true };
-    return { day: String(day), weekday: WEEKDAY_LABELS[idx], empty: false };
+    const date = addPlannerDays(plannerCalendarWeekStart, idx);
+    return { day: String(date.getDate()), date: toDateKey(date), weekday: WEEKDAY_LABELS[date.getDay()], empty: false };
   });
   const plannerCalendarWeekDates = Array.from({ length: 7 }, (_, idx) => {
-    const day = plannerCalendarWeekStart + idx;
-    if (day > plannerMonthDays) return { day: '', weekday: WEEKDAY_LABELS[idx], empty: true, count: 0, minutes: 0 };
-    const items = plannerItemsByDate[String(day)] || [];
+    const date = addPlannerDays(plannerCalendarWeekStart, idx);
+    const dateKey = toDateKey(date);
+    const items = plannerItemsByDate[dateKey] || [];
     return {
-      day: String(day),
-      weekday: WEEKDAY_LABELS[idx],
+      day: String(date.getDate()),
+      date: dateKey,
+      weekday: WEEKDAY_LABELS[date.getDay()],
       empty: false,
       count: items.length,
       minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
     };
   });
-  const firstPlannerWeekday = new Date(todayYear, todayMonth - 1, 1).getDay();
+  const firstPlannerWeekday = new Date(selectedYear, selectedMonth - 1, 1).getDay();
   const plannerCalendarMonthCells = [
     ...Array.from({ length: firstPlannerWeekday }, (_, idx) => ({ key: `blank-${idx}`, blank: true })),
     ...Array.from({ length: plannerMonthDays }, (_, idx) => {
       const day = String(idx + 1);
-      const items = plannerItemsByDate[day] || [];
+      const dateKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${day.padStart(2, '0')}`;
+      const items = plannerItemsByDate[dateKey] || [];
       return {
-        key: day,
+        key: dateKey,
         day,
+        date: dateKey,
         blank: false,
-        isSelected: selectedPlannerDate === day,
-        isToday: FIXED_TODAY_DATE.endsWith(`-${day.padStart(2, '0')}`),
+        isSelected: selectedPlannerDateKey === dateKey,
+        isToday: FIXED_TODAY_DATE === dateKey,
         count: items.length,
         minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
       };
     })
   ];
 
-  const plannerViewItems = plannerItemsByDate[selectedPlannerDate] || [];
+  const plannerViewItems = plannerItemsByDate[selectedPlannerDateKey] || [];
   const plannerViewMinutes = plannerViewItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const plannerViewHour = Math.floor(plannerViewMinutes / 60);
   const plannerViewMinute = plannerViewMinutes % 60;
@@ -164,6 +191,7 @@ export function buildPlannerDerived(state = {}) {
     plannerItemsByDate,
     plannerMonthDays,
     plannerMonthLabel,
+    selectedPlannerDateKey,
     selectedPlannerDate,
     selectedPlannerWeekday,
     plannerViewItems,
