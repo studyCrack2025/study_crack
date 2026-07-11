@@ -99,7 +99,7 @@ export function renderCalendarSheet({
       ? renderPlannerCalendarMonth({ plannerCalendarMonthCells, selectedPlannerDate })
       : renderPlannerCalendarWeek({ plannerCalendarWeekDates, selectedPlannerDate });
   const body = `<div class="planner-calendar-grabber" aria-hidden="true"></div><div class="planner-calendar-head"><button type="button" class="planner-calendar-nav" data-action="plannerCalendarPrevWeek" aria-label="이전 주">‹</button><h3>${plannerMonthLabel}</h3><button type="button" class="planner-calendar-nav" data-action="plannerCalendarNextWeek" aria-label="다음 주">›</button></div><div class="planner-calendar-toolbar"><div class="planner-calendar-segment">${renderPlannerCalendarModeButton('week', '주', mode)}${renderPlannerCalendarModeButton('month', '월', mode)}</div><div class="planner-calendar-actions"><button type="button" data-action="plannerCalendarToday">오늘</button><button type="button" data-action="closePlannerCalendar">완료</button></div></div>${viewHtml}`;
-  return renderSheet({ panelClass: 'planner-calendar-sheet', dismissAction: 'closePlannerCalendar', body });
+  return renderSheet({ overlayClass: 'planner-calendar-overlay', panelClass: 'planner-calendar-sheet', dismissAction: 'closePlannerCalendar', body });
 }
 
 export function renderEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
