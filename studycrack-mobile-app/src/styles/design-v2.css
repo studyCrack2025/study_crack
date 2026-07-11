@@ -1410,11 +1410,15 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .calendar-form-actions{position:sticky;bottom:0;margin:0 -2px;padding-top:10px;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%);}
 .calendar-form-actions .btn{height:44px;border-radius:13px;}
 .calendar-delete-btn{background:#FFF1F2 !important;border-color:#FECDD3 !important;color:#BE123C !important;}
-.planner-calendar-sheet{display:flex;flex-direction:column;gap:14px;padding:18px 16px max(18px,env(safe-area-inset-bottom));}
-.planner-calendar-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-right:34px;}
-.planner-calendar-head span{display:block;margin-bottom:3px;font-size:10px;font-weight:900;color:var(--primary-dark);}
-.planner-calendar-head h3{font-size:20px;line-height:1.2;}
-.planner-calendar-segment{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:4px;border:1px solid #DDE7F6;border-radius:15px;background:#F6F8FE;}
+.planner-calendar-sheet{display:flex;flex-direction:column;gap:14px;padding:10px 0 0;max-height:calc(82dvh - 78px - env(safe-area-inset-bottom));overflow:hidden;border-radius:22px 22px 0 0;background:#FFFFFF;}
+.planner-calendar-grabber{align-self:center;width:48px;height:6px;border-radius:999px;background:#D1D5DB;margin:0 0 8px;}
+.planner-calendar-head{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:8px;padding:0 16px;}
+.planner-calendar-head h3{margin:0;text-align:center;font-size:24px;line-height:1.15;font-weight:950;color:#111827;}
+.planner-calendar-nav{width:42px;height:42px;border:0;background:transparent;color:#263F78;font-size:40px;line-height:1;font-weight:700;font-family:inherit;}
+.planner-calendar-toolbar{display:grid;grid-template-columns:132px minmax(0,1fr);align-items:center;gap:12px;padding:0 16px;}
+.planner-calendar-actions{display:flex;justify-content:flex-end;gap:14px;}
+.planner-calendar-actions button{border:0;background:transparent;color:#26304A;font-size:17px;font-weight:850;font-family:inherit;}
+.planner-calendar-segment{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border:1px solid #E5E7EB;border-radius:13px;background:#F1F2F5;}
 .planner-calendar-segment button{height:36px;border:none;border-radius:12px;background:transparent;color:#64748B;font-weight:900;}
 .planner-calendar-segment button.active{background:#fff;color:var(--primary-dark);box-shadow:0 5px 14px rgba(52,78,143,.12);}
 .planner-calendar-day-panel{display:grid;gap:12px;}
@@ -1429,17 +1433,23 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-agenda-item p{margin:2px 0 0;font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .planner-calendar-agenda-item strong{font-size:12px;color:var(--primary-dark);}
 .planner-calendar-empty{padding:18px;border:1px dashed #CBD5E1;border-radius:14px;background:#F8FAFC;text-align:center;color:#64748B;font-size:13px;font-weight:800;}
-.planner-calendar-week-panel{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;}
-.planner-calendar-week-card{min-width:0;min-height:86px;padding:8px 4px;border:1px solid #E2E8F0;border-radius:14px;background:#fff;color:#334155;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
-.planner-calendar-week-card small{font-size:10px;font-weight:800;color:#94A3B8;}
-.planner-calendar-week-card b{font-size:17px;line-height:1;color:#0F172A;}
-.planner-calendar-week-card span{font-size:10px;font-weight:900;color:#64748B;}
-.planner-calendar-week-card em{font-style:normal;font-size:9px;font-weight:800;color:var(--primary-dark);}
-.planner-calendar-week-card.active{border-color:var(--primary);background:#EEF4FF;box-shadow:0 8px 18px rgba(52,78,143,.1);}
-.planner-calendar-week-card.is-empty{opacity:.35;background:#F8FAFC;}
+.planner-calendar-week-panel{display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.planner-calendar-week-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 0 0 42px;border-bottom:1px solid rgba(15,23,42,.28);}
+.planner-calendar-week-card{min-width:0;min-height:72px;padding:10px 2px;border:0;border-radius:0;background:transparent;color:#334155;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:inherit;}
+.planner-calendar-week-card small{font-size:13px;font-weight:850;color:#111827;}
+.planner-calendar-week-card b{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;font-size:23px;line-height:1;color:#111827;font-weight:900;}
+.planner-calendar-week-card.active b{background:linear-gradient(180deg,#E8EEFF 0%,#DDE7FF 100%);color:#4C63C7;}
+.planner-calendar-week-card.is-empty{opacity:.28;}
+.planner-calendar-time-grid{max-height:42dvh;overflow:auto;-webkit-overflow-scrolling:touch;}
+.planner-calendar-time-row{display:grid;grid-template-columns:42px repeat(7,minmax(0,1fr));min-height:58px;}
+.planner-calendar-time-row span{display:flex;align-items:flex-start;justify-content:center;padding-top:10px;border-right:1px solid rgba(15,23,42,.28);color:#111827;font-size:12px;font-weight:800;white-space:nowrap;}
+.planner-calendar-time-cell{position:relative;min-width:0;border:0;border-right:1px solid rgba(15,23,42,.28);border-bottom:1px solid rgba(15,23,42,.28);background:#FFFFFF;font-family:inherit;}
+.planner-calendar-time-cell::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed rgba(15,23,42,.22);}
+.planner-calendar-time-cell.active{background:linear-gradient(180deg,rgba(229,236,255,.72),rgba(244,247,255,.28));}
+.planner-calendar-time-cell em{position:relative;z-index:1;display:inline-flex;margin:10px 4px;padding:4px 6px;border-radius:8px;background:#FFFFFF;color:#26304A;font-size:11px;font-style:normal;font-weight:850;box-shadow:0 4px 9px rgba(52,78,143,.08);}
 .planner-calendar-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;margin-bottom:6px;font-size:11px;font-weight:900;color:#94A3B8;}
 .planner-calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
-.planner-calendar-month-day{position:relative;min-height:42px;border:1px solid transparent;border-radius:12px;background:#F8FAFC;color:#334155;font-weight:900;}
+.planner-calendar-month-day{position:relative;min-height:42px;border:1px solid transparent;border-radius:12px;background:#F8FAFC;color:#334155;font-weight:900;font-family:inherit;}
 .planner-calendar-month-day b{font-size:13px;}
 .planner-calendar-month-day span{position:absolute;right:5px;bottom:4px;min-width:15px;height:15px;border-radius:999px;background:#DDEBFF;color:var(--primary-dark);font-size:9px;line-height:15px;}
 .planner-calendar-month-day.active{background:var(--primary);color:#fff;}
@@ -1786,6 +1796,43 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .locked-coach-page .locked-preview{filter:blur(.8px);opacity:.68;}
 .locked-feature-panel-inline{position:static;transform:none;border:1px solid #D8E6FF;border-radius:18px;background:#FFFFFF;box-shadow:0 12px 26px rgba(52,78,143,.12);}
 .locked-feature-panel-inline .locked-feature-actions{grid-template-columns:1fr;}
+.planner-screen{gap:13px;padding:10px 12px calc(104px + env(safe-area-inset-bottom));}
+.planner-title-card{border-radius:24px!important;background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%)!important;}
+.planner-title-card .top-card-head{min-height:84px;padding:14px 16px;grid-template-columns:minmax(0,1fr) 40px;}
+.planner-title-card .top-card-head h3{font-size:23px;line-height:1.14;color:#111827;}
+.planner-title-card .top-card-head p{margin-top:6px;font-size:12.5px;line-height:1.35;color:#7A879C;}
+.planner-checklist-art{position:relative;display:block;width:44px;height:44px;color:#405C86;}
+.planner-checklist-pen{position:absolute;left:3px;top:8px;width:7px;height:31px;border:3px solid currentColor;border-radius:999px;}
+.planner-checklist-pen::after{content:"";position:absolute;left:50%;bottom:-8px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:8px solid currentColor;transform:translateX(-50%);}
+.planner-checklist-paper{position:absolute;right:0;top:4px;width:30px;height:36px;border:3px solid currentColor;border-radius:7px;background:rgba(248,250,255,.8);}
+.planner-checklist-paper b{position:absolute;left:9px;width:13px;height:8px;border-left:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(-45deg);}
+.planner-checklist-paper b:first-child{top:8px;}
+.planner-checklist-paper b:last-child{top:22px;}
+.planner-date-head{margin:0;align-items:center;}
+.planner-date-head h3{font-size:22px;line-height:1.15;font-weight:950;color:#111827;letter-spacing:0;}
+.planner-date-head .planner-cal-btn{width:44px;height:44px;border-radius:15px;border:1px solid #DDE7F6;background:#FFFFFF;color:#7A879C;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.planner-date-head .planner-cal-btn svg{width:22px;height:22px;stroke-width:2.2;}
+.planner-days-carousel{gap:9px;padding:2px 0 6px;overflow-x:auto;scroll-padding-inline:0;}
+.planner-date-item{min-width:46px;min-height:50px;padding:6px 8px;border:1px solid transparent;border-radius:15px;background:transparent;color:#64748B;box-shadow:none;}
+.planner-date-item small{font-size:11.5px;line-height:1;font-weight:900;color:#8A95A8;}
+.planner-date-item strong{font-size:17px;line-height:1.05;font-weight:950;color:#465466;}
+.planner-date-item.active{background:linear-gradient(180deg,#EEF4FF 0%,#DFE9FF 100%)!important;border:1px solid #D8E6FF!important;box-shadow:0 8px 17px rgba(52,78,143,.08)!important;}
+.planner-date-item.active small,.planner-date-item.active strong{color:#4C79EE;font-weight:950;}
+.planner-date-item.is-empty{opacity:.28;pointer-events:none;}
+.planner-day-summary{margin:0;align-items:flex-start;}
+.planner-day-summary h4{font-size:18px;line-height:1.25;font-weight:950;color:#111827;}
+.planner-day-summary p{margin-top:6px;font-size:13px;color:#526176;font-weight:850;}
+.planner-premium-cta{margin:0;padding:17px 15px!important;border-radius:19px!important;border:1px solid rgba(255,255,255,.18)!important;background:linear-gradient(135deg,#4D6AAE 0%,#293F78 100%)!important;box-shadow:0 12px 22px rgba(39,61,119,.2)!important;gap:13px!important;}
+.planner-premium-copy{gap:8px!important;}
+.planner-premium-copy .badge{padding:5px 10px!important;border-radius:999px!important;background:rgba(255,255,255,.13)!important;border:1px solid rgba(255,255,255,.38)!important;color:#FFFFFF!important;font-size:11.5px!important;letter-spacing:.02em!important;}
+.planner-premium-copy b{font-size:19px!important;line-height:1.3!important;color:#FFFFFF!important;font-weight:950!important;}
+.planner-premium-copy p{font-size:14px!important;line-height:1.45!important;color:#E8EEFF!important;font-weight:760!important;}
+.planner-premium-btn{min-height:48px!important;border-radius:14px!important;background:rgba(255,255,255,.94)!important;color:#203C7D!important;font-size:14.5px!important;font-weight:950!important;box-shadow:0 7px 14px rgba(15,23,42,.14)!important;}
+.planner-plan-list{gap:10px;padding-bottom:0;}
+.planner-empty-day{padding:17px 15px!important;border:1px solid #DDE7F6!important;border-radius:18px!important;background:linear-gradient(180deg,#F8FBFF 0%,#FFFFFF 100%)!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
+.planner-empty-day b{font-size:15px!important;line-height:1.3;color:#111827!important;font-weight:950!important;}
+.planner-empty-day p{font-size:12.5px!important;line-height:1.45;color:#7A879C!important;font-weight:780!important;margin-top:6px!important;}
+.planner-add-cta{margin-top:2px!important;min-height:48px;border:1.5px dashed #8BB6E8!important;border-radius:18px!important;background:rgba(255,255,255,.72)!important;color:#263F78!important;font-size:14.5px!important;font-weight:950!important;box-shadow:none!important;}
 .analysis-v2{padding-top:6px;}
 .analysis-v2-head{border-radius:18px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
 .analysis-v2-head .top-card-head{min-height:78px;padding:12px 16px;grid-template-columns:minmax(0,1fr) 40px;gap:10px;}
@@ -1826,6 +1873,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .analysis-sim-status b{font-size:12px;}
 .analysis-sim-status small{font-size:10.5px;}
 @media (max-width:360px){.home-content,.analysis-v2{gap:10px;padding-inline:10px;}.home-header{grid-template-columns:1fr;}.home-greeting-cracky{width:44px;height:44px;}.home-greeting-speech{min-height:54px;padding:9px 11px;}.home-greeting{font-size:15px;}.home-sub{font-size:11px;}.home-calendar-btn{height:52px;}.home-analysis-criteria{grid-template-columns:1fr;padding:12px;}.home-analysis-criteria b{font-size:15px;}.home-result-card-v3,.home-add-univ-card{min-height:188px;padding:14px 12px;}.home-result-score strong{font-size:25px;}.home-study-summary .timer{font-size:30px;}.goal-compact b{font-size:24px;}.analysis-v2-head .top-card-head,.planner-title-card .top-card-head,.coach-title-card .top-card-head{min-height:70px;padding:11px 14px;grid-template-columns:minmax(0,1fr) 36px;}.analysis-v2-head .top-card-head h3,.planner-title-card .top-card-head h3,.coach-title-card .top-card-head h3{font-size:21px;}.analysis-v2-head .top-card-head p,.planner-title-card .top-card-head p,.coach-title-card .top-card-head p{font-size:11.5px;}.analysis-v2-head .top-infographic,.top-infographic-planner,.top-infographic-coach{width:36px;height:36px;border-radius:13px;}.analysis-result-head{grid-template-columns:1fr;padding:14px 12px 12px;}.analysis-exam-select{height:40px!important;}.analysis-gap-grid{padding:14px 12px 7px;}.analysis-gap-grid b{font-size:18px;}.analysis-main-gauge-wrap{padding:0 12px 14px;}.analysis-main-gauge{height:18px;}.analysis-main-gauge-marker::before{top:-34px;height:32px;}.analysis-boost-card{padding:14px 12px 16px!important;}.analysis-section-head h4{font-size:18px;}.analysis-sim-table-head,.analysis-sim-row{grid-template-columns:minmax(0,.95fr) 62px minmax(0,1.05fr);gap:6px;}.analysis-sim-row{min-height:58px;padding:11px 10px;}.analysis-sim-row.best{min-height:68px;padding:12px 10px;}.analysis-sim-effect{font-size:15px;}.analysis-sim-row.best .analysis-sim-effect{font-size:19px;}}
+@media (max-width:360px){.planner-screen{gap:12px;padding-inline:10px;}.planner-title-card .top-card-head{min-height:78px;padding:13px 14px;grid-template-columns:minmax(0,1fr) 36px;}.planner-title-card .top-card-head h3{font-size:21px;}.planner-title-card .top-card-head p{font-size:11.5px;margin-top:5px;}.planner-checklist-art{width:38px;height:38px;transform:scale(.86);transform-origin:center;}.planner-date-head h3{font-size:20px;line-height:1.14;}.planner-date-head .planner-cal-btn{width:40px;height:40px;border-radius:14px;}.planner-date-item{min-width:43px;min-height:48px;border-radius:14px;}.planner-date-item small{font-size:11px;}.planner-date-item strong{font-size:16px;}.planner-day-summary h4{font-size:17px;}.planner-day-summary p{font-size:12.5px;}.planner-premium-cta{padding:15px 13px!important;border-radius:18px!important;}.planner-premium-copy b{font-size:18px!important;}.planner-premium-copy p{font-size:13px!important;}.planner-premium-btn{min-height:46px!important;font-size:14px!important;}.planner-empty-day b{font-size:14px!important;}.planner-empty-day p{font-size:12px!important;}.planner-add-cta{min-height:46px;font-size:14px!important;}.planner-calendar-head h3{font-size:21px;}.planner-calendar-toolbar{grid-template-columns:112px minmax(0,1fr);gap:8px;padding-inline:12px;}.planner-calendar-actions{gap:10px;}.planner-calendar-actions button{font-size:15px;}.planner-calendar-week-days{padding-left:36px;}.planner-calendar-time-row{grid-template-columns:36px repeat(7,minmax(0,1fr));min-height:54px;}.planner-calendar-time-row span{font-size:10.5px;}.planner-calendar-week-card b{width:38px;height:38px;font-size:20px;}.planner-calendar-week-card small{font-size:12px;}}
 
 /* 2026-07-07: analysis gauge reference alignment. */
 .analysis-main-gauge-wrap{gap:4px;padding-top:2px;}

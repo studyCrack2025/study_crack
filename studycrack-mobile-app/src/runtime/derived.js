@@ -83,18 +83,17 @@ export function buildPlannerDerived(state = {}) {
   const plannerMonthDays = new Date(todayYear, todayMonth, 0).getDate();
   const plannerMonthLabel = `${todayYear}년 ${todayMonth}월`;
 
-  const plannerWeekDates = Array.from({ length: 15 }, (_, idx) => {
-    const day = Math.min(plannerMonthDays, Math.max(1, Number(selectedDate) - 7 + idx));
-    const weekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, day).getDay()];
-    return { day: String(day), weekday };
-  });
-
   const selectedPlannerDate = selectedDate;
   const selectedPlannerWeekday = WEEKDAY_LABELS[new Date(todayYear, todayMonth - 1, Number(selectedDate) || 1).getDay()];
 
   const plannerItemsByDate = groupPlannerByDate(plannerItems);
   const selectedDayNumber = Math.max(1, Math.min(plannerMonthDays, Number(selectedDate) || 1));
   const plannerCalendarWeekStart = Math.max(1, selectedDayNumber - new Date(todayYear, todayMonth - 1, selectedDayNumber).getDay());
+  const plannerWeekDates = Array.from({ length: 7 }, (_, idx) => {
+    const day = plannerCalendarWeekStart + idx;
+    if (day > plannerMonthDays) return { day: '', weekday: WEEKDAY_LABELS[idx], empty: true };
+    return { day: String(day), weekday: WEEKDAY_LABELS[idx], empty: false };
+  });
   const plannerCalendarWeekDates = Array.from({ length: 7 }, (_, idx) => {
     const day = plannerCalendarWeekStart + idx;
     if (day > plannerMonthDays) return { day: '', weekday: WEEKDAY_LABELS[idx], empty: true, count: 0, minutes: 0 };

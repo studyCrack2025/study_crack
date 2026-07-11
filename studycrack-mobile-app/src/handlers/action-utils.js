@@ -17,7 +17,10 @@ export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
   'closeCalendarEventForm',
   'setPlannerCalendarMode',
   'openPlannerCalendar',
-  'closePlannerCalendar'
+  'closePlannerCalendar',
+  'plannerCalendarPrevWeek',
+  'plannerCalendarNextWeek',
+  'plannerCalendarToday'
 ]);
 
 export function getActionElement(event, selector = '[data-action]') {

@@ -94,14 +94,16 @@ export function PlannerScreen(ctx) {
                   <p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p>
                 </div>
                 <span
-                  className="top-infographic top-infographic-planner"
+                  className="planner-checklist-art"
                   aria-hidden="true"
-                  dangerouslySetInnerHTML={{ __html: icon('calendar', false) }}
-                />
+                >
+                  <i className="planner-checklist-pen" />
+                  <i className="planner-checklist-paper"><b /><b /></i>
+                </span>
               </div>
             </div>
 
-            <div className="planner-head">
+            <div className="planner-head planner-date-head">
               <h3>{plannerMonthLabel} {selectedPlannerDate}일 ({selectedPlannerWeekday})</h3>
               <button
                 className="planner-cal-btn"
@@ -111,12 +113,13 @@ export function PlannerScreen(ctx) {
             </div>
 
             <div className="planner-days planner-days-carousel planner-date-strip">
-              {plannerWeekDates.map(({ day, weekday }) => (
+              {plannerWeekDates.map(({ day, weekday, empty }, idx) => (
                 <button
-                  key={day}
-                  className={`planner-date-item ${selectedPlannerDate === day ? 'active' : ''}`}
+                  key={day || `empty-${idx}`}
+                  className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDate === day ? 'active' : ''}`}
                   data-action="selectPlannerDate"
                   data-planner-date={day}
+                  disabled={empty}
                 >
                   <small>{weekday}</small>
                   <strong>{day}</strong>
@@ -124,7 +127,7 @@ export function PlannerScreen(ctx) {
               ))}
             </div>
 
-            <div className="planner-section-title planner-fade">
+            <div className="planner-section-title planner-day-summary planner-fade">
               <div>
                 <h4>{selectedPlannerDate}일 계획</h4>
                 <p>

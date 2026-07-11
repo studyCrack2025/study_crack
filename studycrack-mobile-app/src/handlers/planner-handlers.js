@@ -92,6 +92,7 @@ export function createPlannerHandlers(ctx) {
     plannerDraft = {},
     plannerEditIndex = null,
     plannerEditItem = null,
+    plannerMonthDays = 31,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
     prompt = globalThis.prompt,
@@ -137,9 +138,26 @@ export function createPlannerHandlers(ctx) {
       return true;
     },
 
+    plannerCalendarPrevWeek() {
+      const current = Number(selectedPlannerDate) || Number(todayDate.split('-')[2]) || 1;
+      preserveY(() => setSelectedDate(String(Math.max(1, current - 7))));
+      return true;
+    },
+
+    plannerCalendarNextWeek() {
+      const current = Number(selectedPlannerDate) || Number(todayDate.split('-')[2]) || 1;
+      preserveY(() => setSelectedDate(String(Math.min(Number(plannerMonthDays) || 31, current + 7))));
+      return true;
+    },
+
+    plannerCalendarToday() {
+      preserveY(() => setSelectedDate(String(Number(todayDate.split('-')[2]) || 1)));
+      return true;
+    },
+
     setPlannerCalendarMode({ actionEl }) {
       const mode = getData(actionEl, 'planner-calendar-mode');
-      if (!['day', 'week', 'month'].includes(mode)) return false;
+      if (!['week', 'month'].includes(mode)) return false;
       preserveY(() => setPlannerCalendarMode(mode));
       return true;
     },
