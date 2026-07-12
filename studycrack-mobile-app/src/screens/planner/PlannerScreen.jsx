@@ -23,12 +23,18 @@ function SubjectDonut({ plannerViewDonutGradient = '', plannerViewSubjectStats =
 }
 
 function PlannerItemCard({ item }) {
+  const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
+    ? `${item.start} - ${item.end}`
+    : `${item.minutes}분`;
+  const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
   return (
-    <div className={`planner-item ${item.done ? 'done' : ''}`} data-action="openPlannerEdit" data-planner-id={item.id}>
+    <div className={`planner-item planner-item-v2 ${item.done ? 'done' : ''}`} data-action="openPlannerEdit" data-planner-id={item.id}>
       <i className={`dot ${item.dot}`} />
       <div className="planner-item-main">
-        <b>{item.subject}</b>
-        <p>{item.content}</p>
+        <small className="planner-item-time">{timeLabel}</small>
+        <b>{item.content}</b>
+        <p>{item.subject}{detailLabel ? ` · ${detailLabel}` : ''}</p>
+        {item.memo ? <em>{item.memo}</em> : null}
       </div>
       <div className="planner-item-right">
         <strong>{item.minutes}분</strong>

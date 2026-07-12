@@ -42,14 +42,26 @@ function normalizePlannerDateKey(value = FIXED_TODAY_DATE) {
   return toDateKey(parsePlannerDate(value));
 }
 
+function plannerStartSortValue(item = {}, index = 0) {
+  const match = String(item.start || '').match(/^(\d{2}):(\d{2})$/);
+  if (!match) return 99999 + index;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
 // 플래너 항목을 날짜별로 그룹(원본 plannerItemsByDate). planner/home derived 공유.
 function groupPlannerByDate(plannerItems = []) {
-  return plannerItems.reduce((acc, item) => {
+  const grouped = plannerItems.reduce((acc, item, idx) => {
     const dateKey = normalizePlannerDateKey(item.date);
     if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(item);
+    acc[dateKey].push({ ...item, __plannerSortIndex: idx });
     return acc;
   }, {});
+  Object.keys(grouped).forEach((dateKey) => {
+    grouped[dateKey] = grouped[dateKey]
+      .sort((a, b) => plannerStartSortValue(a, a.__plannerSortIndex) - plannerStartSortValue(b, b.__plannerSortIndex))
+      .map(({ __plannerSortIndex, ...item }) => item);
+  });
+  return grouped;
 }
 
 function formatMinutesLabel(minutes) {

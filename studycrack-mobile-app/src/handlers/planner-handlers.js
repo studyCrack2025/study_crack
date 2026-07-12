@@ -1,6 +1,7 @@
 import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
+import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
 
 function noop() {}
 
@@ -14,6 +15,10 @@ function query(ctx, selector) {
 
 function getInputValue(ctx, selector) {
   return query(ctx, selector)?.value || '';
+}
+
+function getCheckedValue(ctx, name, fallback = '') {
+  return query(ctx, `input[name="${name}"]:checked`)?.value || fallback;
 }
 
 function dotForSubject(subject = '') {
@@ -245,26 +250,38 @@ export function createPlannerHandlers(ctx) {
 
     addPlannerFromSheet() {
       const draft = typeof ctx.getPlannerDraft === 'function' ? ctx.getPlannerDraft() : plannerDraft;
-      const content = String(getRefValue(plannerContentRef)).trim();
+      const start = getInputValue(ctx, '[data-field="plannerStartTime"]').trim();
+      const end = getInputValue(ctx, '[data-field="plannerEndTime"]').trim();
+      const category = getCheckedValue(ctx, 'plannerCategory', draft.subject || '기타');
+      const detailSubject = getCheckedValue(ctx, 'plannerDetailSubject', '');
+      const activityType = getCheckedValue(ctx, 'plannerActivityType', '');
+      const memo = getInputValue(ctx, '[data-field="plannerMemo"]').trim();
+      const content = String(getInputValue(ctx, '[data-field="plannerContent"]') || getRefValue(plannerContentRef)).trim();
       const customMinutes = String(getRefValue(plannerCustomMinutesRef)).trim();
-      const minutes = draft.durationChoice === 'custom' ? Number(customMinutes) : Number(draft.durationChoice);
-      if (!draft.subject || !content || !minutes || Number.isNaN(minutes)) return false;
+      const minutesFromRange = minutesBetween(start, end);
+      const minutes = minutesFromRange || (draft.durationChoice === 'custom' ? Number(customMinutes) : Number(draft.durationChoice));
+      if (!category || !content || !minutes || Number.isNaN(minutes)) return false;
+      if (start && end && !minutesFromRange) return false;
       setPlannerItems((prev) => [
         ...prev,
         {
           id: buildPlannerId(),
           date: selectedPlannerDateKey || selectedPlannerDate,
-          subject: draft.subject,
+          subject: category,
+          category,
+          detailSubject,
+          activityType,
           content,
-          start: '--:--',
-          end: '--:--',
+          memo,
+          start: start || '--:--',
+          end: end || '--:--',
           minutes,
-          dot: dotForSubject(draft.subject)
+          dot: dotForPlannerCategory(category) || dotForSubject(category)
         }
       ]);
       setRefValue(plannerContentRef, '');
       setRefValue(plannerCustomMinutesRef, '');
-      setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '' });
+      setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' });
       goto?.('planner', false);
       return true;
     },
@@ -272,12 +289,31 @@ export function createPlannerHandlers(ctx) {
     savePlannerEdit() {
       if (plannerEditIndex === null) return false;
       const subject = getInputValue(ctx, '[data-field="plannerEditSubject"]').trim();
+      const detailSubject = getInputValue(ctx, '[data-field="plannerEditDetailSubject"]').trim();
+      const activityType = getInputValue(ctx, '[data-field="plannerEditActivityType"]').trim();
       const content = getInputValue(ctx, '[data-field="plannerEditContent"]').trim();
-      const minutes = Number(getInputValue(ctx, '[data-field="plannerEditMinutes"]') || 0);
+      const memo = getInputValue(ctx, '[data-field="plannerEditMemo"]').trim();
+      const start = getInputValue(ctx, '[data-field="plannerEditStart"]').trim();
+      const end = getInputValue(ctx, '[data-field="plannerEditEnd"]').trim();
+      const rangeMinutes = minutesBetween(start, end);
+      const minutes = rangeMinutes || Number(plannerEditItem.minutes || 0);
       if (!subject || !content || !minutes || !plannerEditItem) return false;
+      if (start && end && !rangeMinutes) return false;
       setPlannerItems((prev) => prev.map((item) => (
         item.id === plannerEditIndex
-          ? { ...item, subject, content, minutes, dot: dotForSubject(subject) }
+          ? {
+              ...item,
+              subject,
+              category: subject,
+              detailSubject,
+              activityType,
+              content,
+              memo,
+              start: start || item.start || '--:--',
+              end: end || item.end || '--:--',
+              minutes,
+              dot: dotForPlannerCategory(subject) || dotForSubject(subject)
+            }
           : item
       )));
       setPlannerEditIndex(null);

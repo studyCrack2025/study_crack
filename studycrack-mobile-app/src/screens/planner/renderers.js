@@ -27,7 +27,11 @@ function renderSubjectDonut({ plannerViewDonutGradient = '', plannerViewSubjectS
 }
 
 function renderPlannerItemCard(item) {
-  return `<div class="planner-item ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><b>${item.subject}</b><p>${item.content}</p></div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`;
+  const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
+    ? `${item.start} - ${item.end}`
+    : `${item.minutes}분`;
+  const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
+  return `<div class="planner-item planner-item-v2 ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><small class="planner-item-time">${timeLabel}</small><b>${item.content}</b><p>${item.subject}${detailLabel ? ` · ${detailLabel}` : ''}</p>${item.memo ? `<em>${item.memo}</em>` : ''}</div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`;
 }
 
 function formatPlannerMinutes(minutes = 0) {
@@ -126,7 +130,7 @@ export function renderCalendarSheet({
 
 export function renderEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
   if (plannerEditIndex === null) return '';
-  const body = `<button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>소요 시간(분)</label><input class="planner-input" data-field="plannerEditMinutes" type="number" value="${plannerEditItem?.minutes || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button>`;
+  const body = `<button class="planner-sheet-close" data-action="closePlannerEdit">✕</button><h3>플래너 항목 수정</h3><div class="planner-time-row"><div class="planner-sheet-block"><label>시작</label><input class="planner-input" data-field="plannerEditStart" type="time" value="${plannerEditItem?.start && plannerEditItem.start !== '--:--' ? plannerEditItem.start : ''}" /></div><div class="planner-sheet-block"><label>종료</label><input class="planner-input" data-field="plannerEditEnd" type="time" value="${plannerEditItem?.end && plannerEditItem.end !== '--:--' ? plannerEditItem.end : ''}" /></div></div><div class="planner-sheet-block"><label>과목</label><input class="planner-input" data-field="plannerEditSubject" value="${plannerEditItem?.subject || ''}" /></div><div class="planner-sheet-block"><label>세부 과목</label><input class="planner-input" data-field="plannerEditDetailSubject" value="${plannerEditItem?.detailSubject || ''}" /></div><div class="planner-sheet-block"><label>학습 유형</label><input class="planner-input" data-field="plannerEditActivityType" value="${plannerEditItem?.activityType || ''}" /></div><div class="planner-sheet-block"><label>세부 내용</label><input class="planner-input" data-field="plannerEditContent" value="${plannerEditItem?.content || ''}" /></div><div class="planner-sheet-block"><label>메모</label><input class="planner-input" data-field="plannerEditMemo" value="${plannerEditItem?.memo || ''}" /></div><button class="btn btn-primary" data-action="savePlannerEdit">수정 저장</button>`;
   return renderSheet({ dismissAction: 'closePlannerEdit', body });
 }
 
