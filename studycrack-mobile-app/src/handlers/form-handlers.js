@@ -65,6 +65,28 @@ function formatMinutes(minutes = 0) {
   return `${min}분`;
 }
 
+const PLANNER_ADD_STEPS = ['time', 'subject', 'activity', 'content'];
+
+function getPlannerAddStep(ctx) {
+  return query(ctx, '[data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
+}
+
+function isPlannerStepValid(ctx, stepKey = getPlannerAddStep(ctx)) {
+  if (stepKey === 'time') {
+    const start = query(ctx, '[data-field="plannerStartTime"]')?.value || '';
+    const end = query(ctx, '[data-field="plannerEndTime"]')?.value || '';
+    const startMinutes = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+    return Boolean(startMinutes !== null && endMinutes !== null && endMinutes > startMinutes);
+  }
+  if (stepKey === 'subject') {
+    return Boolean(query(ctx, 'input[name="plannerCategory"]:checked')?.value && query(ctx, 'input[name="plannerDetailSubject"]:checked')?.value);
+  }
+  if (stepKey === 'activity') return Boolean(query(ctx, 'input[name="plannerActivityType"]:checked')?.value);
+  if (stepKey === 'content') return Boolean(String(query(ctx, '[data-field="plannerContent"]')?.value || '').trim());
+  return true;
+}
+
 function syncPlannerAddForm(ctx) {
   const start = query(ctx, '[data-field="plannerStartTime"]')?.value || '';
   const end = query(ctx, '[data-field="plannerEndTime"]')?.value || '';
@@ -76,6 +98,7 @@ function syncPlannerAddForm(ctx) {
   const preview = query(ctx, '[data-planner-duration-preview]');
   const error = query(ctx, '[data-planner-time-error]');
   const submit = query(ctx, '.planner-sheet-submit');
+  const next = query(ctx, '[data-planner-step-next]');
   if (preview) preview.textContent = minutes ? formatMinutes(minutes) : '시간 확인';
   if (error) error.classList.toggle('active', Boolean(start && end && !minutes));
   const canSubmit = Boolean(category && content && minutes);
@@ -83,6 +106,7 @@ function syncPlannerAddForm(ctx) {
     submit.disabled = !canSubmit;
     submit.classList?.toggle?.('disabled', !canSubmit);
   }
+  if (next) next.disabled = !isPlannerStepValid(ctx);
   return canSubmit;
 }
 

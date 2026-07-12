@@ -21,6 +21,71 @@ function getCheckedValue(ctx, name, fallback = '') {
   return query(ctx, `input[name="${name}"]:checked`)?.value || fallback;
 }
 
+const PLANNER_ADD_STEPS = ['time', 'subject', 'activity', 'content'];
+
+function queryAll(ctx, selector) {
+  return Array.from(getDocument(ctx)?.querySelectorAll?.(selector) || []);
+}
+
+function getPlannerAddRoot(ctx) {
+  return query(ctx, '[data-planner-add-root]');
+}
+
+function getPlannerAddStepIndex(ctx) {
+  const root = getPlannerAddRoot(ctx);
+  const activeStep = root?.querySelector?.('[data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
+  return Math.max(0, PLANNER_ADD_STEPS.indexOf(activeStep));
+}
+
+function setPlannerAddStep(ctx, nextIndex) {
+  const clamped = Math.max(0, Math.min(PLANNER_ADD_STEPS.length - 1, Number(nextIndex) || 0));
+  const activeKey = PLANNER_ADD_STEPS[clamped];
+  queryAll(ctx, '[data-planner-add-step]').forEach((step) => {
+    step.classList.toggle('active', step.getAttribute('data-planner-add-step') === activeKey);
+  });
+  queryAll(ctx, '[data-planner-step-dot]').forEach((dot, idx) => {
+    dot.classList.toggle('active', idx === clamped);
+    dot.classList.toggle('done', idx < clamped);
+  });
+  const prev = query(ctx, '[data-planner-step-prev]');
+  const next = query(ctx, '[data-planner-step-next]');
+  const submit = query(ctx, '[data-planner-step-submit]');
+  if (prev) prev.disabled = clamped === 0;
+  if (next) {
+    next.hidden = clamped === PLANNER_ADD_STEPS.length - 1;
+    next.disabled = !validatePlannerAddStep(ctx, activeKey);
+  }
+  if (submit) submit.hidden = clamped !== PLANNER_ADD_STEPS.length - 1;
+}
+
+function validatePlannerAddStep(ctx, stepKey, { focus = false } = {}) {
+  if (stepKey === 'time') {
+    const startInput = query(ctx, '[data-field="plannerStartTime"]');
+    const endInput = query(ctx, '[data-field="plannerEndTime"]');
+    const valid = Boolean(minutesBetween(startInput?.value || '', endInput?.value || ''));
+    const error = query(ctx, '[data-planner-time-error]');
+    if (error) error.classList.toggle('active', !valid);
+    if (!valid && focus) (endInput || startInput)?.focus?.();
+    return valid;
+  }
+  if (stepKey === 'subject') {
+    const valid = Boolean(getCheckedValue(ctx, 'plannerCategory') && getCheckedValue(ctx, 'plannerDetailSubject'));
+    if (!valid && focus) query(ctx, 'input[name="plannerCategory"]')?.focus?.();
+    return valid;
+  }
+  if (stepKey === 'activity') {
+    const valid = Boolean(getCheckedValue(ctx, 'plannerActivityType'));
+    if (!valid && focus) query(ctx, 'input[name="plannerActivityType"]')?.focus?.();
+    return valid;
+  }
+  if (stepKey === 'content') {
+    const content = getInputValue(ctx, '[data-field="plannerContent"]').trim();
+    if (!content && focus) query(ctx, '[data-field="plannerContent"]')?.focus?.();
+    return Boolean(content);
+  }
+  return true;
+}
+
 function dotForSubject(subject = '') {
   const lowered = String(subject).toLowerCase();
   if (String(subject).includes('수') || lowered.includes('math')) return 'math';
@@ -172,6 +237,19 @@ export function createPlannerHandlers(ctx) {
 
     closePlannerCalendar() {
       afterSafariViewportStable(() => setPlannerCalendarOpen(false));
+      return true;
+    },
+
+    plannerAddNextStep() {
+      const currentIndex = getPlannerAddStepIndex(ctx);
+      const currentStep = PLANNER_ADD_STEPS[currentIndex];
+      if (!validatePlannerAddStep(ctx, currentStep, { focus: true })) return true;
+      setPlannerAddStep(ctx, currentIndex + 1);
+      return true;
+    },
+
+    plannerAddPrevStep() {
+      setPlannerAddStep(ctx, getPlannerAddStepIndex(ctx) - 1);
       return true;
     },
 

@@ -29,23 +29,38 @@ export function PlannerAddScreen(ctx) {
   const defaultStart = '09:00';
   const defaultEnd = '10:00';
   const defaultMinutes = formatPlannerMinutes(60);
+  const steps = [
+    { key: 'time', label: '시간' },
+    { key: 'subject', label: '과목' },
+    { key: 'activity', label: '유형' },
+    { key: 'content', label: '내용' }
+  ];
 
   return (
     <div className="app-shell">
       <div className="app-frame">
         <div className="screen app-screen app-content" data-screen="plannerAdd">
-          <div className="planner-screen planner-add-screen">
+          <div className="planner-screen planner-add-screen" data-planner-add-root>
             <div dangerouslySetInnerHTML={{ __html: appbar('계획 추가', true) }} />
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>
-              <p>시작과 종료 시간을 정하면 캘린더에 일정처럼 정리됩니다.</p>
+              <p>하나씩 입력하면 오늘 계획에 깔끔하게 정리됩니다.</p>
             </section>
 
-            <section className="planner-add-card planner-time-card">
+            <div className="planner-step-progress" aria-label="계획 추가 단계">
+              {steps.map((step, idx) => (
+                <span key={step.key} className={idx === 0 ? 'active' : ''} data-planner-step-dot={step.key}>
+                  <i>{idx + 1}</i>
+                  <b>{step.label}</b>
+                </span>
+              ))}
+            </div>
+
+            <section className="planner-add-card planner-add-step planner-time-card active" data-planner-add-step="time">
               <div className="planner-add-card-head">
                 <div>
-                  <b>시간</b>
+                  <b>공부할 시간</b>
                   <small>실제 공부할 시간 범위를 입력해 주세요.</small>
                 </div>
                 <strong data-planner-duration-preview>{defaultMinutes}</strong>
@@ -63,7 +78,7 @@ export function PlannerAddScreen(ctx) {
               <p className="planner-form-hint" data-planner-time-error>종료 시간이 시작 시간보다 늦어야 저장할 수 있어요.</p>
             </section>
 
-            <section className="planner-add-card">
+            <section className="planner-add-card planner-add-step" data-planner-add-step="subject">
               <div className="planner-add-card-head">
                 <div>
                   <b>과목</b>
@@ -106,7 +121,7 @@ export function PlannerAddScreen(ctx) {
               </div>
             </section>
 
-            <section className="planner-add-card">
+            <section className="planner-add-card planner-add-step" data-planner-add-step="activity">
               <div className="planner-add-card-head">
                 <div>
                   <b>학습 유형</b>
@@ -122,7 +137,7 @@ export function PlannerAddScreen(ctx) {
               </div>
             </section>
 
-            <section className="planner-add-card">
+            <section className="planner-add-card planner-add-step" data-planner-add-step="content">
               <div className="planner-add-card-head">
                 <div>
                   <b>내용</b>
@@ -133,9 +148,17 @@ export function PlannerAddScreen(ctx) {
               <textarea className="planner-input planner-memo-input" data-field="plannerMemo" placeholder="메모 선택 입력" rows="3" />
             </section>
 
-            <button className="btn btn-primary planner-sheet-submit disabled" data-action="addPlannerFromSheet" disabled>
-              계획 저장하기
-            </button>
+            <div className="planner-add-footer">
+              <button className="btn btn-secondary planner-step-prev" data-action="plannerAddPrevStep" data-planner-step-prev disabled>
+                이전
+              </button>
+              <button className="btn btn-primary planner-step-next" data-action="plannerAddNextStep" data-planner-step-next>
+                다음
+              </button>
+              <button className="btn btn-primary planner-sheet-submit disabled" data-action="addPlannerFromSheet" data-planner-step-submit hidden disabled>
+                계획 저장하기
+              </button>
+            </div>
             <div className="planner-bottom-space" />
           </div>
         </div>
