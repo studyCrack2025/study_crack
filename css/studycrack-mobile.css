@@ -563,6 +563,18 @@ body {
 .planner-calendar-plan-empty { padding:14px; border:1px dashed #CBD8EA; border-radius:14px; background:#FFFFFF; text-align:center; }
 .planner-calendar-plan-empty b { display:block; font-size:13px; color:#26304A; font-weight:950; }
 .planner-calendar-plan-empty small { display:block; margin-top:4px; font-size:11.5px; color:#7B8798; font-weight:800; }
+.planner-inline-calendar { display:grid; gap:10px; margin:-2px 0 0; }
+.planner-inline-calendar-toolbar { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; }
+.planner-inline-segment { min-width:0; }
+.planner-inline-calendar-nav { display:flex; align-items:center; justify-content:flex-end; gap:5px; }
+.planner-inline-calendar-nav button { height:34px; min-width:34px; border:1px solid #DDE7F6; border-radius:12px; background:#FFFFFF; color:#263F78; font-size:15px; font-weight:950; font-family:inherit; box-shadow:0 5px 12px rgba(52,78,143,.06); }
+.planner-inline-calendar-nav button:first-child, .planner-inline-calendar-nav button:last-child { font-size:25px; line-height:1; }
+.planner-inline-calendar .planner-days-carousel { display:flex; gap:9px; padding:0 0 4px; overflow-x:auto; scroll-padding-inline:0; }
+.planner-inline-calendar .planner-calendar-month-panel { padding:2px 0 0; }
+.planner-inline-calendar .planner-calendar-month-grid { gap:6px; }
+.planner-inline-calendar .planner-calendar-month-day { min-height:40px; border-radius:13px; background:#FFFFFF; border-color:#E3EAF6; box-shadow:0 5px 12px rgba(52,78,143,.045); }
+.planner-inline-calendar .planner-calendar-month-day.active { background:#111827; color:#FFFFFF; border-color:#111827; }
+.planner-inline-calendar .planner-calendar-month-day.is-today:not(.active) { background:#EFF6FF; border-color:#A7C6FF; }
 @keyframes plannerSheetUp {
   from { transform: translateY(20px); opacity:0; }
   to { transform: translateY(0); opacity:1; }

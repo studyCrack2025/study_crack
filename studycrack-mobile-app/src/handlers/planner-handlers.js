@@ -158,7 +158,10 @@ export function createPlannerHandlers(ctx) {
     },
 
     openPlannerCalendar() {
-      preserveY(() => setPlannerCalendarOpen(true));
+      preserveY(() => {
+        setPlannerCalendarOpen(false);
+        setPlannerCalendarMode(plannerCalendarMode === 'month' ? 'week' : 'month');
+      });
       return true;
     },
 

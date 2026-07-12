@@ -51,6 +51,19 @@ function renderPlannerCalendarModeButton(mode, label, activeMode) {
   return `<button type="button" class="${activeClass(activeMode === mode)}" data-action="setPlannerCalendarMode" data-planner-calendar-mode="${mode}">${label}</button>`;
 }
 
+function renderInlinePlannerCalendar({
+  plannerCalendarMode = 'week',
+  plannerCalendarMonthCells = [],
+  plannerWeekDates = [],
+  selectedPlannerDateKey = ''
+}) {
+  const mode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
+  const body = mode === 'month'
+    ? renderPlannerCalendarMonth({ plannerCalendarMonthCells })
+    : renderDateStrip({ plannerWeekDates, selectedPlannerDateKey });
+  return `<div class="planner-inline-calendar"><div class="planner-inline-calendar-toolbar"><div class="planner-calendar-segment planner-inline-segment">${renderPlannerCalendarModeButton('week', '주', mode)}${renderPlannerCalendarModeButton('month', '월', mode)}</div><div class="planner-inline-calendar-nav"><button type="button" data-action="plannerCalendarPrevWeek" aria-label="${mode === 'month' ? '이전 달' : '이전 주'}">‹</button><button type="button" data-action="plannerCalendarToday">오늘</button><button type="button" data-action="plannerCalendarNextWeek" aria-label="${mode === 'month' ? '다음 달' : '다음 주'}">›</button></div></div>${body}</div>`;
+}
+
 function renderPlannerCalendarDay({ plannerViewHour = 0, plannerViewItems = [], plannerViewMinute = 0, selectedPlannerDate = '' }) {
   const totalLabel = `${plannerViewHour ? `${plannerViewHour}시간 ` : ''}${plannerViewMinute}분`;
   const items = plannerViewItems.length
@@ -129,7 +142,6 @@ export function renderPlannerScreen(ctx) {
   const {
     icon = defaultIcon,
     layout,
-    plannerCalendarOpen,
     plannerCalendarMode,
     plannerCalendarMonthCells,
     plannerCalendarWeekDates,
@@ -148,16 +160,17 @@ export function renderPlannerScreen(ctx) {
     selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
   } = ctx;
+  const mode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
+  const nextMode = mode === 'month' ? 'week' : 'month';
 
   return layout(
-    `<div class="planner-screen"><div class="card planner-title-card"><div class="top-card-head"><div><h3>플래너</h3><p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p></div><span class="planner-checklist-art" aria-hidden="true"><i class="planner-checklist-pen"></i><i class="planner-checklist-paper"><b></b><b></b></i></span></div></div><div class="planner-head planner-date-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="openPlannerCalendar">${icon('calendar', false)}</button></div>
-       ${renderDateStrip({ plannerWeekDates, selectedPlannerDateKey })}
+    `<div class="planner-screen"><div class="card planner-title-card"><div class="top-card-head"><div><h3>플래너</h3><p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p></div><span class="planner-checklist-art" aria-hidden="true"><i class="planner-checklist-pen"></i><i class="planner-checklist-paper"><b></b><b></b></i></span></div></div><div class="planner-head planner-date-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="setPlannerCalendarMode" data-planner-calendar-mode="${nextMode}">${icon('calendar', false)}</button></div>
+       ${renderInlinePlannerCalendar({ plannerCalendarMode: mode, plannerCalendarMonthCells, plannerWeekDates, selectedPlannerDateKey })}
        <div class="planner-section-title planner-day-summary planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone === 'warn' ? '<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>' : ''}</div>${renderSubjectDonut({ plannerViewDonutGradient, plannerViewSubjectStats })}</div>
        <div class="card planner-premium-cta"><div class="planner-premium-copy"><span class="badge">SKY MENTOR</span><b>혼자 짠 플래너, 불안하신가요?</b><p>SKY 선생님이<br/>직접 이번 주 플래너를 짜드립니다.</p></div><button type="button" class="planner-premium-btn" data-action="startStandard">플래너 직접 받기</button></div>
        ${renderPlannerItems({ plannerViewItems, selectedPlannerDate })}
 
        <div class="planner-bottom-space"></div>
-       ${renderCalendarSheet({ plannerCalendarMode, plannerCalendarMonthCells, plannerCalendarOpen, plannerCalendarWeekDates, plannerMonthLabel, plannerViewHour, plannerViewItems, plannerViewMinute, selectedPlannerDate, selectedPlannerDateKey })}
        ${renderEditSheet({ plannerEditIndex, plannerEditItem })}
        </div>`,
     true
