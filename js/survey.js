@@ -16,7 +16,10 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-const JUL_AVAILABLE_INQUIRY_CODES = new Set(['생윤', '윤사', '한지', '세지', '동사', '세사']);
+const JUL_AVAILABLE_INQUIRY_CODES = new Set([
+    '생윤', '윤사', '한지', '세지', '동사', '세사', '경제', '정법', '사문',
+    '물1', '물2', '화1', '화2', '생1', '생2', '지1', '지2'
+]);
 
 function isJulyInquiryAvailable(value) {
     if (!value) return true;
@@ -236,7 +239,7 @@ async function requestScoreConversion(type) {
     scoreVal = parseInt(rawEl.value);
 
     if (month === 'jul' && (type === 'inq1' || type === 'inq2') && !isJulyInquiryAvailable(subNameVal)) {
-        alert('7월 학평 추정 데이터는 현재 생활과 윤리, 윤리와 사상, 한국지리, 세계지리, 동아시아사, 세계사만 지원합니다.');
+        alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
         rawEl.value = '';
         return;
     }
@@ -604,7 +607,7 @@ async function saveQuantitative() {
     }
 
     if (month === 'jul' && (!isJulyInquiryAvailable(inq1Name) || !isJulyInquiryAvailable(inq2Name))) {
-        alert('7월 학평 추정 데이터는 현재 생활과 윤리, 윤리와 사상, 한국지리, 세계지리, 동아시아사, 세계사만 지원합니다.');
+        alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
         return;
     }
 
