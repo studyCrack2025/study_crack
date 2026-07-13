@@ -278,7 +278,7 @@ export function renderLockedFeatureScreen(ctx) {
   const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
   const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
   if (lockedFeatureTarget === 'strategy') {
-    return layout(`<div class="coach-page locked-coach-page">${renderLockedFeaturePreview(lockedFeatureTarget)}<section class="locked-feature-panel locked-feature-panel-inline"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 주간 점검과 튜터 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button></div></section></div>`, true);
+    return layout(`<div class="coach-page locked-coach-page"><div class="locked-coach-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}</div><section class="locked-feature-panel locked-feature-panel-inline"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 주간 점검과 튜터 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button></div></section></div>`, true);
   }
   return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, true);
 }
@@ -298,7 +298,7 @@ export function renderStrategyScreen(ctx) {
     : renderWeeklyRows({ reports: weeklyReports });
 
   return layout(
-    `<div class="coach-page">
+    `<div class="coach-page ${weeklyReports.length ? '' : 'coach-empty-state-screen'}">
         <div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
         <div class="card coach-status-card">
           <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${submitted ? 'coach-submitted' : ''}">${submitted ? '제출 이력 있음' : '미제출'}</span></div>

@@ -154,7 +154,7 @@ export function PlannerScreen(ctx) {
     <div className="app-shell">
       <div className="app-frame">
         <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
-          <div className="planner-screen">
+          <div className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <div className="card planner-title-card">
               <div className="top-card-head">
                 <div>
@@ -241,7 +241,7 @@ export function PlannerScreen(ctx) {
               </button>
             </div>
 
-            <div className="planner-bottom-space" />
+            <div className="planner-bottom-space" aria-hidden="true" />
           </div>
         </div>
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
