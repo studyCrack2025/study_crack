@@ -53,14 +53,13 @@ function renderUniversityCard({ item, plannerBadges, scoreTierClass }) {
   const scoreLabel = status === 'confirmed' ? (item.scoreUpdating ? '갱신 중…' : 'AI 점수')
     : status === 'live' ? '예상 점수' : pending ? '분석 중' : '성적 입력 필요';
   const scoreValue = empty ? '—' : `${item.score}점`;
-  const gapValue = noScore ? '—' : `${item.gap}점`;
+  const gapValue = noScore ? '—' : Number(item.gap || 0) > 0 ? `-${item.gap}점` : '0점';
   const scoreInner = pending ? '<strong class="home-score-skeleton" aria-label="분석 중"></strong>' : `<strong>${scoreValue}</strong>`;
   return `<button class="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3" data-action="selectUniversity" data-target-major="${item.major}">
           <span class="home-univ-remove" data-action="removeAnalysisTarget" data-target-major="${item.major}">✕</span>
           <div class="home-result-top"><div><p class="home-result-major">${item.major}</p><span class="home-result-state">${item.rank}</span></div><div class="home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}">${scoreInner}<small>${scoreLabel}</small></div></div>
-          <div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
-          <div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div>
-          <div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div>
+          <div class="home-result-gauge-panel"><div class="home-result-gauge"><i class="${scoreTierClass(item.score)}" style="width:${scorePct}%"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div><div class="home-result-gauge-meta"><span>0</span><span>합격컷 100</span><span>안정컷 150</span><span>MAX 250</span></div></div>
+          <div class="home-result-kpi-panel"><div class="kpi-row score-row"><div class="kpi-item"><b>${noScore ? '—' : scoreValue}</b>현재 점수</div><div class="kpi-item danger"><b>${gapValue}</b>부족 점수</div></div></div>
           <div class="home-planner-badges chip-row">${plannerBadges.map((badge) => `<span class="chip">${badge}</span>`).join('')}</div>
         </button>`;
 }
@@ -263,9 +262,11 @@ export function renderHomeView(ctx) {
     weeklyReportsStatus = 'idle'
   } = ctx;
 
+  const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);
+  const homeSlideGapPx = 12;
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const universityCards = homeTargets.map((item) => renderUniversityCard({ item, plannerBadges, scoreTierClass })).join('');
-  const indicators = [...homeTargets, { add: true }].map((_, idx) => `<i class="${idx === homeSlideIndex ? 'active' : ''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('');
+  const indicators = [...homeTargets, { add: true }].map((_, idx) => `<i class="${idx === safeHomeSlideIndex ? 'active' : ''}" data-action="setHomeSlide" data-slide-index="${idx}"></i>`).join('');
   const timerDisabled = studyTimerRunning ? 'disabled' : '';
   const stopDisabled = studyTimerRunning ? '' : 'disabled';
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
@@ -287,7 +288,7 @@ export function renderHomeView(ctx) {
     <div class="section home-section">
       <div class="home-analysis-criteria"><div><b>지원학과 AI 점수</b></div><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select></div>
       <div class="home-kpi-slider">
-        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" data-home-slide-index="${homeSlideIndex}" style="--home-slide-card-width:100%;--home-slide-gap:12px;--home-slide-x:calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
+        <div class="home-kpi-track anchor-volatile ${homeSlideMotion}" data-home-slide-index="${safeHomeSlideIndex}" style="--home-slide-card-width:100%;--home-slide-gap:${homeSlideGapPx}px;--home-slide-x:calc(-${safeHomeSlideIndex * 100}% - ${safeHomeSlideIndex * homeSlideGapPx}px + ${homeDragOffset}px);--home-slide-transition:${slideTransition};">
         ${universityCards}<button class="university-card-slide university-card card slider-card home-add-univ-card" data-action="openAnalysisSearchFromHome"><span class="home-add-univ-icon">${icon('plus', false)}</span><span class="home-add-univ-copy"><b>목표 대학 추가</b><p>대학과 학과를 검색해 AI 분석에 추가하세요.</p></span><span class="home-add-univ-action">검색하기</span></button></div>
       </div>
       <div class="home-kpi-indicator card-indicator">${indicators}</div>
@@ -303,7 +304,7 @@ export function renderHomeView(ctx) {
       </div>
       <button class="card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessBasic ? '' : 'is-locked'}" data-action="goto" data-target="planner">
         <div class="home-goal-title-row"><p class="analysis-title">오늘 공부 목표</p>${canAccessBasic ? '' : '<span class="home-goal-plan-badge">Basic부터</span>'}</div>
-        ${canAccessBasic && todayPlannerItems.length ? `<div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><em>${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessBasic ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Basic 기능 보기</span>`}
+        ${canAccessBasic && todayPlannerItems.length ? `<div class="home-goal-progress-head"><div class="goal-compact"><b>${todayPlannerProgress}%</b><span>달성</span><i>${studyTimerRunning ? '진행중' : '시작 전'}</i></div><em>목표 ${formatMinutesLabel(todayPlannerTotalMinutes)}</em></div><div class="track"><i style="width:${todayPlannerProgress}%"></i></div><div class="goal-tags">${todayPlannerSubjectSummary.slice(0, 3).map((value) => `<span>${value}</span>`).join('')}</div>` : canAccessBasic ? `<p class="sub">오늘 계획을 추가해보세요</p><span class="home-goal-empty-cta">플래너로 이동</span>` : `<p class="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p><span class="home-goal-empty-cta">Basic 기능 보기</span>`}
       </button>
       ${renderHomeReportPreview({ proReports, proReportsStatus, weeklyReports, weeklyReportsStatus })}
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">

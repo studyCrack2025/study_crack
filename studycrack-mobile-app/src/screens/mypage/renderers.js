@@ -311,7 +311,7 @@ export function renderNotificationSettingsScreen(ctx) {
 }
 
 // 알림 목록 화면(전체): 홈 알림 팝오버의 '전체 보기'/마이페이지 진입 대상.
-const NOTI_PAGE_SIZE = 5;
+const NOTI_PAGE_SIZE = 7;
 
 export function renderNotificationListScreen(ctx) {
   const {

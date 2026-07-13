@@ -39,7 +39,7 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       : status === 'live' ? '예상 점수'
         : pending ? '분석 중' : '성적 입력 필요';
   const scoreValue = empty ? '—' : `${item.score}점`;
-  const gapValue = noScore ? '—' : `${item.gap}점`;
+  const gapValue = noScore ? '—' : Number(item.gap || 0) > 0 ? `-${item.gap}점` : '0점';
   return (
     <button
       className="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3"
@@ -59,23 +59,27 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
           <small>{scoreLabel}</small>
         </div>
       </div>
-      <div className="home-result-gauge">
-        <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
-        <span className="cut pass" style={{ left: '40%' }} />
-        <span className="cut safe" style={{ left: '60%' }} />
-      </div>
-      <div className="home-result-gauge-meta">
-        <span>0</span>
-        <span>합격컷 100</span>
-        <span>안정컷 150</span>
-        <span>MAX 250</span>
-      </div>
-      <div className="kpi-row score-row">
-        <div className="kpi-item">
-          <b>{noScore ? '—' : scoreValue}</b>현재 점수
+      <div className="home-result-gauge-panel">
+        <div className="home-result-gauge">
+          <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
+          <span className="cut pass" style={{ left: '40%' }} />
+          <span className="cut safe" style={{ left: '60%' }} />
         </div>
-        <div className="kpi-item danger">
-          <b>{gapValue}</b>부족 점수
+        <div className="home-result-gauge-meta">
+          <span>0</span>
+          <span>합격컷 100</span>
+          <span>안정컷 150</span>
+          <span>MAX 250</span>
+        </div>
+      </div>
+      <div className="home-result-kpi-panel">
+        <div className="kpi-row score-row">
+          <div className="kpi-item">
+            <b>{noScore ? '—' : scoreValue}</b>현재 점수
+          </div>
+          <div className="kpi-item danger">
+            <b>{gapValue}</b>부족 점수
+          </div>
         </div>
       </div>
       <div className="home-planner-badges chip-row">
@@ -403,11 +407,13 @@ export function HomeScreen(ctx) {
   const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
   if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} crackySrc={crackySrc} />;
 
+  const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);
+  const homeSlideGapPx = 12;
   const slideTransition = homeDragOffset !== 0 ? '0s' : 'transform .42s cubic-bezier(.22,1,.36,1)';
   const trackStyle = {
     '--home-slide-card-width': '100%',
-    '--home-slide-gap': '12px',
-    '--home-slide-x': `calc(-${homeSlideIndex} * (var(--home-slide-card-width) + var(--home-slide-gap)) + ${homeDragOffset}px)`,
+    '--home-slide-gap': `${homeSlideGapPx}px`,
+    '--home-slide-x': `calc(-${safeHomeSlideIndex * 100}% - ${safeHomeSlideIndex * homeSlideGapPx}px + ${homeDragOffset}px)`,
     '--home-slide-transition': slideTransition
   };
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
@@ -451,7 +457,7 @@ export function HomeScreen(ctx) {
                   <div>
                     <b>지원학과 AI 점수</b>
                   </div>
-                  <select className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>
+                  <select className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
                     {EXAM_OPTIONS.map((label) => (
                       <option value={label} key={label}>
                         {label}
@@ -462,7 +468,7 @@ export function HomeScreen(ctx) {
                 <div className="home-kpi-slider">
                   <div
                     className={`home-kpi-track anchor-volatile ${homeSlideMotion}`}
-                    data-home-slide-index={homeSlideIndex}
+                    data-home-slide-index={safeHomeSlideIndex}
                     style={trackStyle}
                   >
                     {homeTargets.map((item) => (
@@ -485,7 +491,7 @@ export function HomeScreen(ctx) {
                   {[...homeTargets, { add: true }].map((_, idx) => (
                     <i
                       key={idx}
-                      className={idx === homeSlideIndex ? 'active' : ''}
+                      className={idx === safeHomeSlideIndex ? 'active' : ''}
                       data-action="setHomeSlide"
                       data-slide-index={idx}
                     />
@@ -538,10 +544,13 @@ export function HomeScreen(ctx) {
                   </div>
                   {canAccessBasic && todayPlannerItems.length ? (
                     <>
-                      <div className="goal-compact">
-                        <b>{todayPlannerProgress}%</b>
-                        <span>달성</span>
-                        <em>{formatMinutesLabel(todayPlannerTotalMinutes)}</em>
+                      <div className="home-goal-progress-head">
+                        <div className="goal-compact">
+                          <b>{todayPlannerProgress}%</b>
+                          <span>달성</span>
+                          <i>{studyTimerRunning ? '진행중' : '시작 전'}</i>
+                        </div>
+                        <em>목표 {formatMinutesLabel(todayPlannerTotalMinutes)}</em>
                       </div>
                       <div className="track">
                         <i style={{ width: `${todayPlannerProgress}%` }} />

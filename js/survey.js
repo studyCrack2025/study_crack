@@ -16,6 +16,40 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+const JUL_AVAILABLE_INQUIRY_CODES = new Set(['생윤', '윤사', '한지', '세지', '동사', '세사']);
+
+function isJulyInquiryAvailable(value) {
+    if (!value) return true;
+    return JUL_AVAILABLE_INQUIRY_CODES.has(String(value).trim());
+}
+
+function clearInquiryFields(prefix) {
+    ['Name', 'Raw', 'Std', 'Pct', 'Grd'].forEach((suffix) => {
+        const el = document.getElementById(`${prefix}${suffix}`);
+        if (el) el.value = '';
+    });
+}
+
+function updateJulyEstimateNotice(month) {
+    const notice = document.getElementById('julEstimateNotice');
+    if (notice) notice.style.display = month === 'jul' ? 'block' : 'none';
+}
+
+function updateInquiryAvailabilityForExam(month) {
+    const isJul = month === 'jul';
+    ['inq1Name', 'inq2Name'].forEach((selectId) => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        Array.from(select.options).forEach((option) => {
+            option.disabled = isJul && option.value && !isJulyInquiryAvailable(option.value);
+        });
+        if (isJul && !isJulyInquiryAvailable(select.value)) {
+            select.value = '';
+            clearInquiryFields(selectId.replace('Name', ''));
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.DEV_MOCK?.enabled) {
@@ -201,6 +235,12 @@ async function requestScoreConversion(type) {
     if (!rawEl || !rawEl.value) return; 
     scoreVal = parseInt(rawEl.value);
 
+    if (month === 'jul' && (type === 'inq1' || type === 'inq2') && !isJulyInquiryAvailable(subNameVal)) {
+        alert('7월 학평 추정 데이터는 현재 생활과 윤리, 윤리와 사상, 한국지리, 세계지리, 동아시아사, 세계사만 지원합니다.');
+        rawEl.value = '';
+        return;
+    }
+
     // 원점수 방어 로직 (국수 최대 100점)
     if (scoreVal < 0 || scoreVal > 100) {
         alert("유효하지 않은 원점수입니다.");
@@ -263,7 +303,7 @@ async function requestScoreConversion(type) {
         const data = await response.json(); 
         
         if (data.error || (!data.std && !data.pct && !data.grd)) {
-            alert("입력하신 원점수에 해당하는 데이터가 없습니다.\n(선택과목을 먼저 지정했는지 확인해주세요)");
+            alert(data.error || "입력하신 원점수에 해당하는 데이터가 없습니다.\n(선택과목을 먼저 지정했는지 확인해주세요)");
             rawEl.value = "";
             if(stdEl) stdEl.placeholder = "-";
             if(pctEl) pctEl.placeholder = "-";
@@ -278,12 +318,12 @@ async function requestScoreConversion(type) {
 
     } catch (e) {
         if (e.message === "Auth expired") return;
-        // 6월 모평 데이터 미준비(JUN_NOT_READY) 등 서버측 명시 사유는 그대로 노출하고 3월로 복귀.
+        // 월별 모의고사 데이터 미준비 등 서버측 명시 사유는 그대로 노출하고 3월로 복귀.
         const msg = e.message || "";
-        if (msg.includes('6월 모평') || msg.includes('JUN_NOT_READY')) {
+        if (msg.includes('6월 모평') || msg.includes('7월 학평') || msg.includes('JUN_NOT_READY') || msg.includes('JUL_NOT_READY')) {
             alert(msg);
             const examSel = document.getElementById('examSelect');
-            if (examSel && examSel.value === 'jun') {
+            if (examSel && (examSel.value === 'jun' || examSel.value === 'jul')) {
                 examSel.value = 'mar';
                 if (typeof loadExamData === 'function') loadExamData();
             }
@@ -506,6 +546,7 @@ async function saveQualitative() {
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
+    updateJulyEstimateNotice(month);
     
     const setVal = (id, val) => { 
         const el = document.getElementById(id); 
@@ -535,6 +576,7 @@ function loadExamData() {
     setVal('inq2Name', d.inq2?.name); setVal('inq2Raw', d.inq2?.raw); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
     
     setVal('foreignName', d.foreign?.name); setVal('foreignGrd', d.foreign?.grd);
+    updateInquiryAvailabilityForExam(month);
 
 }
 
@@ -558,6 +600,11 @@ async function saveQuantitative() {
 
     if (!engGrd || !histGrd) {
         alert("영어/한국사는 등급(1~9)만 선택할 수 있습니다.");
+        return;
+    }
+
+    if (month === 'jul' && (!isJulyInquiryAvailable(inq1Name) || !isJulyInquiryAvailable(inq2Name))) {
+        alert('7월 학평 추정 데이터는 현재 생활과 윤리, 윤리와 사상, 한국지리, 세계지리, 동아시아사, 세계사만 지원합니다.');
         return;
     }
 

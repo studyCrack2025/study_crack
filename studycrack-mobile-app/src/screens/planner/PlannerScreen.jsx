@@ -1,4 +1,4 @@
-import { renderCalendarSheet, renderEditSheet } from './renderers.js';
+import { renderEditSheet } from './renderers.js';
 
 // planner 화면의 React-트리(JSX) 버전. 문자열 renderer(renderPlannerScreen)와 DOM 구조·data-action을
 // 1:1로 맞추되, 날짜 스트립(.planner-date-strip)을 실제 React 노드로 두어 재렌더 간 scrollLeft를 보존한다.
@@ -23,12 +23,18 @@ function SubjectDonut({ plannerViewDonutGradient = '', plannerViewSubjectStats =
 }
 
 function PlannerItemCard({ item }) {
+  const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
+    ? `${item.start} - ${item.end}`
+    : `${item.minutes}분`;
+  const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
   return (
-    <div className={`planner-item ${item.done ? 'done' : ''}`} data-action="openPlannerEdit" data-planner-id={item.id}>
+    <div className={`planner-item planner-item-v2 ${item.done ? 'done' : ''}`} data-action="openPlannerEdit" data-planner-id={item.id}>
       <i className={`dot ${item.dot}`} />
       <div className="planner-item-main">
-        <b>{item.subject}</b>
-        <p>{item.content}</p>
+        <small className="planner-item-time">{timeLabel}</small>
+        <b>{item.content}</b>
+        <p>{item.subject}{detailLabel ? ` · ${detailLabel}` : ''}</p>
+        {item.memo ? <em>{item.memo}</em> : null}
       </div>
       <div className="planner-item-right">
         <strong>{item.minutes}분</strong>
@@ -45,6 +51,77 @@ function PlannerItemCard({ item }) {
   );
 }
 
+function PlannerCalendarSegment({ activeMode = 'week' }) {
+  return (
+    <div className="planner-calendar-segment planner-inline-segment">
+      <button
+        type="button"
+        className={activeMode === 'week' ? 'active' : ''}
+        data-action="setPlannerCalendarMode"
+        data-planner-calendar-mode="week"
+      >
+        주
+      </button>
+      <button
+        type="button"
+        className={activeMode === 'month' ? 'active' : ''}
+        data-action="setPlannerCalendarMode"
+        data-planner-calendar-mode="month"
+      >
+        월
+      </button>
+    </div>
+  );
+}
+
+function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '' }) {
+  return (
+    <div className="planner-days planner-days-carousel planner-date-strip">
+      {plannerWeekDates.map(({ date, day, weekday, empty }, idx) => (
+        <button
+          key={date || `empty-${idx}`}
+          className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDateKey === date ? 'active' : ''}`}
+          data-action="selectPlannerDate"
+          data-planner-date={date || ''}
+          disabled={empty}
+        >
+          <small>{weekday}</small>
+          <strong>{day}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PlannerMonthGrid({ plannerCalendarMonthCells = [] }) {
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  return (
+    <div className="planner-calendar-month-panel planner-inline-month-panel">
+      <div className="planner-calendar-weekdays">
+        {weekdays.map((day) => <span key={day}>{day}</span>)}
+      </div>
+      <div className="planner-calendar-month-grid">
+        {plannerCalendarMonthCells.map((cell, idx) => (
+          cell.blank ? (
+            <span key={cell.key || `blank-${idx}`} className="planner-calendar-month-day is-blank" />
+          ) : (
+            <button
+              key={cell.key || cell.date}
+              type="button"
+              className={`planner-calendar-month-day ${cell.isSelected ? 'active' : ''} ${cell.isToday ? 'is-today' : ''}`}
+              data-action="selectPlannerDate"
+              data-planner-date={cell.date}
+            >
+              <b>{cell.day}</b>
+              {cell.count ? <span>{cell.count}</span> : null}
+            </button>
+          )
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PlannerScreen(ctx) {
   const {
     dimmed = false,
@@ -52,7 +129,6 @@ export function PlannerScreen(ctx) {
     tabBarHtml = '',
     plannerCalendarMode,
     plannerCalendarMonthCells,
-    plannerCalendarOpen,
     plannerCalendarWeekDates,
     plannerEditIndex,
     plannerEditItem,
@@ -65,52 +141,63 @@ export function PlannerScreen(ctx) {
     plannerViewSubjectStats = [],
     plannerWeekDates = [],
     selectedPlannerDate = '',
+    selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
   } = ctx;
 
   const overlaysHtml =
-    renderCalendarSheet({
-      plannerCalendarMode,
-      plannerCalendarMonthCells,
-      plannerCalendarOpen,
-      plannerCalendarWeekDates,
-      plannerMonthLabel,
-      plannerViewHour,
-      plannerViewItems,
-      plannerViewMinute,
-      selectedPlannerDate
-    }) +
     renderEditSheet({ plannerEditIndex, plannerEditItem });
+  const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
+  const toggleCalendarMode = calendarMode === 'month' ? 'week' : 'month';
 
   return (
     <div className="app-shell">
       <div className="app-frame">
         <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
-          <div className="planner-screen">
-            <div className="planner-head">
+          <div className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
+            <div className="card planner-title-card">
+              <div className="top-card-head">
+                <div>
+                  <h3>플래너</h3>
+                  <p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p>
+                </div>
+                <span
+                  className="planner-checklist-art"
+                  aria-hidden="true"
+                >
+                  <i className="planner-checklist-pen" />
+                  <i className="planner-checklist-paper"><b /><b /></i>
+                </span>
+              </div>
+            </div>
+
+            <div className="planner-head planner-date-head">
               <h3>{plannerMonthLabel} {selectedPlannerDate}일 ({selectedPlannerWeekday})</h3>
               <button
                 className="planner-cal-btn"
-                data-action="openPlannerCalendar"
+                data-action="setPlannerCalendarMode"
+                data-planner-calendar-mode={toggleCalendarMode}
                 dangerouslySetInnerHTML={{ __html: icon('calendar', false) }}
               />
             </div>
 
-            <div className="planner-days planner-days-carousel planner-date-strip">
-              {plannerWeekDates.map(({ day, weekday }) => (
-                <button
-                  key={day}
-                  className={`planner-date-item ${selectedPlannerDate === day ? 'active' : ''}`}
-                  data-action="selectPlannerDate"
-                  data-planner-date={day}
-                >
-                  <small>{weekday}</small>
-                  <strong>{day}</strong>
-                </button>
-              ))}
+            <div className="planner-inline-calendar">
+              <div className="planner-inline-calendar-toolbar">
+                <PlannerCalendarSegment activeMode={calendarMode} />
+                <div className="planner-inline-calendar-nav">
+                  <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
+                  <button type="button" data-action="plannerCalendarToday">오늘</button>
+                  <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
+                </div>
+              </div>
+              {calendarMode === 'month' ? (
+                <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
+              ) : (
+                <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
+              )}
             </div>
 
-            <div className="planner-section-title planner-fade">
+            <div className="planner-section-title planner-day-summary planner-fade">
               <div>
                 <h4>{selectedPlannerDate}일 계획</h4>
                 <p>
@@ -154,7 +241,7 @@ export function PlannerScreen(ctx) {
               </button>
             </div>
 
-            <div className="planner-bottom-space" />
+            <div className="planner-bottom-space" aria-hidden="true" />
           </div>
         </div>
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />

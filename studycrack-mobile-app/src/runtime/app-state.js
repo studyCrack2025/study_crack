@@ -100,10 +100,10 @@ export function createInitialAppState() {
     homeDragOffset: 0,
     scoreDragOffset: 0,
     // planner
-    selectedDate: String(Number(FIXED_TODAY_DATE.split('-')[2])),
+    selectedDate: FIXED_TODAY_DATE,
     plannerCalendarOpen: false,
     plannerCalendarMode: 'week',
-    plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '' },
+    plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' },
     plannerItems: DEFAULT_PLANNER_ITEMS,
     plannerEditIndex: null,
     // 공부 타이머/기록 (records는 후속 하이드레이션)

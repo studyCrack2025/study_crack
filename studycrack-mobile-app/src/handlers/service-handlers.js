@@ -3,7 +3,7 @@ import { buildMobileWeeklyCheckPayload, markMobileNotificationsRead } from '../r
 
 function noop() {}
 
-const NOTI_PAGE_SIZE = 5;
+const NOTI_PAGE_SIZE = 7;
 
 function getWindow(ctx) {
   return ctx.window || globalThis.window || {};
