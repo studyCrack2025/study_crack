@@ -311,7 +311,7 @@ export function renderNotificationSettingsScreen(ctx) {
 }
 
 // 알림 목록 화면(전체): 홈 알림 팝오버의 '전체 보기'/마이페이지 진입 대상.
-const NOTI_PAGE_SIZE = 5;
+const NOTI_PAGE_SIZE = 7;
 
 export function renderNotificationListScreen(ctx) {
   const {
@@ -320,7 +320,7 @@ export function renderNotificationListScreen(ctx) {
     notiList = [],
     notiStatus = 'idle',
     notiPage = 0,
-    notiExpandedId = ''
+    notiDetailId = ''
   } = ctx;
 
   const list = Array.isArray(notiList) ? notiList : [];
@@ -340,18 +340,17 @@ export function renderNotificationListScreen(ctx) {
 
   const itemsHtml = pageItems
     .map((n, idx) => {
-      const id = String(n.id || n.notificationId || `${start + idx}`);
-      const expanded = notiExpandedId === id;
+      const id = String(n.notiId || n.id || n.notificationId || `${start + idx}`);
       const date = formatQnaDate(n.createdAt);
       const fullBody = escapeHtml(n.body || n.message || '');
-      return `<button type="button" class="noti-list-row ${n.isRead ? '' : 'is-unread'} ${expanded ? 'is-open' : ''}" data-action="toggleNotiDetail" data-noti-id="${escapeHtml(id)}">
+      return `<button type="button" class="noti-list-row ${n.isRead ? '' : 'is-unread'}" data-action="openNotiDetail" data-noti-id="${escapeHtml(id)}">
         <span class="noti-list-dot" aria-hidden="true"></span>
         <span class="noti-list-main">
           <b>${escapeHtml(n.title || '알림')}</b>
-          <p class="noti-list-body ${expanded ? 'is-full' : ''}">${fullBody || '내용이 없습니다.'}</p>
+          <p class="noti-list-body">${fullBody || '내용이 없습니다.'}</p>
           ${date ? `<span class="noti-list-date">${escapeHtml(date)}</span>` : ''}
         </span>
-        <span class="noti-list-chev" aria-hidden="true">${expanded ? '▴' : '▾'}</span>
+        <span class="noti-list-chev" aria-hidden="true">보기</span>
       </button>`;
     })
     .join('');
@@ -364,7 +363,16 @@ export function renderNotificationListScreen(ctx) {
       </div>`
     : '';
 
-  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>${pager}`, false);
+  const selected = notiDetailId ? list.find((n, idx) => String(n.notiId || n.id || n.notificationId || idx) === String(notiDetailId)) : null;
+  const selectedDate = selected ? formatQnaDate(selected.createdAt) : '';
+  const detailModal = selected
+    ? `<div class="noti-detail-overlay" data-action="closeNotiDetail"><article class="noti-detail-modal" data-action="noopModal">
+        <div class="noti-detail-head"><div><span>알림 상세</span><h4>${escapeHtml(selected.title || '알림')}</h4>${selectedDate ? `<p>${escapeHtml(selectedDate)}</p>` : ''}</div><button type="button" class="qna-modal-close" data-action="closeNotiDetail" aria-label="닫기">✕</button></div>
+        <div class="noti-detail-body">${escapeHtml(selected.body || selected.message || '내용이 없습니다.')}</div>
+      </article></div>`
+    : '';
+
+  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>${pager}${detailModal}`, false);
 }
 
 export function renderCustomerSupportScreen(ctx) {

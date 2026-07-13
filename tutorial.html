@@ -129,15 +129,17 @@
     <template id="tpl-survey-quan">
         <div class="step-card">
             <h3>성적 입력</h3>
-            <p class="step-desc">3월·5월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
+            <p class="step-desc">3월·5월·7월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                 <label style="font-size:0.9rem; font-weight:600; color:#475569;">시험 선택:</label>
                 <select id="tutExamMonth" style="padding:6px 12px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9rem; color:#334155; background:#fff; cursor:pointer;">
                     <option value="mar">3월 학평</option>
                     <option value="may">5월 학평</option>
                     <option value="jun">6월 모평</option>
+                    <option value="jul">7월 학평</option>
                 </select>
             </div>
+            <p id="tutJulEstimateNotice" class="step-desc" style="display:none; color:#b45309; margin-top:-4px;">7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.</p>
             <div class="score-grid">
                 <div class="score-input-card">
                     <div class="score-subject-label">국어</div>

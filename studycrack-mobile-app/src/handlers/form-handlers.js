@@ -43,6 +43,84 @@ function query(ctx, selector) {
   return getDocument(ctx)?.querySelector?.(selector) || null;
 }
 
+function queryAll(ctx, selector) {
+  return Array.from(getDocument(ctx)?.querySelectorAll?.(selector) || []);
+}
+
+function timeToMinutes(value = '') {
+  const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+function formatMinutes(minutes = 0) {
+  const safe = Math.max(0, Number(minutes) || 0);
+  const hour = Math.floor(safe / 60);
+  const min = safe % 60;
+  if (hour && min) return `${hour}시간 ${min}분`;
+  if (hour) return `${hour}시간`;
+  return `${min}분`;
+}
+
+const PLANNER_ADD_STEPS = ['time', 'subject', 'activity', 'content'];
+
+function getPlannerAddStep(ctx) {
+  return query(ctx, '[data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
+}
+
+function isPlannerStepValid(ctx, stepKey = getPlannerAddStep(ctx)) {
+  if (stepKey === 'time') {
+    const start = query(ctx, '[data-field="plannerStartTime"]')?.value || '';
+    const end = query(ctx, '[data-field="plannerEndTime"]')?.value || '';
+    const startMinutes = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+    return Boolean(startMinutes !== null && endMinutes !== null && endMinutes > startMinutes);
+  }
+  if (stepKey === 'subject') {
+    return Boolean(query(ctx, 'input[name="plannerCategory"]:checked')?.value && query(ctx, 'input[name="plannerDetailSubject"]:checked')?.value);
+  }
+  if (stepKey === 'activity') return Boolean(query(ctx, 'input[name="plannerActivityType"]:checked')?.value);
+  if (stepKey === 'content') return Boolean(String(query(ctx, '[data-field="plannerContent"]')?.value || '').trim());
+  return true;
+}
+
+function syncPlannerAddForm(ctx) {
+  const start = query(ctx, '[data-field="plannerStartTime"]')?.value || '';
+  const end = query(ctx, '[data-field="plannerEndTime"]')?.value || '';
+  const content = String(query(ctx, '[data-field="plannerContent"]')?.value || '').trim();
+  const category = query(ctx, 'input[name="plannerCategory"]:checked')?.value || '';
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  const minutes = startMinutes !== null && endMinutes !== null && endMinutes > startMinutes ? endMinutes - startMinutes : 0;
+  const preview = query(ctx, '[data-planner-duration-preview]');
+  const error = query(ctx, '[data-planner-time-error]');
+  const submit = query(ctx, '.planner-sheet-submit');
+  const next = query(ctx, '[data-planner-step-next]');
+  if (preview) preview.textContent = minutes ? formatMinutes(minutes) : '시간 확인';
+  if (error) error.classList.toggle('active', Boolean(start && end && !minutes));
+  const canSubmit = Boolean(category && content && minutes);
+  if (submit) {
+    submit.disabled = !canSubmit;
+    submit.classList?.toggle?.('disabled', !canSubmit);
+  }
+  if (next) next.disabled = !isPlannerStepValid(ctx);
+  return canSubmit;
+}
+
+function syncPlannerDetailGroup(ctx, category) {
+  queryAll(ctx, '[data-planner-detail-group]').forEach((group) => {
+    const active = group.getAttribute('data-planner-detail-group') === category;
+    group.classList.toggle('active', active);
+    const firstRadio = group.querySelector('input[name="plannerDetailSubject"]');
+    if (active && firstRadio && !group.querySelector('input[name="plannerDetailSubject"]:checked')) {
+      firstRadio.checked = true;
+    }
+  });
+}
+
 function normalizeNumberInput(target, max, alert) {
   const raw = String(target.value || '');
   if (raw && !/^\d+$/.test(raw)) {
@@ -235,17 +313,11 @@ export function createFormHandlers(ctx) {
     if (!field) return { handled: Boolean(coachAnswer || coachPlan || coachActual) };
     if (field === 'plannerContent' && ctx.plannerContentRef) {
       ctx.plannerContentRef.current = target.value;
-      const draft = ctx.plannerDraft || {};
-      const customMinutes = String(ctx.plannerCustomMinutesRef?.current || '').trim();
-      const minutesValid = draft.durationChoice === 'custom'
-        ? Number(customMinutes) > 0
-        : Number(draft.durationChoice) > 0;
-      const submit = query(ctx, '.planner-sheet-submit');
-      const canSubmit = Boolean(draft.subject && String(target.value || '').trim() && minutesValid);
-      if (submit) {
-        submit.disabled = !canSubmit;
-        submit.classList?.toggle?.('disabled', !canSubmit);
-      }
+      syncPlannerAddForm(ctx);
+      return { handled: true, field };
+    }
+    if (field === 'plannerStartTime' || field === 'plannerEndTime' || field === 'plannerMemo') {
+      syncPlannerAddForm(ctx);
       return { handled: true, field };
     }
     if (field === 'plannerCustomMinutes' && ctx.plannerCustomMinutesRef) {
@@ -273,6 +345,15 @@ export function createFormHandlers(ctx) {
     if (!target?.getAttribute) return { handled: false };
     markStableScrollPosition();
     const field = target.getAttribute('data-field');
+    if (target.name === 'plannerCategory') {
+      syncPlannerDetailGroup(ctx, target.value);
+      syncPlannerAddForm(ctx);
+      return { handled: true, field: 'plannerCategory' };
+    }
+    if (target.name === 'plannerDetailSubject' || target.name === 'plannerActivityType') {
+      syncPlannerAddForm(ctx);
+      return { handled: true, field: target.name };
+    }
     const isOb2ScoreField = OB2_SCORE_SELECT_FIELDS.has(field) || target.getAttribute('data-score-key') === 'english_grade';
     if (ctx.isIOSSafari?.() && ctx.screen === 'ob2' && isOb2ScoreField) {
       if (ctx.ob2SelectSyncTimerRef?.current) clearTimeout(ctx.ob2SelectSyncTimerRef.current);

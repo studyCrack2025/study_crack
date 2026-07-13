@@ -41,7 +41,7 @@ const MASCOTS = {
 const STEPS = [
     { id: 'intro',       msg: '지금 바로 나만의 합격 전략을 확인해보세요.',                        mascot: 'hi' },
     { id: 'survey-qual', msg: '먼저 현재 학년과 희망 계열을 알려주세요.',                          mascot: 'thumbsup' },
-    { id: 'survey-quan', msg: '3월 또는 5월 학력평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
+    { id: 'survey-quan', msg: '3월·5월·7월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
     { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
     { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
     { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
@@ -53,6 +53,50 @@ let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selecte
 let isInterrupted = false;
 let tutorialCompleted = false;
 let mbtiDimSelections = [null, null, null, null];
+
+const JUL_AVAILABLE_INQUIRY_CODES = new Set([
+    '생윤', '윤사', '한지', '세지', '동사', '세사', '경제', '정법', '사문',
+    '물1', '물2', '화1', '화2', '생1', '생2', '지1', '지2'
+]);
+
+function isTutorialJulyInquiryAvailable(value) {
+    if (!value) return true;
+    return JUL_AVAILABLE_INQUIRY_CODES.has(String(value).trim());
+}
+
+function clearTutorialInquiry(prefix) {
+    const ids = prefix === 'tutInq1' ? ['tutInq1Name', 'tutInq1'] : ['tutInq2Name', 'tutInq2'];
+    ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+}
+
+function updateTutorialExamNotice() {
+    const month = document.getElementById('tutExamMonth')?.value || 'mar';
+    const notice = document.getElementById('tutJulEstimateNotice');
+    if (notice) notice.style.display = month === 'jul' ? 'block' : 'none';
+    ['tutInq1Name', 'tutInq2Name'].forEach((selectId) => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        Array.from(select.options).forEach((option) => {
+            option.disabled = month === 'jul' && option.value && !isTutorialJulyInquiryAvailable(option.value);
+        });
+        if (month === 'jul' && !isTutorialJulyInquiryAvailable(select.value)) {
+            select.value = '';
+            clearTutorialInquiry(selectId === 'tutInq1Name' ? 'tutInq1' : 'tutInq2');
+        }
+    });
+}
+
+function setupTutorialExamControls() {
+    const examSelect = document.getElementById('tutExamMonth');
+    if (examSelect) {
+        examSelect.value = tutorialData.examMonth || 'mar';
+        examSelect.addEventListener('change', updateTutorialExamNotice);
+    }
+    updateTutorialExamNotice();
+}
 
 function buildAuthenticatedFetchOptions(options = {}) {
     const headers = {
@@ -108,10 +152,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 전화번호 상태 — 보유 시 prefill(이미 인증된 번호로 간주), 없으면(소셜 다수) intro에서 SMS 인증 필요
             tutorialData.phone = data.phone || '';
             tutorialData.phoneVerified = !!(data.phone && String(data.phone).trim());
-            // 점수 데이터 복원 (최신 시험 월 우선: jun > may > mar)
+            // 점수 데이터 복원 (최신 시험 월 우선: jul > jun > may > mar)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const activeMonth = data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar');
+                const activeMonth = data.quantitative.jul ? 'jul' : (data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar'));
                 tutorialData.examMonth = activeMonth;
                 const activeQuan = data.quantitative[activeMonth];
                 if (activeQuan) {
@@ -285,6 +329,7 @@ async function renderStep() {
 
     if (step.id === 'univ-rec') initUnivSim();
     if (step.id === 'intro') setupIntroPhone();
+    if (step.id === 'survey-quan') setupTutorialExamControls();
 }
 
 // ── intro 전화번호 단계 (결제·알림용) ──────────────────────────────
@@ -430,9 +475,14 @@ async function _nextStepCore() {
             return;
         }
 
-        // 선택된 시험 월 (3월 학평 / 5월 학평 / 6월 모평)
+        // 선택된 시험 월 (3월·5월·7월 학평 / 6월 모평)
         let examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
         tutorialData.examMonth = examMonth;
+
+        if (examMonth === 'jul' && (!isTutorialJulyInquiryAvailable(inq1Name) || !isTutorialJulyInquiryAvailable(inq2Name))) {
+            alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
+            return;
+        }
 
         // 점수 환산 API 병렬 호출 → survey.js 로드 시 std/pct/grd 즉시 표시.
         // 선택 시험 데이터 로딩 실패 시 사용자 알림 후 3월 학평으로 전환해 재시도.
@@ -445,8 +495,8 @@ async function _nextStepCore() {
                 convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
             ]);
         } catch (e) {
-            if (e && e.code === 'JUN_NOT_READY') {
-                alert(e.message || '6월 모평 데이터를 불러오지 못했습니다. 3월 학평 기준으로 진행할게요.');
+            if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE')) {
+                alert(e.message || '선택한 시험 데이터를 불러오지 못했습니다. 3월 학평 기준으로 진행할게요.');
                 examMonth = 'mar';
                 tutorialData.examMonth = 'mar';
                 const sel = document.getElementById('tutExamMonth');
@@ -835,8 +885,8 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
         }
     ];
 
-    // may/jun 모드는 백엔드 데이터 미준비(JUN_NOT_READY)·매핑 누락 시를 대비해 mar 폴백 시도.
-    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun');
+    // 월별 학평/모평 모드는 데이터 미준비·매핑 누락 시를 대비해 mar 폴백 시도.
+    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun' || requestedExamMode === 'jul');
     if (isLearningMonthMode) {
         attempts.push({
             stage: 'fallback_exam_month_strict',
@@ -1480,7 +1530,7 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar'));
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.jul ? 'jul' : (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar')));
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
@@ -1796,12 +1846,17 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         const res = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify({ ...payload, month }) });
         if (res.ok) {
             const data = await res.json();
+            if (data.error) {
+                const err = new Error(data.error);
+                err.code = data.code || 'CONVERT_SCORE_FAILED';
+                throw err;
+            }
             if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
-        } else if (res.status === 503 && month === 'jun') {
+        } else if (res.status === 503 && (month === 'jun' || month === 'jul')) {
             // 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
             const body = await res.json().catch(() => ({}));
-            const err = new Error(body.error || '6월 모평 데이터를 불러오지 못했습니다.');
-            err.code = body.code || 'JUN_NOT_READY';
+            const err = new Error(body.error || '선택한 시험 데이터를 불러오지 못했습니다.');
+            err.code = body.code || (month === 'jul' ? 'JUL_NOT_READY' : 'JUN_NOT_READY');
             throw err;
         }
         // 5월 변환 실패 시 3월 기준 폴백 (legacy 동작 유지 — may 데이터 매핑 누락 edge case 대비).
@@ -1814,7 +1869,7 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         }
         return { std: '', pct: '', grd: '' };
     } catch (e) {
-        if (e && e.code === 'JUN_NOT_READY') throw e;
+        if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE')) throw e;
         return { std: '', pct: '', grd: '' };
     }
 }

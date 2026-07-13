@@ -2,6 +2,7 @@ import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
+import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
 import { AuthLoginScreen, AuthSignupScreen } from '../screens/auth/AuthScreens.jsx';
 import {
@@ -115,7 +116,8 @@ export const MOBILE_SCREEN_COMPONENTS = {
   authLogin: AuthLoginScreen,
   authSignup: AuthSignupScreen,
   home: HomeScreen,
-  planner: PlannerScreen
+  planner: PlannerScreen,
+  plannerAdd: PlannerAddScreen
 };
 
 export function getScreenComponent(screenName) {

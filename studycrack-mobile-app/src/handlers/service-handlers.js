@@ -1,9 +1,9 @@
 import { getData } from './action-utils.js';
-import { buildMobileWeeklyCheckPayload } from '../runtime/persistence.js';
+import { buildMobileWeeklyCheckPayload, markMobileNotificationsRead } from '../runtime/persistence.js';
 
 function noop() {}
 
-const NOTI_PAGE_SIZE = 5;
+const NOTI_PAGE_SIZE = 7;
 
 function getWindow(ctx) {
   return ctx.window || globalThis.window || {};
@@ -238,11 +238,19 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    // 알림 팝오버 항목/전체 보기 → 알림 목록 화면으로 이동(팝오버는 닫음). 페이지/펼침 초기화.
-    openNotificationList() {
+    // 알림 팝오버 항목은 목록 이동 후 상세 모달로 열고, 해당 알림만 읽음 처리한다.
+    openNotificationList({ actionEl } = {}) {
+      const id = getData(actionEl, 'noti-id');
+      const list = ctx.notiList || [];
+      const index = id ? list.findIndex((n, idx) => String(n.notiId || n.id || n.notificationId || idx) === String(id)) : -1;
       setNotifModalOpen(false);
-      setField('notiPage', 0);
+      setField('notiPage', index >= 0 ? Math.floor(index / NOTI_PAGE_SIZE) : 0);
       setField('notiExpandedId', '');
+      setField('notiDetailId', id || '');
+      if (id) {
+        setField('notiList', list.map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
+        markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
+      }
       goto?.('notificationList');
       return true;
     },
@@ -264,6 +272,21 @@ export function createServiceHandlers(ctx) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
       setField('notiExpandedId', ctx.notiExpandedId === id ? '' : id);
+      return true;
+    },
+
+    openNotiDetail({ actionEl }) {
+      const id = getData(actionEl, 'noti-id');
+      if (!id) return false;
+      setField('notiDetailId', id);
+      setField('notiList', (ctx.notiList || []).map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
+      markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
+      return true;
+    },
+
+    closeNotiDetail({ actionEl, isOverlaySelfClick }) {
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('noti-detail-overlay')) return false;
+      setField('notiDetailId', '');
       return true;
     },
 

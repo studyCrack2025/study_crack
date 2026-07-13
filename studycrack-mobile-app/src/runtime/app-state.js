@@ -100,10 +100,10 @@ export function createInitialAppState() {
     homeDragOffset: 0,
     scoreDragOffset: 0,
     // planner
-    selectedDate: String(Number(FIXED_TODAY_DATE.split('-')[2])),
+    selectedDate: FIXED_TODAY_DATE,
     plannerCalendarOpen: false,
     plannerCalendarMode: 'week',
-    plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '' },
+    plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' },
     plannerItems: DEFAULT_PLANNER_ITEMS,
     plannerEditIndex: null,
     // 공부 타이머/기록 (records는 후속 하이드레이션)
@@ -191,6 +191,7 @@ export function createInitialAppState() {
     notiStatus: 'idle', // idle | loading | ready | empty | error
     notiPage: 0, // 알림 내역 페이지(5개씩)
     notiExpandedId: '', // 펼쳐 본문을 보여줄 알림 id
+    notiDetailId: '', // 상세 모달로 열 알림 id
     openFaq: '',
     notifModalOpen: false,
     // 수험 일정 캘린더.

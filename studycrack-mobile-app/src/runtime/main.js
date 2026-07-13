@@ -14,7 +14,7 @@ import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/ren
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, markMobileNotificationsRead, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
@@ -297,6 +297,24 @@ function resolveAnalysisExamMode(state = {}) {
     }) || explicitKey || 'mar';
 }
 
+function buildRenderScoreCache(state = {}, examKey = '') {
+  const baseCache = state.scoreCache || {};
+  const snapshot = state.lastAnalysisSnapshot;
+  const snapshotMatches = snapshot && snapshot.examMode === examKey;
+  const analysisResults = (state.analysisResults || []).length
+    ? state.analysisResults
+    : snapshotMatches
+      ? snapshot.analysisResults || []
+      : [];
+  const analysisSimulations = (state.analysisSimulations || []).length
+    ? state.analysisSimulations
+    : snapshotMatches
+      ? snapshot.analysisSimulations || []
+      : [];
+  const merged = normalizeServerResults(analysisResults, analysisSimulations);
+  return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
+}
+
 // 탭바 dimmed 조건. 원본 App()의 tabbarDimmed와 동일.
 function isTabbarDimmed(state) {
   return Boolean(
@@ -337,6 +355,7 @@ function MobileApp() {
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
+  const userFetchRetryRef = useRef(0);
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
   const simulationFetchSignatureRef = useRef('');
@@ -465,6 +484,11 @@ function MobileApp() {
     plannerCenteredRef.current = true;
   }, [state.screen, state.selectedDate]);
 
+  useEffect(() => {
+    if (state.screen === 'home' || state.homeDragOffset === 0) return;
+    setState({ homeDragOffset: 0 });
+  }, [state.screen, state.homeDragOffset]);
+
   const dimmed = isTabbarDimmed(state);
   const visibleTabItems = filterTabItemsForTier();
 
@@ -485,6 +509,8 @@ function MobileApp() {
   }, [nav]);
 
   const derivedCtx = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
+  const renderExamKey = resolveAnalysisExamMode(state);
+  const renderScoreCache = buildRenderScoreCache(state, renderExamKey);
   const baseCtx = {
     ...state,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
@@ -496,19 +522,19 @@ function MobileApp() {
     // targetMajor로 재정렬하던 computeHomeTargets 경로를 대체 → 1~3지망 순서 섞임/라이브·0 폴백 제거.
     homeTargets: buildUniversityCards(
       uniqueTargetList(state.homeTargetList || []),
-      state.scoreCache,
-      resolveAnalysisExamMode(state),
+      renderScoreCache,
+      renderExamKey,
       state.scoreFetchStatus
     ),
     // [환산점수 단일 출처] 분석 화면의 점수/게이지/시뮬레이션 타겟도 scoreCache(서버)에서만 만든다.
     // 분석 선택 대학(targetMajor)은 분석 전용 — homeTargets(homeTargetList)와 분리되어 홈 순서에 영향 없음.
     ...(() => {
-      const examKey = resolveAnalysisExamMode(state);
+      const examKey = renderExamKey;
       const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);
       const selectedMajor = targets.includes(state.targetMajor)
         ? state.targetMajor
         : targets[0] || state.targetMajor || '';
-      const view = buildAnalysisScoreView(selectedMajor, state.scoreCache, examKey, state.scoreFetchStatus);
+      const view = buildAnalysisScoreView(selectedMajor, renderScoreCache, examKey, state.scoreFetchStatus);
       return {
         analysisSelected: { ...(derivedCtx.analysisSelected || {}), score: view.score },
         analysisScoreView: view,
@@ -522,7 +548,7 @@ function MobileApp() {
         gaugeTargetPct: view.pct,
         gaugePassPct: 40,
         gaugeSafePct: 60,
-        analysisSimulationTargets: buildSimulationTargets(targets, state.scoreCache, examKey),
+        analysisSimulationTargets: buildSimulationTargets(targets, renderScoreCache, examKey),
         analysisMajorOptions: targets,
         normalizedTargetMajor: selectedMajor
       };
@@ -554,6 +580,7 @@ function MobileApp() {
     // 공용 API/session helper를 재사용한다. 미로드 시 graceful no-op.
     apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
     userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || '',
+    notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || '',
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
     expireMobileSessionSilently,
@@ -792,9 +819,26 @@ function MobileApp() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
+    const userApiBinding = getUserApiBinding();
+    if (typeof userApiBinding.apiFetch !== 'function' || !userApiBinding.userApiUrl) {
+      const retryDelay = Math.min(1200, 250 + userFetchRetryRef.current * 100);
+      setState({ userLoadStatus: 'loading' });
+      const timer = globalThis.setTimeout?.(() => {
+        userFetchRetryRef.current += 1;
+        if (userFetchRetryRef.current >= 40) {
+          setState({ userLoadStatus: 'error' });
+          return;
+        }
+        setState({ userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1 });
+      }, retryDelay);
+      return () => {
+        if (timer) globalThis.clearTimeout?.(timer);
+      };
+    }
+    userFetchRetryRef.current = 0;
     let cancelled = false;
     setState({ userLoadStatus: 'loading' });
-    fetchCurrentUser({ apiFetch: window.apiFetch, userApiUrl: window.CONFIG?.api?.user }).then((userData) => {
+    fetchCurrentUser(userApiBinding).then((userData) => {
       if (cancelled) return;
       if (!userData) {
         setState({ userLoadStatus: 'error' });
@@ -822,7 +866,7 @@ function MobileApp() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [getUserApiBinding, state.userFetchRetryTick]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || state.userLoadStatus !== 'ready') return undefined;
@@ -914,18 +958,6 @@ function MobileApp() {
     };
   }, [getNotiApiBinding]);
 
-  // 알림 패널을 열면 미읽음 상태를 갱신한다.
-  useEffect(() => {
-    if (!state.notifModalOpen) return undefined;
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const current = stateRef.current.notiList || [];
-    if (!current.some((n) => !n.isRead)) return undefined;
-    setState({ notiList: current.map((n) => ({ ...n, isRead: true })) });
-    markMobileNotificationsRead({ ...getNotiApiBinding(), notiId: 'all' });
-    return undefined;
-  }, [state.notifModalOpen, getNotiApiBinding]);
-
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
@@ -976,14 +1008,15 @@ function MobileApp() {
     const scoreSignature = buildScoreSignature(examMode, targetList);
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
-      if (scoreFetchRetryRef.current >= 10) {
-        setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
-        return undefined;
-      }
+      const retryDelay = Math.min(1200, 250 + scoreFetchRetryRef.current * 100);
       const timer = globalThis.setTimeout?.(() => {
         scoreFetchRetryRef.current += 1;
+        if (scoreFetchRetryRef.current >= 40) {
+          setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
+          return;
+        }
         setState({ scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
-      }, 250);
+      }, retryDelay);
       return () => {
         if (timer) globalThis.clearTimeout?.(timer);
       };
