@@ -1998,6 +1998,12 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .locked-coach-preview-wrap{position:absolute;inset:10px 12px 12px;overflow:hidden;border-radius:20px;pointer-events:none;}
 .locked-coach-page .locked-preview{height:100%;filter:blur(1.2px);opacity:.46;transform:scale(.98);transform-origin:center;}
 .locked-coach-page .locked-feature-panel-inline{position:relative;z-index:2;width:min(100%,360px);margin:auto;padding:18px;border-radius:20px;box-shadow:0 18px 40px rgba(52,78,143,.18);}
+.app-screen[data-screen="lockedFeature"]{padding:0!important;}
+.app-screen[data-screen="lockedFeature"] .locked-coach-page{position:absolute;inset:0 0 calc(78px + env(safe-area-inset-bottom)) 0;min-height:0!important;padding:16px!important;display:flex;align-items:center;justify-content:center;}
+.app-screen[data-screen="lockedFeature"] .locked-coach-preview-wrap{inset:16px;border-radius:20px;}
+.app-screen[data-screen="lockedFeature"] .locked-feature-panel-inline{margin:0;max-height:calc(100% - 32px);overflow:auto;}
+.analysis-v2.loading .card{min-height:0!important;}
+.analysis-v2.loading .analysis-v2-head .top-card-head{min-height:78px!important;padding:12px 16px!important;}
 
 /* 2026-07-07: analysis gauge reference alignment. */
 .analysis-main-gauge-wrap{gap:4px;padding-top:2px;}
