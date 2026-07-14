@@ -18,6 +18,7 @@ export function AnalysisScreen(ctx) {
   const hasAnalysisError = Boolean(analysisApiError) && ['error', 'stale', 'empty'].includes(analysisApiStatus);
   const analysisBodyHtml = renderUnifiedAnalysis(ctx);
   const searchModalHtml = renderAnalysisSearchModal(ctx);
+  const showAnalysisBody = !isAnalyzing;
 
   return (
     <div className="app-shell">
@@ -38,20 +39,22 @@ export function AnalysisScreen(ctx) {
               </div>
             </div>
 
-            {isAnalyzing && (
-              <div className="analysis-loading-panel" role="status" aria-live="polite">
-                <div className="analysis-loading-orbit">
-                  <i />
-                  <i />
-                  <i />
-                </div>
-                <div>
-                  <span>AI 분석 진행 중</span>
-                  <b>목표 대학 기준으로 합격 가능성을 계산하고 있어요</b>
-                  <p>성적, 목표 대학, 과목별 효율을 순서대로 확인합니다.</p>
+            {isAnalyzing ? (
+              <div className="analysis-loading-stage" role="status" aria-live="polite">
+                <div className="analysis-loading-panel">
+                  <div className="analysis-loading-orbit">
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                  <div>
+                    <span>AI 분석 진행 중</span>
+                    <b>목표 대학 기준으로 합격 가능성을 계산하고 있어요</b>
+                    <p>성적, 목표 대학, 과목별 효율을 순서대로 확인합니다.</p>
+                  </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {isStale && (
               <div className="analysis-stale-note" role="status" aria-live="polite">
@@ -73,7 +76,7 @@ export function AnalysisScreen(ctx) {
               </div>
             )}
 
-            <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: analysisBodyHtml }} />
+            {showAnalysisBody ? <div className="analysis-result-stage" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: analysisBodyHtml }} /> : null}
             <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: searchModalHtml }} />
           </section>
         </div>

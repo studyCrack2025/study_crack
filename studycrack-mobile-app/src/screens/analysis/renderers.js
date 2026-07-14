@@ -285,7 +285,7 @@ export function renderAnalysisScreen(ctx) {
     layout
   } = ctx;
   const loadingPanel = isAnalyzing
-    ? '<div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div>'
+    ? '<div class="analysis-loading-stage"><div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div></div>'
     : '';
   const stalePanel = analysisApiStatus === 'stale'
     ? `<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>${escapeHtml(analysisApiError || '새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.')}</span></div></div>`
@@ -307,7 +307,7 @@ export function renderAnalysisScreen(ctx) {
         ${stalePanel}
         ${errorPanel}
 
-        ${renderUnifiedAnalysis(ctx)}
+        ${isAnalyzing ? '' : renderUnifiedAnalysis(ctx)}
 
         ${renderAnalysisSearchModal(ctx)}
       </section>`,

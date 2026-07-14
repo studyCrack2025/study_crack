@@ -275,8 +275,8 @@ export function renderMyPageScreen(ctx) {
 
   const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}${renderMbtiModal(ctx)}`;
   return layout(`<div class="my-stack">
-      <header class="my-page-hero"><span>MY STUDYCRACK</span><h1>마이페이지</h1><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></header>
-      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
+      <div class="card my-title-card"><div class="top-card-head"><div><h3>마이페이지</h3><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></div><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
+      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="badge">${escapeHtml(planStatus)}</span></div></button>
       ${renderMyMbtiCard(mbtiResult)}
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
