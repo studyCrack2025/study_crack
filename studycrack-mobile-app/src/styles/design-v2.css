@@ -1377,7 +1377,6 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .payment-fixed-term{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #DDE7F6;border-radius:14px;background:#FFFFFF;}
 .payment-fixed-term span{font-size:12px;color:#64748B;font-weight:800;}
 .payment-fixed-term b{font-size:14px;color:#26304A;}
-@media (max-width:360px){
 .home-kpi-slider{touch-action:pan-y;overscroll-behavior-x:contain;user-select:none;-webkit-user-select:none;}
 .home-kpi-track{will-change:transform;backface-visibility:hidden;}
 .calendar-sheet-overlay{overscroll-behavior:contain;}
@@ -1470,12 +1469,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .planner-calendar-month-grid{gap:3px;}
 .planner-calendar-month-day{min-height:38px;}
 }
-.plan-console-selector button span{font-size:10.5px;}
-.plan-console-head{grid-template-columns:minmax(0,1fr) 58px;}
-.plan-console-visual{width:56px;height:56px;border-radius:17px;}
-.plan-console-head h3{font-size:28px;}
-.plan-console-price b{font-size:22px;}
-}
+@media (max-width:360px){.plan-console-selector button span{font-size:10.5px;}.plan-console-head{grid-template-columns:minmax(0,1fr) 58px;}.plan-console-visual{width:56px;height:56px;border-radius:17px;}.plan-console-head h3{font-size:28px;}.plan-console-price b{font-size:22px;}}
 
 
 /* 2026-06-27: analysis tab final responsive containment. */
