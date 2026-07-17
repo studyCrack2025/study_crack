@@ -164,14 +164,6 @@ input,select,textarea{font-size:16px !important;}
 .home-skeleton-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .home-skeleton-kpis span{height:48px;border-radius:12px;}
 .home-skeleton-note{margin:2px 0 0;text-align:center;font-size:12.5px;font-weight:800;color:#8A97AC;}
-.home-report-preview-card{display:grid;gap:12px;}
-.home-report-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.home-report-preview-item{min-width:0;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:14px;padding:12px;text-align:left;display:grid;gap:5px;font-family:inherit;}
-.home-report-preview-item span{font-size:11px;color:var(--primary-dark);font-weight:900;}
-.home-report-preview-item b{min-width:0;font-size:14px;line-height:1.35;color:#26304A;font-weight:900;word-break:keep-all;}
-.home-report-preview-item small{font-size:11px;color:#64748B;font-weight:900;}
-.home-report-preview-item.pro{background:#FFFFFF;}
-.home-ranking-tier{margin:4px 0 0;font-size:13px;font-weight:800;color:#334155;}
 .rank-tier-bronze{border-color:#E7D8CC;background:linear-gradient(160deg,rgba(180,120,80,.10),rgba(255,255,255,.95));}
 .rank-tier-silver{border-color:#D5DCE5;background:linear-gradient(160deg,rgba(148,163,184,.12),rgba(255,255,255,.95));}
 .rank-tier-gold{border-color:#F4E2A1;background:linear-gradient(160deg,rgba(250,204,21,.14),rgba(255,255,255,.96));}
@@ -180,19 +172,6 @@ input,select,textarea{font-size:16px !important;}
 .rank-shine{position:relative;overflow:hidden;}
 .rank-shine:after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 0%,rgba(255,255,255,.55) 42%,transparent 68%);transform:translateX(-130%);animation:rankShine 2.8s ease-in-out infinite;}
 @keyframes rankShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
-.home-goal-linked-card .analysis-title{margin-bottom:6px;}
-.goal-compact{display:flex;align-items:flex-end;gap:8px;margin-bottom:8px}
-.goal-compact b{font-size:26px;line-height:1;color:var(--primary-dark)}
-.goal-compact span{font-size:12px;color:#64748B;font-weight:700}
-.goal-compact em{margin-left:auto;font-style:normal;font-weight:700;color:#334155}
-.goal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.goal-tags span{font-size:12px;padding:4px 8px;background:#EAF2FF;color:var(--primary-dark);border-radius:999px}
-.home-goal-linked-card .track{height:14px;border-radius:999px;}
-.home-goal-linked-card{text-align:left;}
-.home-goal-empty-cta{margin-top:8px;display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;background:#DBEAFE;color:var(--primary-dark);border-radius:10px;font-weight:700;font-size:13px;}
-.home-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.home-mini-badge{font-size:11px;font-weight:700;color:var(--primary-dark);background:#DBEAFE;border-radius:999px;padding:4px 8px;}
-.home-top-icons{display:flex;justify-content:flex-end;align-items:center;}
 .pro-top-btn{
   width:100%;height:56px;border:none;border-radius:var(--radius-md);position:relative;overflow:hidden;
   background:var(--primary-dark);
@@ -598,9 +577,6 @@ input,select,textarea{font-size:16px !important;}
 .tabbar button.active svg,.tabbar button.active span{filter:none;opacity:1;}
 .plan-price-row{background:#F8FBFF;border-color:#DDE7F6;}
 .home-goal-linked-card.is-locked{background:linear-gradient(160deg,#FFFFFF 0%,#F8FBFF 58%,#F1F6FF 100%);border-style:solid;}
-.home-goal-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
-.home-goal-title-row .analysis-title{margin:0;}
-.home-goal-plan-badge{flex:0 0 auto;border-radius:999px;background:#EEF4FF;color:var(--primary-dark);border:1px solid #D8E6FF;padding:5px 9px;font-size:11px;font-weight:900;}
 .home-goal-linked-card.is-locked .sub{margin:7px 0 0;color:#526176;line-height:1.5;}
 .home-goal-linked-card.is-locked .home-goal-empty-cta{margin-top:12px;background:var(--primary-dark);color:#fff;border-radius:12px;padding:10px 12px;font-weight:900;}
 .home-breakdown-list{margin-top:12px;display:grid;gap:8px;}
@@ -860,44 +836,15 @@ input,select,textarea{font-size:16px !important;}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 /* 인사말 한 줄 고정: JS fit이 박스 폭 기준 overflow를 측정해 폰트를 축소(이름이 길어도 줄바꿈 금지). */
 .home-greeting-fit{white-space:nowrap;overflow:hidden;max-width:100%;}
-.home-kpi-slider{overflow:hidden;padding:0;}
-.home-result-state,.home-mini-badge,.home-goal-plan-badge{border:1px solid #D8E6FF;background:#EEF4FF;color:var(--primary-dark);font-weight:900;}
 /* 2026-06-27: 환산점수 미확정 상태(분석 중) 표기 — 0점 플리커 대신 스켈레톤/안내. */
 .home-result-score.is-pending strong{color:#94A3B8;}
 .home-result-score.is-updating small{color:var(--primary-dark);}
 .home-score-skeleton{display:block;width:62px;height:22px;margin-left:auto;border-radius:8px;background:linear-gradient(90deg,#E8EEF7,#F4F8FE,#E8EEF7);background-size:200% 100%;animation:analysisSk 1.3s linear infinite;}
-.kpi-row.score-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;}
-.kpi-row.score-row .kpi-item{display:grid;gap:3px;border:1px solid #E3EAF6;background:#F8FBFF;border-radius:12px;padding:9px 7px;text-align:center;color:#64748B;font-size:10.5px;font-weight:800;line-height:1.25;}
-.kpi-row.score-row .kpi-item b{display:block;width:auto;min-width:0;text-align:center;color:#26304A;font-size:14px;font-weight:900;}
-.kpi-row.score-row .kpi-item.danger b{color:#C2410C;}
-.home-planner-badges{gap:6px;margin-top:0;}
-.home-planner-badges .chip{border:1px solid #DDE7F6;background:#FFFFFF;color:#526176;border-radius:999px;padding:5px 8px;font-size:10.5px;font-weight:900;white-space:nowrap;}
-.home-kpi-indicator{margin:0;}
-.home-kpi-indicator i{width:6px;height:6px;background:#C8D6EB;}
-.home-kpi-indicator i.active{width:18px;background:var(--primary-dark);}
 .home-pro-below-card-btn{height:46px;margin:0;border-radius:15px;background:#FFFFFF;color:var(--primary-dark);border:1px solid #BFD3F8;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .home-pro-below-card-btn span{font-weight:900;}
-.home-card-head{margin:0 0 10px;}
-.home-card-head .analysis-title,.home-goal-title-row .analysis-title,.home-ranking-head .analysis-title{color:#26304A;font-size:15px;font-weight:900;}
-.premium-clock{width:100%;padding:10px 12px;border:1px solid #DDE7F6;background:#F8FBFF;text-align:center;}
-.study-timer-row{gap:10px;}
-.timer-actions{gap:8px;max-width:none;}
-.timer-actions .mini{height:42px;border-radius:12px;font-weight:900;}
 .home-breakdown-toggle{border:1px solid #D8E6FF;background:#EEF4FF;color:var(--primary-dark);font-weight:900;}
 .home-breakdown-item,.home-breakdown-detail-row{box-shadow:none;}
-.home-goal-linked-card{display:grid;gap:10px;background:#FFFFFF;}
-.home-goal-linked-card.is-locked{background:#FFFFFF;border-style:solid;}
-.home-goal-linked-card .track,.home-ranking-progress{height:8px;border:1px solid #DDE7F6;background:#EDF2FA;border-radius:999px;box-shadow:inset 0 1px 2px rgba(52,78,143,.08);}
-.home-goal-linked-card .track i,.home-ranking-progress i{background:linear-gradient(90deg,#6F8FD9 0%,var(--primary-dark) 100%);border-radius:999px;transition:width .82s cubic-bezier(.22,1,.36,1);}
-.home-goal-empty-cta,.home-goal-linked-card.is-locked .home-goal-empty-cta{display:flex;justify-content:center;background:var(--primary-dark);color:#FFFFFF;border-radius:12px;padding:10px 12px;font-weight:900;}
-.goal-compact b{color:#26304A;}
-.goal-compact em{color:#526176;}
-.goal-tags span{border:1px solid #D8E6FF;background:#EEF4FF;color:var(--primary-dark);font-weight:900;}
-.ranking-card,.ranking-card.rank-tier-bronze,.ranking-card.rank-tier-silver,.ranking-card.rank-tier-gold,.ranking-card.rank-tier-platinum,.ranking-card.rank-tier-diamond{background:#FFFFFF;border-color:#DDE7F6;}
 .rank-shine:after{content:none;}
-.home-ranking-main{font-size:34px;color:#26304A;font-weight:900;}
-.home-ranking-tier{color:var(--primary-dark);font-weight:900;letter-spacing:0;}
-.home-ranking-sub,.home-ranking-foot,.home-ranking-tip{color:#64748B;font-weight:800;}
 .ranking-theme{min-height:100%;background:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 52%,#F7F9FE 100%);}
 .ranking-page{display:grid;gap:12px;padding-bottom:28px;min-width:0;}
 .ranking-hero{display:grid;gap:5px;padding:4px 2px 0;text-align:left;}
@@ -1261,7 +1208,6 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 
 /* 2026-07-06: image-reference home redesign. */
 .home-dashboard{background:linear-gradient(180deg,#F7F9FF 0%,#FFFFFF 44%,#F8FAFF 100%);}
-.home-content{gap:13px;padding-bottom:104px;}
 .home-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(104px,118px);gap:10px;align-items:center;margin:0;}
 .home-greeting-bubble{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;min-width:0;}
 .home-greeting-cracky{width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 7px 12px rgba(52,78,143,.11));}
@@ -1308,7 +1254,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-kpi-indicator i.active{width:28px;background:#4869B2;}
 .home-add-univ-card{min-height:238px;border-radius:25px;border-color:#DCE6F6;background:linear-gradient(180deg,#FFFFFF 0%,#F7F9FF 100%);box-shadow:0 12px 26px rgba(52,78,143,.08);}
 .home-study-summary{display:grid;gap:14px;padding:20px 16px;border:1px solid #DCE6F6;border-radius:25px;background:linear-gradient(180deg,#FFFFFF 0%,#FBFDFF 100%);box-shadow:0 12px 26px rgba(52,78,143,.075);}
-.home-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;}
+.home-card-head,.home-goal-title-row,.home-ranking-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;}
 .home-card-head .analysis-title,.home-goal-title-row .analysis-title,.home-ranking-head .analysis-title{font-size:19px;line-height:1.2;color:#111827;font-weight:950;}
 .home-mini-badge,.home-goal-plan-badge{border:1px solid #D8E2F3;border-radius:999px;background:#F3F7FF;color:#243F74;padding:7px 11px;font-size:12px;line-height:1;font-weight:950;}
 .study-timer-row{display:grid;grid-template-columns:1fr;gap:13px;text-align:center;}
@@ -1683,7 +1629,7 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .kpi-row.score-row{gap:8px;}
 .kpi-row.score-row .kpi-item{min-height:50px;border-radius:15px;font-size:11px;}
 .kpi-row.score-row .kpi-item b{font-size:16px;}
-.home-study-summary,.home-goal-linked-card,.home-report-preview-card{padding:15px 14px;border-radius:18px;gap:11px;box-shadow:0 7px 18px rgba(52,78,143,.07);}
+.home-study-summary,.home-goal-linked-card,.home-report-preview-card,.ranking-card{display:grid;gap:12px;padding:16px 14px;border:1px solid #DDE7F6;border-radius:18px;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);overflow:hidden;box-sizing:border-box;}
 .home-card-head .analysis-title,.home-goal-title-row .analysis-title,.home-ranking-head .analysis-title{font-size:17px;}
 .home-mini-badge,.home-goal-plan-badge{padding:6px 9px;font-size:11px;}
 .premium-clock{padding:16px 10px;border-radius:16px;}
@@ -1696,11 +1642,19 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .goal-compact span{font-size:14px;}
 .goal-compact i{padding:5px 8px;font-size:10.5px;}
 .home-goal-linked-card .track{height:9px;}
+.home-goal-linked-card .sub{margin:2px 0 4px;font-size:13px;line-height:1.48;color:#64748B;font-weight:800;}
 .goal-tags span{padding:6px 9px;font-size:11.5px;}
+.home-goal-empty-cta,.home-goal-linked-card.is-locked .home-goal-empty-cta{width:100%;min-height:42px;display:flex;align-items:center;justify-content:center;margin-top:4px;border-radius:13px;background:#4269DF;color:#FFFFFF;font-size:13.5px;font-weight:950;}
 .home-report-preview-item{min-height:88px;border-radius:15px;padding:11px 10px;}
 .home-report-preview-item span{font-size:11.5px;}
 .home-report-preview-item b{font-size:14px;}
 .home-report-preview-item small{font-size:10.5px;}
+.ranking-card{align-content:start;justify-items:stretch;text-align:center;gap:10px;}
+.home-ranking-main{margin:8px 0 0;font-size:42px;line-height:1;color:#26304A;font-weight:950;}
+.home-ranking-tier{margin:2px 0 0;color:var(--primary-dark);font-size:13px;line-height:1.2;font-weight:950;letter-spacing:0;}
+.home-ranking-sub{margin:0;color:#64748B;font-size:12.5px;line-height:1.35;font-weight:850;}
+.home-ranking-progress{width:100%;height:8px;margin:8px 0 4px;border:1px solid #DDE7F6;background:#EDF2FA;border-radius:999px;box-shadow:inset 0 1px 2px rgba(52,78,143,.08);overflow:hidden;}
+.home-ranking-foot,.home-ranking-tip{margin:0;color:#64748B;font-size:12px;line-height:1.35;font-weight:850;}
 .home-notif-fab{width:52px;height:52px;right:16px;bottom:calc(104px + env(safe-area-inset-bottom));}
 .notif-popover{bottom:calc(104px + 52px + 12px + env(safe-area-inset-bottom));}
 .home-greeting{font-size:16px;}
@@ -2016,48 +1970,48 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .app-screen[data-screen="analysis"],
 .app-screen[data-screen="planner"],
 .app-screen[data-screen="strategy"],
-.app-screen[data-screen="my"]{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important;background:var(--mobile-soft-bg);}
+.app-screen[data-screen="my"]{padding-bottom:calc(82px + env(safe-area-inset-bottom));background:var(--mobile-soft-bg);}
 .home-content,
 .analysis-v2,
 .planner-screen,
 .coach-page,
-.my-stack{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--mobile-screen-gap)!important;padding:var(--mobile-screen-top) var(--mobile-screen-x) var(--mobile-tabbar-clearance)!important;background:transparent!important;}
-.home-content{gap:var(--home-screen-gap)!important;}
+.my-stack{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--mobile-screen-gap);padding:var(--mobile-screen-top) var(--mobile-screen-x) var(--mobile-tabbar-clearance);background:transparent;}
+.home-content{gap:var(--home-screen-gap);}
 .home-content > *,
 .analysis-v2 > *,
 .planner-screen > *,
 .coach-page > *,
-.my-stack > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0!important;}
+.my-stack > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
 .home-content .card + .card,
-.coach-page > .card{margin-top:0!important;}
+.coach-page > .card{margin-top:0;}
 .home-content .card,
 .analysis-v2 .card,
 .planner-screen .card,
 .coach-page .card,
-.my-stack .card{border-color:var(--mobile-card-border)!important;background:var(--mobile-card-bg);box-shadow:var(--mobile-card-shadow)!important;border-radius:var(--mobile-card-radius)!important;}
+.my-stack .card{border-color:var(--mobile-card-border);background:var(--mobile-card-bg);box-shadow:var(--mobile-card-shadow);border-radius:var(--mobile-card-radius);}
 .planner-title-card,
 .analysis-v2-head,
 .coach-title-card,
-.my-title-card{padding:0!important;border-radius:var(--mobile-title-radius)!important;background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%)!important;border:1px solid var(--mobile-card-border)!important;box-shadow:var(--mobile-card-shadow)!important;overflow:hidden;}
+.my-title-card{padding:0;border-radius:var(--mobile-title-radius);background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%);border:1px solid var(--mobile-card-border);box-shadow:var(--mobile-card-shadow);overflow:hidden;}
 .planner-title-card .top-card-head,
 .analysis-v2-head .top-card-head,
 .coach-title-card .top-card-head,
-.my-title-card .top-card-head{min-height:var(--mobile-title-height)!important;padding:var(--mobile-title-pad-y) var(--mobile-title-pad-x)!important;grid-template-columns:minmax(0,1fr) var(--mobile-title-icon)!important;gap:10px!important;align-items:center!important;}
+.my-title-card .top-card-head{min-height:var(--mobile-title-height);padding:var(--mobile-title-pad-y) var(--mobile-title-pad-x);grid-template-columns:minmax(0,1fr) var(--mobile-title-icon);gap:10px;align-items:center;}
 .planner-title-card .top-card-head h3,
 .analysis-v2-head .top-card-head h3,
 .coach-title-card .top-card-head h3,
-.my-title-card .top-card-head h3{margin:0!important;font-size:23px!important;line-height:1.14!important;color:#111827!important;font-weight:950!important;letter-spacing:0!important;}
+.my-title-card .top-card-head h3{margin:0;font-size:23px;line-height:1.14;color:#111827;font-weight:950;letter-spacing:0;}
 .planner-title-card .top-card-head p,
 .analysis-v2-head .top-card-head p,
 .coach-title-card .top-card-head p,
-.my-title-card .top-card-head p{margin:6px 0 0!important;font-size:12.5px!important;line-height:1.35!important;color:#7A879C!important;font-weight:800!important;word-break:keep-all;}
+.my-title-card .top-card-head p{margin:6px 0 0;font-size:12.5px;line-height:1.35;color:#7A879C;font-weight:800;word-break:keep-all;}
 .planner-title-card .top-infographic,
 .analysis-v2-head .top-infographic,
 .coach-title-card .top-infographic,
 .my-title-card .top-infographic,
 .top-infographic-planner,
 .top-infographic-coach,
-.top-infographic-my{width:var(--mobile-title-icon)!important;height:var(--mobile-title-icon)!important;border-radius:14px!important;background:#EEF4FF!important;color:var(--primary-dark)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.88)!important;}
+.top-infographic-my{width:var(--mobile-title-icon);height:var(--mobile-title-icon);border-radius:14px;background:#EEF4FF;color:var(--primary-dark);box-shadow:inset 0 1px 0 rgba(255,255,255,.88);}
 .my-profile-card,
 .my-mbti-card,
 .my-menu-card{width:100%;box-sizing:border-box;}
@@ -2067,36 +2021,5 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .coach-status-card,
 .coach-feedback-card,
 .planner-premium-cta,
-.planner-empty-day{border-radius:var(--mobile-card-radius)!important;box-shadow:var(--mobile-card-shadow)!important;}
-.home-study-summary,
-.home-goal-linked-card,
-.home-report-preview-card,
-.ranking-card{width:100%;min-width:0;display:grid!important;gap:12px!important;padding:16px 14px!important;border:1px solid var(--mobile-card-border)!important;border-radius:var(--mobile-card-radius)!important;background:#FFFFFF!important;box-shadow:var(--mobile-card-shadow)!important;overflow:hidden;box-sizing:border-box;}
-.home-card-head,
-.home-goal-title-row,
-.home-ranking-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin:0!important;min-width:0;}
-.home-card-head .analysis-title,
-.home-goal-title-row .analysis-title,
-.home-ranking-head .analysis-title{min-width:0;margin:0!important;font-size:17px!important;line-height:1.22!important;color:#111827!important;font-weight:950!important;}
-.home-mini-badge,
-.home-goal-plan-badge,
-.home-ranking-head .badge{flex:0 0 auto;border:1px solid #D8E2F3!important;border-radius:999px!important;background:#F3F7FF!important;color:#243F74!important;padding:6px 9px!important;font-size:11px!important;line-height:1!important;font-weight:950!important;}
-.home-study-summary{align-content:start;}
-.home-goal-linked-card{align-content:start;text-align:left;}
-.home-goal-linked-card .sub{margin:2px 0 4px!important;font-size:13px!important;line-height:1.48!important;color:#64748B!important;font-weight:800!important;}
-.home-goal-empty-cta,
-.home-goal-linked-card.is-locked .home-goal-empty-cta{width:100%;min-height:42px;display:flex!important;align-items:center!important;justify-content:center!important;margin-top:4px!important;border-radius:13px!important;background:#4269DF!important;color:#FFFFFF!important;font-size:13.5px!important;font-weight:950!important;}
-.home-report-preview-card{align-content:start;}
-.home-report-preview-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;min-width:0;}
-.home-report-preview-item{min-width:0;min-height:88px!important;display:grid!important;align-content:start!important;gap:6px!important;padding:12px 11px!important;border:1px solid #E3EAF6!important;border-radius:15px!important;background:#FFFFFF!important;text-align:left!important;box-shadow:0 6px 14px rgba(52,78,143,.04)!important;}
-.home-report-preview-item span{font-size:11.5px!important;line-height:1.25!important;color:#111827!important;font-weight:950!important;}
-.home-report-preview-item b{font-size:14px!important;line-height:1.32!important;color:#111827!important;font-weight:950!important;word-break:keep-all;}
-.home-report-preview-item small{font-size:10.5px!important;line-height:1.25!important;color:#667085!important;font-weight:850!important;}
-.ranking-card{align-content:start;justify-items:stretch;text-align:center;gap:10px!important;}
-.home-ranking-main{margin:8px 0 0!important;font-size:42px!important;line-height:1!important;color:#26304A!important;font-weight:950!important;}
-.home-ranking-tier{margin:2px 0 0!important;color:var(--primary-dark)!important;font-size:13px!important;line-height:1.2!important;font-weight:950!important;letter-spacing:0!important;}
-.home-ranking-sub{margin:0!important;color:#64748B!important;font-size:12.5px!important;line-height:1.35!important;font-weight:850!important;}
-.home-ranking-progress{width:100%;height:8px!important;margin:8px 0 4px!important;border:1px solid #DDE7F6!important;background:#EDF2FA!important;border-radius:999px!important;box-shadow:inset 0 1px 2px rgba(52,78,143,.08)!important;overflow:hidden;}
-.home-ranking-foot,
-.home-ranking-tip{margin:0!important;color:#64748B!important;font-size:12px!important;line-height:1.35!important;font-weight:850!important;}
-@media (max-width:360px){:root{--mobile-screen-x:10px;--mobile-screen-top:10px;--mobile-screen-gap:16px;--home-screen-gap:16px;--mobile-title-height:78px;--mobile-title-pad-y:13px;--mobile-title-pad-x:14px;--mobile-title-icon:38px;}.planner-title-card .top-card-head h3,.analysis-v2-head .top-card-head h3,.coach-title-card .top-card-head h3,.my-title-card .top-card-head h3{font-size:21px!important;}.planner-title-card .top-card-head p,.analysis-v2-head .top-card-head p,.coach-title-card .top-card-head p,.my-title-card .top-card-head p{font-size:11.5px!important;}}
+.planner-empty-day{border-radius:var(--mobile-card-radius);box-shadow:var(--mobile-card-shadow);}
+@media (max-width:360px){:root{--mobile-screen-x:10px;--mobile-screen-top:10px;--mobile-screen-gap:16px;--home-screen-gap:16px;--mobile-title-height:78px;--mobile-title-pad-y:13px;--mobile-title-pad-x:14px;--mobile-title-icon:38px;}.planner-title-card .top-card-head h3,.analysis-v2-head .top-card-head h3,.coach-title-card .top-card-head h3,.my-title-card .top-card-head h3{font-size:21px;}.planner-title-card .top-card-head p,.analysis-v2-head .top-card-head p,.coach-title-card .top-card-head p,.my-title-card .top-card-head p{font-size:11.5px;}}
