@@ -1,0 +1,59 @@
+/* 2026-07-15: mobile layout system final. */
+:root{--mobile-screen-x:12px;--mobile-screen-top:10px;--mobile-screen-gap:18px;--home-screen-gap:18px;--mobile-tabbar-clearance:8px;--mobile-title-height:84px;--mobile-title-radius:24px;--mobile-title-pad-y:14px;--mobile-title-pad-x:16px;--mobile-title-icon:40px;--mobile-card-radius:18px;--mobile-card-border:#DDE7F6;--mobile-card-bg:#FFFFFF;--mobile-card-shadow:0 7px 18px rgba(52,78,143,.07);--mobile-soft-bg:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 48%,#F7F9FE 100%);}
+.app-screen[data-screen="home"],
+.app-screen[data-screen="analysis"],
+.app-screen[data-screen="planner"],
+.app-screen[data-screen="strategy"],
+.app-screen[data-screen="my"]{padding-bottom:calc(82px + env(safe-area-inset-bottom));background:var(--mobile-soft-bg);}
+.home-content,
+.analysis-v2,
+.planner-screen,
+.coach-page,
+.my-stack{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--mobile-screen-gap);padding:var(--mobile-screen-top) var(--mobile-screen-x) var(--mobile-tabbar-clearance);background:transparent;}
+.home-content{gap:var(--home-screen-gap);}
+.home-content > *,
+.analysis-v2 > *,
+.planner-screen > *,
+.coach-page > *,
+.my-stack > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
+.home-content .card + .card,
+.coach-page > .card{margin-top:0;}
+.home-content .card,
+.analysis-v2 .card,
+.planner-screen .card,
+.coach-page .card,
+.my-stack .card{border-color:var(--mobile-card-border);background:var(--mobile-card-bg);box-shadow:var(--mobile-card-shadow);border-radius:var(--mobile-card-radius);}
+.planner-title-card,
+.analysis-v2-head,
+.coach-title-card,
+.my-title-card{padding:0;border-radius:var(--mobile-title-radius);background:linear-gradient(180deg,#FFFFFF 0%,#F8FBFF 100%);border:1px solid var(--mobile-card-border);box-shadow:var(--mobile-card-shadow);overflow:hidden;}
+.planner-title-card .top-card-head,
+.analysis-v2-head .top-card-head,
+.coach-title-card .top-card-head,
+.my-title-card .top-card-head{min-height:var(--mobile-title-height);padding:var(--mobile-title-pad-y) var(--mobile-title-pad-x);grid-template-columns:minmax(0,1fr) var(--mobile-title-icon);gap:10px;align-items:center;}
+.planner-title-card .top-card-head h3,
+.analysis-v2-head .top-card-head h3,
+.coach-title-card .top-card-head h3,
+.my-title-card .top-card-head h3{margin:0;font-size:23px;line-height:1.14;color:#111827;font-weight:950;letter-spacing:0;}
+.planner-title-card .top-card-head p,
+.analysis-v2-head .top-card-head p,
+.coach-title-card .top-card-head p,
+.my-title-card .top-card-head p{margin:6px 0 0;font-size:12.5px;line-height:1.35;color:#7A879C;font-weight:800;word-break:keep-all;}
+.planner-title-card .top-infographic,
+.analysis-v2-head .top-infographic,
+.coach-title-card .top-infographic,
+.my-title-card .top-infographic,
+.top-infographic-planner,
+.top-infographic-coach,
+.top-infographic-my{width:var(--mobile-title-icon);height:var(--mobile-title-icon);border-radius:14px;background:#EEF4FF;color:var(--primary-dark);box-shadow:inset 0 1px 0 rgba(255,255,255,.88);}
+.my-profile-card,
+.my-mbti-card,
+.my-menu-card{width:100%;box-sizing:border-box;}
+.analysis-result-card,
+.analysis-reverse-card,
+.coach-status-card,
+.coach-feedback-card,
+.planner-premium-cta,
+.planner-empty-day{border-radius:var(--mobile-card-radius);box-shadow:var(--mobile-card-shadow);}
+@media (max-width:360px){:root{--mobile-screen-x:10px;--mobile-screen-top:10px;--mobile-screen-gap:16px;--home-screen-gap:16px;--mobile-title-height:78px;--mobile-title-pad-y:13px;--mobile-title-pad-x:14px;--mobile-title-icon:38px;}.planner-title-card .top-card-head h3,.analysis-v2-head .top-card-head h3,.coach-title-card .top-card-head h3,.my-title-card .top-card-head h3{font-size:21px;}.planner-title-card .top-card-head p,.analysis-v2-head .top-card-head p,.coach-title-card .top-card-head p,.my-title-card .top-card-head p{font-size:11.5px;}}
+

@@ -1,7 +1,36 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-// V2 재디자인 스타일. 빌드 시 HTML 셸의 기본 모바일 CSS 뒤에 로드된다.
+// V2 재디자인 스타일. foundation -> screen styles -> final layout overrides 순서를 유지한다.
+import '../styles/foundation/tokens.css';
+import '../styles/foundation/base.css';
+import '../styles/foundation/shell.css';
+import '../styles/components/primitives.css';
+import '../styles/components/mbti-survey.css';
+import '../styles/components/insights.css';
 import '../styles/design-v2.css';
+import '../styles/layout/mobile-bridge.css';
+import '../styles/foundation/motion.css';
+import '../styles/components/modals.css';
+import '../styles/screens/auth-signup.css';
+import '../styles/screens/auth-recovery.css';
+import '../styles/screens/auth.css';
+import '../styles/screens/onboarding.css';
+import '../styles/screens/locked-splash.css';
+import '../styles/screens/home-overlays.css';
+import '../styles/screens/home-base.css';
+import '../styles/screens/home.css';
+import '../styles/screens/analysis-base.css';
+import '../styles/screens/analysis-unified.css';
+import '../styles/screens/analysis.css';
+import '../styles/screens/planner-calendar.css';
+import '../styles/screens/planner.css';
+import '../styles/screens/planner-add.css';
+import '../styles/screens/service.css';
+import '../styles/screens/mypage-support.css';
+import '../styles/screens/mypage-data.css';
+import '../styles/screens/mypage.css';
+import '../styles/screens/score-input.css';
+import '../styles/layout/mobile-layout-system.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';

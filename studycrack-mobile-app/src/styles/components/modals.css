@@ -1,0 +1,20 @@
+:root{--mobile-modal-width:min(calc(100% - 24px),520px);}
+.home-modal-overlay,.terms-modal-backdrop{padding-inline:12px;padding-block:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-bottom));box-sizing:border-box;}
+.home-modal,.profile-detail-modal,.score-onepage-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal{width:var(--mobile-modal-width);max-width:100%;box-sizing:border-box;}
+.profile-detail-modal{max-width:100%;}
+.score-onepage-modal{width:var(--mobile-modal-width);}
+.terms-modal{width:var(--mobile-modal-width);max-width:100%;max-height:min(82dvh,640px);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;padding:0;border-radius:20px;}
+.terms-modal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 12px;border-bottom:1px solid #E2E8F4;}
+.terms-modal-head .terms-modal-title{margin:0;font-size:18px;font-weight:800;}
+.terms-modal-head .terms-modal-close{flex:0 0 auto;margin:0;width:32px;height:32px;font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.terms-modal-body{flex:1 1 auto;min-height:0;max-height:none;margin:14px;border-radius:12px;-webkit-overflow-scrolling:touch;}
+.target-delete-modal{display:grid;gap:16px;padding:20px!important;border-radius:24px!important;}
+.target-delete-modal-head{display:grid;gap:8px;}
+.target-delete-modal-head span{width:max-content;border-radius:999px;background:#EEF4FF;color:#2F5FE8;padding:5px 9px;font-size:11px;font-weight:950;}
+.target-delete-modal-head h3{margin:0;color:#172033;font-size:20px;line-height:1.25;font-weight:950;}
+.target-delete-modal-head p{margin:0;color:#64748B;font-size:13px;line-height:1.5;font-weight:750;}
+.target-delete-modal-head b{color:#26304A;font-weight:950;}
+.target-delete-error{margin:0;padding:11px 12px;border-radius:14px;background:#FFF1F2;color:#E11D48;font-size:12px;line-height:1.45;font-weight:850;}
+.target-delete-actions{margin-top:0;}
+.target-delete-actions .btn-primary.danger{background:#EF4444!important;border-color:#EF4444!important;color:#FFFFFF!important;}
+@media (max-width:360px){.profile-detail-actions,.support-btns,.my-profile-edit-actions{flex-direction:column;}.profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}}
