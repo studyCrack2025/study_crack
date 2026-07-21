@@ -367,6 +367,34 @@ function reducer(state, patch) {
   return { ...state, ...patch };
 }
 
+const PUBLIC_MOBILE_SCREENS = new Set([
+  'splash',
+  'on1',
+  'on2',
+  'on3',
+  'authLogin',
+  'authSignup',
+  'authFindId',
+  'authFindPw',
+  'privacyPolicy',
+  'termsScreen'
+]);
+
+function isLocalMobilePreview() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const host = window.location.hostname || '';
+  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
+}
+
+function replaceMobileScreenParam(screen) {
+  if (typeof window === 'undefined' || !window.location || !window.history) return;
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('screen', screen);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  } catch (_error) {}
+}
+
 // 모바일 런타임 셸.
 // URL ?screen=<id>는 로컬/디자인 점검 시 초기 화면 지정에만 사용한다.
 // 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
@@ -379,6 +407,10 @@ function createInitialAppStateWithScreenParam() {
     ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
     : base;
   if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home', tab: 'home' };
+  if (!hasSession && param && !isLocalMobilePreview() && !PUBLIC_MOBILE_SCREENS.has(param)) {
+    replaceMobileScreenParam('authLogin');
+    return { ...base, screen: 'authLogin', tab: 'home' };
+  }
   return param
     ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
     : sessionSafeBase;
