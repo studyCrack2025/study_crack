@@ -1,0 +1,20 @@
+/* Weekly coaching and report list layouts. */
+.weekly-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 5px;}
+.weekly-head h3{margin:0;color:#0F172A;font-size:19px;font-weight:800;}
+.weekly-back{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--line);border-radius:12px;background:#FFFFFF;color:#334155;font:inherit;}
+.weekly-range{margin:0 0 8px;color:#4B5563;font-size:13.5px;font-weight:600;}
+.weekly-rate{display:flex;align-items:flex-start;justify-content:space-between;padding:15px;border-radius:18px;}
+.weekly-rate h2{margin:6px 0 0;color:var(--primary);font-size:40px;font-weight:800;line-height:1;}
+.weekly-feedback{position:relative;margin-top:7px;padding:11px;border-radius:18px;overflow:visible;}
+.weekly-char{position:absolute;right:4px;bottom:-5px;width:92px;height:auto;object-fit:contain;}
+.weekly-next{position:static;min-height:52px;margin-top:0;}
+.report-desc{margin:4px 0 6px;color:#4B5563;font-size:13.5px;}
+.report-main{padding:11px;border-radius:18px;text-align:center;}
+.report-date{margin:5px 0 0;color:#1F2937;font-size:15.5px;font-weight:700;}
+.report-list{margin-top:7px;padding:11px;border-radius:18px;}
+.report-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:5px;padding:9px 10px;border:1px solid #D1D5DB;border-radius:12px;background:#FFFFFF;text-align:left;font:inherit;}
+.report-row b{color:#0F172A;font-size:13.5px;}
+.report-row p{margin:2px 0 0;color:#4B5563;font-size:12.5px;}
+.report-sample{position:static;min-height:52px;margin-top:0;}
+.report-detail-card{border:1.5px solid #D6E3F5;box-shadow:0 8px 24px rgba(15,23,42,.08);}
+.report-detail-text{margin:0;color:#4B5563;font-size:14px;font-weight:500;line-height:1.62;}

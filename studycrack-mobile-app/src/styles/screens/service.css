@@ -110,3 +110,12 @@
 .plan-console-head h3{font-size:28px;}
 .plan-console-price b{font-size:22px;}
 }
+.payment-done-screen{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding-top:32px;}
+.payment-complete-wrap{text-align:center;}
+.payment-check{display:grid;place-items:center;width:100px;height:100px;margin:8px auto 16px;border-radius:999px;background:var(--primary);box-shadow:0 4px 12px rgba(76,121,238,.18);}
+.payment-check .icon{width:52px;height:52px;stroke:#FFFFFF;stroke-width:2.5;}
+.payment-complete-title{margin:0;font-size:24px;font-weight:900;letter-spacing:0;}
+.payment-complete-sub{margin:16px 0 0;color:#334155;font-size:14px;}
+.payment-complete-note{margin-top:16px;padding:16px;border:1px solid #D8E3F6;border-radius:18px;background:#F6F9FF;color:#334155;text-align:left;font-size:13px;line-height:1.6;}
+.payment-cta{position:static;margin-top:16px;padding:0;}
+.payment-cta .btn{width:100%;min-height:52px;border-radius:14px;}
