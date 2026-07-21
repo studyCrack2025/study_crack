@@ -12,6 +12,13 @@ const BASELINE_CSS = [
   'studycrack-mobile-app/src/styles/design-v2.css',
   'css/studycrack-mobile.css'
 ];
+const INTENTIONALLY_UNSTYLED = new Map([
+  ['mbti-survey-q', 'Question wrapper; child survey blocks own the layout.'],
+  ['analysis-result-stage', 'React bridge uses inline display:contents.'],
+  ['profile-photo-pick-text', 'Text inherits the styled profile-photo-pick label.'],
+  ['ob5-after-eta', 'Semantic onboarding result group; child cards own the layout.'],
+  ['planner-detail-groups', 'Semantic group wrapper; planner-detail-group owns visibility and layout.']
+]);
 const require = createRequire(join(ROOT, 'studycrack-mobile-app/package.json'));
 
 function walk(dir, extensions) {
@@ -31,8 +38,29 @@ function readBaseline(path) {
   });
 }
 
-function extractClasses(source) {
-  const classes = new Set();
+function stripTemplateExpressions(value) {
+  let result = '';
+  let depth = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    const next = value[index + 1];
+    if (depth === 0 && char === '$' && next === '{') {
+      depth = 1;
+      index += 1;
+      continue;
+    }
+    if (depth > 0) {
+      if (char === '{') depth += 1;
+      if (char === '}') depth -= 1;
+      continue;
+    }
+    result += char;
+  }
+  return result;
+}
+
+function extractClassGroups(source) {
+  const groups = [];
   const patterns = [
     /class(?:Name)?\s*=\s*["'`]([^"'`]+)["'`]/g,
     /class(?:Name)?\s*=\s*\{\s*["'`]([^"'`]+)["'`]\s*\}/g,
@@ -41,14 +69,17 @@ function extractClasses(source) {
   ];
   for (const pattern of patterns) {
     for (const match of source.matchAll(pattern)) {
-      match[1].split(/\s+/).forEach((token) => {
+      const classes = new Set();
+      stripTemplateExpressions(match[1]).split(/\s+/).forEach((token) => {
         if (/[${}()]/.test(token)) return;
         const normalized = token.replace(/[^a-zA-Z0-9_-].*$/, '');
+        if (normalized.endsWith('-')) return;
         if (/^[a-zA-Z_-][a-zA-Z0-9_-]*$/.test(normalized)) classes.add(normalized);
       });
+      if (classes.size) groups.push(classes);
     }
   }
-  return classes;
+  return groups;
 }
 
 function hasSelector(css, className) {
@@ -76,13 +107,21 @@ const cssFiles = walk(STYLE_ROOT, new Set(['.css']));
 const currentCss = cssFiles.map((path) => readFileSync(path, 'utf8')).join('\n');
 const baselineCss = BASELINE_CSS.map(readBaseline).join('\n');
 const usage = new Map();
+const companionCoverage = new Map();
 
 for (const path of sourceFiles) {
-  const classes = extractClasses(readFileSync(path, 'utf8'));
-  for (const className of classes) {
-    const paths = usage.get(className) || [];
-    paths.push(relative(ROOT, path));
-    usage.set(className, paths);
+  const classGroups = extractClassGroups(readFileSync(path, 'utf8'));
+  for (const classes of classGroups) {
+    for (const className of classes) {
+      const paths = usage.get(className) || [];
+      paths.push(relative(ROOT, path));
+      usage.set(className, paths);
+      const companions = companionCoverage.get(className) || new Set();
+      for (const companion of classes) {
+        if (companion !== className && hasSelector(currentCss, companion)) companions.add(companion);
+      }
+      companionCoverage.set(className, companions);
+    }
   }
 }
 
@@ -91,16 +130,27 @@ const rows = [...usage.entries()].map(([className, paths]) => ({
   paths,
   current: hasSelector(currentCss, className),
   baseline: hasSelector(baselineCss, className),
+  coveredBy: [...(companionCoverage.get(className) || [])],
   destination: destination(className)
 }));
 const missing = rows.filter((row) => !row.current);
+const uncovered = missing.filter((row) => row.coveredBy.length === 0);
+const intentional = uncovered
+  .filter((row) => INTENTIONALLY_UNSTYLED.has(row.className))
+  .map((row) => ({ ...row, reason: INTENTIONALLY_UNSTYLED.get(row.className) }));
+const actionable = uncovered.filter((row) => !INTENTIONALLY_UNSTYLED.has(row.className));
 const recoverable = missing.filter((row) => row.baseline);
 const report = {
   baseline: BASELINE,
   sourceClassCount: rows.length,
   currentMissingCount: missing.length,
+  currentUncoveredCount: uncovered.length,
+  currentActionableCount: actionable.length,
   baselineRecoverableCount: recoverable.length,
   missing,
+  uncovered,
+  intentional,
+  actionable,
   recoverable
 };
 
@@ -130,6 +180,8 @@ if (rulesArgIndex >= 0) {
   console.log(`baseline: ${BASELINE}`);
   console.log(`source classes: ${rows.length}`);
   console.log(`missing in current CSS: ${missing.length}`);
+  console.log(`missing without styled companion: ${uncovered.length}`);
+  console.log(`actionable missing selectors: ${actionable.length}`);
   console.log(`present in baseline only: ${recoverable.length}`);
   for (const row of recoverable) {
     console.log(`\n${row.className}`);

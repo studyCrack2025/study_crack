@@ -93,6 +93,7 @@
 .calendar-form-title{font-weight:800;color:#0F172A;}
 .calendar-form-date-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
 .calendar-form-date-grid > div{min-width:0;display:grid;gap:7px;}
+.calendar-form-date-grid .planner-input{width:100%;min-width:0;box-sizing:border-box;}
 .calendar-form-note{min-height:82px!important;height:auto!important;line-height:1.45;padding:12px 14px;resize:none;}
 .calendar-form-actions{position:sticky;bottom:0;display:flex;gap:8px;margin:0 -2px;padding-top:10px;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 28%);}
 .calendar-form-actions .calendar-delete-btn{margin-right:auto;color:#DC2626;}
