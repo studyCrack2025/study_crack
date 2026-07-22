@@ -19,6 +19,21 @@ const INTENTIONALLY_UNSTYLED = new Map([
   ['ob5-after-eta', 'Semantic onboarding result group; child cards own the layout.'],
   ['planner-detail-groups', 'Semantic group wrapper; planner-detail-group owns visibility and layout.']
 ]);
+const PROPERTY_CONTRACTS = [
+  { selector: '.card', properties: ['min-width', 'box-sizing'] },
+  { selector: '.planner-input', properties: ['width', 'min-width', 'min-height', 'box-sizing', 'padding', 'border'] },
+  { selector: '.planner-title-card .top-card-head', properties: ['display', 'grid-template-columns', 'gap', 'align-items'], values: { display: ['grid'] } },
+  { selector: '.top-infographic', properties: ['display', 'align-items', 'justify-content', 'padding'], values: { display: ['flex'] } },
+  { selector: '.top-infographic i', properties: ['display', 'width', 'background'] },
+  { selector: '.auth-unified-card', properties: ['display', 'gap'], values: { display: ['grid'] } },
+  { selector: '.auth-sso-btn', properties: ['display', 'grid-template-columns', 'align-items', 'padding'], values: { display: ['grid'] } },
+  { selector: '.find-email-modal.auth-recovery-modal', properties: ['display', 'gap', 'box-sizing'], values: { display: ['grid'] } },
+  { selector: '.account-marketing-row .notify-switch', properties: ['position', 'width', 'height', 'padding'] },
+  { selector: '.planner-premium-cta', properties: ['display', 'gap', 'overflow'], values: { display: ['grid'] } },
+  { selector: '.planner-premium-copy', properties: ['display', 'gap'], values: { display: ['grid'] } },
+  { selector: '.planner-plan-list', properties: ['display', 'gap'], values: { display: ['grid'] } },
+  { selector: '.home-report-preview-grid', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] } }
+];
 const require = createRequire(join(ROOT, 'studycrack-mobile-app/package.json'));
 
 function walk(dir, extensions) {
@@ -106,6 +121,8 @@ const sourceFiles = walk(SOURCE_ROOT, new Set(['.js', '.jsx']));
 const cssFiles = walk(STYLE_ROOT, new Set(['.css']));
 const currentCss = cssFiles.map((path) => readFileSync(path, 'utf8')).join('\n');
 const baselineCss = BASELINE_CSS.map(readBaseline).join('\n');
+const postcss = require('postcss');
+const currentCssRoot = postcss.parse(currentCss);
 const usage = new Map();
 const companionCoverage = new Map();
 
@@ -140,6 +157,27 @@ const intentional = uncovered
   .map((row) => ({ ...row, reason: INTENTIONALLY_UNSTYLED.get(row.className) }));
 const actionable = uncovered.filter((row) => !INTENTIONALLY_UNSTYLED.has(row.className));
 const recoverable = missing.filter((row) => row.baseline);
+const propertyContracts = PROPERTY_CONTRACTS.map((contract) => {
+  const declarations = new Map();
+  currentCssRoot.walkRules((rule) => {
+    const selectors = rule.selector.split(',').map((selector) => selector.trim());
+    if (!selectors.includes(contract.selector)) return;
+    rule.walkDecls((decl) => declarations.set(decl.prop, decl.value));
+  });
+  const missingProperties = contract.properties.filter((property) => !declarations.has(property));
+  const invalidValues = Object.entries(contract.values || {}).flatMap(([property, allowed]) => {
+    const value = declarations.get(property);
+    return value && !allowed.includes(value) ? [{ property, value, allowed }] : [];
+  });
+  return {
+    selector: contract.selector,
+    declarations: Object.fromEntries(declarations),
+    missingProperties,
+    invalidValues,
+    valid: missingProperties.length === 0 && invalidValues.length === 0
+  };
+});
+const propertyContractFailures = propertyContracts.filter((contract) => !contract.valid);
 const report = {
   baseline: BASELINE,
   sourceClassCount: rows.length,
@@ -151,12 +189,13 @@ const report = {
   uncovered,
   intentional,
   actionable,
-  recoverable
+  recoverable,
+  propertyContracts,
+  propertyContractFailureCount: propertyContractFailures.length
 };
 
 const rulesArgIndex = process.argv.indexOf('--rules');
 if (rulesArgIndex >= 0) {
-  const postcss = require('postcss');
   const destinationFilter = process.argv[rulesArgIndex + 1] || '';
   const targetClasses = new Set(recoverable
     .filter((row) => !destinationFilter || row.destination === destinationFilter)
@@ -183,9 +222,19 @@ if (rulesArgIndex >= 0) {
   console.log(`missing without styled companion: ${uncovered.length}`);
   console.log(`actionable missing selectors: ${actionable.length}`);
   console.log(`present in baseline only: ${recoverable.length}`);
+  console.log(`property contract failures: ${propertyContractFailures.length}`);
+  for (const contract of propertyContractFailures) {
+    console.log(`\n${contract.selector}`);
+    if (contract.missingProperties.length) console.log(`  missing properties: ${contract.missingProperties.join(', ')}`);
+    for (const invalid of contract.invalidValues) {
+      console.log(`  invalid ${invalid.property}: ${invalid.value} (expected ${invalid.allowed.join(' or ')})`);
+    }
+  }
   for (const row of recoverable) {
     console.log(`\n${row.className}`);
     console.log(`  used: ${row.paths.join(', ')}`);
     console.log(`  destination: ${row.destination}`);
   }
 }
+
+if (rulesArgIndex < 0 && propertyContractFailures.length > 0) process.exitCode = 1;

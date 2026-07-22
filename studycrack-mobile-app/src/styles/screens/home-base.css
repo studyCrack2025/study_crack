@@ -127,8 +127,8 @@
 .goal-tags span{border:none;border-radius:999px;background:#111B34;color:#FFFFFF;padding:7px 11px;font-size:12.5px;font-weight:950;}
 .home-goal-empty-cta,.home-goal-linked-card.is-locked .home-goal-empty-cta{border-radius:14px;padding:12px 14px;background:#4269DF;color:#FFFFFF;font-size:13.5px;font-weight:950;}
 .home-report-preview-card{display:grid;gap:16px;padding:18px 16px;border:1px solid #DCE6F6;border-radius:24px;background:linear-gradient(180deg,#FFFFFF 0%,#F7F9FF 100%);box-shadow:0 11px 24px rgba(52,78,143,.07);}
-.home-report-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.home-report-preview-item{min-height:104px;border:1px solid #E3EAF6;border-radius:17px;background:#FFFFFF;padding:13px 12px;box-shadow:0 7px 14px rgba(52,78,143,.04);}
+.home-report-preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.home-report-preview-item{width:100%;min-width:0;min-height:104px;display:grid;align-content:start;gap:5px;text-align:left;border:1px solid #E3EAF6;border-radius:17px;background:#FFFFFF;padding:13px 12px;box-shadow:0 7px 14px rgba(52,78,143,.04);}
 .home-report-preview-item span{font-size:12.5px;color:#111827;font-weight:950;}
 .home-report-preview-item b{font-size:16px;line-height:1.32;color:#111827;font-weight:950;}
 .home-report-preview-item small{font-size:11.5px;color:#667085;font-weight:850;}

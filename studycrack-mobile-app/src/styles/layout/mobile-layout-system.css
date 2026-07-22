@@ -30,7 +30,7 @@
 .planner-title-card .top-card-head,
 .analysis-v2-head .top-card-head,
 .coach-title-card .top-card-head,
-.my-title-card .top-card-head{min-height:var(--mobile-title-height);padding:var(--mobile-title-pad-y) var(--mobile-title-pad-x);grid-template-columns:minmax(0,1fr) var(--mobile-title-icon);gap:10px;align-items:center;}
+.my-title-card .top-card-head{min-height:var(--mobile-title-height);padding:var(--mobile-title-pad-y) var(--mobile-title-pad-x);display:grid;grid-template-columns:minmax(0,1fr) var(--mobile-title-icon);gap:10px;align-items:center;}
 .planner-title-card .top-card-head h3,
 .analysis-v2-head .top-card-head h3,
 .coach-title-card .top-card-head h3,
@@ -42,10 +42,14 @@
 .planner-title-card .top-infographic,
 .analysis-v2-head .top-infographic,
 .coach-title-card .top-infographic,
-.my-title-card .top-infographic,
-.top-infographic-planner,
-.top-infographic-coach,
-.top-infographic-my{width:var(--mobile-title-icon);height:var(--mobile-title-icon);border-radius:14px;background:#EEF4FF;color:var(--primary-dark);box-shadow:inset 0 1px 0 rgba(255,255,255,.88);}
+.my-title-card .top-infographic{width:var(--mobile-title-icon);height:var(--mobile-title-icon);border-radius:14px;background:#EEF4FF;color:var(--primary-dark);box-shadow:inset 0 1px 0 rgba(255,255,255,.88);}
+.top-infographic{box-sizing:border-box;flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:8px 7px;border:1px solid #E2E8F0;}
+.top-infographic i{display:block;width:5px;border-radius:999px;background:var(--primary);opacity:.9;}
+.top-infographic i:nth-child(1){height:9px;}
+.top-infographic i:nth-child(2){height:14px;}
+.top-infographic i:nth-child(3){height:19px;}
+.top-infographic-my{position:relative;}
+.top-infographic-my::after{content:"";position:absolute;right:7px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--primary);opacity:.18;}
 .my-profile-card,
 .my-mbti-card,
 .my-menu-card{width:100%;box-sizing:border-box;}
@@ -56,4 +60,3 @@
 .planner-premium-cta,
 .planner-empty-day{border-radius:var(--mobile-card-radius);box-shadow:var(--mobile-card-shadow);}
 @media (max-width:360px){:root{--mobile-screen-x:10px;--mobile-screen-top:10px;--mobile-screen-gap:16px;--home-screen-gap:16px;--mobile-title-height:78px;--mobile-title-pad-y:13px;--mobile-title-pad-x:14px;--mobile-title-icon:38px;}.planner-title-card .top-card-head h3,.analysis-v2-head .top-card-head h3,.coach-title-card .top-card-head h3,.my-title-card .top-card-head h3{font-size:21px;}.planner-title-card .top-card-head p,.analysis-v2-head .top-card-head p,.coach-title-card .top-card-head p,.my-title-card .top-card-head p{font-size:11.5px;}}
-

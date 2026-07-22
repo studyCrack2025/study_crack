@@ -40,10 +40,12 @@ function FindEmailModal({ foundEmailMasked = '' }) {
       <div className="find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="find-email-title">
         <div className="auth-recovery-head">
           <span className="auth-recovery-icon" aria-hidden="true">ID</span>
+          <div className="auth-recovery-copy">
+            <h3 id="find-email-title">이메일 찾기</h3>
+            <p className="sub">가입 시 등록한 이름과 휴대폰 번호로 계정을 확인합니다.</p>
+          </div>
           <button type="button" className="close-btn" data-action="closeFindEmailModal" aria-label="닫기">×</button>
         </div>
-        <h3 id="find-email-title">이메일 찾기</h3>
-        <p className="sub">가입 시 등록한 이름과 휴대폰 번호로 계정을 확인합니다.</p>
         <div className="auth-recovery-fields">
           <input className="planner-input" data-find-email-name placeholder="이름" autoComplete="name" />
           <input className="planner-input" data-field="findEmailPhone" inputMode="numeric" placeholder="휴대폰 번호" autoComplete="tel" />
@@ -62,10 +64,12 @@ function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
       <div className="find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
         <div className="auth-recovery-head">
           <span className="auth-recovery-icon" aria-hidden="true">PW</span>
+          <div className="auth-recovery-copy">
+            <h3 id="reset-password-title">비밀번호 재설정</h3>
+            <p className="sub">{isRequest ? '가입하신 이메일 주소로 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>
+          </div>
           <button type="button" className="close-btn" data-action="closeResetPasswordModal" aria-label="닫기">×</button>
         </div>
-        <h3 id="reset-password-title">비밀번호 재설정</h3>
-        <p className="sub">{isRequest ? '가입하신 이메일 주소로 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>
         <div className="auth-recovery-fields">
           {isRequest ? (
             <input className="planner-input" data-reset-email placeholder="가입한 이메일 주소" defaultValue={email} autoComplete="email" />

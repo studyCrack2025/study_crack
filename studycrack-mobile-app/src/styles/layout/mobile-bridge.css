@@ -26,7 +26,8 @@ input,select,textarea{font-size:16px !important;}
 .card,button,input,select,textarea,img,svg{max-width:100%;}
 .planner-calendar-sheet{bottom:calc(78px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;}
 .top-infographic-planner{display:grid;place-items:center;padding:0;}
-.top-infographic-coach{display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:8px 7px;}
+.top-infographic-coach{display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:8px 7px;background:rgba(124,58,237,.1);}
+.top-infographic-coach i{background:var(--accent-purple);}
 .top-infographic-planner svg{width:22px;height:22px;stroke:currentColor;}
 .app-screen[data-screen="home"],.app-screen[data-screen="analysis"],.app-screen[data-screen="planner"],.app-screen[data-screen="strategy"],.app-screen[data-screen="my"],.app-screen[data-screen="lockedFeature"]{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important;}
 .coach-empty-state-screen{gap:10px!important;padding-bottom:8px!important;}
