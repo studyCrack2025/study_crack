@@ -1,4 +1,5 @@
 .analysis-unified{display:grid;gap:12px;min-width:0;width:100%;}
+.analysis-content-stage{display:grid;gap:12px;min-width:0;width:100%;animation:analysisResultEnter .34s cubic-bezier(.22,.61,.36,1) both;}
 .analysis-card-eyebrow{display:inline-flex;width:max-content;max-width:100%;border-radius:999px;background:linear-gradient(180deg,#F2F6FF 0%,#EAF1FF 100%);color:#1E4FD6;padding:7px 10px;font-size:11px;line-height:1;font-weight:950;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);}
 .analysis-result-card{display:grid;gap:0;padding:0!important;border-radius:28px!important;border:1px solid #DCE6F6!important;background:linear-gradient(180deg,#FFFFFF 0%,#FBFDFF 100%)!important;box-shadow:0 16px 34px rgba(52,78,143,.095)!important;overflow:visible!important;}
 .analysis-result-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(116px,132px);gap:12px;align-items:center;padding:20px 18px 16px;border-bottom:1px solid #E3EAF6;}
@@ -68,8 +69,7 @@
 .analysis-v2.loading .card::before{content:none!important;}
 .analysis-loading-stage{min-height:calc(100dvh - 250px - env(safe-area-inset-bottom));display:grid;place-items:center;padding:14px 0 28px;}
 .analysis-loading-stage .analysis-loading-panel{width:min(100%,340px);margin:0;animation:analysisLoadingFloat .5s ease both;}
-.analysis-v2:not(.loading) .analysis-unified{animation:analysisResultEnter .34s cubic-bezier(.22,.61,.36,1) both;}
 @keyframes analysisLoadingFloat{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes analysisResultEnter{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @media (max-width:360px){.analysis-loading-stage{min-height:calc(100dvh - 224px - env(safe-area-inset-bottom));padding:10px 0 22px;}}
-@media (prefers-reduced-motion:reduce){.analysis-loading-stage .analysis-loading-panel,.analysis-v2:not(.loading) .analysis-unified{animation:none!important;}}
+@media (prefers-reduced-motion:reduce){.analysis-loading-stage .analysis-loading-panel,.analysis-content-stage{animation:none!important;}}

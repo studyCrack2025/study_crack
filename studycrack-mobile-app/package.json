@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-source.mjs && node scripts/check-score-store.mjs",
+    "check": "node scripts/check-source.mjs && node scripts/check-score-store.mjs && node scripts/check-email-input.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

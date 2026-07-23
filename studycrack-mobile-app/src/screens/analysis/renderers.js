@@ -293,22 +293,22 @@ export function renderAnalysisScreen(ctx) {
   const errorPanel = analysisApiError && ['error', 'empty'].includes(analysisApiStatus)
     ? `<div class="analysis-stale-note error"><i aria-hidden="true"></i><div><b>분석 결과를 불러오지 못했습니다</b><span>${escapeHtml(analysisApiError)}</span></div></div>`
     : '';
+  const contentStage = `<div class="analysis-content-stage">
+      <div class="card analysis-v2-head">
+        <div class="top-card-head">
+          <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
+          <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+      </div>
+      ${stalePanel}
+      ${errorPanel}
+      ${renderUnifiedAnalysis(ctx)}
+    </div>`;
 
   return layout(
-    `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
-        <div class="card analysis-v2-head">
-          <div class="top-card-head">
-            <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
-            <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
-          </div>
-        </div>
-
+    `<section class="analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}">
         ${loadingPanel}
-        ${stalePanel}
-        ${errorPanel}
-
-        ${isAnalyzing ? '' : renderUnifiedAnalysis(ctx)}
-
+        ${isAnalyzing ? '' : contentStage}
         ${renderAnalysisSearchModal(ctx)}
       </section>`,
     true

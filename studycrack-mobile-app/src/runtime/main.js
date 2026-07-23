@@ -791,6 +791,20 @@ function MobileApp() {
     };
   }, [state.screen, state.targetMajor]);
 
+  useEffect(() => {
+    if (state.screen === 'accountInfo') return;
+    if (!state.phoneChangeModalOpen && !state.myProfileEditOpen) return;
+    setState({
+      phoneChangeModalOpen: false,
+      phoneChangeStep: 'input',
+      phoneChangeSending: false,
+      myProfileEditOpen: false,
+      myProfileNameDraft: '',
+      myProfilePhoneDraft: '',
+      myProfilePhoneCodeDraft: ''
+    });
+  }, [state.screen, state.phoneChangeModalOpen, state.myProfileEditOpen]);
+
   // 원본 ob3 분석 로딩은 1.5초 후 해제된다. ob5 직접 진입 시에도 영구 오버레이를 방지한다.
   useEffect(() => {
     if (state.screen === 'ob5') {

@@ -47,7 +47,7 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       data-target-major={item.major}
     >
       <div className="home-result-top">
-        <div>
+        <div className="home-result-copy">
           <p className="home-result-major">{item.major}</p>
           <span className="home-result-state">{item.rank}</span>
         </div>

@@ -47,7 +47,7 @@ function renderResetPasswordModal({ resetPasswordEmail, resetPasswordModalOpen, 
   if (!resetPasswordModalOpen) return '';
   const isRequest = resetPasswordStep === 'request';
   const body = isRequest
-    ? `<input class="planner-input" data-reset-email placeholder="가입한 이메일 주소" defaultValue="${resetPasswordEmail}" />`
+    ? `<input class="planner-input" data-reset-email data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="email" placeholder="가입한 이메일 주소" value="${escapeHtml(resetPasswordEmail)}" />`
     : '<input class="planner-input" data-reset-code placeholder="인증 코드 6자리" /><input class="planner-input" data-reset-password type="password" placeholder="새 비밀번호 (8자 이상)" /><input class="planner-input" data-reset-password-confirm type="password" placeholder="새 비밀번호 확인" />';
   const action = isRequest ? 'requestResetPasswordCode' : 'submitResetPassword';
   const label = isRequest ? (resetPasswordSending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료';
@@ -75,7 +75,7 @@ export function renderAuthLoginScreen(ctx) {
         ${renderLogo(studycrackLogoSrc)}
         <h1>StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
-        <input class="planner-input auth-input" data-field="loginEmail" type="email" inputmode="email" autocomplete="username" placeholder="이메일" />
+        <input class="planner-input auth-input" data-field="loginEmail" data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="username" placeholder="이메일" />
         <input class="planner-input auth-input" data-login-password type="password" autocomplete="current-password" placeholder="비밀번호" />
         ${authError ? `<p class="auth-error">${escapeHtml(authError)}</p>` : ''}
         <button class="btn btn-primary auth-submit" data-action="loginSuccess" ${disabled(authSubmitting)}>${authSubmitting ? '로그인 중...' : '로그인'}</button>
@@ -140,7 +140,7 @@ export function renderAuthSignupScreen(ctx) {
       <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
       <div class="signup-section auth-native-section">
         <div class="signup-section-head"><p class="section-title">계정 인증</p>${renderSignupVerifyStatus(emailVerified, '이메일')}</div>
-        <input class="planner-input auth-input" data-field="signupEmail" type="email" inputmode="email" autocomplete="email" placeholder="이메일" value="${escapeHtml(signupForm.email)}" />
+        <input class="planner-input auth-input" data-field="signupEmail" data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="email" placeholder="이메일" value="${escapeHtml(signupForm.email)}" />
         <button type="button" class="btn btn-secondary signup-inline-btn" data-action="sendSignupEmailCode" ${disabled(signupEmailSending || signupSubmitting)}>${signupEmailSending ? '발송 중...' : '이메일 인증번호 받기'}</button>
         <div class="signup-code-row"><input class="planner-input auth-input" data-field="signupEmailCode" inputmode="numeric" placeholder="인증번호 6자리" value="${escapeHtml(signupForm.emailCode)}" /><button type="button" class="btn btn-secondary signup-code-btn" data-action="verifySignupEmail" ${disabled(signupSubmitting)}>확인</button></div>
       </div>

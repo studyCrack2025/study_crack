@@ -72,7 +72,7 @@ function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
         </div>
         <div className="auth-recovery-fields">
           {isRequest ? (
-            <input className="planner-input" data-reset-email placeholder="가입한 이메일 주소" defaultValue={email} autoComplete="email" />
+            <input className="planner-input" data-reset-email data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" placeholder="가입한 이메일 주소" defaultValue={email} autoComplete="email" />
           ) : (
             <>
               <input className="planner-input" data-reset-code placeholder="인증 코드 6자리" inputMode="numeric" />
@@ -119,7 +119,7 @@ export function AuthLoginScreen(ctx) {
           <Logo src={studycrackLogoSrc} />
           <h1 className="auth-wordmark">StudyCrack</h1>
           <p className="auth-title">합격 전략을 시작해볼까요?</p>
-          <input className="planner-input auth-input" data-field="loginEmail" type="email" inputMode="email" autoComplete="username" placeholder="이메일" />
+          <input className="planner-input auth-input" data-field="loginEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="username" placeholder="이메일" />
           <input className="planner-input auth-input" data-login-password type="password" autoComplete="current-password" placeholder="비밀번호" />
           {authError && <p className="auth-error">{authError}</p>}
           <button className="btn btn-primary auth-submit" data-action="loginSuccess" disabled={authSubmitting}>
@@ -247,7 +247,7 @@ function SignupStep({ ctx, step }) {
         <div className="signup-stage-head"><span>3단계</span><h2>로그인에 사용할 이메일을 인증해주세요</h2><p>인증번호는 입력한 이메일 주소로 발송됩니다.</p></div>
         <div className="signup-section auth-native-section">
           <div className="signup-section-head"><p className="section-title">이메일 인증</p><VerifyStatus done={emailVerified} label="이메일" /></div>
-          <input className="planner-input auth-input" data-field="signupEmail" type="email" inputMode="email" autoComplete="email" placeholder="이메일" defaultValue={signupForm.email} />
+          <input className="planner-input auth-input" data-field="signupEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="email" placeholder="이메일" defaultValue={signupForm.email} />
           <button type="button" className="btn btn-secondary signup-inline-btn" data-action="sendSignupEmailCode" disabled={signupEmailSending || signupSubmitting}>{signupEmailSending ? '발송 중...' : '이메일 인증번호 받기'}</button>
           <div className="signup-code-row">
             <input className="planner-input auth-input" data-field="signupEmailCode" inputMode="numeric" placeholder="인증번호 6자리" defaultValue={signupForm.emailCode} />

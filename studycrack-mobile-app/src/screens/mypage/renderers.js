@@ -151,9 +151,7 @@ function renderProfileDetailModal(ctx) {
     ${renderTutorInfo(user, selectedPlan)}
     <section class="profile-detail-section profile-detail-actions-section">
       <div class="profile-detail-actions">
-        <button type="button" class="profile-action-row" data-action="openMyProfileEdit"><span>이름 변경</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
-        <button type="button" class="profile-action-row" data-action="openPhoneChangeModal"><span>${user?.phone ? '전화번호 변경' : '전화번호 등록'}</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
-        <button type="button" class="profile-action-row" data-action="goto" data-target="accountInfo"><span>소셜 로그인 관리</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
+        <button type="button" class="profile-action-row" data-action="openAccountManagement"><span>계정정보 관리</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
       </div>
     </section>`;
   return renderModal({ panelClass: 'profile-detail-modal', dismissAction: 'closeProfileDetailModal', body });
@@ -173,8 +171,8 @@ function renderProfileEditModal(ctx) {
 
   if (!myProfileEditOpen) return '';
 
-  const body = `<p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${escapeHtml(myProfileNameDraft)}" placeholder="이름"/></div><p class="sub" style="margin:8px 0 0;">목표 대학은 분석 탭에서 관리합니다.</p><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
-  return renderModal({ panelClass: 'my-profile-edit-modal', dismissAction: 'closeMyProfileEdit', body });
+  const body = `<div class="account-edit-head"><span class="account-edit-mark" aria-hidden="true">이름</span><div><p class="home-modal-title">이름 변경</p><p>서비스에서 사용할 이름을 입력해주세요.</p></div><button type="button" class="account-edit-close" data-action="closeMyProfileEdit" aria-label="닫기">✕</button></div><div class="account-edit-fields"><label for="mobile-profile-name">이름</label><input id="mobile-profile-name" class="planner-input" data-field="myProfileNameDraft" value="${escapeHtml(myProfileNameDraft)}" autocomplete="name" maxlength="30" placeholder="이름"/><small>변경한 이름은 프로필과 학습 리포트에 함께 표시됩니다.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button type="button" class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
+  return renderModal({ panelClass: 'my-profile-edit-modal account-edit-modal', dismissAction: 'closeMyProfileEdit', body });
 }
 
 function renderLogoutModal(logoutModalOpen = false) {
@@ -198,10 +196,13 @@ function renderPhoneChangeModal(ctx) {
     phoneChangeStep = 'input'
   } = ctx;
   if (!phoneChangeModalOpen) return '';
+  const isVerify = phoneChangeStep === 'verify';
+  const phoneTitle = ctx.user?.phone ? '전화번호 변경' : '전화번호 등록';
+  const head = `<div class="account-edit-head"><span class="account-edit-mark phone" aria-hidden="true">인증</span><div><p class="home-modal-title">${isVerify ? '인증번호 확인' : phoneTitle}</p><p>${isVerify ? '문자로 받은 6자리 번호를 확인합니다.' : '중요한 결제 및 서비스 안내에 사용할 번호입니다.'}</p></div><button type="button" class="account-edit-close" data-action="closePhoneChangeModal" aria-label="닫기">✕</button></div><div class="phone-change-progress" aria-label="전화번호 변경 단계"><span class="done">1</span><i></i><span class="${isVerify ? 'active' : ''}">2</span></div>`;
   const body = phoneChangeStep === 'verify'
-    ? `<p class="home-modal-title">전화번호 인증</p><p class="sub" style="margin:8px 0 12px;">${escapeHtml(myProfilePhoneDraft || '입력한 번호')}로 받은 인증번호를 입력해주세요.</p><input class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="인증번호 6자리"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>재전송</button><button class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div><button class="text-link-btn phone-change-cancel" data-action="closePhoneChangeModal">취소</button>`
-    : `<p class="home-modal-title">전화번호 변경</p><p class="sub" style="margin:8px 0 12px;">결제 확인, 알림톡, 중요 공지 수신에 사용할 휴대폰 번호를 인증합니다.</p><input class="planner-input" data-field="myProfilePhoneDraft" inputmode="tel" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><p class="phone-change-hint">숫자만 입력해도 자동으로 인증 형식에 맞춰 전송됩니다.</p><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 전송'}</button></div>`;
-  return renderModal({ panelClass: 'phone-change-modal', dismissAction: 'closePhoneChangeModal', body });
+    ? `${head}<div class="account-edit-fields"><label for="mobile-phone-code">인증번호</label><input id="mobile-phone-code" class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="6자리 인증번호"/><small>${escapeHtml(myProfilePhoneDraft || '입력한 번호')}로 발송된 번호를 입력해주세요.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '재전송 중' : '재전송'}</button><button type="button" class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div>`
+    : `${head}<div class="account-edit-fields"><label for="mobile-phone-number">휴대폰 번호</label><input id="mobile-phone-number" class="planner-input" data-field="myProfilePhoneDraft" inputmode="numeric" autocomplete="tel" maxlength="11" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><small>하이픈 없이 숫자 11자리를 입력해주세요.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button type="button" class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 받기'}</button></div>`;
+  return renderModal({ panelClass: 'phone-change-modal account-edit-modal', dismissAction: 'closePhoneChangeModal', body });
 }
 
 function renderSocialAccountRows(user = {}) {
@@ -273,7 +274,7 @@ export function renderMyPageScreen(ctx) {
   const sub = buildSubscriptionSummary(user, selectedPlan);
   const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
-  const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}${renderMbtiModal(ctx)}`;
+  const myOverlays = `${renderProfileDetailModal(ctx)}${renderMbtiModal(ctx)}`;
   return layout(`<div class="my-stack">
       <div class="card my-title-card"><div class="top-card-head"><div><h3>마이페이지</h3><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></div><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
       <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="badge">${escapeHtml(planStatus)}</span></div></button>
