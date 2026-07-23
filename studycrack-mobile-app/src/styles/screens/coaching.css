@@ -19,6 +19,8 @@
 .coach-textarea{min-height:120px;padding:12px;resize:none;}
 .coach-count{margin:6px 0 0;color:#64748B;font-size:12px;text-align:right;}
 .coach-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.coach-status-card h4,.coach-feedback-card h4{margin:0;}
+.coach-page:not(.coach-empty-state-screen) .coach-status-card p,.coach-page:not(.coach-empty-state-screen) .coach-feedback-card p{margin:8px 0;}
 .coach-report-list{display:grid;gap:12px;margin-top:10px;}
 .coach-report-card{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;text-align:left;}
 .coach-report-side{display:grid;justify-items:end;gap:8px;}

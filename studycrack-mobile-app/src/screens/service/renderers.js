@@ -328,9 +328,9 @@ export function renderWeeklyScreen(ctx) {
   const fb = latest?.tutorFeedback || {};
   if (!latest) {
     return layout(
-      `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
+      `<div class="weekly-page mobile-card-stack"><div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
        <div class="card weekly-feedback"><p class="sub" style="margin:0 0 10px;">주간 점검 기록이 없습니다.</p><div class="feedback-item">${icon('check', true)}학습 코칭 화면에서 이번 주 점검을 제출하면 이곳에 피드백이 표시됩니다.</div><img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/></div>
-       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="strategy">학습 코칭으로 이동</button></div>`,
+       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="strategy">학습 코칭으로 이동</button></div></div>`,
       true
     );
   }
@@ -348,7 +348,7 @@ export function renderWeeklyScreen(ctx) {
     : ['튜터가 피드백을 최종 제출하면 이곳에 표시됩니다.'];
 
   return layout(
-    `<div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
+    `<div class="weekly-page mobile-card-stack"><div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
        <p class="weekly-range">${escapeHtml(formatWeekIdLabel(latest.weekId))}</p>
        <div class="card weekly-rate"><div><p class="sub">피드백 상태</p><h2>${done ? '도착' : '대기'}</h2></div><span class="badge">${escapeHtml(latest.tutorName || '튜터 확인 중')}</span></div>
        <div class="card weekly-feedback">
@@ -356,7 +356,7 @@ export function renderWeeklyScreen(ctx) {
          ${feedbackItems.map((item) => `<div class="feedback-item">${icon('check', true)}${escapeHtml(item)}</div>`).join('')}
          <img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/>
        </div>
-       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div>`,
+       <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div></div>`,
     true
   );
 }
@@ -373,20 +373,21 @@ export function renderReportScreen(ctx) {
     : renderReportRows({ icon, reports: proReports });
 
   return layout(
-    `<span class="badge">프로 플랜 전용</span>
+    `<div class="report-page mobile-card-stack"><div><span class="badge">프로 플랜 전용</span>
        <p class="report-desc">2주에 한 번, 내 맞춤 분석 리포트 제공</p>
+       </div>
        <div class="card report-main"><p class="sub">리포트 상태</p><p class="report-date">${proReports.length ? '발행 이력 있음' : '발행 대기 중'}</p><h2>${proReports.length}</h2></div>
        <div class="card report-list"><p class="sub">이전 보고서</p>
          ${statusText}
        </div>
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div>`,
+       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div></div>`,
     true,
     renderProRequestModal(ctx)
   );
 }
 
 export function renderReportDetailScreen({ appbar, layout }) {
-  return layout(appbar('종합 분석 리포트', true) + '<div class="card report-detail-card"><p class="sub">모바일 앱에서는 실제 발행된 PDF 리포트만 확인할 수 있습니다.</p><p class="report-detail-text">PRO 리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div>', false);
+  return layout(appbar('종합 분석 리포트', true) + '<div class="report-detail-page mobile-card-stack"><div class="card report-detail-card"><p class="sub">모바일 앱에서는 실제 발행된 PDF 리포트만 확인할 수 있습니다.</p><p class="report-detail-text">PRO 리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div>', false);
 }
 
 export function renderProEliteScreen(ctx) {

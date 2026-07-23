@@ -1,10 +1,3 @@
-.ranking-podium-card,.ranking-list-card,.my-rank-fixed{border-color:#DDE7F6!important;background:#FFFFFF!important;border-radius:20px!important;box-shadow:0 7px 18px rgba(52,78,143,.07)!important;}
-.ranking-podium-card{padding:14px!important;overflow:hidden;}
-.my-rank-fixed{display:grid;justify-items:center;gap:8px;padding:18px!important;text-align:center;}
-.my-rank-fixed .sub{margin:0;color:#64748B;font-size:12px;font-weight:950;}
-.my-rank-fixed > b{font-size:42px;line-height:1;color:#182238;font-weight:950;}
-.my-rank-tier{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:999px;padding:7px 11px;color:#26304A;font-size:12px;font-weight:950;}
-.my-rank-fixed > small{color:#64748B;font-size:12px;font-weight:850;}
 .my-stack,.account-info-page,.qual-form-page,.tutor-qna-page{background:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 48%,#F7F9FE 100%);}
 .my-stack{display:grid;gap:12px;padding-bottom:28px;}
 .my-stack .card,.account-info-page .card,.qual-form-page .card,.support-direct-card,.support-qna-card,.faq-card,.settings-list,.notify-card{border-color:#DDE7F6;background:#FFFFFF;box-shadow:0 7px 18px rgba(52,78,143,.07);border-radius:18px;}
@@ -126,10 +119,4 @@
 .mobile-social-row{display:grid;}
 .mobile-social-action{justify-content:start;}
 .qual-grade-row{grid-template-columns:1fr;}
-}
-@media (max-width:360px){
-.ranking-podium{grid-template-columns:1fr;}
-.podium-item.first{transform:none;}
-.ranking-row{grid-template-columns:24px auto minmax(0,1fr);gap:7px;}
-.my-rank-fixed > b{font-size:36px;}
 }

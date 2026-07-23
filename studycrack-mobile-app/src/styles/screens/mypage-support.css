@@ -22,7 +22,7 @@
 .qna-textarea{height:170px;resize:none;}
 .qna-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
 .support-direct-card{display:grid;gap:8px;}
-.support-qna-card{display:grid;gap:12px;margin-top:12px;}
+.support-qna-card{display:grid;gap:12px;}
 .support-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .support-section-head .analysis-title{margin:0;}
 .support-section-head span{flex:0 0 auto;border-radius:999px;background:#F1F5F9;color:#64748B;padding:5px 9px;font-size:11px;font-weight:800;}

@@ -34,6 +34,7 @@ import '../styles/screens/service.css';
 import '../styles/screens/mypage-support.css';
 import '../styles/screens/mypage-data.css';
 import '../styles/screens/mypage.css';
+import '../styles/screens/ranking.css';
 import '../styles/screens/score-input.css';
 import '../styles/layout/mobile-layout-system.css';
 import { renderAppBar } from '../components/app-bar.js';
@@ -345,7 +346,7 @@ function buildRenderScoreCache(state = {}, examKey = '') {
     : snapshotMatches
       ? snapshot.analysisSimulations || []
       : [];
-  const merged = normalizeServerResults(analysisResults, analysisSimulations);
+  const merged = normalizeServerResults(analysisResults, analysisSimulations, state.scoreFetchSignature || '');
   return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
 }
 
@@ -424,6 +425,7 @@ function MobileApp() {
   const userFetchRetryRef = useRef(0);
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
+  const scoreRequestIdRef = useRef(0);
   const simulationFetchSignatureRef = useRef('');
   stateRef.current = state;
 
@@ -1051,12 +1053,14 @@ function MobileApp() {
       ...(state.homeTargetList || [])
     ]);
     if (state.userLoadStatus !== 'ready') {
+      scoreRequestIdRef.current += 1;
       if (state.scoreFetchStatus !== 'loading') {
         setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
       }
       return undefined;
     }
     if (!userScores || !targetList.length) {
+      scoreRequestIdRef.current += 1;
       scoreFetchRetryRef.current = 0;
       scoreFetchSignatureRef.current = '';
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
@@ -1071,9 +1075,10 @@ function MobileApp() {
       return undefined;
     }
 
-    const scoreSignature = buildScoreSignature(examMode, targetList);
+    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
+      scoreRequestIdRef.current += 1;
       const retryDelay = Math.min(1200, 250 + scoreFetchRetryRef.current * 100);
       const timer = globalThis.setTimeout?.(() => {
         scoreFetchRetryRef.current += 1;
@@ -1087,13 +1092,20 @@ function MobileApp() {
         if (timer) globalThis.clearTimeout?.(timer);
       };
     }
+    if (
+      scoreFetchSignatureRef.current === scoreSignature
+      && state.scoreFetchSignature === scoreSignature
+      && (state.scoreFetchStatus === 'loading' || state.scoreFetchStatus === 'ready')
+    ) return undefined;
     scoreFetchRetryRef.current = 0;
+    const requestId = scoreRequestIdRef.current + 1;
+    scoreRequestIdRef.current = requestId;
     scoreFetchSignatureRef.current = scoreSignature;
     simulationFetchSignatureRef.current = '';
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
     fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
-      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
       if (!payload) {
         const timer = globalThis.setTimeout?.(() => {
           setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
@@ -1112,8 +1124,9 @@ function MobileApp() {
           : 'empty';
       // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
       // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
-      const merged = normalizeServerResults(analysisResults);
-      const hasScores = Object.keys(merged).length > 0;
+      const merged = normalizeServerResults(analysisResults, [], scoreSignature);
+      const hasEntries = Object.keys(merged).length > 0;
+      const hasScores = Object.values(merged).some((entry) => entry.available !== false && Number.isFinite(Number(entry.score)));
       setState({
         analysisResults,
         analysisSimulations,
@@ -1122,11 +1135,11 @@ function MobileApp() {
           : stateRef.current.lastAnalysisSnapshot,
         analysisApiStatus: nextStatus,
         analysisApiError: analysisError?.message || (analysisResults.length ? '' : ''),
-        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
+        scoreCache: hasEntries ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
         scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
-      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',
@@ -1165,7 +1178,7 @@ function MobileApp() {
     ]);
     if (!userScores || !targetList.length || !(state.analysisResults || []).length) return undefined;
 
-    const scoreSignature = buildScoreSignature(examMode, targetList);
+    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
     const simulationSignature = `sim::${scoreSignature}`;
     if (simulationFetchSignatureRef.current === simulationSignature) return undefined;
 
@@ -1177,7 +1190,7 @@ function MobileApp() {
       if (simulationFetchSignatureRef.current !== simulationSignature) return;
       const simulationResults = payload?.simulationResults || [];
       const currentAnalysisResults = stateRef.current.analysisResults || [];
-      const merged = normalizeServerResults(currentAnalysisResults, simulationResults);
+      const merged = normalizeServerResults(currentAnalysisResults, simulationResults, scoreSignature);
       const hasScores = Object.keys(merged).length > 0;
       setState({
         analysisSimulations: simulationResults,

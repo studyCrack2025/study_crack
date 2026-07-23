@@ -32,7 +32,14 @@ const PROPERTY_CONTRACTS = [
   { selector: '.planner-premium-cta', properties: ['display', 'gap', 'overflow'], values: { display: ['grid'] } },
   { selector: '.planner-premium-copy', properties: ['display', 'gap'], values: { display: ['grid'] } },
   { selector: '.planner-plan-list', properties: ['display', 'gap'], values: { display: ['grid'] } },
-  { selector: '.home-report-preview-grid', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] } }
+  { selector: '.home-report-preview-grid', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] } },
+  { selector: '.mobile-card-stack', properties: ['width', 'min-width', 'display', 'gap'], values: { display: ['grid'] } },
+  { selector: '.analysis-title', properties: ['margin'], values: { margin: ['0'] } },
+  { selector: '.sub', properties: ['margin'], values: { margin: ['0'] } },
+  { selector: '.home-section-last', properties: ['display', 'gap', 'margin'], values: { display: ['grid'], margin: ['0'] } },
+  { selector: '.kpi-row.score-row', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] } },
+  { selector: '.kpi-row.score-row .kpi-item', properties: ['min-width', 'display', 'gap', 'padding', 'text-align'], values: { display: ['grid'] } },
+  { selector: '.kpi-row.score-row .kpi-item b', properties: ['display', 'width', 'min-width'], values: { display: ['block'] } }
 ];
 const require = createRequire(join(ROOT, 'studycrack-mobile-app/package.json'));
 
