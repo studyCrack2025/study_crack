@@ -116,6 +116,7 @@
 .my-profile-right{justify-items:start;}
 .profile-photo-actions,.profile-detail-actions,.support-btns,.qna-modal-actions{grid-template-columns:1fr;}
 .account-info-row,.account-info-row.action{grid-template-columns:1fr;gap:4px;}
+.account-info-row.action .account-inline-action{justify-self:start;margin:2px 0 0;}
 .mobile-social-row{display:grid;}
 .mobile-social-action{justify-content:start;}
 .qual-grade-row{grid-template-columns:1fr;}

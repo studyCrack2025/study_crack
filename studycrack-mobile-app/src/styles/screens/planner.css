@@ -33,14 +33,14 @@
 .planner-inline-calendar-nav{display:flex;align-items:center;justify-content:flex-end;gap:5px;}
 .planner-inline-calendar-nav button{height:34px;min-width:34px;border:1px solid #DDE7F6;border-radius:12px;background:#FFFFFF;color:#263F78;font-size:15px;font-weight:950;font-family:inherit;box-shadow:0 5px 12px rgba(52,78,143,.06);}
 .planner-inline-calendar-nav button:first-child,.planner-inline-calendar-nav button:last-child{font-size:25px;line-height:1;}
-.planner-inline-calendar .planner-days-carousel{display:flex;gap:9px;padding:0 0 4px;overflow-x:auto;scroll-padding-inline:0;}
+.planner-inline-calendar .planner-days-carousel{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%;padding:0 0 4px;overflow:visible;scroll-padding-inline:0;}
 .planner-inline-calendar .planner-calendar-month-panel{padding:2px 0 0;}
 .planner-inline-calendar .planner-calendar-month-grid{gap:6px;}
 .planner-inline-calendar .planner-calendar-month-day{min-height:40px;border-radius:13px;background:#FFFFFF;border-color:#E3EAF6;box-shadow:0 5px 12px rgba(52,78,143,.045);}
 .planner-inline-calendar .planner-calendar-month-day.active{background:#111827;color:#FFFFFF;border-color:#111827;}
 .planner-inline-calendar .planner-calendar-month-day.is-today:not(.active){background:#EFF6FF;border-color:#A7C6FF;}
 .planner-days-carousel{display:flex;gap:9px;padding:2px 0 6px;overflow-x:auto;scroll-padding-inline:0;scroll-snap-type:x mandatory;}
-.planner-date-item{flex:0 0 auto;scroll-snap-align:center;display:grid;gap:2px;min-width:46px;min-height:50px;padding:6px 8px;border:1px solid transparent;border-radius:15px;background:transparent;color:#64748B;box-shadow:none;}
+.planner-date-item{width:100%;min-width:0;scroll-snap-align:center;display:grid;gap:2px;min-height:50px;padding:6px 4px;border:1px solid transparent;border-radius:15px;background:transparent;color:#64748B;box-shadow:none;}
 .planner-date-item small{font-size:11.5px;line-height:1;font-weight:900;color:#8A95A8;}
 .planner-date-item strong{font-size:17px;line-height:1.05;font-weight:950;color:#465466;}
 .planner-date-item.active{background:linear-gradient(180deg,#EEF4FF 0%,#DFE9FF 100%)!important;border:1px solid #D8E6FF!important;box-shadow:0 8px 17px rgba(52,78,143,.08)!important;}
