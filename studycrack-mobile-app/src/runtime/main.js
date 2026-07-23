@@ -1,7 +1,42 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-// V2 재디자인 스타일. 빌드 시 HTML 셸의 기본 모바일 CSS 뒤에 로드된다.
+// V2 재디자인 스타일. foundation -> screen styles -> final layout overrides 순서를 유지한다.
+import '../styles/foundation/tokens.css';
+import '../styles/foundation/base.css';
+import '../styles/foundation/shell.css';
+import '../styles/components/primitives.css';
+import '../styles/components/mbti-survey.css';
+import '../styles/components/insights.css';
 import '../styles/design-v2.css';
+import '../styles/layout/mobile-bridge.css';
+import '../styles/foundation/motion.css';
+import '../styles/components/modals.css';
+import '../styles/components/navigation.css';
+import '../styles/components/sheets.css';
+import '../styles/components/drawers.css';
+import '../styles/screens/auth-signup.css';
+import '../styles/screens/auth-recovery.css';
+import '../styles/screens/auth.css';
+import '../styles/screens/onboarding.css';
+import '../styles/screens/locked-splash.css';
+import '../styles/screens/home-overlays.css';
+import '../styles/screens/home-base.css';
+import '../styles/screens/home.css';
+import '../styles/screens/analysis-base.css';
+import '../styles/screens/analysis-unified.css';
+import '../styles/screens/analysis.css';
+import '../styles/screens/planner-calendar.css';
+import '../styles/screens/planner.css';
+import '../styles/screens/planner-add.css';
+import '../styles/screens/coaching.css';
+import '../styles/screens/reports.css';
+import '../styles/screens/service.css';
+import '../styles/screens/mypage-support.css';
+import '../styles/screens/mypage-data.css';
+import '../styles/screens/mypage.css';
+import '../styles/screens/ranking.css';
+import '../styles/screens/score-input.css';
+import '../styles/layout/mobile-layout-system.css';
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
 import { renderIcon } from '../components/icon.js';
@@ -311,7 +346,7 @@ function buildRenderScoreCache(state = {}, examKey = '') {
     : snapshotMatches
       ? snapshot.analysisSimulations || []
       : [];
-  const merged = normalizeServerResults(analysisResults, analysisSimulations);
+  const merged = normalizeServerResults(analysisResults, analysisSimulations, state.scoreFetchSignature || '');
   return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
 }
 
@@ -333,6 +368,34 @@ function reducer(state, patch) {
   return { ...state, ...patch };
 }
 
+const PUBLIC_MOBILE_SCREENS = new Set([
+  'splash',
+  'on1',
+  'on2',
+  'on3',
+  'authLogin',
+  'authSignup',
+  'authFindId',
+  'authFindPw',
+  'privacyPolicy',
+  'termsScreen'
+]);
+
+function isLocalMobilePreview() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const host = window.location.hostname || '';
+  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
+}
+
+function replaceMobileScreenParam(screen) {
+  if (typeof window === 'undefined' || !window.location || !window.history) return;
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('screen', screen);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  } catch (_error) {}
+}
+
 // 모바일 런타임 셸.
 // URL ?screen=<id>는 로컬/디자인 점검 시 초기 화면 지정에만 사용한다.
 // 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
@@ -345,6 +408,10 @@ function createInitialAppStateWithScreenParam() {
     ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
     : base;
   if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home', tab: 'home' };
+  if (!hasSession && param && !isLocalMobilePreview() && !PUBLIC_MOBILE_SCREENS.has(param)) {
+    replaceMobileScreenParam('authLogin');
+    return { ...base, screen: 'authLogin', tab: 'home' };
+  }
   return param
     ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
     : sessionSafeBase;
@@ -358,6 +425,7 @@ function MobileApp() {
   const userFetchRetryRef = useRef(0);
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
+  const scoreRequestIdRef = useRef(0);
   const simulationFetchSignatureRef = useRef('');
   stateRef.current = state;
 
@@ -723,6 +791,20 @@ function MobileApp() {
     };
   }, [state.screen, state.targetMajor]);
 
+  useEffect(() => {
+    if (state.screen === 'accountInfo') return;
+    if (!state.phoneChangeModalOpen && !state.myProfileEditOpen) return;
+    setState({
+      phoneChangeModalOpen: false,
+      phoneChangeStep: 'input',
+      phoneChangeSending: false,
+      myProfileEditOpen: false,
+      myProfileNameDraft: '',
+      myProfilePhoneDraft: '',
+      myProfilePhoneCodeDraft: ''
+    });
+  }, [state.screen, state.phoneChangeModalOpen, state.myProfileEditOpen]);
+
   // 원본 ob3 분석 로딩은 1.5초 후 해제된다. ob5 직접 진입 시에도 영구 오버레이를 방지한다.
   useEffect(() => {
     if (state.screen === 'ob5') {
@@ -985,12 +1067,14 @@ function MobileApp() {
       ...(state.homeTargetList || [])
     ]);
     if (state.userLoadStatus !== 'ready') {
+      scoreRequestIdRef.current += 1;
       if (state.scoreFetchStatus !== 'loading') {
         setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
       }
       return undefined;
     }
     if (!userScores || !targetList.length) {
+      scoreRequestIdRef.current += 1;
       scoreFetchRetryRef.current = 0;
       scoreFetchSignatureRef.current = '';
       const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
@@ -1005,9 +1089,10 @@ function MobileApp() {
       return undefined;
     }
 
-    const scoreSignature = buildScoreSignature(examMode, targetList);
+    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
+      scoreRequestIdRef.current += 1;
       const retryDelay = Math.min(1200, 250 + scoreFetchRetryRef.current * 100);
       const timer = globalThis.setTimeout?.(() => {
         scoreFetchRetryRef.current += 1;
@@ -1021,13 +1106,20 @@ function MobileApp() {
         if (timer) globalThis.clearTimeout?.(timer);
       };
     }
+    if (
+      scoreFetchSignatureRef.current === scoreSignature
+      && state.scoreFetchSignature === scoreSignature
+      && (state.scoreFetchStatus === 'loading' || state.scoreFetchStatus === 'ready')
+    ) return undefined;
     scoreFetchRetryRef.current = 0;
+    const requestId = scoreRequestIdRef.current + 1;
+    scoreRequestIdRef.current = requestId;
     scoreFetchSignatureRef.current = scoreSignature;
     simulationFetchSignatureRef.current = '';
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
     fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
-      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
       if (!payload) {
         const timer = globalThis.setTimeout?.(() => {
           setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
@@ -1046,8 +1138,9 @@ function MobileApp() {
           : 'empty';
       // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
       // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
-      const merged = normalizeServerResults(analysisResults);
-      const hasScores = Object.keys(merged).length > 0;
+      const merged = normalizeServerResults(analysisResults, [], scoreSignature);
+      const hasEntries = Object.keys(merged).length > 0;
+      const hasScores = Object.values(merged).some((entry) => entry.available !== false && Number.isFinite(Number(entry.score)));
       setState({
         analysisResults,
         analysisSimulations,
@@ -1056,11 +1149,11 @@ function MobileApp() {
           : stateRef.current.lastAnalysisSnapshot,
         analysisApiStatus: nextStatus,
         analysisApiError: analysisError?.message || (analysisResults.length ? '' : ''),
-        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
+        scoreCache: hasEntries ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
         scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
       });
     }).catch((error) => {
-      if (scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',
@@ -1099,7 +1192,7 @@ function MobileApp() {
     ]);
     if (!userScores || !targetList.length || !(state.analysisResults || []).length) return undefined;
 
-    const scoreSignature = buildScoreSignature(examMode, targetList);
+    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
     const simulationSignature = `sim::${scoreSignature}`;
     if (simulationFetchSignatureRef.current === simulationSignature) return undefined;
 
@@ -1111,7 +1204,7 @@ function MobileApp() {
       if (simulationFetchSignatureRef.current !== simulationSignature) return;
       const simulationResults = payload?.simulationResults || [];
       const currentAnalysisResults = stateRef.current.analysisResults || [];
-      const merged = normalizeServerResults(currentAnalysisResults, simulationResults);
+      const merged = normalizeServerResults(currentAnalysisResults, simulationResults, scoreSignature);
       const hasScores = Object.keys(merged).length > 0;
       setState({
         analysisSimulations: simulationResults,

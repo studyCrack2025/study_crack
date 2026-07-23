@@ -2,7 +2,7 @@
 // 3중 타겟 리스트를 대체한다. 화면은 오직 이 모듈이 만든 카드/엔트리만 읽는다(서버 converted_score 전용).
 //
 // 데이터 모델
-//   scoreCache: { [examKey]: { [univKey]: { score, status, color, sim } } }
+//   scoreCache: { [examKey]: { [univKey]: { score, available, reason, status, color, sim } } }
 //   - univKey = 공백 제거 대학+학과명. 서버 응답의 univ/major를 정규화해 저장한다.
 //   - 시험 전환은 examKey만 바뀔 뿐 캐시를 지우지 않는다 → 재진입 시 0 깜빡임 없이 즉시 표시.
 
@@ -16,9 +16,19 @@ export function examKeyOf(state = {}) {
   return state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType) || 'active';
 }
 
-// (examKey, 정렬된 타겟 리스트) → fetch 시그니처. 동일 시그니처면 재요청하지 않는다.
-export function buildScoreSignature(examKey, targetUniversities = []) {
-  return `${examKey}::${(targetUniversities || []).map(univKey).filter(Boolean).join('|')}`;
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value).sort().reduce((result, key) => {
+    result[key] = stableValue(value[key]);
+    return result;
+  }, {});
+}
+
+// 시험·대학·성적이 모두 같을 때만 같은 요청으로 취급한다.
+export function buildScoreSignature(examKey, targetUniversities = [], userScores = {}) {
+  const targets = (targetUniversities || []).map(univKey).filter(Boolean).sort();
+  return `${examKey}::${targets.join('|')}::${JSON.stringify(stableValue(userScores || {}))}`;
 }
 
 // 캐시에서 한 대학의 엔트리를 찾는다. 정확 일치 → 부분 포함(백엔드 학과명 정규화 차이 흡수).
@@ -38,7 +48,7 @@ export function selectScoreEntry(scoreCache = {}, examKey = '', name = '') {
 export function buildUniversityCard(name, scoreCache = {}, examKey = '', fetchStatus = 'idle') {
   const entry = selectScoreEntry(scoreCache, examKey, name);
   const numeric = entry ? Number(entry.score) : NaN;
-  const hasScore = Number.isFinite(numeric);
+  const hasScore = entry?.available !== false && Number.isFinite(numeric);
   const pending = !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle');
   const score = hasScore ? Math.round(numeric) : 0;
   const cut = 100;
@@ -63,7 +73,7 @@ export function buildUniversityCards(targetUniversities = [], scoreCache = {}, e
 }
 
 // 서버 분석 응답(analysisResults) + 시뮬레이션을 캐시 머지용 맵으로 정규화한다.
-export function normalizeServerResults(analysisResults = [], simulationResults = []) {
+export function normalizeServerResults(analysisResults = [], simulationResults = [], sourceSignature = '') {
   const simByKey = {};
   for (const sim of simulationResults || []) {
     if (!sim || !sim.univ) continue;
@@ -73,10 +83,17 @@ export function normalizeServerResults(analysisResults = [], simulationResults =
   for (const item of analysisResults || []) {
     if (!item || !item.univ) continue;
     const score = Number(item.converted_score);
-    if (!Number.isFinite(score)) continue;
     const key = univKey(`${item.univ}${item.major || ''}`);
+    const explicitAvailability = item.score_available;
+    const legacyAvailable = item.is_eligible !== false
+      && !['분석 불가', '지원 불가'].includes(String(item.status || ''))
+      && Number.isFinite(score);
+    const available = explicitAvailability === true || (explicitAvailability == null && legacyAvailable);
     merged[key] = {
-      score: Math.round(score),
+      score: available ? Math.round(score) : null,
+      available,
+      reason: available ? '' : String(item.score_unavailable_reason || item.msg || '환산점수를 계산할 수 없습니다.'),
+      sourceSignature,
       status: item.status || '',
       color: item.color || '',
       sim: simByKey[key] || null
@@ -96,7 +113,7 @@ export function buildSimulationTargets(targetUniversities = [], scoreCache = {},
     .map((name) => {
       const entry = selectScoreEntry(scoreCache, examKey, name);
       const numeric = entry ? Number(entry.score) : NaN;
-      if (!Number.isFinite(numeric)) return null;
+      if (entry?.available === false || !Number.isFinite(numeric)) return null;
       const score = Math.round(numeric);
       return { major: name, label: compactLabel(name), score, cut: 100, gap: score - 100 };
     })
@@ -107,7 +124,7 @@ export function buildSimulationTargets(targetUniversities = [], scoreCache = {},
 export function buildAnalysisScoreView(selectedMajor = '', scoreCache = {}, examKey = '', fetchStatus = 'idle') {
   const entry = selectScoreEntry(scoreCache, examKey, selectedMajor);
   const numeric = entry ? Number(entry.score) : NaN;
-  const hasScore = Number.isFinite(numeric);
+  const hasScore = entry?.available !== false && Number.isFinite(numeric);
   const score = hasScore ? Math.round(numeric) : 0;
   const pct = Math.min((score / 250) * 100, 100);
   const status = (entry && entry.status) || (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전');

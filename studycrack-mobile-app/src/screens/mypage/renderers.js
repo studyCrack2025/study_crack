@@ -151,9 +151,7 @@ function renderProfileDetailModal(ctx) {
     ${renderTutorInfo(user, selectedPlan)}
     <section class="profile-detail-section profile-detail-actions-section">
       <div class="profile-detail-actions">
-        <button type="button" class="profile-action-row" data-action="openMyProfileEdit"><span>이름 변경</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
-        <button type="button" class="profile-action-row" data-action="openPhoneChangeModal"><span>${user?.phone ? '전화번호 변경' : '전화번호 등록'}</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
-        <button type="button" class="profile-action-row" data-action="goto" data-target="accountInfo"><span>소셜 로그인 관리</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
+        <button type="button" class="profile-action-row" data-action="openAccountManagement"><span>계정정보 관리</span><i aria-hidden="true">${icon('chevron', false)}</i></button>
       </div>
     </section>`;
   return renderModal({ panelClass: 'profile-detail-modal', dismissAction: 'closeProfileDetailModal', body });
@@ -173,8 +171,8 @@ function renderProfileEditModal(ctx) {
 
   if (!myProfileEditOpen) return '';
 
-  const body = `<p class="home-modal-title">프로필 수정</p><div class="my-profile-edit-fields"><label>이름</label><input class="planner-input" data-field="myProfileNameDraft" value="${escapeHtml(myProfileNameDraft)}" placeholder="이름"/></div><p class="sub" style="margin:8px 0 0;">목표 대학은 분석 탭에서 관리합니다.</p><div class="support-btns my-profile-edit-actions"><button class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
-  return renderModal({ panelClass: 'my-profile-edit-modal', dismissAction: 'closeMyProfileEdit', body });
+  const body = `<div class="account-edit-head"><div><p class="home-modal-title">이름 변경</p><p>서비스에서 사용할 이름을 입력해주세요.</p></div><button type="button" class="account-edit-close" data-action="closeMyProfileEdit" aria-label="닫기">✕</button></div><div class="account-edit-fields"><label for="mobile-profile-name">새 이름</label><input id="mobile-profile-name" class="planner-input" data-field="myProfileNameDraft" value="${escapeHtml(myProfileNameDraft)}" autocomplete="name" maxlength="30" placeholder="이름"/><small>변경한 이름은 프로필과 학습 리포트에 함께 표시됩니다.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button type="button" class="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>`;
+  return renderModal({ panelClass: 'my-profile-edit-modal account-edit-modal', dismissAction: 'closeMyProfileEdit', body });
 }
 
 function renderLogoutModal(logoutModalOpen = false) {
@@ -198,10 +196,13 @@ function renderPhoneChangeModal(ctx) {
     phoneChangeStep = 'input'
   } = ctx;
   if (!phoneChangeModalOpen) return '';
+  const isVerify = phoneChangeStep === 'verify';
+  const phoneTitle = ctx.user?.phone ? '전화번호 변경' : '전화번호 등록';
+  const head = `<div class="account-edit-head"><div><p class="home-modal-title">${isVerify ? '인증번호 확인' : phoneTitle}</p><p>${isVerify ? '문자로 받은 6자리 번호를 입력해주세요.' : '중요한 결제 및 서비스 안내에 사용할 번호를 인증합니다.'}</p></div><button type="button" class="account-edit-close" data-action="closePhoneChangeModal" aria-label="닫기">✕</button></div>`;
   const body = phoneChangeStep === 'verify'
-    ? `<p class="home-modal-title">전화번호 인증</p><p class="sub" style="margin:8px 0 12px;">${escapeHtml(myProfilePhoneDraft || '입력한 번호')}로 받은 인증번호를 입력해주세요.</p><input class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="인증번호 6자리"/><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>재전송</button><button class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div><button class="text-link-btn phone-change-cancel" data-action="closePhoneChangeModal">취소</button>`
-    : `<p class="home-modal-title">전화번호 변경</p><p class="sub" style="margin:8px 0 12px;">결제 확인, 알림톡, 중요 공지 수신에 사용할 휴대폰 번호를 인증합니다.</p><input class="planner-input" data-field="myProfilePhoneDraft" inputmode="tel" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><p class="phone-change-hint">숫자만 입력해도 자동으로 인증 형식에 맞춰 전송됩니다.</p><div class="support-btns" style="margin-top:12px"><button class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 전송'}</button></div>`;
-  return renderModal({ panelClass: 'phone-change-modal', dismissAction: 'closePhoneChangeModal', body });
+    ? `${head}<div class="account-edit-fields"><label for="mobile-phone-code">인증번호</label><input id="mobile-phone-code" class="planner-input" data-field="myProfilePhoneCodeDraft" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="${escapeHtml(myProfilePhoneCodeDraft)}" placeholder="6자리 인증번호"/><small>${escapeHtml(myProfilePhoneDraft || '입력한 번호')}로 발송된 번호를 입력해주세요.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '재전송 중' : '재전송'}</button><button type="button" class="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></div>`
+    : `${head}<div class="account-edit-fields"><label for="mobile-phone-number">휴대폰 번호</label><input id="mobile-phone-number" class="planner-input" data-field="myProfilePhoneDraft" inputmode="numeric" autocomplete="tel" maxlength="11" value="${escapeHtml(myProfilePhoneDraft)}" placeholder="01012345678"/><small>하이픈 없이 숫자 11자리를 입력해주세요.</small></div><div class="account-edit-actions"><button type="button" class="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button type="button" class="btn btn-primary" data-action="requestPhoneChange" ${phoneChangeSending ? 'disabled' : ''}>${phoneChangeSending ? '전송 중' : '인증번호 받기'}</button></div>`;
+  return renderModal({ panelClass: 'phone-change-modal account-edit-modal', dismissAction: 'closePhoneChangeModal', body });
 }
 
 function renderSocialAccountRows(user = {}) {
@@ -273,10 +274,10 @@ export function renderMyPageScreen(ctx) {
   const sub = buildSubscriptionSummary(user, selectedPlan);
   const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
-  const myOverlays = `${renderProfileDetailModal(ctx)}${renderProfileEditModal(ctx)}${renderMbtiModal(ctx)}`;
+  const myOverlays = `${renderProfileDetailModal(ctx)}${renderMbtiModal(ctx)}`;
   return layout(`<div class="my-stack">
-      <header class="my-page-hero"><span>MY STUDYCRACK</span><h1>마이페이지</h1><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></header>
-      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span><span class="badge">${escapeHtml(planStatus)}</span></div></button>
+      <div class="card my-title-card"><div class="top-card-head"><div><h3>마이페이지</h3><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></div><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
+      <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="badge">${escapeHtml(planStatus)}</span></div></button>
       ${renderMyMbtiCard(mbtiResult)}
       <div class="card my-menu-card">
         <button class="my-row" data-action="goto" data-target="qualInfo">정성조사서 <span>${icon('chevron', false)}</span></button><button class="my-row" data-action="goto" data-target="scoreInfo">성적 정보 <span>${icon('chevron', false)}</span></button>
@@ -396,7 +397,7 @@ export function renderCustomerSupportScreen(ctx) {
     ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
   ];
 
-  return layout(appbar('고객센터', true) + `<div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub" style="margin:0">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openQnaComposer">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card support-qna-card"><div class="support-section-head"><p class="analysis-title">내 문의 내역</p>${qnaHistory.length ? `<span>${qnaHistory.length}건</span>` : ''}</div><div class="qna-list compact">${renderSupportQnaList({ qnaHistory, qnaStatus })}</div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div>`, false, renderSupportQnaComposerModal(ctx));
+  return layout(appbar('고객센터', true) + `<div class="mobile-card-stack support-page"><div class="card support-direct-card"><p class="analysis-title">궁금한 점을 바로 남겨주세요.</p><p class="sub">운영 시간: 평일 10:00 - 18:00</p><div class="support-btns"><button class="btn btn-primary" data-action="openQnaComposer">1:1 문의 작성</button><button class="btn btn-secondary" data-action="openKakaoSupport">카카오톡 문의하기</button></div></div><div class="card support-qna-card"><div class="support-section-head"><p class="analysis-title">내 문의 내역</p>${qnaHistory.length ? `<span>${qnaHistory.length}건</span>` : ''}</div><div class="qna-list compact">${renderSupportQnaList({ qnaHistory, qnaStatus })}</div></div><div class="card faq-card">${faqs.map(([id, q, a]) => `<button class="faq-row" data-action="toggleFaq" data-faq-id="${id}"><div><b>${q}</b>${openFaq === id ? `<p>${a}</p>` : ''}</div><span>${icon('chevron', false)}</span></button>`).join('')}</div></div>`, false, renderSupportQnaComposerModal(ctx));
 }
 
 export function renderSettingsMainScreen(ctx) {
@@ -448,9 +449,9 @@ export function renderAccountInfoScreen(ctx) {
     <section class="card mobile-account-card">
       <div class="account-section-head"><h3>계정 정보 변경</h3><span>${escapeHtml(providerLabel(authProvider) || 'Local')}</span></div>
       <div class="account-info-row"><span>이메일</span><strong>${escapeHtml(displayEmail(user))}</strong></div>
-      <div class="account-info-row action phone-row ${hasPhone ? '' : 'missing'}"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong><button type="button" class="text-link-btn" data-action="openPhoneChangeModal">${hasPhone ? '변경' : '등록'}</button></div>
+      <div class="account-info-row action phone-row ${hasPhone ? '' : 'missing'}"><span>전화번호</span><strong>${escapeHtml(user?.phone || '등록된 번호 없음')}</strong><button type="button" class="text-link-btn account-inline-action" data-action="openPhoneChangeModal">${hasPhone ? '변경' : '등록'}</button></div>
       ${hasPhone ? '' : '<p class="account-inline-warning">결제와 중요 알림을 위해 전화번호 인증 등록이 필요합니다.</p>'}
-      ${authProvider === 'local' ? `<div class="account-info-row action"><span>비밀번호</span><strong>********</strong><button type="button" class="text-link-btn" data-action="openChangePassword">변경</button></div>` : ''}
+      ${authProvider === 'local' ? `<div class="account-info-row action"><span>비밀번호</span><strong>********</strong><button type="button" class="text-link-btn account-inline-action" data-action="openChangePassword">변경</button></div>` : ''}
       <div class="account-marketing-row">
         <div><b>마케팅 수신 동의</b><p>${marketingAgreed ? `${marketingDate || '동의일 확인 중'} 동의` : '미동의 상태입니다.'}</p></div>
         <button type="button" class="notify-switch ${marketingAgreed ? 'on' : ''}" data-action="saveMarketingConsent" data-marketing-agreed="${marketingAgreed ? 'false' : 'true'}"><i></i></button>

@@ -740,6 +740,11 @@ export function createProfileHandlers(ctx) {
     },
 
     openMyProfileEdit() {
+      if (ctx.screen !== 'accountInfo') {
+        setProfileDetailModalOpen(false);
+        goto?.('accountInfo');
+        return true;
+      }
       setMyProfileNameDraft(ctx.user?.name || '');
       setProfileDetailModalOpen(false);
       setMyProfileEditOpen(true);
@@ -757,9 +762,26 @@ export function createProfileHandlers(ctx) {
         alert('이름을 입력해주세요.');
         return false;
       }
+      const result = await updateMemberInfo({ name: nextName });
+      if (!result.ok) {
+        alert(result.error || '이름 저장에 실패했습니다.');
+        return false;
+      }
       setUser((prev) => ({ ...(prev || {}), name: nextName }));
-      await updateMemberInfo({ name: nextName });
       setMyProfileEditOpen(false);
+      return true;
+    },
+
+    openAccountManagement() {
+      setProfileDetailModalOpen(false);
+      setMyProfileEditOpen(false);
+      setPhoneChangeModalOpen(false);
+      setMyProfileNameDraft('');
+      setMyProfilePhoneDraft('');
+      setMyProfilePhoneCodeDraft('');
+      setPhoneChangeStep('input');
+      setPhoneChangeSending(false);
+      goto?.('accountInfo');
       return true;
     },
 
@@ -774,6 +796,12 @@ export function createProfileHandlers(ctx) {
     },
 
     openPhoneChangeModal() {
+      if (ctx.screen !== 'accountInfo') {
+        setProfileDetailModalOpen(false);
+        setPhoneChangeModalOpen(false);
+        goto?.('accountInfo');
+        return true;
+      }
       setMyProfilePhoneDraft('');
       setMyProfilePhoneCodeDraft('');
       setPhoneChangeStep('input');

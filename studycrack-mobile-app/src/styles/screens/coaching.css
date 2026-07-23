@@ -1,0 +1,28 @@
+/* Coaching flow restored from the active renderer contract. */
+.coach-close{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:999px;background:#F1F5F9;font:inherit;font-size:16px;}
+.coach-step-body h4{margin:0;font-size:18px;}
+.coach-subject-list{display:grid;gap:12px;margin:12px 0;}
+.coach-subject-card{padding:12px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;}
+.coach-subject-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.coach-delete-btn{padding:6px 10px;border:0;border-radius:10px;background:#F8FAFC;color:#B91C1C;font:inherit;font-size:12px;}
+.coach-hours-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px;}
+.coach-rate-box{display:flex;align-items:center;justify-content:center;min-width:86px;padding:0 8px;border:1px solid #BFDBFE;border-radius:12px;background:#EFF6FF;color:var(--primary);font-size:12px;font-weight:700;}
+.coach-upload-box{display:grid;gap:12px;padding:14px;border:1px dashed #94A3B8;border-radius:18px;background:#FFFFFF;}
+.coach-thumb-list{display:grid;gap:8px;margin-top:10px;}
+.coach-thumb{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#FFFFFF;font-size:13px;}
+.coach-choice-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.coach-exam-form{display:grid;gap:8px;margin-top:10px;}
+.coach-exam-subject-list{display:grid;gap:12px;}
+.coach-exam-subject-card{display:grid;gap:8px;padding:10px;border:1px solid #E2E8F0;border-radius:16px;background:#FFFFFF;}
+.coach-exam-subject-card h5{margin:0;color:#0F172A;font-size:14px;font-weight:800;}
+.coach-drop-box{margin-top:12px;padding:12px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;}
+.coach-textarea{min-height:120px;padding:12px;resize:none;}
+.coach-count{margin:6px 0 0;color:#64748B;font-size:12px;text-align:right;}
+.coach-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.coach-status-card h4,.coach-feedback-card h4{margin:0;}
+.coach-page:not(.coach-empty-state-screen) .coach-status-card p,.coach-page:not(.coach-empty-state-screen) .coach-feedback-card p{margin:8px 0;}
+.coach-report-list{display:grid;gap:12px;margin-top:10px;}
+.coach-report-card{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;text-align:left;}
+.coach-report-side{display:grid;justify-items:end;gap:8px;}
+.coach-pdf-badge{background:#EFF6FF;color:var(--primary);}
+.coach-report-arrow{color:var(--primary);font-size:20px;font-weight:700;line-height:1;}

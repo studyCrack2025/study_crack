@@ -285,7 +285,7 @@ export function renderAnalysisScreen(ctx) {
     layout
   } = ctx;
   const loadingPanel = isAnalyzing
-    ? '<div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div>'
+    ? '<div class="analysis-loading-stage"><div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div></div>'
     : '';
   const stalePanel = analysisApiStatus === 'stale'
     ? `<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>${escapeHtml(analysisApiError || '새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.')}</span></div></div>`
@@ -293,22 +293,22 @@ export function renderAnalysisScreen(ctx) {
   const errorPanel = analysisApiError && ['error', 'empty'].includes(analysisApiStatus)
     ? `<div class="analysis-stale-note error"><i aria-hidden="true"></i><div><b>분석 결과를 불러오지 못했습니다</b><span>${escapeHtml(analysisApiError)}</span></div></div>`
     : '';
+  const contentStage = `<div class="analysis-content-stage">
+      <div class="card analysis-v2-head">
+        <div class="top-card-head">
+          <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
+          <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+      </div>
+      ${stalePanel}
+      ${errorPanel}
+      ${renderUnifiedAnalysis(ctx)}
+    </div>`;
 
   return layout(
-    `<section class="analysis-v2 ${isAnalyzing ? 'loading' : ''}">
-        <div class="card analysis-v2-head">
-          <div class="top-card-head">
-            <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
-            <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
-          </div>
-        </div>
-
+    `<section class="analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}">
         ${loadingPanel}
-        ${stalePanel}
-        ${errorPanel}
-
-        ${renderUnifiedAnalysis(ctx)}
-
+        ${isAnalyzing ? '' : contentStage}
         ${renderAnalysisSearchModal(ctx)}
       </section>`,
     true

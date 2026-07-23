@@ -84,11 +84,11 @@ export function createInitialAppState() {
     analysisApiStatus: 'idle',
     analysisApiError: '',
     lastAnalysisSnapshot: null,
-    // 환산점수 단일 출처(재설계): (시험키 → 대학키 → {score,status,color,sim}) 캐시.
+    // 환산점수 단일 출처: (시험키 → 대학키 → {score,available,reason,status,color,sim}) 캐시.
     // 화면은 여기서만 점수를 읽는다(서버 converted_score 전용). 시험 전환해도 캐시는 유지.
     scoreCache: {},
     scoreFetchStatus: 'idle', // 현재 시그니처의 fetch 상태: idle|loading|ready|empty|error
-    scoreFetchSignature: '', // 마지막으로 적용된 (examKey::targetList) 시그니처
+    scoreFetchSignature: '', // 마지막으로 적용된 시험·대학·성적 시그니처
     scoreFetchRetryTick: 0,
     // 분석 화면에서 보고 있는 대학 index(홈 슬라이더 index와 분리 — 홈 순서에 영향 없음).
     analysisSelectedIndex: 0,

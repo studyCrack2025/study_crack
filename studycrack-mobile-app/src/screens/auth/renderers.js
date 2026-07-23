@@ -40,19 +40,20 @@ function checked(value) {
 
 function renderFindEmailModal({ findEmailModalOpen, foundEmailMasked }) {
   if (!findEmailModalOpen) return '';
-  return `<div class="find-email-modal-backdrop" data-action="closeFindEmailModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeFindEmailModal">×</button><h3>이메일 찾기</h3><p class="sub">가입 시 등록한 이름과 전화번호를 입력해주세요.</p><input class="planner-input" data-find-email-name placeholder="이름" /><input class="planner-input" data-field="findEmailPhone" inputmode="numeric" placeholder="전화번호 (숫자만 입력)" /><button type="button" class="btn btn-primary" data-action="findEmailByNamePhone">이메일 찾기</button>${foundEmailMasked ? `<div class="find-email-result">회원님의 이메일은<br/><b>${foundEmailMasked}</b> 입니다.</div>` : ''}</div></div>`;
+  return `<div class="find-email-modal-backdrop" data-action="closeFindEmailModal"><div class="find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="find-email-title"><div class="auth-recovery-head"><span class="auth-recovery-icon" aria-hidden="true">ID</span><div class="auth-recovery-copy"><h3 id="find-email-title">이메일 찾기</h3><p class="sub">가입 시 등록한 이름과 휴대폰 번호로 계정을 확인합니다.</p></div><button type="button" class="close-btn" data-action="closeFindEmailModal" aria-label="닫기">×</button></div><div class="auth-recovery-fields"><input class="planner-input" data-find-email-name placeholder="이름" autocomplete="name" /><input class="planner-input" data-field="findEmailPhone" inputmode="numeric" placeholder="휴대폰 번호" autocomplete="tel" /></div><button type="button" class="btn btn-primary auth-recovery-submit" data-action="findEmailByNamePhone">이메일 찾기</button>${foundEmailMasked ? `<div class="find-email-result"><span>확인된 이메일</span><b>${foundEmailMasked}</b></div>` : ''}</div></div>`;
 }
 
 function renderResetPasswordModal({ resetPasswordEmail, resetPasswordModalOpen, resetPasswordSending, resetPasswordStep }) {
   if (!resetPasswordModalOpen) return '';
   const isRequest = resetPasswordStep === 'request';
   const body = isRequest
-    ? `<input class="planner-input" data-reset-email placeholder="가입한 이메일 주소" defaultValue="${resetPasswordEmail}" />`
+    ? `<input class="planner-input" data-reset-email data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="email" placeholder="가입한 이메일 주소" value="${escapeHtml(resetPasswordEmail)}" />`
     : '<input class="planner-input" data-reset-code placeholder="인증 코드 6자리" /><input class="planner-input" data-reset-password type="password" placeholder="새 비밀번호 (8자 이상)" /><input class="planner-input" data-reset-password-confirm type="password" placeholder="새 비밀번호 확인" />';
   const action = isRequest ? 'requestResetPasswordCode' : 'submitResetPassword';
   const label = isRequest ? (resetPasswordSending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료';
 
-  return `<div class="find-email-modal-backdrop" data-action="closeResetPasswordModal"><div class="find-email-modal" data-action="noopModal"><button type="button" class="close-btn" data-action="closeResetPasswordModal">×</button><h3>비밀번호 재설정</h3><p class="sub">${isRequest ? '가입하신 이메일 주소를 입력하시면 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>${body}<button type="button" class="btn btn-primary" data-action="${action}" ${disabled(resetPasswordSending)}>${label}</button></div></div>`;
+  const description = isRequest ? '가입하신 이메일 주소로 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.';
+  return `<div class="find-email-modal-backdrop" data-action="closeResetPasswordModal"><div class="find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title"><div class="auth-recovery-head"><span class="auth-recovery-icon" aria-hidden="true">PW</span><div class="auth-recovery-copy"><h3 id="reset-password-title">비밀번호 재설정</h3><p class="sub">${description}</p></div><button type="button" class="close-btn" data-action="closeResetPasswordModal" aria-label="닫기">×</button></div><div class="auth-recovery-fields">${body}</div><button type="button" class="btn btn-primary auth-recovery-submit" data-action="${action}" ${disabled(resetPasswordSending)}>${label}</button></div></div>`;
 }
 
 export function renderAuthLoginScreen(ctx) {
@@ -74,7 +75,7 @@ export function renderAuthLoginScreen(ctx) {
         ${renderLogo(studycrackLogoSrc)}
         <h1>StudyCrack</h1>
         <p class="auth-title">합격 전략을 시작해볼까요?</p>
-        <input class="planner-input auth-input" data-field="loginEmail" type="email" inputmode="email" autocomplete="username" placeholder="이메일" />
+        <input class="planner-input auth-input" data-field="loginEmail" data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="username" placeholder="이메일" />
         <input class="planner-input auth-input" data-login-password type="password" autocomplete="current-password" placeholder="비밀번호" />
         ${authError ? `<p class="auth-error">${escapeHtml(authError)}</p>` : ''}
         <button class="btn btn-primary auth-submit" data-action="loginSuccess" ${disabled(authSubmitting)}>${authSubmitting ? '로그인 중...' : '로그인'}</button>
@@ -85,7 +86,7 @@ export function renderAuthLoginScreen(ctx) {
           <span>|</span>
           <button class="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
         </div>
-        <button class="auth-link-btn" data-action="goto" data-target="authSignup">아직 계정이 없나요? 회원가입</button>
+        <button class="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
       </div>
       ${renderFindEmailModal({ findEmailModalOpen, foundEmailMasked })}
       ${renderResetPasswordModal({ resetPasswordEmail, resetPasswordModalOpen, resetPasswordSending, resetPasswordStep })}
@@ -139,7 +140,7 @@ export function renderAuthSignupScreen(ctx) {
       <div class="auth-divider"><span>또는 이메일로 직접 가입하기</span></div>
       <div class="signup-section auth-native-section">
         <div class="signup-section-head"><p class="section-title">계정 인증</p>${renderSignupVerifyStatus(emailVerified, '이메일')}</div>
-        <input class="planner-input auth-input" data-field="signupEmail" type="email" inputmode="email" autocomplete="email" placeholder="이메일" value="${escapeHtml(signupForm.email)}" />
+        <input class="planner-input auth-input" data-field="signupEmail" data-email-input type="email" inputmode="email" lang="en" autocapitalize="none" spellcheck="false" autocomplete="email" placeholder="이메일" value="${escapeHtml(signupForm.email)}" />
         <button type="button" class="btn btn-secondary signup-inline-btn" data-action="sendSignupEmailCode" ${disabled(signupEmailSending || signupSubmitting)}>${signupEmailSending ? '발송 중...' : '이메일 인증번호 받기'}</button>
         <div class="signup-code-row"><input class="planner-input auth-input" data-field="signupEmailCode" inputmode="numeric" placeholder="인증번호 6자리" value="${escapeHtml(signupForm.emailCode)}" /><button type="button" class="btn btn-secondary signup-code-btn" data-action="verifySignupEmail" ${disabled(signupSubmitting)}>확인</button></div>
       </div>

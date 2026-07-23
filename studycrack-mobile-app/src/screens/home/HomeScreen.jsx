@@ -46,11 +46,8 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       data-action="selectUniversity"
       data-target-major={item.major}
     >
-      <span className="home-univ-remove" data-action="removeAnalysisTarget" data-target-major={item.major}>
-        ✕
-      </span>
       <div className="home-result-top">
-        <div>
+        <div className="home-result-copy">
           <p className="home-result-major">{item.major}</p>
           <span className="home-result-state">{item.rank}</span>
         </div>
@@ -58,6 +55,9 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
           {pending ? <strong className="home-score-skeleton" aria-label="분석 중" /> : <strong>{scoreValue}</strong>}
           <small>{scoreLabel}</small>
         </div>
+        <span className="home-univ-remove" data-action="removeAnalysisTarget" data-target-major={item.major}>
+          ✕
+        </span>
       </div>
       <div className="home-result-gauge-panel">
         <div className="home-result-gauge">

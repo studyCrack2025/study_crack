@@ -1,0 +1,39 @@
+.mbti-survey-modal{width:calc(100vw - 24px);max-width:440px;max-height:90vh;display:flex;flex-direction:column;padding:18px;overflow:auto;border-radius:20px;background:#FFFFFF;box-sizing:border-box;}
+.mbti-survey-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.mbti-survey-section{font-size:11px;font-weight:900;letter-spacing:.04em;color:var(--primary-dark);background:#EEF4FF;border:1px solid #D8E6FF;border-radius:999px;padding:5px 11px;}
+.mbti-survey-eyebrow{display:block;font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--primary-dark);margin-bottom:6px;}
+.mbti-survey-intro{display:flex;flex-direction:column;gap:12px;text-align:center;padding:8px 4px;}
+.mbti-survey-intro .home-modal-title{font-size:22px;}
+.mbti-survey-lead{margin:0;font-size:13.5px;line-height:1.6;color:#475569;font-weight:700;}
+.mbti-survey-points{margin:4px 0 8px;padding:0;list-style:none;display:grid;gap:8px;text-align:left;}
+.mbti-survey-points li{position:relative;padding-left:22px;font-size:12.5px;line-height:1.5;color:#526176;font-weight:700;}
+.mbti-survey-points li:before{content:"✓";position:absolute;left:0;top:0;color:#0F7B55;font-weight:900;}
+.mbti-survey-start{height:50px;border-radius:14px;font-weight:900;}
+.mbti-survey-close-link{border:none;background:transparent;color:#94A3B8;font-size:13px;font-weight:800;font-family:inherit;padding:4px;}
+.mbti-survey-progress{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.mbti-survey-bar{flex:1 1 auto;height:6px;border-radius:999px;background:#E2EAF6;overflow:hidden;}
+.mbti-survey-bar i{display:block;height:100%;border-radius:999px;background:var(--primary-dark);transition:width .3s ease;}
+.mbti-survey-progress span{flex:0 0 auto;font-size:12px;font-weight:900;color:#475569;}
+.mbti-survey-qtext{margin:0 0 16px;font-size:18px;font-weight:900;line-height:1.45;color:#1F2A44;}
+.mbti-survey-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.mbti-survey-choice{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:14px 15px;border:1.5px solid #DDE7F6;border-radius:15px;background:#F8FBFF;color:#26304A;font-family:inherit;font-size:14px;font-weight:700;line-height:1.4;text-align:left;cursor:pointer;transition:border-color .12s,background .12s;}
+.mbti-survey-choice:active{background:#EEF4FF;}
+.mbti-survey-choice.selected{border-color:var(--primary);background:#EEF4FF;box-shadow:0 6px 16px rgba(52,78,143,.12);}
+.mbti-survey-choice-mark{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#E2EAF8;color:var(--primary-dark);font-size:13px;font-weight:900;}
+.mbti-survey-choice.selected .mbti-survey-choice-mark{background:var(--primary-dark);color:#fff;}
+.mbti-survey-nav{display:flex;gap:8px;}
+.mbti-survey-nav .btn{flex:1 1 auto;width:auto;height:48px;border-radius:14px;font-weight:900;}
+.mbti-survey-nav .mbti-survey-prev{flex:0 0 auto;min-width:84px;}
+.mbti-survey-result{display:flex;flex-direction:column;gap:10px;text-align:center;}
+.mbti-result-code{font-size:40px;font-weight:900;letter-spacing:.1em;color:var(--primary-dark);line-height:1;margin-top:4px;}
+.mbti-result-name{font-size:18px;font-weight:900;color:#1F2A44;}
+.mbti-result-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:2px 0;}
+.mbti-result-tag{font-size:11.5px;font-weight:800;color:var(--primary-dark);background:#EEF4FF;border:1px solid #D8E6FF;border-radius:999px;padding:5px 10px;}
+.mbti-result-desc{margin:4px 0;font-size:13px;line-height:1.6;color:#475569;font-weight:700;}
+.mbti-result-traits{margin:0;padding:0;list-style:none;display:grid;gap:7px;text-align:left;}
+.mbti-result-traits li{position:relative;padding:10px 12px 10px 32px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;font-size:13px;font-weight:800;color:#334155;}
+.mbti-result-traits li:before{content:"★";position:absolute;left:12px;top:10px;color:#F59E0B;}
+.mbti-result-subjects{margin-top:6px;padding:13px;border:1px solid #DDE7F6;border-radius:14px;background:#F8FBFF;text-align:left;}
+.mbti-result-subjects-label{margin:0 0 8px;font-size:12px;font-weight:900;color:var(--primary-dark);}
+.mbti-result-subject-list{display:flex;flex-wrap:wrap;gap:6px;}
+.mbti-result-subject{font-size:12px;font-weight:800;color:#26304A;background:#FFFFFF;border:1px solid #DDE7F6;border-radius:999px;padding:6px 11px;}

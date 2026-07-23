@@ -7,6 +7,7 @@ import {
   verifySignupSmsCode
 } from '../runtime/auth-service.js';
 import { getData } from './action-utils.js';
+import { isValidEmailAddress, sanitizeEmailInput } from '../utils/email-input.js';
 
 function noop() {}
 
@@ -103,10 +104,6 @@ function readSignupTermValues(ctx) {
     acc[key] = input ? input.checked === true : previous[key] === true;
     return acc;
   }, {});
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
 }
 
 function isValidSignupPassword(password) {
@@ -412,7 +409,7 @@ export function createAuthHandlers(ctx) {
         }
       }
       if (step === 3) {
-        if (!isValidEmail(fields.email)) {
+        if (!isValidEmailAddress(fields.email)) {
           setSignupError('이메일 형식을 확인해주세요.');
           return false;
         }
@@ -430,7 +427,7 @@ export function createAuthHandlers(ctx) {
       prevent(event);
       const { fields } = captureSignupState();
       const { email } = fields;
-      if (!isValidEmail(email)) {
+      if (!isValidEmailAddress(email)) {
         setSignupError('이메일 형식을 확인해주세요.');
         return false;
       }
@@ -453,7 +450,7 @@ export function createAuthHandlers(ctx) {
       prevent(event);
       const { fields } = captureSignupState();
       const { email, emailCode } = fields;
-      if (!isValidEmail(email) || !emailCode) {
+      if (!isValidEmailAddress(email) || !emailCode) {
         setSignupError('이메일과 인증번호를 입력해주세요.');
         return false;
       }
@@ -519,7 +516,7 @@ export function createAuthHandlers(ctx) {
       const { fields, terms } = captureSignupState();
       const phone = normalizeCognitoPhone(fields.phoneRaw);
       const referral = fields.referral === 'etc' ? fields.referralEtc : fields.referral;
-      if (!isValidEmail(fields.email)) {
+      if (!isValidEmailAddress(fields.email)) {
         setSignupError('이메일 형식을 확인해주세요.');
         return false;
       }
@@ -597,10 +594,14 @@ export function createAuthHandlers(ctx) {
 
     async loginSuccess({ event }) {
       prevent(event);
-      const email = getInputValue(ctx, '[data-field="loginEmail"]').trim();
+      const email = sanitizeEmailInput(getInputValue(ctx, '[data-field="loginEmail"]')).trim();
       const password = getInputValue(ctx, '[data-login-password]');
       if (!email || !password) {
         setAuthError('이메일과 비밀번호를 입력해주세요.');
+        return false;
+      }
+      if (!isValidEmailAddress(email)) {
+        setAuthError('올바른 이메일 주소를 입력해주세요.');
         return false;
       }
       setAuthError('');

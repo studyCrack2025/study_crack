@@ -1,3 +1,5 @@
+import { sanitizeEmailInputElement } from '../utils/email-input.js';
+
 function noop() {}
 
 const SCORE_KEY_MAX = {
@@ -246,6 +248,9 @@ export function createFormHandlers(ctx) {
   function handleInput(event) {
     const target = event?.target;
     if (!target?.getAttribute) return { handled: false };
+    if (target.hasAttribute('data-email-input')) {
+      sanitizeEmailInputElement(target);
+    }
     const scoreKey = target.getAttribute('data-score-key');
     if (scoreKey) {
       normalizeNumberInput(target, SCORE_KEY_MAX[scoreKey], alert);
@@ -275,8 +280,16 @@ export function createFormHandlers(ctx) {
       renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
-    if (field === 'myProfilePhoneDraft') setMyProfilePhoneDraft(target.value);
-    if (field === 'myProfilePhoneCodeDraft') setMyProfilePhoneCodeDraft(target.value);
+    if (field === 'myProfilePhoneDraft') {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 11);
+      if (target.value !== numeric) target.value = numeric;
+      setMyProfilePhoneDraft(numeric);
+    }
+    if (field === 'myProfilePhoneCodeDraft') {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 6);
+      if (target.value !== numeric) target.value = numeric;
+      setMyProfilePhoneCodeDraft(numeric);
+    }
     if (field === 'marketingAgreed') {
       const checked = target.checked === true;
       ctx.setUser?.((prev) => ({ ...(prev || {}), marketingAgreed: checked }));
