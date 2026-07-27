@@ -374,10 +374,11 @@ export function HomeScreen(ctx) {
     homeSlideMotion = '',
     homeTargets = [],
     icon = () => '',
-    myRank = 124,
-    percentile = 100,
+    myRank = 0,
+    percentile = 0,
     plannerBadges = [],
     rankingProgress = 0,
+    rankingTotal = 0,
     rankTier = 'bronze',
     rankTierLabel = 'BRONZE',
     proReports = [],
@@ -590,13 +591,13 @@ export function HomeScreen(ctx) {
                     <p className="analysis-title">내 공부 랭킹</p>
                     <span className="badge">오늘 기준</span>
                   </div>
-                  <p className="home-ranking-main">{Math.min(myRank, 124)}등</p>
+                  <p className="home-ranking-main">{myRank ? `${myRank}등` : '집계 전'}</p>
                   <p className="home-ranking-tier">{rankTierLabel}</p>
-                  <p className="home-ranking-sub">전체 124명 중</p>
+                  <p className="home-ranking-sub">{rankingTotal ? `전체 ${rankingTotal}명 중` : '공부 기록을 기다리고 있어요'}</p>
                   <div className="home-ranking-progress">
                     <i style={{ width: `${rankingProgress}%` }} />
                   </div>
-                  <p className="home-ranking-foot">상위 {percentile}%</p>
+                  <p className="home-ranking-foot">{percentile ? `상위 ${percentile}%` : '오늘 기준'}</p>
                   <p className="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
                 </button>
               </div>

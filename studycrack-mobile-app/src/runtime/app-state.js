@@ -79,10 +79,19 @@ export function createInitialAppState() {
     activeScoreView: 'target',
     universityModalOpen: false,
     universityCatalog: [],
+    universitySelectedName: '',
+    universityRecommendations: [],
+    universityRecommendationStatus: 'idle',
+    universityRecommendationError: '',
+    universityRecommendationRetryTick: 0,
     analysisResults: [],
     analysisSimulations: [],
     analysisApiStatus: 'idle',
     analysisApiError: '',
+    analysisBacktraceStatus: 'idle',
+    analysisBacktracePlan: null,
+    analysisBacktraceError: '',
+    analysisBacktraceSignature: '',
     lastAnalysisSnapshot: null,
     // 환산점수 단일 출처: (시험키 → 대학키 → {score,available,reason,status,color,sim}) 캐시.
     // 화면은 여기서만 점수를 읽는다(서버 converted_score 전용). 시험 전환해도 캐시는 유지.
@@ -110,6 +119,12 @@ export function createInitialAppState() {
     studyRecords: [],
     studySubjectRecords: [],
     studyTimerRunning: false,
+    activeStudySession: null,
+    studyTimerTick: 0,
+    rankingRows: [],
+    rankingStatus: 'idle',
+    rankingError: '',
+    rankingMe: null,
     activeStudySubject: '',
     activePlannerItemId: '',
     studySubjectSheetOpen: false,
@@ -258,6 +273,7 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   const savedNotifications = safeParse(STORAGE_KEYS.notifications, null, storage);
   const savedStudyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
   const savedSubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
+  const savedActiveStudySession = safeParse(STORAGE_KEYS.activeStudySession, null, storage);
   const savedEvents = readArray(STORAGE_KEYS.admissionCalendar, [], storage)
     .map((e) => normalizePersonalEvent(e))
     .filter(Boolean);
@@ -272,6 +288,10 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
     notifications: { ...state.notifications, ...(isPlainObject(savedNotifications) ? savedNotifications : {}) },
     studyRecords: Array.isArray(savedStudyRecords) ? savedStudyRecords : state.studyRecords,
     studySubjectRecords: Array.isArray(savedSubjectRecords) ? savedSubjectRecords : state.studySubjectRecords,
+    activeStudySession: isPlainObject(savedActiveStudySession) && savedActiveStudySession.status === 'running' ? savedActiveStudySession : null,
+    studyTimerRunning: Boolean(isPlainObject(savedActiveStudySession) && savedActiveStudySession.status === 'running'),
+    activeStudySubject: isPlainObject(savedActiveStudySession) ? String(savedActiveStudySession.subject || '') : state.activeStudySubject,
+    activePlannerItemId: isPlainObject(savedActiveStudySession) ? String(savedActiveStudySession.plannerItemId || '') : state.activePlannerItemId,
     personalEvents: savedEvents,
     selectedPlan: savedPlan || state.selectedPlan,
     targetMajor: savedTarget || state.targetMajor,

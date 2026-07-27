@@ -105,6 +105,8 @@ export function createAnalysisHandlers(ctx) {
     setTargetUnivSlots = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    setUniversitySelectedName = noop,
+    setUniversityRecommendationRetryTick = noop,
     persistTargetUnivs = noop,
     timeout = setTimeout,
     updatePossibleUnivSlider = noop
@@ -215,6 +217,25 @@ export function createAnalysisHandlers(ctx) {
       renderUniversityResultsOnly(value, input || actionEl);
       const doc = getDocument(ctx);
       if (input && doc?.activeElement !== input) input.focus?.({ preventScroll: true });
+      return true;
+    },
+
+    selectUniversityForMajor({ actionEl }) {
+      const university = getData(actionEl, 'university-name');
+      if (!university) return false;
+      setUniversitySelectedName(university);
+      setAnalysisSearchTerm('');
+      return true;
+    },
+
+    backToUniversityList() {
+      setUniversitySelectedName('');
+      setAnalysisSearchTerm('');
+      return true;
+    },
+
+    refreshUniversityRecommendations() {
+      setUniversityRecommendationRetryTick((value) => Number(value || 0) + 1);
       return true;
     },
 

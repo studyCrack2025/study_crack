@@ -1,6 +1,5 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
 import { EXAM_OPTIONS, INQUIRY_SUBJECTS } from '../../constants/options.js';
-import { RANKING_MOCK } from '../../constants/ranking.js';
 
 const TRACK_OPTIONS = ['예체능', '인문사회', '상경계열', '자연/공학', '의치한약수', '간호', '사범/교대', '기타'];
 const RANKING_PERIODS = [
@@ -30,14 +29,6 @@ function renderExamOptions(scoreExamType = '') {
   return EXAM_OPTIONS.map((label) => `<option value="${label}" ${scoreExamType === label ? 'selected' : ''}>${label}</option>`).join('');
 }
 
-function scoreMetric(raw) {
-  const n = Math.max(0, Number(raw) || 0);
-  const std = Math.min(160, Math.round(n * 0.95 + 22));
-  const pct = Math.min(99, Math.max(1, Math.round(n * 0.9 + 10)));
-  const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
-  return { std, pct, grade };
-}
-
 function renderInquiryOptions(selected = '') {
   // DB에 저장된 과목명이 표준 목록과 미세하게 달라도(예: '물리Ⅰ' vs '물리학Ⅰ') 드롭다운에 표시되도록
   // 목록에 없는 저장값은 별도 옵션으로 선두에 추가한다.
@@ -60,9 +51,8 @@ function renderGradeSegment(field, selected = '') {
 }
 
 function renderRawMetric(raw) {
-  if (!Number(raw || 0)) return '<div class="score-onepage-metric"><span>표준 -</span><span>백분위 -</span><span>등급 -</span></div>';
-  const metric = scoreMetric(raw);
-  return `<div class="score-onepage-metric"><span>표준 ${metric.std}</span><span>백분위 ${metric.pct}</span><span>${metric.grade}등급</span></div>`;
+  const entered = String(raw ?? '').trim() !== '';
+  return `<div class="score-onepage-metric"><span>원점수 ${entered ? Number(raw) : '-'}</span><span>표준점수 저장 후 계산</span><span>백분위 저장 후 계산</span></div>`;
 }
 
 function renderScoreNumberInput(field, value, placeholder, max = 100) {
@@ -81,30 +71,9 @@ function subjectHint(missing, text) {
   return missing ? `<p class="score-field-hint">${text}</p>` : '';
 }
 
-// 휠(스와이프) 점수 피커. 한 항목 높이(px) — main.js 초기화 effect와 동일해야 한다.
-export const SCORE_WHEEL_ITEM_H = 40;
-
-// 원점수에서 실제로 불가능한 점수를 제외한 유효 점수 목록. 수능 문항이 2·3점 혼합이라
-// 1점(최소 문항=2)과 만점-1(한 문항만 틀리면 최소 2점 손실)은 받을 수 없다 → 제외.
-function rawValidScores(max) {
-  const out = [0];
-  for (let v = 2; v <= max - 2; v += 1) out.push(v);
-  if (max >= 2) out.push(max);
-  return out;
-}
-
-function renderScoreWheel({ field, values, selected, suffix = '', emptyLabel = '' }) {
-  const list = emptyLabel ? ['', ...values] : values.slice();
-  let selIdx = list.findIndex((v) => String(v) === String(selected ?? ''));
-  if (selIdx < 0) selIdx = 0;
-  const items = list
-    .map((v, i) => {
-      const label = v === '' ? emptyLabel : `${v}${suffix}`;
-      return `<div class="score-wheel-item ${i === selIdx ? 'is-selected' : ''}" data-value="${escapeHtml(String(v))}">${label}</div>`;
-    })
-    .join('');
-  const selectedValue = list[selIdx] ?? '';
-  return `<div class="score-wheel-wrap"><div class="score-wheel-band" aria-hidden="true"></div><div class="score-wheel-fade top" aria-hidden="true"></div><div class="score-wheel-fade bottom" aria-hidden="true"></div><div class="score-wheel" data-wheel-field="${field}" data-wheel-index="${selIdx}" role="listbox" aria-label="점수 선택">${items}</div><input type="hidden" data-field="${field}" value="${escapeHtml(String(selectedValue))}"/></div>`;
+function renderDirectScoreInput({ field, value, max, label }) {
+  const shownValue = value === 0 || value === '0' ? '0' : String(value || '');
+  return `<label class="score-direct-field"><span>${label}</span><div class="score-direct-control"><input class="planner-input score-direct-input" data-field="${field}" data-score-max="${max}" value="${escapeHtml(shownValue)}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="0" aria-label="${label} 원점수"/><em>점</em></div><small>0점 또는 2~${max - 2}점, ${max}점</small></label>`;
 }
 
 const SCORE_STEPS = [
@@ -128,14 +97,16 @@ function isSubjectSaved(q, key) {
 }
 
 function renderRawSubjectPanel({ title, selField, options, commonField, electiveField, commonMax, electiveMax, sub }) {
-  const raw = Number(sub.common || 0) + Number(sub.elective || 0);
+  const hasCommon = String(sub.common ?? '').trim() !== '';
+  const hasElective = String(sub.elective ?? '').trim() !== '';
+  const raw = hasCommon && hasElective ? Number(sub.common) + Number(sub.elective) : '';
   return `<div class="score-step-panel">
     <div class="score-step-panel-head"><b>${title}</b><span>선택 과목 + 공통/선택 원점수</span></div>
     <label class="score-field-label">선택 과목</label>
     <select class="planner-input" data-field="${selField}">${options}</select>
     <label class="score-field-label">원점수</label>
-    <div class="score-wheel-grid"><div class="score-wheel-field"><span>공통</span>${renderScoreWheel({ field: commonField, values: rawValidScores(commonMax), selected: sub.common, suffix: '점', emptyLabel: '미입력' })}</div><div class="score-wheel-field"><span>선택</span>${renderScoreWheel({ field: electiveField, values: rawValidScores(electiveMax), selected: sub.elective, suffix: '점', emptyLabel: '미입력' })}</div></div>
-    <p class="score-wheel-help">문항 배점상 나올 수 없는 1점과 만점보다 1점 낮은 점수는 제외했어요.</p>
+    <div class="score-direct-grid">${renderDirectScoreInput({ field: commonField, value: sub.common, max: commonMax, label: '공통' })}${renderDirectScoreInput({ field: electiveField, value: sub.elective, max: electiveMax, label: '선택' })}</div>
+    <p class="score-direct-help">숫자로 직접 입력해 주세요. 문항 배점상 불가능한 1점과 만점보다 1점 낮은 점수는 저장할 수 없어요.</p>
     ${renderRawMetric(raw)}
   </div>`;
 }
@@ -156,8 +127,8 @@ function renderInquirySubjectPanel({ title, subjField, scoreField, inq }) {
     <label class="score-field-label">탐구 과목</label>
     <select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select>
     <label class="score-field-label">원점수</label>
-    <div class="score-wheel-single">${renderScoreWheel({ field: scoreField, values: rawValidScores(50), selected: inq.score, suffix: '점', emptyLabel: '미입력' })}</div>
-    <p class="score-wheel-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 선택지에서 제외됩니다.</p>
+    <div class="score-direct-single">${renderDirectScoreInput({ field: scoreField, value: inq.score, max: 50, label: '탐구 원점수' })}</div>
+    <p class="score-direct-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 저장할 수 없어요.</p>
     ${renderRawMetric(inq.score)}
   </div>`;
 }
@@ -216,17 +187,32 @@ export function renderRankingScreen(ctx) {
   const {
     appbar,
     layout,
-    rankingMock = RANKING_MOCK,
     rankingPeriod = 'daily',
-    tierClass = defaultTierClass
+    rankingRows = [],
+    rankingStatus = 'idle',
+    rankingError = '',
+    rankingMe = null,
+    tierClass = defaultTierClass,
+    formatHms = (seconds) => {
+      const total = Math.max(0, Number(seconds) || 0);
+      return `${String(Math.floor(total / 3600)).padStart(2, '0')}:${String(Math.floor((total % 3600) / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    }
   } = ctx;
-  const rows = rankingMock[rankingPeriod] || [];
+  const rows = rankingRows || [];
+  const myRank = rankingMe?.rank ? `${rankingMe.rank}등` : '집계 전';
+  const myTier = rankingMe?.tier || 'BRONZE';
+  const statusPanel = rankingStatus === 'loading'
+    ? '<div class="card ranking-state-card">랭킹을 집계하고 있어요.</div>'
+    : rankingStatus === 'error'
+      ? `<div class="card ranking-state-card error">${escapeHtml(rankingError || '랭킹을 불러오지 못했습니다.')}</div>`
+      : rankingStatus === 'empty'
+        ? '<div class="card ranking-state-card">아직 이 기간의 공부 기록이 없습니다.</div>'
+        : '';
 
   return layout(appbar('공부 랭킹', true) + `<section class="ranking-theme"><div class="ranking-page"><div class="ranking-hero"><span>STUDY RANKING</span><h3>오늘의 공부 랭킹</h3><p>공부 시간과 연속 기록으로 나의 위치를 확인해보세요.</p></div>
-      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-emblem small bronze"><strong>2</strong><small>일</small></span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
+      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>${myRank}</b><div class="my-rank-tier"><span class="tier-emblem small ${tierClass(myTier)}"><strong>${rankingMe?.rank || '-'}</strong><small>위</small></span><span>${escapeHtml(myTier)}</span></div><small>${rankingMe ? `${formatHms(rankingMe.seconds)} 공부` : '공부를 시작하면 집계됩니다.'}</small></div>
       <div class="ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
-      <div class="card ranking-podium-card"><div class="ranking-podium">${rows.slice(0, 3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx === 0 ? 'first' : idx === 1 ? 'second' : 'third'}">${idx === 0 ? '<span class="podium-crown">👑</span>' : '<span class="podium-crown">✦</span>'}<span class="tier-emblem ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small><i class="podium-block">${idx + 1}</i></div>`).join('')}</div></div>
-      <div class="card ranking-list-card">${rows.slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx + 4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
+      ${statusPanel || `<div class="card ranking-podium-card"><div class="ranking-podium">${rows.slice(0, 3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx === 0 ? 'first' : idx === 1 ? 'second' : 'third'}"><span class="podium-crown">${idx + 1}</span><span class="tier-emblem ${tierClass(row.tier)}"><strong>${idx + 1}</strong><small>위</small></span><b>${escapeHtml(row.name)}</b><p>${formatHms(row.seconds)}</p><small>${escapeHtml(row.tier)}</small><i class="podium-block">${idx + 1}</i></div>`).join('')}</div></div><div class="card ranking-list-card">${rows.slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx + 4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${idx + 4}</strong><small>위</small></span><div class="meta"><b>${escapeHtml(row.name)}</b><p>${formatHms(row.seconds)}</p></div><em>${escapeHtml(row.tier)}</em></div>`).join('')}</div>`}
     </div></section>`, true);
 }
 

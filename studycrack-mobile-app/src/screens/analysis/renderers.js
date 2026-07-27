@@ -141,21 +141,24 @@ function renderReverseProjectionCard({
   analysisSimRows = [],
   canUseReverseProjection = false,
   currentScore = 0,
-  simMeta = null
+  backtraceStatus = 'idle',
+  backtracePlan = null,
+  backtraceError = ''
 }) {
-  const backtrace = summarizeBacktracePlan(simMeta?.backtracePlan);
+  const backtrace = summarizeBacktracePlan(backtracePlan);
   if (!canUseReverseProjection) {
     return `<div class="card analysis-reverse-card locked">
       <div><span class="analysis-card-eyebrow">Standard Exclusive</span><h4>안정권까지 도달하려면 최소 몇점?</h4><p>최소 노력 대비 도달 성적은 Standard 이상에서 확인할 수 있어요.</p></div>
       <button type="button" class="btn btn-secondary mini" data-action="goto" data-target="proIntro">Standard 기능 보기</button>
     </div>`;
   }
-  if (!analysisSimRows.length) {
+  if (!analysisSimRows.length || backtraceStatus === 'loading' || backtraceStatus === 'idle') {
     return `<div class="card analysis-reverse-card"><span class="analysis-card-eyebrow">역산 대기</span><h4>시뮬레이션 결과를 불러오는 중</h4><p>과목별 상승 효율이 준비되면 최소 조합을 계산합니다.</p></div>`;
   }
-  const ranked = [...analysisSimRows].sort((a, b) => Number(b.gainNum || 0) - Number(a.gainNum || 0)).slice(0, 3);
-  const fallbackItems = ranked.map((row, index) => `${escapeHtml(row.subject)} +${index === 0 ? 4 : index === 1 ? 3 : 1}`);
-  const planItems = backtrace?.items?.length ? backtrace.items.map(escapeHtml) : fallbackItems;
+  if (backtraceStatus === 'error' || backtraceStatus === 'empty' || !backtrace) {
+    return `<div class="card analysis-reverse-card"><span class="analysis-card-eyebrow">역산 결과</span><h4>조합을 계산하지 못했습니다</h4><p>${escapeHtml(backtraceError || '현재 성적과 목표 대학 조건에서 도달 가능한 조합이 없습니다.')}</p></div>`;
+  }
+  const planItems = backtrace.items.map(escapeHtml);
   const expectedText = backtrace?.reachable && Number.isFinite(backtrace.expectedUiScore)
     ? `${Math.round(backtrace.expectedUiScore)}점 도달`
     : backtrace?.error
@@ -165,7 +168,7 @@ function renderReverseProjectionCard({
     ? `총 +${backtrace.minTotalRaw}점`
     : currentScore >= 100
       ? '이미 합격권'
-      : '최소 조합 계산 중';
+      : '도달 조합 없음';
   const lead = backtrace?.reachable
     ? `가장 적은 원점수 상승으로 합격권에 닿는 조합입니다.`
     : backtrace?.error || '단일 과목 +1점으로 변화가 작을 때는 여러 과목 조합을 함께 봅니다.';
@@ -187,6 +190,9 @@ export function renderUnifiedAnalysis(ctx) {
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
     analysisScoreView = null,
+    analysisBacktraceStatus = 'idle',
+    analysisBacktracePlan = null,
+    analysisBacktraceError = '',
     canAccessStandard = false,
     canUseReverseProjection = canAccessStandard,
     canUseScoreSimulation = canAccessStandard,
@@ -238,7 +244,7 @@ export function renderUnifiedAnalysis(ctx) {
         ${renderSimulationTable({ rows: analysisSimRows, selectedSubject: analysisHighlightedSubject, canUseScoreSimulation })}
       </div>
 
-      ${renderReverseProjectionCard({ analysisSimRows, canUseReverseProjection, currentScore, simMeta })}
+      ${renderReverseProjectionCard({ analysisSimRows, canUseReverseProjection, currentScore, backtraceStatus: analysisBacktraceStatus, backtracePlan: analysisBacktracePlan, backtraceError: analysisBacktraceError })}
     </div>
   `;
 }
@@ -249,6 +255,9 @@ export function renderAddUniversityScreen(ctx) {
     analysisSearchList = [],
     analysisSearchTerm = '',
     analysisTargetList = [],
+    universitySelectedName = '',
+    universityRecommendationStatus = 'idle',
+    universityRecommendationError = '',
     appbar,
     layout
   } = ctx;
@@ -260,16 +269,18 @@ export function renderAddUniversityScreen(ctx) {
           <p class="sub">현재 성적과 목표를 기준으로 대학을 추천하거나 직접 검색할 수 있어요.</p>
         </div>
         <div class="card add-univ-section">
-          <div class="add-univ-head"><h4>추천 대학</h4><span class="badge">추천</span></div>
+          <div class="add-univ-head"><div><h4>현재 성적 기준 추천</h4><p class="sub">웹과 동일한 분석 로직으로 다시 계산합니다.</p></div><button type="button" class="btn btn-secondary mini" data-action="refreshUniversityRecommendations" ${universityRecommendationStatus === 'loading' ? 'disabled' : ''}>${universityRecommendationStatus === 'loading' ? '추천 중' : '다시 추천'}</button></div>
           <div class="add-univ-grid">
-            ${analysisRecommended.map((name) => renderAddUniversityCard({ analysisTargetList, name })).join('')}
+            ${analysisRecommended.map((name) => renderAddUniversityCard({ analysisTargetList, name })).join('') || `<p class="add-univ-empty">${escapeHtml(universityRecommendationError || '추천 결과를 준비하고 있어요.')}</p>`}
           </div>
         </div>
         <div class="card add-univ-section">
-          <div class="add-univ-head"><h4>대학 검색</h4></div>
-          <div class="analysis-search-inline"><input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><button type="button" class="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
+          <div class="add-univ-head"><div>${universitySelectedName ? `<button type="button" class="add-univ-back" data-action="backToUniversityList">대학 다시 선택</button><h4>${escapeHtml(universitySelectedName)} 학과 선택</h4>` : '<h4>대학 선택</h4><p class="sub">대학을 먼저 고르면 해당 학과만 보여드려요.</p>'}</div><span class="badge">${universitySelectedName ? '2 / 2' : '1 / 2'}</span></div>
+          <div class="analysis-search-inline"><input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${escapeHtml(analysisSearchTerm)}" placeholder="${universitySelectedName ? '학과명 검색' : '대학명 검색'}"/><button type="button" class="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
           <div class="add-univ-results">
-            ${analysisSearchList.map((name) => renderSearchRow({ analysisTargetList, name })).join('') || '<p class="sub">검색 결과가 없습니다.</p>'}
+            ${analysisSearchList.map((name) => universitySelectedName
+              ? renderSearchRow({ analysisTargetList, name })
+              : `<button type="button" class="add-univ-university-row" data-action="selectUniversityForMajor" data-university-name="${escapeHtml(name)}"><span>${escapeHtml(name)}</span><em>학과 보기</em></button>`).join('') || '<p class="add-univ-empty">검색 결과가 없습니다.</p>'}
           </div>
         </div>
       </div>`,

@@ -106,6 +106,12 @@ export function mapUserToStatePatch(userData, base = {}) {
     userPatch.univChangeRemaining = userData.univChangeRemaining;
   }
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
+  if (userData.notificationPreferences && typeof userData.notificationPreferences === 'object') {
+    patch.notifications = {
+      ...(base.notifications || {}),
+      ...Object.fromEntries(['planner', 'weekly', 'report', 'billing'].map((key) => [key, userData.notificationPreferences[key] !== false]))
+    };
+  }
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
   if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;
   if (userData.qualitative && typeof userData.qualitative === 'object') {

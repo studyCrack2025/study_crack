@@ -1,5 +1,5 @@
 import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
-import { ANALYSIS_PROFILES, ANALYSIS_RECOMMENDED, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
+import { ANALYSIS_PROFILES, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
 import {
   computeDday,
   eventCoversDate,
@@ -406,11 +406,13 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
     return acc;
   }, {});
 
-  const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
-  const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
-  const rankingProgress = Math.max(5, 100 - percentile);
-  const rankTier = percentile <= 5 ? 'diamond' : percentile <= 15 ? 'platinum' : percentile <= 30 ? 'gold' : percentile <= 60 ? 'silver' : 'bronze';
-  const rankTierLabel = rankTier === 'diamond' ? 'DIAMOND' : rankTier === 'platinum' ? 'PLATINUM' : rankTier === 'gold' ? 'GOLD' : rankTier === 'silver' ? 'SILVER' : 'BRONZE';
+  const rankingMe = state.rankingStatus === 'ready' ? state.rankingMe : null;
+  const myRank = Number(rankingMe?.rank) || 0;
+  const rankingTotal = Number(rankingMe?.total) || 0;
+  const percentile = myRank && rankingTotal ? Math.max(1, Math.min(100, Math.ceil((myRank / rankingTotal) * 100))) : 0;
+  const rankingProgress = percentile ? Math.max(5, 100 - percentile) : 0;
+  const rankTierLabel = String(rankingMe?.tier || 'BRONZE').toUpperCase();
+  const rankTier = rankTierLabel.toLowerCase();
 
   return {
     liveCurrentScore,
@@ -426,6 +428,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
     breakdownSubjects,
     breakdownDetailMap,
     myRank,
+    rankingTotal,
     percentile,
     rankingProgress,
     rankTier,
@@ -442,6 +445,8 @@ export function buildAnalysisDerived(state = {}) {
     homeTargetList = [],
     analysisSearchTerm = '',
     universityCatalog = [],
+    universitySelectedName = '',
+    universityRecommendations = [],
     analysisResults = [],
     analysisSimulations = [],
     lastAnalysisSnapshot = null
@@ -471,22 +476,20 @@ export function buildAnalysisDerived(state = {}) {
     })
   };
 
-  const analysisRecommended = ANALYSIS_RECOMMENDED;
+  const analysisRecommended = universityRecommendations;
   const hasUniversityCatalog = Array.isArray(universityCatalog) && universityCatalog.length;
-  const catalogPool = hasUniversityCatalog
-    ? universityCatalog
-    : ANALYSIS_SEARCH_SEED;
-  const recommendedSearchPool = hasUniversityCatalog ? [] : analysisRecommended;
-  const analysisSearchPool = Array.from(
-    new Set([...catalogPool, ...(analysisTargetList || []), ...(homeTargetList || []), ...recommendedSearchPool])
-  ).filter(Boolean);
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
-  const analysisSearchList = analysisSearchPool
-    .filter((name) => {
-      if (!normalizedSearchTerm) return true;
-      return String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm);
-    })
-    .slice(0, normalizedSearchTerm ? 80 : 30);
+  const selectedCatalog = hasUniversityCatalog
+    ? universityCatalog.find((item) => item.univName === universitySelectedName)
+    : null;
+  const universityNames = hasUniversityCatalog
+    ? universityCatalog.map((item) => item.univName)
+    : Array.from(new Set(ANALYSIS_SEARCH_SEED.map((label) => String(label).split(/\s+/)[0])));
+  const analysisSearchList = (universitySelectedName
+    ? (selectedCatalog?.majors || []).map((major) => `${universitySelectedName} ${major}`)
+    : universityNames)
+    .filter((name) => !normalizedSearchTerm || String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm))
+    .slice(0, normalizedSearchTerm ? 80 : 40);
 
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor =
@@ -564,6 +567,7 @@ export function buildAnalysisDerived(state = {}) {
     analysisSelected,
     analysisRecommended,
     analysisSearchList,
+    universitySelectedName,
     analysisGaugeFill,
     analysisGaugeColor,
     analysisTargetScore,

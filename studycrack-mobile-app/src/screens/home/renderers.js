@@ -230,16 +230,17 @@ export function renderHomeView(ctx) {
     homeSlideMotion = '',
     homeTargets = [],
     icon = () => '',
-    myRank = 124,
+    myRank = 0,
     notifModalOpen = false,
     notiList = [],
     notiStatus = 'idle',
-    percentile = 100,
+    percentile = 0,
     plannedScheduleOptions = [],
     plannerBadges = [],
     proReports = [],
     proReportsStatus = 'idle',
     rankingProgress = 0,
+    rankingTotal = 0,
     rankTier = 'bronze',
     rankTierLabel = 'BRONZE',
     scoreTierClass = defaultScoreTierClass,
@@ -308,11 +309,11 @@ export function renderHomeView(ctx) {
       ${renderHomeReportPreview({ proReports, proReportsStatus, weeklyReports, weeklyReportsStatus })}
       <button type="button" class="card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}" data-action="goRanking">
         <div class="home-ranking-head"><p class="analysis-title">내 공부 랭킹</p><span class="badge">오늘 기준</span></div>
-        <p class="home-ranking-main">${Math.min(myRank, 124)}등</p>
+        <p class="home-ranking-main">${myRank ? `${myRank}등` : '집계 전'}</p>
         <p class="home-ranking-tier">${rankTierLabel}</p>
-        <p class="home-ranking-sub">전체 124명 중</p>
+        <p class="home-ranking-sub">${rankingTotal ? `전체 ${rankingTotal}명 중` : '공부 기록을 기다리고 있어요'}</p>
         <div class="home-ranking-progress"><i style="width:${rankingProgress}%"></i></div>
-        <p class="home-ranking-foot">상위 ${percentile}%</p>
+        <p class="home-ranking-foot">${percentile ? `상위 ${percentile}%` : '오늘 기준'}</p>
         <p class="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
       </button>
     </div>

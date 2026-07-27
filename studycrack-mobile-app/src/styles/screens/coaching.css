@@ -1,11 +1,12 @@
 /* Coaching flow restored from the active renderer contract. */
 .coach-close{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:999px;background:#F1F5F9;font:inherit;font-size:16px;}
-.coach-step-body h4{margin:0;font-size:18px;}
-.coach-subject-list{display:grid;gap:12px;margin:12px 0;}
-.coach-subject-card{padding:12px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;}
+.coach-step-body h4{margin:0;font-size:17px;line-height:1.4;}
+.coach-step-body>.sub{margin:8px 0 0;line-height:1.55;}
+.coach-subject-list{display:grid;gap:14px;margin:16px 0;}
+.coach-subject-card{padding:14px;border:1px solid #E2E8F0;border-radius:18px;background:#FFFFFF;}
 .coach-subject-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
 .coach-delete-btn{padding:6px 10px;border:0;border-radius:10px;background:#F8FAFC;color:#B91C1C;font:inherit;font-size:12px;}
-.coach-hours-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:8px;}
+.coach-hours-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:10px;}
 .coach-rate-box{display:flex;align-items:center;justify-content:center;min-width:86px;padding:0 8px;border:1px solid #BFDBFE;border-radius:12px;background:#EFF6FF;color:var(--primary);font-size:12px;font-weight:700;}
 .coach-upload-box{display:grid;gap:12px;padding:14px;border:1px dashed #94A3B8;border-radius:18px;background:#FFFFFF;}
 .coach-thumb-list{display:grid;gap:8px;margin-top:10px;}

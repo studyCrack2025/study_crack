@@ -45,11 +45,11 @@ import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
-import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/renderers.js';
+import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileBacktrace, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchStudyRanking, fetchUniversityCatalog, fetchUniversityRecommendations, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveNotificationPreferences, saveQualitative, saveQuantitative, saveStudySession, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
@@ -427,6 +427,7 @@ function MobileApp() {
   const scoreFetchSignatureRef = useRef('');
   const scoreRequestIdRef = useRef(0);
   const simulationFetchSignatureRef = useRef('');
+  const backtraceFetchSignatureRef = useRef('');
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -514,6 +515,16 @@ function MobileApp() {
     [getUserApiBinding]
   );
 
+  const persistStudySession = useCallback(
+    (session) => saveStudySession({ ...getUserApiBinding(), session }),
+    [getUserApiBinding]
+  );
+
+  const persistNotificationPreferences = useCallback(
+    (preferences) => saveNotificationPreferences({ ...getUserApiBinding(), preferences }),
+    [getUserApiBinding]
+  );
+
   const persistMobileQna = useCallback(
     ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
     [getQnaApiBinding]
@@ -581,6 +592,9 @@ function MobileApp() {
   const renderScoreCache = buildRenderScoreCache(state, renderExamKey);
   const baseCtx = {
     ...state,
+    isAnalyzing: state.analysisApiStatus === 'loading'
+      && !(state.analysisResults || []).length
+      && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
     ...setters,
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
@@ -702,6 +716,8 @@ function MobileApp() {
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
+    persistStudySession,
+    persistNotificationPreferences,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
@@ -770,26 +786,34 @@ function MobileApp() {
     };
   }, [state.scoreSlideMotion]);
 
-  // 분석 화면 진입 시 원본처럼 도달 성적 카드 skeleton을 단계적으로 해제한다.
   useEffect(() => {
-    if (state.screen !== 'analysis' || state.analysisMode !== 'summary') return undefined;
-    setState({ analysisEtaStage: 1, activeScoreView: 'target' });
-    const timer1 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 2 }), 1500);
-    const timer2 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 3 }), 4500);
-    return () => {
-      if (timer1) globalThis.clearTimeout?.(timer1);
-      if (timer2) globalThis.clearTimeout?.(timer2);
-    };
-  }, [state.screen, state.analysisMode, state.targetMajor]);
+    const session = state.activeStudySession;
+    if (!session || session.status !== 'running') {
+      timerOps.stopLiveStudyTimer();
+      return undefined;
+    }
+    timerOps.startLiveStudyTimer(session.startedAt, (seconds) => setState({ studyTimerTick: seconds }));
+    return () => timerOps.stopLiveStudyTimer();
+  }, [state.activeStudySession?.sessionId]);
 
   useEffect(() => {
-    if (state.screen !== 'analysis') return undefined;
-    setState({ isAnalyzing: true });
-    const timer = globalThis.setTimeout?.(() => setState({ isAnalyzing: false }), 2000);
+    if (!['home', 'ranking'].includes(state.screen) || state.userLoadStatus !== 'ready') return undefined;
+    let cancelled = false;
+    setState({ rankingStatus: 'loading', rankingError: '' });
+    const period = state.screen === 'ranking' ? state.rankingPeriod : 'daily';
+    fetchStudyRanking({ ...getUserApiBinding(), period }).then((result) => {
+      if (cancelled) return;
+      setState({
+        rankingRows: result.rows || [],
+        rankingMe: result.me || null,
+        rankingStatus: result.ok ? ((result.rows || []).length ? 'ready' : 'empty') : 'error',
+        rankingError: result.error || ''
+      });
+    });
     return () => {
-      if (timer) globalThis.clearTimeout?.(timer);
+      cancelled = true;
     };
-  }, [state.screen, state.targetMajor]);
+  }, [getUserApiBinding, state.screen, state.rankingPeriod, state.userLoadStatus]);
 
   useEffect(() => {
     if (state.screen === 'accountInfo') return;
@@ -825,64 +849,13 @@ function MobileApp() {
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
 
-  useEffect(() => {
-    if (!state.scoreEditOpen) return undefined;
-    const doc = globalThis.document;
-    if (!doc?.querySelectorAll) return undefined;
-    const raf = globalThis.requestAnimationFrame || ((fn) => fn());
-    const syncWheel = (wheel) => {
-      if (!wheel?.querySelectorAll) return;
-      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
-      if (!items.length) return;
-      const maxIndex = items.length - 1;
-      const index = Math.max(0, Math.min(maxIndex, Math.round((wheel.scrollTop || 0) / SCORE_WHEEL_ITEM_H)));
-      const item = items[index];
-      const value = item?.getAttribute?.('data-value') ?? '';
-      wheel.dataset.wheelIndex = String(index);
-      items.forEach((el, i) => {
-        el.classList.toggle('is-selected', i === index);
-        el.setAttribute('aria-selected', i === index ? 'true' : 'false');
-      });
-      const input = wheel.parentElement?.querySelector?.(`input[data-field="${wheel.getAttribute('data-wheel-field')}"]`);
-      if (input) input.value = value;
-    };
-    const wheels = Array.from(doc.querySelectorAll('.score-wheel'));
-    wheels.forEach((wheel) => {
-      const index = Number(wheel.getAttribute('data-wheel-index') || 0);
-      raf(() => {
-        wheel.scrollTop = Math.max(0, index) * SCORE_WHEEL_ITEM_H;
-        syncWheel(wheel);
-      });
-    });
-    const onScroll = (event) => {
-      if (event.target?.classList?.contains?.('score-wheel')) syncWheel(event.target);
-    };
-    const onClick = (event) => {
-      const item = event.target?.closest?.('.score-wheel-item');
-      if (!item) return;
-      const wheel = item.closest?.('.score-wheel');
-      if (!wheel) return;
-      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
-      const index = items.indexOf(item);
-      if (index < 0) return;
-      wheel.scrollTo?.({ top: index * SCORE_WHEEL_ITEM_H, behavior: 'smooth' });
-      if (!wheel.scrollTo) wheel.scrollTop = index * SCORE_WHEEL_ITEM_H;
-      syncWheel(wheel);
-    };
-    doc.addEventListener('scroll', onScroll, true);
-    doc.addEventListener('click', onClick, true);
-    return () => {
-      doc.removeEventListener('scroll', onScroll, true);
-      doc.removeEventListener('click', onClick, true);
-    };
-  }, [state.scoreEditOpen, state.scoreEditStep]);
-
   // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
   useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.plannerItems, state.plannerItems); }, [state.plannerItems]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.notifications, state.notifications); }, [state.notifications]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords); }, [state.studyRecords]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords); }, [state.studySubjectRecords]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.activeStudySession, state.activeStudySession); }, [state.activeStudySession]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.admissionCalendar, state.personalEvents); }, [state.personalEvents]);
   useEffect(() => {
     // 문자열 키는 원본과 동일하게 raw 저장(readString과 짝).
@@ -990,6 +963,31 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (state.screen !== 'addUniversity' || state.userLoadStatus !== 'ready') return undefined;
+    const examMode = resolveAnalysisExamMode(state);
+    const examData = state.user?.quantitative?.[examMode];
+    let cancelled = false;
+    setState({ universityRecommendationStatus: 'loading', universityRecommendationError: '' });
+    fetchUniversityRecommendations({
+      ...getAnalysisApiBinding(),
+      examData,
+      examMode,
+      savedStream: state.user?.qualitative?.stream || state.obTrack,
+      excludeTargets: state.analysisTargetList
+    }).then((result) => {
+      if (cancelled) return;
+      setState({
+        universityRecommendations: result.recommendations || [],
+        universityRecommendationStatus: result.ok && result.recommendations?.length ? 'ready' : 'empty',
+        universityRecommendationError: result.error || ''
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getAnalysisApiBinding, state.screen, state.userLoadStatus, state.universityRecommendationRetryTick]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -1171,6 +1169,51 @@ function MobileApp() {
     state.scoreExamType,
     state.targetMajor,
     state.userLoadStatus,
+    state.user?.quantitative
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || state.screen !== 'analysis' || !canUseReverseProjection(state)) {
+      backtraceFetchSignatureRef.current = '';
+      if (state.analysisBacktraceStatus !== 'idle' || state.analysisBacktracePlan || state.analysisBacktraceError) {
+        setState({ analysisBacktraceStatus: 'idle', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: '' });
+      }
+      return undefined;
+    }
+    if (state.userLoadStatus !== 'ready' || state.analysisApiStatus !== 'ready' || !(state.analysisSimulations || []).length) return undefined;
+    const examMode = resolveAnalysisExamMode(state);
+    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
+    const targetMajor = String(state.targetMajor || '').trim();
+    if (!userScores || !targetMajor) return undefined;
+    const signature = `backtrace::${buildScoreSignature(examMode, [targetMajor], userScores)}`;
+    if (backtraceFetchSignatureRef.current === signature && state.analysisBacktraceSignature === signature) return undefined;
+    const apiBinding = getAnalysisApiBinding();
+    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
+    backtraceFetchSignatureRef.current = signature;
+    setState({ analysisBacktraceStatus: 'loading', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: signature });
+    fetchMobileBacktrace({ ...apiBinding, targetMajor, userScores, examMode }).then((result) => {
+      if (backtraceFetchSignatureRef.current !== signature) return;
+      setState({
+        analysisBacktraceStatus: result.ok ? (result.plan ? 'ready' : 'empty') : 'error',
+        analysisBacktracePlan: result.plan || null,
+        analysisBacktraceError: result.error || '',
+        analysisBacktraceSignature: signature
+      });
+    });
+    return undefined;
+  }, [
+    getAnalysisApiBinding,
+    state.screen,
+    state.targetMajor,
+    state.scoreExamKey,
+    state.scoreExamType,
+    state.analysisApiStatus,
+    state.analysisSimulations,
+    state.userLoadStatus,
+    state.userTier,
+    state.selectedPlan,
+    state.user?.currentSubscription,
+    state.user?.pendingSubscription,
     state.user?.quantitative
   ]);
 

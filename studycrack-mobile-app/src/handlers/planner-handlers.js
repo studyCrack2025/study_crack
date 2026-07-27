@@ -164,18 +164,29 @@ function startStudyTimer(ctx, subject, plannerItemId = '') {
     setStudySubjectSheetOnlyPlanned = noop,
     setStudySubjectSheetOpen = noop,
     setStudyTimerRunning = noop,
+    setActiveStudySession = noop,
+    setStudyTimerTick = noop,
     startLiveStudyTimer = noop,
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop
   } = ctx;
 
+  const startedAt = new Date().toISOString();
+  const session = {
+    sessionId: globalThis.crypto?.randomUUID?.() || `study-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    subject,
+    plannerItemId,
+    startedAt,
+    status: 'running'
+  };
   setActiveStudySubject(subject);
   setActivePlannerItemId(plannerItemId);
   setStudySubjectSheetOpen(false);
   setStudySubjectSheetOnlyPlanned(false);
   setStudyTimerRunning(true);
+  setActiveStudySession(session);
   setRefValue(studyTimerSecondsRef, 0);
-  startLiveStudyTimer();
+  startLiveStudyTimer(startedAt, (seconds) => setStudyTimerTick(seconds));
   syncLiveStudyTimerUi(0);
 }
 
@@ -213,10 +224,13 @@ export function createPlannerHandlers(ctx) {
     setStudySubjectSheetOnlyPlanned = noop,
     setStudySubjectSheetOpen = noop,
     setStudyTimerRunning = noop,
+    setActiveStudySession = noop,
+    setStudyTimerTick = noop,
     startLiveStudyTimer = noop,
     stopLiveStudyTimer = noop,
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop,
+    persistStudySession = noop,
     todayDate = FIXED_TODAY_DATE
   } = ctx;
 
@@ -436,10 +450,11 @@ export function createPlannerHandlers(ctx) {
       return true;
     },
 
-    stopStudyTimer() {
+    async stopStudyTimer() {
+      if (!ctx.studyTimerRunning || !ctx.activeStudySession) return false;
       setStudyTimerRunning(false);
       stopLiveStudyTimer();
-      const elapsed = Number(getRefValue(studyTimerSecondsRef, 0)) || 0;
+      const elapsed = Math.max(1, Number(getRefValue(studyTimerSecondsRef, 0)) || 0);
       const activeSubject = typeof ctx.getActiveStudySubject === 'function' ? ctx.getActiveStudySubject() : ctx.activeStudySubject;
       const activePlannerItemId = typeof ctx.getActivePlannerItemId === 'function' ? ctx.getActivePlannerItemId() : ctx.activePlannerItemId;
       setStudyRecords((prev) => mutateStudyRecord(prev, todayDate, elapsed));
@@ -454,9 +469,14 @@ export function createPlannerHandlers(ctx) {
         }
       }
       setRefValue(studyTimerSecondsRef, 0);
+      setStudyTimerTick(0);
       syncLiveStudyTimerUi(0);
+      const completedSession = { ...ctx.activeStudySession, subject: activeSubject || ctx.activeStudySession.subject, plannerItemId: activePlannerItemId || '', endedAt: new Date().toISOString(), durationSeconds: elapsed, status: 'completed' };
+      setActiveStudySession(null);
       setActiveStudySubject('');
       setActivePlannerItemId('');
+      const result = await persistStudySession(completedSession);
+      if (result && result.ok === false) ctx.alert?.(result.error || '공부 기록을 서버에 저장하지 못했습니다. 기기에는 기록을 유지합니다.');
       return true;
     },
 

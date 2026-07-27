@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   selectedPlan: 'selectedPlan',
   selectedUniversity: 'selectedUniversity',
   startupErrors: 'studycrack_startup_errors_v1',
+  activeStudySession: 'activeStudySession',
   studyRecords: 'studyRecords',
   studySubjectRecords: 'studySubjectRecords',
   user: 'user'
