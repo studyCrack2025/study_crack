@@ -86,6 +86,8 @@ export function createInitialAppState() {
     universityRecommendationRetryTick: 0,
     analysisResults: [],
     analysisSimulations: [],
+    analysisResultExamMode: '',
+    analysisResultSignature: '',
     analysisApiStatus: 'idle',
     analysisApiError: '',
     analysisBacktraceStatus: 'idle',

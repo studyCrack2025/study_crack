@@ -280,8 +280,11 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'coachingMonth') setCoachingMonth(target.value);
     if (field === 'proEliteMonth') setProEliteMonth(target.value);
-    if (field === 'qnaDraftTitle') setQnaDraftTitle(target.value);
-    if (field === 'qnaDraftContent') setQnaDraftContent(target.value);
+    if (field === 'qnaDraftTitle' || field === 'qnaDraftContent') {
+      const key = field === 'qnaDraftTitle' ? 'title' : 'content';
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current[key] = target.value;
+      return { handled: true, field };
+    }
     if (field === 'analysisSearchTerm') {
       if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);

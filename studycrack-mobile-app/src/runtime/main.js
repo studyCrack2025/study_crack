@@ -51,7 +51,7 @@ import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap }
 import { buildDerivedContext } from './derived.js';
 import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileBacktrace, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchStudyRanking, fetchUniversityCatalog, fetchUniversityRecommendations, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveNotificationPreferences, saveQualitative, saveQuantitative, saveStudySession, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
 import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
-import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
+import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, canRetryInitialScore, canRetryInitialScorePayload, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
@@ -336,13 +336,16 @@ function buildRenderScoreCache(state = {}, examKey = '') {
   const baseCache = state.scoreCache || {};
   const snapshot = state.lastAnalysisSnapshot;
   const snapshotMatches = snapshot && snapshot.examMode === examKey;
-  const analysisResults = (state.analysisResults || []).length
-    ? state.analysisResults
+  const liveResultsMatch = state.analysisResultExamMode === examKey
+    && state.analysisResultSignature
+    && state.analysisResultSignature === state.scoreFetchSignature;
+  const analysisResults = liveResultsMatch
+    ? state.analysisResults || []
     : snapshotMatches
       ? snapshot.analysisResults || []
       : [];
-  const analysisSimulations = (state.analysisSimulations || []).length
-    ? state.analysisSimulations
+  const analysisSimulations = liveResultsMatch
+    ? state.analysisSimulations || []
     : snapshotMatches
       ? snapshot.analysisSimulations || []
       : [];
@@ -426,8 +429,10 @@ function MobileApp() {
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
   const scoreRequestIdRef = useRef(0);
+  const scoreResultRetryRef = useRef({ signature: '', attempts: 0 });
   const simulationFetchSignatureRef = useRef('');
   const backtraceFetchSignatureRef = useRef('');
+  const qnaDraftRef = useRef({ title: '', content: '' });
   stateRef.current = state;
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
@@ -692,6 +697,9 @@ function MobileApp() {
     suppressClickUntilRef,
     plannerContentRef,
     plannerCustomMinutesRef,
+    qnaDraftRef,
+    qnaDraftTitle: qnaDraftRef.current.title,
+    qnaDraftContent: qnaDraftRef.current.content,
     isIOSSafari: scrollOps.isIOSSafari,
     getHomeSliderState: () => getHomeSliderState(),
     updatePossibleUnivSlider,
@@ -1088,6 +1096,9 @@ function MobileApp() {
     }
 
     const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
+    if (scoreResultRetryRef.current.signature !== scoreSignature) {
+      scoreResultRetryRef.current = { signature: scoreSignature, attempts: 0 };
+    }
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
       scoreRequestIdRef.current += 1;
@@ -1129,6 +1140,21 @@ function MobileApp() {
       const analysisSimulations = [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       const analysisError = payload.analysisError || null;
+      if (canRetryInitialScorePayload({ error: analysisError, resultCount: analysisResults.length }, scoreResultRetryRef.current.attempts)) {
+        scoreResultRetryRef.current.attempts += 1;
+        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
+        globalThis.setTimeout?.(() => {
+          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+          setState({
+            analysisApiStatus: 'loading',
+            analysisApiError: '',
+            scoreFetchStatus: 'idle',
+            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
+          });
+        }, retryDelay);
+        return;
+      }
+      if (analysisResults.length) scoreResultRetryRef.current.attempts = 0;
       const nextStatus = analysisResults.length
         ? 'ready'
         : analysisError
@@ -1142,6 +1168,8 @@ function MobileApp() {
       setState({
         analysisResults,
         analysisSimulations,
+        analysisResultExamMode: examMode,
+        analysisResultSignature: scoreSignature,
         lastAnalysisSnapshot: analysisResults.length
           ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
@@ -1152,6 +1180,20 @@ function MobileApp() {
       });
     }).catch((error) => {
       if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (canRetryInitialScore(error, scoreResultRetryRef.current.attempts)) {
+        scoreResultRetryRef.current.attempts += 1;
+        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
+        globalThis.setTimeout?.(() => {
+          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+          setState({
+            analysisApiStatus: 'loading',
+            analysisApiError: '',
+            scoreFetchStatus: 'idle',
+            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
+          });
+        }, retryDelay);
+        return;
+      }
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',

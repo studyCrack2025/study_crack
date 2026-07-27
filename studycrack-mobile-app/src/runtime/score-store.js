@@ -31,6 +31,18 @@ export function buildScoreSignature(examKey, targetUniversities = [], userScores
   return `${examKey}::${targets.join('|')}::${JSON.stringify(stableValue(userScores || {}))}`;
 }
 
+export function canRetryInitialScore(error, attempts = 0) {
+  if (!error || attempts >= 2 || error.code === 'AUTH_EXPIRED') return false;
+  const status = Number(error.status || 0);
+  return status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+export function canRetryInitialScorePayload({ error = null, resultCount = 0 } = {}, attempts = 0) {
+  if (attempts >= 2) return false;
+  if (error) return canRetryInitialScore(error, attempts);
+  return Number(resultCount) === 0;
+}
+
 // 캐시에서 한 대학의 엔트리를 찾는다. 정확 일치 → 부분 포함(백엔드 학과명 정규화 차이 흡수).
 export function selectScoreEntry(scoreCache = {}, examKey = '', name = '') {
   const cache = scoreCache && scoreCache[examKey];

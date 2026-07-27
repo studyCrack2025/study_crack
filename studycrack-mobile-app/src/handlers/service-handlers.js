@@ -333,18 +333,22 @@ export function createServiceHandlers(ctx) {
     },
 
     openQnaComposer() {
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaComposerOpen(true);
       return true;
     },
 
     closeQnaComposer() {
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
+      setQnaDraftTitle('');
+      setQnaDraftContent('');
       setQnaComposerOpen(false);
       return true;
     },
 
     async submitMobileQna() {
-      const title = String(ctx.qnaDraftTitle || '').trim();
-      const content = String(ctx.qnaDraftContent || '').trim();
+      const title = String(query(ctx, '[data-field="qnaDraftTitle"]')?.value ?? ctx.qnaDraftRef?.current?.title ?? ctx.qnaDraftTitle ?? '').trim();
+      const content = String(query(ctx, '[data-field="qnaDraftContent"]')?.value ?? ctx.qnaDraftRef?.current?.content ?? ctx.qnaDraftContent ?? '').trim();
       if (!title || !content) {
         alert('질문 제목과 내용을 입력해주세요.');
         return false;
@@ -359,6 +363,7 @@ export function createServiceHandlers(ctx) {
       }
       setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
       setQnaStatus('ready');
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaDraftTitle('');
       setQnaDraftContent('');
       setQnaComposerOpen(false);
