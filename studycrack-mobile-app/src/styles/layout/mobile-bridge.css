@@ -3,20 +3,18 @@
 .card:active{transform:none !important;filter:none !important;}
 input,select,textarea{font-size:16px !important;}
 .coach-hidden-file{display:none;}
-.app-shell,.app-frame{background:var(--bg);}
-.screen.app-screen{background:linear-gradient(180deg,var(--bg) 0%,#FFFFFF 46%,#F7F9FE 100%);}
+.app-shell,.app-frame{background:var(--sc-canvas);}
+.screen.app-screen{background:var(--sc-canvas);}
 .card,.premium-panel,.home-insight-card,.mobile-plan-card,.mobile-payment-card,.qna-list-row,.qual-form-card,.analysis-loading-panel{border-color:#DDE7F6;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .analysis-exam-picker,.qual-form-head{background:linear-gradient(160deg,#FFFFFF 0%,#F8FBFF 54%,#EEF4FF 100%);border-color:#D8E6FF;}
 .badge,.home-mini-badge,.home-result-state,.preview-icon,.score-row .pill.up,.qna-row-side em.done{background:#EEF4FF;color:var(--primary-dark);}
 .btn-primary,.cta-btn,.analysis-convert-btn,.pro-request-btn{background:var(--primary-dark);box-shadow:0 7px 16px rgba(52,78,143,.16);}
-.tabbar button.active{background:#EEF4FF;color:var(--primary-dark);}
-.tabbar button.active svg,.tabbar button.active span{filter:none;opacity:1;}
 .plan-price-row{background:#F8FBFF;border-color:#DDE7F6;}
 .home-goal-linked-card.is-locked{background:linear-gradient(160deg,#FFFFFF 0%,#F8FBFF 58%,#F1F6FF 100%);border-style:solid;}
 .home-goal-linked-card.is-locked .sub{margin:7px 0 0;color:#526176;line-height:1.5;}
 .home-goal-linked-card.is-locked .home-goal-empty-cta{margin-top:12px;background:var(--primary-dark);color:#fff;border-radius:12px;padding:10px 12px;font-weight:900;}
-.app-screen .card{border-radius:18px;}
-.home-dashboard,.analysis-v2,.planner-screen,.coach-page,.tutor-qna-page,.pro-elite-page,.account-info-page,.qual-form-page,.score-info-page,.plan-console-page,.payment-console-page{background:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 48%,#F7F9FE 100%);}
+.app-screen .card{border-radius:var(--sc-radius-card);}
+.home-dashboard,.analysis-v2,.planner-screen,.coach-page,.tutor-qna-page,.pro-elite-page,.account-info-page,.qual-form-page,.score-info-page,.plan-console-page,.payment-console-page{background:transparent;}
 .home-dashboard .card,.analysis-v2 .card,.planner-screen .card,.coach-page .card,.tutor-qna-page .card,.pro-elite-page .card,.account-info-page .card,.qual-form-page .card,.score-info-page .card,.plan-console-page .card,.payment-console-page .card{border-color:#DDE7F6;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
 .coach-empty{white-space:normal;overflow-wrap:anywhere;word-break:keep-all;text-align:center;border-color:#DDE7F6;background:#F8FBFF;color:#64748B;font-weight:800;}
@@ -24,12 +22,12 @@ input,select,textarea{font-size:16px !important;}
 .app-frame,.app-screen,.app-content,.home-dashboard,.home-content,.analysis-v2,.planner-screen,.coach-page,.my-stack,.plan-console-page,.payment-console-page{min-width:0;max-width:100%;}
 .home-content > *,.analysis-v2 > *,.planner-screen > *,.plan-console-page > *,.payment-console-page > *{min-width:0;max-width:100%;}
 .card,button,input,select,textarea,img,svg{max-width:100%;}
-.planner-calendar-sheet{bottom:calc(78px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;}
+.planner-calendar-sheet{bottom:calc(var(--sc-tabbar-height) + env(safe-area-inset-bottom));border-radius:var(--sc-radius-card) var(--sc-radius-card) 0 0;}
 .top-infographic-planner{display:grid;place-items:center;padding:0;}
 .top-infographic-coach{display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:8px 7px;background:rgba(124,58,237,.1);}
 .top-infographic-coach i{background:var(--accent-purple);}
 .top-infographic-planner svg{width:22px;height:22px;stroke:currentColor;}
-.app-screen[data-screen="home"],.app-screen[data-screen="analysis"],.app-screen[data-screen="planner"],.app-screen[data-screen="strategy"],.app-screen[data-screen="my"],.app-screen[data-screen="lockedFeature"]{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important;}
+.app-screen[data-screen="home"],.app-screen[data-screen="analysis"],.app-screen[data-screen="planner"],.app-screen[data-screen="strategy"],.app-screen[data-screen="my"],.app-screen[data-screen="lockedFeature"]{padding-bottom:calc(var(--sc-tabbar-height) + var(--sc-space-16) + env(safe-area-inset-bottom))!important;}
 .coach-empty-state-screen{gap:14px!important;padding-bottom:8px!important;}
 .coach-empty-state-screen .coach-title-card .top-card-head{min-height:68px;padding:11px 14px;}
 .coach-empty-state-screen .coach-title-card .top-card-head h3{font-size:21px;}

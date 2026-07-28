@@ -231,12 +231,6 @@ function canUseScoreSimulation(state) {
   const activeSub = pickActiveAccessSubscription(user);
   if (!activeSub) return false;
   const tier = normalizeAccessTier(activeSub.tier);
-  if (tier === 'trial') {
-    const remaining = typeof user.univChangeRemaining === 'number' ? user.univChangeRemaining : 0;
-    const graceUntil = parseAccessDate(user.gracePeriodUntil);
-    if (remaining <= 0 && (!graceUntil || Date.now() > graceUntil.getTime())) return false;
-    return true;
-  }
   return ['basic', 'starter', 'standard', 'pro'].includes(tier);
 }
 

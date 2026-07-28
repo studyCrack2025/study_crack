@@ -12,10 +12,11 @@ function defaultIcon() {
 
 export function renderTabButton({ key, label, icon }, { tab = 'home', icon: iconFn = defaultIcon } = {}) {
   const active = tab === key;
-  return `<button class="${active ? 'active' : ''}" data-action="tab" data-tab="${key}">${iconFn(icon, active)}<span>${label}</span></button>`;
+  const current = active ? ' aria-current="page"' : '';
+  return `<button type="button" class="${active ? 'active' : ''}" data-action="tab" data-tab="${key}" aria-label="${label}"${current}>${iconFn(icon, active)}<span>${label}</span></button>`;
 }
 
 export function renderTabBar({ tab = 'home', dimmed = false, icon = defaultIcon, items = TAB_ITEMS } = {}) {
   const buttons = items.map((item) => renderTabButton(item, { tab, icon })).join('');
-  return `<div class="tabbar bottom-tab ${dimmed ? 'is-muted' : ''}">${buttons}</div>`;
+  return `<nav class="tabbar bottom-tab ${dimmed ? 'is-muted' : ''}" aria-label="주요 메뉴">${buttons}</nav>`;
 }

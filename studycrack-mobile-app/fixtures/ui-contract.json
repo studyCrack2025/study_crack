@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "logoExport": "STUDYCRACK_LOGO_SRC",
+    "logoAsset": "./assets/images/studycrack_logo_wo_bg.png",
+    "onboardingLogoExport": "ONBOARDING_LOGO_SRC"
+  },
+  "viewports": [
+    { "width": 320, "height": 700 },
+    { "width": 360, "height": 800 },
+    { "width": 390, "height": 844 },
+    { "width": 430, "height": 932 }
+  ],
+  "states": ["loading", "ready", "empty", "error", "locked"],
+  "mainTabs": ["home", "analysis", "strategy", "planner", "my"],
+  "screens": [
+    "home",
+    "analysis",
+    "addUniversity",
+    "ranking",
+    "qualInfo",
+    "scoreInfo",
+    "authLogin",
+    "authFindId",
+    "authFindPw",
+    "authSignup",
+    "splash",
+    "on1",
+    "on2",
+    "on3",
+    "planner",
+    "plannerAdd",
+    "ob1",
+    "ob2",
+    "ob3",
+    "ob4",
+    "ob5",
+    "strategy",
+    "weekly",
+    "report",
+    "reportDetail",
+    "lockedFeature",
+    "proElite",
+    "tutor",
+    "proIntro",
+    "payment",
+    "paymentComplete",
+    "my",
+    "notificationSettings",
+    "notificationList",
+    "customerSupport",
+    "settingsMain",
+    "settingsTermsPicker",
+    "accountInfo",
+    "privacyPolicy",
+    "termsScreen"
+  ],
+  "analysis": {
+    "primaryMetric": "convertedScore",
+    "efficiencyUnit": "point",
+    "forwardTiers": ["basic", "starter", "standard", "pro"],
+    "reverseTiers": ["standard", "pro"]
+  }
+}
