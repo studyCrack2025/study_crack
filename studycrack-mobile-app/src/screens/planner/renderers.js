@@ -1,4 +1,5 @@
 import { renderSheet } from '../../components/sheet.js';
+import { buildPlannerPresentation } from './presentation.js';
 
 const PLANNER_SUBJECTS = ['수학', '국어', '영어', '탐구', '기타'];
 const PLANNER_DURATIONS = [
@@ -9,46 +10,48 @@ const PLANNER_DURATIONS = [
   ['custom', '직접 입력']
 ];
 
-function defaultIcon() {
-  return '';
-}
-
 function activeClass(value) {
   return value ? 'active' : '';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function renderDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '' }) {
   return `<div class="planner-days planner-days-carousel planner-date-strip">${plannerWeekDates.map(({ date, day, weekday, empty }) => `<button class="planner-date-item ${empty ? 'is-empty' : ''} ${activeClass(selectedPlannerDateKey === date)}" ${empty ? 'disabled' : 'data-action="selectPlannerDate"'} data-planner-date="${date || ''}"><small>${weekday}</small><strong>${day}</strong></button>`).join('')}</div>`;
 }
 
-function renderSubjectDonut({ plannerViewDonutGradient = '', plannerViewSubjectStats = [] }) {
-  if (!plannerViewSubjectStats.length) return '';
-  return `<div class="planner-donut-wrap"><div class="planner-donut" style="--donut:${plannerViewDonutGradient}"></div><div class="planner-donut-legend">${plannerViewSubjectStats.map((item) => `<span><i style="background:${item.color}"></i>${item.subject} ${item.percent}%</span>`).join('')}</div></div>`;
-}
-
 function renderPlannerItemCard(item) {
   const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
     ? `${item.start} - ${item.end}`
     : `${item.minutes}분`;
-  const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
-  return `<div class="planner-item planner-item-v2 ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${item.id}"><i class="dot ${item.dot}"></i><div class="planner-item-main"><small class="planner-item-time">${timeLabel}</small><b>${item.content}</b><p>${item.subject}${detailLabel ? ` · ${detailLabel}` : ''}</p>${item.memo ? `<em>${item.memo}</em>` : ''}</div><div class="planner-item-right"><strong>${item.minutes}분</strong><div class="planner-item-controls"><button class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${item.id}">✓ ${item.done ? '완료!' : '완료'}</button><button class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${item.id}">✕</button></div></div></div>`;
-}
-
-function formatPlannerMinutes(minutes = 0) {
-  const safe = Math.max(0, Number(minutes) || 0);
-  const hour = Math.floor(safe / 60);
-  const min = safe % 60;
-  if (hour && min) return `${hour}시간 ${min}분`;
-  if (hour) return `${hour}시간`;
-  return `${min}분`;
+  const detailLabel = [item.subject, item.detailSubject, item.activityType].filter(Boolean).join(' · ') || '학습 계획';
+  const plannerId = escapeHtml(item.id);
+  return `<article class="planner-item planner-item-v2 ${item.done ? 'done' : ''}" data-action="openPlannerEdit" data-planner-id="${plannerId}"><span class="planner-item-subject ${escapeHtml(item.dot || 'etc')}" aria-hidden="true"><i></i></span><div class="planner-item-main"><small class="planner-item-time">${escapeHtml(timeLabel)}</small><b>${escapeHtml(item.content)}</b><p>${escapeHtml(detailLabel)}</p></div><div class="planner-item-actions"><span>${escapeHtml(item.minutes)}분</span><div><button type="button" class="planner-item-done" data-action="togglePlannerDone" data-planner-id="${plannerId}" aria-label="${item.done ? '완료 취소' : '계획 완료'}"><i aria-hidden="true">✓</i></button><button type="button" class="planner-item-remove" data-action="removePlannerItem" data-planner-id="${plannerId}" aria-label="계획 삭제">×</button></div></div></article>`;
 }
 
 function renderPlannerItems({ plannerViewItems = [], selectedPlannerDate = '' }) {
   const items = plannerViewItems.map(renderPlannerItemCard).join('');
-  return `<div class="planner-plan-list">
-         ${items || `<div class="planner-empty-day"><b>아직 등록한 계획이 없어요</b><p>${selectedPlannerDate}일에 학습을 추가해 하루 목표를 만들어 보세요.</p></div>`}
-         <button class="planner-add-cta" data-action="openPlannerAddPage">+ ${selectedPlannerDate}일 계획 추가하기</button>
-       </div>`;
+  return `<section class="planner-tasks-section"><div class="planner-section-head"><div><span>${escapeHtml(selectedPlannerDate)}일</span><h4>학습 계획</h4></div><button type="button" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div><div class="planner-plan-list">${items || '<div class="planner-empty-day"><b>아직 등록한 계획이 없어요</b><p>실행할 과목과 시간을 추가해 하루 목표를 만들어 보세요.</p></div>'}<button type="button" class="planner-add-cta" data-action="openPlannerAddPage">${escapeHtml(selectedPlannerDate)}일 계획 추가</button></div></section>`;
+}
+
+function renderPlannerProgress(plannerViewItems = []) {
+  const presentation = buildPlannerPresentation(plannerViewItems);
+  const status = presentation.remainingCount ? `${presentation.remainingCount}개 남음` : presentation.totalCount ? '모두 완료' : '계획 대기';
+  return `<section class="card planner-progress-card"><div class="planner-progress-head"><div><span>오늘 진도</span><h4>${presentation.progress}% 완료</h4></div><b>${status}</b></div><div class="planner-progress-track" aria-label="플래너 완료율 ${presentation.progress}%"><i style="width:${presentation.progress}%"></i></div><div class="planner-progress-stats"><div><span>완료 계획</span><b>${presentation.completedCount}/${presentation.totalCount}</b></div><div><span>완료 시간</span><b>${presentation.completedDurationLabel}</b></div><div><span>총 계획</span><b>${presentation.totalDurationLabel}</b></div></div></section>`;
+}
+
+function renderPlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
+  const warning = plannerFeedback.tone === 'warn';
+  const title = warning ? '과목 균형을 한 번 점검해 보세요' : hasItems ? '이번 주 계획을 함께 점검해요' : '계획을 만들면 피드백을 받을 수 있어요';
+  const description = plannerFeedback.message || (warning ? '특정 과목에 시간이 몰려 있어 우선순위 조정이 필요해요.' : '주간 계획과 실행 기록을 바탕으로 다음 학습 방향을 정리합니다.');
+  return `<section class="card planner-feedback-card"><div class="planner-feedback-copy"><span>SKY MENTOR</span><h4>${escapeHtml(title)}</h4><p>${escapeHtml(description)}</p></div><button type="button" data-action="goto" data-target="weekly">주간 피드백 보기 <b aria-hidden="true">›</b></button></section>`;
 }
 
 function renderPlannerCalendarModeButton(mode, label, activeMode) {
@@ -65,7 +68,7 @@ function renderInlinePlannerCalendar({
   const body = mode === 'month'
     ? renderPlannerCalendarMonth({ plannerCalendarMonthCells })
     : renderDateStrip({ plannerWeekDates, selectedPlannerDateKey });
-  return `<div class="planner-inline-calendar"><div class="planner-inline-calendar-toolbar"><div class="planner-calendar-segment planner-inline-segment">${renderPlannerCalendarModeButton('week', '주', mode)}${renderPlannerCalendarModeButton('month', '월', mode)}</div><div class="planner-inline-calendar-nav"><button type="button" data-action="plannerCalendarPrevWeek" aria-label="${mode === 'month' ? '이전 달' : '이전 주'}">‹</button><button type="button" data-action="plannerCalendarToday">오늘</button><button type="button" data-action="plannerCalendarNextWeek" aria-label="${mode === 'month' ? '다음 달' : '다음 주'}">›</button></div></div>${body}</div>`;
+  return `<section class="card planner-calendar-card"><div class="planner-inline-calendar-toolbar"><div class="planner-calendar-segment planner-inline-segment">${renderPlannerCalendarModeButton('week', '주', mode)}${renderPlannerCalendarModeButton('month', '월', mode)}</div><div class="planner-inline-calendar-nav"><button type="button" data-action="plannerCalendarPrevWeek" aria-label="${mode === 'month' ? '이전 달' : '이전 주'}">‹</button><button type="button" data-action="plannerCalendarToday">오늘</button><button type="button" data-action="plannerCalendarNextWeek" aria-label="${mode === 'month' ? '다음 달' : '다음 주'}">›</button></div></div>${body}</section>`;
 }
 
 function renderPlannerCalendarDay({ plannerViewHour = 0, plannerViewItems = [], plannerViewMinute = 0, selectedPlannerDate = '' }) {
@@ -144,7 +147,6 @@ function renderDurationPills(plannerDraft = {}) {
 
 export function renderPlannerScreen(ctx) {
   const {
-    icon = defaultIcon,
     layout,
     plannerCalendarMode,
     plannerCalendarMonthCells,
@@ -152,29 +154,21 @@ export function renderPlannerScreen(ctx) {
     plannerEditIndex,
     plannerEditItem,
     plannerFeedback = {},
-    plannerMonthDays,
     plannerMonthLabel = '',
-    plannerViewDonutGradient,
-    plannerViewHour = 0,
-    plannerViewItems,
-    plannerViewMinute = 0,
-    plannerViewSubjectStats,
+    plannerViewItems = [],
     plannerWeekDates,
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
   } = ctx;
   const mode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
-  const nextMode = mode === 'month' ? 'week' : 'month';
 
   return layout(
-    `<div class="planner-screen"><div class="card planner-title-card"><div class="top-card-head"><div><h3>플래너</h3><p>오늘 계획을 확인하고, 학습 흐름을 이어가세요.</p></div><span class="planner-checklist-art" aria-hidden="true"><i class="planner-checklist-pen"></i><i class="planner-checklist-paper"><b></b><b></b></i></span></div></div><div class="planner-head planner-date-head"><h3>${plannerMonthLabel} ${selectedPlannerDate}일 (${selectedPlannerWeekday})</h3><button class="planner-cal-btn" data-action="setPlannerCalendarMode" data-planner-calendar-mode="${nextMode}">${icon('calendar', false)}</button></div>
+    `<div class="planner-screen"><header class="planner-context-head"><div><span>오늘의 플래너</span><h3>${escapeHtml(plannerMonthLabel)} ${escapeHtml(selectedPlannerDate)}일 <small>${escapeHtml(selectedPlannerWeekday)}요일</small></h3><p>계획을 확인하고, 오늘의 학습 흐름을 이어가세요.</p></div><span class="planner-checklist-art" aria-hidden="true"><i class="planner-checklist-pen"></i><i class="planner-checklist-paper"><b></b><b></b></i></span></header>
        ${renderInlinePlannerCalendar({ plannerCalendarMode: mode, plannerCalendarMonthCells, plannerWeekDates, selectedPlannerDateKey })}
-       <div class="planner-section-title planner-day-summary planner-fade"><div><h4>${selectedPlannerDate}일 계획</h4><p>총 ${plannerViewHour}시간 ${plannerViewMinute}분</p>${plannerFeedback.tone === 'warn' ? '<span class="planner-warning-pill">⚠ 수학 비중 높음 · 과목 균형 필요</span>' : ''}</div>${renderSubjectDonut({ plannerViewDonutGradient, plannerViewSubjectStats })}</div>
-       <div class="card planner-premium-cta"><div class="planner-premium-copy"><span class="badge">SKY MENTOR</span><b>혼자 짠 플래너, 불안하신가요?</b><p>SKY 선생님이<br/>직접 이번 주 플래너를 짜드립니다.</p></div><button type="button" class="planner-premium-btn" data-action="startStandard">플래너 직접 받기</button></div>
+       ${renderPlannerProgress(plannerViewItems)}
        ${renderPlannerItems({ plannerViewItems, selectedPlannerDate })}
-
-       <div class="planner-bottom-space"></div>
+       ${renderPlannerFeedback({ plannerFeedback, hasItems: Boolean(plannerViewItems.length) })}
        ${renderEditSheet({ plannerEditIndex, plannerEditItem })}
        </div>`,
     true

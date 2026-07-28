@@ -67,3 +67,24 @@
 .planner-calendar-plan-empty{padding:14px;border:1px dashed #CBD8EA;border-radius:14px;background:#FFFFFF;text-align:center;}
 .planner-calendar-plan-empty b{display:block;font-size:13px;color:#26304A;font-weight:950;}
 .planner-calendar-plan-empty small{display:block;margin-top:4px;font-size:11.5px;color:#7B8798;font-weight:800;}
+.planner-calendar-card{display:grid;gap:10px;padding:12px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
+.planner-inline-calendar-toolbar{display:grid;grid-template-columns:minmax(104px,.42fr) minmax(0,1fr);align-items:center;gap:10px;}
+.planner-inline-segment{min-width:0;padding:3px;border-color:var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}
+.planner-inline-segment button{height:32px;border-radius:9px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:800;}
+.planner-inline-segment button.active{color:var(--sc-navy);box-shadow:var(--sc-shadow-normal);}
+.planner-inline-calendar-nav{display:flex;align-items:center;justify-content:flex-end;gap:4px;}
+.planner-inline-calendar-nav button{height:34px;min-width:34px;padding:0 8px;border:1px solid var(--sc-border-subtle);border-radius:10px;background:var(--sc-surface);color:var(--sc-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;}
+.planner-inline-calendar-nav button:first-child,.planner-inline-calendar-nav button:last-child{padding:0;font-size:22px;font-weight:600;line-height:1;}
+.planner-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;}
+.planner-date-item{width:100%;min-width:0;min-height:48px;display:grid;align-content:center;gap:3px;padding:5px 2px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--sc-ink-muted);font:inherit;box-shadow:none;}
+.planner-date-item small{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;line-height:1;}
+.planner-date-item strong{color:var(--sc-ink);font-size:15px;font-weight:850;line-height:1.1;}
+.planner-date-item.active{border-color:#BED0F2;background:var(--sc-surface-accent);}
+.planner-date-item.active small,.planner-date-item.active strong{color:var(--sc-blue);}
+.planner-date-item.is-empty{opacity:.3;pointer-events:none;}
+.planner-inline-month-panel{padding:1px 0 0;}
+.planner-inline-month-panel .planner-calendar-month-grid{gap:4px;}
+.planner-inline-month-panel .planner-calendar-month-day{min-height:38px;border-color:var(--sc-border-subtle);border-radius:10px;background:var(--sc-surface);box-shadow:none;}
+.planner-inline-month-panel .planner-calendar-month-day.active{border-color:var(--sc-navy);background:var(--sc-navy);color:#FFFFFF;}
+.planner-inline-month-panel .planner-calendar-month-day.is-today:not(.active){border-color:#9EB9E9;background:var(--sc-surface-accent);}
+@media (max-width:340px),(max-height:740px){.app-screen[data-screen="planner"] .planner-calendar-card{gap:7px;padding:9px;}.app-screen[data-screen="planner"] .planner-date-item{min-height:40px;}.app-screen[data-screen="planner"] .planner-inline-calendar-nav button{height:30px;min-width:30px;padding-inline:5px;}}
