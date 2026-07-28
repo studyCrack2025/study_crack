@@ -19,6 +19,7 @@ import {
   renderTargetDeleteModal,
   renderUniversityModal
 } from './renderers.js';
+import { buildMissionSubjectRows, getHomeScorePresentation } from './presentation.js';
 
 // home 화면의 React-트리(JSX) 버전. 문자열 renderer(renderHomeView)와 DOM 구조·data-action을 1:1로 맞춘다.
 // 핵심: KPI 슬라이더 트랙(.home-kpi-track)을 실제 React 노드로 두어, 슬라이드 전환 시 트랙 엘리먼트가
@@ -27,19 +28,8 @@ import {
 // 스크롤/전환 상태가 없는 오버레이(대학 검색 모달·공부 과목 시트·알림 모달·drawer)와 펼침 breakdown,
 // 탭바는 기존 문자열 renderer를 leaf로 임베드해 변환 범위를 한정한다.
 
-function UniversityCard({ item, plannerBadges, scoreTierClass }) {
-  const scorePct = Math.min((item.score / 250) * 100, 100);
-  // 점수 출처 상태별 표기. pending(분석 대기)은 0점 대신 스켈레톤, empty(성적 없음)는 안내 문구.
-  const status = item.scoreStatus || 'confirmed';
-  const pending = status === 'pending';
-  const empty = status === 'empty';
-  const noScore = pending || empty;
-  const scoreLabel =
-    status === 'confirmed' ? (item.scoreUpdating ? '갱신 중…' : 'AI 점수')
-      : status === 'live' ? '예상 점수'
-        : pending ? '분석 중' : '성적 입력 필요';
-  const scoreValue = empty ? '—' : `${item.score}점`;
-  const gapValue = noScore ? '—' : Number(item.gap || 0) > 0 ? `-${item.gap}점` : '0점';
+function UniversityCard({ item, scoreTierClass }) {
+  const score = getHomeScorePresentation(item);
   return (
     <button
       className="university-card-slide card home-kpi-card admission-card slider-card home-result-card-v3"
@@ -48,12 +38,13 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
     >
       <div className="home-result-top">
         <div className="home-result-copy">
+          <span className="home-result-eyebrow">선택 대학</span>
           <p className="home-result-major">{item.major}</p>
           <span className="home-result-state">{item.rank}</span>
         </div>
-        <div className={`home-result-score ${noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}`}>
-          {pending ? <strong className="home-score-skeleton" aria-label="분석 중" /> : <strong>{scoreValue}</strong>}
-          <small>{scoreLabel}</small>
+        <div className={`home-result-score ${score.noScore ? 'is-pending' : ''} ${item.scoreUpdating ? 'is-updating' : ''}`}>
+          {score.pending ? <strong className="home-score-skeleton" aria-label="분석 중" /> : <strong>{score.scoreValue}</strong>}
+          <small>{score.scoreLabel}</small>
         </div>
         <span className="home-univ-remove" data-action="removeAnalysisTarget" data-target-major={item.major}>
           ✕
@@ -61,7 +52,7 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       </div>
       <div className="home-result-gauge-panel">
         <div className="home-result-gauge">
-          <i className={scoreTierClass(item.score)} style={{ width: `${scorePct}%` }} />
+          <i className={scoreTierClass(score.score)} style={{ width: `${score.scorePct}%` }} />
           <span className="cut pass" style={{ left: '40%' }} />
           <span className="cut safe" style={{ left: '60%' }} />
         </div>
@@ -75,19 +66,14 @@ function UniversityCard({ item, plannerBadges, scoreTierClass }) {
       <div className="home-result-kpi-panel">
         <div className="kpi-row score-row">
           <div className="kpi-item">
-            <b>{noScore ? '—' : scoreValue}</b>현재 점수
+            <span>현재 환산점수</span>
+            <b>{score.scoreValue}</b>
           </div>
-          <div className="kpi-item danger">
-            <b>{gapValue}</b>부족 점수
+          <div className={`kpi-item ${score.neededToPass > 0 ? 'danger' : 'success'}`}>
+            <span>합격컷까지</span>
+            <b>{score.neededLabel}</b>
           </div>
         </div>
-      </div>
-      <div className="home-planner-badges chip-row">
-        {plannerBadges.map((badge, idx) => (
-          <span className="chip" key={idx}>
-            {badge}
-          </span>
-        ))}
       </div>
     </button>
   );
@@ -335,7 +321,7 @@ function HomeReportPreviewCard({ proReports = [], proReportsStatus = 'idle', wee
   const latestWeekly = weeklyReports[0] || null;
   const latestPro = proReports[0] || null;
   return (
-    <section className="card home-report-preview-card home-insight-card premium-panel">
+    <section className="home-report-preview-section">
       <div className="home-card-head">
         <p className="analysis-title">리포트 미리보기</p>
         <span className="home-mini-badge">학습 기록 기반</span>
@@ -361,8 +347,6 @@ export function HomeScreen(ctx) {
     dimmed = false,
     tabBarHtml = '',
     canAccessBasic = false,
-    canAccessPro = false,
-    canAccessStandard = false,
     crackySrc = CRACKY_SRC,
     user = {},
     formatHms = defaultFormatHms,
@@ -376,7 +360,6 @@ export function HomeScreen(ctx) {
     icon = () => '',
     myRank = 0,
     percentile = 0,
-    plannerBadges = [],
     rankingProgress = 0,
     rankingTotal = 0,
     rankTier = 'bronze',
@@ -387,10 +370,10 @@ export function HomeScreen(ctx) {
     studyTimerRunning = false,
     todayPlannerItems = [],
     todayPlannerProgress = 0,
-    todayPlannerSubjectSummary = [],
     todayPlannerTotalMinutes = 0,
     todayRecord = null,
     todayStudySeconds = 0,
+    todaySubjectsWithTimer = {},
     weeklyReports = [],
     weeklyReportsStatus = 'idle',
     userLoadStatus = 'idle',
@@ -418,6 +401,7 @@ export function HomeScreen(ctx) {
     '--home-slide-transition': slideTransition
   };
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
+  const missionSubjectRows = buildMissionSubjectRows(todayPlannerItems, todaySubjectsWithTimer);
 
   // 스크롤/전환 무관 영역은 기존 문자열 renderer 재사용(leaf 임베드).
   const universityModalHtml = renderUniversityModal(ctx);
@@ -453,10 +437,11 @@ export function HomeScreen(ctx) {
                 </div>
               </div>
 
-              <div className="section home-section">
-                <div className="home-analysis-criteria">
-                  <div>
-                    <b>지원학과 AI 점수</b>
+              <section className="home-score-section">
+                <div className="home-score-section-head">
+                  <div className="home-score-section-copy">
+                    <span>대학 분석</span>
+                    <h2>지원학과 AI 점수</h2>
                   </div>
                   <select className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
                     {EXAM_OPTIONS.map((label) => (
@@ -473,7 +458,7 @@ export function HomeScreen(ctx) {
                     style={trackStyle}
                   >
                     {homeTargets.map((item) => (
-                      <UniversityCard key={item.major} item={item} plannerBadges={plannerBadges} scoreTierClass={scoreTierClass} />
+                      <UniversityCard key={item.major} item={item} scoreTierClass={scoreTierClass} />
                     ))}
                     <button
                       className="university-card-slide university-card card slider-card home-add-univ-card"
@@ -499,18 +484,24 @@ export function HomeScreen(ctx) {
                   ))}
                 </div>
                 <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
-              </div>
+              </section>
 
-              <div className="section home-section home-section-last">
-                <div className="card home-study-summary study-summary-card home-insight-card premium-panel">
+              <div className="home-primary-stack">
+                <section className="home-mission-card sc-card">
                   <div className="home-card-head">
-                    <p className="analysis-title">오늘 누적 공부</p>
-                    <span className="home-mini-badge">{studyTimerRunning ? '진행중' : '대기'}</span>
+                    <div>
+                      <span className="home-card-eyebrow">오늘 미션</span>
+                      <h2>오늘의 학습을 이어가세요</h2>
+                    </div>
+                    <span className="home-mini-badge">{studyTimerRunning ? '진행 중' : `${todayPlannerProgress}%`}</span>
                   </div>
                   <div className="study-timer-row">
-                    <b className="timer premium-clock" data-study-base-seconds={todayRecord?.studyTime || 0}>
-                      {formatHms(todayStudySeconds)}
-                    </b>
+                    <div className="home-timer-copy">
+                      <span>오늘 누적 공부</span>
+                      <b className="timer premium-clock" data-study-base-seconds={todayRecord?.studyTime || 0}>
+                        {formatHms(todayStudySeconds)}
+                      </b>
+                    </div>
                     <div className="timer-actions">
                       <button
                         className={`btn btn-primary mini ${studyTimerRunning ? 'disabled' : ''}`}
@@ -528,52 +519,69 @@ export function HomeScreen(ctx) {
                       </button>
                     </div>
                   </div>
-                  <button type="button" className="home-breakdown-toggle" data-action="toggleStudyBreakdown">
-                    {showStudyBreakdown ? '접기' : '펼쳐보기'}
-                  </button>
-                  <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: breakdownHtml }} />
-                </div>
-
-                <button
-                  className={`card study-goal-card home-goal-linked-card home-insight-card premium-panel ${canAccessBasic ? '' : 'is-locked'}`}
-                  data-action="goto"
-                  data-target="planner"
-                >
-                  <div className="home-goal-title-row">
-                    <p className="analysis-title">오늘 공부 목표</p>
-                    {!canAccessBasic && <span className="home-goal-plan-badge">Basic부터</span>}
-                  </div>
                   {canAccessBasic && todayPlannerItems.length ? (
-                    <>
-                      <div className="home-goal-progress-head">
-                        <div className="goal-compact">
-                          <b>{todayPlannerProgress}%</b>
-                          <span>달성</span>
-                          <i>{studyTimerRunning ? '진행중' : '시작 전'}</i>
-                        </div>
-                        <em>목표 {formatMinutesLabel(todayPlannerTotalMinutes)}</em>
+                    <div className="home-mission-plan">
+                      <div className="home-mission-progress-head">
+                        <span>{todayPlannerItems.length}개 계획</span>
+                        <b>목표 {formatMinutesLabel(todayPlannerTotalMinutes)}</b>
                       </div>
-                      <div className="track">
-                        <i style={{ width: `${todayPlannerProgress}%` }} />
-                      </div>
-                      <div className="goal-tags">
-                        {todayPlannerSubjectSummary.slice(0, 3).map((value, idx) => (
-                          <span key={idx}>{value}</span>
+                      <div className="home-mission-progress"><i style={{ width: `${todayPlannerProgress}%` }} /></div>
+                      <div className="home-mission-subjects">
+                        {missionSubjectRows.map((row) => (
+                          <div className="home-mission-subject" key={row.subject}>
+                            <span>{row.subject}</span>
+                            <div><i style={{ width: `${row.progress}%` }} /></div>
+                            <small>{formatMinutesLabel(Math.round(row.actualSeconds / 60))} / {formatMinutesLabel(row.plannedMinutes)}</small>
+                          </div>
                         ))}
                       </div>
-                    </>
-                  ) : canAccessBasic ? (
-                    <>
-                      <p className="sub">오늘 계획을 추가해보세요</p>
-                      <span className="home-goal-empty-cta">플래너로 이동</span>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <p className="sub">개인 플래너로 오늘의 공부 목표를 관리할 수 있어요.</p>
-                      <span className="home-goal-empty-cta">Basic 기능 보기</span>
-                    </>
+                    <div className={`home-mission-empty ${canAccessBasic ? '' : 'is-locked'}`}>
+                      <b>{canAccessBasic ? '아직 등록한 계획이 없어요' : '오늘 목표 관리는 Basic부터 사용할 수 있어요'}</b>
+                      <p>{canAccessBasic ? '플래너에서 오늘 할 일을 추가해보세요.' : '학습 시간을 기록하고 일일 계획을 한곳에서 관리하세요.'}</p>
+                    </div>
                   )}
-                </button>
+                  <button type="button" className="home-mission-planner-link" data-action="goto" data-target="planner">
+                    <span>{canAccessBasic ? '오늘 계획 관리' : 'Basic 기능 보기'}</span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="home-breakdown-toggle" data-action="toggleStudyBreakdown">
+                    {showStudyBreakdown ? '과목별 기록 접기' : '과목별 기록 보기'}
+                  </button>
+                  <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: breakdownHtml }} />
+                </section>
+
+                <section className="home-learning-flow-card sc-card">
+                  <div className="home-card-head">
+                    <div>
+                      <span className="home-card-eyebrow">학습 흐름</span>
+                      <h2>오늘의 기록</h2>
+                    </div>
+                    <span className="home-mini-badge">오늘 기준</span>
+                  </div>
+                  <div className="home-flow-stats">
+                    <div><span>공부 시간</span><b>{formatMinutesLabel(Math.round(todayStudySeconds / 60))}</b></div>
+                    <div><span>완료율</span><b>{todayPlannerProgress}%</b></div>
+                    <div><span>계획</span><b>{todayPlannerItems.length}개</b></div>
+                  </div>
+                  <button
+                    type="button"
+                    className={`home-ranking-row rank-tier-${rankTier} ${rankingShine}`}
+                    data-action="goRanking"
+                  >
+                    <div className="home-ranking-copy">
+                      <span>내 공부 랭킹</span>
+                      <b>{myRank ? `${myRank}등` : '집계 전'}</b>
+                      <small>{rankingTotal ? `전체 ${rankingTotal}명 중 · ${rankTierLabel}` : '공부 기록을 기다리고 있어요'}</small>
+                    </div>
+                    <div className="home-ranking-meter">
+                      <span>{percentile ? `상위 ${percentile}%` : '오늘 기준'}</span>
+                      <div><i style={{ width: `${rankingProgress}%` }} /></div>
+                    </div>
+                    <span className="home-ranking-chevron" aria-hidden="true">›</span>
+                  </button>
+                </section>
 
                 <HomeReportPreviewCard
                   proReports={proReports}
@@ -581,25 +589,6 @@ export function HomeScreen(ctx) {
                   weeklyReports={weeklyReports}
                   weeklyReportsStatus={weeklyReportsStatus}
                 />
-
-                <button
-                  type="button"
-                  className={`card home-bottom-summary ranking-card home-insight-card premium-panel rank-tier-${rankTier} ${rankingShine}`}
-                  data-action="goRanking"
-                >
-                  <div className="home-ranking-head">
-                    <p className="analysis-title">내 공부 랭킹</p>
-                    <span className="badge">오늘 기준</span>
-                  </div>
-                  <p className="home-ranking-main">{myRank ? `${myRank}등` : '집계 전'}</p>
-                  <p className="home-ranking-tier">{rankTierLabel}</p>
-                  <p className="home-ranking-sub">{rankingTotal ? `전체 ${rankingTotal}명 중` : '공부 기록을 기다리고 있어요'}</p>
-                  <div className="home-ranking-progress">
-                    <i style={{ width: `${rankingProgress}%` }} />
-                  </div>
-                  <p className="home-ranking-foot">{percentile ? `상위 ${percentile}%` : '오늘 기준'}</p>
-                  <p className="home-ranking-tip">오늘 공부를 시작하면 순위가 올라가요</p>
-                </button>
               </div>
 
               <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />

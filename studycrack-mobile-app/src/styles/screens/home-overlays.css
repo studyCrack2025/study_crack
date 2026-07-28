@@ -43,12 +43,6 @@
 .noti-detail-head p{margin:6px 0 0;font-size:11px;font-weight:800;color:#94A3B8;}
 .noti-detail-body{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px;color:#334155;font-size:14px;line-height:1.65;font-weight:700;white-space:pre-wrap;}
 .home-top-icons{align-self:stretch;display:flex;justify-content:flex-end;}
-.home-calendar-btn{position:relative;width:100%;min-width:0;max-width:none;height:72px;display:grid;grid-template-columns:25px minmax(0,1fr);align-content:center;align-items:center;gap:8px;padding:0 12px;border-radius:21px;border:1px solid #DCE6F6;background:linear-gradient(180deg,#FFFFFF 0%,#FBFDFF 100%);color:#26304A;box-shadow:0 10px 22px rgba(52,78,143,.075);}
-.home-calendar-btn-icon{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;}
-.home-calendar-btn-icon svg{width:22px;height:22px;stroke:#1F2A44;stroke-width:2.35;}
-.home-calendar-copy{display:grid;gap:4px;min-width:0;text-align:left;}
-.home-calendar-dday{font-size:15px;line-height:1;font-weight:950;color:#1F2A44;letter-spacing:0;}
-.home-calendar-summary{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;line-height:1.2;font-weight:900;color:#7A879C;letter-spacing:0;}
 .calendar-sheet{max-height:80dvh;display:flex;flex-direction:column;overflow:hidden;border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box;}
 .calendar-sheet-overlay{overscroll-behavior:contain;}
 .calendar-sheet-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
