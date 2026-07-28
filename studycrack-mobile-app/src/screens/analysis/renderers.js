@@ -1,4 +1,8 @@
 import { EXAM_OPTIONS } from '../../constants/options.js';
+import {
+  buildAnalysisPresentation,
+  clampAnalysisScore
+} from './presentation.js';
 
 function defaultScoreTierClass(score) {
   const n = Number(score) || 0;
@@ -18,6 +22,14 @@ function escapeHtml(value) {
 
 function renderExamOptions(scoreExamType = '') {
   return EXAM_OPTIONS.map((label) => `<option value="${escapeHtml(label)}" ${scoreExamType === label ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
+}
+
+function renderTargetOptions(options = [], selected = '') {
+  const normalized = Array.from(new Set(options.filter(Boolean)));
+  const optionHtml = normalized.length
+    ? normalized.map((label) => `<option value="${escapeHtml(label)}" ${selected === label ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')
+    : '<option value="" selected>목표 대학을 추가해주세요</option>';
+  return `${optionHtml}<option value="__add_university__">+ 희망 대학 추가</option>`;
 }
 
 function formatPoint(value, digits = 1) {
@@ -54,20 +66,6 @@ export function renderAnalysisSearchModal(ctx) {
   return `<div class="analysis-search-overlay" data-action="closeAnalysisSearch"><div class="analysis-search-modal" data-action="noopModal"><div class="analysis-search-head"><h4>희망 대학 선택</h4><button data-action="closeAnalysisSearch">✕</button></div><div class="analysis-search-sticky analysis-search-inline"><input class="planner-input" data-field="analysisSearchTerm" value="${analysisSearchTerm}" placeholder="대학명 또는 학과명을 검색하세요"/><button type="button" class="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div><div class="analysis-search-section recommend"><p>현재 성적 기준 추천</p><div class="analysis-search-rec-grid">${analysisRecommended.map((name) => `<button class="analysis-rec-card" data-action="addAnalysisTarget" data-target-major="${name}"><div><strong>${name}</strong><span class="badge">추천</span></div><em>${analysisTargetList.includes(name) ? '추가됨' : '선택'}</em></button>`).join('')}</div></div><div class="analysis-search-section"><p>검색 결과</p>${analysisSearchList.map((name) => `<button class="analysis-search-row" data-action="addAnalysisTarget" data-target-major="${name}">${name}<span>${analysisTargetList.includes(name) ? '추가됨' : '추가'}</span></button>`).join('')}</div></div></div>`;
 }
 
-function clampScore(value, max = 250) {
-  return Math.max(0, Math.min(max, Number(value) || 0));
-}
-
-function selectedBoostRow(rows = [], selectedSubject = '', recommendedIndex = -1) {
-  if (!rows.length) return null;
-  const bySubject = rows.find((row) => row.subject === selectedSubject);
-  if (bySubject) return bySubject;
-  const best = [...rows].sort((a, b) => Number(b.gainNum || 0) - Number(a.gainNum || 0))[0];
-  if (best) return best;
-  if (recommendedIndex >= 0 && rows[recommendedIndex]) return rows[recommendedIndex];
-  return rows[0];
-}
-
 function rawNeededText(row = {}) {
   if (row.rawNeeded && row.rawNeeded > 1) return `원점수 +${row.rawNeeded}점부터 변화`;
   return '';
@@ -79,42 +77,39 @@ function simulationStatusText(row = {}, isBest = false) {
   return rawNeededText(row) || '변동 대기';
 }
 
-function sortedSimulationRows(rows = []) {
-  const maxGain = Math.max(...rows.map((row) => Number(row.gainNum || 0)), 0);
-  return [...rows]
-    .map((row) => ({ ...row, isBest: maxGain > 0 && Number(row.gainNum || 0) === maxGain }))
-    .sort((a, b) => {
-      const gainDelta = Number(b.gainNum || 0) - Number(a.gainNum || 0);
-      if (gainDelta !== 0) return gainDelta;
-      return Number(a.idx || 0) - Number(b.idx || 0);
-    });
-}
-
-function renderSimulationTable({ rows = [], selectedSubject = '', canUseScoreSimulation = false }) {
-  if (!canUseScoreSimulation) {
-    return `<div class="analysis-boost-locked"><b>Basic 이상에서 과목별 +1점 시뮬레이션이 열려요</b><button type="button" class="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button></div>`;
-  }
+function renderSimulationTable({ rows = [], selectedSubject = '' }) {
   if (!rows.length) {
     return '<div class="analysis-boost-empty">시뮬레이션 결과를 불러오면 과목별 상승 효율이 표시됩니다.</div>';
   }
-  const sortedRows = sortedSimulationRows(rows);
-  const defaultSubject = sortedRows[0]?.subject || '';
-  const activeSubject = selectedSubject || defaultSubject;
-  return `<div class="analysis-sim-table" role="table" aria-label="과목별 1점 상승 효과">
-    <div class="analysis-sim-table-head" role="row"><span>과목</span><span>+1점 효과</span><span>판정</span></div>
-    ${sortedRows.map((row) => {
+  const activeSubject = selectedSubject || rows[0]?.subject || '';
+  return `<div class="analysis-sim-table" role="table" aria-label="과목별 원점수 1점 상승의 환산점수 효과">
+    <div class="analysis-sim-table-head" role="row"><span>과목</span><span>환산 효과</span><span>+1점 적용 후</span></div>
+    ${rows.map((row) => {
     const active = activeSubject === row.subject;
     const status = simulationStatusText(row, row.isBest);
+    const before = clampAnalysisScore(row.baseUiScore);
+    const after = clampAnalysisScore(row.afterUiScore);
     return `<button type="button" class="analysis-sim-row ${row.isBest ? 'best' : ''} ${active ? 'active' : ''} ${row.isEvaporation ? 'is-flat' : ''}" data-action="highlightSimSubject" data-sim-subject="${escapeHtml(row.subject)}" role="row">
       <span class="analysis-sim-subject" role="cell"><b>${escapeHtml(row.subject)}</b>${row.isBest ? '<em>최고 반영</em>' : ''}</span>
       <span class="analysis-sim-effect" role="cell">${escapeHtml(row.gain)}</span>
-      <span class="analysis-sim-status" role="cell"><b>${escapeHtml(status)}</b><small>${escapeHtml(row.isEvaporation ? rawNeededText(row) || '현재 +1점으로는 변화 없음' : row.desc)}</small></span>
+      <span class="analysis-sim-status" role="cell"><b>${escapeHtml(status)}</b><small>${formatPoint(before)} → ${formatPoint(after)}점</small></span>
     </button>`;
   }).join('')}</div>`;
 }
 
-function firstSimulationMeta(rows = []) {
-  return rows.find((row) => row.backtracePlan || row.needsBacktrace) || rows[0] || null;
+function renderCurrentScoreSummary(scores = {}) {
+  const inquiryScores = [scores.inquiry1, scores.inquiry2]
+    .filter((value) => value !== '' && value !== null && value !== undefined)
+    .map(Number)
+    .filter(Number.isFinite);
+  const items = [
+    ['국어', scores.korean],
+    ['수학', scores.math],
+    ['영어', scores.english],
+    ['탐구', inquiryScores.length ? inquiryScores.reduce((sum, value) => sum + value, 0) / inquiryScores.length : null]
+  ].filter(([, value]) => value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value)));
+  if (!items.length) return '';
+  return `<div class="card analysis-score-summary"><div class="analysis-score-summary-head"><h4>현재 성적</h4><span>원점수 기준</span></div><div class="analysis-score-summary-grid">${items.map(([label, value]) => `<div><span>${label}</span><b>${formatPoint(value)}점</b></div>`).join('')}</div></div>`;
 }
 
 function subjectDeltaLabel(key = '', value = 0) {
@@ -184,8 +179,9 @@ function renderReverseProjectionCard({
 
 export function renderUnifiedAnalysis(ctx) {
   const {
-    analysisGaugeColor = '#4c79ee',
     analysisHighlightedSubject = '',
+    analysisMajorOptions = [],
+    analysisStatus = '',
     analysisSelected = {},
     analysisSimRecommendedIndex = -1,
     analysisSimRows = [],
@@ -195,33 +191,52 @@ export function renderUnifiedAnalysis(ctx) {
     analysisBacktraceError = '',
     canAccessStandard = false,
     canUseReverseProjection = canAccessStandard,
-    canUseScoreSimulation = canAccessStandard,
+    normalizedTargetMajor = '',
     scoreExamType = '',
     scoreTierClass = defaultScoreTierClass,
+    scores = {},
   } = ctx;
   const scoreView = analysisScoreView || { pending: false, hasScore: true, score: Number(analysisSelected.score || 0) };
-  const simMeta = firstSimulationMeta(analysisSimRows);
-  const serverBaseScore = Number(simMeta?.baseUiScore);
-  const rawBaseScore = Number.isFinite(serverBaseScore) ? serverBaseScore : Number(scoreView.score ?? analysisSelected.score ?? 0);
-  const currentScore = clampScore(rawBaseScore);
-  const bestBoost = canUseScoreSimulation ? selectedBoostRow(analysisSimRows, '', analysisSimRecommendedIndex) : null;
-  const currentPct = Math.min((currentScore / 250) * 100, 100);
-  const gapToPass = Math.max(0, 100 - currentScore);
+  const presentation = buildAnalysisPresentation({
+    rows: analysisSimRows,
+    selectedSubject: analysisHighlightedSubject,
+    recommendedIndex: analysisSimRecommendedIndex,
+    scoreView,
+    fallbackScore: analysisSelected.score
+  });
+  const {
+    sortedRows,
+    selectedRow,
+    bestRow,
+    currentScore,
+    afterScore,
+    currentPct,
+    afterPct,
+    previewLeftPct,
+    previewWidthPct,
+    hasPreview,
+    gapToPass
+  } = presentation;
+  const activeSubject = selectedRow?.subject || '';
   const gapToPassText = gapToPass ? `+${formatPoint(gapToPass)}점` : '도달';
-  const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '현재 위치';
-  const maxEffectText = bestBoost && scoreView.hasScore ? bestBoost.gain : '—';
-  const bestSubjectChip = bestBoost && scoreView.hasScore ? `${escapeHtml(bestBoost.subject)} ${escapeHtml(bestBoost.gain)}` : '효과 대기';
+  const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
+  const maxEffectText = bestRow && scoreView.hasScore ? bestRow.gain : '—';
+  const bestSubjectChip = bestRow && scoreView.hasScore ? `${escapeHtml(bestRow.subject)} ${escapeHtml(bestRow.gain)}` : '효과 대기';
+  const selectedEffectText = selectedRow && scoreView.hasScore
+    ? `${escapeHtml(selectedRow.subject)} 원점수 +1 적용 시 ${formatPoint(currentScore)}점 → ${formatPoint(afterScore)}점`
+    : '과목을 선택하면 상승 후 환산점수를 함께 보여드려요.';
   const passPct = 40;
   const safePct = 60;
   return `
     <div class="analysis-unified">
       <div class="card analysis-result-card">
         <div class="analysis-result-head">
-          <div>
-            <h4>희망대학 분석</h4>
-            <p>대학 분석 결과가 같은 시험 기준으로 계산됩니다.</p>
-          </div>
-          <select class="analysis-exam-select planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select>
+          <label><span>희망 대학</span><select class="analysis-target-select planner-input" data-field="analysisTargetMajor">${renderTargetOptions(analysisMajorOptions, normalizedTargetMajor)}</select></label>
+          <label><span>시험 기준</span><select class="analysis-exam-select planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select></label>
+        </div>
+        <div class="analysis-result-overview">
+          <div><span>현재 환산점수</span><strong>${escapeHtml(currentScoreText)}</strong></div>
+          <em class="analysis-status-pill ${scoreTierClass(currentScore)}">${escapeHtml(analysisStatus || '분석 결과')}</em>
         </div>
         <div class="analysis-gap-grid">
           <div><span>합격컷까지</span><b>${gapToPassText}</b></div>
@@ -230,21 +245,24 @@ export function renderUnifiedAnalysis(ctx) {
         <div class="analysis-main-gauge-wrap ${scoreTierClass(currentScore)}">
           <div class="analysis-main-gauge-top"><span>${escapeHtml(currentScoreText)}</span></div>
           <div class="analysis-main-gauge" aria-label="환산점수 게이지">
-            <i class="analysis-main-gauge-fill" style="width:${currentPct}%;background:${analysisGaugeColor}"></i>
+            <i class="analysis-main-gauge-fill" style="width:${currentPct}%"></i>
+            ${hasPreview ? `<i class="analysis-main-gauge-preview-fill" style="left:${previewLeftPct}%;width:${previewWidthPct}%"><em></em><em></em></i><span class="analysis-main-gauge-preview-label" style="left:${afterPct}%">+1 후 ${formatPoint(afterScore)}점</span>` : ''}
             <span class="analysis-main-gauge-pin" style="left:${currentPct}%"><i></i></span>
-            <span class="analysis-main-gauge-marker pass" style="left:${passPct}%"><i></i></span>
-            <span class="analysis-main-gauge-marker safe" style="left:${safePct}%"><i></i></span>
+            <span class="analysis-main-gauge-marker pass" style="left:${passPct}%"></span>
+            <span class="analysis-main-gauge-marker safe" style="left:${safePct}%"></span>
           </div>
-          <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="fifty" style="left:20%">50</span><span class="pass" style="left:${passPct}%">합격 100</span><span class="safe" style="left:${safePct}%">안정 150</span><span class="max">250</span></div>
+          <div class="analysis-main-gauge-scale"><span class="zero">0</span><span class="pass" style="left:${passPct}%">합격 100</span><span class="safe" style="left:${safePct}%">안정 150</span><span class="max">250</span></div>
+          <p class="analysis-main-gauge-caption">${selectedEffectText}</p>
         </div>
       </div>
 
       <div class="card analysis-boost-card">
-        <div class="analysis-section-head"><div><span class="analysis-card-eyebrow">점수 상승 시뮬레이션</span><h4>과목 1점이 어디에 가장 크게 반영될까요?</h4></div><b>${bestSubjectChip}</b></div>
-        ${renderSimulationTable({ rows: analysisSimRows, selectedSubject: analysisHighlightedSubject, canUseScoreSimulation })}
+        <div class="analysis-section-head"><div><span class="analysis-card-eyebrow">원점수 +1 효율</span><h4>한 점을 어디에 투자할까요?</h4><p>${bestRow ? `${escapeHtml(bestRow.subject)} 1점이 환산점수에 가장 크게 반영돼요.` : '성적 분석이 끝나면 과목별 효율을 비교해드려요.'}</p></div><b>${bestSubjectChip}</b></div>
+        ${renderSimulationTable({ rows: sortedRows, selectedSubject: activeSubject })}
       </div>
 
       ${renderReverseProjectionCard({ analysisSimRows, canUseReverseProjection, currentScore, backtraceStatus: analysisBacktraceStatus, backtracePlan: analysisBacktracePlan, backtraceError: analysisBacktraceError })}
+      ${renderCurrentScoreSummary(scores)}
     </div>
   `;
 }
@@ -296,7 +314,7 @@ export function renderAnalysisScreen(ctx) {
     layout
   } = ctx;
   const loadingPanel = isAnalyzing
-    ? '<div class="analysis-loading-stage"><div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>분석 중</span><b>선택한 성적과 목표대학을 다시 계산하고 있어요</b><p>잠시 뒤 지원 가능성과 추천 전략이 갱신됩니다.</p></div></div></div>'
+    ? '<div class="analysis-loading-stage"><div class="analysis-loading-panel"><span class="analysis-loading-orbit"><i></i><i></i><i></i></span><div><span>AI 분석 진행 중</span><b>목표 대학 기준 환산점수를 계산하고 있어요</b><p>현재 점수와 과목별 원점수 1점 효과를 확인합니다.</p></div></div></div>'
     : '';
   const stalePanel = analysisApiStatus === 'stale'
     ? `<div class="analysis-stale-note"><i aria-hidden="true"></i><div><b>이전 분석 결과를 먼저 보여드리고 있어요</b><span>${escapeHtml(analysisApiError || '새 기준으로 계산이 끝나면 결과가 자동으로 갱신됩니다.')}</span></div></div>`
@@ -305,12 +323,7 @@ export function renderAnalysisScreen(ctx) {
     ? `<div class="analysis-stale-note error"><i aria-hidden="true"></i><div><b>분석 결과를 불러오지 못했습니다</b><span>${escapeHtml(analysisApiError)}</span></div></div>`
     : '';
   const contentStage = `<div class="analysis-content-stage">
-      <div class="card analysis-v2-head">
-        <div class="top-card-head">
-          <div><h3>분석</h3><p>결과를 보고, 전략을 이해하고, 바로 실행으로 연결하세요.</p></div>
-          <span class="top-infographic top-infographic-analysis" aria-hidden="true"><i></i><i></i><i></i></span>
-        </div>
-      </div>
+      <header class="analysis-context-head"><div><span>AI 성적 분석</span><h3>분석</h3><p>환산점수와 과목별 효율을 한눈에 확인하세요.</p></div><i aria-hidden="true"><b></b><b></b><b></b></i></header>
       ${stalePanel}
       ${errorPanel}
       ${renderUnifiedAnalysis(ctx)}
