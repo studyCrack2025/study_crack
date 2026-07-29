@@ -47,20 +47,20 @@ export function renderSplashScreen(ctx) {
 export function renderOn1Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content" data-screen="on1"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2><span class="accent">데이터 기반으로</span>
 내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을
-제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">합격 가능성</div><div class="onboarding-score">72<em>%</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c7d8f8" stop-opacity="0.65"/><stop offset="100%" stop-color="#c7d8f8" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#4c79ee" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#4c79ee"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
+제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">지원학과 AI 점수</div><div class="onboarding-score">128<em>점</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c7d8f8" stop-opacity="0.65"/><stop offset="100%" stop-color="#c7d8f8" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#4c79ee" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#4c79ee"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
 }
 
 export function renderOn2Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content" data-screen="on2"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2>나에게 최적화된
 점수 상승 전략을 제공해요</h2><p>과목별 효율과 목표 도달 시간을
-정확하게 예측해 드려요.</p></div><div class="onboarding-center"><div class="onboarding-card strategy"><div class="onboarding-stat">수학 +12점
-합격 가능성 +18%</div><svg class="onboarding-graph strategy" viewBox="0 0 320 96"><rect x="72" y="58" width="16" height="38" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="142" y="40" width="16" height="56" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="212" y="22" width="16" height="74" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="282" y="-2" width="16" height="98" rx="3" fill="#4c79ee" fill-opacity="0.85"/><path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="#8aa9f1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="88" r="3" fill="#8aa9f1"/><circle cx="302" cy="12" r="3" fill="#8aa9f1"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on2" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`;
+정확하게 예측해 드려요.</p></div><div class="onboarding-center"><div class="onboarding-card strategy"><div class="onboarding-stat"><span>수학 원점수 +1</span>
+환산점수 +18점</div><svg class="onboarding-graph strategy" viewBox="0 0 320 96"><rect x="72" y="58" width="16" height="38" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="142" y="40" width="16" height="56" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="212" y="22" width="16" height="74" rx="3" fill="#4c79ee" fill-opacity="0.85"/><rect x="282" y="-2" width="16" height="98" rx="3" fill="#4c79ee" fill-opacity="0.85"/><path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="#8aa9f1" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="88" r="3" fill="#8aa9f1"/><circle cx="302" cy="12" r="3" fill="#8aa9f1"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on2" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i class="active"></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on3">다음</button></div></div></div></div>`;
 }
 
 export function renderOn3Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content" data-screen="on3"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2>실행부터 관리까지
-끝까지 함께해요</h2><p>플래너, 주간 점검, Sky튜터 피드백,
-프로 보고서로 완성됩니다.</p></div><div class="onboarding-center"><div class="onboarding-card list"><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg></span><span>플래너 & 주간 점검</span></div><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-4 5-6 8-6s6.2 2 8 6"/></svg></span><span>Sky튜터 1:1 피드백</span></div><div class="onboarding-list-item long-report"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h6"/></svg></span><span>중장기 합격 전략 리포트</span></div></div></div><img src="${CRACKY_SRC}" class="onboarding-character on3" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="authLogin">시작하기</button></div></div></div></div>`;
+끝까지 함께해요</h2><p>플래너, 주간 점검, SKY 튜터 피드백,
+프로 보고서로 완성됩니다.</p></div><div class="onboarding-center"><div class="onboarding-card list"><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg></span><span>플래너 & 주간 점검</span></div><div class="onboarding-list-item"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-4 5-6 8-6s6.2 2 8 6"/></svg></span><span>SKY 튜터 1:1 피드백</span></div><div class="onboarding-list-item long-report"><span class="onboarding-icon-box"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v6h6"/></svg></span><span>중장기 합격 전략 리포트</span></div></div></div><img src="${CRACKY_SRC}" class="onboarding-character on3" alt="크랙이"/><div class="onboarding-shot-dots"><i></i><i></i><i class="active"></i></div><button class="onboarding-next" data-action="goto" data-target="authLogin">시작하기</button></div></div></div></div>`;
 }
 
 function renderOnboardingScreen(ctx, { step, title, subcopy, bubbleText, body = '', cta = '' }) {
@@ -73,7 +73,7 @@ function renderOnboardingScreen(ctx, { step, title, subcopy, bubbleText, body = 
        <p class="sub ob-subcopy">${subcopy}</p>
        ${renderBubble(bubbleText, crackySrc)}
        ${body}
-       </div><div class="cta-wrapper cta-container onboarding-fixed-cta">${cta}</div></div>`,
+       </div><div class="cta-wrapper cta-container">${cta}</div></div>`,
     false
   );
 }
@@ -83,18 +83,18 @@ export function renderOb1Screen(ctx) {
 
   const body = `<div class="ob1-survey-card">
          <h3>정성조사서</h3>
-         <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p class="ob1-subtitle" style="color:#ef4444;font-weight:700;">* 표시는 필수 입력 항목입니다.</p>
+         <p class="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p class="ob1-subtitle ob-required-copy">* 표시는 필수 입력 항목입니다.</p>
          <div class="ob1-field-stack">
            <div class="ob1-field">
-            <label>현재 학년 <span style="color:#ef4444">*</span></label>
+            <label>현재 학년 <span class="ob-required">*</span></label>
              <div class="ob1-pill-row">${renderGradeButtons(obGradeStatus)}</div>
            </div>
            <div class="ob1-field">
-            <label>출신 학교 <span style="color:#ef4444">*</span></label>
+            <label>출신 학교 <span class="ob-required">*</span></label>
              <input class="ob1-input" data-field="obSchoolName" value="${obSchoolName}" placeholder="출신 학교 입력" />
            </div>
            <div class="ob1-field">
-            <label>희망 계열 <span style="color:#ef4444">*</span></label>
+            <label>희망 계열 <span class="ob-required">*</span></label>
              <select class="ob1-select" data-field="obTrack">
                <option ${selected(obTrack, '예체능')}>예체능</option>
                <option ${selected(obTrack, '인문')}>인문</option>
@@ -102,7 +102,7 @@ export function renderOb1Screen(ctx) {
              </select>
            </div>
            <div class="ob1-field">
-             <label>스터디크랙을 통해 얻고 싶은 점 <span style="color:#ef4444">*</span></label>
+             <label>스터디크랙을 통해 얻고 싶은 점 <span class="ob-required">*</span></label>
              <textarea class="ob1-textarea" data-field="obGoalText" placeholder="자유롭게 입력">${obGoalText}</textarea>
            </div>
            <div class="ob1-field">
@@ -126,7 +126,7 @@ export function renderOb2Screen(ctx) {
   const { obExamType } = ctx;
 
   const body = `<div class="ob1-score-wrap">
-         <h3>성적 입력 <span style="color:#ef4444">*</span></h3>
+         <h3>성적 입력 <span class="ob-required">*</span></h3>
          <p class="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p>
          <div class="ob1-score-exam">
            <label>시험 선택</label>
@@ -203,7 +203,7 @@ export function renderOb4Screen(ctx) {
          <div class="ob-uni-list">${recommended.map((name) => `<button class="ob-uni-item ${targetMajor === name ? 'active' : ''}" data-action="selectTarget" data-target-major="${name}">${name}</button>`).join('')}</div>
        </div>
        <div class="card ob-card analysis-top">
-         <p class="analysis-title">합격 가능성 분석</p>
+         <p class="analysis-title">지원학과 환산점수 분석</p>
          <div class="analysis-v2-summary-top">
            <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
            <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${score}점</strong><small>AI 점수</small></div>
@@ -213,10 +213,10 @@ export function renderOb4Screen(ctx) {
          <div class="kpi-row score-row"><div class="kpi-item"><b>${liveCurrentScore}점</b>현재성적</div><div class="kpi-item"><b>100점</b>합격 컷</div><div class="kpi-item danger"><b>${gap > 0 ? `+${gap}` : gap}점</b>격차</div></div>
        </div>
        <div class="card ob-card plus-one-card">
-         <p class="analysis-title">+1점 상승 시뮬레이션</p>
-         <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>+12점 → +18%</span></div>
-         <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>+6점 → +9%</span></div>
-         <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>+3점 → +5%</span></div>
+         <p class="analysis-title">원점수 1점 효율</p>
+         <div class="analysis-impact-item">수학<div class="track"><i style="width:90%"></i></div><span>환산 +18.0점</span></div>
+         <div class="analysis-impact-item">탐구<div class="track"><i style="width:68%;background:#14b8a6"></i></div><span>환산 +6.8점</span></div>
+         <div class="analysis-impact-item">영어<div class="track"><i style="width:48%;background:#f59e0b"></i></div><span>환산 +3.0점</span></div>
        </div>
        ${renderMbtiResultCard(mbtiResult)}`;
 
@@ -251,7 +251,7 @@ export function renderOb5Screen(ctx) {
        <div class="eta-card"><div class="card ob-card ob-period-card on-eta-card"><span class="eyebrow">현재 학습분석 기반</span><b>Standard 이용 시 평균 3개월 내 도달 예상</b><p>주간 플래너 피드백과 학습 방향 코칭 제공</p></div>${ob3IsAnalyzing ? `<div class="loading-overlay"><div class="loading-box"><div class="dots">● ● ●</div><div>분석중입니다</div><div>잠시만 기다려주세요</div></div></div>` : ''}</div>
        <div class="ob5-after-eta">
        <div class="card ob-card">
-         <p class="analysis-title">합격 가능성 변화</p>
+         <p class="analysis-title">환산점수 변화</p>
          <div class="ob-total-compare"><div><span>현재</span><b>${gaugeCurrent}점</b></div><i>→</i><div><span>목표</span><b class="target">${gaugeTarget}점</b></div></div>
          <div class="ob-gauge">
            <div class="ob-gauge-current ${scoreTierClass(gaugeCurrent)}" style="width:${gaugeCurrentPct}%"></div>

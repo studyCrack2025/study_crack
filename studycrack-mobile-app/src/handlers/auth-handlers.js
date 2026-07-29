@@ -240,6 +240,18 @@ export function createAuthHandlers(ctx) {
   }
 
   return {
+    toggleLoginPasswordVisibility({ actionEl, event }) {
+      prevent(event);
+      const input = query(ctx, '[data-login-password]');
+      if (!input) return false;
+      const reveal = input.type === 'password';
+      input.type = reveal ? 'text' : 'password';
+      actionEl.textContent = reveal ? '숨김' : '보기';
+      actionEl.setAttribute('aria-label', reveal ? '비밀번호 숨기기' : '비밀번호 보기');
+      input.focus?.({ preventScroll: true });
+      return true;
+    },
+
     openFindEmailModal({ event }) {
       event?.preventDefault?.();
       setFindEmailModalOpen(true);

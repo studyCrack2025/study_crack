@@ -10,13 +10,14 @@
 
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="/css/auth.css?v=20260524a">
+    <link rel="stylesheet" href="/css/social-callback.css?v=20260729a">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 
 </head>
-<body class="auth-body">
-    <div class="auth-card" style="text-align: center;">
-        <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img" style="margin-bottom: 20px;">
-        <p id="statusMsg" style="color: #475569; font-size: 0.95rem; line-height: 1.7;">소셜 로그인을 처리하고 있습니다.<br>잠시만 기다려 주세요...</p>
+<body class="auth-body social-callback-page">
+    <div class="auth-card social-callback-status">
+        <img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack 로고" class="auth-logo-img">
+        <p id="statusMsg">소셜 로그인을 처리하고 있습니다.<br>잠시만 기다려 주세요...</p>
     </div>
 
     <div id="socialSignupTermsModal" class="modal hidden">
@@ -61,7 +62,7 @@
     <div id="socialTermDetailModal" class="modal hidden">
         <div class="modal-content term-modal-content">
             <span class="close-btn" onclick="closeSocialTermDetailModal()">&times;</span>
-            <h3 id="socialTermDetailTitle" style="margin-bottom: 15px; font-size: 1.1rem; color:#1e293b;"></h3>
+            <h3 id="socialTermDetailTitle"></h3>
             <div id="socialTermDetailText" class="term-text-box"></div>
         </div>
     </div>

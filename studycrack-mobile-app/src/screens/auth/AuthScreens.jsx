@@ -1,9 +1,9 @@
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
 import { renderTermsModal } from '../../components/terms-modal.js';
 
-function Logo({ src = STUDYCRACK_LOGO_SRC }) {
+function Logo({ src = STUDYCRACK_LOGO_SRC, compact = false }) {
   return (
-    <div className="auth-logo-wrap compact signup-logo">
+    <div className={`auth-logo-wrap${compact ? ' compact' : ''}`}>
       <img
         src={src}
         className="auth-logo"
@@ -23,11 +23,11 @@ function SocialButtons({ suffix = '로그인' }) {
   return (
     <div className="auth-sso-row">
       <button className="auth-sso-btn google" data-action="ssoSuccess" data-provider="google">
-        <span className="auth-sso-icon">G</span>
+        <img className="auth-sso-icon" src="./assets/images/social-google.svg" alt="" aria-hidden="true" />
         <span>Google로 {suffix}</span>
       </button>
       <button className="auth-sso-btn naver" data-action="ssoSuccess" data-provider="naver">
-        <span className="auth-sso-icon">N</span>
+        <img className="auth-sso-icon" src="./assets/images/social-naver.svg" alt="" aria-hidden="true" />
         <span>Naver로 {suffix}</span>
       </button>
     </div>
@@ -39,8 +39,8 @@ function FindEmailModal({ foundEmailMasked = '' }) {
     <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeFindEmailModal">
       <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="find-email-title">
         <div className="sc-modal-head auth-recovery-head">
-          <span className="auth-recovery-icon" aria-hidden="true">ID</span>
           <div className="auth-recovery-copy">
+            <span className="auth-recovery-eyebrow">계정 복구</span>
             <h3 id="find-email-title">이메일 찾기</h3>
             <p className="sub">가입 시 등록한 이름과 휴대폰 번호로 계정을 확인합니다.</p>
           </div>
@@ -53,7 +53,7 @@ function FindEmailModal({ foundEmailMasked = '' }) {
           </div>
           {foundEmailMasked && <div className="find-email-result"><span>확인된 이메일</span><b>{foundEmailMasked}</b></div>}
         </div>
-        <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action="findEmailByNamePhone">이메일 찾기</button></div>
+        <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action={foundEmailMasked ? 'closeFindEmailModal' : 'findEmailByNamePhone'}>{foundEmailMasked ? '로그인으로 돌아가기' : '이메일 찾기'}</button></div>
       </div>
     </div>
   );
@@ -65,8 +65,8 @@ function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
     <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeResetPasswordModal">
       <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
         <div className="sc-modal-head auth-recovery-head">
-          <span className="auth-recovery-icon" aria-hidden="true">PW</span>
           <div className="auth-recovery-copy">
+            <span className="auth-recovery-eyebrow">{isRequest ? '계정 복구' : '인증 코드 확인'}</span>
             <h3 id="reset-password-title">비밀번호 재설정</h3>
             <p className="sub">{isRequest ? '가입하신 이메일 주소로 비밀번호 재설정 코드를 보내드립니다.' : '이메일로 발송된 6자리 코드와 새 비밀번호를 입력해주세요.'}</p>
           </div>
@@ -120,24 +120,30 @@ export function AuthLoginScreen(ctx) {
   return (
     <AuthShell screen="authLogin" overlays={overlays}>
       <div className="auth-screen">
-        <div className="card auth-unified-card">
-          <Logo src={studycrackLogoSrc} />
-          <h1 className="auth-wordmark">StudyCrack</h1>
-          <p className="auth-title">합격 전략을 시작해볼까요?</p>
-          <input className="planner-input auth-input" data-field="loginEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="username" placeholder="이메일" />
-          <input className="planner-input auth-input" data-login-password type="password" autoComplete="current-password" placeholder="비밀번호" />
-          {authError && <p className="auth-error">{authError}</p>}
-          <button className="btn btn-primary auth-submit" data-action="loginSuccess" disabled={authSubmitting}>
-            {authSubmitting ? <><span className="auth-button-spinner" aria-hidden="true" />로그인 중...</> : '로그인'}
-          </button>
-          <div className="auth-divider"><span>또는 소셜 계정으로 로그인</span></div>
-          <SocialButtons />
-          <div className="auth-helper-row">
-            <button className="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
-            <span>|</span>
-            <button className="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
+        <div className="auth-entry-layout">
+          <header className="auth-brand-block">
+            <Logo src={studycrackLogoSrc} />
+            <h1 className="auth-wordmark">StudyCrack</h1>
+            <p className="auth-title">합격 전략을 시작해볼까요?</p>
+          </header>
+          <div className="auth-unified-card">
+            <div className="auth-form-stack">
+              <label className="auth-field"><span>이메일</span><input className="planner-input auth-input" data-field="loginEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="username" placeholder="example@studycrack.co.kr" /></label>
+              <label className="auth-field"><span>비밀번호</span><div className="auth-password-field"><input className="planner-input auth-input" data-login-password type="password" autoComplete="current-password" placeholder="비밀번호를 입력해주세요" /><button type="button" className="auth-password-toggle" data-action="toggleLoginPasswordVisibility" aria-label="비밀번호 보기">보기</button></div></label>
+              {authError && <p className="auth-error" role="alert">{authError}</p>}
+              <button className="btn btn-primary auth-submit" data-action="loginSuccess" disabled={authSubmitting}>
+                {authSubmitting ? <><span className="auth-button-spinner" aria-hidden="true" />로그인 중...</> : '로그인'}
+              </button>
+            </div>
+            <div className="auth-divider"><span>소셜 계정으로 로그인</span></div>
+            <SocialButtons />
+            <div className="auth-helper-row">
+              <button className="auth-link-btn" data-action="openFindEmailModal">이메일 찾기</button>
+              <span aria-hidden="true" />
+              <button className="auth-link-btn" data-action="openResetPasswordModal">비밀번호 찾기</button>
+            </div>
+            <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
           </div>
-          <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
         </div>
       </div>
     </AuthShell>
@@ -224,7 +230,7 @@ function SignupStep({ ctx, step }) {
     return (
       <section className="signup-stage" key="identity">
         <div className="signup-stage-head"><span>2단계</span><h2>기본 정보와 휴대폰을 확인할게요</h2><p>본인 확인과 서비스 안내에 필요한 정보입니다.</p></div>
-        <div className="signup-section auth-native-section">
+        <div className="signup-section">
           <div className="signup-section-head"><p className="section-title">기본 정보</p><VerifyStatus done={phoneVerified} label="전화번호" /></div>
           <input className="planner-input auth-input" data-field="signupName" autoComplete="name" placeholder="이름" defaultValue={signupForm.name} />
           <div className="signup-two-col">
@@ -248,7 +254,7 @@ function SignupStep({ ctx, step }) {
     return (
       <section className="signup-stage" key="email">
         <div className="signup-stage-head"><span>3단계</span><h2>로그인에 사용할 이메일을 인증해주세요</h2><p>인증번호는 입력한 이메일 주소로 발송됩니다.</p></div>
-        <div className="signup-section auth-native-section">
+        <div className="signup-section">
           <div className="signup-section-head"><p className="section-title">이메일 인증</p><VerifyStatus done={emailVerified} label="이메일" /></div>
           <input className="planner-input auth-input" data-field="signupEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="email" placeholder="이메일" defaultValue={signupForm.email} />
           <button type="button" className="btn btn-secondary signup-inline-btn" data-action="sendSignupEmailCode" disabled={signupEmailSending || signupSubmitting}>{signupEmailSending ? '발송 중...' : '이메일 인증번호 받기'}</button>
@@ -264,12 +270,12 @@ function SignupStep({ ctx, step }) {
   return (
     <section className="signup-stage" key="account">
       <div className="signup-stage-head"><span>4단계</span><h2>마지막으로 계정 정보를 설정해주세요</h2><p>안전한 비밀번호를 만들면 가입이 완료됩니다.</p></div>
-      <div className="signup-section auth-native-section">
+      <div className="signup-section">
         <p className="section-title">비밀번호</p>
         <input className="planner-input auth-input" data-field="signupPassword" type="password" autoComplete="new-password" placeholder="영문 대/소문자, 숫자, 특수문자 포함 8자 이상" defaultValue={signupForm.password} />
         <input className="planner-input auth-input" data-field="signupPasswordConfirm" type="password" autoComplete="new-password" placeholder="비밀번호 확인" defaultValue={signupForm.passwordConfirm} />
       </div>
-      <div className="signup-section auth-native-section">
+      <div className="signup-section">
         <p className="section-title">가입 경로</p>
         <select className="planner-input auth-input" data-field="signupReferral" defaultValue={signupForm.referral || '인스타그램'}>
           <option value="인스타그램">인스타그램</option><option value="스레드">스레드</option><option value="오르비">오르비</option><option value="etc">기타</option>
@@ -297,7 +303,7 @@ export function AuthSignupScreen(ctx) {
     <AuthShell screen="authSignup" overlays={overlays}>
       <div className="signup-page">
         <div className="signup-form-card">
-          <Logo src={studycrackLogoSrc} />
+          <Logo src={studycrackLogoSrc} compact />
           <SignupProgress step={step} />
           <SignupStep ctx={ctx} step={step} />
           {signupError && <p className="auth-error signup-error" role="alert">{signupError}</p>}

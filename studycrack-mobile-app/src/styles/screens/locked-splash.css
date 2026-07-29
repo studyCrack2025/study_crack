@@ -1,16 +1,16 @@
-.splash-v2{width:100%;height:100%;min-height:100dvh;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;background:radial-gradient(circle at 50% 20%,rgba(113,65,217,.12),transparent 34%),linear-gradient(180deg,#FFFFFF 0%,#F3F7FF 46%,#EAF2FF 100%);color:var(--text);gap:12px;justify-content:center;padding:0 42px;text-align:center;}
-.splash-v2::before{content:"";position:absolute;left:50%;top:18%;width:230px;height:230px;border-radius:999px;background:rgba(76,121,238,.12);transform:translateX(-50%);filter:blur(2px);}
+.splash-v2{width:100%;height:100%;min-height:100dvh;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sc-space-12);box-sizing:border-box;padding:var(--sc-space-24);background:var(--sc-canvas);color:var(--sc-ink);text-align:center;}
+.splash-v2::before{content:none;}
 .splash-v2 h1{margin:0;font-size:32px;line-height:1.15;font-weight:900;letter-spacing:0;}
-.splash-v2 p{position:relative;z-index:1;margin:2px 0 0;color:#344E8F;font-size:15px;font-weight:800;letter-spacing:0;}
-.splash-logo-panel{position:relative;z-index:1;width:188px;min-height:92px;border-radius:28px;background:rgba(255,255,255,.78);border:1px solid rgba(216,230,255,.92);display:grid;place-items:center;padding:16px 18px;box-shadow:0 18px 42px rgba(52,78,143,.13);}
-.splash-real-logo{display:block;width:150px;max-width:100%;height:auto;}
-.splash-cracky{position:relative;z-index:1;width:118px;height:auto;margin:-4px 0 -2px;filter:drop-shadow(0 14px 18px rgba(52,78,143,.16));}
+.splash-v2 p{position:relative;z-index:1;margin:0;color:var(--sc-navy);font-size:var(--sc-type-body);font-weight:700;letter-spacing:0;}
+.splash-logo-panel{position:relative;z-index:1;width:174px;min-height:84px;display:grid;place-items:center;box-sizing:border-box;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-raised);}
+.splash-real-logo{display:block;width:138px;max-width:100%;height:auto;}
+.splash-cracky{position:relative;z-index:1;width:96px;height:auto;margin:0;filter:drop-shadow(0 8px 14px rgba(37,69,121,.12));}
 .splash-brand-mark{width:124px;height:124px;border-radius:32px;background:rgba(255,255,255,.14);display:grid;place-items:center;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 18px 40px rgba(15,23,42,.18);}
 .splash-bolt{width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.92);color:#2563EB;display:grid;place-items:center;font-size:24px;box-shadow:0 8px 20px rgba(15,23,42,.16);}
 .splash-card{position:absolute;right:18px;bottom:18px;width:42px;height:34px;border-radius:12px;background:rgba(255,255,255,.26);display:grid;gap:4px;padding:8px;box-sizing:border-box;}
 .splash-card i{display:block;height:3px;border-radius:999px;background:rgba(255,255,255,.78);}
-.splash-progress{position:relative;z-index:1;width:112px;height:4px;border-radius:999px;background:#D8E6FF;overflow:hidden;margin-top:8px;}
-.splash-progress i{display:block;width:38%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary-dark),var(--primary));animation:splashProgress 1.05s ease-in-out infinite;}
+.splash-progress{position:relative;z-index:1;width:96px;height:4px;margin-top:var(--sc-space-8);overflow:hidden;border-radius:var(--sc-radius-pill);background:var(--sc-border-subtle);}
+.splash-progress i{display:block;width:38%;height:100%;border-radius:inherit;background:var(--sc-blue);animation:splashProgress 1.05s ease-in-out infinite;}
 @keyframes splashProgress{0%{transform:translateX(-110%);}100%{transform:translateX(280%);}}
 .app-screen[data-screen="lockedFeature"]{display:grid;min-height:100%;padding:0!important;overflow:hidden;}
 .locked-feature-page{position:relative;display:grid;gap:var(--sc-space-12);min-height:100%;padding:var(--sc-space-16) var(--sc-space-16) calc(var(--sc-tabbar-height) + var(--sc-space-16) + env(safe-area-inset-bottom));box-sizing:border-box;background:var(--sc-canvas);}
