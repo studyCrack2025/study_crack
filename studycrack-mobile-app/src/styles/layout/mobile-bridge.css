@@ -16,7 +16,7 @@ input,select,textarea{font-size:16px !important;}
 .home-dashboard,.analysis-v2,.planner-screen,.tutor-qna-page,.pro-elite-page,.account-info-page,.qual-form-page,.score-info-page,.plan-console-page,.payment-console-page{background:transparent;}
 .home-dashboard .card,.analysis-v2 .card,.planner-screen .card,.tutor-qna-page .card,.pro-elite-page .card,.account-info-page .card,.qual-form-page .card,.score-info-page .card,.plan-console-page .card,.payment-console-page .card{border-color:#DDE7F6;box-shadow:0 7px 18px rgba(52,78,143,.07);}
 .top-icon-btn{border:1px solid #DDE7F6;background:#FFFFFF;color:#26304A;box-shadow:0 5px 14px rgba(52,78,143,.06);}
-.app-frame,.app-screen,.app-content,.home-dashboard,.home-content,.analysis-v2,.planner-screen,.my-stack,.plan-console-page,.payment-console-page{min-width:0;max-width:100%;}
+.app-frame,.app-screen,.app-content,.home-dashboard,.home-content,.analysis-v2,.planner-screen,.my-page,.plan-console-page,.payment-console-page{min-width:0;max-width:100%;}
 .home-content > *,.analysis-v2 > *,.planner-screen > *,.plan-console-page > *,.payment-console-page > *{min-width:0;max-width:100%;}
 .card,button,input,select,textarea,img,svg{max-width:100%;}
 .planner-calendar-sheet{bottom:calc(var(--sc-tabbar-height) + env(safe-area-inset-bottom));border-radius:var(--sc-radius-card) var(--sc-radius-card) 0 0;}

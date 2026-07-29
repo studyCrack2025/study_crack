@@ -262,6 +262,10 @@ function renderMyMbtiCard(mbtiResult) {
   </div>`;
 }
 
+export function renderMyPageOverlays(ctx) {
+  return `${renderProfileDetailModal(ctx)}${renderMbtiModal(ctx)}`;
+}
+
 export function renderMyPageScreen(ctx) {
   const {
     icon = defaultIcon,
@@ -274,7 +278,7 @@ export function renderMyPageScreen(ctx) {
   const sub = buildSubscriptionSummary(user, selectedPlan);
   const cardSummary = sub.hasPlan ? `${sub.planLabel} · ${sub.periodLine}` : '계정 및 구독 정보';
 
-  const myOverlays = `${renderProfileDetailModal(ctx)}${renderMbtiModal(ctx)}`;
+  const myOverlays = renderMyPageOverlays(ctx);
   return layout(`<div class="my-stack">
       <div class="card my-title-card"><div class="top-card-head"><div><h3>마이페이지</h3><p>계정, 구독, 성적과 알림을 한 곳에서 관리해요.</p></div><span class="top-infographic top-infographic-my" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
       <button type="button" class="card my-profile-card" data-action="openProfileDetailModal"><div class="my-profile-left"><div class="my-avatar">${renderProfileAvatar(user, icon, 'my-avatar-img')}</div><div><p class="my-name">${escapeHtml(displayName(user))}</p><p class="sub">${escapeHtml(cardSummary)}</p></div></div><div class="my-profile-right"><span class="badge">${escapeHtml(planStatus)}</span></div></button>
