@@ -251,6 +251,7 @@ export function createInitialAppState() {
     qnaSubmitting: false,
     coachingSubmitting: false,
     coachingSubmitted: false,
+    coachingView: 'sessions',
     coachingSheetOpen: false,
     coachingStep: 1,
     coachingMonth: '26년 4월',

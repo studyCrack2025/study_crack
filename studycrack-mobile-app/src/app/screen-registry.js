@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/home/HomeScreen.jsx';
 import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
 import { AuthLoginScreen, AuthSignupScreen } from '../screens/auth/AuthScreens.jsx';
+import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import {
   renderAddUniversityScreen,
   renderAnalysisScreen,
@@ -115,6 +116,7 @@ export const MOBILE_SCREEN_COMPONENTS = {
   analysis: AnalysisScreen,
   authLogin: AuthLoginScreen,
   authSignup: AuthSignupScreen,
+  strategy: CoachingScreen,
   home: HomeScreen,
   planner: PlannerScreen,
   plannerAdd: PlannerAddScreen

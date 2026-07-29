@@ -119,6 +119,7 @@ export function createServiceHandlers(ctx) {
     setCoachingSubjectRows = noop,
     setCoachingSubmitted = noop,
     setCoachingTrend = noop,
+    setCoachingView = noop,
     setDrawerOpen = noop,
     setDuration = noop,
     setField = noop,
@@ -385,6 +386,13 @@ export function createServiceHandlers(ctx) {
       ensureCoachingSubjectRows();
       setCoachingStep(1);
       setCoachingSheetOpen(true);
+      return true;
+    },
+
+    setCoachingView({ actionEl }) {
+      const view = getData(actionEl, 'coaching-view');
+      if (!['sessions', 'feedback'].includes(view)) return false;
+      setCoachingView(view);
       return true;
     },
 

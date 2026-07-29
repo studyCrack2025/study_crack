@@ -8,19 +8,15 @@
 .home-content,
 .analysis-v2,
 .planner-screen,
-.coach-page,
 .my-stack{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--mobile-screen-gap);padding:var(--mobile-screen-top) var(--mobile-screen-x) var(--mobile-tabbar-clearance);background:transparent;}
 .home-content{gap:var(--home-screen-gap);}
 .home-content > *,
 .analysis-v2 > *,
 .planner-screen > *,
-.coach-page > *,
 .my-stack > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.home-content .card + .card,
-.coach-page > .card{margin-top:0;}
+.home-content .card + .card{margin-top:0;}
 .home-content .card:not([class*="rank-tier-"]),
 .analysis-v2 .card,
-.coach-page .card,
 .my-stack .card{border-color:var(--mobile-card-border);background:var(--mobile-card-bg);box-shadow:var(--mobile-card-shadow);border-radius:var(--mobile-card-radius);}
 .analysis-v2-head,
 .coach-title-card,
@@ -48,7 +44,5 @@
 .my-mbti-card,
 .my-menu-card{width:100%;box-sizing:border-box;}
 .analysis-result-card,
-.analysis-reverse-card,
-.coach-status-card,
-.coach-feedback-card{border-radius:var(--mobile-card-radius);box-shadow:var(--mobile-card-shadow);}
+.analysis-reverse-card{border-radius:var(--mobile-card-radius);box-shadow:var(--mobile-card-shadow);}
 @media (max-width:360px){:root{--mobile-page-gutter:14px;--mobile-screen-x:0px;--mobile-screen-top:0px;--mobile-screen-gap:var(--sc-card-gap);--home-screen-gap:var(--sc-card-gap);--mobile-stack-gap:var(--sc-card-gap);--mobile-title-height:68px;--mobile-title-pad-y:var(--sc-space-12);--mobile-title-pad-x:14px;--mobile-title-icon:34px;}.analysis-v2-head .top-card-head h3,.coach-title-card .top-card-head h3,.my-title-card .top-card-head h3{font-size:19px;}.analysis-v2-head .top-card-head p,.coach-title-card .top-card-head p,.my-title-card .top-card-head p{font-size:11px;}}

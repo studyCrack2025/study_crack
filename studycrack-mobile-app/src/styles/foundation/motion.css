@@ -19,9 +19,9 @@ button:active,.btn:active,.top-icon-btn:active,.my-row:active,.notify-row:active
 .home-kpi-indicator i,.possible-univ-dot,.slider-dot{transition:width var(--motion-base) var(--ease-standard),background-color var(--motion-base) ease,opacity var(--motion-base) ease,transform var(--motion-base) var(--ease-spring);}
 .home-kpi-indicator i.active,.possible-univ-dot.active,.slider-dot.active{transform:scale(1.05);}
 .home-result-gauge i,.home-goal-linked-card .track i,.home-ranking-progress i,.progress > span,.track i,.fill,.analysis-v2-progress .progress-base,.analysis-v2-progress .progress-range,.analysis-v2-progress .dot,.analysis-v2-progress .trend-arrow,.analysis-v2-vert-item .bar,.score-info-subject-card strong{transition-duration:var(--motion-slow) !important;transition-timing-function:var(--ease-enter) !important;}
-.home-modal-overlay,.planner-sheet-overlay,.coach-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay,.find-email-modal-backdrop{animation:overlayFadeIn var(--motion-base) ease both;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
-.home-modal,.planner-sheet,.coach-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
-.planner-sheet,.coach-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
+.home-modal-overlay,.planner-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay,.find-email-modal-backdrop{animation:overlayFadeIn var(--motion-base) ease both;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
+.planner-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
 .side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
 .app-screen-overlays > *{animation:none !important;}
 .app-screen-overlays > * > *{animation:none !important;}
