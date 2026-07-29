@@ -1,4 +1,5 @@
 import { renderModal } from '../../components/modal.js';
+import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { FIXED_TODAY_DATE } from '../../constants/mock-data.js';
 import { PLAN_META } from '../../constants/plans.js';
@@ -160,11 +161,11 @@ function renderWeeklyRows({ reports = [] }) {
 }
 
 function renderReportRows({ icon = defaultIcon, reports = [] }) {
-  if (!reports.length) return '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>';
+  if (!reports.length) return renderSecondaryState({ title: '아직 발행된 PRO 리포트가 없어요', description: '새 리포트가 준비되면 이곳에 표시됩니다.' });
   return reports.map((report) => {
     const reportLink = safeExternalUrl(report.reportLink);
     const ready = !!reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
-    return `<button class="report-row" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><div><b>${escapeHtml(formatReportKeyLabel(report.key))}</b><p>${reportStatusLabel(report)}</p></div><span>${ready ? 'PDF' : icon('chevron', false)}</span></button>`;
+    return `<button class="sc-secondary-row report-row" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><span class="sc-secondary-row-main"><b>${escapeHtml(formatReportKeyLabel(report.key))}</b><p>${reportStatusLabel(report)}</p></span><span class="sc-secondary-row-meta">${ready ? '<b>PDF</b><em>다운로드</em>' : icon('chevron', false)}</span></button>`;
   }).join('');
 }
 
@@ -363,31 +364,25 @@ export function renderWeeklyScreen(ctx) {
 
 export function renderReportScreen(ctx) {
   const {
+    appbar,
     icon = defaultIcon,
     layout,
     proReports = [],
     proReportsStatus = 'idle'
   } = ctx;
   const statusText = proReportsStatus === 'loading'
-    ? '<div class="coach-empty">PRO 리포트를 불러오는 중입니다.</div>'
+    ? renderSecondaryState({ kind: 'loading', title: 'PRO 리포트를 불러오는 중이에요' })
     : renderReportRows({ icon, reports: proReports });
 
   return layout(
-    `<div class="report-page mobile-card-stack"><div><span class="badge">프로 플랜 전용</span>
-       <p class="report-desc">2주에 한 번, 내 맞춤 분석 리포트 제공</p>
-       </div>
-       <div class="card report-main"><p class="sub">리포트 상태</p><p class="report-date">${proReports.length ? '발행 이력 있음' : '발행 대기 중'}</p><h2>${proReports.length}</h2></div>
-       <div class="card report-list"><p class="sub">이전 보고서</p>
-         ${statusText}
-       </div>
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div></div>`,
+    appbar('학습 리포트', true) + `<div class="sc-secondary-page report-page">${renderSecondaryIntro({ eyebrow: 'PRO REPORT', title: '맞춤 전략 리포트', description: '발행된 전략 리포트를 확인하고 새 분석을 요청할 수 있어요.', aside: '<span class="sc-chip">PRO</span>' })}<section class="sc-secondary-section report-summary"><div class="report-summary-main"><span>발행 리포트</span><b>${proReports.length}개</b><p>${proReports.length ? '최근 발행 이력을 확인해보세요.' : '첫 리포트 발행을 기다리고 있어요.'}</p></div><button class="btn btn-primary report-sample" data-action="openProRequestModal">새 리포트 요청</button></section><section class="sc-secondary-section report-list"><div class="sc-secondary-section-head"><div><h3>리포트 목록</h3><p>다운로드 가능한 PDF만 바로 열립니다.</p></div></div><div class="sc-secondary-list">${statusText}</div></section></div>`,
     true,
     renderProRequestModal(ctx)
   );
 }
 
 export function renderReportDetailScreen({ appbar, layout }) {
-  return layout(appbar('종합 분석 리포트', true) + '<div class="report-detail-page mobile-card-stack"><div class="card report-detail-card"><p class="sub">모바일 앱에서는 실제 발행된 PDF 리포트만 확인할 수 있습니다.</p><p class="report-detail-text">PRO 리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div>', false);
+  return layout(appbar('종합 분석 리포트', true) + `<div class="sc-secondary-page report-detail-page">${renderSecondaryIntro({ eyebrow: 'REPORT DETAIL', title: '리포트 상세', description: '실제로 발행된 PDF 리포트만 안전하게 제공합니다.' })}<section class="sc-secondary-section report-detail-card"><div class="sc-secondary-section-head"><div><h3>발행 리포트 선택</h3><p>리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div>${renderSecondaryState({ title: '선택된 리포트가 없어요', description: '목록으로 돌아가 확인할 리포트를 선택해주세요.' })}</section></div>`, false);
 }
 
 export function renderProEliteScreen(ctx) {
@@ -447,7 +442,7 @@ export function renderProIntroScreen(ctx) {
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('플랜 선택', true) + `<section class="plan-console-page">${upgradeNotice}${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta })}</section>`, false);
+  return layout(appbar('플랜 선택', true) + `<section class="sc-secondary-page plan-console-page">${renderSecondaryIntro({ eyebrow: 'MEMBERSHIP', title: '나에게 맞는 플랜', description: '플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다.', aside: `<span class="sc-chip">${planDisplayName(checkoutPlan)}</span>` })}${upgradeNotice}${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta })}</section>`, false);
 }
 
 export function renderPaymentScreen(ctx) {
@@ -462,7 +457,7 @@ export function renderPaymentScreen(ctx) {
   const durationControl = ['Standard', 'Pro'].includes(checkoutPlan)
     ? `<div class="payment-option-block"><b>결제 기간</b><div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div></div>`
     : `<div class="payment-fixed-term"><span>결제 단위</span><b>${checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>`;
-  return layout(appbar('결제 플랜 확인', true) + `<section class="payment-console-page">${renderPlanSelector({ checkoutPlan, planMeta })}${durationControl}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta, ctaLabel: '웹 결제로 계속하기', ctaAction: 'openWebPayment' })}</section>`, false);
+  return layout(appbar('결제 플랜 확인', true) + `<section class="sc-secondary-page payment-console-page">${renderSecondaryIntro({ eyebrow: 'CHECKOUT', title: '결제 전 확인', description: '선택한 플랜과 기간을 확인한 뒤 안전한 웹 결제로 이동합니다.', aside: `<span class="sc-chip">${planDisplayName(checkoutPlan)}</span>` })}${renderPlanSelector({ checkoutPlan, planMeta })}${durationControl}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta, ctaLabel: '웹 결제로 계속하기', ctaAction: 'openWebPayment' })}</section>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {
@@ -471,5 +466,5 @@ export function renderPaymentCompleteScreen(ctx) {
     layout
   } = ctx;
 
-  return layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><p class="title payment-complete-title">결제 확인은 웹 결제 페이지에서 진행됩니다</p><p class="sub payment-complete-sub">모바일 앱 내부에서는 결제 완료를 임의로 처리하지 않습니다.</p><div class="card payment-complete-note"><b>안전한 결제 안내</b><p>전화번호 확인과 NICEPAY 인증을 위해 기존 웹 결제 페이지로 이동해주세요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div></div>`, false);
+  return layout(`<div class="sc-secondary-page payment-done-screen">${renderSecondaryIntro({ eyebrow: 'SECURE PAYMENT', title: '웹 결제에서 계속할게요', description: '전화번호 확인과 결제 인증은 기존 웹 결제 페이지에서 안전하게 진행됩니다.' })}<section class="sc-secondary-section payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><div><p class="payment-complete-title">결제 상태는 서버 확인 후 반영됩니다</p><p class="payment-complete-sub">모바일 앱이 결제 완료 상태를 임의로 만들지 않습니다.</p></div><div class="payment-complete-note"><b>안전한 결제 안내</b><p>NICEPAY 인증이 끝나면 구독 정보가 계정에 반영됩니다.</p></div><button class="btn btn-primary payment-cta" data-action="openWebPayment">웹 결제 페이지로 이동</button></section></div>`, false);
 }

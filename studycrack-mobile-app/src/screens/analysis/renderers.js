@@ -1,4 +1,5 @@
 import { EXAM_OPTIONS } from '../../constants/options.js';
+import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import {
   buildAnalysisPresentation,
   clampAnalysisScore
@@ -41,15 +42,12 @@ function formatPoint(value, digits = 1) {
 
 function renderAddUniversityCard({ analysisTargetList = [], name }) {
   const added = analysisTargetList.includes(name);
-  return `<div class="add-univ-card">
-              <div class="add-univ-card-top"><div class="add-univ-item-text"><b>${name}</b><p>현재 성적 기준 우선 검토 대학</p><span class="add-univ-item-badge">검토</span></div><span class="badge">추천</span></div>
-              <button class="btn ${added ? 'btn-secondary' : 'btn-primary'}" data-action="addAnalysisTarget" data-target-major="${name}" ${added ? 'disabled' : ''}>${added ? '추가됨' : '추가'}</button>
-            </div>`;
+  return `<div class="sc-secondary-row add-univ-card"><div class="sc-secondary-row-main add-univ-item-text"><b>${escapeHtml(name)}</b><p>현재 성적 기준 우선 검토 대학</p></div><span class="sc-badge">추천</span><button class="btn ${added ? 'btn-secondary' : 'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${escapeHtml(name)}" ${added ? 'disabled' : ''}>${added ? '추가됨' : '추가'}</button></div>`;
 }
 
 function renderSearchRow({ analysisTargetList = [], name }) {
   const added = analysisTargetList.includes(name);
-  return `<div class="add-univ-row"><div class="add-univ-item-text"><span>${name}</span><span class="add-univ-item-badge">검색</span></div><button class="btn ${added ? 'btn-secondary' : 'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${name}" ${added ? 'disabled' : ''}>${added ? '추가됨' : '추가'}</button></div>`;
+  return `<div class="sc-secondary-row add-univ-row"><div class="sc-secondary-row-main add-univ-item-text"><b>${escapeHtml(name)}</b><p>선택한 대학의 모집 학과</p></div><button class="btn ${added ? 'btn-secondary' : 'btn-primary'} mini" data-action="addAnalysisTarget" data-target-major="${escapeHtml(name)}" ${added ? 'disabled' : ''}>${added ? '추가됨' : '추가'}</button></div>`;
 }
 
 export function renderAnalysisSearchModal(ctx) {
@@ -281,26 +279,23 @@ export function renderAddUniversityScreen(ctx) {
   } = ctx;
 
   return layout(
-    appbar('대학 추가', true) + `<div class="add-univ-page">
-        <div class="card add-univ-hero">
-          <p class="analysis-title">희망 대학을 추가해보세요</p>
-          <p class="sub">현재 성적과 목표를 기준으로 대학을 추천하거나 직접 검색할 수 있어요.</p>
-        </div>
-        <div class="card add-univ-section">
-          <div class="add-univ-head"><div><h4>현재 성적 기준 추천</h4><p class="sub">웹과 동일한 분석 로직으로 다시 계산합니다.</p></div><button type="button" class="btn btn-secondary mini" data-action="refreshUniversityRecommendations" ${universityRecommendationStatus === 'loading' ? 'disabled' : ''}>${universityRecommendationStatus === 'loading' ? '추천 중' : '다시 추천'}</button></div>
-          <div class="add-univ-grid">
-            ${analysisRecommended.map((name) => renderAddUniversityCard({ analysisTargetList, name })).join('') || `<p class="add-univ-empty">${escapeHtml(universityRecommendationError || '추천 결과를 준비하고 있어요.')}</p>`}
+    appbar('대학 추가', true) + `<div class="sc-secondary-page add-univ-page">
+        ${renderSecondaryIntro({ eyebrow: 'TARGET UNIVERSITY', title: '희망 대학 추가', description: '현재 성적 추천을 확인하거나 대학과 학과를 순서대로 직접 선택하세요.', aside: `<span class="sc-chip">최대 6개</span>` })}
+        <section class="sc-secondary-section add-univ-section">
+          <div class="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3><p>웹과 동일한 분석 로직으로 계산한 결과입니다.</p></div><button type="button" class="btn btn-secondary mini" data-action="refreshUniversityRecommendations" ${universityRecommendationStatus === 'loading' ? 'disabled' : ''}>${universityRecommendationStatus === 'loading' ? '추천 중' : '새로고침'}</button></div>
+          <div class="sc-secondary-list add-univ-grid">
+            ${analysisRecommended.map((name) => renderAddUniversityCard({ analysisTargetList, name })).join('') || renderSecondaryState({ kind: universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty', title: universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError || '추천 결과가 아직 없어요', description: '성적 입력 상태를 확인한 뒤 다시 추천을 요청해주세요.' })}
           </div>
-        </div>
-        <div class="card add-univ-section">
-          <div class="add-univ-head"><div>${universitySelectedName ? `<button type="button" class="add-univ-back" data-action="backToUniversityList">대학 다시 선택</button><h4>${escapeHtml(universitySelectedName)} 학과 선택</h4>` : '<h4>대학 선택</h4><p class="sub">대학을 먼저 고르면 해당 학과만 보여드려요.</p>'}</div><span class="badge">${universitySelectedName ? '2 / 2' : '1 / 2'}</span></div>
+        </section>
+        <section class="sc-secondary-section add-univ-section">
+          <div class="sc-secondary-section-head add-univ-head"><div>${universitySelectedName ? `<button type="button" class="add-univ-back" data-action="backToUniversityList">대학 다시 선택</button><h3>${escapeHtml(universitySelectedName)} 학과</h3><p>추가할 학과를 선택해주세요.</p>` : '<h3>직접 검색</h3><p>대학을 먼저 선택하면 해당 대학의 학과만 보여드려요.</p>'}</div><span class="sc-badge">${universitySelectedName ? '2 / 2' : '1 / 2'}</span></div>
           <div class="analysis-search-inline"><input class="planner-input add-univ-search" data-field="analysisSearchTerm" value="${escapeHtml(analysisSearchTerm)}" placeholder="${universitySelectedName ? '학과명 검색' : '대학명 검색'}"/><button type="button" class="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
-          <div class="add-univ-results">
+          <div class="sc-secondary-list add-univ-results">
             ${analysisSearchList.map((name) => universitySelectedName
               ? renderSearchRow({ analysisTargetList, name })
-              : `<button type="button" class="add-univ-university-row" data-action="selectUniversityForMajor" data-university-name="${escapeHtml(name)}"><span>${escapeHtml(name)}</span><em>학과 보기</em></button>`).join('') || '<p class="add-univ-empty">검색 결과가 없습니다.</p>'}
+              : `<button type="button" class="sc-secondary-row add-univ-university-row" data-action="selectUniversityForMajor" data-university-name="${escapeHtml(name)}"><span class="sc-secondary-row-main"><b>${escapeHtml(name)}</b><p>학과 목록 보기</p></span><em>다음</em></button>`).join('') || renderSecondaryState({ title: '검색 결과가 없어요', description: '대학명 또는 학과명을 다시 확인해주세요.' })}
           </div>
-        </div>
+        </section>
       </div>`,
     true
   );

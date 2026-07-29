@@ -21,20 +21,11 @@
 .qna-modal-body label{font-size:13px;font-weight:800;color:#475569;}
 .qna-textarea{height:170px;resize:none;}
 .qna-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
-.support-direct-card{display:grid;gap:8px;}
-.support-qna-card{display:grid;gap:12px;}
-.support-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.support-section-head .analysis-title{margin:0;}
-.support-section-head span{flex:0 0 auto;border-radius:999px;background:#F1F5F9;color:#64748B;padding:5px 9px;font-size:11px;font-weight:800;}
+.support-section-head{align-items:center;}
 .score-info-detail-table{display:grid;gap:8px;margin:14px 0;}
 .score-info-detail-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;font-size:12px;color:#475569;padding:10px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC;}
-.qna-list.compact{gap:8px;}
-.qna-list-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid #E2E8F0;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.04);}
-.qna-row-main{min-width:0;display:grid;gap:4px;}
-.qna-row-main b{font-size:14px;line-height:1.35;color:#0F172A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.qna-row-main p{margin:0;font-size:12px;line-height:1.35;color:#64748B;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.qna-list-row{align-items:center;}
 .qna-row-main small{margin:0;font-size:12px;line-height:1.35;color:var(--primary-dark);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;font-weight:700;}
-.qna-row-side{display:grid;justify-items:end;gap:5px;align-self:stretch;align-content:center;}
 .qna-row-side em{font-style:normal;border-radius:999px;background:#F1F5F9;color:#64748B;padding:5px 8px;font-size:11px;font-weight:900;white-space:nowrap;}
 .qna-row-side em.done{background:#DBEAFE;color:var(--primary-dark);}
 .qna-row-side span{font-size:11px;color:#94A3B8;white-space:nowrap;}

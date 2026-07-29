@@ -5,6 +5,7 @@ import '../styles/foundation/tokens.css';
 import '../styles/foundation/base.css';
 import '../styles/foundation/shell.css';
 import '../styles/components/primitives.css';
+import '../styles/components/secondary.css';
 import '../styles/components/mbti-survey.css';
 import '../styles/components/insights.css';
 import '../styles/design-v2.css';

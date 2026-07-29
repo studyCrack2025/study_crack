@@ -1,4 +1,5 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
+import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import { EXAM_OPTIONS, INQUIRY_SUBJECTS } from '../../constants/options.js';
 
 const TRACK_OPTIONS = ['예체능', '인문사회', '상경계열', '자연/공학', '의치한약수', '간호', '사범/교대', '기타'];
@@ -201,19 +202,28 @@ export function renderRankingScreen(ctx) {
   const rows = rankingRows || [];
   const myRank = rankingMe?.rank ? `${rankingMe.rank}등` : '집계 전';
   const myTier = rankingMe?.tier || 'BRONZE';
+  const rankingTotal = Number(rankingMe?.total) || rows.length;
+  const percentile = rankingMe?.rank && rankingTotal ? Math.max(1, Math.ceil((Number(rankingMe.rank) / rankingTotal) * 100)) : 0;
   const statusPanel = rankingStatus === 'loading'
-    ? '<div class="card ranking-state-card">랭킹을 집계하고 있어요.</div>'
+    ? renderSecondaryState({ kind: 'loading', title: '랭킹을 집계하고 있어요', description: '학습 기록을 반영하는 중입니다.' })
     : rankingStatus === 'error'
-      ? `<div class="card ranking-state-card error">${escapeHtml(rankingError || '랭킹을 불러오지 못했습니다.')}</div>`
-      : rankingStatus === 'empty'
-        ? '<div class="card ranking-state-card">아직 이 기간의 공부 기록이 없습니다.</div>'
+      ? renderSecondaryState({ kind: 'error', title: '랭킹을 불러오지 못했어요', description: escapeHtml(rankingError || '잠시 후 다시 확인해주세요.') })
+      : rankingStatus === 'empty' || !rows.length
+        ? renderSecondaryState({ title: '아직 이 기간의 공부 기록이 없어요', description: '공부 타이머를 시작하면 자동으로 집계됩니다.' })
         : '';
 
-  return layout(appbar('공부 랭킹', true) + `<section class="ranking-theme"><div class="ranking-page"><div class="ranking-hero"><span>STUDY RANKING</span><h3>오늘의 공부 랭킹</h3><p>공부 시간과 연속 기록으로 나의 위치를 확인해보세요.</p></div>
-      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>${myRank}</b><div class="my-rank-tier"><span class="tier-emblem small ${tierClass(myTier)}"><strong>${rankingMe?.rank || '-'}</strong><small>위</small></span><span>${escapeHtml(myTier)}</span></div><small>${rankingMe ? `${formatHms(rankingMe.seconds)} 공부` : '공부를 시작하면 집계됩니다.'}</small></div>
-      <div class="ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
-      ${statusPanel || `<div class="card ranking-podium-card"><div class="ranking-podium">${rows.slice(0, 3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx === 0 ? 'first' : idx === 1 ? 'second' : 'third'}"><span class="podium-crown">${idx + 1}</span><span class="tier-emblem ${tierClass(row.tier)}"><strong>${idx + 1}</strong><small>위</small></span><b>${escapeHtml(row.name)}</b><p>${formatHms(row.seconds)}</p><small>${escapeHtml(row.tier)}</small><i class="podium-block">${idx + 1}</i></div>`).join('')}</div></div><div class="card ranking-list-card">${rows.slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx + 4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${idx + 4}</strong><small>위</small></span><div class="meta"><b>${escapeHtml(row.name)}</b><p>${formatHms(row.seconds)}</p></div><em>${escapeHtml(row.tier)}</em></div>`).join('')}</div>`}
-    </div></section>`, true);
+  const rankingRowsHtml = rows.map((row, idx) => {
+    const rank = Number(row.rank) || idx + 1;
+    const isMe = row.isMe === true || (rankingMe && rank === Number(rankingMe.rank) && String(row.name || '') === String(rankingMe.name || row.name || ''));
+    return `<div class="sc-secondary-row ranking-row ${isMe ? 'is-me' : ''}"><span class="ranking-position ${rank <= 3 ? 'is-top' : ''}">${rank}</span><span class="sc-secondary-row-main"><b>${escapeHtml(row.name || '회원')}</b><p>${formatHms(row.seconds)} 공부</p></span><span class="sc-secondary-row-meta"><b>${escapeHtml(row.tier || 'BRONZE')}</b>${isMe ? '<em>내 순위</em>' : ''}</span></div>`;
+  }).join('');
+
+  return layout(appbar('공부 랭킹', true) + `<section class="sc-secondary-page ranking-page">
+      ${renderSecondaryIntro({ eyebrow: 'STUDY RANKING', title: '공부 기록 순위', description: '실제 누적 공부 시간을 기준으로 같은 기간의 순위를 확인해요.', aside: `<span class="sc-chip">${RANKING_PERIODS.find(([key]) => key === rankingPeriod)?.[1] || '일간'}</span>` })}
+      <section class="sc-secondary-section ranking-summary"><div class="ranking-summary-main"><span>내 순위</span><b>${myRank}</b><p>${rankingMe ? `${formatHms(rankingMe.seconds)} 공부` : '공부를 시작하면 집계됩니다.'}</p></div><div class="ranking-summary-stats"><div><span>티어</span><b class="${tierClass(myTier)}">${escapeHtml(myTier)}</b></div><div><span>전체</span><b>${rankingTotal ? `${rankingTotal}명` : '—'}</b></div><div><span>상위</span><b>${percentile ? `${percentile}%` : '—'}</b></div></div></section>
+      <div class="sc-secondary-segmented ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
+      ${statusPanel || `<section class="sc-secondary-section ranking-board"><div class="sc-secondary-section-head"><div><h3>전체 순위</h3><p>상위 기록부터 차례로 표시합니다.</p></div><span class="sc-badge">${rows.length}명</span></div><div class="sc-secondary-list ranking-list-card">${rankingRowsHtml}</div></section>`}
+    </section>`, true);
 }
 
 export function renderQualInfoScreen(ctx) {
@@ -227,7 +237,7 @@ export function renderQualInfoScreen(ctx) {
     obTrack = ''
   } = ctx;
 
-  return layout(appbar('정성조사서', true) + `<section class="qual-form-page"><div class="card qual-form-head"><span class="badge">학습성향 진단</span><h3>전략 설계를 위한 기본 정보를 입력해주세요.</h3><p>* 표시는 필수 입력 항목입니다.</p></div><div class="card qual-form-card"><div class="qual-field wide"><label>현재 학년 <span>*</span></label><div class="ob1-pill-row qual-grade-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="qual-field"><label>출신 학교 <span>*</span></label><input class="planner-input" data-field="obSchoolName" value="${escapeHtml(obSchoolName)}" placeholder="출신 학교 입력"/></div><div class="qual-field"><label>희망 계열 <span>*</span></label><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div><div class="qual-field wide"><label>스터디크랙을 통해 얻고 싶은 점 <span>*</span></label><textarea class="planner-input qual-textarea" data-field="obGoalText" rows="4" placeholder="예: 목표 대학에 맞는 과목별 우선순위를 알고 싶어요.">${escapeHtml(obGoalText)}</textarea></div><div class="qual-field wide"><label>입시 고민 및 질문</label><textarea class="planner-input qual-textarea" data-field="obQuestionText" rows="5" placeholder="현재 가장 고민되는 부분을 자유롭게 적어주세요.">${escapeHtml(obQuestionText)}</textarea></div><button class="btn btn-primary qual-save-btn" data-action="saveQualInfo">정성조사서 저장</button></div></section>`, false);
+  return layout(appbar('정성조사서', true) + `<section class="sc-secondary-page qual-form-page">${renderSecondaryIntro({ eyebrow: 'STUDENT PROFILE', title: '전략 설계 정보', description: '현재 상황과 목표를 입력하면 분석과 튜터 피드백에 함께 반영됩니다.', aside: '<span class="sc-badge">* 필수</span>' })}<section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>기본 정보</h3><p>학년과 학교, 희망 계열을 알려주세요.</p></div></div><div class="sc-secondary-form qual-form-card"><div class="sc-secondary-field qual-field wide"><label>현재 학년 <span>*</span></label><div class="ob1-pill-row qual-grade-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="sc-secondary-field qual-field"><label>출신 학교 <span>*</span></label><input class="planner-input" data-field="obSchoolName" value="${escapeHtml(obSchoolName)}" placeholder="출신 학교 입력"/></div><div class="sc-secondary-field qual-field"><label>희망 계열 <span>*</span></label><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div></div></section><section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>목표와 고민</h3><p>전략에 반영할 내용을 구체적으로 적어주세요.</p></div></div><div class="sc-secondary-form qual-form-card"><div class="sc-secondary-field qual-field wide"><label>스터디크랙을 통해 얻고 싶은 점 <span>*</span></label><textarea class="planner-input qual-textarea" data-field="obGoalText" rows="4" placeholder="예: 목표 대학에 맞는 과목별 우선순위를 알고 싶어요.">${escapeHtml(obGoalText)}</textarea></div><div class="sc-secondary-field qual-field wide"><label>입시 고민 및 질문</label><textarea class="planner-input qual-textarea" data-field="obQuestionText" rows="5" placeholder="현재 가장 고민되는 부분을 자유롭게 적어주세요.">${escapeHtml(obQuestionText)}</textarea></div><button class="btn btn-primary qual-save-btn" data-action="saveQualInfo">정성조사서 저장</button></div></section></section>`, false);
 }
 
 export function renderScoreInfoScreen(ctx) {
@@ -242,5 +252,5 @@ export function renderScoreInfoScreen(ctx) {
   } = ctx;
   const modal = scoreEditOpen ? (scoreEditModalHtml || (typeof ScoreEditModal === 'function' ? ScoreEditModal() : '')) : '';
 
-  return layout(appbar('성적 정보', true) + `<section class="score-info-page"><div class="card score-info-hero"><span class="badge">분석 기준</span><h3>모의고사별 성적을 한 번에 관리해요</h3><p>선택한 시험 성적이 홈과 분석 탭의 지원학과 점수에 연결됩니다.</p><div class="score-info-picker"><label>기준 시험</label><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select><button class="btn btn-secondary" data-action="applyScoreExam">적용</button></div></div><div class="card score-info-card"><div class="score-info-card-head"><div><p class="analysis-title">내 성적</p><p class="sub">과목별 원점수와 분석용 지표를 확인합니다.</p></div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">전체 성적 입력/수정</button></div><div class="score-info-subject-list">${scoreInfoDetailList}</div></div></section>`, false, modal);
+  return layout(appbar('성적 정보', true) + `<section class="sc-secondary-page score-info-page">${renderSecondaryIntro({ eyebrow: 'SCORE DATA', title: '모의고사 성적', description: '선택한 시험 성적이 홈과 분석의 대학별 환산점수 기준이 됩니다.' })}<section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>분석 기준 시험</h3><p>확인할 모의고사를 선택해주세요.</p></div></div><div class="score-info-picker"><label>기준 시험</label><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select><button class="btn btn-secondary" data-action="applyScoreExam">적용</button></div></section><section class="sc-secondary-section score-info-card"><div class="sc-secondary-section-head score-info-card-head"><div><h3>내 성적</h3><p>원점수와 표준점수·백분위·등급을 함께 확인합니다.</p></div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">입력·수정</button></div><div class="score-info-subject-list">${scoreInfoDetailList}</div></section></section>`, false, modal);
 }
