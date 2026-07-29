@@ -10,7 +10,7 @@
     { "width": 390, "height": 844 },
     { "width": 430, "height": 932 }
   ],
-  "states": ["loading", "ready", "empty", "error", "locked"],
+  "states": ["loading", "ready", "empty", "error", "locked", "updating"],
   "mainTabs": ["home", "analysis", "strategy", "planner", "my"],
   "screens": [
     "home",

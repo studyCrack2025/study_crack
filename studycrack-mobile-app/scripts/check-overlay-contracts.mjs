@@ -19,15 +19,19 @@ assert.match(terms, /sc-modal-body terms-modal-body/);
 assert.deepEqual(readViewportMetrics({ height: 512.4, offsetTop: 17.7 }, 844), { height: 512, offsetTop: 18 });
 assert.deepEqual(readViewportMetrics(null, 844), { height: 844, offsetTop: 0 });
 
-const [modalCss, sheetCss, authSource, analysisSource] = await Promise.all([
+const [modalCss, sheetCss, homeOverlayCss, authSource, analysisSource] = await Promise.all([
   readFile(new URL('../src/styles/components/modals.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/styles/components/sheets.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/styles/screens/home-overlays.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/auth/AuthScreens.jsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/analysis/AnalysisScreen.jsx', import.meta.url), 'utf8')
 ]);
 
 assert.match(modalCss, /--sc-visual-height/);
 assert.match(sheetCss, /--sc-sheet-max-height/);
+const sheetLayer = Number(sheetCss.match(/\.sc-overlay--sheet\{[^}]*z-index:(\d+)/)?.[1]);
+const calendarEventLayer = Number(homeOverlayCss.match(/\.calendar-event-overlay\{[^}]*z-index:(\d+)/)?.[1]);
+assert.ok(calendarEventLayer > sheetLayer, 'Calendar event modal must render above the open calendar sheet');
 assert.match(authSource, /app-screen-overlays/);
 assert.match(analysisSource, /app-screen-overlays/);
 

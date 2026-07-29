@@ -98,6 +98,6 @@
 .notif-sheet-head .qna-modal-close,.calendar-form-head .qna-modal-close{flex:0 0 auto;align-self:flex-start;width:30px;height:30px;display:flex;align-items:center;justify-content:center;margin:-2px -4px 0 0;}
 .calendar-form-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #E8EEF9;}
 .calendar-selected-head .btn{width:auto;flex:0 0 auto;min-width:0;min-height:38px;padding:0 15px;font-size:12.5px;border-radius:999px;white-space:nowrap;}
-.calendar-event-overlay{z-index:140;}
+.calendar-event-overlay{z-index:530;}
 .calendar-event-modal{max-height:min(84dvh,680px);overflow-y:auto;}
 @media (max-width:360px){.calendar-form-date-grid{grid-template-columns:1fr;}}
