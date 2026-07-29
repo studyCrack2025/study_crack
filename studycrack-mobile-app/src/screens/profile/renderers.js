@@ -171,7 +171,7 @@ export function renderScoreEditModal(ctx = {}) {
   const isLast = step === 6;
   const primaryLabel = saving ? '저장 중…' : isLast ? '저장하고 완료' : '저장하고 다음';
 
-  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-stepper-modal" data-action="noopModal">
+  return `<div class="sc-overlay sc-overlay--modal home-modal-overlay" data-action="closeScoreEdit"><div class="sc-modal home-modal score-edit-modal score-stepper-modal" data-action="noopModal" role="dialog" aria-modal="true">
     <div class="score-onepage-head"><div><p class="home-modal-title">성적 입력</p><p class="sub">과목을 선택해 하나씩 입력하고 저장해요.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
     <div class="score-stepper-progress"><div class="score-stepper-bar"><i style="width:${progressPct}%"></i></div><span>${doneCount} / ${SCORE_STEPS.length} 저장됨</span></div>
     <div class="score-step-rail">${rail}</div>

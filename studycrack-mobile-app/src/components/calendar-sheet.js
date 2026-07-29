@@ -65,8 +65,8 @@ function renderEventForm(ctx) {
   const categoryOptions = PERSONAL_CALENDAR_CATEGORIES
     .map((key) => `<option value="${key}" ${draft.category === key ? 'selected' : ''}>${escapeHtml((CALENDAR_CATEGORIES[key] || {}).label || key)}</option>`)
     .join('');
-  const body = `<div class="profile-detail-modal-head"><p class="home-modal-title">${calendarEventEditId ? '일정 수정' : '내 일정 추가'}</p><button type="button" class="qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button></div>
-    <div class="calendar-form-fields">
+  const body = `<div class="sc-modal-head profile-detail-modal-head"><p class="home-modal-title">${calendarEventEditId ? '일정 수정' : '내 일정 추가'}</p><button type="button" class="sc-overlay-close qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button></div>
+    <div class="sc-modal-body calendar-form-fields">
       <label>제목</label>
       <input class="planner-input" data-calendar-field="title" maxlength="60" value="${escapeHtml(draft.title || '')}" placeholder="일정 제목"/>
       <label>날짜</label>
@@ -78,7 +78,7 @@ function renderEventForm(ctx) {
       <label>메모 (선택)</label>
       <textarea class="planner-input calendar-form-note" data-calendar-field="note" maxlength="300" placeholder="메모">${escapeHtml(draft.note || '')}</textarea>
     </div>
-    <div class="support-btns calendar-form-actions">
+    <div class="sc-modal-footer support-btns calendar-form-actions">
       ${calendarEventEditId ? `<button type="button" class="btn btn-secondary calendar-delete-btn" data-action="deleteCalendarEvent" data-event-id="${escapeHtml(calendarEventEditId)}" ${calendarSaving ? 'disabled' : ''}>삭제</button>` : ''}
       <button type="button" class="btn btn-secondary" data-action="closeCalendarEventForm" ${calendarSaving ? 'disabled' : ''}>취소</button>
       <button type="button" class="btn btn-primary" data-action="saveCalendarEvent" ${calendarSaving ? 'disabled' : ''}>${calendarSaving ? '저장 중...' : '저장'}</button>
@@ -122,9 +122,9 @@ export function renderCalendarSheet(ctx = {}) {
       : '';
   const addDisabled = calendarSyncStatus === 'loading' ? 'disabled' : '';
 
-  const body = `<div class="notif-sheet-handle" aria-hidden="true"></div>
-    <div class="notif-sheet-head"><p class="home-modal-title">다가오는 일정</p><button type="button" class="qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button></div>
-    <div class="calendar-sheet-scroll">
+  const body = `<div class="sc-sheet-handle notif-sheet-handle" aria-hidden="true"></div>
+    <div class="sc-sheet-head notif-sheet-head"><p class="home-modal-title">다가오는 일정</p><button type="button" class="sc-overlay-close qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button></div>
+    <div class="sc-sheet-body calendar-sheet-scroll">
       ${syncHtml}
       ${nearestHtml}
       <div class="calendar-month-nav"><button type="button" class="calendar-nav-btn" data-action="calendarPrevMonth" aria-label="이전 달">‹</button><b>${escapeHtml(calendarMonthLabel)}</b><button type="button" class="calendar-nav-btn" data-action="calendarNextMonth" aria-label="다음 달">›</button></div>

@@ -13,5 +13,5 @@ export function renderTermsModal(openTermsType, termsContent = TERMS_CONTENT) {
   if (!openTermsType) return '';
   const content = termsContent[openTermsType] || {};
   // header / scroll body 2영역: panel은 overflow:hidden, body만 독립 스크롤(하단 radius·safe-area 보장).
-  return `<div class="terms-modal-backdrop" data-action="closeTermsModal"><div class="terms-modal" data-action="noopModal"><div class="terms-modal-head"><p class="terms-modal-title">${escapeHtml(content.title || '약관')}</p><button class="terms-modal-close" data-action="closeTermsModal" aria-label="닫기">×</button></div><div class="terms-modal-body">${escapeHtml(content.body || '약관 내용을 불러오지 못했습니다.')}</div></div></div>`;
+  return `<div class="sc-overlay sc-overlay--modal terms-modal-backdrop" data-action="closeTermsModal"><div class="sc-modal terms-modal" data-action="noopModal" role="dialog" aria-modal="true"><div class="sc-modal-head terms-modal-head"><p class="terms-modal-title">${escapeHtml(content.title || '약관')}</p><button class="sc-overlay-close terms-modal-close" data-action="closeTermsModal" aria-label="닫기">×</button></div><div class="sc-modal-body terms-modal-body">${escapeHtml(content.body || '약관 내용을 불러오지 못했습니다.')}</div></div></div>`;
 }

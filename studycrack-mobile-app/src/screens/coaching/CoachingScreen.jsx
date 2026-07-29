@@ -1,4 +1,5 @@
 import { buildCoachingPresentation } from './presentation.js';
+import { EmptyState } from '../../components/EmptyState.jsx';
 
 const STEP_COPY = {
   5: ['학습 계획 점검', '현재 계획에서 확신이 없거나 수정이 필요한 부분을 적어주세요.', 'step5', '예: 하루 계획이 자꾸 밀립니다. 현실적인 수정이 필요합니다.'],
@@ -36,7 +37,7 @@ function CoachingEmpty({ view = 'sessions', loading = false }) {
     : view === 'feedback'
       ? ['아직 도착한 피드백이 없어요', '튜터 검토가 끝나면 이곳에서 바로 확인할 수 있어요.']
       : ['아직 제출한 학습 점검이 없어요', '이번 주 기록과 질문을 남기고 첫 코칭을 시작해 보세요.'];
-  return <div className={`coaching-empty ${loading ? 'is-loading' : ''}`}><span aria-hidden="true">{loading ? '···' : '✓'}</span><b>{copy[0]}</b><p>{copy[1]}</p></div>;
+  return <EmptyState className="coaching-empty" loading={loading} title={copy[0]} description={copy[1]} />;
 }
 
 function SessionRow({ item }) {
@@ -118,7 +119,7 @@ function CoachingStepBody(ctx) {
 function CoachingSheet(ctx) {
   const { coachingSheetOpen = false, coachingStep = 1, coachingSubmitting = false } = ctx;
   if (!coachingSheetOpen) return null;
-  return <div className="sc-sheet-overlay coach-sheet-overlay" data-action="closeCoachingSheet"><section className="sc-sheet coach-sheet" data-action="noopModal"><div className="sc-sheet-handle" aria-hidden="true" /><header className="coach-sheet-head"><div><span>주간 학습 점검</span><h3>튜터에게 보낼 이번 주 기록</h3></div><button type="button" className="coach-close" data-action="closeCoachingSheet" aria-label="닫기">×</button></header><div className="coach-step-progress"><i style={{ width: `${(coachingStep / 8) * 100}%` }} /><span>{coachingStep} / 8</span></div><div className="coach-sheet-body"><CoachingStepBody {...ctx} /></div><footer className="coach-sheet-footer"><button type="button" className="btn btn-secondary" data-action="coachingPrev" disabled={coachingStep === 1 || coachingSubmitting}>이전</button><button type="button" className="btn btn-primary" data-action="coachingNext" disabled={coachingSubmitting}>{coachingStep === 8 ? (coachingSubmitting ? '제출 중' : '작성 완료 및 제출') : '다음 단계'}</button></footer></section></div>;
+  return <div className="sc-overlay sc-overlay--sheet sc-sheet-overlay coach-sheet-overlay" data-action="closeCoachingSheet"><section className="sc-sheet coach-sheet" data-action="noopModal" role="dialog" aria-modal="true"><div className="sc-sheet-handle" aria-hidden="true" /><header className="sc-sheet-head coach-sheet-head"><div><span>주간 학습 점검</span><h3>튜터에게 보낼 이번 주 기록</h3></div><button type="button" className="sc-overlay-close coach-close" data-action="closeCoachingSheet" aria-label="닫기">×</button></header><div className="coach-step-progress"><i style={{ width: `${(coachingStep / 8) * 100}%` }} /><span>{coachingStep} / 8</span></div><div className="sc-sheet-body coach-sheet-body"><CoachingStepBody {...ctx} /></div><footer className="sc-sheet-footer coach-sheet-footer"><button type="button" className="btn btn-secondary" data-action="coachingPrev" disabled={coachingStep === 1 || coachingSubmitting}>이전</button><button type="button" className="btn btn-primary" data-action="coachingNext" disabled={coachingSubmitting}>{coachingStep === 8 ? (coachingSubmitting ? '제출 중' : '작성 완료 및 제출') : '다음 단계'}</button></footer></section></div>;
 }
 
 export function CoachingScreen(ctx) {

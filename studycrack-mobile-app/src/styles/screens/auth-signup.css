@@ -43,10 +43,4 @@
 .signup-stage-actions{display:grid;grid-template-columns:1fr;gap:8px;}
 .signup-stage-actions:has(.btn-secondary){grid-template-columns:minmax(92px,.42fr) minmax(0,1fr);}
 .signup-stage-actions .btn,.signup-stage-actions .signup-submit{min-height:48px;border-radius:14px;}
-.terms-modal-backdrop{background:rgba(15,23,42,.42);align-items:flex-end;}
-.terms-modal{width:min(100%,440px);max-height:min(78dvh,620px);border:1px solid #DDE7F6;border-radius:22px 22px 0 0;background:#FFFFFF;box-shadow:0 -18px 42px rgba(15,23,42,.18);}
-.terms-modal-head{padding:16px 18px 12px;}
-.terms-modal-head .terms-modal-title{font-size:16px;color:#0F172A;font-weight:900;}
-.terms-modal-head .terms-modal-close{width:32px;height:32px;border:none;border-radius:999px;background:#F1F5F9;color:#64748B;font-size:22px;}
-.terms-modal-body{margin:12px;padding:14px;border:1px solid #E2E8F0;border-radius:14px;background:#F8FBFF;color:#334155;font-size:12.5px;line-height:1.65;white-space:pre-wrap;overflow:auto;}
 @keyframes signupStageIn{from{opacity:.001;transform:translate3d(10px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}

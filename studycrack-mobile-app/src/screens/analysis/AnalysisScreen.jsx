@@ -63,9 +63,9 @@ export function AnalysisScreen(ctx) {
                 <div className="analysis-result-stage" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: analysisBodyHtml }} />
               </div>
             ) : null}
-            <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: searchModalHtml }} />
           </section>
         </div>
+        <div className="app-screen-overlays" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: searchModalHtml }} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>

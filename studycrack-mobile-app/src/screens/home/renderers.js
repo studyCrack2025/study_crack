@@ -200,7 +200,7 @@ export function renderNotificationModal(ctx = {}) {
 
 export function renderDrawer({ drawerOpen = false, icon, menuItems = DEFAULT_MENU_ITEMS }) {
   if (!drawerOpen) return '';
-  return `<div class="home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${menuItems.map(([target, label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${icon('chevron', false)}</span></button>`).join('')}</aside></div>`;
+  return `<div class="sc-overlay home-modal-overlay drawer-overlay" data-action="closeDrawer"><aside class="side-drawer" data-action="noopModal"><h3>메뉴</h3>${menuItems.map(([target, label]) => `<button class="my-row" data-action="drawerGoto" data-target="${target}">${label}<span>${icon('chevron', false)}</span></button>`).join('')}</aside></div>`;
 }
 
 export function renderHomeView(ctx) {

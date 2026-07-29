@@ -208,16 +208,16 @@ function CalendarEventForm(ctx) {
   if (!calendarEventFormOpen) return null;
   const draft = calendarEventDraft || {};
   return (
-    <div className="home-modal-overlay calendar-event-overlay" data-action="closeCalendarEventForm">
-      <div className="home-modal calendar-event-modal" data-action="noopModal">
-        <div className="calendar-form-head">
+    <div className="sc-overlay sc-overlay--modal home-modal-overlay calendar-event-overlay" data-action="closeCalendarEventForm">
+      <div className="sc-modal home-modal calendar-event-modal" data-action="noopModal" role="dialog" aria-modal="true">
+        <div className="sc-modal-head calendar-form-head">
           <div>
             <span>내 일정</span>
             <p className="home-modal-title">{calendarEventEditId ? '내 일정 수정' : '내 일정 추가'}</p>
           </div>
-          <button type="button" className="qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button>
+          <button type="button" className="sc-overlay-close qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button>
         </div>
-        <div className="calendar-form-fields">
+        <div className="sc-modal-body calendar-form-fields">
           <label>일정 제목</label>
           <input className="planner-input calendar-form-title" data-calendar-field="title" maxLength="60" defaultValue={draft.title || ''} placeholder="예: 수시 원서 접수 마감" />
           <div className="calendar-form-date-grid">
@@ -239,7 +239,7 @@ function CalendarEventForm(ctx) {
           <label>메모</label>
           <textarea className="planner-input calendar-form-note" data-calendar-field="note" maxLength="300" defaultValue={draft.note || ''} placeholder="준비물, 장소, 확인할 내용을 적어두세요." />
         </div>
-        <div className="support-btns calendar-form-actions">
+        <div className="sc-modal-footer support-btns calendar-form-actions">
           {calendarEventEditId ? (
             <button type="button" className="btn btn-secondary calendar-delete-btn" data-action="deleteCalendarEvent" data-event-id={calendarEventEditId} disabled={calendarSaving}>삭제</button>
           ) : null}
@@ -267,17 +267,17 @@ function CalendarSheet(ctx) {
   const addDisabled = calendarSyncStatus === 'loading';
   return (
     <>
-      <div className="planner-sheet-overlay calendar-sheet-overlay" data-action="closeCalendarSheet">
-        <div className="planner-sheet calendar-sheet" data-action="noopModal">
-          <div className="notif-sheet-handle" aria-hidden="true" />
-          <div className="notif-sheet-head calendar-sheet-head">
+      <div className="sc-overlay sc-overlay--sheet planner-sheet-overlay calendar-sheet-overlay" data-action="closeCalendarSheet">
+        <div className="sc-sheet planner-sheet calendar-sheet" data-action="noopModal" role="dialog" aria-modal="true">
+          <div className="sc-sheet-handle notif-sheet-handle" aria-hidden="true" />
+          <div className="sc-sheet-head notif-sheet-head calendar-sheet-head">
             <div>
               <span>입시 캘린더</span>
               <p className="home-modal-title">수험 일정</p>
             </div>
-            <button type="button" className="qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button>
+            <button type="button" className="sc-overlay-close qna-modal-close" data-action="closeCalendarSheet" aria-label="닫기">✕</button>
           </div>
-          <div className="calendar-sheet-scroll">
+          <div className="sc-sheet-body calendar-sheet-scroll">
             {calendarSyncStatus === 'loading' ? <p className="calendar-sync-note">내 일정을 동기화하고 있어요.</p> : null}
             {calendarSyncStatus === 'error' ? <p className="calendar-sync-note error">내 일정을 불러오지 못했습니다. 잠시 후 다시 열어주세요.</p> : null}
             {calendarNearestEvent ? (
@@ -407,8 +407,7 @@ export function HomeScreen(ctx) {
   const universityModalHtml = renderUniversityModal(ctx);
   const targetDeleteModalHtml = renderTargetDeleteModal(ctx);
   const breakdownHtml = renderStudyBreakdown(ctx);
-  const overlaysHtml =
-    renderStudySubjectSheet(ctx) + targetDeleteModalHtml + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
+  const overlaysHtml = universityModalHtml + renderStudySubjectSheet(ctx) + targetDeleteModalHtml + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
   // 알림 시트는 app-frame 직속에 둬야 스크롤 컨테이너(.app-screen)가 아닌 고정 프레임 기준으로 하단에 붙는다.
   const notifSheetHtml = renderNotificationModal(ctx);
 
@@ -483,7 +482,6 @@ export function HomeScreen(ctx) {
                     />
                   ))}
                 </div>
-                <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: universityModalHtml }} />
               </section>
 
               <div className="home-primary-stack">
@@ -591,10 +589,10 @@ export function HomeScreen(ctx) {
                 />
               </div>
 
-              <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
             </div>
           </div>
         </div>
+        <div className="app-screen-overlays" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
         <button
           type="button"
           className="home-notif-fab"

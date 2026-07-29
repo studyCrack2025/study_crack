@@ -371,13 +371,13 @@ export function renderNotificationListScreen(ctx) {
   const selected = notiDetailId ? list.find((n, idx) => String(n.notiId || n.id || n.notificationId || idx) === String(notiDetailId)) : null;
   const selectedDate = selected ? formatQnaDate(selected.createdAt) : '';
   const detailModal = selected
-    ? `<div class="noti-detail-overlay" data-action="closeNotiDetail"><article class="noti-detail-modal" data-action="noopModal">
-        <div class="noti-detail-head"><div><span>알림 상세</span><h4>${escapeHtml(selected.title || '알림')}</h4>${selectedDate ? `<p>${escapeHtml(selectedDate)}</p>` : ''}</div><button type="button" class="qna-modal-close" data-action="closeNotiDetail" aria-label="닫기">✕</button></div>
-        <div class="noti-detail-body">${escapeHtml(selected.body || selected.message || '내용이 없습니다.')}</div>
+    ? `<div class="sc-overlay sc-overlay--modal noti-detail-overlay" data-action="closeNotiDetail"><article class="sc-modal noti-detail-modal" data-action="noopModal" role="dialog" aria-modal="true">
+        <div class="sc-modal-head noti-detail-head"><div><span>알림 상세</span><h4>${escapeHtml(selected.title || '알림')}</h4>${selectedDate ? `<p>${escapeHtml(selectedDate)}</p>` : ''}</div><button type="button" class="sc-overlay-close qna-modal-close" data-action="closeNotiDetail" aria-label="닫기">✕</button></div>
+        <div class="sc-modal-body noti-detail-body">${escapeHtml(selected.body || selected.message || '내용이 없습니다.')}</div>
       </article></div>`
     : '';
 
-  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>${pager}${detailModal}`, false);
+  return layout(appbar('알림', true) + `<div class="card noti-list-card">${itemsHtml}</div>${pager}`, false, detailModal);
 }
 
 export function renderCustomerSupportScreen(ctx) {

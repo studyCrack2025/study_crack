@@ -1,5 +1,6 @@
 import { buildPlannerPresentation } from './presentation.js';
 import { renderEditSheet } from './renderers.js';
+import { EmptyState } from '../../components/EmptyState.jsx';
 
 function PlannerChecklistArt() {
   return (
@@ -173,7 +174,7 @@ export function PlannerScreen(ctx) {
                 {plannerViewItems.length ? (
                   plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
                 ) : (
-                  <div className="planner-empty-day"><b>아직 등록한 계획이 없어요</b><p>실행할 과목과 시간을 추가해 하루 목표를 만들어 보세요.</p></div>
+                  <EmptyState className="planner-empty-day" title="아직 등록한 계획이 없어요" description="실행할 과목과 시간을 추가해 하루 목표를 만들어 보세요." />
                 )}
                 <button type="button" className="planner-add-cta" data-action="openPlannerAddPage">{selectedPlannerDate}일 계획 추가</button>
               </div>

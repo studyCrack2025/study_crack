@@ -55,6 +55,7 @@ import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, bu
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
+import { attachVisualViewportMetrics } from './visual-viewport.js';
 
 const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } = React;
 
@@ -428,6 +429,8 @@ function MobileApp() {
   const backtraceFetchSignatureRef = useRef('');
   const qnaDraftRef = useRef({ title: '', content: '' });
   stateRef.current = state;
+
+  useEffect(() => attachVisualViewportMetrics(), []);
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
   const setters = useMemo(
