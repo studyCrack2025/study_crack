@@ -142,6 +142,30 @@ function HomeLoadingPanel({ tabBarHtml = '', crackySrc = CRACKY_SRC }) {
   );
 }
 
+function HomeLoadFailure({ message = '', tabBarHtml = '' }) {
+  return (
+    <div className="app-shell">
+      <div className="app-frame">
+        <div className="screen app-screen app-content">
+          <div className="home-dashboard home-container">
+            <div className="home-content">
+              <div className="sc-empty" role="alert">
+                <span className="sc-empty-mark" aria-hidden="true">!</span>
+                <div>
+                  <b>사용자 정보를 불러오지 못했어요</b>
+                  <p>{message || '네트워크 상태를 확인한 뒤 다시 시도해주세요.'}</p>
+                </div>
+                <button type="button" className="btn btn-primary" data-action="retryInit">다시 시도</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
+      </div>
+    </div>
+  );
+}
+
 function reportStatusText(status = 'idle', hasItem = false) {
   if (status === 'loading') return '불러오는 중';
   if (status === 'error') return '확인 필요';
@@ -377,6 +401,7 @@ export function HomeScreen(ctx) {
     weeklyReports = [],
     weeklyReportsStatus = 'idle',
     userLoadStatus = 'idle',
+    userLoadError = '',
     notiList = [],
     calendarNearestEvent = null,
     calendarNearestDdayLabel = '',
@@ -386,9 +411,10 @@ export function HomeScreen(ctx) {
   const unreadCount = countUnreadNotifications(notiList);
 
   const sessionActive = typeof hasClientSession === 'function' && hasClientSession();
-  // 'ready'는 실데이터 병합 완료, 'error'는 네트워크/CORS 실패라 더 기다리지 않고 보유 데이터로 렌더(무한 로딩 방지).
-  // 인증 만료는 별도 가드가 로그인 화면으로 이동시키므로 여기서 로딩에 머물지 않는다.
-  const profileReady = userLoadStatus === 'ready' || userLoadStatus === 'error' || !sessionActive;
+  if (sessionActive && userLoadStatus === 'error') {
+    return <HomeLoadFailure message={userLoadError} tabBarHtml={tabBarHtml} />;
+  }
+  const profileReady = userLoadStatus === 'ready' || !sessionActive;
   if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} crackySrc={crackySrc} />;
 
   const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);

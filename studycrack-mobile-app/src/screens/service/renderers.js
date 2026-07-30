@@ -1,12 +1,12 @@
 import { renderModal } from '../../components/modal.js';
 import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { FIXED_TODAY_DATE } from '../../constants/mock-data.js';
+import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { PLAN_META } from '../../constants/plans.js';
 
 // 잠금 프리뷰(블러 처리되는 데모 표면)용 현재 월/일 라벨.
 function lockedPreviewDateLabel() {
-  const [, month, day] = FIXED_TODAY_DATE.split('-').map(Number);
+  const [, month, day] = TODAY_DATE.split('-').map(Number);
   return `${month}월 ${day}일`;
 }
 

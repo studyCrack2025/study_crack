@@ -72,7 +72,7 @@ export function buildUniversityCard(name, scoreCache = {}, examKey = '', fetchSt
     scoreStatus: hasScore ? 'confirmed' : pending ? 'pending' : 'empty',
     scoreUpdating: hasScore && fetchStatus === 'loading',
     gap: gap > 0 ? `+${gap}` : String(gap),
-    rank: (entry && entry.status) || (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전'),
+    rank: (entry && entry.status) || (hasScore ? (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전') : pending ? '분석 중' : '분석 대기'),
     color: (entry && entry.color) || ''
   };
 }
@@ -139,11 +139,12 @@ export function buildAnalysisScoreView(selectedMajor = '', scoreCache = {}, exam
   const hasScore = entry?.available !== false && Number.isFinite(numeric);
   const score = hasScore ? Math.round(numeric) : 0;
   const pct = Math.min((score / 250) * 100, 100);
-  const status = (entry && entry.status) || (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전');
-  const color = (entry && entry.color) || (score >= 150 ? '#22C55E' : score >= 100 ? '#2563EB' : '#F97316');
+  const pending = !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle');
+  const status = (entry && entry.status) || (hasScore ? (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전') : pending ? '분석 중' : '분석 대기');
+  const color = (entry && entry.color) || (hasScore ? (score >= 150 ? '#22C55E' : score >= 100 ? '#2563EB' : '#F97316') : '');
   return {
     hasScore,
-    pending: !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle'),
+    pending,
     score,
     pct,
     status,

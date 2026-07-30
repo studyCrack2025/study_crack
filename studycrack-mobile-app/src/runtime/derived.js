@@ -1,5 +1,4 @@
-import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
-import { ANALYSIS_PROFILES, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
+import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import {
   computeDday,
   eventCoversDate,
@@ -25,11 +24,11 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = FIXED_TODAY_DATE) {
+function parsePlannerDate(value = TODAY_DATE) {
   const raw = String(value || '').trim();
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
-    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(FIXED_TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
+    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
   const [year, month, day] = source.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -38,7 +37,7 @@ function addPlannerDays(date, days) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-function normalizePlannerDateKey(value = FIXED_TODAY_DATE) {
+function normalizePlannerDateKey(value = TODAY_DATE) {
   return toDateKey(parsePlannerDate(value));
 }
 
@@ -113,7 +112,7 @@ function computeLiveCurrentScore(scores = {}) {
 
 // 플래너 화면 derived.
 export function buildPlannerDerived(state = {}) {
-  const { plannerItems = [], selectedDate = FIXED_TODAY_DATE, plannerEditIndex = null } = state;
+  const { plannerItems = [], selectedDate = TODAY_DATE, plannerEditIndex = null } = state;
 
   const selectedDateObject = parsePlannerDate(selectedDate);
   const selectedPlannerDateKey = toDateKey(selectedDateObject);
@@ -156,7 +155,7 @@ export function buildPlannerDerived(state = {}) {
         date: dateKey,
         blank: false,
         isSelected: selectedPlannerDateKey === dateKey,
-        isToday: FIXED_TODAY_DATE === dateKey,
+        isToday: TODAY_DATE === dateKey,
         count: items.length,
         minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
       };
@@ -354,7 +353,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
 
   // 오늘 플래너 요약
   const byDate = groupPlannerByDate(plannerItems);
-  const todayDateKey = String(Number(FIXED_TODAY_DATE.split('-')[2]));
+  const todayDateKey = TODAY_DATE;
   const todayPlannerItems = byDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerSubjectSummary = Object.entries(
@@ -372,7 +371,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   // 원본 todayStudySeconds = (todayRecord?.studyTime||0) + liveStudySeconds(타이머 ref).
   // derived는 순수 함수라 라이브 ref가 없어 정지 상태(liveStudySeconds=0)와 동일하게 누적 기록만 반영.
   // 라이브 타이머 가산은 후속 effect 단계에서 연결한다.
-  const todayKey = FIXED_TODAY_DATE;
+  const todayKey = TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey) || null;
   const todayStudySeconds = (todayRecord?.studyTime || 0) + live;
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
@@ -439,7 +438,6 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
 // 분석 화면 derived.
 export function buildAnalysisDerived(state = {}) {
   const {
-    scores = {},
     targetMajor = '',
     analysisTargetList = [],
     homeTargetList = [],
@@ -454,26 +452,17 @@ export function buildAnalysisDerived(state = {}) {
   const effectiveAnalysisResults = analysisResults.length ? analysisResults : (lastAnalysisSnapshot?.analysisResults || []);
   const effectiveAnalysisSimulations = analysisSimulations.length ? analysisSimulations : (lastAnalysisSnapshot?.analysisSimulations || []);
 
-  const liveCurrentScore = computeLiveCurrentScore(scores);
-
   const serverSelected = findTargetItem(effectiveAnalysisResults, targetMajor);
   const serverSimulation = findTargetItem(effectiveAnalysisSimulations, targetMajor);
   const serverScore = Number(serverSelected?.converted_score);
   const hasServerScore = Number.isFinite(serverScore);
-  const analysisBaseProfile = ANALYSIS_PROFILES[targetMajor] || ANALYSIS_PROFILES['연세대학교 경영학과'];
   const analysisSelected = {
-    ...analysisBaseProfile,
-    score: hasServerScore ? Math.round(serverScore) : liveCurrentScore,
-    verdict: serverSelected?.status || analysisBaseProfile.verdict,
-    verdictColor: serverSelected?.color || analysisBaseProfile.verdictColor,
-    aiGrade: serverSelected?.status || analysisBaseProfile.aiGrade,
-    comment: serverSelected?.msg || analysisBaseProfile.comment,
-    sim: (analysisBaseProfile.sim || []).map((r, idx) => {
-      const boost = Math.max(0, Math.round((liveCurrentScore - 60) / 10));
-      const g = Number(String(r[1]).replace(/[^0-9.-]/g, '')) || 0;
-      const totalGain = Math.round(g + boost);
-      return [r[0], `+${totalGain}점`, r[2], idx === 0];
-    })
+    score: hasServerScore ? Math.round(serverScore) : 0,
+    verdict: serverSelected?.status || '',
+    verdictColor: serverSelected?.color || '',
+    aiGrade: serverSelected?.status || '',
+    comment: serverSelected?.msg || '',
+    sim: []
   };
 
   const analysisRecommended = universityRecommendations;
@@ -482,9 +471,7 @@ export function buildAnalysisDerived(state = {}) {
   const selectedCatalog = hasUniversityCatalog
     ? universityCatalog.find((item) => item.univName === universitySelectedName)
     : null;
-  const universityNames = hasUniversityCatalog
-    ? universityCatalog.map((item) => item.univName)
-    : Array.from(new Set(ANALYSIS_SEARCH_SEED.map((label) => String(label).split(/\s+/)[0])));
+  const universityNames = hasUniversityCatalog ? universityCatalog.map((item) => item.univName) : [];
   const analysisSearchList = (universitySelectedName
     ? (selectedCatalog?.majors || []).map((major) => `${universitySelectedName} ${major}`)
     : universityNames)
@@ -493,10 +480,10 @@ export function buildAnalysisDerived(state = {}) {
 
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor =
-    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316');
-  const analysisStatus = serverSelected?.status || (analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험');
+    serverSelected?.color || (hasServerScore ? (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316') : '');
+  const analysisStatus = serverSelected?.status || (hasServerScore ? (analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험') : '');
   const analysisStatusColor =
-    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316');
+    serverSelected?.color || (hasServerScore ? (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316') : '');
 
   const serverSimRows = buildServerSimRows(serverSimulation);
   const analysisSimRows = serverSimRows.length ? serverSimRows : [];
@@ -529,10 +516,6 @@ export function buildAnalysisDerived(state = {}) {
     ? targetMajor
     : analysisMajorOptions[0] || targetMajor || '';
 
-  const analysisSimulationBaseOrder = Array.from(
-    new Set([...(targetMajor ? [targetMajor] : []), ...(analysisTargetList || []), ...(homeTargetList || [])])
-  ).filter(Boolean);
-  const homeTargets = computeHomeTargets(state);
   const serverSimulationTargets = (effectiveAnalysisResults || [])
     .map((item) => {
       const major = targetFullName(item);
@@ -547,21 +530,7 @@ export function buildAnalysisDerived(state = {}) {
       };
     })
     .filter(Boolean);
-  const fallbackSimulationTargets = (analysisSimulationBaseOrder.length ? analysisSimulationBaseOrder : [targetMajor])
-    .filter(Boolean)
-    .map((major) => {
-      const base = homeTargets.find((item) => item.major === major) || homeTargets[0];
-      const score = Number(base?.score || liveCurrentScore || 0);
-      const cut = Number(base?.cut || 100);
-      return {
-        major,
-        label: compactTargetLabel(major),
-        score,
-        cut,
-        gap: score - cut
-      };
-    });
-  const analysisSimulationTargets = serverSimulationTargets.length ? serverSimulationTargets : fallbackSimulationTargets;
+  const analysisSimulationTargets = serverSimulationTargets;
 
   return {
     analysisSelected,
@@ -663,7 +632,7 @@ function pad2(n) {
 
 // 수험 일정 캘린더 파생: 병합 일정, 최근접 일정/D-day, 월간 그리드, 선택일 일정.
 export function buildCalendarDerived(state = {}) {
-  const today = FIXED_TODAY_DATE;
+  const today = TODAY_DATE;
   const personalEvents = Array.isArray(state.personalEvents) ? state.personalEvents : [];
   const todayYear = Number(today.slice(0, 4));
   const officialEvents = getOfficialAdmissionEvents(todayYear);

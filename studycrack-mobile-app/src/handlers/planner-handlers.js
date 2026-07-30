@@ -1,4 +1,4 @@
-import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
+import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
@@ -110,9 +110,9 @@ function toPlannerDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = FIXED_TODAY_DATE, fallback = FIXED_TODAY_DATE) {
+function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
   const raw = String(value || '').trim();
-  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(FIXED_TODAY_DATE).split('-')[2]) || 1;
+  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(TODAY_DATE).split('-')[2]) || 1;
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
     : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
@@ -231,7 +231,7 @@ export function createPlannerHandlers(ctx) {
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop,
     persistStudySession = noop,
-    todayDate = FIXED_TODAY_DATE
+    todayDate = TODAY_DATE
   } = ctx;
 
   return {

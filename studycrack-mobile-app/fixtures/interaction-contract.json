@@ -20,7 +20,7 @@
     "pro": { "rank": 3, "mainTabsVisible": true, "planner": true, "coaching": true, "scoreSimulation": true, "reverseProjection": true }
   },
   "screens": {
-    "home": { "profile": "main", "actions": ["setHomeSlide", "openCalendarSheet", "openStudySubjectSheet", "openNotificationModal", "goRanking", "openAnalysisSearchFromHome", "removeAnalysisTarget"] },
+    "home": { "profile": "main", "actions": ["setHomeSlide", "openCalendarSheet", "openStudySubjectSheet", "openNotificationModal", "goRanking", "openAnalysisSearchFromHome", "removeAnalysisTarget", "retryInit"] },
     "analysis": { "profile": "main", "actions": ["selectTarget", "setScoreView", "highlightSimSubject", "openAnalysisSearchFromHome"] },
     "addUniversity": { "profile": "secondary", "actions": ["refreshUniversityRecommendations", "selectUniversityForMajor", "runUniversitySearch", "addAnalysisTarget", "backToUniversityList"] },
     "ranking": { "profile": "secondary", "actions": ["setRankingPeriod", "back"] },
@@ -160,6 +160,7 @@
     "removePlannerItem",
     "removePlannerPhoto",
     "requestPhoneChange",
+    "retryInit",
     "retryMbti",
     "runUniversitySearch",
     "saveCalendarEvent",

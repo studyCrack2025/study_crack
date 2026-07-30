@@ -51,7 +51,7 @@ import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createSta
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
 import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileBacktrace, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchStudyRanking, fetchUniversityCatalog, fetchUniversityRecommendations, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveNotificationPreferences, saveQualitative, saveQuantitative, saveStudySession, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
-import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
+import { createUserDataResetPatch, fetchCurrentUser, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, canRetryInitialScore, canRetryInitialScorePayload, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -428,6 +428,16 @@ function MobileApp() {
   const scoreResultRetryRef = useRef({ signature: '', attempts: 0 });
   const simulationFetchSignatureRef = useRef('');
   const backtraceFetchSignatureRef = useRef('');
+
+  const retryUserLoad = useCallback(() => {
+    userFetchRetryRef.current = 0;
+    setState({
+      ...createUserDataResetPatch(),
+      userLoadStatus: 'idle',
+      userLoadError: '',
+      userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1
+    });
+  }, []);
   const qnaDraftRef = useRef({ title: '', content: '' });
   stateRef.current = state;
 
@@ -603,6 +613,7 @@ function MobileApp() {
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
     // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
     ...derivedCtx,
+    initializeApp: retryUserLoad,
     // [환산점수 단일 출처] 홈 대학 카드는 homeTargetList(고정 순서) + scoreCache(서버 점수)에서만 만든다.
     // targetMajor로 재정렬하던 computeHomeTargets 경로를 대체 → 1~3지망 순서 섞임/라이브·0 폴백 제거.
     homeTargets: buildUniversityCards(
@@ -876,18 +887,18 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 세션이 있으면 사용자 데이터를 1회 병합하고, 실패 시 데모 상태를 유지한다.
+  // 세션이 있으면 사용자 데이터를 불러온다. 사용자별 값은 서버 응답만 신뢰한다.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     const userApiBinding = getUserApiBinding();
     if (typeof userApiBinding.apiFetch !== 'function' || !userApiBinding.userApiUrl) {
       const retryDelay = Math.min(1200, 250 + userFetchRetryRef.current * 100);
-      setState({ userLoadStatus: 'loading' });
+      setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
       const timer = globalThis.setTimeout?.(() => {
         userFetchRetryRef.current += 1;
         if (userFetchRetryRef.current >= 40) {
-          setState({ userLoadStatus: 'error' });
+          setState({ userLoadStatus: 'error', userLoadError: '사용자 정보 연결을 준비하지 못했습니다. 다시 시도해주세요.' });
           return;
         }
         setState({ userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1 });
@@ -898,11 +909,11 @@ function MobileApp() {
     }
     userFetchRetryRef.current = 0;
     let cancelled = false;
-    setState({ userLoadStatus: 'loading' });
+    setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
     fetchCurrentUser(userApiBinding).then((userData) => {
       if (cancelled) return;
       if (!userData) {
-        setState({ userLoadStatus: 'error' });
+        setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
         return;
       }
       const role = String(userData.role || 'student').toLowerCase();
@@ -914,7 +925,7 @@ function MobileApp() {
         try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
       }
       const patch = mapUserToStatePatch(userData, stateRef.current);
-      setState({ ...patch, userLoadStatus: 'ready' });
+      setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
     }).catch((error) => {
       if (cancelled) return;
       // 인증 만료: alert 없이 세션 정리 후 모바일 로그인 화면으로 1회만 이동.
@@ -922,7 +933,7 @@ function MobileApp() {
         expireMobileSessionSilently();
         return;
       }
-      setState({ userLoadStatus: 'error' });
+      setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
     });
     return () => {
       cancelled = true;
@@ -1070,6 +1081,18 @@ function MobileApp() {
       ...(state.analysisTargetList || []),
       ...(state.homeTargetList || [])
     ]);
+    if (state.userLoadStatus === 'error') {
+      scoreRequestIdRef.current += 1;
+      if (state.analysisApiStatus !== 'error' || state.scoreFetchStatus !== 'error') {
+        setState({
+          analysisApiStatus: 'error',
+          analysisApiError: state.userLoadError || '사용자 정보를 불러오지 못했습니다.',
+          scoreFetchStatus: 'error',
+          scoreFetchSignature: ''
+        });
+      }
+      return undefined;
+    }
     if (state.userLoadStatus !== 'ready') {
       scoreRequestIdRef.current += 1;
       if (state.scoreFetchStatus !== 'loading') {
@@ -1208,6 +1231,7 @@ function MobileApp() {
     state.scoreExamKey,
     state.scoreExamType,
     state.targetMajor,
+    state.userLoadError,
     state.userLoadStatus,
     state.user?.quantitative
   ]);
