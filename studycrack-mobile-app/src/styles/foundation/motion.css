@@ -9,18 +9,18 @@
 @keyframes onboardingSceneIn{from{opacity:.001;transform:translate3d(18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 @keyframes onboardingItemIn{from{opacity:.001;transform:translate3d(0,12px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 @keyframes onboardingCharacterIn{from{opacity:.001;transform:translate3d(12px,8px,0) scale(.9) rotate(2deg);}to{opacity:1;transform:translate3d(0,0,0) scale(1) rotate(0);}}
-.card,.home-insight-card,.home-result-card-v3,.home-add-univ-card,.planner-item,.analysis-v2-head,.analysis-v2-card,.score-info-card,.score-info-hero,.mobile-account-card,.my-profile-hero,.my-insight-card,.my-study-stats,.my-menu-group,.support-direct-card,.support-qna-card,.faq-card,.settings-list,.notify-card,.plan-console-detail,.payment-safe-card,.locked-feature-preview-wrap{transition:transform var(--motion-base) var(--ease-standard),box-shadow var(--motion-base) var(--ease-standard),border-color var(--motion-base) var(--ease-standard),background-color var(--motion-base) var(--ease-standard),opacity var(--motion-base) ease;}
-button,.btn,.top-icon-btn,.my-menu-row,.notify-row,.faq-row,.analysis-v2-tab,.analysis-search-row,.analysis-rec-card,.planner-input,.ob1-pill,.plan-console-selector button,.tabbar button{transition:transform var(--motion-fast) var(--ease-standard),background-color var(--motion-fast) ease,color var(--motion-fast) ease,border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,opacity var(--motion-fast) ease,filter var(--motion-fast) ease;}
-button:active,.btn:active,.top-icon-btn:active,.my-menu-row:active,.notify-row:active,.faq-row:active,.analysis-search-row:active,.analysis-rec-card:active,.planner-item:active,.plan-console-selector button:active{transform:translate3d(0,1px,0) scale(.992);filter:brightness(.985);}
+.card,.home-result-card-v3,.home-add-univ-card,.planner-item,.score-info-card,.mobile-account-card,.my-profile-hero,.my-insight-card,.my-study-stats,.my-menu-group,.support-direct-card,.support-qna-card,.faq-card,.settings-list,.notify-card,.plan-console-detail,.locked-feature-preview-wrap{transition:transform var(--motion-base) var(--ease-standard),box-shadow var(--motion-base) var(--ease-standard),border-color var(--motion-base) var(--ease-standard),background-color var(--motion-base) var(--ease-standard),opacity var(--motion-base) ease;}
+button,.btn,.my-menu-row,.notify-row,.faq-row,.analysis-search-row,.analysis-rec-card,.planner-input,.ob1-pill,.plan-console-selector button,.tabbar button{transition:transform var(--motion-fast) var(--ease-standard),background-color var(--motion-fast) ease,color var(--motion-fast) ease,border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,opacity var(--motion-fast) ease,filter var(--motion-fast) ease;}
+button:active,.btn:active,.my-menu-row:active,.notify-row:active,.faq-row:active,.analysis-search-row:active,.analysis-rec-card:active,.planner-item:active,.plan-console-selector button:active{transform:translate3d(0,1px,0) scale(.992);filter:brightness(.985);}
 .tabbar button::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;border-radius:999px;background:var(--primary-dark);opacity:0;transform:translate3d(-50%,4px,0) scale(.7);transition:opacity var(--motion-base) ease,transform var(--motion-base) var(--ease-spring),width var(--motion-base) var(--ease-standard);}
 .tabbar button.active::after{width:16px;opacity:1;transform:translate3d(-50%,0,0) scale(1);}
 .tabbar button:active{transform:none;filter:none;}
 .home-kpi-track,.score-journey-track,.possible-univ-track{will-change:transform;transition-timing-function:var(--ease-enter) !important;}
 .home-kpi-indicator i,.possible-univ-dot,.slider-dot{transition:width var(--motion-base) var(--ease-standard),background-color var(--motion-base) ease,opacity var(--motion-base) ease,transform var(--motion-base) var(--ease-spring);}
 .home-kpi-indicator i.active,.possible-univ-dot.active,.slider-dot.active{transform:scale(1.05);}
-.home-result-gauge i,.home-goal-linked-card .track i,.home-ranking-progress i,.progress > span,.track i,.fill,.analysis-v2-progress .progress-base,.analysis-v2-progress .progress-range,.analysis-v2-progress .dot,.analysis-v2-progress .trend-arrow,.analysis-v2-vert-item .bar,.score-info-subject-card strong{transition-duration:var(--motion-slow) !important;transition-timing-function:var(--ease-enter) !important;}
+.home-result-gauge i,.progress > span,.track i,.fill,.score-info-subject-card strong{transition-duration:var(--motion-slow) !important;transition-timing-function:var(--ease-enter) !important;}
 .sc-overlay,.home-modal-overlay,.planner-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay,.find-email-modal-backdrop{animation:overlayFadeIn var(--motion-base) ease both;}
-.sc-modal,.sc-sheet,.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.score-onepage-modal,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.v2-step-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
+.sc-modal,.sc-sheet,.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
 .planner-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
 .side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
 .app-screen-overlays > *{animation:none !important;}
@@ -28,7 +28,6 @@ button:active,.btn:active,.top-icon-btn:active,.my-menu-row:active,.notify-row:a
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes surfaceLiftIn{from{opacity:.001;transform:translate3d(0,12px,0) scale(.985);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes bottomSheetIn{from{opacity:.001;transform:translate3d(0,28px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
-@keyframes modalPopIn{from{opacity:.001;transform:translate3d(0,10px,0) scale(.97);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes drawerSlideIn{from{opacity:.001;transform:translate3d(-18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 .home-content > *,.analysis-v2 > *,.planner-screen > *,.my-page > *{animation:contentRiseIn 340ms var(--ease-enter) both;}
 .home-content > *:nth-child(2),.analysis-v2 > *:nth-child(2),.planner-screen > *:nth-child(2),.my-page > *:nth-child(2){animation-delay:35ms;}
@@ -36,5 +35,4 @@ button:active,.btn:active,.top-icon-btn:active,.my-menu-row:active,.notify-row:a
 .home-content > *:nth-child(n+4),.analysis-v2 > *:nth-child(n+4),.planner-screen > *:nth-child(n+4),.my-page > *:nth-child(n+4){animation-delay:95ms;}
 @keyframes contentRiseIn{from{opacity:.001;transform:translate3d(0,8px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 .home-breakdown-detail,.home-breakdown-detail-row,.qna-list-row,.score-info-subject-card,.home-report-preview-item,.planner-item,.mobile-social-row,.profile-detail-section{animation:contentRiseIn 280ms var(--ease-enter) both;}
-.analysis-v2.loading .card::before,.analysis-eta-loading .skeleton{animation-duration:1.35s;}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important;}}

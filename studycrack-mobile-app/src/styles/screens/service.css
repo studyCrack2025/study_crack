@@ -1,39 +1,12 @@
-.plan-hero-kicker,.plan-kicker{font-size:11px;font-weight:900;color:var(--primary-dark);letter-spacing:0;text-transform:uppercase;}
-.mobile-plan-guide{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr auto;align-items:center;gap:8px;margin:0 2px 14px;color:#334155;font-size:11px;line-height:1.25;font-weight:900;}
-.mobile-plan-guide i{height:2px;border-radius:999px;background:#BFDBFE;}
-.mobile-plan-card{border-radius:22px;padding:18px;border:1px solid #E2E8F0;box-shadow:0 8px 20px rgba(15,23,42,.05);display:grid;gap:12px;}
-.mobile-plan-card.active{border:2px solid var(--primary);background:linear-gradient(160deg,#FFFFFF,#EFF6FF);box-shadow:0 12px 28px rgba(37,99,235,.14);}
-.mobile-plan-card .plan-head{align-items:flex-start;}
-.mobile-plan-card h4{font-size:24px;line-height:1.1;letter-spacing:0;}
-.mobile-plan-card .badge.muted{background:#F1F5F9;color:#64748B;}
-.plan-price-row{display:grid;gap:4px;padding:12px;border-radius:16px;background:#F8FBFF;border:1px solid #DDE7F6;}
-.plan-price-row .original{font-size:12px;color:#94A3B8;text-decoration:line-through;font-weight:700;}
-.plan-price-row b{font-size:24px;line-height:1.12;color:#0F172A;font-weight:900;}
-.plan-price-row em{font-style:normal;color:#475569;font-size:12px;font-weight:800;}
-.mobile-payment-card{border-radius:22px;border-color:#BFDBFE;background:linear-gradient(180deg,#FFFFFF,#F8FBFF);}
-.payment-save-badge{align-self:flex-start;border-radius:999px;background:#DCFCE7;color:#047857;padding:6px 10px;font-size:11px;font-weight:900;white-space:nowrap;}
-.payment-total-row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:12px 0;border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;}
-.payment-total-row span{font-size:12px;color:#94A3B8;text-decoration:line-through;font-weight:700;}
-.payment-total-row b{font-size:20px;color:#0F172A;}
-.payment-tabs.four{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
-.payment-tabs.four button{font-size:12px;padding:0 4px;}
 .locked-upgrade-card{display:grid;gap:7px;margin-bottom:12px;border:1px solid #D8E6FF;border-radius:18px;background:linear-gradient(160deg,#FFFFFF,#EEF4FF);}
 .locked-upgrade-card h3{margin:0;color:#26304A;font-size:18px;line-height:1.35;font-weight:900;letter-spacing:0;}
 .locked-upgrade-card p{margin:0;color:#64748B;font-size:12px;line-height:1.45;font-weight:700;}
-.mobile-plan-hero,.mobile-payment-hero{border-radius:18px;padding:20px;border:1px solid #D8E6FF;background:linear-gradient(160deg,#FFFFFF 0%,#F8FBFF 54%,#EEF4FF 100%);box-shadow:0 8px 24px rgba(15,23,42,.06);display:grid;gap:8px;margin-bottom:14px;}
-.mobile-plan-hero h3,.mobile-payment-hero h3{margin:0;font-size:23px;line-height:1.28;font-weight:900;color:#0F172A;letter-spacing:0;}
-.mobile-plan-hero p,.mobile-payment-hero p{margin:0;font-size:13px;line-height:1.55;color:#475569;}
-.payment-safe-card{display:grid;gap:6px;border-radius:18px;border:1px solid #D8E6FF;background:linear-gradient(160deg,#FFFFFF 0%,#F8FBFF 54%,#EEF4FF 100%);}
-.payment-safe-card b{font-size:14px;color:#0F172A;}
-.payment-safe-card p{margin:0;font-size:13px;line-height:1.5;color:#475569;}
 .plan-console-page,.payment-console-page{padding-bottom:28px;}
-.plan-console-hero{margin-bottom:0;}
 .plan-console-selector{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:2px 1px 5px;}
 .plan-console-selector::-webkit-scrollbar{display:none;}
 .plan-console-selector button{min-width:0;min-height:48px;border:1px solid #DDE7F6;background:#FFFFFF;border-radius:12px;padding:7px 5px;display:grid;gap:4px;place-items:center;font-family:inherit;color:#526176;box-shadow:none;}
 .plan-console-selector button.active{border-color:#BFD3F8;background:#EEF4FF;color:var(--primary-dark);box-shadow:0 0 0 3px rgba(76,121,238,.08);}
 .plan-console-selector span{font-size:12px;font-weight:900;letter-spacing:0;}
-.plan-console-selector button span{font-size:12px;}
 .plan-console-selector b{font-size:10px;line-height:1.2;font-weight:900;text-align:center;}
 .plan-console-selector button b{display:none;}
 .plan-console-detail{display:grid;gap:16px;padding:16px;border-radius:var(--sc-radius-card);background:#FFFFFF;border:1px solid var(--sc-border-subtle);box-shadow:var(--sc-shadow-normal);}
@@ -50,34 +23,13 @@
 .plan-console-price b{font-size:25px;line-height:1;color:#315BC9;font-weight:900;text-align:left;}
 .plan-console-price em{font-style:normal;font-size:11px;color:#64748B;font-weight:900;text-align:left;}
 .plan-console-original{font-size:11px;color:#94A3B8;text-decoration:line-through;font-weight:800;text-align:left;}
-.plan-console-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.plan-console-summary div{display:grid;gap:4px;padding:11px;border:1px solid #DDE7F6;background:#F8FBFF;border-radius:14px;}
-.plan-console-summary span{font-size:10.5px;line-height:1.2;color:#64748B;font-weight:900;}
-.plan-console-summary b{font-size:12px;line-height:1.35;color:#26304A;font-weight:900;}
-.plan-console-features{display:grid;grid-template-columns:1fr;gap:7px;}
-.plan-console-features span{min-height:34px;border:1px solid #E3EAF6;background:#FFFFFF;border-radius:12px;padding:8px 9px;font-size:11px;line-height:1.25;color:#334155;font-weight:800;}
-.plan-console-features .plan-console-more{display:flex;align-items:center;justify-content:center;border-style:dashed;background:#F8FBFF;color:var(--primary-dark);font-weight:900;}
-.plan-capability-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;}
-.plan-capability{border-radius:14px;padding:9px 6px;text-align:center;border:1px solid #E3EAF6;background:#FFFFFF;}
-.plan-capability.enabled{border-color:#BFD3F8;background:#EEF4FF;}
-.plan-capability.locked{opacity:.72;background:#F8FAFC;}
-.plan-capability span{display:block;font-size:9px;line-height:1.1;color:#64748B;font-weight:900;}
-.plan-capability b{display:block;margin-top:4px;font-size:11px;line-height:1.2;color:#26304A;font-weight:900;}
 .plan-console-cta{width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;background:var(--primary-dark);}
 .plan-console-cta span,.plan-console-cta svg{width:18px;height:18px;stroke:#FFFFFF;}
-.plan-console-note{display:grid;gap:5px;border-radius:18px;background:#FFFFFF;border-color:#DDE7F6;}
-.plan-console-note b{font-size:14px;color:#26304A;font-weight:900;}
-.plan-console-note p{margin:0;font-size:12px;line-height:1.5;color:#64748B;font-weight:700;}
 .payment-duration-row{border:1px solid #DDE7F6;background:#FFFFFF;border-radius:16px;padding:5px;box-shadow:0 5px 14px rgba(52,78,143,.05);}
 .payment-duration-row button{border-radius:12px;font-weight:900;color:#526176;}
 .payment-duration-row button.active{background:#EEF4FF;color:var(--primary-dark);}
 .payment-option-block{display:grid;gap:7px;padding:12px;border:1px solid #DDE7F6;background:#FFFFFF;border-radius:18px;box-shadow:0 5px 14px rgba(52,78,143,.05);}
 .payment-option-block > b{font-size:13px;color:#26304A;font-weight:900;}
-.payment-flow-card{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:12px;}
-.payment-flow-card div{min-width:0;display:grid;gap:4px;justify-items:center;text-align:center;padding:10px 6px;border:1px solid #E3EAF6;background:#F8FBFF;border-radius:14px;}
-.payment-flow-card span{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:#EEF4FF;color:var(--primary-dark);font-size:11px;font-weight:900;}
-.payment-flow-card b{font-size:12px;color:#26304A;font-weight:900;}
-.payment-flow-card p{margin:0;font-size:10.5px;line-height:1.3;color:#64748B;font-weight:800;}
 .plan-console-benefits{display:grid;}
 .plan-benefit-row{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #EEF2F7;}
 .plan-benefit-row:last-child{border-bottom:0;}
@@ -95,19 +47,11 @@
 .payment-fixed-term{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border:1px solid #DDE7F6;border-radius:14px;background:#FFFFFF;}
 .payment-fixed-term span{font-size:12px;color:#64748B;font-weight:800;}
 .payment-fixed-term b{font-size:14px;color:#26304A;}
-@media (max-width:390px){
-.plan-console-head{grid-template-columns:1fr;}
-.plan-console-price{justify-items:start;}
-.plan-console-price b,.plan-console-price em,.plan-console-original{text-align:left;}
-.plan-console-summary,.plan-console-features{grid-template-columns:1fr;}
-.plan-capability-grid{grid-template-columns:1fr 1fr;}
-.payment-flow-card{grid-template-columns:1fr;}
-}
 @media (max-width:360px){
-.plan-console-selector button span{font-size:10.5px;}
+.plan-console-selector span{font-size:10.5px;}
 .plan-console-head{grid-template-columns:minmax(0,1fr) 58px;}
 .plan-console-visual{width:56px;height:56px;border-radius:17px;}
-.plan-console-head h3{font-size:28px;}
+.plan-console-head h3{font-size:22px;}
 .plan-console-price b{font-size:22px;}
 }
 .payment-done-screen{padding-top:var(--sc-space-16);}

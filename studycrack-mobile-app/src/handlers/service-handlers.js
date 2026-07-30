@@ -81,7 +81,7 @@ function hasMissingExamScore(scores) {
 function togglePlanDom(ctx, plan) {
   const doc = getDocument(ctx);
   if (doc?.body?.dataset) doc.body.dataset.checkoutPlan = plan;
-  queryAll(ctx, '.plan-card, .payment-plan-tabs button, .payment-tabs button, .plan-console-selector button').forEach((card) => {
+  queryAll(ctx, '.plan-console-selector button').forEach((card) => {
     const key = card.getAttribute?.('data-plan');
     if (key) card.classList?.toggle?.('active', key === plan);
   });

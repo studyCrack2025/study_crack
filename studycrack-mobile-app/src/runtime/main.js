@@ -8,7 +8,6 @@ import '../styles/components/primitives.css';
 import '../styles/components/secondary.css';
 import '../styles/components/mbti-survey.css';
 import '../styles/components/insights.css';
-import '../styles/layout/mobile-bridge.css';
 import '../styles/foundation/motion.css';
 import '../styles/components/modals.css';
 import '../styles/components/navigation.css';

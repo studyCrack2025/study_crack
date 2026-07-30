@@ -83,7 +83,6 @@ export function createInitialAppState() {
     targetDeleteError: '',
     analysisSearchOpen: false,
     analysisSearchTerm: '',
-    analysisMode: 'summary',
     analysisEtaStage: 1,
     analysisHighlightedSubject: '',
     analysisBarProjectionTarget: '',
