@@ -3,7 +3,6 @@ import {
   MBTI_QUESTIONS,
   MBTI_SECTIONS,
   MBTI_LETTER_LABELS,
-  countMbtiAnswered,
   getMbtiProfile
 } from '../constants/mbti.js';
 
@@ -83,5 +82,3 @@ export function renderMbtiModal({ mbtiModalOpen = false, mbtiStep = 'intro', mbt
   }
   return renderModal({ panelClass: 'mbti-survey-modal', dismissAction: 'closeMbtiModal', body });
 }
-
-export { countMbtiAnswered };

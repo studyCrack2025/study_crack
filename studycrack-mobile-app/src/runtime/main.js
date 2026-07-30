@@ -8,7 +8,6 @@ import '../styles/components/primitives.css';
 import '../styles/components/secondary.css';
 import '../styles/components/mbti-survey.css';
 import '../styles/components/insights.css';
-import '../styles/design-v2.css';
 import '../styles/layout/mobile-bridge.css';
 import '../styles/foundation/motion.css';
 import '../styles/components/modals.css';
@@ -354,7 +353,6 @@ function isTabbarDimmed(state) {
   return Boolean(
     state.coachingSheetOpen ||
       state.studySubjectSheetOpen ||
-      state.plannerCalendarOpen ||
       state.plannerEditIndex !== null ||
       state.drawerOpen ||
       state.universityModalOpen ||

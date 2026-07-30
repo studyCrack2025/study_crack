@@ -1,4 +1,4 @@
-/* studycrack-mobile.css — bundle 로딩 전 fallback 전용 최소 스타일. 실제 앱 UI는 studycrack-mobile-app/src/styles/design-v2.css가 담당한다. */
+/* Bundle loading fallback only. Runtime UI styles are imported explicitly by src/runtime/main.js. */
 :root { --mobile-boot-bg:#F6F8FE; --mobile-boot-card:#FFFFFF; --mobile-boot-text:#26304A; --mobile-boot-muted:#64748B; --mobile-boot-line:#D8E3F4; --mobile-boot-primary:#344E8F; }
 * { box-sizing:border-box; }
 html,

@@ -123,7 +123,6 @@ export function createInitialAppState() {
     scoreDragOffset: 0,
     // planner
     selectedDate: TODAY_DATE,
-    plannerCalendarOpen: false,
     plannerCalendarMode: 'week',
     plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' },
     plannerItems: [],

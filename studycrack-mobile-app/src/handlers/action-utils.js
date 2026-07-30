@@ -16,8 +16,6 @@ export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
   'openCalendarEventForm',
   'closeCalendarEventForm',
   'setPlannerCalendarMode',
-  'openPlannerCalendar',
-  'closePlannerCalendar',
   'plannerCalendarPrevWeek',
   'plannerCalendarNextWeek',
   'plannerCalendarToday'

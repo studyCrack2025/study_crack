@@ -192,7 +192,6 @@ function startStudyTimer(ctx, subject, plannerItemId = '') {
 
 export function createPlannerHandlers(ctx) {
   const {
-    afterSafariViewportStable = (fn) => fn?.(),
     centerPlannerDate = noop,
     goto,
     plannerCalendarMode = 'week',
@@ -212,7 +211,6 @@ export function createPlannerHandlers(ctx) {
     setActiveStudySubject = noop,
     setExpandedBreakdownSubject = noop,
     setNotifModalOpen = noop,
-    setPlannerCalendarOpen = noop,
     setPlannerCalendarMode = noop,
     setPlannerDraft = noop,
     setPlannerEditIndex = noop,
@@ -236,21 +234,7 @@ export function createPlannerHandlers(ctx) {
 
   return {
     openPlannerAddPage() {
-      setPlannerCalendarOpen(false);
       goto?.('plannerAdd');
-      return true;
-    },
-
-    openPlannerCalendar() {
-      preserveY(() => {
-        setPlannerCalendarOpen(false);
-        setPlannerCalendarMode(plannerCalendarMode === 'month' ? 'week' : 'month');
-      });
-      return true;
-    },
-
-    closePlannerCalendar() {
-      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
       return true;
     },
 
@@ -298,9 +282,6 @@ export function createPlannerHandlers(ctx) {
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      if (!actionEl?.closest?.('.planner-calendar-sheet')) {
-        afterSafariViewportStable(() => setPlannerCalendarOpen(false));
-      }
       requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;

@@ -67,7 +67,7 @@ function renderMissingScreen(ctx, screenName = '') {
   return layout(`<div class="center init-loading"><h3>${screenName || 'home'}</h3><p class="sub">화면 renderer 연결 준비 중입니다.</p></div>`, false);
 }
 
-export const MOBILE_SCREEN_RENDERER_NAMES = [
+const MOBILE_SCREEN_RENDERER_NAMES = [
   'home',
   'analysis',
   'addUniversity',

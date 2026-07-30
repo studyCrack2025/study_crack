@@ -6,14 +6,8 @@
 //   - univKey = 공백 제거 대학+학과명. 서버 응답의 univ/major를 정규화해 저장한다.
 //   - 시험 전환은 examKey만 바뀔 뿐 캐시를 지우지 않는다 → 재진입 시 0 깜빡임 없이 즉시 표시.
 
-import { scoreExamTypeToKey } from './persistence.js';
-
 export function univKey(name) {
   return String(name || '').replace(/\s+/g, '');
-}
-
-export function examKeyOf(state = {}) {
-  return state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType) || 'active';
 }
 
 function stableValue(value) {

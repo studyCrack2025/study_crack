@@ -5,10 +5,8 @@ export const STORAGE_KEYS = {
   notifications: 'notifications',
   plannerItems: 'plannerItems',
   scores: 'scores',
-  scrollPositions: 'studycrack_scroll_positions_v1',
   selectedPlan: 'selectedPlan',
   selectedUniversity: 'selectedUniversity',
-  startupErrors: 'studycrack_startup_errors_v1',
   activeStudySession: 'activeStudySession',
   studyRecords: 'studyRecords',
   studySubjectRecords: 'studySubjectRecords',
@@ -42,7 +40,7 @@ export function readString(key, fallback = '', storage = globalThis.localStorage
   }
 }
 
-export function readObject(key, fallback = {}, storage = globalThis.localStorage) {
+function readObject(key, fallback = {}, storage = globalThis.localStorage) {
   const parsed = safeParse(key, fallback, storage);
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;
 }
@@ -58,18 +56,4 @@ export function readExamScoresMap(storage = globalThis.localStorage) {
 
 export function writeExamScoresMap(map, storage = globalThis.localStorage) {
   return safeStringifySet(STORAGE_KEYS.examScoresByType, map || {}, storage);
-}
-
-export function appendStartupError({ type, payload, screen, userAgent, width, visualViewportWidth, timestamp = Date.now() }, storage = globalThis.localStorage) {
-  const logs = readArray(STORAGE_KEYS.startupErrors, [], storage);
-  const next = logs.concat({
-    type,
-    payload: String(payload || ''),
-    screen,
-    ua: userAgent,
-    width,
-    vv: visualViewportWidth,
-    ts: timestamp
-  });
-  return safeStringifySet(STORAGE_KEYS.startupErrors, next.slice(-20), storage);
 }
