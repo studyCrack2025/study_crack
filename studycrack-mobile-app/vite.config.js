@@ -12,7 +12,17 @@ export default defineConfig({
       input: 'src/runtime/main.js',
       output: {
         entryFileNames: 'studycrack-mobile.bundle.js',
-        format: 'iife'
+        chunkFileNames: 'chunks/[name]-[hash].js',
+        assetFileNames(assetInfo) {
+          return assetInfo.name?.endsWith('.css') ? 'studycrack-mobile.css' : 'assets/[name]-[hash][extname]';
+        },
+        format: 'es',
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) return 'vendor-react';
+          if (id.includes('/amazon-cognito-identity-js/') || id.includes('/js-cookie/')) return 'vendor-auth';
+          return 'vendor';
+        }
       }
     }
   }

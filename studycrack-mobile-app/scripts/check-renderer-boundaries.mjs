@@ -5,6 +5,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 const [
   registrySource,
+  appRegistrySource,
   analysisSource,
   mypageSource,
   serviceSource,
@@ -24,6 +25,7 @@ const [
   termsModalComponent
 ] = await Promise.all([
   read('../src/app/screen-registry.js'),
+  read('../src/app/screen-registry-app.js'),
   read('../src/screens/analysis/renderers.js'),
   read('../src/screens/mypage/renderers.js'),
   read('../src/screens/service/renderers.js'),
@@ -42,6 +44,8 @@ const [
   read('../src/components/MbtiModal.jsx'),
   read('../src/components/TermsModal.jsx')
 ]);
+
+const combinedRegistrySource = `${registrySource}\n${appRegistrySource}`;
 
 const jsxScreenNames = [
   'accountInfo',
@@ -62,9 +66,9 @@ const jsxScreenNames = [
   'termsScreen'
 ];
 for (const screenName of jsxScreenNames) {
-  assert.match(registrySource, new RegExp(`\\b${screenName}:`), `${screenName} must remain JSX-owned`);
+  assert.match(combinedRegistrySource, new RegExp(`\\b${screenName}:`), `${screenName} must remain JSX-owned`);
   assert.doesNotMatch(
-    registrySource,
+    combinedRegistrySource,
     new RegExp(`\\n\\s{4}${screenName}: render`),
     `${screenName} must not be registered as a string renderer`
   );
@@ -72,9 +76,16 @@ for (const screenName of jsxScreenNames) {
 
 assert.match(
   registrySource,
-  /for \(const screenName of Object\.keys\(MOBILE_SCREEN_COMPONENTS\)\) delete merged\[screenName\]/,
-  'custom string renderers must not override JSX-owned screens'
+  /for \(const screenName of Object\.keys\(BOOTSTRAP_SCREEN_COMPONENTS\)\) delete merged\[screenName\]/,
+  'custom string renderers must not override bootstrap JSX screens'
 );
+assert.match(
+  registrySource,
+  /for \(const screenName of Object\.keys\(appRegistry\?\.MOBILE_APP_SCREEN_COMPONENTS \|\| \{\}\)\) delete merged\[screenName\]/,
+  'custom string renderers must not override deferred JSX screens'
+);
+assert.match(registrySource, /import\('\.\/screen-registry-app\.js'\)/, 'app screen registry must stay dynamically imported');
+assert.match(appRegistrySource, /export const MOBILE_APP_SCREEN_COMPONENTS/, 'deferred JSX ownership must stay explicit');
 assert.doesNotMatch(registrySource, /fallbackScreen/);
 
 const fullScreenRenderers = [
@@ -143,4 +154,4 @@ assert.match(termsModalComponent, /<Modal dismissAction="closeTermsModal"/);
 assert.doesNotMatch(authComponent, /dangerouslySetInnerHTML/);
 assert.doesNotMatch(legalComponent, /dangerouslySetInnerHTML/);
 
-console.log('renderer ownership boundary ok: 16 JSX screens, React analysis/home/terms/planner/MY/MBTI overlays');
+console.log('renderer ownership boundary ok: 16 JSX screens across bootstrap and deferred app registries');

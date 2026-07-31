@@ -43,7 +43,7 @@ import { renderScoreJourneyCard, scoreTierClass } from '../components/score-jour
 import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
-import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
+import { getScreenComponent, isDeferredAppScreen, loadAppScreenRegistry, renderMobileScreen } from '../app/screen-registry.js';
 import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
@@ -56,7 +56,7 @@ import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
 import { attachVisualViewportMetrics } from './visual-viewport.js';
 
-const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } = React;
+const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } = React;
 
 // 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
 // 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
@@ -415,6 +415,9 @@ function createInitialAppStateWithScreenParam() {
 
 function MobileApp() {
   const [state, setState] = useReducer(reducer, undefined, createInitialAppStateWithScreenParam);
+  const [appScreenRegistry, setAppScreenRegistry] = useState(null);
+  const [appChunkStatus, setAppChunkStatus] = useState('idle');
+  const [appChunkRetryTick, setAppChunkRetryTick] = useState(0);
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
@@ -439,6 +442,30 @@ function MobileApp() {
   stateRef.current = state;
 
   useEffect(() => attachVisualViewportMetrics(), []);
+
+  useEffect(() => {
+    const shouldLoad = isDeferredAppScreen(state.screen)
+      || (state.screen === 'splash'
+        && typeof window !== 'undefined'
+        && typeof window.hasClientSession === 'function'
+        && window.hasClientSession());
+    if (!shouldLoad || appScreenRegistry) return undefined;
+    let active = true;
+    setAppChunkStatus('loading');
+    loadAppScreenRegistry()
+      .then((module) => {
+        if (!active) return;
+        setAppScreenRegistry(module);
+        setAppChunkStatus('ready');
+      })
+      .catch(() => {
+        if (!active) return;
+        setAppChunkStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [appChunkRetryTick, appScreenRegistry, state.screen]);
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
   const setters = useMemo(
@@ -1375,13 +1402,49 @@ function MobileApp() {
     onBlur
   };
 
+  if (isDeferredAppScreen(state.screen) && !appScreenRegistry) {
+    const failed = appChunkStatus === 'error';
+    return React.createElement(
+      'div',
+      wrapperProps,
+      React.createElement(
+        'div',
+        { className: 'app-shell' },
+        React.createElement(
+          'div',
+          { className: 'app-frame' },
+          React.createElement(
+            'div',
+            { className: 'screen app-screen app-content', 'data-screen': state.screen },
+            React.createElement(
+              'div',
+              { className: 'center init-loading', role: 'status', 'aria-live': 'polite' },
+              React.createElement('h3', null, failed ? '화면을 불러오지 못했습니다' : '앱 화면을 준비하고 있어요'),
+              React.createElement('p', { className: 'sub' }, failed ? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.' : '잠시만 기다려 주세요.'),
+              failed
+                ? React.createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-primary mini',
+                    onClick: () => {
+                      setAppChunkStatus('idle');
+                      setAppChunkRetryTick((value) => value + 1);
+                    }
+                  }, '다시 시도')
+                : null
+            )
+          )
+        )
+      )
+    );
+  }
+
   // JSX 등록 화면은 React 트리만 사용한다. 미등록 보조 화면만 문자열 renderer 경로를 사용한다.
-  const ScreenComponent = getScreenComponent(state.screen);
+  const ScreenComponent = getScreenComponent(state.screen, appScreenRegistry);
   if (ScreenComponent) {
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
   }
 
-  const rendered = renderMobileScreen(state.screen, ctx);
+  const rendered = renderMobileScreen(state.screen, ctx, { appRegistry: appScreenRegistry });
   // 셸 조각이 분리된 경우(문자열 화면): app-shell/app-frame을 React 노드로 두고 배경/오버레이/탭바를
   // 각각 독립 dangerouslySetInnerHTML div로 렌더한다. React는 __html 문자열이 바뀐 div만 갱신하므로,
   // 모달 상태만 변할 때 배경(inner) DOM은 그대로 유지된다 → 어떤 모달도 배경을 새로고침하지 않는다.

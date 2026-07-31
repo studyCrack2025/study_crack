@@ -1,41 +1,18 @@
 import { renderAppBar } from '../components/app-bar.js';
 import { renderAppShell } from '../components/app-shell.js';
-import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
-import { HomeScreen } from '../screens/home/HomeScreen.jsx';
-import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
-import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
 import { AuthFindIdScreen, AuthFindPwScreen, AuthLoginScreen, AuthSignupScreen } from '../screens/auth/AuthScreens.jsx';
-import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
-import { Ob3Screen } from '../screens/onboarding/Ob3Screen.jsx';
-import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
 import { PrivacyPolicyScreen, SettingsMainScreen, SettingsTermsPickerScreen, TermsScreen } from '../screens/mypage/LegalScreens.jsx';
-import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
+import { Ob3Screen } from '../screens/onboarding/Ob3Screen.jsx';
 import {
-  renderAddUniversityScreen,
-  renderNotificationSettingsScreen,
-  renderNotificationListScreen,
-  renderCustomerSupportScreen,
-  renderLockedFeatureScreen,
-  renderSplashScreen,
-  renderOn1Screen,
-  renderOn2Screen,
-  renderOn3Screen,
   renderOb1Screen,
   renderOb2Screen,
   renderOb4Screen,
   renderOb5Screen,
-  renderQualInfoScreen,
-  renderRankingScreen,
-  renderScoreInfoScreen,
-  renderPaymentCompleteScreen,
-  renderPaymentScreen,
-  renderProEliteScreen,
-  renderProIntroScreen,
-  renderReportDetailScreen,
-  renderReportScreen,
-  renderTutorScreen,
-  renderWeeklyScreen
-} from '../screens/index.js';
+  renderOn1Screen,
+  renderOn2Screen,
+  renderOn3Screen,
+  renderSplashScreen
+} from '../screens/onboarding/renderers.js';
 
 function defaultLayout(inner, withTab = false, overlays = '') {
   return renderAppShell({ inner: String(inner || ''), withTab, overlays: String(overlays || '') });
@@ -43,10 +20,6 @@ function defaultLayout(inner, withTab = false, overlays = '') {
 
 function defaultAppbar(title = '', showBack = false) {
   return renderAppBar({ title, showBack });
-}
-
-function defaultIcon() {
-  return '';
 }
 
 function renderMissingScreen(ctx, screenName = '') {
@@ -97,75 +70,106 @@ const MOBILE_SCREEN_RENDERER_NAMES = [
   'termsScreen'
 ];
 
-// JSX 화면은 React 트리만 소유한다. 문자열 renderer map에는 같은 screen key를 두지 않는다.
-export const MOBILE_SCREEN_COMPONENTS = {
-  accountInfo: AccountInfoScreen,
-  analysis: AnalysisScreen,
+export const DEFERRED_APP_SCREEN_NAMES = [
+  'home',
+  'analysis',
+  'addUniversity',
+  'ranking',
+  'qualInfo',
+  'scoreInfo',
+  'planner',
+  'plannerAdd',
+  'strategy',
+  'weekly',
+  'report',
+  'reportDetail',
+  'lockedFeature',
+  'proElite',
+  'tutor',
+  'proIntro',
+  'payment',
+  'paymentComplete',
+  'my',
+  'notificationSettings',
+  'notificationList',
+  'customerSupport',
+  'accountInfo'
+];
+
+const DEFERRED_APP_SCREEN_SET = new Set(DEFERRED_APP_SCREEN_NAMES);
+
+export const BOOTSTRAP_SCREEN_COMPONENTS = {
   authFindId: AuthFindIdScreen,
   authFindPw: AuthFindPwScreen,
   authLogin: AuthLoginScreen,
   authSignup: AuthSignupScreen,
-  strategy: CoachingScreen,
-  home: HomeScreen,
-  my: MyPageScreen,
   ob3: Ob3Screen,
-  planner: PlannerScreen,
-  plannerAdd: PlannerAddScreen,
   privacyPolicy: PrivacyPolicyScreen,
   settingsMain: SettingsMainScreen,
   settingsTermsPicker: SettingsTermsPickerScreen,
   termsScreen: TermsScreen
 };
 
-export function getScreenComponent(screenName) {
-  return MOBILE_SCREEN_COMPONENTS[screenName] || null;
+const BOOTSTRAP_SCREEN_RENDERERS = {
+  splash: renderSplashScreen,
+  on1: renderOn1Screen,
+  on2: renderOn2Screen,
+  on3: renderOn3Screen,
+  ob1: renderOb1Screen,
+  ob2: renderOb2Screen,
+  ob4: renderOb4Screen,
+  ob5: renderOb5Screen
+};
+
+let appRegistryModule = null;
+let appRegistryPromise = null;
+
+export function isDeferredAppScreen(screenName) {
+  return DEFERRED_APP_SCREEN_SET.has(screenName);
+}
+
+export function loadAppScreenRegistry() {
+  if (appRegistryModule) return Promise.resolve(appRegistryModule);
+  if (!appRegistryPromise) {
+    appRegistryPromise = import('./screen-registry-app.js')
+      .then((module) => {
+        appRegistryModule = module;
+        return module;
+      })
+      .catch((error) => {
+        appRegistryPromise = null;
+        throw error;
+      });
+  }
+  return appRegistryPromise;
+}
+
+export function getScreenComponent(screenName, appRegistry = null) {
+  return BOOTSTRAP_SCREEN_COMPONENTS[screenName] || appRegistry?.MOBILE_APP_SCREEN_COMPONENTS?.[screenName] || null;
 }
 
 export function createScreenRenderContext(ctx = {}) {
   return {
     appbar: defaultAppbar,
-    icon: defaultIcon,
+    icon: () => '',
     layout: defaultLayout,
     ...ctx
   };
 }
 
-export function createMobileScreenRenderers(ctx = {}) {
+export function createMobileScreenRenderers(ctx = {}, appRegistry = null) {
+  const renderCtx = createScreenRenderContext(ctx);
   const customRenderers = ctx.screenRenderers || {};
-  const renderers = {
-    addUniversity: renderAddUniversityScreen,
-    customerSupport: renderCustomerSupportScreen,
-    lockedFeature: renderLockedFeatureScreen,
-    notificationSettings: renderNotificationSettingsScreen,
-    notificationList: renderNotificationListScreen,
-    splash: renderSplashScreen,
-    on1: renderOn1Screen,
-    on2: renderOn2Screen,
-    on3: renderOn3Screen,
-    ob1: renderOb1Screen,
-    ob2: renderOb2Screen,
-    ob4: renderOb4Screen,
-    ob5: renderOb5Screen,
-    payment: renderPaymentScreen,
-    paymentComplete: renderPaymentCompleteScreen,
-    proElite: renderProEliteScreen,
-    proIntro: renderProIntroScreen,
-    qualInfo: renderQualInfoScreen,
-    ranking: renderRankingScreen,
-    report: renderReportScreen,
-    reportDetail: renderReportDetailScreen,
-    scoreInfo: renderScoreInfoScreen,
-    tutor: renderTutorScreen,
-    weekly: renderWeeklyScreen
-  };
-  const merged = { ...renderers, ...customRenderers };
-  for (const screenName of Object.keys(MOBILE_SCREEN_COMPONENTS)) delete merged[screenName];
+  const appRenderers = appRegistry?.createAppScreenRenderers?.(renderCtx) || {};
+  const merged = { ...BOOTSTRAP_SCREEN_RENDERERS, ...appRenderers, ...customRenderers };
+  for (const screenName of Object.keys(BOOTSTRAP_SCREEN_COMPONENTS)) delete merged[screenName];
+  for (const screenName of Object.keys(appRegistry?.MOBILE_APP_SCREEN_COMPONENTS || {})) delete merged[screenName];
   return merged;
 }
 
 export function renderMobileScreen(screenName, ctx = {}, options = {}) {
   const renderCtx = createScreenRenderContext(ctx);
-  const renderers = options.renderers || createMobileScreenRenderers(renderCtx);
+  const renderers = options.renderers || createMobileScreenRenderers(renderCtx, options.appRegistry);
   const renderer = renderers[screenName];
   if (typeof renderer !== 'function') return renderMissingScreen(renderCtx, screenName);
   try {

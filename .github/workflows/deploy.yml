@@ -76,11 +76,19 @@ jobs:
             --exclude "*" --include "js/*" --include "css/*" \
             --cache-control "public, max-age=31536000, immutable"
 
-          # 모바일 번들은 고정 파일명(버전 쿼리 없음)이라 항상 재검증 — stale 방지
-          # (CloudFront /* 무효화와 함께. 정식 런타임 스위치 시 버전드 경로로 전환 예정)
+          # 모바일 entry는 고정 파일명이라 항상 재검증한다.
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "studycrack-mobile-app/dist/*" \
+            --exclude "*" \
+            --include "studycrack-mobile-app/dist/studycrack-mobile.bundle.js" \
+            --include "studycrack-mobile-app/dist/studycrack-mobile.css" \
             --cache-control "no-cache, no-store, must-revalidate"
+
+          # 분할 chunk는 content hash 파일명이므로 장기 캐시한다.
+          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
+            --exclude "*" \
+            --include "studycrack-mobile-app/dist/chunks/*" \
+            --include "studycrack-mobile-app/dist/assets/*" \
+            --cache-control "public, max-age=31536000, immutable"
 
       # 5. CloudFront 캐시 무효화 (CF_DIST_ID가 비어있지 않을 때만 실행)
       - name: CloudFront Invalidation
