@@ -83,7 +83,7 @@ function SubjectStep({ rows = [] }) {
 }
 
 function UploadList({ files = [], removeAction = '' }) {
-  return files.length ? <div className="coach-thumb-list">{files.map((file, index) => <div className="coach-thumb" key={`${file.name || 'file'}-${index}`}><span>{file.name || `사진 ${index + 1}`}</span><button type="button" data-action={removeAction} data-photo-index={index}>삭제</button></div>)}</div> : <p className="coach-upload-empty">선택된 사진이 없습니다.</p>;
+  return files.length ? <div className="coach-thumb-list">{files.map((file, index) => <div className="coach-thumb" key={`${file.name || 'file'}-${index}`}><span>{file.name || `사진 ${index + 1}`}</span>{removeAction === 'removePlannerPhoto' ? <button type="button" data-action="removePlannerPhoto" data-photo-index={index}>삭제</button> : <button type="button" data-action="removeExamPhoto" data-photo-index={index}>삭제</button>}</div>)}</div> : <p className="coach-upload-empty">선택된 사진이 없습니다.</p>;
 }
 
 function PlannerProofStep({ files = [] }) {

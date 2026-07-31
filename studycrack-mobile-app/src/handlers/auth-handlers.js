@@ -362,31 +362,6 @@ export function createAuthHandlers(ctx) {
       return false;
     },
 
-    toggleSignupAllTerms({ actionEl }) {
-      const { fields } = captureSignupState();
-      const checked = actionEl?.checked === true;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({
-        standard: checked,
-        service: checked,
-        privacy: checked,
-        refund: checked,
-        marketing: checked
-      });
-      return true;
-    },
-
-    toggleSignupTerm({ actionEl }) {
-      const { fields, termValues } = captureSignupState();
-      const key = actionEl?.getAttribute?.('data-signup-term');
-      if (!key) return false;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({ ...termValues, [key]: actionEl?.checked === true });
-      return true;
-    },
-
     openSignupTermsModal({ actionEl }) {
       captureSignupState();
       setOpenTermsType(actionEl?.getAttribute?.('data-terms-type') || 'standard');

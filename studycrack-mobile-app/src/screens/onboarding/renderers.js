@@ -1,5 +1,4 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
-import { renderMbtiModal } from '../../components/mbti-modal.js';
 import { MBTI_LETTER_LABELS, getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
 import { scoreTierClass as defaultScoreTierClass } from '../../components/score-journey.js';
 import { EXAM_OPTIONS } from '../../constants/options.js';
@@ -159,27 +158,6 @@ export function renderOb2Screen(ctx) {
     bubbleText: '점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요.',
     body,
     cta: '<button class="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button><button type="button" class="auth-link-btn" data-action="skipOb2WithoutScore">시험 성적이 없어요</button>'
-  });
-}
-
-export function renderOb3Screen(ctx) {
-  const { mbtiAnswers, mbtiModalOpen, mbtiResult, mbtiStep } = ctx;
-
-  const body = `<div class="card ob-card">
-         <p class="analysis-title">학습 성향 진단</p>
-         <p class="sub">36문항으로 나의 학습 유형을 진단해요.</p>
-         <button class="btn btn-secondary" data-action="openMbtiModal">진단 시작하기</button>
-         ${renderMbtiResultCard(mbtiResult)}
-       </div>
-       ${renderMbtiModal({ mbtiModalOpen, mbtiStep, mbtiAnswers, mbtiResult })}`;
-
-  return renderOnboardingScreen(ctx, {
-    step: 3,
-    title: '학습성향 진단 1-3',
-    subcopy: '마지막 단계예요.<br/>학습 MBTI로 내 공부 성향을 진단해보세요.',
-    bubbleText: '짧은 질문 4개로 학습 성향을 빠르게 확인할 수 있어요!',
-    body,
-    cta: '<button class="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button>'
   });
 }
 

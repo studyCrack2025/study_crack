@@ -8,25 +8,14 @@ import {
   getCalendarCategoryMeta
 } from '../../constants/admission-calendar.js';
 import {
+  buildMissionSubjectRows,
   countUnreadNotifications,
   defaultFormatHms,
   defaultFormatMinutesLabel,
   defaultScoreTierClass,
-  renderDrawer,
-  renderNotificationModal,
-  renderStudyBreakdown,
-  renderStudySubjectSheet,
-  renderTargetDeleteModal,
-  renderUniversityModal
-} from './renderers.js';
-import { buildMissionSubjectRows, getHomeScorePresentation } from './presentation.js';
-
-// home 화면의 React-트리(JSX) 버전. 문자열 renderer(renderHomeView)와 DOM 구조·data-action을 1:1로 맞춘다.
-// 핵심: KPI 슬라이더 트랙(.home-kpi-track)을 실제 React 노드로 두어, 슬라이드 전환 시 트랙 엘리먼트가
-// 유지되고 transform(--home-slide-x) 변화에 CSS transition이 적용된다(문자열 경로는 매 렌더 트랙을
-// 재생성해 transition이 끊겨 점프). 이벤트는 셸 래퍼의 위임 디스패처가 처리하므로 data-action만 유지.
-// 스크롤/전환 상태가 없는 오버레이(대학 검색 모달·공부 과목 시트·알림 모달·drawer)와 펼침 breakdown,
-// 탭바는 기존 문자열 renderer를 leaf로 임베드해 변환 범위를 한정한다.
+  getHomeScorePresentation
+} from './presentation.js';
+import { HomeOverlays, HomeStudyBreakdown, NotificationPopover } from './HomeOverlays.jsx';
 
 function UniversityCard({ item, scoreTierClass }) {
   const score = getHomeScorePresentation(item);
@@ -429,14 +418,6 @@ export function HomeScreen(ctx) {
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
   const missionSubjectRows = buildMissionSubjectRows(todayPlannerItems, todaySubjectsWithTimer);
 
-  // 스크롤/전환 무관 영역은 기존 문자열 renderer 재사용(leaf 임베드).
-  const universityModalHtml = renderUniversityModal(ctx);
-  const targetDeleteModalHtml = renderTargetDeleteModal(ctx);
-  const breakdownHtml = renderStudyBreakdown(ctx);
-  const overlaysHtml = universityModalHtml + renderStudySubjectSheet(ctx) + targetDeleteModalHtml + renderDrawer({ drawerOpen: ctx.drawerOpen, icon });
-  // 알림 시트는 app-frame 직속에 둬야 스크롤 컨테이너(.app-screen)가 아닌 고정 프레임 기준으로 하단에 붙는다.
-  const notifSheetHtml = renderNotificationModal(ctx);
-
   return (
     <div className="app-shell">
       <div className="app-frame">
@@ -573,7 +554,7 @@ export function HomeScreen(ctx) {
                   <button type="button" className="home-breakdown-toggle" data-action="toggleStudyBreakdown">
                     {showStudyBreakdown ? '과목별 기록 접기' : '과목별 기록 보기'}
                   </button>
-                  <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: breakdownHtml }} />
+                  <HomeStudyBreakdown {...ctx} />
                 </section>
 
                 <section className="home-learning-flow-card sc-card">
@@ -618,7 +599,7 @@ export function HomeScreen(ctx) {
             </div>
           </div>
         </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
+        <div className="app-screen-overlays" style={{ display: 'contents' }}><HomeOverlays {...ctx} /></div>
         <button
           type="button"
           className="home-notif-fab"
@@ -628,7 +609,7 @@ export function HomeScreen(ctx) {
           <span className="home-notif-fab-icon" dangerouslySetInnerHTML={{ __html: icon('bell', false) }} />
           {unreadCount ? <span className="home-notif-fab-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
         </button>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: notifSheetHtml }} />
+        <NotificationPopover {...ctx} />
         <CalendarSheet {...ctx} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>

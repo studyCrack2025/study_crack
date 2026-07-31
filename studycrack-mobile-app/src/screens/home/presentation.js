@@ -4,6 +4,35 @@ function formatScore(value) {
   return Number.isInteger(score) ? String(score) : score.toFixed(1).replace(/\.0$/, '');
 }
 
+export function defaultScoreTierClass(score) {
+  const value = Number(score) || 0;
+  if (value <= 100) return 'score-tier-low';
+  if (value <= 150) return 'score-tier-mid';
+  return 'score-tier-high';
+}
+
+export function defaultFormatHms(total) {
+  const safeTotal = Math.max(0, Number(total) || 0);
+  const hour = Math.floor(safeTotal / 3600);
+  const minute = Math.floor((safeTotal % 3600) / 60);
+  const second = safeTotal % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+}
+
+export function defaultFormatMinutesLabel(minutes) {
+  const safeMinutes = Math.max(0, Number(minutes) || 0);
+  const hour = Math.floor(safeMinutes / 60);
+  const minute = safeMinutes % 60;
+  if (hour && minute) return `${hour}시간 ${minute}분`;
+  if (hour) return `${hour}시간`;
+  return `${minute}분`;
+}
+
+export function countUnreadNotifications(notiList = []) {
+  if (!Array.isArray(notiList)) return 0;
+  return notiList.reduce((sum, notification) => (notification && !notification.isRead ? sum + 1 : sum), 0);
+}
+
 export function getHomeScorePresentation(item = {}) {
   const status = item.scoreStatus || 'confirmed';
   const pending = status === 'pending';

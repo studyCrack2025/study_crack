@@ -297,16 +297,6 @@ export function createPlannerHandlers(ctx) {
       return true;
     },
 
-    setPlannerSubject({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, subject: getData(actionEl, 'planner-subject') }));
-      return true;
-    },
-
-    setPlannerDuration({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, durationChoice: getData(actionEl, 'planner-duration') }));
-      return true;
-    },
-
     removePlannerItem({ actionEl }) {
       const plannerId = getData(actionEl, 'planner-id');
       if (!plannerId) return false;

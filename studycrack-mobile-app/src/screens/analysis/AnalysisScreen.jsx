@@ -1,10 +1,5 @@
-import {
-  renderAnalysisSearchModal,
-  renderUnifiedAnalysis
-} from './renderers.js';
+import { AnalysisContent, AnalysisSearchSheet } from './AnalysisContent.jsx';
 
-// analysis 화면의 React-트리(JSX) 버전. 상단 shell은 React 노드로 유지하고,
-// 아직 JSX로 풀지 않은 통합 분석 카드와 검색 모달은 기존 문자열 renderer를 leaf로 임베드한다.
 export function AnalysisScreen(ctx) {
   const {
     dimmed = false,
@@ -16,8 +11,6 @@ export function AnalysisScreen(ctx) {
 
   const isStale = analysisApiStatus === 'stale';
   const hasAnalysisError = Boolean(analysisApiError) && ['error', 'stale', 'empty'].includes(analysisApiStatus);
-  const analysisBodyHtml = renderUnifiedAnalysis(ctx);
-  const searchModalHtml = renderAnalysisSearchModal(ctx);
   const showAnalysisBody = !isAnalyzing;
 
   return (
@@ -60,12 +53,12 @@ export function AnalysisScreen(ctx) {
                     <div><b>분석 결과를 불러오지 못했습니다</b><span>{analysisApiError}</span></div>
                   </div>
                 )}
-                <div className="analysis-result-stage" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: analysisBodyHtml }} />
+                <div className="analysis-result-stage" style={{ display: 'contents' }}><AnalysisContent {...ctx} /></div>
               </div>
             ) : null}
           </section>
         </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: searchModalHtml }} />
+        <div className="app-screen-overlays" style={{ display: 'contents' }}><AnalysisSearchSheet {...ctx} /></div>
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>

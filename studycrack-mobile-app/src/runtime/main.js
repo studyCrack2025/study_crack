@@ -1375,14 +1375,13 @@ function MobileApp() {
     onBlur
   };
 
-  // dual-mode: JSX 컴포넌트로 등록된 화면은 실제 React 트리로 렌더(reconciliation → DOM/scroll 보존).
-  // 미등록 화면은 기존 문자열 renderer를 dangerouslySetInnerHTML로 주입(매 렌더 전체 교체).
+  // JSX 등록 화면은 React 트리만 사용한다. 미등록 보조 화면만 문자열 renderer 경로를 사용한다.
   const ScreenComponent = getScreenComponent(state.screen);
   if (ScreenComponent) {
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
   }
 
-  const rendered = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
+  const rendered = renderMobileScreen(state.screen, ctx);
   // 셸 조각이 분리된 경우(문자열 화면): app-shell/app-frame을 React 노드로 두고 배경/오버레이/탭바를
   // 각각 독립 dangerouslySetInnerHTML div로 렌더한다. React는 __html 문자열이 바뀐 div만 갱신하므로,
   // 모달 상태만 변할 때 배경(inner) DOM은 그대로 유지된다 → 어떤 모달도 배경을 새로고침하지 않는다.

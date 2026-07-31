@@ -1,5 +1,5 @@
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
-import { renderTermsModal } from '../../components/terms-modal.js';
+import { TermsModal } from '../../components/TermsModal.jsx';
 
 function Logo({ src = STUDYCRACK_LOGO_SRC, compact = false }) {
   return (
@@ -100,6 +100,31 @@ function AuthShell({ children, overlays = null, screen }) {
       </div>
     </div>
   );
+}
+
+function AuthDirectRecoveryScreen({ description, screen, title }) {
+  return (
+    <AuthShell screen={screen}>
+      <div className="auth-screen">
+        <div className="auth-entry-layout auth-direct-recovery">
+          <div className="auth-unified-card auth-form-card">
+            <span className="auth-recovery-eyebrow">계정 복구</span>
+            <h1>{title}</h1>
+            <p className="sub">{description}</p>
+            <button className="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">로그인 화면으로 이동</button>
+          </div>
+        </div>
+      </div>
+    </AuthShell>
+  );
+}
+
+export function AuthFindIdScreen() {
+  return <AuthDirectRecoveryScreen screen="authFindId" title="이메일 찾기" description="로그인 화면의 이메일 찾기 창에서 가입 정보를 확인할 수 있습니다." />;
+}
+
+export function AuthFindPwScreen() {
+  return <AuthDirectRecoveryScreen screen="authFindPw" title="비밀번호 재설정" description="로그인 화면의 비밀번호 찾기 창에서 인증 코드를 받아 재설정할 수 있습니다." />;
 }
 
 export function AuthLoginScreen(ctx) {
@@ -297,7 +322,7 @@ export function AuthSignupScreen(ctx) {
   } = ctx;
   const step = Math.min(4, Math.max(1, Number(signupStep) || 1));
 
-  const overlays = openTermsType ? <div dangerouslySetInnerHTML={{ __html: renderTermsModal(openTermsType) }} /> : null;
+  const overlays = openTermsType ? <TermsModal openTermsType={openTermsType} /> : null;
 
   return (
     <AuthShell screen="authSignup" overlays={overlays}>

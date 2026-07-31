@@ -1,5 +1,5 @@
 import { buildPlannerPresentation } from './presentation.js';
-import { renderEditSheet } from './renderers.js';
+import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 
 function PlannerChecklistArt() {
@@ -136,7 +136,6 @@ export function PlannerScreen(ctx) {
     selectedPlannerWeekday = ''
   } = ctx;
 
-  const overlaysHtml = renderEditSheet({ plannerEditIndex, plannerEditItem });
   const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
   const presentation = buildPlannerPresentation(plannerViewItems);
 
@@ -183,7 +182,7 @@ export function PlannerScreen(ctx) {
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} />
           </main>
         </div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlaysHtml }} />
+        <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} />
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>

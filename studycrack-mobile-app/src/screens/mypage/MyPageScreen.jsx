@@ -1,8 +1,8 @@
-import { renderMyPageOverlays } from './renderers.js';
 import { buildMyPagePresentation } from './presentation.js';
 import { MyProfileHeader } from './MyProfileHeader.jsx';
 import { MbtiInsightCard } from './MbtiInsightCard.jsx';
 import { MyMenuList } from './MyMenuList.jsx';
+import { MyPageOverlays } from './ProfileOverlays.jsx';
 
 function MyStudyStats({ stats }) {
   return (
@@ -22,12 +22,12 @@ export function MyPageScreen(ctx) {
     studyRecords,
     user
   });
-  const overlays = renderMyPageOverlays(ctx);
+  const overlayOpen = Boolean(ctx.profileDetailModalOpen || ctx.mbtiModalOpen);
 
   return (
     <div className="app-shell">
       <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="my">
+        <div className={`screen app-screen app-content ${dimmed || overlayOpen ? 'modal-lock' : ''}`} data-screen="my">
           <main className="my-page">
             <MyProfileHeader icon={icon} presentation={presentation} />
             <MbtiInsightCard mbti={presentation.mbti} />
@@ -35,7 +35,7 @@ export function MyPageScreen(ctx) {
             <MyMenuList icon={icon} />
           </main>
         </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: overlays }} />
+        {overlayOpen ? <div className="app-screen-overlays" style={{ display: 'contents' }}><MyPageOverlays {...ctx} /></div> : null}
         <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
       </div>
     </div>
