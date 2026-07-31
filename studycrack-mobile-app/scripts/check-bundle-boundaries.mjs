@@ -21,6 +21,12 @@ const appRegistryChunk = chunks.find((chunk) => Object.keys(chunk.modules).some(
 assert.ok(entryChunk, 'stable mobile module entry must be emitted');
 assert.ok(appRegistryChunk, 'deferred app screen registry chunk must be emitted');
 assert.notEqual(appRegistryChunk.fileName, entryChunk.fileName, 'signed-in app screens must not be bundled into the entry');
+assert.match(
+  entryChunk.code,
+  /["']\/studycrack-mobile-app\/dist\/chunks\//,
+  'entry imports must resolve from the deployed mobile dist path'
+);
+assert.doesNotMatch(entryChunk.code, /["']\/chunks\//, 'entry must not request chunks from the site root');
 assert.ok(
   entryChunk.dynamicImports.includes(appRegistryChunk.fileName),
   'entry must dynamically import the signed-in app screen chunk'
