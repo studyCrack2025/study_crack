@@ -15,6 +15,7 @@
 .sc-secondary-row:last-child{border-bottom:0;}
 .sc-secondary-row-main{min-width:0;display:grid;flex:1;gap:3px;}
 .sc-secondary-row-main b{min-width:0;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.faq-row .sc-secondary-row-main b{overflow:visible;text-overflow:clip;white-space:normal;word-break:keep-all;}
 .sc-secondary-row-main p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
 .sc-secondary-row-meta{flex:0 0 auto;display:grid;justify-items:end;gap:4px;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;}
 .sc-secondary-segmented{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sc-space-4);box-sizing:border-box;padding:var(--sc-space-4);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}

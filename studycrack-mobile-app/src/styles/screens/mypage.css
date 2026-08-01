@@ -40,7 +40,7 @@
 .my-study-stats span{font-size:10px;line-height:1.25;color:var(--sc-ink-muted);font-weight:700;letter-spacing:0;}
 .my-study-stats b{max-width:100%;font-size:14px;line-height:1.25;color:var(--sc-brand-navy);font-weight:800;letter-spacing:0;word-break:keep-all;}
 .my-study-stats > div:nth-child(2) b{color:var(--sc-action-positive-strong);}
-.my-study-stats > div:nth-child(3) b{color:var(--sc-action-urgent);}
+.my-study-stats > div:nth-child(3) b{color:var(--sc-action-urgent-strong);}
 .my-menu-sections{display:grid;gap:16px;}
 .my-menu-section{display:grid;gap:7px;}
 .my-menu-section h2{margin:0;padding:0 3px;font-size:11px;line-height:1.3;color:var(--sc-ink-subtle);font-weight:700;letter-spacing:0;}

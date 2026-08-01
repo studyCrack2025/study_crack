@@ -12,7 +12,7 @@
 .signup-progress-item.done span{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .signup-stage{display:grid;gap:var(--sc-space-16);padding:var(--sc-space-20);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);animation:signupStageIn var(--sc-motion-screen) var(--ease-enter) both;}
 .signup-stage-head{display:grid;gap:var(--sc-space-4);padding:0;}
-.signup-stage-head > span{color:var(--sc-blue);font-size:var(--sc-type-micro);font-weight:800;}
+.signup-stage-head > span{color:var(--sc-brand-navy);font-size:var(--sc-type-micro);font-weight:800;}
 .signup-stage-head h2{margin:0;color:var(--sc-ink);font-size:var(--sc-type-title);font-weight:800;line-height:1.35;letter-spacing:0;}
 .signup-stage-head p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
 .signup-section{display:grid;gap:var(--sc-space-8);margin:0;padding:0;border:0;border-radius:0;background:transparent;}

@@ -9,11 +9,17 @@
       "--sc-brand-navy": "#1B3A6B",
       "--sc-brand-navy-deep": "#0F2347",
       "--sc-action-positive": "#00C9A7",
+      "--sc-action-positive-strong": "#007A68",
       "--sc-action-urgent": "#FF6B35",
+      "--sc-action-urgent-strong": "#B93813",
       "--sc-state-threshold": "#FFC857",
+      "--sc-state-success": "#007A68",
       "--sc-surface-canvas": "#F8F9FC",
       "--sc-surface-card": "#FFFFFF",
-      "--sc-ink-strong": "#0F2347"
+      "--sc-ink-strong": "#0F2347",
+      "--sc-ink-muted": "#5B6B80",
+      "--sc-ink-subtle": "#667085",
+      "--sc-provider-naver-contrast": "#00813A"
     },
     "roles": {
       "result": "--sc-brand-navy",
@@ -25,7 +31,12 @@
       { "foreground": "#FFFFFF", "background": "#1B3A6B", "minimum": 4.5 },
       { "foreground": "#0F2347", "background": "#00C9A7", "minimum": 4.5 },
       { "foreground": "#0F2347", "background": "#FF6B35", "minimum": 4.5 },
-      { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 }
+      { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 },
+      { "foreground": "#5B6B80", "background": "#F5F7FA", "minimum": 4.5 },
+      { "foreground": "#667085", "background": "#F8F9FC", "minimum": 4.5 },
+      { "foreground": "#007A68", "background": "#F0FCFA", "minimum": 4.5 },
+      { "foreground": "#B93813", "background": "#FFF8F5", "minimum": 4.5 },
+      { "foreground": "#FFFFFF", "background": "#00813A", "minimum": 4.5 }
     ],
     "auditCeilings": {
       "screenColorLiterals": 0,
@@ -48,8 +59,8 @@
       "src/styles/screens/planner.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold", "--sc-subject-math"],
       "src/styles/screens/planner-calendar.css": ["--sc-brand-navy", "--sc-surface-positive", "--sc-action-positive-strong", "--sc-subject-korean"],
       "src/styles/screens/coaching.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
-      "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent"],
-      "src/styles/screens/auth.css": ["--sc-brand-navy", "--sc-state-danger", "--sc-on-brand", "--sc-provider-naver"],
+      "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent-strong"],
+      "src/styles/screens/auth.css": ["--sc-brand-navy", "--sc-state-danger", "--sc-on-brand", "--sc-provider-naver-contrast"],
       "src/styles/screens/auth-signup.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-positive"],
       "src/styles/screens/auth-recovery.css": ["--sc-action-positive", "--sc-surface-positive"],
       "src/styles/screens/onboarding.css": ["--sc-brand-hero", "--sc-surface-card", "--sc-on-brand"],
