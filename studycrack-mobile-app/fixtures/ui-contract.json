@@ -4,6 +4,41 @@
     "logoAsset": "./assets/images/studycrack_logo_wo_bg.png",
     "onboardingLogoExport": "ONBOARDING_LOGO_SRC"
   },
+  "visualLanguage": {
+    "palette": {
+      "--sc-brand-navy": "#1B3A6B",
+      "--sc-brand-navy-deep": "#0F2347",
+      "--sc-action-positive": "#00C9A7",
+      "--sc-action-urgent": "#FF6B35",
+      "--sc-state-threshold": "#FFC857",
+      "--sc-surface-canvas": "#F8F9FC",
+      "--sc-surface-card": "#FFFFFF",
+      "--sc-ink-strong": "#0F2347"
+    },
+    "roles": {
+      "result": "--sc-brand-navy",
+      "positiveAction": "--sc-action-positive",
+      "urgentAction": "--sc-action-urgent",
+      "threshold": "--sc-state-threshold"
+    },
+    "contrastPairs": [
+      { "foreground": "#FFFFFF", "background": "#1B3A6B", "minimum": 4.5 },
+      { "foreground": "#0F2347", "background": "#00C9A7", "minimum": 4.5 },
+      { "foreground": "#0F2347", "background": "#FF6B35", "minimum": 4.5 },
+      { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 }
+    ],
+    "auditCeilings": {
+      "screenColorLiterals": 672,
+      "componentColorLiterals": 107,
+      "legacyAliasReferences": 81
+    },
+    "requiredCommonConsumers": {
+      "src/styles/components/primitives.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card", "--sc-focus-ring"],
+      "src/styles/components/navigation.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-shadow-nav"],
+      "src/styles/components/modals.css": ["--sc-surface-card", "--sc-state-danger", "--sc-shadow-overlay"],
+      "src/styles/components/sheets.css": ["--sc-surface-card", "--sc-shadow-sheet"]
+    }
+  },
   "viewports": [
     { "width": 320, "height": 700 },
     { "width": 360, "height": 800 },
