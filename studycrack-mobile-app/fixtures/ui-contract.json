@@ -28,15 +28,23 @@
       { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 }
     ],
     "auditCeilings": {
-      "screenColorLiterals": 672,
+      "screenColorLiterals": 626,
       "componentColorLiterals": 107,
-      "legacyAliasReferences": 81
+      "legacyAliasReferences": 79
     },
     "requiredCommonConsumers": {
       "src/styles/components/primitives.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card", "--sc-focus-ring"],
       "src/styles/components/navigation.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-shadow-nav"],
       "src/styles/components/modals.css": ["--sc-surface-card", "--sc-state-danger", "--sc-shadow-overlay"],
       "src/styles/components/sheets.css": ["--sc-surface-card", "--sc-shadow-sheet"]
+    },
+    "requiredScreenConsumers": {
+      "src/styles/screens/home.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
+      "src/styles/screens/analysis-unified.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-surface-positive"],
+      "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"]
+    },
+    "requiredOwnershipGuards": {
+      "src/styles/layout/mobile-layout-system.css": [":not(.home-result-card-v3)", ":not(.analysis-result-card)"]
     }
   },
   "viewports": [

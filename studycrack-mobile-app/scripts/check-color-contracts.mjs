@@ -52,10 +52,18 @@ for (const [token, value] of Object.entries(visual.palette)) {
   assert.match(tokenSource, new RegExp(`${escapeRegExp(token)}:${escapeRegExp(value)}(?:;|})`, 'i'), `${token} must remain ${value}`);
 }
 
-for (const [relativePath, tokens] of Object.entries(visual.requiredCommonConsumers)) {
+const requiredConsumers = { ...visual.requiredCommonConsumers, ...visual.requiredScreenConsumers };
+for (const [relativePath, tokens] of Object.entries(requiredConsumers)) {
   const source = await read(relativePath);
   for (const token of tokens) {
     assert.ok(source.includes(`var(${token})`), `${relativePath} must consume ${token}`);
+  }
+}
+
+for (const [relativePath, guards] of Object.entries(visual.requiredOwnershipGuards)) {
+  const source = await read(relativePath);
+  for (const guard of guards) {
+    assert.ok(source.includes(guard), `${relativePath} must preserve ${guard}`);
   }
 }
 
