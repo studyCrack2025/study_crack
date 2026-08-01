@@ -32,8 +32,8 @@
 .mobile-social-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--sc-line-subtle);background:var(--sc-surface-card);border-radius:14px;}
 .mobile-social-info{display:flex;align-items:center;gap:10px;min-width:0;}
 .mobile-social-mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:13px;background:var(--sc-surface-subtle);color:var(--sc-ink);border:1px solid var(--sc-line-subtle);}
-.mobile-social-mark.google{color:#4285F4;}
-.mobile-social-mark.naver{background:#03C75A;color:#FFFFFF;border-color:#03C75A;}
+.mobile-social-mark.google{color:var(--sc-provider-google);}
+.mobile-social-mark.naver{background:var(--sc-provider-naver);color:var(--sc-on-brand);border-color:var(--sc-provider-naver);}
 .mobile-social-info b{display:block;font-size:14px;color:var(--sc-ink);line-height:1.2;}
 .mobile-social-info small{display:block;margin-top:3px;font-size:11px;color:var(--sc-ink-muted);font-weight:700;}
 .mobile-social-action{display:flex;align-items:center;gap:6px;flex:0 0 auto;}

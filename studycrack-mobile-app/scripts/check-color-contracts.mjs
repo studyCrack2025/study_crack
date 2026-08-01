@@ -52,6 +52,10 @@ for (const [token, value] of Object.entries(visual.palette)) {
   assert.match(tokenSource, new RegExp(`${escapeRegExp(token)}:${escapeRegExp(value)}(?:;|})`, 'i'), `${token} must remain ${value}`);
 }
 
+for (const token of visual.forbiddenTokenDefinitions) {
+  assert.doesNotMatch(tokenSource, new RegExp(`${escapeRegExp(token)}:`), `${token} is a retired compatibility alias`);
+}
+
 const requiredConsumers = { ...visual.requiredCommonConsumers, ...visual.requiredScreenConsumers };
 for (const [relativePath, tokens] of Object.entries(requiredConsumers)) {
   const source = await read(relativePath);
@@ -76,11 +80,14 @@ const cssFiles = await listCssFiles(stylesRoot);
 const sources = await Promise.all(cssFiles.map(async (file) => ({ file, source: await readFile(file, 'utf8') })));
 const screenColorLiterals = sources.filter(({ file }) => file.includes(`${path.sep}screens${path.sep}`)).reduce((total, { source }) => total + countColorLiterals(source), 0);
 const componentColorLiterals = sources.filter(({ file }) => file.includes(`${path.sep}components${path.sep}`)).reduce((total, { source }) => total + countColorLiterals(source), 0);
+const tokenFile = path.join(stylesRoot, 'foundation', 'tokens.css');
+const nonFoundationColorLiterals = sources.filter(({ file }) => file !== tokenFile).reduce((total, { source }) => total + countColorLiterals(source), 0);
 const allStyles = sources.map(({ source }) => stripComments(source)).join('\n');
 const legacyAliasReferences = (allStyles.match(/var\(--(?:primary|primary-dark|primary-soft)\)/g) || []).length;
 
 assert.ok(screenColorLiterals <= visual.auditCeilings.screenColorLiterals, `Screen color literals increased: ${screenColorLiterals} > ${visual.auditCeilings.screenColorLiterals}`);
 assert.ok(componentColorLiterals <= visual.auditCeilings.componentColorLiterals, `Component color literals increased: ${componentColorLiterals} > ${visual.auditCeilings.componentColorLiterals}`);
+assert.ok(nonFoundationColorLiterals <= visual.auditCeilings.nonFoundationColorLiterals, `Non-foundation color literals increased: ${nonFoundationColorLiterals} > ${visual.auditCeilings.nonFoundationColorLiterals}`);
 assert.ok(legacyAliasReferences <= visual.auditCeilings.legacyAliasReferences, `Legacy color aliases increased: ${legacyAliasReferences} > ${visual.auditCeilings.legacyAliasReferences}`);
 
-console.log(`Color contract check passed: ${Object.keys(visual.palette).length} palette tokens, ${visual.contrastPairs.length} AA pairs, ${screenColorLiterals} screen literals, ${componentColorLiterals} component literals, ${legacyAliasReferences} legacy aliases.`);
+console.log(`Color contract check passed: ${Object.keys(visual.palette).length} palette tokens, ${visual.contrastPairs.length} AA pairs, ${screenColorLiterals} screen literals, ${componentColorLiterals} component literals, ${nonFoundationColorLiterals} non-foundation literals, ${legacyAliasReferences} legacy aliases.`);

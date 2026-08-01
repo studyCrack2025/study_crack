@@ -33,11 +33,11 @@
 .planner-item-v2{width:100%;min-height:72px;display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;box-sizing:border-box;padding:10px 11px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);transition:border-color var(--sc-motion-control) ease,background var(--sc-motion-control) ease,transform var(--sc-motion-control) ease;}
 .planner-item-v2:active{transform:scale(.99);}
 .planner-item-subject{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:var(--sc-surface-subtle);}
-.planner-item-subject i{width:9px;height:9px;border-radius:50%;background:#64748B;}
-.planner-item-subject.math i{background:#3B82F6;}
-.planner-item-subject.kor i{background:#8B5CF6;}
-.planner-item-subject.eng i{background:#14B8A6;}
-.planner-item-subject.sci i{background:#F97316;}
+.planner-item-subject i{width:9px;height:9px;border-radius:50%;background:var(--sc-subject-other);}
+.planner-item-subject.math i{background:var(--sc-subject-math);}
+.planner-item-subject.kor i{background:var(--sc-subject-korean);}
+.planner-item-subject.eng i{background:var(--sc-subject-english);}
+.planner-item-subject.sci i{background:var(--sc-subject-science);}
 .planner-item-main{min-width:0;display:grid;gap:2px;}
 .planner-item-time{color:var(--sc-brand-navy);font-size:var(--sc-type-micro);font-weight:800;line-height:1.2;text-decoration:none;}
 .planner-item-main b{overflow:hidden;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:850;line-height:1.25;text-overflow:ellipsis;white-space:nowrap;transition:color var(--sc-motion-control) ease,text-decoration-color var(--sc-motion-control) ease;}

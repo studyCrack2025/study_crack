@@ -73,8 +73,8 @@
 .coach-hours-row label > span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:750;}
 .coach-hours-row .planner-input{min-height:42px;}
 .coach-rate-box{align-self:end;height:42px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--sc-action-positive) 28%,var(--sc-line-subtle));border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:850;}
-.coach-add-subject{width:100%;min-height:44px;border:1px dashed #AFC0DA;border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:850;}
-.coach-upload-box{display:grid;place-items:center;gap:3px;padding:var(--sc-space-16);border:1px dashed #AFC0DA;border-radius:var(--sc-radius-control);background:var(--sc-surface);text-align:center;}
+.coach-add-subject{width:100%;min-height:44px;border:1px dashed var(--sc-line-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:850;}
+.coach-upload-box{display:grid;place-items:center;gap:3px;padding:var(--sc-space-16);border:1px dashed var(--sc-line-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);text-align:center;}
 .coach-upload-box > span{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:var(--sc-surface-accent);color:var(--sc-navy);font-size:20px;}
 .coach-upload-box b{margin-top:3px;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:850;}
 .coach-upload-box p,.coach-upload-empty{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;}

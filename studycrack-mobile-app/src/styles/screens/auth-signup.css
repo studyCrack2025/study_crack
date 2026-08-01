@@ -31,7 +31,7 @@
 .auth-terms-check-row.all{min-height:52px;background:var(--sc-surface-muted);font-size:13px;font-weight:800;}
 .auth-terms-view{min-width:58px;height:32px;padding:0 var(--sc-space-8);border:0;border-radius:10px;background:var(--sc-surface-accent);color:var(--sc-navy);font-size:10px;font-weight:800;}
 .signup-error{padding:10px 12px;}
-.signup-stage-actions{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:1fr;gap:var(--sc-space-8);padding-top:var(--sc-space-4);background:linear-gradient(180deg,rgba(245,247,250,0),var(--sc-canvas) 18px);}
+.signup-stage-actions{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:1fr;gap:var(--sc-space-8);padding-top:var(--sc-space-4);background:linear-gradient(180deg,transparent,var(--sc-canvas) 18px);}
 .signup-stage-actions:has(.btn-secondary){grid-template-columns:minmax(88px,.38fr) minmax(0,1fr);}
 .signup-stage-actions .btn,.signup-stage-actions .signup-submit{min-height:48px;border-radius:var(--sc-radius-control);}
 .signup-login-link{margin:0;text-align:center;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;}
