@@ -94,9 +94,10 @@ function PlannerMonthGrid({ plannerCalendarMonthCells = [] }) {
 }
 
 function PlannerProgress({ presentation }) {
+  const progressTone = presentation.remainingCount ? 'pending' : presentation.totalCount ? 'complete' : 'waiting';
   return (
     <section className="card planner-progress-card">
-      <div className="planner-progress-head"><div><span>오늘 진도</span><h4>{presentation.progress}% 완료</h4></div><b>{presentation.remainingCount ? `${presentation.remainingCount}개 남음` : presentation.totalCount ? '모두 완료' : '계획 대기'}</b></div>
+      <div className="planner-progress-head"><div><span>오늘 진도</span><h4>{presentation.progress}% 완료</h4></div><b className={progressTone}>{presentation.remainingCount ? `${presentation.remainingCount}개 남음` : presentation.totalCount ? '모두 완료' : '계획 대기'}</b></div>
       <div className="planner-progress-track" aria-label={`플래너 완료율 ${presentation.progress}%`}><i style={{ width: `${presentation.progress}%` }} /></div>
       <div className="planner-progress-stats">
         <div><span>완료 계획</span><b>{presentation.completedCount}/{presentation.totalCount}</b></div>
@@ -112,7 +113,7 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
   const title = warning ? '과목 균형을 한 번 점검해 보세요' : hasItems ? '이번 주 계획을 함께 점검해요' : '계획을 만들면 피드백을 받을 수 있어요';
   const description = plannerFeedback.message || (warning ? '특정 과목에 시간이 몰려 있어 우선순위 조정이 필요해요.' : '주간 계획과 실행 기록을 바탕으로 다음 학습 방향을 정리합니다.');
   return (
-    <section className="card planner-feedback-card">
+    <section className={`card planner-feedback-card ${warning ? 'warn' : ''}`}>
       <div className="planner-feedback-copy"><span>SKY MENTOR</span><h4>{title}</h4><p>{description}</p></div>
       <button type="button" data-action="goto" data-target="weekly">주간 피드백 보기 <b aria-hidden="true">›</b></button>
     </section>

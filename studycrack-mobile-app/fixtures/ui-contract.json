@@ -28,9 +28,9 @@
       { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 }
     ],
     "auditCeilings": {
-      "screenColorLiterals": 626,
+      "screenColorLiterals": 560,
       "componentColorLiterals": 107,
-      "legacyAliasReferences": 79
+      "legacyAliasReferences": 75
     },
     "requiredCommonConsumers": {
       "src/styles/components/primitives.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card", "--sc-focus-ring"],
@@ -41,7 +41,11 @@
     "requiredScreenConsumers": {
       "src/styles/screens/home.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
       "src/styles/screens/analysis-unified.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-surface-positive"],
-      "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"]
+      "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
+      "src/styles/screens/planner.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
+      "src/styles/screens/planner-calendar.css": ["--sc-brand-navy", "--sc-surface-positive", "--sc-action-positive-strong"],
+      "src/styles/screens/coaching.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
+      "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent"]
     },
     "requiredOwnershipGuards": {
       "src/styles/layout/mobile-layout-system.css": [":not(.home-result-card-v3)", ":not(.analysis-result-card)"]
