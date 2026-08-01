@@ -28,9 +28,9 @@
       { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 }
     ],
     "auditCeilings": {
-      "screenColorLiterals": 560,
-      "componentColorLiterals": 107,
-      "legacyAliasReferences": 75
+      "screenColorLiterals": 160,
+      "componentColorLiterals": 85,
+      "legacyAliasReferences": 32
     },
     "requiredCommonConsumers": {
       "src/styles/components/primitives.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card", "--sc-focus-ring"],
@@ -45,7 +45,21 @@
       "src/styles/screens/planner.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
       "src/styles/screens/planner-calendar.css": ["--sc-brand-navy", "--sc-surface-positive", "--sc-action-positive-strong"],
       "src/styles/screens/coaching.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
-      "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent"]
+      "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent"],
+      "src/styles/screens/auth.css": ["--sc-brand-navy", "--sc-state-danger", "--sc-on-brand"],
+      "src/styles/screens/auth-signup.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-positive"],
+      "src/styles/screens/auth-recovery.css": ["--sc-action-positive", "--sc-surface-positive"],
+      "src/styles/screens/onboarding.css": ["--sc-brand-hero", "--sc-surface-card", "--sc-on-brand"],
+      "src/styles/screens/locked-splash.css": ["--sc-surface-card", "--sc-on-brand-surface-strong", "--sc-shadow-overlay"],
+      "src/styles/screens/home-overlays.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-state-danger"],
+      "src/styles/screens/planner-add.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
+      "src/styles/screens/reports.css": ["--sc-brand-navy", "--sc-surface-card"],
+      "src/styles/screens/service.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
+      "src/styles/screens/mypage-support.css": ["--sc-action-positive-strong", "--sc-surface-card"],
+      "src/styles/screens/mypage-data.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-surface-card"],
+      "src/styles/screens/ranking.css": ["--sc-brand-navy", "--sc-surface-muted"],
+      "src/styles/screens/score-input.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-surface-card"],
+      "src/styles/components/mbti-survey.css": ["--sc-action-positive", "--sc-state-threshold", "--sc-surface-card"]
     },
     "requiredOwnershipGuards": {
       "src/styles/layout/mobile-layout-system.css": [":not(.home-result-card-v3)", ":not(.analysis-result-card)"]

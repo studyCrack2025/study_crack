@@ -15,7 +15,7 @@
 .ranking-row{min-height:62px;}
 .ranking-row.is-me{background:var(--sc-surface-accent);}
 .ranking-position{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:11px;font-weight:800;}
-.ranking-position.is-top{background:var(--sc-navy);color:#FFFFFF;}
+.ranking-position.is-top{background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .ranking-row .sc-secondary-row-meta b{color:var(--sc-navy);}
 .ranking-row .sc-secondary-row-meta em{color:var(--sc-blue);font-style:normal;}
 @media (max-width:360px){.ranking-summary{grid-template-columns:1fr;align-items:start;}.ranking-summary-stats{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));}.ranking-summary-stats > div{padding:8px 5px;}}
