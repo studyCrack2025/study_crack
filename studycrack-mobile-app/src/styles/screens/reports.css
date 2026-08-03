@@ -1,21 +1,23 @@
 /* Weekly coaching and report list layouts. */
 .weekly-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;}
-.weekly-head h3{margin:0;color:#0F172A;font-size:19px;font-weight:800;}
-.weekly-back{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--line);border-radius:12px;background:#FFFFFF;color:#334155;font:inherit;}
-.weekly-range{margin:0;color:#4B5563;font-size:13.5px;font-weight:600;}
+.weekly-head h3{margin:0;color:var(--sc-ink-strong);font-size:19px;font-weight:800;}
+.weekly-back{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--sc-line-subtle);border-radius:12px;background:var(--sc-surface-card);color:var(--sc-ink);font:inherit;}
+.weekly-range{margin:0;color:var(--sc-ink-muted);font-size:13.5px;font-weight:600;}
 .weekly-rate{display:flex;align-items:flex-start;justify-content:space-between;padding:15px;border-radius:18px;}
-.weekly-rate h2{margin:6px 0 0;color:var(--primary);font-size:40px;font-weight:800;line-height:1;}
+.weekly-rate h2{margin:6px 0 0;color:var(--sc-brand-navy);font-size:40px;font-weight:800;line-height:1;}
 .weekly-feedback{position:relative;padding:14px;border-radius:18px;overflow:visible;}
 .weekly-char{position:absolute;right:4px;bottom:-5px;width:92px;height:auto;object-fit:contain;}
 .weekly-next{position:static;min-height:52px;margin-top:0;}
-.report-desc{margin:4px 0 0;color:#4B5563;font-size:13.5px;}
+.report-desc{margin:4px 0 0;color:var(--sc-ink-muted);font-size:13.5px;}
 .report-main{display:grid;gap:6px;padding:14px;border-radius:18px;text-align:center;}
-.report-main h2{margin:0;color:var(--primary-dark);font-size:36px;line-height:1;}
-.report-date{margin:5px 0 0;color:#1F2937;font-size:15.5px;font-weight:700;}
-.report-list{display:grid;gap:8px;padding:14px;border-radius:18px;}
-.report-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:0;padding:10px 11px;border:1px solid #D1D5DB;border-radius:12px;background:#FFFFFF;text-align:left;font:inherit;}
-.report-row b{color:#0F172A;font-size:13.5px;}
-.report-row p{margin:2px 0 0;color:#4B5563;font-size:12.5px;}
-.report-sample{position:static;min-height:52px;margin-top:0;}
-.report-detail-card{display:grid;gap:8px;border:1.5px solid #D6E3F5;box-shadow:0 8px 24px rgba(15,23,42,.08);}
-.report-detail-text{margin:0;color:#4B5563;font-size:14px;font-weight:500;line-height:1.62;}
+.report-main h2{margin:0;color:var(--sc-brand-navy);font-size:36px;line-height:1;}
+.report-date{margin:5px 0 0;color:var(--sc-ink);font-size:15.5px;font-weight:700;}
+.report-summary{grid-template-columns:minmax(0,1fr) auto;align-items:end;}
+.report-summary-main{min-width:0;display:grid;gap:3px;}
+.report-summary-main span{font-size:var(--sc-type-micro);font-weight:700;color:var(--sc-ink-muted);}
+.report-summary-main b{font-size:24px;line-height:1.1;font-weight:800;color:var(--sc-ink);}
+.report-summary-main p{margin:0;font-size:var(--sc-type-caption);line-height:1.4;font-weight:600;color:var(--sc-ink-muted);}
+.report-sample{position:static;min-height:42px;margin-top:0;white-space:nowrap;}
+.report-detail-card{gap:var(--sc-space-12);}
+.report-detail-text{margin:0;color:var(--sc-ink-muted);font-size:14px;font-weight:500;line-height:1.62;}
+@media (max-width:360px){.report-summary{grid-template-columns:1fr;align-items:start;}.report-sample{width:100%;}}

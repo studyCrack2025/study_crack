@@ -1,10 +1,8 @@
 import {
   DEFAULT_NOTIFICATIONS,
-  DEFAULT_PLANNER_ITEMS,
-  DEFAULT_SCORES,
-  DEFAULT_USER,
-  FIXED_TODAY_DATE
-} from '../constants/mock-data.js';
+  EMPTY_USER,
+  TODAY_DATE
+} from '../constants/runtime-defaults.js';
 import { STORAGE_KEYS, readArray, readString, safeParse } from '../state/storage.js';
 import { normalizePlannerItems } from '../state/planner-storage.js';
 import { normalizePersonalEvent } from '../constants/admission-calendar.js';
@@ -13,7 +11,18 @@ import { normalizeTargetUnivSlots } from './persistence.js';
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
 export const MAIN_TAB_SCREENS = ['home', 'analysis', 'strategy', 'planner', 'my'];
 
-const DEFAULT_TARGET_LIST = ['연세대학교 경영학과', '고려대학교 경영대학', '강서대학교 G2빅데이터경영학과'];
+const LEGACY_DEMO_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
+
+function isLegacyDemoScores(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const keys = Object.keys(LEGACY_DEMO_SCORES);
+  return keys.every((key) => Number(value[key]) === LEGACY_DEMO_SCORES[key])
+    && Object.keys(value).every((key) => keys.includes(key));
+}
+
+function removeLegacyDemoPlannerItems(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => !String(item?.id || '').startsWith('pl-default-'));
+}
 
 const DEFAULT_SCORE_STATE = {
   korean: { type: '', common: '', elective: '' },
@@ -48,10 +57,12 @@ export function createInitialAppState() {
     loggedIn: false,
     drawerOpen: false,
     // user/plan
-    user: DEFAULT_USER,
+    user: { ...EMPTY_USER },
     userLoadStatus: 'idle',
+    userLoadError: '',
+    userFetchRetryTick: 0,
     userTier: '',
-    selectedPlan: DEFAULT_USER.plan,
+    selectedPlan: '',
     checkoutPlan: 'Standard',
     upgradePromptTier: '',
     upgradePromptTarget: '',
@@ -59,30 +70,40 @@ export function createInitialAppState() {
     lockedFeatureTier: '',
     lockedFeatureLabel: '',
     duration: '4주',
-    targetMajor: DEFAULT_USER.targetUniversity,
+    targetMajor: '',
     targetOpen: false,
     selectedUniversityIndex: 0,
     // analysis/대학
-    analysisTargetList: [...DEFAULT_TARGET_LIST],
-    homeTargetList: [...DEFAULT_TARGET_LIST],
-    targetUnivSlots: normalizeTargetUnivSlots([], DEFAULT_TARGET_LIST),
+    analysisTargetList: [],
+    homeTargetList: [],
+    targetUnivSlots: normalizeTargetUnivSlots([]),
     targetDeleteModalOpen: false,
     targetDeleteCandidate: '',
     targetDeleteSaving: false,
     targetDeleteError: '',
     analysisSearchOpen: false,
     analysisSearchTerm: '',
-    analysisMode: 'summary',
     analysisEtaStage: 1,
     analysisHighlightedSubject: '',
     analysisBarProjectionTarget: '',
     activeScoreView: 'target',
     universityModalOpen: false,
     universityCatalog: [],
+    universitySelectedName: '',
+    universityRecommendations: [],
+    universityRecommendationStatus: 'idle',
+    universityRecommendationError: '',
+    universityRecommendationRetryTick: 0,
     analysisResults: [],
     analysisSimulations: [],
+    analysisResultExamMode: '',
+    analysisResultSignature: '',
     analysisApiStatus: 'idle',
     analysisApiError: '',
+    analysisBacktraceStatus: 'idle',
+    analysisBacktracePlan: null,
+    analysisBacktraceError: '',
+    analysisBacktraceSignature: '',
     lastAnalysisSnapshot: null,
     // 환산점수 단일 출처: (시험키 → 대학키 → {score,available,reason,status,color,sim}) 캐시.
     // 화면은 여기서만 점수를 읽는다(서버 converted_score 전용). 시험 전환해도 캐시는 유지.
@@ -100,16 +121,21 @@ export function createInitialAppState() {
     homeDragOffset: 0,
     scoreDragOffset: 0,
     // planner
-    selectedDate: FIXED_TODAY_DATE,
-    plannerCalendarOpen: false,
+    selectedDate: TODAY_DATE,
     plannerCalendarMode: 'week',
     plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' },
-    plannerItems: DEFAULT_PLANNER_ITEMS,
+    plannerItems: [],
     plannerEditIndex: null,
     // 공부 타이머/기록 (records는 후속 하이드레이션)
     studyRecords: [],
     studySubjectRecords: [],
     studyTimerRunning: false,
+    activeStudySession: null,
+    studyTimerTick: 0,
+    rankingRows: [],
+    rankingStatus: 'idle',
+    rankingError: '',
+    rankingMe: null,
     activeStudySubject: '',
     activePlannerItemId: '',
     studySubjectSheetOpen: false,
@@ -177,7 +203,7 @@ export function createInitialAppState() {
     obScoreInputs: {},
     isAnalyzing: false,
     // 성적
-    scores: DEFAULT_SCORES,
+    scores: {},
     scoreState: DEFAULT_SCORE_STATE,
     scoreEditState: DEFAULT_SCORE_EDIT_STATE,
     scoreEditOpen: false,
@@ -197,8 +223,8 @@ export function createInitialAppState() {
     // 수험 일정 캘린더.
     personalEvents: [],
     calendarSheetOpen: false,
-    calendarSelectedDate: FIXED_TODAY_DATE, // 시트에서 선택된 날짜(YYYY-MM-DD)
-    calendarMonthAnchor: `${FIXED_TODAY_DATE.slice(0, 7)}-01`, // 월간 그리드 기준(해당 월 1일)
+    calendarSelectedDate: TODAY_DATE, // 시트에서 선택된 날짜(YYYY-MM-DD)
+    calendarMonthAnchor: `${TODAY_DATE.slice(0, 7)}-01`, // 월간 그리드 기준(해당 월 1일)
     calendarEventFormOpen: false,
     calendarEventEditId: null, // 수정 중인 개인 일정 id(null이면 신규)
     calendarEventDraft: null, // { title, date, endDate, category, note }
@@ -234,6 +260,7 @@ export function createInitialAppState() {
     qnaSubmitting: false,
     coachingSubmitting: false,
     coachingSubmitted: false,
+    coachingView: 'sessions',
     coachingSheetOpen: false,
     coachingStep: 1,
     coachingMonth: '26년 4월',
@@ -258,23 +285,28 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   const savedNotifications = safeParse(STORAGE_KEYS.notifications, null, storage);
   const savedStudyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
   const savedSubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
+  const savedActiveStudySession = safeParse(STORAGE_KEYS.activeStudySession, null, storage);
   const savedEvents = readArray(STORAGE_KEYS.admissionCalendar, [], storage)
     .map((e) => normalizePersonalEvent(e))
     .filter(Boolean);
-  const savedPlan = readString(STORAGE_KEYS.selectedPlan, '', storage);
-  const savedTarget = readString(STORAGE_KEYS.selectedUniversity, '', storage);
   const savedTab = readString(STORAGE_KEYS.activeTab, '', storage);
   const isPlainObject = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  const hydratedScores = isPlainObject(savedScores) && !isLegacyDemoScores(savedScores) ? savedScores : {};
+  const hydratedPlannerItems = Array.isArray(savedItems)
+    ? normalizePlannerItems(removeLegacyDemoPlannerItems(savedItems))
+    : state.plannerItems;
   return {
     ...state,
-    scores: { ...state.scores, ...(isPlainObject(savedScores) ? savedScores : {}) },
-    plannerItems: Array.isArray(savedItems) ? normalizePlannerItems(savedItems) : state.plannerItems,
+    scores: { ...state.scores, ...hydratedScores },
+    plannerItems: hydratedPlannerItems,
     notifications: { ...state.notifications, ...(isPlainObject(savedNotifications) ? savedNotifications : {}) },
     studyRecords: Array.isArray(savedStudyRecords) ? savedStudyRecords : state.studyRecords,
     studySubjectRecords: Array.isArray(savedSubjectRecords) ? savedSubjectRecords : state.studySubjectRecords,
+    activeStudySession: isPlainObject(savedActiveStudySession) && savedActiveStudySession.status === 'running' ? savedActiveStudySession : null,
+    studyTimerRunning: Boolean(isPlainObject(savedActiveStudySession) && savedActiveStudySession.status === 'running'),
+    activeStudySubject: isPlainObject(savedActiveStudySession) ? String(savedActiveStudySession.subject || '') : state.activeStudySubject,
+    activePlannerItemId: isPlainObject(savedActiveStudySession) ? String(savedActiveStudySession.plannerItemId || '') : state.activePlannerItemId,
     personalEvents: savedEvents,
-    selectedPlan: savedPlan || state.selectedPlan,
-    targetMajor: savedTarget || state.targetMajor,
     tab: savedTab || state.tab
   };
 }

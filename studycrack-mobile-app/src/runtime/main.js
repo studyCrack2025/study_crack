@@ -5,10 +5,9 @@ import '../styles/foundation/tokens.css';
 import '../styles/foundation/base.css';
 import '../styles/foundation/shell.css';
 import '../styles/components/primitives.css';
+import '../styles/components/secondary.css';
 import '../styles/components/mbti-survey.css';
 import '../styles/components/insights.css';
-import '../styles/design-v2.css';
-import '../styles/layout/mobile-bridge.css';
 import '../styles/foundation/motion.css';
 import '../styles/components/modals.css';
 import '../styles/components/navigation.css';
@@ -44,19 +43,20 @@ import { renderScoreJourneyCard, scoreTierClass } from '../components/score-jour
 import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
-import { getScreenComponent, renderMobileScreen } from '../app/screen-registry.js';
-import { SCORE_WHEEL_ITEM_H, renderScoreEditModal } from '../screens/profile/renderers.js';
+import { getScreenComponent, isDeferredAppScreen, loadAppScreenRegistry, renderMobileScreen } from '../app/screen-registry.js';
+import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchUniversityCatalog, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveQualitative, saveQuantitative, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
-import { fetchCurrentUser, mapUserToStatePatch } from './session.js';
-import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from './score-store.js';
+import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileBacktrace, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchStudyRanking, fetchUniversityCatalog, fetchUniversityRecommendations, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveNotificationPreferences, saveQualitative, saveQuantitative, saveStudySession, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
+import { createUserDataResetPatch, fetchCurrentUser, mapUserToStatePatch } from './session.js';
+import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, canRetryInitialScore, canRetryInitialScorePayload, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
+import { attachVisualViewportMetrics } from './visual-viewport.js';
 
-const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } = React;
+const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } = React;
 
 // 스크롤 비-setter 연산(원본 window 스크롤 헬퍼). iOS 가드 상태를 유지해야 하므로
 // 컴포넌트 밖 단일 인스턴스로 둔다(렌더마다 재생성 금지).
@@ -231,12 +231,6 @@ function canUseScoreSimulation(state) {
   const activeSub = pickActiveAccessSubscription(user);
   if (!activeSub) return false;
   const tier = normalizeAccessTier(activeSub.tier);
-  if (tier === 'trial') {
-    const remaining = typeof user.univChangeRemaining === 'number' ? user.univChangeRemaining : 0;
-    const graceUntil = parseAccessDate(user.gracePeriodUntil);
-    if (remaining <= 0 && (!graceUntil || Date.now() > graceUntil.getTime())) return false;
-    return true;
-  }
   return ['basic', 'starter', 'standard', 'pro'].includes(tier);
 }
 
@@ -336,13 +330,16 @@ function buildRenderScoreCache(state = {}, examKey = '') {
   const baseCache = state.scoreCache || {};
   const snapshot = state.lastAnalysisSnapshot;
   const snapshotMatches = snapshot && snapshot.examMode === examKey;
-  const analysisResults = (state.analysisResults || []).length
-    ? state.analysisResults
+  const liveResultsMatch = state.analysisResultExamMode === examKey
+    && state.analysisResultSignature
+    && state.analysisResultSignature === state.scoreFetchSignature;
+  const analysisResults = liveResultsMatch
+    ? state.analysisResults || []
     : snapshotMatches
       ? snapshot.analysisResults || []
       : [];
-  const analysisSimulations = (state.analysisSimulations || []).length
-    ? state.analysisSimulations
+  const analysisSimulations = liveResultsMatch
+    ? state.analysisSimulations || []
     : snapshotMatches
       ? snapshot.analysisSimulations || []
       : [];
@@ -355,7 +352,6 @@ function isTabbarDimmed(state) {
   return Boolean(
     state.coachingSheetOpen ||
       state.studySubjectSheetOpen ||
-      state.plannerCalendarOpen ||
       state.plannerEditIndex !== null ||
       state.drawerOpen ||
       state.universityModalOpen ||
@@ -419,6 +415,9 @@ function createInitialAppStateWithScreenParam() {
 
 function MobileApp() {
   const [state, setState] = useReducer(reducer, undefined, createInitialAppStateWithScreenParam);
+  const [appScreenRegistry, setAppScreenRegistry] = useState(null);
+  const [appChunkStatus, setAppChunkStatus] = useState('idle');
+  const [appChunkRetryTick, setAppChunkRetryTick] = useState(0);
   const stateRef = useRef(state);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
@@ -426,8 +425,47 @@ function MobileApp() {
   const scoreFetchRetryRef = useRef(0);
   const scoreFetchSignatureRef = useRef('');
   const scoreRequestIdRef = useRef(0);
+  const scoreResultRetryRef = useRef({ signature: '', attempts: 0 });
   const simulationFetchSignatureRef = useRef('');
+  const backtraceFetchSignatureRef = useRef('');
+
+  const retryUserLoad = useCallback(() => {
+    userFetchRetryRef.current = 0;
+    setState({
+      ...createUserDataResetPatch(),
+      userLoadStatus: 'idle',
+      userLoadError: '',
+      userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1
+    });
+  }, []);
+  const qnaDraftRef = useRef({ title: '', content: '' });
   stateRef.current = state;
+
+  useEffect(() => attachVisualViewportMetrics(), []);
+
+  useEffect(() => {
+    const shouldLoad = isDeferredAppScreen(state.screen)
+      || (state.screen === 'splash'
+        && typeof window !== 'undefined'
+        && typeof window.hasClientSession === 'function'
+        && window.hasClientSession());
+    if (!shouldLoad || appScreenRegistry) return undefined;
+    let active = true;
+    setAppChunkStatus('loading');
+    loadAppScreenRegistry()
+      .then((module) => {
+        if (!active) return;
+        setAppScreenRegistry(module);
+        setAppChunkStatus('ready');
+      })
+      .catch(() => {
+        if (!active) return;
+        setAppChunkStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [appChunkRetryTick, appScreenRegistry, state.screen]);
 
   // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
   const setters = useMemo(
@@ -514,6 +552,16 @@ function MobileApp() {
     [getUserApiBinding]
   );
 
+  const persistStudySession = useCallback(
+    (session) => saveStudySession({ ...getUserApiBinding(), session }),
+    [getUserApiBinding]
+  );
+
+  const persistNotificationPreferences = useCallback(
+    (preferences) => saveNotificationPreferences({ ...getUserApiBinding(), preferences }),
+    [getUserApiBinding]
+  );
+
   const persistMobileQna = useCallback(
     ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
     [getQnaApiBinding]
@@ -581,11 +629,15 @@ function MobileApp() {
   const renderScoreCache = buildRenderScoreCache(state, renderExamKey);
   const baseCtx = {
     ...state,
+    isAnalyzing: state.analysisApiStatus === 'loading'
+      && !(state.analysisResults || []).length
+      && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
     // 상태 키별 setX setter 전체(핸들러 ctx 계약)
     ...setters,
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
     // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
     ...derivedCtx,
+    initializeApp: retryUserLoad,
     // [환산점수 단일 출처] 홈 대학 카드는 homeTargetList(고정 순서) + scoreCache(서버 점수)에서만 만든다.
     // targetMajor로 재정렬하던 computeHomeTargets 경로를 대체 → 1~3지망 순서 섞임/라이브·0 폴백 제거.
     homeTargets: buildUniversityCards(
@@ -678,6 +730,9 @@ function MobileApp() {
     suppressClickUntilRef,
     plannerContentRef,
     plannerCustomMinutesRef,
+    qnaDraftRef,
+    qnaDraftTitle: qnaDraftRef.current.title,
+    qnaDraftContent: qnaDraftRef.current.content,
     isIOSSafari: scrollOps.isIOSSafari,
     getHomeSliderState: () => getHomeSliderState(),
     updatePossibleUnivSlider,
@@ -702,6 +757,8 @@ function MobileApp() {
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
+    persistStudySession,
+    persistNotificationPreferences,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
@@ -770,26 +827,34 @@ function MobileApp() {
     };
   }, [state.scoreSlideMotion]);
 
-  // 분석 화면 진입 시 원본처럼 도달 성적 카드 skeleton을 단계적으로 해제한다.
   useEffect(() => {
-    if (state.screen !== 'analysis' || state.analysisMode !== 'summary') return undefined;
-    setState({ analysisEtaStage: 1, activeScoreView: 'target' });
-    const timer1 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 2 }), 1500);
-    const timer2 = globalThis.setTimeout?.(() => setState({ analysisEtaStage: 3 }), 4500);
-    return () => {
-      if (timer1) globalThis.clearTimeout?.(timer1);
-      if (timer2) globalThis.clearTimeout?.(timer2);
-    };
-  }, [state.screen, state.analysisMode, state.targetMajor]);
+    const session = state.activeStudySession;
+    if (!session || session.status !== 'running') {
+      timerOps.stopLiveStudyTimer();
+      return undefined;
+    }
+    timerOps.startLiveStudyTimer(session.startedAt, (seconds) => setState({ studyTimerTick: seconds }));
+    return () => timerOps.stopLiveStudyTimer();
+  }, [state.activeStudySession?.sessionId]);
 
   useEffect(() => {
-    if (state.screen !== 'analysis') return undefined;
-    setState({ isAnalyzing: true });
-    const timer = globalThis.setTimeout?.(() => setState({ isAnalyzing: false }), 2000);
+    if (!['home', 'ranking'].includes(state.screen) || state.userLoadStatus !== 'ready') return undefined;
+    let cancelled = false;
+    setState({ rankingStatus: 'loading', rankingError: '' });
+    const period = state.screen === 'ranking' ? state.rankingPeriod : 'daily';
+    fetchStudyRanking({ ...getUserApiBinding(), period }).then((result) => {
+      if (cancelled) return;
+      setState({
+        rankingRows: result.rows || [],
+        rankingMe: result.me || null,
+        rankingStatus: result.ok ? ((result.rows || []).length ? 'ready' : 'empty') : 'error',
+        rankingError: result.error || ''
+      });
+    });
     return () => {
-      if (timer) globalThis.clearTimeout?.(timer);
+      cancelled = true;
     };
-  }, [state.screen, state.targetMajor]);
+  }, [getUserApiBinding, state.screen, state.rankingPeriod, state.userLoadStatus]);
 
   useEffect(() => {
     if (state.screen === 'accountInfo') return;
@@ -825,64 +890,13 @@ function MobileApp() {
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
 
-  useEffect(() => {
-    if (!state.scoreEditOpen) return undefined;
-    const doc = globalThis.document;
-    if (!doc?.querySelectorAll) return undefined;
-    const raf = globalThis.requestAnimationFrame || ((fn) => fn());
-    const syncWheel = (wheel) => {
-      if (!wheel?.querySelectorAll) return;
-      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
-      if (!items.length) return;
-      const maxIndex = items.length - 1;
-      const index = Math.max(0, Math.min(maxIndex, Math.round((wheel.scrollTop || 0) / SCORE_WHEEL_ITEM_H)));
-      const item = items[index];
-      const value = item?.getAttribute?.('data-value') ?? '';
-      wheel.dataset.wheelIndex = String(index);
-      items.forEach((el, i) => {
-        el.classList.toggle('is-selected', i === index);
-        el.setAttribute('aria-selected', i === index ? 'true' : 'false');
-      });
-      const input = wheel.parentElement?.querySelector?.(`input[data-field="${wheel.getAttribute('data-wheel-field')}"]`);
-      if (input) input.value = value;
-    };
-    const wheels = Array.from(doc.querySelectorAll('.score-wheel'));
-    wheels.forEach((wheel) => {
-      const index = Number(wheel.getAttribute('data-wheel-index') || 0);
-      raf(() => {
-        wheel.scrollTop = Math.max(0, index) * SCORE_WHEEL_ITEM_H;
-        syncWheel(wheel);
-      });
-    });
-    const onScroll = (event) => {
-      if (event.target?.classList?.contains?.('score-wheel')) syncWheel(event.target);
-    };
-    const onClick = (event) => {
-      const item = event.target?.closest?.('.score-wheel-item');
-      if (!item) return;
-      const wheel = item.closest?.('.score-wheel');
-      if (!wheel) return;
-      const items = Array.from(wheel.querySelectorAll('.score-wheel-item'));
-      const index = items.indexOf(item);
-      if (index < 0) return;
-      wheel.scrollTo?.({ top: index * SCORE_WHEEL_ITEM_H, behavior: 'smooth' });
-      if (!wheel.scrollTo) wheel.scrollTop = index * SCORE_WHEEL_ITEM_H;
-      syncWheel(wheel);
-    };
-    doc.addEventListener('scroll', onScroll, true);
-    doc.addEventListener('click', onClick, true);
-    return () => {
-      doc.removeEventListener('scroll', onScroll, true);
-      doc.removeEventListener('click', onClick, true);
-    };
-  }, [state.scoreEditOpen, state.scoreEditStep]);
-
   // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
   useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.plannerItems, state.plannerItems); }, [state.plannerItems]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.notifications, state.notifications); }, [state.notifications]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords); }, [state.studyRecords]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords); }, [state.studySubjectRecords]);
+  useEffect(() => { safeStringifySet(STORAGE_KEYS.activeStudySession, state.activeStudySession); }, [state.activeStudySession]);
   useEffect(() => { safeStringifySet(STORAGE_KEYS.admissionCalendar, state.personalEvents); }, [state.personalEvents]);
   useEffect(() => {
     // 문자열 키는 원본과 동일하게 raw 저장(readString과 짝).
@@ -897,18 +911,18 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 세션이 있으면 사용자 데이터를 1회 병합하고, 실패 시 데모 상태를 유지한다.
+  // 세션이 있으면 사용자 데이터를 불러온다. 사용자별 값은 서버 응답만 신뢰한다.
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     const userApiBinding = getUserApiBinding();
     if (typeof userApiBinding.apiFetch !== 'function' || !userApiBinding.userApiUrl) {
       const retryDelay = Math.min(1200, 250 + userFetchRetryRef.current * 100);
-      setState({ userLoadStatus: 'loading' });
+      setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
       const timer = globalThis.setTimeout?.(() => {
         userFetchRetryRef.current += 1;
         if (userFetchRetryRef.current >= 40) {
-          setState({ userLoadStatus: 'error' });
+          setState({ userLoadStatus: 'error', userLoadError: '사용자 정보 연결을 준비하지 못했습니다. 다시 시도해주세요.' });
           return;
         }
         setState({ userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1 });
@@ -919,11 +933,11 @@ function MobileApp() {
     }
     userFetchRetryRef.current = 0;
     let cancelled = false;
-    setState({ userLoadStatus: 'loading' });
+    setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
     fetchCurrentUser(userApiBinding).then((userData) => {
       if (cancelled) return;
       if (!userData) {
-        setState({ userLoadStatus: 'error' });
+        setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
         return;
       }
       const role = String(userData.role || 'student').toLowerCase();
@@ -935,7 +949,12 @@ function MobileApp() {
         try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
       }
       const patch = mapUserToStatePatch(userData, stateRef.current);
-      setState({ ...patch, userLoadStatus: 'ready' });
+      // 초기 사용자 조회 중 폐기된 분석 요청의 서명이 남으면 같은 시험의 첫 계산이 건너뛰어질 수 있다.
+      scoreRequestIdRef.current += 1;
+      scoreFetchSignatureRef.current = '';
+      scoreFetchRetryRef.current = 0;
+      scoreResultRetryRef.current = { signature: '', attempts: 0 };
+      setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
     }).catch((error) => {
       if (cancelled) return;
       // 인증 만료: alert 없이 세션 정리 후 모바일 로그인 화면으로 1회만 이동.
@@ -943,7 +962,7 @@ function MobileApp() {
         expireMobileSessionSilently();
         return;
       }
-      setState({ userLoadStatus: 'error' });
+      setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
     });
     return () => {
       cancelled = true;
@@ -990,6 +1009,31 @@ function MobileApp() {
       cancelled = true;
     };
   }, [getAnalysisApiBinding]);
+
+  useEffect(() => {
+    if (state.screen !== 'addUniversity' || state.userLoadStatus !== 'ready') return undefined;
+    const examMode = resolveAnalysisExamMode(state);
+    const examData = state.user?.quantitative?.[examMode];
+    let cancelled = false;
+    setState({ universityRecommendationStatus: 'loading', universityRecommendationError: '' });
+    fetchUniversityRecommendations({
+      ...getAnalysisApiBinding(),
+      examData,
+      examMode,
+      savedStream: state.user?.qualitative?.stream || state.obTrack,
+      excludeTargets: state.analysisTargetList
+    }).then((result) => {
+      if (cancelled) return;
+      setState({
+        universityRecommendations: result.recommendations || [],
+        universityRecommendationStatus: result.ok && result.recommendations?.length ? 'ready' : 'empty',
+        universityRecommendationError: result.error || ''
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getAnalysisApiBinding, state.screen, state.userLoadStatus, state.universityRecommendationRetryTick]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -1066,10 +1110,24 @@ function MobileApp() {
       ...(state.analysisTargetList || []),
       ...(state.homeTargetList || [])
     ]);
+    if (state.userLoadStatus === 'error') {
+      scoreRequestIdRef.current += 1;
+      scoreFetchSignatureRef.current = '';
+      if (state.analysisApiStatus !== 'error' || state.scoreFetchStatus !== 'error') {
+        setState({
+          analysisApiStatus: 'error',
+          analysisApiError: state.userLoadError || '사용자 정보를 불러오지 못했습니다.',
+          scoreFetchStatus: 'error',
+          scoreFetchSignature: ''
+        });
+      }
+      return undefined;
+    }
     if (state.userLoadStatus !== 'ready') {
       scoreRequestIdRef.current += 1;
-      if (state.scoreFetchStatus !== 'loading') {
-        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
+      scoreFetchSignatureRef.current = '';
+      if (state.scoreFetchStatus !== 'loading' || state.scoreFetchSignature) {
+        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: '' });
       }
       return undefined;
     }
@@ -1090,6 +1148,9 @@ function MobileApp() {
     }
 
     const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
+    if (scoreResultRetryRef.current.signature !== scoreSignature) {
+      scoreResultRetryRef.current = { signature: scoreSignature, attempts: 0 };
+    }
     const apiBinding = getAnalysisApiBinding();
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
       scoreRequestIdRef.current += 1;
@@ -1131,6 +1192,21 @@ function MobileApp() {
       const analysisSimulations = [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       const analysisError = payload.analysisError || null;
+      if (canRetryInitialScorePayload({ error: analysisError, resultCount: analysisResults.length }, scoreResultRetryRef.current.attempts)) {
+        scoreResultRetryRef.current.attempts += 1;
+        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
+        globalThis.setTimeout?.(() => {
+          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+          setState({
+            analysisApiStatus: 'loading',
+            analysisApiError: '',
+            scoreFetchStatus: 'idle',
+            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
+          });
+        }, retryDelay);
+        return;
+      }
+      if (analysisResults.length) scoreResultRetryRef.current.attempts = 0;
       const nextStatus = analysisResults.length
         ? 'ready'
         : analysisError
@@ -1144,6 +1220,8 @@ function MobileApp() {
       setState({
         analysisResults,
         analysisSimulations,
+        analysisResultExamMode: examMode,
+        analysisResultSignature: scoreSignature,
         lastAnalysisSnapshot: analysisResults.length
           ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
@@ -1154,6 +1232,20 @@ function MobileApp() {
       });
     }).catch((error) => {
       if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+      if (canRetryInitialScore(error, scoreResultRetryRef.current.attempts)) {
+        scoreResultRetryRef.current.attempts += 1;
+        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
+        globalThis.setTimeout?.(() => {
+          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
+          setState({
+            analysisApiStatus: 'loading',
+            analysisApiError: '',
+            scoreFetchStatus: 'idle',
+            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
+          });
+        }, retryDelay);
+        return;
+      }
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
       setState({
         analysisApiStatus: hasPrevious ? 'stale' : 'error',
@@ -1170,7 +1262,53 @@ function MobileApp() {
     state.scoreExamKey,
     state.scoreExamType,
     state.targetMajor,
+    state.userLoadError,
     state.userLoadStatus,
+    state.user?.quantitative
+  ]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || state.screen !== 'analysis' || !canUseReverseProjection(state)) {
+      backtraceFetchSignatureRef.current = '';
+      if (state.analysisBacktraceStatus !== 'idle' || state.analysisBacktracePlan || state.analysisBacktraceError) {
+        setState({ analysisBacktraceStatus: 'idle', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: '' });
+      }
+      return undefined;
+    }
+    if (state.userLoadStatus !== 'ready' || state.analysisApiStatus !== 'ready' || !(state.analysisSimulations || []).length) return undefined;
+    const examMode = resolveAnalysisExamMode(state);
+    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
+    const targetMajor = String(state.targetMajor || '').trim();
+    if (!userScores || !targetMajor) return undefined;
+    const signature = `backtrace::${buildScoreSignature(examMode, [targetMajor], userScores)}`;
+    if (backtraceFetchSignatureRef.current === signature && state.analysisBacktraceSignature === signature) return undefined;
+    const apiBinding = getAnalysisApiBinding();
+    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
+    backtraceFetchSignatureRef.current = signature;
+    setState({ analysisBacktraceStatus: 'loading', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: signature });
+    fetchMobileBacktrace({ ...apiBinding, targetMajor, userScores, examMode }).then((result) => {
+      if (backtraceFetchSignatureRef.current !== signature) return;
+      setState({
+        analysisBacktraceStatus: result.ok ? (result.plan ? 'ready' : 'empty') : 'error',
+        analysisBacktracePlan: result.plan || null,
+        analysisBacktraceError: result.error || '',
+        analysisBacktraceSignature: signature
+      });
+    });
+    return undefined;
+  }, [
+    getAnalysisApiBinding,
+    state.screen,
+    state.targetMajor,
+    state.scoreExamKey,
+    state.scoreExamType,
+    state.analysisApiStatus,
+    state.analysisSimulations,
+    state.userLoadStatus,
+    state.userTier,
+    state.selectedPlan,
+    state.user?.currentSubscription,
+    state.user?.pendingSubscription,
     state.user?.quantitative
   ]);
 
@@ -1271,14 +1409,49 @@ function MobileApp() {
     onBlur
   };
 
-  // dual-mode: JSX 컴포넌트로 등록된 화면은 실제 React 트리로 렌더(reconciliation → DOM/scroll 보존).
-  // 미등록 화면은 기존 문자열 renderer를 dangerouslySetInnerHTML로 주입(매 렌더 전체 교체).
-  const ScreenComponent = getScreenComponent(state.screen);
+  if (isDeferredAppScreen(state.screen) && !appScreenRegistry) {
+    const failed = appChunkStatus === 'error';
+    return React.createElement(
+      'div',
+      wrapperProps,
+      React.createElement(
+        'div',
+        { className: 'app-shell' },
+        React.createElement(
+          'div',
+          { className: 'app-frame' },
+          React.createElement(
+            'div',
+            { className: 'screen app-screen app-content', 'data-screen': state.screen },
+            React.createElement(
+              'div',
+              { className: 'center init-loading', role: 'status', 'aria-live': 'polite' },
+              React.createElement('h3', null, failed ? '화면을 불러오지 못했습니다' : '앱 화면을 준비하고 있어요'),
+              React.createElement('p', { className: 'sub' }, failed ? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.' : '잠시만 기다려 주세요.'),
+              failed
+                ? React.createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-primary mini',
+                    onClick: () => {
+                      setAppChunkStatus('idle');
+                      setAppChunkRetryTick((value) => value + 1);
+                    }
+                  }, '다시 시도')
+                : null
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // JSX 등록 화면은 React 트리만 사용한다. 미등록 보조 화면만 문자열 renderer 경로를 사용한다.
+  const ScreenComponent = getScreenComponent(state.screen, appScreenRegistry);
   if (ScreenComponent) {
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
   }
 
-  const rendered = renderMobileScreen(state.screen, ctx, { fallbackScreen: 'home' });
+  const rendered = renderMobileScreen(state.screen, ctx, { appRegistry: appScreenRegistry });
   // 셸 조각이 분리된 경우(문자열 화면): app-shell/app-frame을 React 노드로 두고 배경/오버레이/탭바를
   // 각각 독립 dangerouslySetInnerHTML div로 렌더한다. React는 __html 문자열이 바뀐 div만 갱신하므로,
   // 모달 상태만 변할 때 배경(inner) DOM은 그대로 유지된다 → 어떤 모달도 배경을 새로고침하지 않는다.

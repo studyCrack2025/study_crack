@@ -1,4 +1,4 @@
-import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
+import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
@@ -110,9 +110,9 @@ function toPlannerDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = FIXED_TODAY_DATE, fallback = FIXED_TODAY_DATE) {
+function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
   const raw = String(value || '').trim();
-  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(FIXED_TODAY_DATE).split('-')[2]) || 1;
+  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(TODAY_DATE).split('-')[2]) || 1;
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
     : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
@@ -164,24 +164,34 @@ function startStudyTimer(ctx, subject, plannerItemId = '') {
     setStudySubjectSheetOnlyPlanned = noop,
     setStudySubjectSheetOpen = noop,
     setStudyTimerRunning = noop,
+    setActiveStudySession = noop,
+    setStudyTimerTick = noop,
     startLiveStudyTimer = noop,
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop
   } = ctx;
 
+  const startedAt = new Date().toISOString();
+  const session = {
+    sessionId: globalThis.crypto?.randomUUID?.() || `study-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    subject,
+    plannerItemId,
+    startedAt,
+    status: 'running'
+  };
   setActiveStudySubject(subject);
   setActivePlannerItemId(plannerItemId);
   setStudySubjectSheetOpen(false);
   setStudySubjectSheetOnlyPlanned(false);
   setStudyTimerRunning(true);
+  setActiveStudySession(session);
   setRefValue(studyTimerSecondsRef, 0);
-  startLiveStudyTimer();
+  startLiveStudyTimer(startedAt, (seconds) => setStudyTimerTick(seconds));
   syncLiveStudyTimerUi(0);
 }
 
 export function createPlannerHandlers(ctx) {
   const {
-    afterSafariViewportStable = (fn) => fn?.(),
     centerPlannerDate = noop,
     goto,
     plannerCalendarMode = 'week',
@@ -201,7 +211,6 @@ export function createPlannerHandlers(ctx) {
     setActiveStudySubject = noop,
     setExpandedBreakdownSubject = noop,
     setNotifModalOpen = noop,
-    setPlannerCalendarOpen = noop,
     setPlannerCalendarMode = noop,
     setPlannerDraft = noop,
     setPlannerEditIndex = noop,
@@ -213,30 +222,19 @@ export function createPlannerHandlers(ctx) {
     setStudySubjectSheetOnlyPlanned = noop,
     setStudySubjectSheetOpen = noop,
     setStudyTimerRunning = noop,
+    setActiveStudySession = noop,
+    setStudyTimerTick = noop,
     startLiveStudyTimer = noop,
     stopLiveStudyTimer = noop,
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop,
-    todayDate = FIXED_TODAY_DATE
+    persistStudySession = noop,
+    todayDate = TODAY_DATE
   } = ctx;
 
   return {
     openPlannerAddPage() {
-      setPlannerCalendarOpen(false);
       goto?.('plannerAdd');
-      return true;
-    },
-
-    openPlannerCalendar() {
-      preserveY(() => {
-        setPlannerCalendarOpen(false);
-        setPlannerCalendarMode(plannerCalendarMode === 'month' ? 'week' : 'month');
-      });
-      return true;
-    },
-
-    closePlannerCalendar() {
-      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
       return true;
     },
 
@@ -284,9 +282,6 @@ export function createPlannerHandlers(ctx) {
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      if (!actionEl?.closest?.('.planner-calendar-sheet')) {
-        afterSafariViewportStable(() => setPlannerCalendarOpen(false));
-      }
       requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;
@@ -299,16 +294,6 @@ export function createPlannerHandlers(ctx) {
 
     closePlannerEdit() {
       setPlannerEditIndex(null);
-      return true;
-    },
-
-    setPlannerSubject({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, subject: getData(actionEl, 'planner-subject') }));
-      return true;
-    },
-
-    setPlannerDuration({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, durationChoice: getData(actionEl, 'planner-duration') }));
       return true;
     },
 
@@ -436,10 +421,11 @@ export function createPlannerHandlers(ctx) {
       return true;
     },
 
-    stopStudyTimer() {
+    async stopStudyTimer() {
+      if (!ctx.studyTimerRunning || !ctx.activeStudySession) return false;
       setStudyTimerRunning(false);
       stopLiveStudyTimer();
-      const elapsed = Number(getRefValue(studyTimerSecondsRef, 0)) || 0;
+      const elapsed = Math.max(1, Number(getRefValue(studyTimerSecondsRef, 0)) || 0);
       const activeSubject = typeof ctx.getActiveStudySubject === 'function' ? ctx.getActiveStudySubject() : ctx.activeStudySubject;
       const activePlannerItemId = typeof ctx.getActivePlannerItemId === 'function' ? ctx.getActivePlannerItemId() : ctx.activePlannerItemId;
       setStudyRecords((prev) => mutateStudyRecord(prev, todayDate, elapsed));
@@ -454,9 +440,14 @@ export function createPlannerHandlers(ctx) {
         }
       }
       setRefValue(studyTimerSecondsRef, 0);
+      setStudyTimerTick(0);
       syncLiveStudyTimerUi(0);
+      const completedSession = { ...ctx.activeStudySession, subject: activeSubject || ctx.activeStudySession.subject, plannerItemId: activePlannerItemId || '', endedAt: new Date().toISOString(), durationSeconds: elapsed, status: 'completed' };
+      setActiveStudySession(null);
       setActiveStudySubject('');
       setActivePlannerItemId('');
+      const result = await persistStudySession(completedSession);
+      if (result && result.ok === false) ctx.alert?.(result.error || '공부 기록을 서버에 저장하지 못했습니다. 기기에는 기록을 유지합니다.');
       return true;
     },
 

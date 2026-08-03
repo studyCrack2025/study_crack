@@ -164,7 +164,7 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
             ${renderCurrentRow('영어', current.english)}
             ${renderCurrentRow(inquiry1Label, current.inquiry1)}
             ${renderCurrentRow(inquiry2Label, current.inquiry2)}
-            <div class="score-journey-total"><span>AI 점수</span><b>${currentAverage}점</b></div>
+            <div class="score-journey-total"><span>환산 점수</span><b>${currentAverage}점</b></div>
           </div>
           <div class="score-journey-col target" data-score-view="target">
             <div class="score-target-panel">
@@ -174,7 +174,7 @@ export function renderScoreJourneyCard(ctx = {}, title = '최소 노력 대비 �
               ${renderTargetRow('영어', current.english, target.english)}
               ${renderTargetRow(inquiry1Label, current.inquiry1, target.inquiry1)}
               ${renderTargetRow(inquiry2Label, current.inquiry2, target.inquiry2)}
-              <div class="score-journey-total"><span>예상 AI 점수</span><b>${targetAverage}점</b></div>
+              <div class="score-journey-total"><span>예상 환산 점수</span><b>${targetAverage}점</b></div>
             </div>
           </div>
         </div>

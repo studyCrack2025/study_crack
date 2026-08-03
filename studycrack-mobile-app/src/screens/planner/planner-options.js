@@ -37,10 +37,6 @@ export function dotForPlannerCategory(category = '') {
   return PLANNER_CATEGORY_OPTIONS.find((item) => item.value === category)?.dot || 'etc';
 }
 
-export function getPlannerDetails(category = '') {
-  return PLANNER_CATEGORY_OPTIONS.find((item) => item.value === category)?.details || PLANNER_CATEGORY_OPTIONS[0].details;
-}
-
 export function timeToMinutes(value = '') {
   const match = String(value || '').match(/^(\d{2}):(\d{2})$/);
   if (!match) return null;

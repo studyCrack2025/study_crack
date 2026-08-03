@@ -5,8 +5,9 @@ const IS_LOCAL = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
 const IS_DEV   = !IS_LOCAL && (currentDomain.includes('cloudfront.net') || currentDomain.includes('dev.studycrack.co.kr'));
 
 const API_BASE_OVERRIDE = typeof window.STUDYCRACK_API_BASE_URL === 'string' ? window.STUDYCRACK_API_BASE_URL.trim() : '';
+const LOCAL_API_BASE = "https://ft35jsftc1.execute-api.ap-northeast-2.amazonaws.com/local";
 const API_BASE = API_BASE_OVERRIDE || (IS_LOCAL
-    ? "https://api.dev.studycrack.co.kr"
+    ? LOCAL_API_BASE
     : IS_DEV
         ? "https://api.dev.studycrack.co.kr"
         : "https://api.studycrack.co.kr");

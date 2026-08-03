@@ -1,6 +1,6 @@
 /* Shared side-drawer shell. */
 .drawer-overlay{align-items:stretch;justify-content:flex-start;padding:0;}
-.side-drawer{width:min(72%,280px);min-width:240px;height:100%;box-sizing:border-box;background:#FFFFFF;padding:18px 14px;box-shadow:8px 0 20px rgba(15,23,42,.12);overflow-y:auto;}
+.side-drawer{width:min(72%,280px);min-width:240px;height:100%;box-sizing:border-box;background:var(--sc-surface-card);padding:18px 14px;box-shadow:var(--sc-shadow-raised);overflow-y:auto;}
 .side-drawer h3{margin:0 0 12px;}
 .side-drawer .my-row{display:flex;align-items:center;justify-content:space-between;white-space:nowrap;word-break:keep-all;}
 .side-drawer .my-row span{flex-shrink:0;}

@@ -81,7 +81,7 @@ function hasMissingExamScore(scores) {
 function togglePlanDom(ctx, plan) {
   const doc = getDocument(ctx);
   if (doc?.body?.dataset) doc.body.dataset.checkoutPlan = plan;
-  queryAll(ctx, '.plan-card, .payment-plan-tabs button, .payment-tabs button, .plan-console-selector button').forEach((card) => {
+  queryAll(ctx, '.plan-console-selector button').forEach((card) => {
     const key = card.getAttribute?.('data-plan');
     if (key) card.classList?.toggle?.('active', key === plan);
   });
@@ -119,6 +119,7 @@ export function createServiceHandlers(ctx) {
     setCoachingSubjectRows = noop,
     setCoachingSubmitted = noop,
     setCoachingTrend = noop,
+    setCoachingView = noop,
     setDrawerOpen = noop,
     setDuration = noop,
     setField = noop,
@@ -333,18 +334,22 @@ export function createServiceHandlers(ctx) {
     },
 
     openQnaComposer() {
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaComposerOpen(true);
       return true;
     },
 
     closeQnaComposer() {
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
+      setQnaDraftTitle('');
+      setQnaDraftContent('');
       setQnaComposerOpen(false);
       return true;
     },
 
     async submitMobileQna() {
-      const title = String(ctx.qnaDraftTitle || '').trim();
-      const content = String(ctx.qnaDraftContent || '').trim();
+      const title = String(query(ctx, '[data-field="qnaDraftTitle"]')?.value ?? ctx.qnaDraftRef?.current?.title ?? ctx.qnaDraftTitle ?? '').trim();
+      const content = String(query(ctx, '[data-field="qnaDraftContent"]')?.value ?? ctx.qnaDraftRef?.current?.content ?? ctx.qnaDraftContent ?? '').trim();
       if (!title || !content) {
         alert('질문 제목과 내용을 입력해주세요.');
         return false;
@@ -359,6 +364,7 @@ export function createServiceHandlers(ctx) {
       }
       setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
       setQnaStatus('ready');
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaDraftTitle('');
       setQnaDraftContent('');
       setQnaComposerOpen(false);
@@ -380,6 +386,13 @@ export function createServiceHandlers(ctx) {
       ensureCoachingSubjectRows();
       setCoachingStep(1);
       setCoachingSheetOpen(true);
+      return true;
+    },
+
+    setCoachingView({ actionEl }) {
+      const view = getData(actionEl, 'coaching-view');
+      if (!['sessions', 'feedback'].includes(view)) return false;
+      setCoachingView(view);
       return true;
     },
 

@@ -1,11 +1,12 @@
 import { renderModal } from '../../components/modal.js';
+import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { FIXED_TODAY_DATE } from '../../constants/mock-data.js';
+import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { PLAN_META } from '../../constants/plans.js';
 
 // 잠금 프리뷰(블러 처리되는 데모 표면)용 현재 월/일 라벨.
 function lockedPreviewDateLabel() {
-  const [, month, day] = FIXED_TODAY_DATE.split('-').map(Number);
+  const [, month, day] = TODAY_DATE.split('-').map(Number);
   return `${month}월 ${day}일`;
 }
 
@@ -25,104 +26,6 @@ function escapeHtml(value) {
 function safeExternalUrl(value) {
   const text = String(value || '').trim();
   return /^https?:\/\//i.test(text) ? text : '';
-}
-
-function renderCoachingSheet(ctx) {
-  const {
-    coachingSheetOpen = false,
-    coachingSubmitting = false,
-    coachingStep = 1,
-  } = ctx;
-
-  if (!coachingSheetOpen) return '';
-
-  const submitLabel = coachingSubmitting ? '제출 중' : '작성 완료 및 제출';
-  return `<div class="coach-sheet-overlay" data-action="closeCoachingSheet">
-          <section class="coach-sheet" data-action="noopModal">
-            <div class="coach-sheet-head"><div><h3>이번 주 학습점검</h3><p>${coachingStep} / 8 단계</p></div><button class="coach-close" data-action="closeCoachingSheet">✕</button></div>
-            <div class="coach-sheet-body">${renderCoachingStepBody(ctx)}</div>
-            <div class="coach-sheet-footer"><button class="btn btn-secondary" data-action="coachingPrev" ${coachingStep === 1 || coachingSubmitting ? 'disabled' : ''}>이전</button><button class="btn btn-primary" data-action="coachingNext" ${coachingSubmitting ? 'disabled' : ''}>${coachingStep === 8 ? submitLabel : '다음 단계'}</button></div>
-          </section>
-        </div>`;
-}
-
-function renderCoachingStepBody(ctx) {
-  const {
-    coachingAnswers = {},
-    coachingDropReasons = [],
-    coachingExamFiles = [],
-    coachingExamScores = {},
-    coachingExamType = '',
-    coachingPlannerFiles = [],
-    coachingStep = 1,
-    coachingSubjectRows = [],
-    coachingTrend = ''
-  } = ctx;
-
-  if (coachingStep === 1) {
-    return `<div class="coach-step-body"><h4>1. 과목별 학습 달성률 <span style="color:#ef4444">*</span></h4><p class="sub">과목별 구체적인 과목명과 시간을 입력하세요.</p>
-        <div class="coach-subject-list">
-          ${coachingSubjectRows.map((row) => {
-            const planned = Number(row.planned) || 0;
-            const actual = Number(row.actual) || 0;
-            const rate = planned > 0 ? Math.min(999, Math.round((actual / planned) * 100)) : 0;
-            return `<div class="coach-subject-card">
-              <div class="coach-subject-head"><b>${escapeHtml(row.subject || '기타')}</b>${row.removable ? `<button class="coach-delete-btn" data-action="removeCoachingSubject" data-coach-row="${escapeHtml(row.id)}">삭제</button>` : ''}</div>
-              <input class="planner-input" data-coach-detail="${escapeHtml(row.id)}" value="${escapeHtml(row.detail || '')}" placeholder="${escapeHtml(row.placeholder || '세부과목 입력')}" />
-              <div class="coach-hours-row">
-                <input class="planner-input" data-coach-plan="${escapeHtml(row.id)}" value="${escapeHtml(row.planned || '')}" type="number" placeholder="계획(H)" />
-                <input class="planner-input" data-coach-actual="${escapeHtml(row.id)}" value="${escapeHtml(row.actual || '')}" type="number" placeholder="실제(H)" />
-                <div class="coach-rate-box" data-coach-rate="${escapeHtml(row.id)}">달성률 ${rate}%</div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-        <button class="btn btn-secondary" data-action="addCoachingSubject">+ 새로운 과목 추가</button>
-      </div>`;
-  }
-
-  if (coachingStep === 2) {
-    return `<div class="coach-step-body"><h4>2. 플래너 인증</h4><p class="sub">플래너 사진을 첨부하면 주간 점검과 함께 저장됩니다.</p>
-        <div class="coach-upload-box"><p>파일/사진 첨부 박스</p><input type="file" class="coach-hidden-file" data-field="coachPlannerFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openPlannerFilePicker">사진 추가하기</button></div>
-        <div class="coach-thumb-list">${coachingPlannerFiles.length ? `<p class="sub">사진 ${coachingPlannerFiles.length}장 선택됨</p>${coachingPlannerFiles.map((file, idx) => `<div class="coach-thumb"><span>${escapeHtml(file.name || `사진 ${idx + 1}`)}</span><button data-action="removePlannerPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">선택된 사진이 없습니다.</p>'}</div>
-      </div>`;
-  }
-
-  if (coachingStep === 3) {
-    const examTypes = ['미응시', '교내', '평가원/교육청', '사설'];
-    return `<div class="coach-step-body"><h4>3. 모의고사 응시 여부 <span style="color:#ef4444">*</span></h4><p class="sub">이번 주 사설 모의고사 또는 학력평가를 응시했나요?</p>
-        <div class="coach-choice-row">${examTypes.map((type) => `<button class="planner-pill ${coachingExamType === type ? 'active' : ''}" data-action="setCoachingExamType" data-coach-exam="${type}">${type}</button>`).join('')}</div>
-        ${coachingExamType && coachingExamType !== '미응시' ? `<div class="coach-exam-form">
-          <input type="file" class="coach-hidden-file" data-field="coachExamFiles" accept="image/*" multiple /><button class="btn btn-secondary" data-action="openExamFilePicker">성적 인증 사진 첨부</button>
-          <div class="coach-thumb-list">${coachingExamFiles.length ? `<p class="sub">사진 ${coachingExamFiles.length}장 선택됨</p>${coachingExamFiles.map((file, idx) => `<div class="coach-thumb"><span>${escapeHtml(file.name || `사진 ${idx + 1}`)}</span><button data-action="removeExamPhoto" data-photo-index="${idx}">삭제</button></div>`).join('')}` : '<p class="sub">선택된 사진이 없습니다.</p>'}</div>
-          <div class="coach-exam-subject-list">
-            <section class="coach-exam-subject-card"><h5>국어</h5><input class="planner-input" data-coach-field="koreanType" value="${escapeHtml(coachingExamScores.koreanType || '')}" placeholder="선택과목" /><input class="planner-input" data-coach-field="koreanRaw" value="${escapeHtml(coachingExamScores.koreanRaw || '')}" placeholder="원점수" /></section>
-            <section class="coach-exam-subject-card"><h5>수학</h5><input class="planner-input" data-coach-field="mathType" value="${escapeHtml(coachingExamScores.mathType || '')}" placeholder="선택과목" /><input class="planner-input" data-coach-field="mathRaw" value="${escapeHtml(coachingExamScores.mathRaw || '')}" placeholder="원점수" /></section>
-            <section class="coach-exam-subject-card"><h5>영어</h5><input class="planner-input" data-coach-field="englishGrade" value="${escapeHtml(coachingExamScores.englishGrade || '')}" placeholder="등급" /></section>
-            <section class="coach-exam-subject-card"><h5>탐구1</h5><input class="planner-input" data-coach-field="inq1Name" value="${escapeHtml(coachingExamScores.inq1Name || '')}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq1Raw" value="${escapeHtml(coachingExamScores.inq1Raw || '')}" placeholder="원점수" /></section>
-            <section class="coach-exam-subject-card"><h5>탐구2</h5><input class="planner-input" data-coach-field="inq2Name" value="${escapeHtml(coachingExamScores.inq2Name || '')}" placeholder="과목명" /><input class="planner-input" data-coach-field="inq2Raw" value="${escapeHtml(coachingExamScores.inq2Raw || '')}" placeholder="원점수" /></section>
-          </div>
-        </div>` : ''}
-      </div>`;
-  }
-
-  if (coachingStep === 4) {
-    const reasons = ['계획 과다', '실전 감각 저하', '컨디션/건강', '기타'];
-    return `<div class="coach-step-body"><h4>4. 최근 2주 학업 추이 <span style="color:#ef4444">*</span></h4><p class="sub">최근 2주간 학습 흐름이 어땠나요?</p>
-        <div class="coach-choice-row">${['상승', '유지', '하락'].map((v) => `<button class="planner-pill ${coachingTrend === v ? 'active' : ''}" data-action="setCoachingTrend" data-coach-trend="${v}">${v}</button>`).join('')}</div>
-        ${coachingTrend === '하락' ? `<div class="coach-drop-box"><p class="sub">하락 원인 (중복 선택 가능)</p><div class="coach-choice-row">${reasons.map((reason) => `<button class="planner-pill ${coachingDropReasons.includes(reason) ? 'active' : ''}" data-action="toggleDropReason" data-drop-reason="${reason}">${reason}</button>`).join('')}</div><textarea class="planner-input coach-textarea" data-coach-answer="step4Reason" maxlength="200" placeholder="구체적인 이유를 간단히 적어주세요.">${escapeHtml(coachingAnswers.step4Reason || '')}</textarea><p class="coach-count" data-coach-count="step4Reason">${(coachingAnswers.step4Reason || '').length}/200</p></div>` : ''}
-      </div>`;
-  }
-
-  const stepMap = {
-    5: ['5. 학습 계획 점검', '현재 세우고 있는 계획의 문제점이나 확신이 없는 부분을 적어주세요.', 'step5', '예: 하루 14시간 계획을 세우는데 자꾸 밀립니다. 현실적인 수정이 필요합니다.'],
-    6: ['6. 학습 방향성 설정', '현재 공부하고 있는 방향이 맞는지, 입시 전략과 일치하는지 고민을 적어주세요.', 'step6', '예: 정시 파이터인데 내신 기간에 수능 공부 밸런스를 어떻게 잡아야 할까요?'],
-    7: ['7. 튜터에게 묻고 싶은 질문', '이번 주 피드백에서 꼭 답변받고 싶은 질문을 적어주세요.', 'step7', '예: 수학은 기출을 반복하는 게 나을까요, N제를 늘리는 게 나을까요?'],
-    8: ['8. 기타 멘탈 관리', '슬럼프, 불안감 등 학습 외적인 고민이 있다면 자유롭게 적어주세요.', 'step8', '자유롭게 작성해주세요.']
-  };
-  const [title, desc, key, placeholder] = stepMap[coachingStep] || stepMap[8];
-  const value = coachingAnswers[key] || '';
-  return `<div class="coach-step-body"><h4>${title}</h4><p class="sub">${desc}</p><textarea class="planner-input coach-textarea" data-coach-answer="${key}" maxlength="200" placeholder="${placeholder}">${escapeHtml(value)}</textarea><p class="coach-count" data-coach-count="${key}">${value.length}/200</p></div>`;
 }
 
 function formatReportKeyLabel(key = '') {
@@ -151,20 +54,12 @@ function hasSubmittedFeedback(report = {}) {
   return report?.tutorFeedback?.submitted === true;
 }
 
-function renderWeeklyRows({ reports = [] }) {
-  if (!reports.length) return '<div class="coach-empty">아직 제출된 주간 점검이 없습니다.</div>';
-  return reports.map((report) => {
-    const done = hasSubmittedFeedback(report);
-    return `<button class="coach-report-card" data-action="goto" data-target="weekly"><div><b>${escapeHtml(formatWeekIdLabel(report.weekId))}</b><p>${done ? '튜터 피드백 도착' : '피드백 대기 중'}</p></div><div class="coach-report-side"><span class="badge coach-pdf-badge">${done ? '완료' : '대기'}</span><span class="coach-report-arrow">›</span></div></button>`;
-  }).join('');
-}
-
 function renderReportRows({ icon = defaultIcon, reports = [] }) {
-  if (!reports.length) return '<div class="coach-empty">아직 발행된 PRO 리포트가 없습니다.</div>';
+  if (!reports.length) return renderSecondaryState({ title: '아직 발행된 PRO 리포트가 없어요', description: '새 리포트가 준비되면 이곳에 표시됩니다.' });
   return reports.map((report) => {
     const reportLink = safeExternalUrl(report.reportLink);
     const ready = !!reportLink && ['published', 'sent'].includes(String(report.status || '').toLowerCase());
-    return `<button class="report-row" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><div><b>${escapeHtml(formatReportKeyLabel(report.key))}</b><p>${reportStatusLabel(report)}</p></div><span>${ready ? 'PDF' : icon('chevron', false)}</span></button>`;
+    return `<button class="sc-secondary-row report-row" data-action="downloadProReport" data-pdf-path="${ready ? escapeHtml(reportLink) : ''}" data-pdf-name="studycrack-pro-report-${escapeHtml(report.key || 'latest')}.pdf"><span class="sc-secondary-row-main"><b>${escapeHtml(formatReportKeyLabel(report.key))}</b><p>${reportStatusLabel(report)}</p></span><span class="sc-secondary-row-meta">${ready ? '<b>PDF</b><em>다운로드</em>' : icon('chevron', false)}</span></button>`;
   }).join('');
 }
 
@@ -262,7 +157,7 @@ function renderLockedFeaturePreview(target = '') {
   if (['report', 'reportDetail', 'proElite', 'tutor'].includes(target)) {
     return `<div class="locked-preview pro-preview"><div class="pro-elite-hero"><span class="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>2주 단위로 목표 대학 도달 전략을 정리합니다.</p></div><div class="pro-elite-list"><div class="pro-elite-item"><div><b>6월 2주차 PRO 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span class="pro-elite-download">PDF</span></div><div class="qna-card"><div class="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>답변 대기</span></div><em>PRO</em></div><p class="qna-question">주간 학습 흐름과 질문을 남기면 튜터 답변이 연결됩니다.</p></div></div></div>`;
   }
-  return `<div class="locked-preview coach-preview"><div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고 튜터 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div><div class="card coach-status-card"><div class="coach-row"><h4>이번 주 학습 점검</h4><span class="badge">대기</span></div><p>학습 달성률, 컨디션, 질문을 바탕으로 다음 주 플래너가 정리됩니다.</p><button class="btn btn-primary" type="button">코칭 요청하기</button></div><div class="card coach-feedback-card"><div class="coach-row"><h4>주간학습 피드백</h4><span class="badge">Standard</span></div><div class="coach-report-list"><div class="coach-report-card"><div><b>튜터 피드백 예시</b><p>과목별 시간 배분과 우선순위 조정</p></div><span class="coach-report-arrow">›</span></div></div></div></div>`;
+  return `<div class="locked-preview coach-preview"><header class="coaching-context"><div><span>학습 코칭</span><h2>선배와 함께 다음 주를 설계해요</h2><p>주간 기록을 점검하고, 바로 실행할 피드백을 받아보세요.</p></div><span class="coaching-mark" aria-hidden="true"><i></i><i></i><i></i></span></header><section class="coaching-hero"><div class="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><span class="coaching-mark" aria-hidden="true"><i></i><i></i><i></i></span><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section class="coaching-history"><div class="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div class="coaching-segment"><button class="active">이번 주 점검</button><button>받은 피드백</button></div><div class="coaching-history-list"><div class="coaching-history-row coaching-session-row"><span class="coaching-session-status"><i></i></span><span class="coaching-session-copy"><small>이번 주 · SKY 튜터</small><b>주간 학습 점검</b><em>검토 대기</em></span><strong>›</strong></div></div></section></div>`;
 }
 
 export function renderLockedFeatureScreen(ctx) {
@@ -281,40 +176,6 @@ export function renderLockedFeatureScreen(ctx) {
     return layout(`<div class="locked-feature-center-shell"><div class="locked-coach-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}</div><section class="locked-feature-panel locked-feature-panel-inline"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 주간 점검과 튜터 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button></div></section></div>`, true);
   }
   return layout(appbar(label, true) + `<div class="locked-feature-page"><div class="locked-feature-preview-wrap">${renderLockedFeaturePreview(lockedFeatureTarget)}<div class="locked-feature-fade" aria-hidden="true"></div><section class="locked-feature-panel"><span class="badge">잠긴 기능</span><h3>${escapeHtml(label)} 기능은 ${tier} 플랜에서 열려요</h3><p>아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.</p><div class="locked-feature-actions"><button class="btn btn-primary" data-action="goto" data-target="proIntro">${tier} 플랜 보기</button><button class="btn btn-secondary" data-action="back">돌아가기</button></div></section></div></div>`, true);
-}
-
-export function renderStrategyScreen(ctx) {
-  const {
-    coachingSubmitted = false,
-    layout,
-    weeklyReports = [],
-    weeklyReportsStatus = 'idle'
-  } = ctx;
-  const latest = weeklyReports[0] || null;
-  const submitted = coachingSubmitted || !!latest;
-  const feedbackReady = weeklyReports.some(hasSubmittedFeedback);
-  const weeklyList = weeklyReportsStatus === 'loading'
-    ? '<div class="coach-empty">주간 점검을 불러오는 중입니다.</div>'
-    : renderWeeklyRows({ reports: weeklyReports });
-
-  return layout(
-    `<div class="coach-page ${weeklyReports.length ? '' : 'coach-empty-state-screen'}">
-        <div class="card coach-title-card"><div class="top-card-head"><div><h3>학습 코칭</h3><p>주간 학습 계획을 점검하고, 튜터의 피드백을 받아보세요.</p></div><span class="top-infographic top-infographic-coach" aria-hidden="true"><i></i><i></i><i></i></span></div></div>
-        <div class="card coach-status-card">
-          <div class="coach-row"><h4>이번 주 학습 점검 & 코칭 요청</h4><span class="badge ${submitted ? 'coach-submitted' : ''}">${submitted ? '제출 이력 있음' : '미제출'}</span></div>
-          <p>이번 주 학습 달성률과 고민을 작성하면 튜터가 피드백을 제공해요.</p>
-          <small>매주 일요일 20:00 마감</small>
-          <button class="btn btn-primary" data-action="openCoachingSheet">${submitted ? '이번 주 점검 작성/수정' : '코칭 요청하기'}</button>
-        </div>
-        <div class="card coach-feedback-card">
-          <div class="coach-row"><h4>주간학습 피드백</h4><span class="badge ${feedbackReady ? 'coach-submitted' : ''}">${feedbackReady ? '도착' : '대기'}</span></div>
-          <p>제출한 주간 점검과 튜터가 최종 제출한 피드백만 표시됩니다.</p>
-          <div class="coach-report-list">${weeklyList}</div>
-        </div>
-        ${renderCoachingSheet(ctx)}
-      </div>`,
-    true
-  );
 }
 
 export function renderWeeklyScreen(ctx) {
@@ -363,31 +224,25 @@ export function renderWeeklyScreen(ctx) {
 
 export function renderReportScreen(ctx) {
   const {
+    appbar,
     icon = defaultIcon,
     layout,
     proReports = [],
     proReportsStatus = 'idle'
   } = ctx;
   const statusText = proReportsStatus === 'loading'
-    ? '<div class="coach-empty">PRO 리포트를 불러오는 중입니다.</div>'
+    ? renderSecondaryState({ kind: 'loading', title: 'PRO 리포트를 불러오는 중이에요' })
     : renderReportRows({ icon, reports: proReports });
 
   return layout(
-    `<div class="report-page mobile-card-stack"><div><span class="badge">프로 플랜 전용</span>
-       <p class="report-desc">2주에 한 번, 내 맞춤 분석 리포트 제공</p>
-       </div>
-       <div class="card report-main"><p class="sub">리포트 상태</p><p class="report-date">${proReports.length ? '발행 이력 있음' : '발행 대기 중'}</p><h2>${proReports.length}</h2></div>
-       <div class="card report-list"><p class="sub">이전 보고서</p>
-         ${statusText}
-       </div>
-       <div class="cta-wrapper"><button class="btn btn-primary report-sample cta-btn" data-action="openProRequestModal">전략 리포트 요청하기</button></div></div>`,
+    appbar('학습 리포트', true) + `<div class="sc-secondary-page report-page">${renderSecondaryIntro({ eyebrow: 'PRO REPORT', title: '맞춤 전략 리포트', description: '발행된 전략 리포트를 확인하고 새 분석을 요청할 수 있어요.', aside: '<span class="sc-chip">PRO</span>' })}<section class="sc-secondary-section report-summary"><div class="report-summary-main"><span>발행 리포트</span><b>${proReports.length}개</b><p>${proReports.length ? '최근 발행 이력을 확인해보세요.' : '첫 리포트 발행을 기다리고 있어요.'}</p></div><button class="btn btn-primary report-sample" data-action="openProRequestModal">새 리포트 요청</button></section><section class="sc-secondary-section report-list"><div class="sc-secondary-section-head"><div><h3>리포트 목록</h3><p>다운로드 가능한 PDF만 바로 열립니다.</p></div></div><div class="sc-secondary-list">${statusText}</div></section></div>`,
     true,
     renderProRequestModal(ctx)
   );
 }
 
 export function renderReportDetailScreen({ appbar, layout }) {
-  return layout(appbar('종합 분석 리포트', true) + '<div class="report-detail-page mobile-card-stack"><div class="card report-detail-card"><p class="sub">모바일 앱에서는 실제 발행된 PDF 리포트만 확인할 수 있습니다.</p><p class="report-detail-text">PRO 리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div>', false);
+  return layout(appbar('종합 분석 리포트', true) + `<div class="sc-secondary-page report-detail-page">${renderSecondaryIntro({ eyebrow: 'REPORT DETAIL', title: '리포트 상세', description: '실제로 발행된 PDF 리포트만 안전하게 제공합니다.' })}<section class="sc-secondary-section report-detail-card"><div class="sc-secondary-section-head"><div><h3>발행 리포트 선택</h3><p>리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div>${renderSecondaryState({ title: '선택된 리포트가 없어요', description: '목록으로 돌아가 확인할 리포트를 선택해주세요.' })}</section></div>`, false);
 }
 
 export function renderProEliteScreen(ctx) {
@@ -447,7 +302,7 @@ export function renderProIntroScreen(ctx) {
     ? `<div class="card locked-upgrade-card"><span class="badge">잠긴 기능</span><h3>${escapeHtml(upgradePromptTarget || '선택한 기능')}은 ${requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div>`
     : '';
 
-  return layout(appbar('플랜 선택', true) + `<section class="plan-console-page">${upgradeNotice}${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta })}</section>`, false);
+  return layout(appbar('플랜 선택', true) + `<section class="sc-secondary-page plan-console-page">${renderSecondaryIntro({ eyebrow: 'MEMBERSHIP', title: '나에게 맞는 플랜', description: '플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다.', aside: `<span class="sc-chip">${planDisplayName(checkoutPlan)}</span>` })}${upgradeNotice}${renderPlanSelector({ checkoutPlan, planMeta })}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta })}</section>`, false);
 }
 
 export function renderPaymentScreen(ctx) {
@@ -462,7 +317,7 @@ export function renderPaymentScreen(ctx) {
   const durationControl = ['Standard', 'Pro'].includes(checkoutPlan)
     ? `<div class="payment-option-block"><b>결제 기간</b><div class="duration-row payment-duration-row"><button class="${duration === '4주' ? 'active' : ''}" data-action="selectDuration" data-duration="4주">4주</button><button class="${duration === '8주' ? 'active' : ''}" data-action="selectDuration" data-duration="8주">8주</button><button class="${duration === '12주' ? 'active' : ''}" data-action="selectDuration" data-duration="12주">12주</button></div></div>`
     : `<div class="payment-fixed-term"><span>결제 단위</span><b>${checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>`;
-  return layout(appbar('결제 플랜 확인', true) + `<section class="payment-console-page">${renderPlanSelector({ checkoutPlan, planMeta })}${durationControl}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta, ctaLabel: '웹 결제로 계속하기', ctaAction: 'openWebPayment' })}</section>`, false);
+  return layout(appbar('결제 플랜 확인', true) + `<section class="sc-secondary-page payment-console-page">${renderSecondaryIntro({ eyebrow: 'CHECKOUT', title: '결제 전 확인', description: '선택한 플랜과 기간을 확인한 뒤 안전한 웹 결제로 이동합니다.', aside: `<span class="sc-chip">${planDisplayName(checkoutPlan)}</span>` })}${renderPlanSelector({ checkoutPlan, planMeta })}${durationControl}${renderSelectedPlanDetail({ checkoutPlan, icon, planMeta, ctaLabel: '웹 결제로 계속하기', ctaAction: 'openWebPayment' })}</section>`, false);
 }
 
 export function renderPaymentCompleteScreen(ctx) {
@@ -471,5 +326,5 @@ export function renderPaymentCompleteScreen(ctx) {
     layout
   } = ctx;
 
-  return layout(`<div class="payment-done-screen"><div class="payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><p class="title payment-complete-title">결제 확인은 웹 결제 페이지에서 진행됩니다</p><p class="sub payment-complete-sub">모바일 앱 내부에서는 결제 완료를 임의로 처리하지 않습니다.</p><div class="card payment-complete-note"><b>안전한 결제 안내</b><p>전화번호 확인과 NICEPAY 인증을 위해 기존 웹 결제 페이지로 이동해주세요.</p></div></div><div class="cta-wrapper payment-cta"><button class="btn btn-primary cta-btn" data-action="openWebPayment">웹 결제 페이지로 이동</button></div></div>`, false);
+  return layout(`<div class="sc-secondary-page payment-done-screen">${renderSecondaryIntro({ eyebrow: 'SECURE PAYMENT', title: '웹 결제에서 계속할게요', description: '전화번호 확인과 결제 인증은 기존 웹 결제 페이지에서 안전하게 진행됩니다.' })}<section class="sc-secondary-section payment-complete-wrap"><div class="payment-check">${icon('check', true)}</div><div><p class="payment-complete-title">결제 상태는 서버 확인 후 반영됩니다</p><p class="payment-complete-sub">모바일 앱이 결제 완료 상태를 임의로 만들지 않습니다.</p></div><div class="payment-complete-note"><b>안전한 결제 안내</b><p>NICEPAY 인증이 끝나면 구독 정보가 계정에 반영됩니다.</p></div><button class="btn btn-primary payment-cta" data-action="openWebPayment">웹 결제 페이지로 이동</button></section></div>`, false);
 }

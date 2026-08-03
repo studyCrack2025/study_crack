@@ -159,12 +159,13 @@ function updateV2eSelectState(setScoreEditState, field, value) {
 
 function updateScoreStateFromField({ alert, field, setScoreState, target, value }) {
   const [, subject, key] = field.split('-');
-  let normalizedValue = value;
+  const normalizedValue = value;
   const max = SCORE_FIELD_MAX[`${subject}-${key}`];
   if (max && Number(value) > max) {
-    alert('성적을 정확히 입력해주세요');
-    normalizedValue = String(max);
-    target.value = normalizedValue;
+    target.setAttribute?.('aria-invalid', 'true');
+    alert(`${max}점 이하의 점수를 입력해주세요.`);
+  } else {
+    target.removeAttribute?.('aria-invalid');
   }
   if (subject === 'english' || subject === 'history') {
     setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
@@ -258,6 +259,19 @@ export function createFormHandlers(ctx) {
     }
 
     const field = target.getAttribute('data-field');
+    if (['v2e-english', 'v2e-history'].includes(field) && target.classList?.contains('score-grade-input')) {
+      const grade = String(target.value || '').replace(/[^1-9]+/g, '').slice(0, 1);
+      if (target.value !== grade) target.value = grade;
+      target.setAttribute('aria-invalid', grade ? 'false' : 'true');
+      return { handled: true, field };
+    }
+    if (field?.startsWith('v2e-') && target.classList?.contains('score-direct-input')) {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 3);
+      if (target.value !== numeric) target.value = numeric;
+      const max = Number(target.getAttribute('data-score-max') || 0);
+      target.setAttribute('aria-invalid', max && Number(numeric) > max ? 'true' : 'false');
+      return { handled: true, field };
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -272,8 +286,11 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'coachingMonth') setCoachingMonth(target.value);
     if (field === 'proEliteMonth') setProEliteMonth(target.value);
-    if (field === 'qnaDraftTitle') setQnaDraftTitle(target.value);
-    if (field === 'qnaDraftContent') setQnaDraftContent(target.value);
+    if (field === 'qnaDraftTitle' || field === 'qnaDraftContent') {
+      const key = field === 'qnaDraftTitle' ? 'title' : 'content';
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current[key] = target.value;
+      return { handled: true, field };
+    }
     if (field === 'analysisSearchTerm') {
       if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);
@@ -306,11 +323,10 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'scoreExamType') applyScoreExamSelection(target.value);
     if (field === 'obExamType') applyObExamSelection(target.value);
-    restoreIfUnexpectedTopJump();
-
     const coachAnswer = target.getAttribute('data-coach-answer');
     const coachPlan = target.getAttribute('data-coach-plan');
     const coachActual = target.getAttribute('data-coach-actual');
+    if (!coachAnswer && !coachPlan && !coachActual) restoreIfUnexpectedTopJump();
     if (coachAnswer) {
       const countEl = query(ctx, `[data-coach-count="${coachAnswer}"]`);
       if (countEl) countEl.textContent = `${target.value.length}/200`;

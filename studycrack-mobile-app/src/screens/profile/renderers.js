@@ -1,6 +1,6 @@
 import { renderGradeButtons } from '../../components/grade-buttons.js';
+import { renderSecondaryIntro, renderSecondaryState } from '../../components/secondary-page.js';
 import { EXAM_OPTIONS, INQUIRY_SUBJECTS } from '../../constants/options.js';
-import { RANKING_MOCK } from '../../constants/ranking.js';
 
 const TRACK_OPTIONS = ['예체능', '인문사회', '상경계열', '자연/공학', '의치한약수', '간호', '사범/교대', '기타'];
 const RANKING_PERIODS = [
@@ -30,14 +30,6 @@ function renderExamOptions(scoreExamType = '') {
   return EXAM_OPTIONS.map((label) => `<option value="${label}" ${scoreExamType === label ? 'selected' : ''}>${label}</option>`).join('');
 }
 
-function scoreMetric(raw) {
-  const n = Math.max(0, Number(raw) || 0);
-  const std = Math.min(160, Math.round(n * 0.95 + 22));
-  const pct = Math.min(99, Math.max(1, Math.round(n * 0.9 + 10)));
-  const grade = pct >= 96 ? 1 : pct >= 89 ? 2 : pct >= 77 ? 3 : pct >= 64 ? 4 : pct >= 52 ? 5 : pct >= 40 ? 6 : pct >= 28 ? 7 : pct >= 16 ? 8 : 9;
-  return { std, pct, grade };
-}
-
 function renderInquiryOptions(selected = '') {
   // DB에 저장된 과목명이 표준 목록과 미세하게 달라도(예: '물리Ⅰ' vs '물리학Ⅰ') 드롭다운에 표시되도록
   // 목록에 없는 저장값은 별도 옵션으로 선두에 추가한다.
@@ -47,22 +39,14 @@ function renderInquiryOptions(selected = '') {
   return `<option value="" ${saved ? '' : 'selected'}>과목 선택</option>${extra}${INQUIRY_SUBJECTS.map((subject) => `<option value="${escapeHtml(subject)}" ${saved === subject ? 'selected' : ''}>${escapeHtml(subject)}</option>`).join('')}`;
 }
 
-function renderGradeSelect(field, selected = '') {
-  return `<select class="planner-input" data-field="${field}"><option value="">등급 선택</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<option value="${n}" ${String(selected) === String(n) ? 'selected' : ''}>${n}등급</option>`).join('')}</select>`;
-}
-
-function renderGradeSegment(field, selected = '') {
-  const key = field === 'v2e-english' ? 'english' : 'history';
-  const cards = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    .map((n) => `<button type="button" class="score-grade-card ${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}"><b>${n}</b><span>등급</span></button>`)
-    .join('');
-  return `<span class="score-grade-label">해당 등급을 선택하세요</span><div class="score-grade-grid" role="group" aria-label="등급 선택">${cards}</div>`;
+function renderGradeInput(field, selected = '', title = '') {
+  const shownValue = /^[1-9]$/.test(String(selected)) ? String(selected) : '';
+  return `<label class="score-grade-field"><span>등급</span><div class="score-grade-control"><input class="score-grade-input" data-field="${field}" data-score-max="9" value="${shownValue}" type="text" inputmode="numeric" pattern="[1-9]" maxlength="1" autocomplete="off" placeholder="1" aria-label="${title} 등급"/><em>등급</em></div><small>1~9등급 중 숫자 하나를 입력해 주세요.</small></label>`;
 }
 
 function renderRawMetric(raw) {
-  if (!Number(raw || 0)) return '<div class="score-onepage-metric"><span>표준 -</span><span>백분위 -</span><span>등급 -</span></div>';
-  const metric = scoreMetric(raw);
-  return `<div class="score-onepage-metric"><span>표준 ${metric.std}</span><span>백분위 ${metric.pct}</span><span>${metric.grade}등급</span></div>`;
+  const entered = String(raw ?? '').trim() !== '';
+  return `<div class="score-onepage-metric"><span>원점수 ${entered ? Number(raw) : '-'}</span><span>표준점수 저장 후 계산</span><span>백분위 저장 후 계산</span></div>`;
 }
 
 function renderScoreNumberInput(field, value, placeholder, max = 100) {
@@ -81,30 +65,10 @@ function subjectHint(missing, text) {
   return missing ? `<p class="score-field-hint">${text}</p>` : '';
 }
 
-// 휠(스와이프) 점수 피커. 한 항목 높이(px) — main.js 초기화 effect와 동일해야 한다.
-export const SCORE_WHEEL_ITEM_H = 40;
-
-// 원점수에서 실제로 불가능한 점수를 제외한 유효 점수 목록. 수능 문항이 2·3점 혼합이라
-// 1점(최소 문항=2)과 만점-1(한 문항만 틀리면 최소 2점 손실)은 받을 수 없다 → 제외.
-function rawValidScores(max) {
-  const out = [0];
-  for (let v = 2; v <= max - 2; v += 1) out.push(v);
-  if (max >= 2) out.push(max);
-  return out;
-}
-
-function renderScoreWheel({ field, values, selected, suffix = '', emptyLabel = '' }) {
-  const list = emptyLabel ? ['', ...values] : values.slice();
-  let selIdx = list.findIndex((v) => String(v) === String(selected ?? ''));
-  if (selIdx < 0) selIdx = 0;
-  const items = list
-    .map((v, i) => {
-      const label = v === '' ? emptyLabel : `${v}${suffix}`;
-      return `<div class="score-wheel-item ${i === selIdx ? 'is-selected' : ''}" data-value="${escapeHtml(String(v))}">${label}</div>`;
-    })
-    .join('');
-  const selectedValue = list[selIdx] ?? '';
-  return `<div class="score-wheel-wrap"><div class="score-wheel-band" aria-hidden="true"></div><div class="score-wheel-fade top" aria-hidden="true"></div><div class="score-wheel-fade bottom" aria-hidden="true"></div><div class="score-wheel" data-wheel-field="${field}" data-wheel-index="${selIdx}" role="listbox" aria-label="점수 선택">${items}</div><input type="hidden" data-field="${field}" value="${escapeHtml(String(selectedValue))}"/></div>`;
+function renderDirectScoreInput({ field, value, max, label }) {
+  const shownValue = value === 0 || value === '0' ? '0' : String(value || '');
+  const ariaLabel = label.includes('원점수') ? label : `${label} 원점수`;
+  return `<label class="score-direct-field"><span>${label}</span><div class="score-direct-control"><input class="planner-input score-direct-input" data-field="${field}" data-score-max="${max}" value="${escapeHtml(shownValue)}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="0" aria-label="${ariaLabel}"/><em>점</em></div><small>0점 또는 2~${max - 2}점, ${max}점</small></label>`;
 }
 
 const SCORE_STEPS = [
@@ -128,36 +92,35 @@ function isSubjectSaved(q, key) {
 }
 
 function renderRawSubjectPanel({ title, selField, options, commonField, electiveField, commonMax, electiveMax, sub }) {
-  const raw = Number(sub.common || 0) + Number(sub.elective || 0);
+  const hasCommon = String(sub.common ?? '').trim() !== '';
+  const hasElective = String(sub.elective ?? '').trim() !== '';
+  const raw = hasCommon && hasElective ? Number(sub.common) + Number(sub.elective) : '';
   return `<div class="score-step-panel">
     <div class="score-step-panel-head"><b>${title}</b><span>선택 과목 + 공통/선택 원점수</span></div>
     <label class="score-field-label">선택 과목</label>
     <select class="planner-input" data-field="${selField}">${options}</select>
     <label class="score-field-label">원점수</label>
-    <div class="score-wheel-grid"><div class="score-wheel-field"><span>공통</span>${renderScoreWheel({ field: commonField, values: rawValidScores(commonMax), selected: sub.common, suffix: '점', emptyLabel: '미입력' })}</div><div class="score-wheel-field"><span>선택</span>${renderScoreWheel({ field: electiveField, values: rawValidScores(electiveMax), selected: sub.elective, suffix: '점', emptyLabel: '미입력' })}</div></div>
-    <p class="score-wheel-help">문항 배점상 나올 수 없는 1점과 만점보다 1점 낮은 점수는 제외했어요.</p>
+    <div class="score-direct-grid">${renderDirectScoreInput({ field: commonField, value: sub.common, max: commonMax, label: '공통' })}${renderDirectScoreInput({ field: electiveField, value: sub.elective, max: electiveMax, label: '선택' })}</div>
+    <p class="score-direct-help">숫자로 직접 입력해 주세요. 문항 배점상 불가능한 1점과 만점보다 1점 낮은 점수는 저장할 수 없어요.</p>
     ${renderRawMetric(raw)}
   </div>`;
 }
 
 function renderGradeSubjectPanel({ title, field, value }) {
   return `<div class="score-step-panel">
-    <div class="score-step-panel-head"><b>${title}</b><span>절대평가 · 등급만 선택</span></div>
-    ${renderGradeSegment(field, value)}
+    <div class="score-step-panel-head"><b>${title}</b><span>절대평가 · 등급 입력</span></div>
+    ${renderGradeInput(field, value, title)}
     ${value
       ? `<div class="score-step-confirm"><span class="score-step-check">✓</span>${title} ${escapeHtml(String(value))}등급으로 입력됐어요</div>`
-      : '<div class="score-step-warn">아래에서 등급을 선택해 주세요</div>'}
+      : '<div class="score-step-warn">1~9 사이의 등급을 입력해 주세요</div>'}
   </div>`;
 }
 
 function renderInquirySubjectPanel({ title, subjField, scoreField, inq }) {
   return `<div class="score-step-panel">
     <div class="score-step-panel-head"><b>${title}</b><span>탐구 과목 + 원점수</span></div>
-    <label class="score-field-label">탐구 과목</label>
-    <select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select>
-    <label class="score-field-label">원점수</label>
-    <div class="score-wheel-single">${renderScoreWheel({ field: scoreField, values: rawValidScores(50), selected: inq.score, suffix: '점', emptyLabel: '미입력' })}</div>
-    <p class="score-wheel-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 선택지에서 제외됩니다.</p>
+    <div class="score-inquiry-grid"><label class="score-inquiry-field"><span>탐구 과목</span><select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select><small>응시한 선택 과목</small></label>${renderDirectScoreInput({ field: scoreField, value: inq.score, max: 50, label: '원점수' })}</div>
+    <p class="score-direct-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 저장할 수 없어요.</p>
     ${renderRawMetric(inq.score)}
   </div>`;
 }
@@ -200,7 +163,7 @@ export function renderScoreEditModal(ctx = {}) {
   const isLast = step === 6;
   const primaryLabel = saving ? '저장 중…' : isLast ? '저장하고 완료' : '저장하고 다음';
 
-  return `<div class="home-modal-overlay" data-action="closeScoreEdit"><div class="home-modal score-edit-modal score-stepper-modal" data-action="noopModal">
+  return `<div class="sc-overlay sc-overlay--modal home-modal-overlay" data-action="closeScoreEdit"><div class="sc-modal home-modal score-edit-modal score-stepper-modal" data-action="noopModal" role="dialog" aria-modal="true">
     <div class="score-onepage-head"><div><p class="home-modal-title">성적 입력</p><p class="sub">과목을 선택해 하나씩 입력하고 저장해요.</p></div><button class="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
     <div class="score-stepper-progress"><div class="score-stepper-bar"><i style="width:${progressPct}%"></i></div><span>${doneCount} / ${SCORE_STEPS.length} 저장됨</span></div>
     <div class="score-step-rail">${rail}</div>
@@ -216,18 +179,42 @@ export function renderRankingScreen(ctx) {
   const {
     appbar,
     layout,
-    rankingMock = RANKING_MOCK,
     rankingPeriod = 'daily',
-    tierClass = defaultTierClass
+    rankingRows = [],
+    rankingStatus = 'idle',
+    rankingError = '',
+    rankingMe = null,
+    tierClass = defaultTierClass,
+    formatHms = (seconds) => {
+      const total = Math.max(0, Number(seconds) || 0);
+      return `${String(Math.floor(total / 3600)).padStart(2, '0')}:${String(Math.floor((total % 3600) / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    }
   } = ctx;
-  const rows = rankingMock[rankingPeriod] || [];
+  const rows = rankingRows || [];
+  const myRank = rankingMe?.rank ? `${rankingMe.rank}등` : '집계 전';
+  const myTier = rankingMe?.tier || 'BRONZE';
+  const rankingTotal = Number(rankingMe?.total) || rows.length;
+  const percentile = rankingMe?.rank && rankingTotal ? Math.max(1, Math.ceil((Number(rankingMe.rank) / rankingTotal) * 100)) : 0;
+  const statusPanel = rankingStatus === 'loading'
+    ? renderSecondaryState({ kind: 'loading', title: '랭킹을 집계하고 있어요', description: '학습 기록을 반영하는 중입니다.' })
+    : rankingStatus === 'error'
+      ? renderSecondaryState({ kind: 'error', title: '랭킹을 불러오지 못했어요', description: escapeHtml(rankingError || '잠시 후 다시 확인해주세요.') })
+      : rankingStatus === 'empty' || !rows.length
+        ? renderSecondaryState({ title: '아직 이 기간의 공부 기록이 없어요', description: '공부 타이머를 시작하면 자동으로 집계됩니다.' })
+        : '';
 
-  return layout(appbar('공부 랭킹', true) + `<section class="ranking-theme"><div class="ranking-page"><div class="ranking-hero"><span>STUDY RANKING</span><h3>오늘의 공부 랭킹</h3><p>공부 시간과 연속 기록으로 나의 위치를 확인해보세요.</p></div>
-      <div class="card my-rank-fixed"><p class="sub">내 순위</p><b>124등</b><div class="my-rank-tier"><span class="tier-emblem small bronze"><strong>2</strong><small>일</small></span><span>BRONZE · 2일 연속</span></div><small>오늘 1시간 20분</small></div>
-      <div class="ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
-      <div class="card ranking-podium-card"><div class="ranking-podium">${rows.slice(0, 3).map((row, idx) => `<div class="podium-item tier-card tier-${tierClass(row.tier)} ${idx === 0 ? 'first' : idx === 1 ? 'second' : 'third'}">${idx === 0 ? '<span class="podium-crown">👑</span>' : '<span class="podium-crown">✦</span>'}<span class="tier-emblem ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><b>${row.name}</b><p>${row.time}</p><small>${row.tier}</small><i class="podium-block">${idx + 1}</i></div>`).join('')}</div></div>
-      <div class="card ranking-list-card">${rows.slice(3).map((row, idx) => `<div class="ranking-row tier-card tier-${tierClass(row.tier)}"><span class="num">${idx + 4}</span><span class="tier-emblem small ${tierClass(row.tier)}"><strong>${row.streak}</strong><small>일</small></span><div class="meta"><b>${row.name}</b><p>${row.time}</p></div><em>${row.tier} · ${row.streak}일 연속</em></div>`).join('')}</div>
-    </div></section>`, true);
+  const rankingRowsHtml = rows.map((row, idx) => {
+    const rank = Number(row.rank) || idx + 1;
+    const isMe = row.isMe === true || (rankingMe && rank === Number(rankingMe.rank) && String(row.name || '') === String(rankingMe.name || row.name || ''));
+    return `<div class="sc-secondary-row ranking-row ${isMe ? 'is-me' : ''}"><span class="ranking-position ${rank <= 3 ? 'is-top' : ''}">${rank}</span><span class="sc-secondary-row-main"><b>${escapeHtml(row.name || '회원')}</b><p>${formatHms(row.seconds)} 공부</p></span><span class="sc-secondary-row-meta"><b>${escapeHtml(row.tier || 'BRONZE')}</b>${isMe ? '<em>내 순위</em>' : ''}</span></div>`;
+  }).join('');
+
+  return layout(appbar('공부 랭킹', true) + `<section class="sc-secondary-page ranking-page">
+      ${renderSecondaryIntro({ eyebrow: 'STUDY RANKING', title: '공부 기록 순위', description: '실제 누적 공부 시간을 기준으로 같은 기간의 순위를 확인해요.', aside: `<span class="sc-chip">${RANKING_PERIODS.find(([key]) => key === rankingPeriod)?.[1] || '일간'}</span>` })}
+      <section class="sc-secondary-section ranking-summary"><div class="ranking-summary-main"><span>내 순위</span><b>${myRank}</b><p>${rankingMe ? `${formatHms(rankingMe.seconds)} 공부` : '공부를 시작하면 집계됩니다.'}</p></div><div class="ranking-summary-stats"><div><span>티어</span><b class="${tierClass(myTier)}">${escapeHtml(myTier)}</b></div><div><span>전체</span><b>${rankingTotal ? `${rankingTotal}명` : '—'}</b></div><div><span>상위</span><b>${percentile ? `${percentile}%` : '—'}</b></div></div></section>
+      <div class="sc-secondary-segmented ranking-tabs">${RANKING_PERIODS.map(([key, label]) => `<button type="button" class="${rankingPeriod === key ? 'active' : ''}" data-action="setRankingPeriod" data-ranking-period="${key}">${label}</button>`).join('')}</div>
+      ${statusPanel || `<section class="sc-secondary-section ranking-board"><div class="sc-secondary-section-head"><div><h3>전체 순위</h3><p>상위 기록부터 차례로 표시합니다.</p></div><span class="sc-badge">${rows.length}명</span></div><div class="sc-secondary-list ranking-list-card">${rankingRowsHtml}</div></section>`}
+    </section>`, true);
 }
 
 export function renderQualInfoScreen(ctx) {
@@ -241,7 +228,7 @@ export function renderQualInfoScreen(ctx) {
     obTrack = ''
   } = ctx;
 
-  return layout(appbar('정성조사서', true) + `<section class="qual-form-page"><div class="card qual-form-head"><span class="badge">학습성향 진단</span><h3>전략 설계를 위한 기본 정보를 입력해주세요.</h3><p>* 표시는 필수 입력 항목입니다.</p></div><div class="card qual-form-card"><div class="qual-field wide"><label>현재 학년 <span>*</span></label><div class="ob1-pill-row qual-grade-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="qual-field"><label>출신 학교 <span>*</span></label><input class="planner-input" data-field="obSchoolName" value="${escapeHtml(obSchoolName)}" placeholder="출신 학교 입력"/></div><div class="qual-field"><label>희망 계열 <span>*</span></label><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div><div class="qual-field wide"><label>스터디크랙을 통해 얻고 싶은 점 <span>*</span></label><textarea class="planner-input qual-textarea" data-field="obGoalText" rows="4" placeholder="예: 목표 대학에 맞는 과목별 우선순위를 알고 싶어요.">${escapeHtml(obGoalText)}</textarea></div><div class="qual-field wide"><label>입시 고민 및 질문</label><textarea class="planner-input qual-textarea" data-field="obQuestionText" rows="5" placeholder="현재 가장 고민되는 부분을 자유롭게 적어주세요.">${escapeHtml(obQuestionText)}</textarea></div><button class="btn btn-primary qual-save-btn" data-action="saveQualInfo">정성조사서 저장</button></div></section>`, false);
+  return layout(appbar('정성조사서', true) + `<section class="sc-secondary-page qual-form-page">${renderSecondaryIntro({ eyebrow: 'STUDENT PROFILE', title: '전략 설계 정보', description: '현재 상황과 목표를 입력하면 분석과 튜터 피드백에 함께 반영됩니다.', aside: '<span class="sc-badge">* 필수</span>' })}<section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>기본 정보</h3><p>학년과 학교, 희망 계열을 알려주세요.</p></div></div><div class="sc-secondary-form qual-form-card"><div class="sc-secondary-field qual-field wide"><label>현재 학년 <span>*</span></label><div class="ob1-pill-row qual-grade-row">${renderGradeButtons(obGradeStatus)}</div></div><div class="sc-secondary-field qual-field"><label>출신 학교 <span>*</span></label><input class="planner-input" data-field="obSchoolName" value="${escapeHtml(obSchoolName)}" placeholder="출신 학교 입력"/></div><div class="sc-secondary-field qual-field"><label>희망 계열 <span>*</span></label><select class="planner-input" data-field="obTrack">${renderTrackOptions(obTrack)}</select></div></div></section><section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>목표와 고민</h3><p>전략에 반영할 내용을 구체적으로 적어주세요.</p></div></div><div class="sc-secondary-form qual-form-card"><div class="sc-secondary-field qual-field wide"><label>스터디크랙을 통해 얻고 싶은 점 <span>*</span></label><textarea class="planner-input qual-textarea" data-field="obGoalText" rows="4" placeholder="예: 목표 대학에 맞는 과목별 우선순위를 알고 싶어요.">${escapeHtml(obGoalText)}</textarea></div><div class="sc-secondary-field qual-field wide"><label>입시 고민 및 질문</label><textarea class="planner-input qual-textarea" data-field="obQuestionText" rows="5" placeholder="현재 가장 고민되는 부분을 자유롭게 적어주세요.">${escapeHtml(obQuestionText)}</textarea></div><button class="btn btn-primary qual-save-btn" data-action="saveQualInfo">정성조사서 저장</button></div></section></section>`, false);
 }
 
 export function renderScoreInfoScreen(ctx) {
@@ -256,5 +243,5 @@ export function renderScoreInfoScreen(ctx) {
   } = ctx;
   const modal = scoreEditOpen ? (scoreEditModalHtml || (typeof ScoreEditModal === 'function' ? ScoreEditModal() : '')) : '';
 
-  return layout(appbar('성적 정보', true) + `<section class="score-info-page"><div class="card score-info-hero"><span class="badge">분석 기준</span><h3>모의고사별 성적을 한 번에 관리해요</h3><p>선택한 시험 성적이 홈과 분석 탭의 지원학과 점수에 연결됩니다.</p><div class="score-info-picker"><label>기준 시험</label><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select><button class="btn btn-secondary" data-action="applyScoreExam">적용</button></div></div><div class="card score-info-card"><div class="score-info-card-head"><div><p class="analysis-title">내 성적</p><p class="sub">과목별 원점수와 분석용 지표를 확인합니다.</p></div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">전체 성적 입력/수정</button></div><div class="score-info-subject-list">${scoreInfoDetailList}</div></div></section>`, false, modal);
+  return layout(appbar('성적 정보', true) + `<section class="sc-secondary-page score-info-page">${renderSecondaryIntro({ eyebrow: 'SCORE DATA', title: '모의고사 성적', description: '선택한 시험 성적이 홈과 분석의 대학별 환산점수 기준이 됩니다.' })}<section class="sc-secondary-section"><div class="sc-secondary-section-head"><div><h3>분석 기준 시험</h3><p>확인할 모의고사를 선택해주세요.</p></div></div><div class="score-info-picker"><label>기준 시험</label><select class="planner-input" data-field="scoreExamType">${renderExamOptions(scoreExamType)}</select><button class="btn btn-secondary" data-action="applyScoreExam">적용</button></div></section><section class="sc-secondary-section score-info-card"><div class="sc-secondary-section-head score-info-card-head"><div><h3>내 성적</h3><p>원점수와 표준점수·백분위·등급을 함께 확인합니다.</p></div><button class="btn btn-primary score-edit-btn" data-action="openScoreEdit">입력·수정</button></div><div class="score-info-subject-list">${scoreInfoDetailList}</div></section></section>`, false, modal);
 }

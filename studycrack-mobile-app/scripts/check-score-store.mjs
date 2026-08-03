@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {
   buildScoreSignature,
   buildUniversityCard,
+  canRetryInitialScore,
+  canRetryInitialScorePayload,
   normalizeServerResults
 } from '../src/runtime/score-store.js';
 
@@ -58,5 +60,15 @@ const legacy = normalizeServerResults([
 ]);
 assert.equal(legacy['성균관대학교경제학과'].available, true, '구버전 정상 응답은 배포 전에도 호환해야 합니다.');
 assert.equal(legacy['한양대학교경제학과'].available, false, '구버전 지원 불가 0점은 확정하면 안 됩니다.');
+
+assert.equal(canRetryInitialScore(new Error('temporary'), 0), true, '상태 코드가 없는 최초 네트워크 실패는 재시도해야 합니다.');
+assert.equal(canRetryInitialScore({ status: 503 }, 1), true, '일시적인 서버 실패는 제한 안에서 재시도해야 합니다.');
+assert.equal(canRetryInitialScore({ status: 400 }, 0), false, '요청 오류는 반복 호출하면 안 됩니다.');
+assert.equal(canRetryInitialScore({ code: 'AUTH_EXPIRED', status: 403 }, 0), false, '인증 만료를 점수 재시도로 숨기면 안 됩니다.');
+assert.equal(canRetryInitialScore({ status: 503 }, 2), false, '최초 점수 재시도는 두 번으로 제한해야 합니다.');
+assert.equal(canRetryInitialScorePayload({ resultCount: 0 }, 0), true, '정상 200의 빈 최초 결과도 제한적으로 재시도해야 합니다.');
+assert.equal(canRetryInitialScorePayload({ resultCount: 1 }, 0), false, '결과가 있으면 빈 응답 재시도를 하지 않아야 합니다.');
+assert.equal(canRetryInitialScorePayload({ error: { status: 503 }, resultCount: 0 }, 1), true);
+assert.equal(canRetryInitialScorePayload({ resultCount: 0 }, 2), false);
 
 console.log('score-store contracts passed');

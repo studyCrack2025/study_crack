@@ -240,6 +240,18 @@ export function createAuthHandlers(ctx) {
   }
 
   return {
+    toggleLoginPasswordVisibility({ actionEl, event }) {
+      prevent(event);
+      const input = query(ctx, '[data-login-password]');
+      if (!input) return false;
+      const reveal = input.type === 'password';
+      input.type = reveal ? 'text' : 'password';
+      actionEl.textContent = reveal ? '숨김' : '보기';
+      actionEl.setAttribute('aria-label', reveal ? '비밀번호 숨기기' : '비밀번호 보기');
+      input.focus?.({ preventScroll: true });
+      return true;
+    },
+
     openFindEmailModal({ event }) {
       event?.preventDefault?.();
       setFindEmailModalOpen(true);
@@ -348,31 +360,6 @@ export function createAuthHandlers(ctx) {
       prevent(event);
       setSignupError('현재 화면에서 회원가입을 완료해주세요.');
       return false;
-    },
-
-    toggleSignupAllTerms({ actionEl }) {
-      const { fields } = captureSignupState();
-      const checked = actionEl?.checked === true;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({
-        standard: checked,
-        service: checked,
-        privacy: checked,
-        refund: checked,
-        marketing: checked
-      });
-      return true;
-    },
-
-    toggleSignupTerm({ actionEl }) {
-      const { fields, termValues } = captureSignupState();
-      const key = actionEl?.getAttribute?.('data-signup-term');
-      if (!key) return false;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({ ...termValues, [key]: actionEl?.checked === true });
-      return true;
     },
 
     openSignupTermsModal({ actionEl }) {

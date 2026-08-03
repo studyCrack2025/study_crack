@@ -1,4 +1,4 @@
-// 세션이 있을 때만 사용자 데이터를 가져와 mock 위에 병합한다(미인증/실패 시 데모 유지).
+import { EMPTY_USER } from '../constants/runtime-defaults.js';
 import {
   createBlankScoreState,
   mapExamDataToScorePatch,
@@ -8,8 +8,7 @@ import {
 } from './persistence.js';
 
 // 사용자 분석 데이터 호출. 성공 시 백엔드 userData 반환, 그 외 null.
-// 네트워크/CORS 실패는 throw 없이 null(데모 유지)하되, 인증 만료(AUTH_EXPIRED)는
-// 상위(모바일 부트스트랩)가 세션 정리/로그인 이동을 분기하도록 그대로 전달한다.
+// 인증 만료(AUTH_EXPIRED)는 상위 부트스트랩이 세션 정리/로그인 이동을 분기하도록 전달한다.
 export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
   if (typeof apiFetch !== 'function' || !userApiUrl) return null;
   try {
@@ -24,6 +23,34 @@ export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
     if (error && error.code === 'AUTH_EXPIRED') throw error;
     return null;
   }
+}
+
+export function createUserDataResetPatch() {
+  return {
+    user: { ...EMPTY_USER },
+    userTier: '',
+    selectedPlan: '',
+    targetMajor: '',
+    homeTargetList: [],
+    analysisTargetList: [],
+    targetUnivSlots: normalizeTargetUnivSlots([]),
+    selectedUniversityIndex: 0,
+    analysisSelectedIndex: 0,
+    homeSlideIndex: 0,
+    scores: {},
+    scoreState: createBlankScoreState(),
+    scoreEditState: createBlankScoreState(),
+    analysisResults: [],
+    analysisSimulations: [],
+    analysisResultExamMode: '',
+    analysisResultSignature: '',
+    analysisApiStatus: 'idle',
+    analysisApiError: '',
+    lastAnalysisSnapshot: null,
+    scoreCache: {},
+    scoreFetchStatus: 'idle',
+    scoreFetchSignature: ''
+  };
 }
 
 // 백엔드 computedTier(소문자 tier) → 마이/요금 UI가 읽는 표시 plan명.
@@ -84,8 +111,18 @@ function mapTargetUnivs(targetUnivs = []) {
 // 사용자 응답을 모바일 state 필드로 병합한다.
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
-  const patch = {};
-  const userPatch = { ...(base.user || {}) };
+  const patch = {
+    userTier: '',
+    selectedPlan: '',
+    scores: {},
+    scoreState: createBlankScoreState(),
+    scoreEditState: createBlankScoreState(),
+    analysisApiStatus: 'idle',
+    analysisApiError: '',
+    scoreFetchStatus: 'idle',
+    scoreFetchSignature: ''
+  };
+  const userPatch = { ...EMPTY_USER };
   if (userData.role) userPatch.role = userData.role;
   if (userData.name) userPatch.name = userData.name;
   ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName'].forEach((key) => {
@@ -106,8 +143,14 @@ export function mapUserToStatePatch(userData, base = {}) {
     userPatch.univChangeRemaining = userData.univChangeRemaining;
   }
   if (userData.marketingAgreed !== undefined) userPatch.marketingAgreed = userData.marketingAgreed === true;
+  if (userData.notificationPreferences && typeof userData.notificationPreferences === 'object') {
+    patch.notifications = {
+      ...(base.notifications || {}),
+      ...Object.fromEntries(['planner', 'weekly', 'report', 'billing'].map((key) => [key, userData.notificationPreferences[key] !== false]))
+    };
+  }
   if (Array.isArray(userData.linkedProviders)) userPatch.linkedProviders = userData.linkedProviders;
-  if (userData.quantitative && typeof userData.quantitative === 'object') userPatch.quantitative = userData.quantitative;
+  userPatch.quantitative = userData.quantitative && typeof userData.quantitative === 'object' ? userData.quantitative : {};
   if (userData.qualitative && typeof userData.qualitative === 'object') {
     userPatch.qualitative = userData.qualitative;
     if (userData.qualitative.status) patch.obGradeStatus = userData.qualitative.status;
@@ -120,34 +163,29 @@ export function mapUserToStatePatch(userData, base = {}) {
   if (userData.computedTier) {
     const tier = String(userData.computedTier).toLowerCase();
     patch.userTier = tier;
-    patch.selectedPlan = TIER_TO_PLAN_DISPLAY[tier] || (base.selectedPlan || '');
+    patch.selectedPlan = TIER_TO_PLAN_DISPLAY[tier] || '';
   }
   const normalizedTargetSlots = normalizeTargetUnivSlots(userData.targetUnivs);
   const explicitTargets = targetSlotsToList(normalizedTargetSlots);
   const targetList = explicitTargets.length ? explicitTargets : mapTargetUnivs(userData.qualitative?.targets || []);
-  if (targetList.length) {
-    userPatch.targetUniversity = targetList[0];
-    patch.targetMajor = targetList[0];
-    patch.homeTargetList = targetList;
-    patch.analysisTargetList = targetList;
-    patch.targetUnivSlots = explicitTargets.length
-      ? normalizedTargetSlots
-      : normalizeTargetUnivSlots([], targetList);
-    patch.selectedUniversityIndex = 0;
-  }
+  userPatch.targetUniversity = targetList[0] || '';
+  patch.targetMajor = targetList[0] || '';
+  patch.homeTargetList = targetList;
+  patch.analysisTargetList = targetList;
+  patch.targetUnivSlots = explicitTargets.length
+    ? normalizedTargetSlots
+    : normalizeTargetUnivSlots([], targetList);
+  patch.selectedUniversityIndex = 0;
+  patch.analysisSelectedIndex = 0;
+  patch.homeSlideIndex = 0;
   const mappedScore = mapQuantitativeToScores(userData.quantitative);
   if (mappedScore) {
-    patch.scores = { ...(base.scores || {}), ...mappedScore.scores };
-    patch.scoreState = { ...(base.scoreState || {}), ...mappedScore.scoreState };
-    patch.scoreEditState = { ...(base.scoreEditState || {}), ...mappedScore.scoreState };
+    patch.scores = { ...mappedScore.scores };
+    patch.scoreState = { ...createBlankScoreState(), ...mappedScore.scoreState };
+    patch.scoreEditState = { ...createBlankScoreState(), ...mappedScore.scoreState };
     patch.scoreExamType = mappedScore.examLabel;
     patch.scoreExamKey = mappedScore.examKey;
-  } else if (userData.quantitative && typeof userData.quantitative === 'object') {
-    const blankScoreState = createBlankScoreState();
-    patch.scores = {};
-    patch.scoreState = blankScoreState;
-    patch.scoreEditState = blankScoreState;
   }
-  if (Object.keys(userPatch).length) patch.user = userPatch;
+  patch.user = userPatch;
   return patch;
 }

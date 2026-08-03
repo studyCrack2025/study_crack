@@ -6,14 +6,8 @@
 //   - univKey = 공백 제거 대학+학과명. 서버 응답의 univ/major를 정규화해 저장한다.
 //   - 시험 전환은 examKey만 바뀔 뿐 캐시를 지우지 않는다 → 재진입 시 0 깜빡임 없이 즉시 표시.
 
-import { scoreExamTypeToKey } from './persistence.js';
-
 export function univKey(name) {
   return String(name || '').replace(/\s+/g, '');
-}
-
-export function examKeyOf(state = {}) {
-  return state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType) || 'active';
 }
 
 function stableValue(value) {
@@ -29,6 +23,18 @@ function stableValue(value) {
 export function buildScoreSignature(examKey, targetUniversities = [], userScores = {}) {
   const targets = (targetUniversities || []).map(univKey).filter(Boolean).sort();
   return `${examKey}::${targets.join('|')}::${JSON.stringify(stableValue(userScores || {}))}`;
+}
+
+export function canRetryInitialScore(error, attempts = 0) {
+  if (!error || attempts >= 2 || error.code === 'AUTH_EXPIRED') return false;
+  const status = Number(error.status || 0);
+  return status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+export function canRetryInitialScorePayload({ error = null, resultCount = 0 } = {}, attempts = 0) {
+  if (attempts >= 2) return false;
+  if (error) return canRetryInitialScore(error, attempts);
+  return Number(resultCount) === 0;
 }
 
 // 캐시에서 한 대학의 엔트리를 찾는다. 정확 일치 → 부분 포함(백엔드 학과명 정규화 차이 흡수).
@@ -60,7 +66,7 @@ export function buildUniversityCard(name, scoreCache = {}, examKey = '', fetchSt
     scoreStatus: hasScore ? 'confirmed' : pending ? 'pending' : 'empty',
     scoreUpdating: hasScore && fetchStatus === 'loading',
     gap: gap > 0 ? `+${gap}` : String(gap),
-    rank: (entry && entry.status) || (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전'),
+    rank: (entry && entry.status) || (hasScore ? (score >= 150 ? '안정' : score >= 100 ? '합격권' : '도전') : pending ? '분석 중' : '분석 대기'),
     color: (entry && entry.color) || ''
   };
 }
@@ -127,11 +133,12 @@ export function buildAnalysisScoreView(selectedMajor = '', scoreCache = {}, exam
   const hasScore = entry?.available !== false && Number.isFinite(numeric);
   const score = hasScore ? Math.round(numeric) : 0;
   const pct = Math.min((score / 250) * 100, 100);
-  const status = (entry && entry.status) || (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전');
-  const color = (entry && entry.color) || (score >= 150 ? '#22C55E' : score >= 100 ? '#2563EB' : '#F97316');
+  const pending = !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle');
+  const status = (entry && entry.status) || (hasScore ? (score >= 150 ? '안정권' : score >= 100 ? '합격권' : '도전') : pending ? '분석 중' : '분석 대기');
+  const color = (entry && entry.color) || (hasScore ? (score >= 150 ? '#22C55E' : score >= 100 ? '#2563EB' : '#F97316') : '');
   return {
     hasScore,
-    pending: !hasScore && (fetchStatus === 'loading' || fetchStatus === 'idle'),
+    pending,
     score,
     pct,
     status,

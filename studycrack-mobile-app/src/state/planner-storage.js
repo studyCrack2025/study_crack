@@ -37,12 +37,3 @@ export function normalizePlannerItems(items = []) {
     };
   });
 }
-
-export function normalizePlannerItemGroups(items = []) {
-  return normalizePlannerItems(items).reduce((acc, item) => {
-    const key = item.date || `${LEGACY_PLANNER_YEAR_MONTH}-14`;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {});
-}

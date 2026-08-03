@@ -1,0 +1,24 @@
+.social-callback-page{min-height:100dvh;display:grid;place-items:center;box-sizing:border-box;margin:0;padding:16px;background:#F5F7FA;color:#172033;font-family:"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:0;}
+.social-callback-page .social-callback-status{width:min(100%,358px);display:grid;justify-items:center;gap:12px;box-sizing:border-box;margin:0;padding:24px 20px;border:1px solid #E1E7F0;border-radius:16px;background:#FFFFFF;box-shadow:0 8px 24px rgba(27,58,107,.12);text-align:center;}
+.social-callback-page .social-callback-status .auth-logo-img{width:92px;height:auto;margin:0;object-fit:contain;}
+.social-callback-page #statusMsg{margin:0;color:#64748B;font-size:14px;font-weight:600;line-height:1.6;}
+.social-callback-page .modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:16px;background:rgba(15,23,42,.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.social-callback-page .modal.hidden{display:none!important;}
+.social-callback-page .modal-content{position:relative;width:min(100%,420px);max-width:100%;max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-sizing:border-box;margin:0;padding:20px;border:1px solid #E1E7F0;border-radius:20px;background:#FFFFFF;box-shadow:0 18px 44px rgba(15,23,42,.18);overflow:auto;text-align:left;}
+.social-callback-page .modal-content h3{margin:0 40px 6px 0;color:#172033;font-size:18px;font-weight:800;line-height:1.35;letter-spacing:0;}
+.social-callback-page .modal-desc{margin:0;color:#64748B;font-size:12px;font-weight:600;line-height:1.5;}
+.social-callback-page .close-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:12px;background:#F8FAFC;color:#64748B;font-size:22px;line-height:1;}
+.social-callback-page .social-terms-list{display:grid;margin:16px 0 12px;border:1px solid #E1E7F0;border-radius:12px;background:#FFFFFF;overflow:hidden;}
+.social-callback-page .social-terms-all{min-height:50px;display:flex;align-items:center;gap:8px;box-sizing:border-box;padding:0 12px;background:#F8FAFC;color:#172033;font-size:13px;}
+.social-callback-page .social-terms-divider{display:none;}
+.social-callback-page .terms-item{min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;box-sizing:border-box;margin:0;padding:8px 10px 8px 12px;border-bottom:1px solid #E1E7F0;color:#172033;font-size:12px;font-weight:600;line-height:1.4;}
+.social-callback-page .terms-item:last-child{border-bottom:0;}
+.social-callback-page .terms-item label{min-width:0;display:flex;align-items:flex-start;gap:7px;margin:0;}
+.social-callback-page .terms-item input,.social-callback-page .social-terms-all input{width:18px;height:18px;flex:0 0 18px;margin:0;accent-color:#4C79EE;}
+.social-callback-page .terms-item a{min-width:58px;height:32px;display:inline-flex;align-items:center;justify-content:center;margin:0;padding:0 8px;border-radius:10px;background:#EEF3FB;color:#254579;font-size:10px;font-weight:800;text-decoration:none;}
+.social-callback-page .social-terms-note{margin:0 0 16px;color:#64748B;font-size:11px;font-weight:600;line-height:1.5;}
+.social-callback-page .auth-btn{width:100%;min-height:48px;margin:0;border:0;border-radius:12px;background:#254579;color:#FFFFFF;font-size:14px;font-weight:800;}
+.social-callback-page .term-modal-content{padding:0;overflow:hidden;}
+.social-callback-page .term-modal-content h3{flex:0 0 auto;margin:0;padding:18px 56px 16px 20px;border-bottom:1px solid #E1E7F0;}
+.social-callback-page .term-text-box{flex:1 1 auto;min-height:0;margin:0;padding:16px 20px;color:#172033;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow:auto;}
+@media (max-width:360px){.social-callback-page.auth-body{padding:12px;}.social-callback-page.auth-body .modal{padding:12px;}.social-callback-page.auth-body .modal-content{padding:16px;}.social-callback-page.auth-body .terms-item{font-size:11px;}.social-callback-page.auth-body .term-modal-content{padding:0;}}

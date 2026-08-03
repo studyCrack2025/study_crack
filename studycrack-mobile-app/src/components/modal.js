@@ -4,10 +4,10 @@ export function renderModal({
   dismissAction = '',
   overlayClass = '',
   panelClass = '',
-  overlayBaseClass = 'home-modal-overlay',
-  panelBaseClass = 'home-modal'
+  overlayBaseClass = 'sc-overlay sc-overlay--modal home-modal-overlay',
+  panelBaseClass = 'sc-modal home-modal'
 } = {}) {
   const overlay = `${overlayBaseClass} ${overlayClass}`.trim();
   const panel = `${panelBaseClass} ${panelClass}`.trim();
-  return `<div class="${overlay}" data-action="${dismissAction}"><div class="${panel}" data-action="noopModal">${body}</div></div>`;
+  return `<div class="${overlay}" data-action="${dismissAction}"><div class="${panel}" data-action="noopModal" role="dialog" aria-modal="true">${body}</div></div>`;
 }

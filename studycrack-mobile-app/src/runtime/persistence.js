@@ -191,6 +191,74 @@ export function saveQuantitative({ apiFetch, userApiUrl, quantitative } = {}) {
   });
 }
 
+function isConvertedMetric(metric) {
+  return metric
+    && Number.isFinite(Number(metric.std))
+    && Number.isFinite(Number(metric.pct))
+    && Number.isFinite(Number(metric.grd));
+}
+
+async function convertSubjectScore({ apiFetch, analysisApiUrl, payload }) {
+  const response = await apiFetch(analysisApiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'convert_score', ...payload })
+  });
+  if (!response?.ok) {
+    const error = await response?.json?.().catch(() => null);
+    throw new Error(error?.error || error?.message || '성적 환산에 실패했습니다.');
+  }
+  const metric = await response.json().catch(() => null);
+  if (!isConvertedMetric(metric)) {
+    throw new Error(metric?.error || '입력한 원점수 조합에 해당하는 성적표 데이터를 찾지 못했습니다.');
+  }
+  return { std: Number(metric.std), pct: Number(metric.pct), grd: Number(metric.grd) };
+}
+
+export async function convertExamScores({ apiFetch, analysisApiUrl, examMode, examData } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl) {
+    return { ok: false, error: '성적 환산 API 설정을 불러오지 못했습니다.' };
+  }
+  if (!examData?.kor || !examData?.math || !examData?.inq1 || !examData?.inq2) {
+    return { ok: false, error: '환산할 성적 정보가 충분하지 않습니다.' };
+  }
+  try {
+    const [kor, math, inq1, inq2] = await Promise.all([
+      convertSubjectScore({
+        apiFetch,
+        analysisApiUrl,
+        payload: { subject: 'kor', score: examData.kor.raw, opt: examData.kor.opt, common: examData.kor.common, elective: examData.kor.elective, month: examMode }
+      }),
+      convertSubjectScore({
+        apiFetch,
+        analysisApiUrl,
+        payload: { subject: 'math', score: examData.math.raw, opt: examData.math.opt, common: examData.math.common, elective: examData.math.elective, month: examMode }
+      }),
+      convertSubjectScore({
+        apiFetch,
+        analysisApiUrl,
+        payload: { subject: 'inq1', score: examData.inq1.raw, subName: examData.inq1.name, month: examMode }
+      }),
+      convertSubjectScore({
+        apiFetch,
+        analysisApiUrl,
+        payload: { subject: 'inq2', score: examData.inq2.raw, subName: examData.inq2.name, month: examMode }
+      })
+    ]);
+    return {
+      ok: true,
+      examData: {
+        ...examData,
+        kor: { ...examData.kor, ...kor },
+        math: { ...examData.math, ...math },
+        inq1: { ...examData.inq1, ...inq1 },
+        inq2: { ...examData.inq2, ...inq2 }
+      }
+    };
+  } catch (error) {
+    return { ok: false, error: error?.message || '성적 환산에 실패했습니다.' };
+  }
+}
+
 export function saveQualitative({ apiFetch, userApiUrl, qualitative } = {}) {
   return postUserData({
     apiFetch,
@@ -200,25 +268,46 @@ export function saveQualitative({ apiFetch, userApiUrl, qualitative } = {}) {
   });
 }
 
-function normalizeUniversityCatalog(data) {
-  const list = Array.isArray(data) ? data : (Array.isArray(data?.univs) ? data.univs : []);
-  return Array.from(
-    new Set(
-      list.flatMap((item) => {
-        const univName = String(item?.univName || item?.univ || '').trim();
-        const majors = Array.isArray(item?.majors) ? item.majors : [];
-        if (!univName) return [];
-        if (!majors.length) return [univName];
-        return majors
-          .map((major) => {
-            const name = typeof major === 'string' ? major : major?.name;
-            const majorName = String(name || '').trim();
-            return majorName ? `${univName} ${majorName}` : univName;
-          })
-          .filter(Boolean);
-      })
-    )
+export function saveStudySession({ apiFetch, userApiUrl, session } = {}) {
+  return postUserData({ apiFetch, userApiUrl, type: 'record_study_session', data: session || {} });
+}
+
+export function saveNotificationPreferences({ apiFetch, userApiUrl, preferences } = {}) {
+  const notificationPreferences = Object.fromEntries(
+    ['planner', 'weekly', 'report', 'billing'].map((key) => [key, preferences?.[key] !== false])
   );
+  return postUserData({ apiFetch, userApiUrl, type: 'update_member_info', data: { notificationPreferences } });
+}
+
+export async function fetchStudyRanking({ apiFetch, userApiUrl, period = 'daily' } = {}) {
+  if (typeof apiFetch !== 'function' || !userApiUrl) return { ok: false, rows: [], me: null, error: '랭킹 API 설정을 불러오지 못했습니다.' };
+  try {
+    const response = await apiFetch(userApiUrl, { method: 'POST', body: JSON.stringify({ type: 'get_study_ranking', data: { period } }) });
+    if (!response?.ok) {
+      const error = await response?.json?.().catch(() => null);
+      return { ok: false, rows: [], me: null, error: error?.error || error?.message || '랭킹을 불러오지 못했습니다.' };
+    }
+    const data = await response.json().catch(() => null);
+    return { ok: true, rows: Array.isArray(data?.rows) ? data.rows : [], me: data?.me || null, error: '' };
+  } catch (error) {
+    return { ok: false, rows: [], me: null, error: error?.message || '랭킹을 불러오지 못했습니다.' };
+  }
+}
+
+export function normalizeUniversityCatalog(data) {
+  const list = Array.isArray(data) ? data : (Array.isArray(data?.univs) ? data.univs : []);
+  const map = new Map();
+  list.forEach((item) => {
+    const univName = String(item?.univName || item?.univ || '').trim();
+    if (!univName) return;
+    const majors = (Array.isArray(item?.majors) ? item.majors : [])
+      .map((major) => String(typeof major === 'string' ? major : major?.name || '').trim())
+      .filter(Boolean);
+    const current = map.get(univName) || [];
+    map.set(univName, Array.from(new Set([...current, ...majors])).sort((a, b) => a.localeCompare(b, 'ko')));
+  });
+  return Array.from(map, ([univName, majors]) => ({ univName, majors }))
+    .sort((a, b) => a.univName.localeCompare(b.univName, 'ko'));
 }
 
 export async function fetchUniversityCatalog({ apiFetch, analysisApiUrl } = {}) {
@@ -233,6 +322,47 @@ export async function fetchUniversityCatalog({ apiFetch, analysisApiUrl } = {}) 
     return normalizeUniversityCatalog(data);
   } catch (_error) {
     return [];
+  }
+}
+
+function inferRecommendationStream(examData, savedStream = '') {
+  const normalized = String(savedStream || '').toLowerCase();
+  if (normalized === 'natural' || /자연|공학|의치|약수|간호/.test(normalized)) return 'natural';
+  if (normalized === 'humanities' || /인문|사회|상경|사범|교대/.test(normalized)) return 'humanities';
+  const mathOpt = String(examData?.math?.opt || '').replace(/\s+/g, '');
+  const inquiries = [examData?.inq1?.name, examData?.inq2?.name].map((name) => String(name || '').replace(/\s+/g, ''));
+  const hasScience = inquiries.some((name) => ['물리학', '화학', '생명과학', '지구과학'].some((subject) => name.includes(subject)));
+  return /미적분|기하/.test(mathOpt) || hasScience ? 'natural' : 'humanities';
+}
+
+export async function fetchUniversityRecommendations({ apiFetch, analysisApiUrl, examData, examMode, savedStream = '', excludeTargets = [] } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl || !examData) return { ok: false, recommendations: [], error: '추천에 필요한 성적 정보가 없습니다.' };
+  const totalStdScore = ['kor', 'math', 'inq1', 'inq2'].reduce((sum, key) => sum + (Number(examData?.[key]?.std) || 0), 0);
+  if (!totalStdScore) return { ok: false, recommendations: [], error: '표준점수가 포함된 성적을 먼저 저장해주세요.' };
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'get_tutorial_recommendations',
+        userScores: examData,
+        stream: inferRecommendationStream(examData, savedStream),
+        totalStdScore,
+        examMode,
+        excludeUnivs: (excludeTargets || []).map(parseTargetMajor).filter(Boolean)
+      })
+    });
+    if (!response?.ok) {
+      const error = await response?.json?.().catch(() => null);
+      return { ok: false, recommendations: [], error: error?.error || error?.message || '추천 대학을 불러오지 못했습니다.' };
+    }
+    const data = await response.json().catch(() => null);
+    const recommendations = Array.from(new Set((Array.isArray(data?.selected) ? data.selected : [])
+      .map((item) => `${String(item?.school || item?.univ || '').trim()} ${String(item?.major || '').trim()}`.trim())
+      .filter((label) => label && label.includes(' '))))
+      .slice(0, 3);
+    return { ok: true, recommendations, error: recommendations.length ? '' : '현재 성적으로 추천할 수 있는 대학이 없습니다.' };
+  } catch (error) {
+    return { ok: false, recommendations: [], error: error?.message || '추천 대학을 불러오지 못했습니다.' };
   }
 }
 
@@ -320,6 +450,40 @@ export async function fetchMobileScoreSimulation({ apiFetch, analysisApiUrl, tar
       simulationResults: [],
       simulationError: await readApiError(error, '시뮬레이션 결과를 불러오지 못했습니다.')
     };
+  }
+}
+
+export async function fetchMobileBacktrace({ apiFetch, analysisApiUrl, targetMajor, userScores, examMode } = {}) {
+  if (typeof apiFetch !== 'function' || !analysisApiUrl || !userScores) {
+    return { ok: false, plan: null, error: '역산에 필요한 성적 정보를 찾지 못했습니다.' };
+  }
+  const targetUniv = parseTargetMajor(targetMajor);
+  if (!targetUniv?.univ || !targetUniv?.major) {
+    return { ok: false, plan: null, error: '분석할 대학과 학과를 먼저 선택해주세요.' };
+  }
+  try {
+    const response = await apiFetch(analysisApiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'backtrace_required_raw',
+        targetUniv,
+        userScores,
+        examMode,
+        targetUiMin: 100,
+        targetUiMax: 150,
+        maxTotalRaw: 20
+      })
+    });
+    if (!response?.ok) {
+      const error = await readApiError(response, '필요 원점수 조합을 계산하지 못했습니다.');
+      return { ok: false, plan: null, error: error.message, status: error.status, code: error.code };
+    }
+    const body = await response.json().catch(() => null);
+    const plan = body?.result || body?.backtrace_plan || null;
+    return { ok: true, plan, error: plan ? '' : '현재 조건에서 도달 가능한 조합을 찾지 못했습니다.' };
+  } catch (error) {
+    const detail = await readApiError(error, '필요 원점수 조합을 계산하지 못했습니다.');
+    return { ok: false, plan: null, error: detail.message, status: detail.status, code: detail.code };
   }
 }
 

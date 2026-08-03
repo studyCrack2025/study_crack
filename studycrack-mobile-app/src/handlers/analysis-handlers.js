@@ -11,10 +11,6 @@ function getDocument(ctx) {
   return ctx.document || globalThis.document;
 }
 
-function queryAll(ctx, selector) {
-  return Array.from(getDocument(ctx)?.querySelectorAll?.(selector) || []);
-}
-
 function getScrollY(ctx) {
   const win = getWindow(ctx);
   return win.scrollY || win.pageYOffset || 0;
@@ -28,23 +24,6 @@ function restoreScroll(ctx, y) {
       win.scrollTo?.({ top: y, left: 0, behavior: 'auto' });
     });
   });
-}
-
-function setAnalysisModeDom(ctx, mode) {
-  queryAll(ctx, '.analysis-v2-tab').forEach((tabEl) => {
-    tabEl.classList?.toggle?.('active', tabEl.getAttribute?.('data-analysis-mode') === mode);
-  });
-  const doc = getDocument(ctx);
-  if (doc?.body?.dataset) doc.body.dataset.analysisMode = mode;
-  const summarySection = doc?.querySelector?.('.analysis-v2-summary');
-  const simulationSection = doc?.querySelector?.('.analysis-v2-compare-card');
-  if (!summarySection || !simulationSection) return false;
-  const showSummary = mode === 'summary';
-  summarySection.style.display = showSummary ? '' : 'none';
-  summarySection.hidden = !showSummary;
-  simulationSection.style.display = showSummary ? 'none' : '';
-  simulationSection.hidden = showSummary;
-  return true;
 }
 
 function findUniversitySearchInput(actionEl) {
@@ -87,7 +66,6 @@ export function createAnalysisHandlers(ctx) {
     setAddingUniversity = noop,
     setAnalysisBarProjectionTarget = noop,
     setAnalysisHighlightedSubject = noop,
-    setAnalysisMode = noop,
     setAnalysisSearchOpen = noop,
     setAnalysisSearchTerm = noop,
     setAnalysisTargetList = noop,
@@ -105,19 +83,14 @@ export function createAnalysisHandlers(ctx) {
     setTargetUnivSlots = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    setUniversitySelectedName = noop,
+    setUniversityRecommendationRetryTick = noop,
     persistTargetUnivs = noop,
     timeout = setTimeout,
     updatePossibleUnivSlider = noop
   } = ctx;
 
   return {
-    setAnalysisMode({ actionEl }) {
-      const mode = getData(actionEl, 'analysis-mode', 'summary');
-      if (ctx.isIOSSafari?.() && ctx.screen === 'analysis' && setAnalysisModeDom(ctx, mode)) return true;
-      setAnalysisMode(mode);
-      return true;
-    },
-
     setScoreView({ actionEl, event }) {
       const nextView = getData(actionEl, 'score-view', 'current');
       if (ctx.isIOSSafari?.()) {
@@ -192,7 +165,6 @@ export function createAnalysisHandlers(ctx) {
       if (!confirm(`${major} 분석을 보시겠어요?`)) return false;
       setTargetMajor(major);
       goto?.('analysis');
-      setAnalysisMode('summary');
       return true;
     },
 
@@ -215,6 +187,25 @@ export function createAnalysisHandlers(ctx) {
       renderUniversityResultsOnly(value, input || actionEl);
       const doc = getDocument(ctx);
       if (input && doc?.activeElement !== input) input.focus?.({ preventScroll: true });
+      return true;
+    },
+
+    selectUniversityForMajor({ actionEl }) {
+      const university = getData(actionEl, 'university-name');
+      if (!university) return false;
+      setUniversitySelectedName(university);
+      setAnalysisSearchTerm('');
+      return true;
+    },
+
+    backToUniversityList() {
+      setUniversitySelectedName('');
+      setAnalysisSearchTerm('');
+      return true;
+    },
+
+    refreshUniversityRecommendations() {
+      setUniversityRecommendationRetryTick((value) => Number(value || 0) + 1);
       return true;
     },
 
