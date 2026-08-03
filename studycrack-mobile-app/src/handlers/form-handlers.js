@@ -259,6 +259,12 @@ export function createFormHandlers(ctx) {
     }
 
     const field = target.getAttribute('data-field');
+    if (['v2e-english', 'v2e-history'].includes(field) && target.classList?.contains('score-grade-input')) {
+      const grade = String(target.value || '').replace(/[^1-9]+/g, '').slice(0, 1);
+      if (target.value !== grade) target.value = grade;
+      target.setAttribute('aria-invalid', grade ? 'false' : 'true');
+      return { handled: true, field };
+    }
     if (field?.startsWith('v2e-') && target.classList?.contains('score-direct-input')) {
       const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 3);
       if (target.value !== numeric) target.value = numeric;

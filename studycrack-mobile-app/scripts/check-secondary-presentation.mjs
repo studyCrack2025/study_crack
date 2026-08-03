@@ -26,6 +26,15 @@ assert.match(profile, /data-action="setRankingPeriod"/);
 assert.doesNotMatch(profile, /ranking-podium|podium-item/);
 assert.match(profile, /data-action="saveQualInfo"/);
 assert.match(profile, /data-action="openScoreEdit"/);
+assert.match(profile, /class="score-grade-input"/);
+assert.match(profile, /class="score-inquiry-grid"/);
+assert.doesNotMatch(profile, /score-grade-grid|score-grade-card|setScoreEditGrade/);
+assert.match(styles, /\.sc-secondary-page\{/);
+
+const scoreStyles = read('../src/styles/screens/score-input.css');
+assert.match(scoreStyles, /\.score-grade-input\{/);
+assert.match(scoreStyles, /\.score-inquiry-grid\{/);
+assert.doesNotMatch(scoreStyles, /\.score-grade-grid\{|\.score-grade-card\{/);
 
 assert.match(mypage, /role="switch" aria-checked=/);
 assert.match(mypage, /const NOTI_PAGE_SIZE = 7/);

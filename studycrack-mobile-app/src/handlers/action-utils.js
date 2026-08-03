@@ -7,7 +7,6 @@ export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
   'closeDrawer',
   'openScoreEdit',
   'closeScoreEdit',
-  'setScoreEditGrade',
   'openCalendarSheet',
   'closeCalendarSheet',
   'selectCalendarDate',

@@ -189,7 +189,6 @@
     "setObGradeStatus",
     "setPlannerCalendarMode",
     "setRankingPeriod",
-    "setScoreEditGrade",
     "setScoreView",
     "skipOb2WithoutScore",
     "slideNext",

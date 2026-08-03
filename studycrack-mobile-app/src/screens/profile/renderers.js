@@ -39,16 +39,9 @@ function renderInquiryOptions(selected = '') {
   return `<option value="" ${saved ? '' : 'selected'}>과목 선택</option>${extra}${INQUIRY_SUBJECTS.map((subject) => `<option value="${escapeHtml(subject)}" ${saved === subject ? 'selected' : ''}>${escapeHtml(subject)}</option>`).join('')}`;
 }
 
-function renderGradeSelect(field, selected = '') {
-  return `<select class="planner-input" data-field="${field}"><option value="">등급 선택</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `<option value="${n}" ${String(selected) === String(n) ? 'selected' : ''}>${n}등급</option>`).join('')}</select>`;
-}
-
-function renderGradeSegment(field, selected = '') {
-  const key = field === 'v2e-english' ? 'english' : 'history';
-  const cards = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-    .map((n) => `<button type="button" class="score-grade-card ${String(selected) === String(n) ? 'active' : ''}" data-action="setScoreEditGrade" data-grade-field="${key}" data-grade-value="${n}"><b>${n}</b><span>등급</span></button>`)
-    .join('');
-  return `<span class="score-grade-label">해당 등급을 선택하세요</span><div class="score-grade-grid" role="group" aria-label="등급 선택">${cards}</div>`;
+function renderGradeInput(field, selected = '', title = '') {
+  const shownValue = /^[1-9]$/.test(String(selected)) ? String(selected) : '';
+  return `<label class="score-grade-field"><span>등급</span><div class="score-grade-control"><input class="score-grade-input" data-field="${field}" data-score-max="9" value="${shownValue}" type="text" inputmode="numeric" pattern="[1-9]" maxlength="1" autocomplete="off" placeholder="1" aria-label="${title} 등급"/><em>등급</em></div><small>1~9등급 중 숫자 하나를 입력해 주세요.</small></label>`;
 }
 
 function renderRawMetric(raw) {
@@ -74,7 +67,8 @@ function subjectHint(missing, text) {
 
 function renderDirectScoreInput({ field, value, max, label }) {
   const shownValue = value === 0 || value === '0' ? '0' : String(value || '');
-  return `<label class="score-direct-field"><span>${label}</span><div class="score-direct-control"><input class="planner-input score-direct-input" data-field="${field}" data-score-max="${max}" value="${escapeHtml(shownValue)}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="0" aria-label="${label} 원점수"/><em>점</em></div><small>0점 또는 2~${max - 2}점, ${max}점</small></label>`;
+  const ariaLabel = label.includes('원점수') ? label : `${label} 원점수`;
+  return `<label class="score-direct-field"><span>${label}</span><div class="score-direct-control"><input class="planner-input score-direct-input" data-field="${field}" data-score-max="${max}" value="${escapeHtml(shownValue)}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="0" aria-label="${ariaLabel}"/><em>점</em></div><small>0점 또는 2~${max - 2}점, ${max}점</small></label>`;
 }
 
 const SCORE_STEPS = [
@@ -114,21 +108,18 @@ function renderRawSubjectPanel({ title, selField, options, commonField, elective
 
 function renderGradeSubjectPanel({ title, field, value }) {
   return `<div class="score-step-panel">
-    <div class="score-step-panel-head"><b>${title}</b><span>절대평가 · 등급만 선택</span></div>
-    ${renderGradeSegment(field, value)}
+    <div class="score-step-panel-head"><b>${title}</b><span>절대평가 · 등급 입력</span></div>
+    ${renderGradeInput(field, value, title)}
     ${value
       ? `<div class="score-step-confirm"><span class="score-step-check">✓</span>${title} ${escapeHtml(String(value))}등급으로 입력됐어요</div>`
-      : '<div class="score-step-warn">아래에서 등급을 선택해 주세요</div>'}
+      : '<div class="score-step-warn">1~9 사이의 등급을 입력해 주세요</div>'}
   </div>`;
 }
 
 function renderInquirySubjectPanel({ title, subjField, scoreField, inq }) {
   return `<div class="score-step-panel">
     <div class="score-step-panel-head"><b>${title}</b><span>탐구 과목 + 원점수</span></div>
-    <label class="score-field-label">탐구 과목</label>
-    <select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select>
-    <label class="score-field-label">원점수</label>
-    <div class="score-direct-single">${renderDirectScoreInput({ field: scoreField, value: inq.score, max: 50, label: '탐구 원점수' })}</div>
+    <div class="score-inquiry-grid"><label class="score-inquiry-field"><span>탐구 과목</span><select class="planner-input" data-field="${subjField}">${renderInquiryOptions(inq.subject)}</select><small>응시한 선택 과목</small></label>${renderDirectScoreInput({ field: scoreField, value: inq.score, max: 50, label: '원점수' })}</div>
     <p class="score-direct-help">탐구도 1점과 49점처럼 문항 배점상 불가능한 점수는 저장할 수 없어요.</p>
     ${renderRawMetric(inq.score)}
   </div>`;
