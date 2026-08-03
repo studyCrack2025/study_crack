@@ -557,6 +557,10 @@ function MobileApp() {
     [getUserApiBinding]
   );
 
+  const refreshStudyRanking = useCallback(() => {
+    setState({ rankingRefreshTick: Number(stateRef.current.rankingRefreshTick || 0) + 1 });
+  }, []);
+
   const persistNotificationPreferences = useCallback(
     (preferences) => saveNotificationPreferences({ ...getUserApiBinding(), preferences }),
     [getUserApiBinding]
@@ -758,6 +762,7 @@ function MobileApp() {
     persistQuantitative,
     persistQualitative,
     persistStudySession,
+    refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,
     persistProReportRequest,
@@ -854,7 +859,7 @@ function MobileApp() {
     return () => {
       cancelled = true;
     };
-  }, [getUserApiBinding, state.screen, state.rankingPeriod, state.userLoadStatus]);
+  }, [getUserApiBinding, state.rankingRefreshTick, state.screen, state.rankingPeriod, state.userLoadStatus]);
 
   useEffect(() => {
     if (state.screen === 'accountInfo') return;
@@ -1001,14 +1006,17 @@ function MobileApp() {
     if (typeof window === 'undefined') return undefined;
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
-    fetchUniversityCatalog(getAnalysisApiBinding()).then((catalog) => {
-      if (cancelled || !catalog.length) return;
-      setState({ universityCatalog: catalog });
+    setState({ universityCatalogStatus: 'loading', universityCatalogError: '' });
+    fetchUniversityCatalog(getAnalysisApiBinding()).then((result) => {
+      if (cancelled) return;
+      setState(result.ok
+        ? { universityCatalog: result.catalog, universityCatalogStatus: 'ready', universityCatalogError: '' }
+        : { universityCatalog: [], universityCatalogStatus: 'error', universityCatalogError: result.error || '대학·학과 목록을 불러오지 못했습니다.' });
     });
     return () => {
       cancelled = true;
     };
-  }, [getAnalysisApiBinding]);
+  }, [getAnalysisApiBinding, state.universityCatalogRetryTick]);
 
   useEffect(() => {
     if (state.screen !== 'addUniversity' || state.userLoadStatus !== 'ready') return undefined;

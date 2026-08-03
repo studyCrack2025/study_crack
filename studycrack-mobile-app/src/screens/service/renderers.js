@@ -190,7 +190,7 @@ export function renderWeeklyScreen(ctx) {
   if (!latest) {
     return layout(
       `<div class="weekly-page mobile-card-stack"><div class="weekly-head"><button class="weekly-back" data-action="back">←</button><h3>주간 점검</h3><span></span></div>
-       <div class="card weekly-feedback"><p class="sub" style="margin:0 0 10px;">주간 점검 기록이 없습니다.</p><div class="feedback-item">${icon('check', true)}학습 코칭 화면에서 이번 주 점검을 제출하면 이곳에 피드백이 표시됩니다.</div><img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/></div>
+       <div class="card weekly-feedback"><p class="sub" style="margin:0 0 10px;">주간 점검 기록이 없습니다.</p><div class="weekly-feedback-body"><div class="weekly-feedback-list"><div class="feedback-item">${icon('check', true)}학습 코칭 화면에서 이번 주 점검을 제출하면 이곳에 피드백이 표시됩니다.</div></div><img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/></div></div>
        <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="strategy">학습 코칭으로 이동</button></div></div>`,
       true
     );
@@ -214,8 +214,7 @@ export function renderWeeklyScreen(ctx) {
        <div class="card weekly-rate"><div><p class="sub">피드백 상태</p><h2>${done ? '도착' : '대기'}</h2></div><span class="badge">${escapeHtml(latest.tutorName || '튜터 확인 중')}</span></div>
        <div class="card weekly-feedback">
          <p class="sub" style="margin:0 0 10px;">주간 요약 피드백</p>
-         ${feedbackItems.map((item) => `<div class="feedback-item">${icon('check', true)}${escapeHtml(item)}</div>`).join('')}
-         <img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/>
+         <div class="weekly-feedback-body"><div class="weekly-feedback-list">${feedbackItems.map((item) => `<div class="feedback-item">${icon('check', true)}${escapeHtml(item)}</div>`).join('')}</div><img loading="lazy" decoding="async" src="${escapeHtml(crackySrc)}" class="weekly-char crackie" alt="크랙이"/></div>
        </div>
        <div class="cta-wrapper"><button class="btn btn-primary weekly-next cta-btn" data-action="goto" data-target="planner">다음 주 계획 세우기</button></div></div>`,
     true

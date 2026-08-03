@@ -10,13 +10,13 @@
 .coaching-mark i:nth-child(1){height:10px;}
 .coaching-mark i:nth-child(2){height:17px;}
 .coaching-mark i:nth-child(3){height:23px;}
-.coaching-hero{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:var(--sc-space-12);align-items:start;padding:var(--sc-space-16);border:1px solid color-mix(in srgb,var(--sc-action-positive) 58%,var(--sc-brand-navy));border-radius:var(--sc-radius-card);background:var(--sc-action-positive);color:var(--sc-brand-navy-deep);box-shadow:0 8px 28px color-mix(in srgb,var(--sc-action-positive) 24%,transparent);overflow:hidden;}
+.coaching-hero{display:grid;grid-template-columns:minmax(0,1fr) 46px;gap:var(--sc-space-12);align-items:start;padding:var(--sc-space-16);border:1px solid color-mix(in srgb,var(--sc-action-positive) 34%,var(--sc-border-subtle));border-radius:var(--sc-radius-card);background:var(--sc-surface-positive);color:var(--sc-ink);box-shadow:var(--sc-shadow-normal);overflow:hidden;}
 .coaching-hero-copy > span{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border:1px solid color-mix(in srgb,var(--sc-brand-navy-deep) 24%,transparent);border-radius:var(--sc-radius-pill);background:var(--sc-on-brand-surface-strong);color:var(--sc-brand-navy-deep);font-size:var(--sc-type-micro);font-weight:850;}
-.coaching-hero-copy h3{margin:9px 0 0;color:var(--sc-brand-navy-deep);font-size:var(--sc-type-section);font-weight:850;line-height:1.4;word-break:keep-all;}
-.coaching-hero-copy p{margin:6px 0 0;color:color-mix(in srgb,var(--sc-brand-navy-deep) 74%,transparent);font-size:var(--sc-type-caption);font-weight:650;line-height:1.55;word-break:keep-all;}
+.coaching-hero-copy h3{margin:9px 0 0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:850;line-height:1.4;word-break:keep-all;}
+.coaching-hero-copy p{margin:6px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:650;line-height:1.55;word-break:keep-all;}
 .coaching-hero > .coaching-mark{border-color:color-mix(in srgb,var(--sc-brand-navy-deep) 22%,transparent);background:var(--sc-on-brand-surface-strong);}
 .coaching-hero > .coaching-mark i{background:var(--sc-brand-navy-deep);}
-.coaching-hero > button{grid-column:1/-1;width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;gap:var(--sc-space-8);padding:0 var(--sc-space-16);border:0;border-radius:var(--sc-radius-control);background:var(--sc-on-brand);color:var(--sc-brand-navy-deep);font:inherit;font-size:var(--sc-type-body);font-weight:850;box-shadow:var(--sc-shadow-normal);}
+.coaching-hero > button{grid-column:1/-1;width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;gap:var(--sc-space-8);padding:0 var(--sc-space-16);border:0;border-radius:var(--sc-radius-control);background:var(--sc-brand-navy-deep);color:var(--sc-on-brand);font:inherit;font-size:var(--sc-type-body);font-weight:850;box-shadow:var(--sc-shadow-normal);}
 .coaching-hero > button b{font-size:19px;font-weight:500;line-height:1;}
 .coaching-history{display:grid;gap:var(--sc-space-12);padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .coaching-history-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sc-space-12);}

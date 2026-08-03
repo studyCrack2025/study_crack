@@ -22,7 +22,7 @@
   "screens": {
     "home": { "profile": "main", "actions": ["setHomeSlide", "openCalendarSheet", "openStudySubjectSheet", "openNotificationModal", "goRanking", "openAnalysisSearchFromHome", "removeAnalysisTarget", "retryInit"] },
     "analysis": { "profile": "main", "actions": ["selectTarget", "setScoreView", "highlightSimSubject", "openAnalysisSearchFromHome"] },
-    "addUniversity": { "profile": "secondary", "actions": ["refreshUniversityRecommendations", "selectUniversityForMajor", "runUniversitySearch", "addAnalysisTarget", "backToUniversityList"] },
+    "addUniversity": { "profile": "secondary", "actions": ["refreshUniversityRecommendations", "retryUniversityCatalog", "selectUniversityForMajor", "runUniversitySearch", "addAnalysisTarget", "backToUniversityList"] },
     "ranking": { "profile": "secondary", "actions": ["setRankingPeriod", "back"] },
     "qualInfo": { "profile": "input", "actions": ["saveQualInfo", "back"] },
     "scoreInfo": { "profile": "input", "actions": ["applyScoreExam", "openScoreEdit", "saveScoreSubject", "closeScoreEdit"] },
@@ -161,6 +161,7 @@
     "requestPhoneChange",
     "retryInit",
     "retryMbti",
+    "retryUniversityCatalog",
     "runUniversitySearch",
     "saveCalendarEvent",
     "saveMarketingConsent",

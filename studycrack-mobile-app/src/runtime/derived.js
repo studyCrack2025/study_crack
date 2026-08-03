@@ -468,8 +468,10 @@ export function buildAnalysisDerived(state = {}) {
   const analysisRecommended = universityRecommendations;
   const hasUniversityCatalog = Array.isArray(universityCatalog) && universityCatalog.length;
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
+  const normalizeCatalogKey = (value) => String(value || '').trim().replace(/\s+/g, '');
+  const selectedUniversityKey = normalizeCatalogKey(universitySelectedName);
   const selectedCatalog = hasUniversityCatalog
-    ? universityCatalog.find((item) => item.univName === universitySelectedName)
+    ? universityCatalog.find((item) => normalizeCatalogKey(item.univName) === selectedUniversityKey)
     : null;
   const universityNames = hasUniversityCatalog ? universityCatalog.map((item) => item.univName) : [];
   const analysisSearchList = (universitySelectedName

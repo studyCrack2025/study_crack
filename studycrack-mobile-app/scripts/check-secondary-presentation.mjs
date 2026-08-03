@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const analysis = read('../src/screens/analysis/renderers.js');
+const analysis = read('../src/screens/analysis/AddUniversityScreen.jsx');
 const profile = read('../src/screens/profile/renderers.js');
 const mypage = read('../src/screens/mypage/renderers.js');
 const account = read('../src/screens/mypage/AccountInfoScreen.jsx');
@@ -11,10 +11,14 @@ const secondaryScreen = read('../src/components/SecondaryScreen.jsx');
 const service = read('../src/screens/service/renderers.js');
 const styles = read('../src/styles/components/secondary.css');
 
-for (const source of [analysis, profile, mypage, service]) {
+for (const source of [profile, mypage, service]) {
   assert.match(source, /sc-secondary-page/);
   assert.match(source, /renderSecondaryIntro/);
 }
+assert.match(analysis, /sc-secondary-page/);
+assert.match(analysis, /SecondaryIntro/);
+assert.match(analysis, /defaultValue=\{analysisSearchTerm\}/);
+assert.match(analysis, /data-action="retryUniversityCatalog"/);
 
 for (const action of [
   'refreshUniversityRecommendations',

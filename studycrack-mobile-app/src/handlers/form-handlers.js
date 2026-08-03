@@ -213,7 +213,6 @@ export function createFormHandlers(ctx) {
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    renderUniversityResultsOnly = noop,
     restoreIfUnexpectedTopJump = noop,
     setAnalysisSearchTerm = noop,
     setCoachingAnswers = noop,
@@ -292,9 +291,7 @@ export function createFormHandlers(ctx) {
       return { handled: true, field };
     }
     if (field === 'analysisSearchTerm') {
-      if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);
-      renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
     if (field === 'myProfilePhoneDraft') {

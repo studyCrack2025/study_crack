@@ -32,14 +32,6 @@ function findUniversitySearchInput(actionEl) {
     ?.querySelector?.('[data-field="analysisSearchTerm"]') || null;
 }
 
-function getRefValue(ref, fallback = '') {
-  return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
-}
-
-function setRefValue(ref, value) {
-  if (ref && typeof ref === 'object') ref.current = value;
-}
-
 function clampHomeSlide(index, homeTargets = []) {
   return Math.max(0, Math.min(index, homeTargets.length));
 }
@@ -60,7 +52,6 @@ export function createAnalysisHandlers(ctx) {
     keepScrollPosition = noop,
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
-    renderUniversityResultsOnly = noop,
     restoreIfUnexpectedTopJump = noop,
     setActiveScoreView = noop,
     setAddingUniversity = noop,
@@ -83,6 +74,9 @@ export function createAnalysisHandlers(ctx) {
     setTargetUnivSlots = noop,
     setTargetOpen = noop,
     setUniversityModalOpen = noop,
+    setUniversityCatalogError = noop,
+    setUniversityCatalogRetryTick = noop,
+    setUniversityCatalogStatus = noop,
     setUniversitySelectedName = noop,
     setUniversityRecommendationRetryTick = noop,
     persistTargetUnivs = noop,
@@ -181,10 +175,8 @@ export function createAnalysisHandlers(ctx) {
 
     runUniversitySearch({ actionEl }) {
       const input = findUniversitySearchInput(actionEl);
-      const value = input?.value || getRefValue(ctx.analysisSearchLiveTermRef);
-      setRefValue(ctx.analysisSearchLiveTermRef, value);
+      const value = input?.value || '';
       setAnalysisSearchTerm(value);
-      renderUniversityResultsOnly(value, input || actionEl);
       const doc = getDocument(ctx);
       if (input && doc?.activeElement !== input) input.focus?.({ preventScroll: true });
       return true;
@@ -206,6 +198,13 @@ export function createAnalysisHandlers(ctx) {
 
     refreshUniversityRecommendations() {
       setUniversityRecommendationRetryTick((value) => Number(value || 0) + 1);
+      return true;
+    },
+
+    retryUniversityCatalog() {
+      setUniversityCatalogStatus('idle');
+      setUniversityCatalogError('');
+      setUniversityCatalogRetryTick((value) => Number(value || 0) + 1);
       return true;
     },
 

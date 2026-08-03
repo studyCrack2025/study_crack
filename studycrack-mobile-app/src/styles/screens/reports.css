@@ -5,8 +5,12 @@
 .weekly-range{margin:0;color:var(--sc-ink-muted);font-size:13.5px;font-weight:600;}
 .weekly-rate{display:flex;align-items:flex-start;justify-content:space-between;padding:15px;border-radius:18px;}
 .weekly-rate h2{margin:6px 0 0;color:var(--sc-brand-navy);font-size:40px;font-weight:800;line-height:1;}
-.weekly-feedback{position:relative;padding:14px;border-radius:18px;overflow:visible;}
-.weekly-char{position:absolute;right:4px;bottom:-5px;width:92px;height:auto;object-fit:contain;}
+.weekly-feedback{padding:14px;border-radius:18px;overflow:hidden;}
+.weekly-feedback-body{display:grid;grid-template-columns:minmax(0,1fr) clamp(56px,17vw,68px);gap:clamp(8px,2.5vw,10px);align-items:end;min-width:0;}
+.weekly-feedback-list{display:grid;gap:6px;min-width:0;}
+.weekly-feedback-list .feedback-item{min-width:0;margin:0;align-items:flex-start;overflow-wrap:anywhere;word-break:keep-all;}
+.weekly-feedback-list .feedback-item svg{flex:0 0 auto;}
+.weekly-char{position:static;align-self:end;width:clamp(56px,17vw,68px);max-width:100%;height:auto;object-fit:contain;}
 .weekly-next{position:static;min-height:52px;margin-top:0;}
 .report-desc{margin:4px 0 0;color:var(--sc-ink-muted);font-size:13.5px;}
 .report-main{display:grid;gap:6px;padding:14px;border-radius:18px;text-align:center;}

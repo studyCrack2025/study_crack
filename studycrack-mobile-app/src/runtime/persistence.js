@@ -13,7 +13,7 @@ async function postUserData({ apiFetch, userApiUrl, type, data } = {}) {
     });
     if (!response || !response.ok) {
       const body = await response?.json?.().catch(() => null);
-      return { ok: false, error: body?.error || body?.message || '저장에 실패했습니다.' };
+      return { ok: false, error: body?.error || body?.message || '저장에 실패했습니다.', code: body?.code || '', status: response.status || 0 };
     }
     const body = await response.json?.().catch(() => null);
     return { ok: true, data: body || null };
@@ -311,17 +311,23 @@ export function normalizeUniversityCatalog(data) {
 }
 
 export async function fetchUniversityCatalog({ apiFetch, analysisApiUrl } = {}) {
-  if (typeof apiFetch !== 'function' || !analysisApiUrl) return [];
+  if (typeof apiFetch !== 'function' || !analysisApiUrl) return { ok: false, catalog: [], error: '대학·학과 API 설정을 불러오지 못했습니다.' };
   try {
     const response = await apiFetch(analysisApiUrl, {
       method: 'POST',
       body: JSON.stringify({ type: 'get_univ_list_only' })
     });
-    if (!response || !response.ok) return [];
+    if (!response || !response.ok) {
+      const error = await response?.json?.().catch(() => null);
+      return { ok: false, catalog: [], error: error?.error || error?.message || '대학·학과 목록을 불러오지 못했습니다.' };
+    }
     const data = await response.json().catch(() => []);
-    return normalizeUniversityCatalog(data);
-  } catch (_error) {
-    return [];
+    const catalog = normalizeUniversityCatalog(data);
+    return catalog.length
+      ? { ok: true, catalog, error: '' }
+      : { ok: false, catalog: [], error: '대학·학과 목록이 비어 있습니다.' };
+  } catch (error) {
+    return { ok: false, catalog: [], error: error?.message || '대학·학과 목록을 불러오지 못했습니다.' };
   }
 }
 

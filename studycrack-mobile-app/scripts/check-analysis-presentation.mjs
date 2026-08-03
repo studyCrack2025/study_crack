@@ -32,4 +32,20 @@ const selectedAbsolute = buildAnalysisPresentation({
 assert.equal(selectedAbsolute.afterScore, 50.5);
 assert.equal(selectedAbsolute.bestRow.subject, '국어');
 
+const cappedAtMax = buildAnalysisPresentation({
+  rows: [{ subject: '국어', gainNum: 12, baseUiScore: 246, afterUiScore: 258, idx: 0 }],
+  selectedSubject: '국어',
+  scoreView: { hasScore: true, pending: false, score: 246 }
+});
+assert.equal(cappedAtMax.afterScore, 250);
+assert.equal(cappedAtMax.afterPct, 100);
+assert.equal(cappedAtMax.previewLabelAlign, 'end');
+
+const nearStart = buildAnalysisPresentation({
+  rows: [{ subject: '수학', gainNum: 3, baseUiScore: 1, afterUiScore: 4, idx: 0 }],
+  selectedSubject: '수학',
+  scoreView: { hasScore: true, pending: false, score: 1 }
+});
+assert.equal(nearStart.previewLabelAlign, 'start');
+
 console.log('analysis-presentation contracts passed');

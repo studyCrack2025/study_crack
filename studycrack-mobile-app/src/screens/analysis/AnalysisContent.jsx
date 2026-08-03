@@ -164,7 +164,7 @@ export function AnalysisContent(ctx) {
     scoreView,
     fallbackScore: analysisSelected.score
   });
-  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
+  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLabelAlign, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
   const targetOptions = Array.from(new Set([normalizedTargetMajor, ...analysisMajorOptions].filter(Boolean)));
   const activeSubject = selectedRow?.subject || '';
   const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
@@ -186,7 +186,7 @@ export function AnalysisContent(ctx) {
           <div className="analysis-main-gauge-top"><span>{currentScoreText}</span></div>
           <div className="analysis-main-gauge" aria-label="환산점수 게이지">
             <i className="analysis-main-gauge-fill" style={{ width: `${currentPct}%` }} />
-            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }}><em /><em /></i><span className="analysis-main-gauge-preview-label" style={{ left: `${afterPct}%` }}>+1 후 {formatPoint(afterScore)}점</span></> : null}
+            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }}><em /><em /></i><span className={`analysis-main-gauge-preview-label is-${previewLabelAlign}`} style={{ left: `${afterPct}%` }}>적용 후 환산 {formatPoint(afterScore)}점</span></> : null}
             <span className="analysis-main-gauge-pin" style={{ left: `${currentPct}%` }}><i /></span>
             <span className="analysis-main-gauge-marker pass" style={{ left: `${passPct}%` }} />
             <span className="analysis-main-gauge-marker safe" style={{ left: `${safePct}%` }} />

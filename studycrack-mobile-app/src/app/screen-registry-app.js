@@ -1,5 +1,5 @@
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
-import { renderAddUniversityScreen } from '../screens/analysis/renderers.js';
+import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
 import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
 import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
@@ -30,6 +30,7 @@ import {
 
 export const MOBILE_APP_SCREEN_COMPONENTS = {
   accountInfo: AccountInfoScreen,
+  addUniversity: AddUniversityScreen,
   analysis: AnalysisScreen,
   strategy: CoachingScreen,
   home: HomeScreen,
@@ -40,7 +41,6 @@ export const MOBILE_APP_SCREEN_COMPONENTS = {
 
 export function createAppScreenRenderers() {
   return {
-    addUniversity: renderAddUniversityScreen,
     customerSupport: renderCustomerSupportScreen,
     lockedFeature: renderLockedFeatureScreen,
     notificationSettings: renderNotificationSettingsScreen,

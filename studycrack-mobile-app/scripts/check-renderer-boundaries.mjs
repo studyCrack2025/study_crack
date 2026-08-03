@@ -6,7 +6,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const [
   registrySource,
   appRegistrySource,
-  analysisSource,
+  addUniversityComponent,
   mypageSource,
   serviceSource,
   accountComponent,
@@ -26,7 +26,7 @@ const [
 ] = await Promise.all([
   read('../src/app/screen-registry.js'),
   read('../src/app/screen-registry-app.js'),
-  read('../src/screens/analysis/renderers.js'),
+  read('../src/screens/analysis/AddUniversityScreen.jsx'),
   read('../src/screens/mypage/renderers.js'),
   read('../src/screens/service/renderers.js'),
   read('../src/screens/mypage/AccountInfoScreen.jsx'),
@@ -49,6 +49,7 @@ const combinedRegistrySource = `${registrySource}\n${appRegistrySource}`;
 
 const jsxScreenNames = [
   'accountInfo',
+  'addUniversity',
   'analysis',
   'authFindId',
   'authFindPw',
@@ -107,7 +108,7 @@ const fullScreenRenderers = [
   'renderTermsScreen',
   'renderStrategyScreen'
 ];
-const legacyRendererSources = [analysisSource, mypageSource, serviceSource].join('\n');
+const legacyRendererSources = [mypageSource, serviceSource].join('\n');
 for (const rendererName of fullScreenRenderers) {
   assert.doesNotMatch(legacyRendererSources, new RegExp(`\\b${rendererName}\\b`), `${rendererName} must stay removed`);
 }
@@ -118,6 +119,9 @@ assert.match(analysisContentComponent, /export function AnalysisContent/);
 assert.match(analysisContentComponent, /export function AnalysisSearchSheet/);
 assert.match(analysisContentComponent, /defaultValue=\{analysisSearchTerm\}/);
 assert.doesNotMatch(analysisContentComponent, /dangerouslySetInnerHTML/);
+assert.match(addUniversityComponent, /export function AddUniversityScreen/);
+assert.match(addUniversityComponent, /defaultValue=\{analysisSearchTerm\}/);
+assert.doesNotMatch(addUniversityComponent, /renderUniversityResultsOnly|analysisSearchLiveTermRef/);
 assert.match(authComponent, /export function AuthFindIdScreen/);
 assert.match(authComponent, /export function AuthFindPwScreen/);
 assert.match(homeComponent, /<HomeStudyBreakdown/);
@@ -154,4 +158,4 @@ assert.match(termsModalComponent, /<Modal dismissAction="closeTermsModal"/);
 assert.doesNotMatch(authComponent, /dangerouslySetInnerHTML/);
 assert.doesNotMatch(legalComponent, /dangerouslySetInnerHTML/);
 
-console.log('renderer ownership boundary ok: 16 JSX screens across bootstrap and deferred app registries');
+console.log('renderer ownership boundary ok: 17 JSX screens across bootstrap and deferred app registries');

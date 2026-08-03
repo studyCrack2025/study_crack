@@ -229,6 +229,7 @@ export function createPlannerHandlers(ctx) {
     studyTimerSecondsRef,
     syncLiveStudyTimerUi = noop,
     persistStudySession = noop,
+    refreshStudyRanking = noop,
     todayDate = TODAY_DATE
   } = ctx;
 
@@ -447,7 +448,9 @@ export function createPlannerHandlers(ctx) {
       setActiveStudySubject('');
       setActivePlannerItemId('');
       const result = await persistStudySession(completedSession);
-      if (result && result.ok === false) ctx.alert?.(result.error || '공부 기록을 서버에 저장하지 못했습니다. 기기에는 기록을 유지합니다.');
+      const duplicate = result?.code === 'STUDY_SESSION_DUPLICATE';
+      if (result?.ok || duplicate) refreshStudyRanking();
+      if (result && result.ok === false && !duplicate) ctx.alert?.(result.error || '공부 기록을 서버에 저장하지 못했습니다. 기기에는 기록을 유지합니다.');
       return true;
     },
 

@@ -40,6 +40,7 @@ export function buildAnalysisPresentation({
   const afterScore = clampAnalysisScore(rawAfterScore);
   const currentPct = (currentScore / GAUGE_MAX) * 100;
   const afterPct = (afterScore / GAUGE_MAX) * 100;
+  const previewLabelAlign = afterPct >= 88 ? 'end' : afterPct <= 12 ? 'start' : 'center';
 
   return {
     sortedRows,
@@ -51,6 +52,7 @@ export function buildAnalysisPresentation({
     afterScore,
     currentPct,
     afterPct,
+    previewLabelAlign,
     previewLeftPct: Math.min(currentPct, afterPct),
     previewWidthPct: Math.abs(afterPct - currentPct),
     hasPreview: Boolean(hasScore && selectedRow && afterScore !== currentScore),
