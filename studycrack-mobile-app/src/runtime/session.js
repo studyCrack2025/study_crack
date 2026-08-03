@@ -116,7 +116,11 @@ export function mapUserToStatePatch(userData, base = {}) {
     selectedPlan: '',
     scores: {},
     scoreState: createBlankScoreState(),
-    scoreEditState: createBlankScoreState()
+    scoreEditState: createBlankScoreState(),
+    analysisApiStatus: 'idle',
+    analysisApiError: '',
+    scoreFetchStatus: 'idle',
+    scoreFetchSignature: ''
   };
   const userPatch = { ...EMPTY_USER };
   if (userData.role) userPatch.role = userData.role;

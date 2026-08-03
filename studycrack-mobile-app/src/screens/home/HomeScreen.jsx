@@ -447,7 +447,7 @@ export function HomeScreen(ctx) {
                 <div className="home-score-section-head">
                   <div className="home-score-section-copy">
                     <span>대학 분석</span>
-                    <h2>지원학과 AI 점수</h2>
+                    <h2>지원학과 환산 점수</h2>
                   </div>
                   <select className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
                     {EXAM_OPTIONS.map((label) => (

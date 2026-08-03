@@ -78,6 +78,9 @@ const populatedPatch = mapUserToStatePatch({
 assert.equal(populatedPatch.selectedPlan, 'Basic');
 assert.equal(populatedPatch.targetMajor, '연세대학교 정치외교학과');
 assert.equal(populatedPatch.scores.korean, 88);
+assert.equal(populatedPatch.analysisApiStatus, 'idle');
+assert.equal(populatedPatch.scoreFetchStatus, 'idle');
+assert.equal(populatedPatch.scoreFetchSignature, '');
 
 const noServerAnalysis = buildAnalysisDerived({
   scores: { korean: 100, math: 100, english: 100, inquiry1: 50, inquiry2: 50 },

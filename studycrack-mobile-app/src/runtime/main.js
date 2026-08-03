@@ -949,6 +949,11 @@ function MobileApp() {
         try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
       }
       const patch = mapUserToStatePatch(userData, stateRef.current);
+      // 초기 사용자 조회 중 폐기된 분석 요청의 서명이 남으면 같은 시험의 첫 계산이 건너뛰어질 수 있다.
+      scoreRequestIdRef.current += 1;
+      scoreFetchSignatureRef.current = '';
+      scoreFetchRetryRef.current = 0;
+      scoreResultRetryRef.current = { signature: '', attempts: 0 };
       setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
     }).catch((error) => {
       if (cancelled) return;
@@ -1107,6 +1112,7 @@ function MobileApp() {
     ]);
     if (state.userLoadStatus === 'error') {
       scoreRequestIdRef.current += 1;
+      scoreFetchSignatureRef.current = '';
       if (state.analysisApiStatus !== 'error' || state.scoreFetchStatus !== 'error') {
         setState({
           analysisApiStatus: 'error',
@@ -1119,8 +1125,9 @@ function MobileApp() {
     }
     if (state.userLoadStatus !== 'ready') {
       scoreRequestIdRef.current += 1;
-      if (state.scoreFetchStatus !== 'loading') {
-        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading' });
+      scoreFetchSignatureRef.current = '';
+      if (state.scoreFetchStatus !== 'loading' || state.scoreFetchSignature) {
+        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: '' });
       }
       return undefined;
     }

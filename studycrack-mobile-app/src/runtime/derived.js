@@ -226,7 +226,7 @@ function computeHomeTargets(state = {}) {
     scoreExamKey = '',
     scoreExamType = ''
   } = state;
-  // 홈 AI 점수는 서버 환산점수(converted_score)만 표시한다. 대학과 무관한 라이브 점수로 폴백하면
+  // 홈 환산 점수는 서버 환산점수(converted_score)만 표시한다. 대학과 무관한 라이브 점수로 폴백하면
   // 비동기 로드 중 서버↔라이브↔0이 뒤바뀌어 "점수가 그때그때 다르고 0으로 리셋"되는 불안정이 생긴다(웹엔 없는 현상).
   // 재요청 중에는 examMode가 일치하는 직전 확정 스냅샷으로 폴백해 확정 점수를 유지하고, 없으면 분석중 스켈레톤을 보인다.
   const currentExamMode = scoreExamKey || scoreExamTypeToKey(scoreExamType);

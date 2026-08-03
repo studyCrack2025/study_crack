@@ -46,7 +46,7 @@ export function renderSplashScreen(ctx) {
 export function renderOn1Screen() {
   return `<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content" data-screen="on1"><div class="onboarding-shot"><div class="onboarding-shot-head"><h2><span class="accent">데이터 기반으로</span>
 내 합격 가능성을 분석해요</h2><p>흔들리지 않는 방향을
-제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">지원학과 AI 점수</div><div class="onboarding-score">128<em>점</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c7d8f8" stop-opacity="0.65"/><stop offset="100%" stop-color="#c7d8f8" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#4c79ee" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#4c79ee"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
+제시해드립니다.</p></div><div class="onboarding-center"><div class="onboarding-card data"><div class="onboarding-label">지원학과 환산 점수</div><div class="onboarding-score">128<em>점</em></div><svg class="onboarding-graph data" viewBox="0 0 320 124"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c7d8f8" stop-opacity="0.65"/><stop offset="100%" stop-color="#c7d8f8" stop-opacity="0"/></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)"/><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="#4c79ee" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="310" cy="10" r="5" fill="#4c79ee"/></svg></div></div><img src="${CRACKY_SRC}" class="onboarding-character on1" alt="크랙이"/><div class="onboarding-shot-dots"><i class="active"></i><i></i><i></i></div><button class="onboarding-next" data-action="goto" data-target="on2">다음</button></div></div></div></div>`;
 }
 
 export function renderOn2Screen() {
@@ -183,8 +183,8 @@ export function renderOb4Screen(ctx) {
        <div class="card ob-card analysis-top">
          <p class="analysis-title">지원학과 환산점수 분석</p>
          <div class="analysis-v2-summary-top">
-           <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">AI 점수 · 합격컷 대비 위치</p></div>
-           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${score}점</strong><small>AI 점수</small></div>
+           <div><p class="analysis-v2-univ">${targetMajor}</p><p class="analysis-v2-label">환산 점수 · 합격컷 대비 위치</p></div>
+           <div class="analysis-v2-score-wrap"><span class="analysis-v2-verdict ${scoreTierClass(score)}" style="color:${analysisStatusColor};border-color:${analysisStatusColor}">${analysisStatus}</span><strong>${score}점</strong><small>환산 점수</small></div>
          </div>
          <div class="analysis-v2-gauge"><i class="${scoreTierClass(score)}" style="width:${analysisGaugeFill}%;background:${analysisGaugeColor}"></i><span class="cut pass" style="left:40%"></span><span class="cut safe" style="left:60%"></span></div>
          <div class="analysis-v2-gauge-meta"><span>0</span><span>합격컷 100점</span><span>안정컷 150점</span><span>MAX 250점</span></div>

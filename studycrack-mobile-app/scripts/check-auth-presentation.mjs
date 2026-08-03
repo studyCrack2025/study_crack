@@ -32,7 +32,7 @@ assert.match(authCss, /\.auth-entry-layout\{/);
 assert.match(authCss, /max-width:358px/);
 assert.match(signupCss, /\.signup-stage\{/);
 assert.match(recoveryCss, /width:min\(100%,360px\)/);
-assert.match(onboardingSource, /지원학과 AI 점수/);
+assert.match(onboardingSource, /지원학과 환산 점수/);
 assert.match(onboardingSource, /환산점수 \+18점/);
 assert.doesNotMatch(onboardingSource, /<div class="onboarding-label">합격 가능성<\/div>/);
 assert.match(ob3Source, /<MbtiModal/);
