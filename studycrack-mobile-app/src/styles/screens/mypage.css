@@ -15,7 +15,7 @@
 .my-profile-chips i[class*="plan-"]{border-color:var(--sc-action-positive);background:var(--sc-action-positive);color:var(--sc-brand-navy-deep);}
 .my-profile-chevron{grid-column:3;grid-row:1;display:grid;place-items:center;align-self:start;color:var(--sc-on-brand-muted);}
 .my-profile-chevron .icon{width:18px;height:18px;stroke:currentColor;}
-.my-insight-card{position:relative;z-index:1;width:calc(100% - 24px);display:grid;justify-self:center;gap:12px;margin-top:-20px;padding:16px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-raised);}
+.my-insight-card{position:relative;width:100%;display:grid;justify-self:stretch;gap:12px;margin:0;padding:16px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-raised);}
 .my-insight-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
 .my-insight-head > div{min-width:0;}
 .my-insight-head small{display:block;margin-bottom:4px;font-size:10px;line-height:1.2;color:var(--sc-ink-muted);font-weight:700;letter-spacing:0;}
