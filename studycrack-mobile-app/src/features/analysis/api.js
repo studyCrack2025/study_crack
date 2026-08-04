@@ -63,9 +63,10 @@ export function normalizeUniversityCatalog(data) {
     .sort((a, b) => a.univName.localeCompare(b.univName, 'ko'));
 }
 
-export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch } = {}) {
+export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch, signal } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: analysisApiUrl,
     payload: { type: 'get_univ_list_only' },
     fallbackError: '대학·학과 목록을 불러오지 못했습니다.'
@@ -87,12 +88,13 @@ function inferRecommendationStream(examData, savedStream = '') {
   return /미적분|기하/.test(mathOpt) || hasScience ? 'natural' : 'humanities';
 }
 
-export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch, examData, examMode, excludeTargets = [], savedStream = '' } = {}) {
+export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch, examData, examMode, excludeTargets = [], savedStream = '', signal } = {}) {
   if (!examData) return apiFailure('추천에 필요한 성적 정보가 없습니다.');
   const totalStdScore = ['kor', 'math', 'inq1', 'inq2'].reduce((sum, key) => sum + (Number(examData?.[key]?.std) || 0), 0);
   if (!totalStdScore) return apiFailure('표준점수가 포함된 성적을 먼저 저장해주세요.');
   const result = await postJson({
     apiFetch,
+    signal,
     url: analysisApiUrl,
     fallbackError: '추천 대학을 불러오지 못했습니다.',
     payload: {
@@ -121,11 +123,12 @@ function normalizeSimulationResults(payload) {
   return (Array.isArray(payload) ? payload : []).filter((item) => item && item.univ && item.major);
 }
 
-export async function fetchMobileTargetAnalysis({ analysisApiUrl, apiFetch, examMode, targetList, userScores } = {}) {
+export async function fetchMobileTargetAnalysis({ analysisApiUrl, apiFetch, examMode, signal, targetList, userScores } = {}) {
   const targetUnivs = toAnalysisTargetPayload(targetList);
   if (!userScores || !targetUnivs.length) return apiFailure('분석할 성적과 지원 대학을 먼저 선택해주세요.');
   const result = await postJson({
     apiFetch,
+    signal,
     url: analysisApiUrl,
     payload: { type: 'analyze_my_targets', targetUnivs, userScores, examMode },
     fallbackError: '분석 결과를 불러오지 못했습니다.'
@@ -134,11 +137,12 @@ export async function fetchMobileTargetAnalysis({ analysisApiUrl, apiFetch, exam
   return apiSuccess({ analysisResults: normalizeAnalysisResults(result.data), simulationResults: [] }, { status: result.status });
 }
 
-export async function fetchMobileScoreSimulation({ analysisApiUrl, apiFetch, examMode, targetList, userScores } = {}) {
+export async function fetchMobileScoreSimulation({ analysisApiUrl, apiFetch, examMode, signal, targetList, userScores } = {}) {
   const targetUnivs = toAnalysisTargetPayload(targetList);
   if (!userScores || !targetUnivs.length) return apiFailure('시뮬레이션할 성적과 지원 대학을 먼저 선택해주세요.');
   const result = await postJson({
     apiFetch,
+    signal,
     url: analysisApiUrl,
     payload: { type: 'simulate_score_rise', targetUnivs, userScores, examMode },
     fallbackError: '시뮬레이션 결과를 불러오지 못했습니다.'
@@ -147,12 +151,13 @@ export async function fetchMobileScoreSimulation({ analysisApiUrl, apiFetch, exa
   return apiSuccess(normalizeSimulationResults(result.data), { status: result.status });
 }
 
-export async function fetchMobileBacktrace({ analysisApiUrl, apiFetch, examMode, targetMajor, userScores } = {}) {
+export async function fetchMobileBacktrace({ analysisApiUrl, apiFetch, examMode, signal, targetMajor, userScores } = {}) {
   const targetUniv = parseTargetMajor(targetMajor);
   if (!userScores) return apiFailure('역산에 필요한 성적 정보를 찾지 못했습니다.');
   if (!targetUniv?.univ || !targetUniv?.major) return apiFailure('분석할 대학과 학과를 먼저 선택해주세요.');
   const result = await postJson({
     apiFetch,
+    signal,
     url: analysisApiUrl,
     fallbackError: '필요 원점수 조합을 계산하지 못했습니다.',
     payload: { type: 'backtrace_required_raw', targetUniv, userScores, examMode, targetUiMin: 100, targetUiMax: 150, maxTotalRaw: 20 }

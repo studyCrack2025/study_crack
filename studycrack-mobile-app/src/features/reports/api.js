@@ -12,9 +12,10 @@ function normalizeProReports(payload) {
     }));
 }
 
-export async function fetchMobileProReports({ apiFetch, reportApiUrl } = {}) {
+export async function fetchMobileProReports({ apiFetch, reportApiUrl, signal } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: reportApiUrl,
     payload: { type: 'get_pro_reports', data: { requesterRole: 'student' } },
     fallbackError: 'PRO 리포트를 불러오지 못했습니다.'
@@ -56,9 +57,10 @@ function normalizeWeeklyReports(payload) {
     }));
 }
 
-export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl } = {}) {
+export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl, signal } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: reportApiUrl,
     payload: { type: 'get_weekly_reports' },
     fallbackError: '주간 리포트를 불러오지 못했습니다.'

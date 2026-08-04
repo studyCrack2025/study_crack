@@ -309,8 +309,8 @@ async function apiFetch(url, options = {}) {
         } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
     } catch (error) {
-        // 예상된 인증 만료는 호출처에서 조용히 처리한다.
-        if (!error || error.code !== 'AUTH_EXPIRED') {
+        // 예상된 인증 만료와 화면 전환에 따른 요청 취소는 호출처에서 조용히 처리한다.
+        if ((!error || error.code !== 'AUTH_EXPIRED') && error?.name !== 'AbortError') {
             console.error('API 통신 실패:', error);
         }
         throw error;

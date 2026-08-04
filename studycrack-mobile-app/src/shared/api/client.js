@@ -1,3 +1,17 @@
+let authExpiredHandler = null;
+
+export function setApiAuthExpiredHandler(handler) {
+  authExpiredHandler = typeof handler === 'function' ? handler : null;
+  return () => {
+    if (authExpiredHandler === handler) authExpiredHandler = null;
+  };
+}
+
+function notifyAuthExpired(result) {
+  if (result?.code === 'AUTH_EXPIRED') authExpiredHandler?.(result);
+  return result;
+}
+
 export function apiSuccess(data = null, { code = '', status = 200 } = {}) {
   return { ok: true, data, error: '', status, code };
 }
@@ -18,27 +32,27 @@ export async function requestJson({ apiFetch, fallbackError = '요청을 처리�
     const response = await apiFetch(url, options);
     const body = await readResponseBody(response);
     if (!response?.ok) {
-      return apiFailure(body?.error || body?.message || fallbackError, {
+      return notifyAuthExpired(apiFailure(body?.error || body?.message || fallbackError, {
         code: body?.code || '',
         data: body,
         status: response?.status || 0
-      });
+      }));
     }
     return apiSuccess(body, { status: response?.status || 200 });
   } catch (error) {
-    return apiFailure(error?.message || fallbackError, {
+    return notifyAuthExpired(apiFailure(error?.message || fallbackError, {
       code: error?.code || '',
       status: error?.status || 0
-    });
+    }));
   }
 }
 
-export function postJson({ apiFetch, fallbackError, payload, url } = {}) {
+export function postJson({ apiFetch, fallbackError, payload, signal, url } = {}) {
   return requestJson({
     apiFetch,
     fallbackError,
     url,
-    options: { method: 'POST', body: JSON.stringify(payload || {}) }
+    options: { method: 'POST', body: JSON.stringify(payload || {}), ...(signal ? { signal } : {}) }
   });
 }
 

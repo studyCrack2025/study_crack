@@ -140,10 +140,6 @@ export function createCalendarHandlers(ctx = {}) {
         });
         setCalendarSaving(false);
         if (!result.ok) {
-          if (result.code === 'AUTH_EXPIRED') {
-            ctx.expireMobileSessionSilently?.();
-            return true;
-          }
           alert(result.error || '일정을 저장하지 못했습니다.');
           return true;
         }
@@ -175,10 +171,6 @@ export function createCalendarHandlers(ctx = {}) {
         });
         setCalendarSaving(false);
         if (!result.ok) {
-          if (result.code === 'AUTH_EXPIRED') {
-            ctx.expireMobileSessionSilently?.();
-            return true;
-          }
           alert(result.error || '일정을 삭제하지 못했습니다.');
           return true;
         }

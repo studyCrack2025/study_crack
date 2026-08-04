@@ -13,8 +13,8 @@ export function normalizeQnaHistory(payload) {
   }));
 }
 
-export async function fetchMobileQnaHistory({ apiFetch, qnaApiUrl } = {}) {
-  const result = await postJson({ apiFetch, url: qnaApiUrl, payload: { type: 'get_qna_list' }, fallbackError: '문의 내역을 불러오지 못했습니다.' });
+export async function fetchMobileQnaHistory({ apiFetch, qnaApiUrl, signal } = {}) {
+  const result = await postJson({ apiFetch, signal, url: qnaApiUrl, payload: { type: 'get_qna_list' }, fallbackError: '문의 내역을 불러오지 못했습니다.' });
   return result.ok ? apiSuccess(normalizeQnaHistory(result.data), { status: result.status }) : result;
 }
 

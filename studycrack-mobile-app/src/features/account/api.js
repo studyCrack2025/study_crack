@@ -26,9 +26,10 @@ export function saveNotificationPreferences({ apiFetch, preferences, userApiUrl 
   return postUserData({ apiFetch, userApiUrl, type: 'update_member_info', data: { notificationPreferences } });
 }
 
-export async function fetchMobileAdmissionCalendar({ apiFetch, userApiUrl } = {}) {
+export async function fetchMobileAdmissionCalendar({ apiFetch, signal, userApiUrl } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: userApiUrl,
     payload: { type: 'get_admission_calendar' },
     fallbackError: '수험 일정을 불러오지 못했습니다.'

@@ -4,9 +4,10 @@ export function saveStudySession({ apiFetch, session, userApiUrl } = {}) {
   return postUserData({ apiFetch, userApiUrl, type: 'record_study_session', data: session || {} });
 }
 
-export async function fetchStudyRanking({ apiFetch, period = 'daily', userApiUrl } = {}) {
+export async function fetchStudyRanking({ apiFetch, period = 'daily', signal, userApiUrl } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: userApiUrl,
     payload: { type: 'get_study_ranking', data: { period } },
     fallbackError: '랭킹을 불러오지 못했습니다.'

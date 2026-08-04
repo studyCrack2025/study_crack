@@ -12,9 +12,10 @@ export function normalizeNotifications(payload) {
   }));
 }
 
-export async function fetchMobileNotifications({ apiFetch, notiApiUrl } = {}) {
+export async function fetchMobileNotifications({ apiFetch, notiApiUrl, signal } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: notiApiUrl,
     payload: { type: 'student_get_notifications' },
     fallbackError: '알림을 불러오지 못했습니다.'

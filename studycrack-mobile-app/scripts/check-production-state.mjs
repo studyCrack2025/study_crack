@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createInitialAppState, hydrateAppState } from '../src/runtime/app-state.js';
 import { buildAnalysisDerived } from '../src/runtime/derived.js';
-import { buildAnalysisScoreView, buildUniversityCard } from '../src/runtime/score-store.js';
+import { buildAnalysisScoreView, buildUniversityCard } from '../src/features/analysis/score-store.js';
 import { createUserDataResetPatch, mapUserToStatePatch } from '../src/runtime/session.js';
 
 function createStorage(values = {}) {

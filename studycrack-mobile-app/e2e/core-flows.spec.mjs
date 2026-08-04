@@ -40,11 +40,15 @@ test('로그인 세션의 사용자와 최초 환산점수가 홈에서 함께 �
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
   await page.waitForTimeout(100);
+  const initialRequestTypes = api.requests.map(({ payload }) => payload.type || 'unknown');
+  for (const deferredType of ['get_univ_list_only', 'get_tutorial_recommendations', 'get_pro_reports', 'get_weekly_reports', 'get_qna_list', 'student_get_notifications']) {
+    expect(initialRequestTypes).not.toContain(deferredType);
+  }
   await testInfo.attach('home-initial-load-baseline.json', {
     body: Buffer.from(JSON.stringify({
       readyMs: Date.now() - startedAt,
       requestCount: api.requests.length,
-      requestTypes: api.requests.map(({ payload }) => payload.type || 'unknown')
+      requestTypes: initialRequestTypes
     }, null, 2)),
     contentType: 'application/json'
   });

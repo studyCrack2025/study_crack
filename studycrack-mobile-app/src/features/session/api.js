@@ -1,8 +1,9 @@
 import { apiFailure, apiSuccess, postJson } from '../../shared/api/client.js';
 
-export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
+export async function fetchCurrentUser({ apiFetch, signal, userApiUrl } = {}) {
   const result = await postJson({
     apiFetch,
+    signal,
     url: userApiUrl,
     payload: { type: 'get_user_analysis' },
     fallbackError: '사용자 정보를 불러오지 못했습니다.'

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-import { apiFailure, apiSuccess, postJson } from '../src/shared/api/client.js';
+import { apiFailure, apiSuccess, postJson, setApiAuthExpiredHandler } from '../src/shared/api/client.js';
 
 const envelopeKeys = ['code', 'data', 'error', 'ok', 'status'];
 
@@ -25,6 +25,23 @@ assertEnvelope(success);
 assert.deepEqual(success.data, { saved: true });
 assert.equal(success.status, 201);
 
+const controller = new AbortController();
+let forwardedSignal = null;
+await postJson({
+  apiFetch: async (_url, options) => {
+    forwardedSignal = options.signal;
+    return { ok: true, status: 200, json: async () => ({}) };
+  },
+  url: '/signal-test',
+  payload: { type: 'test' },
+  signal: controller.signal
+});
+assert.equal(forwardedSignal, controller.signal);
+
+let expiredResult = null;
+const releaseAuthExpiredHandler = setApiAuthExpiredHandler((result) => {
+  expiredResult = result;
+});
 const failure = await postJson({
   apiFetch: async () => ({ ok: false, status: 403, json: async () => ({ error: '만료', code: 'AUTH_EXPIRED' }) }),
   url: '/test',
@@ -33,6 +50,8 @@ const failure = await postJson({
 assertEnvelope(failure);
 assert.equal(failure.code, 'AUTH_EXPIRED');
 assert.equal(failure.status, 403);
+assert.equal(expiredResult, failure);
+releaseAuthExpiredHandler();
 
 const apiModules = [
   'src/features/account/api.js',
@@ -51,5 +70,35 @@ for (const path of apiModules) {
 }
 
 await assert.rejects(access(new URL('../src/runtime/persistence.js', import.meta.url)));
+
+const runtimeMain = await readFile(new URL('../src/runtime/main.js', import.meta.url), 'utf8');
+assert.equal(/\bfetch[A-Z][A-Za-z0-9]*\s*\(/.test(runtimeMain), false, 'runtime/main.js must not own domain fetch effects.');
+for (const hookName of [
+  'useSession',
+  'useRankingResource',
+  'useAdmissionCalendarResource',
+  'useReportResources',
+  'useSupportResource',
+  'useNotificationResource',
+  'useAnalysisResources'
+]) {
+  assert.match(runtimeMain, new RegExp(`\\b${hookName}\\s*\\(`), `runtime/main.js must compose ${hookName}.`);
+}
+
+const cancellableResourceHooks = [
+  'src/features/session/use-session.js',
+  'src/features/account/use-admission-calendar-resource.js',
+  'src/features/analysis/use-score-resources.js',
+  'src/features/analysis/use-university-resources.js',
+  'src/features/notifications/use-notification-resource.js',
+  'src/features/planner/use-ranking-resource.js',
+  'src/features/reports/use-report-resources.js',
+  'src/features/support/use-support-resource.js'
+];
+for (const path of cancellableResourceHooks) {
+  const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+  assert.match(source, /AbortController/, `${path} must cancel obsolete requests.`);
+  assert.match(source, /RequestRef|requestKeyRef|requestKey/, `${path} must reject stale responses.`);
+}
 
 console.log('domain API envelope and ownership contracts passed');

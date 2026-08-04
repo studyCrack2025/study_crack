@@ -48,21 +48,27 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { fetchMobileAdmissionCalendar, saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { fetchMobileBacktrace, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchUniversityCatalog, fetchUniversityRecommendations } from '../features/analysis/api.js';
+import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
+import { useAdmissionCalendarResource } from '../features/account/use-admission-calendar-resource.js';
+import { useAnalysisResources } from '../features/analysis/use-analysis-resources.js';
 import { createBlankScoreState, mapExamDataToScorePatch, scoreExamTypeToKey } from '../features/analysis/score-model.js';
 import { targetSlotsToList, upsertTargetSlot } from '../features/analysis/target-model.js';
-import { fetchMobileNotifications } from '../features/notifications/api.js';
-import { fetchStudyRanking, saveStudySession } from '../features/planner/api.js';
-import { fetchMobileProReports, fetchMobileWeeklyReports, requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
-import { fetchCurrentUser } from '../features/session/api.js';
-import { fetchMobileQnaHistory, saveMobileQna } from '../features/support/api.js';
+import { resolveAnalysisExamMode, uniqueTargetList } from '../features/analysis/resource-model.js';
+import { useNotificationResource } from '../features/notifications/use-notification-resource.js';
+import { saveStudySession } from '../features/planner/api.js';
+import { useRankingResource } from '../features/planner/use-ranking-resource.js';
+import { requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
+import { useReportResources } from '../features/reports/use-report-resources.js';
+import { useSession } from '../features/session/use-session.js';
+import { saveMobileQna } from '../features/support/api.js';
+import { useSupportResource } from '../features/support/use-support-resource.js';
 import { createUserDataResetPatch, mapUserToStatePatch } from './session.js';
-import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, canRetryInitialScore, canRetryInitialScorePayload, mergeScoreCache, normalizeServerResults } from './score-store.js';
+import { buildAnalysisScoreView, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from '../features/analysis/score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
 import { clearMobileAuthArtifacts } from './auth-service.js';
 import { attachVisualViewportMetrics } from './visual-viewport.js';
+import { setApiAuthExpiredHandler } from '../shared/api/client.js';
 
 const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } = React;
 
@@ -119,10 +125,6 @@ function updatePossibleUnivSlider(slider, nextIndex) {
   slider.parentElement?.querySelectorAll?.('.slider-indicator [data-action="slideTo"]')?.forEach((dot, i) => {
     dot.classList?.toggle?.('active', i === idx);
   });
-}
-
-function uniqueTargetList(list = []) {
-  return Array.from(new Set((list || []).map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 6);
 }
 
 function notifySaveFailure(result, message) {
@@ -323,17 +325,6 @@ function buildScoreSelectionPatch(scoreExamType, current) {
   };
 }
 
-function resolveAnalysisExamMode(state = {}) {
-  const explicitKey = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
-  if (explicitKey && explicitKey !== 'active') return explicitKey;
-  const quantitative = state.user?.quantitative || {};
-  return ['jun', 'may', 'mar', 'apr', 'jul', 'sep', 'oct', 'csat']
-    .find((examKey) => {
-      const item = quantitative[examKey];
-      return item && typeof item === 'object' && (item.kor || item.math || item.eng || item.inq1 || item.inq2);
-    }) || explicitKey || 'mar';
-}
-
 function buildRenderScoreCache(state = {}, examKey = '') {
   const baseCache = state.scoreCache || {};
   const snapshot = state.lastAnalysisSnapshot;
@@ -430,12 +421,6 @@ function MobileApp() {
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const userFetchRetryRef = useRef(0);
-  const scoreFetchRetryRef = useRef(0);
-  const scoreFetchSignatureRef = useRef('');
-  const scoreRequestIdRef = useRef(0);
-  const scoreResultRetryRef = useRef({ signature: '', attempts: 0 });
-  const simulationFetchSignatureRef = useRef('');
-  const backtraceFetchSignatureRef = useRef('');
 
   const retryUserLoad = useCallback(() => {
     userFetchRetryRef.current = 0;
@@ -450,6 +435,7 @@ function MobileApp() {
   stateRef.current = state;
 
   useEffect(() => attachVisualViewportMetrics(), []);
+  useEffect(() => setApiAuthExpiredHandler(expireMobileSessionSilently), []);
 
   useEffect(() => {
     const shouldLoad = isDeferredAppScreen(state.screen)
@@ -544,6 +530,65 @@ function MobileApp() {
     }),
     []
   );
+
+  const hasClientSession = useCallback(
+    () => typeof window !== 'undefined'
+      && typeof window.hasClientSession === 'function'
+      && window.hasClientSession(),
+    []
+  );
+
+  const applyUserData = useCallback((userData) => {
+    const role = String(userData?.role || 'student').toLowerCase();
+    if (role && role !== 'student') {
+      blockNonStudentMobileSession(role);
+      return;
+    }
+    if (userData?.role) {
+      try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
+    }
+    const patch = mapUserToStatePatch(userData, stateRef.current);
+    setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
+  }, []);
+
+  useSession({
+    applyUserData,
+    configRetryRef: userFetchRetryRef,
+    getApiBinding: getUserApiBinding,
+    hasSession: hasClientSession,
+    resetPatch: createUserDataResetPatch,
+    retryTick: state.userFetchRetryTick,
+    setState
+  });
+  const resourceSessionReady = state.userLoadStatus === 'ready' && hasClientSession();
+  useRankingResource({
+    enabled: resourceSessionReady && ['home', 'ranking'].includes(state.screen),
+    getApiBinding: getUserApiBinding,
+    period: state.screen === 'ranking' ? state.rankingPeriod : 'daily',
+    refreshTick: state.rankingRefreshTick,
+    setState
+  });
+  useAdmissionCalendarResource({
+    enabled: state.userLoadStatus === 'ready' && state.screen === 'home',
+    getApiBinding: getUserApiBinding,
+    hasSession: hasClientSession,
+    setState
+  });
+  useReportResources({ enabled: resourceSessionReady, getApiBinding: getReportApiBinding, screen: state.screen, setState });
+  useSupportResource({ enabled: resourceSessionReady && state.screen === 'customerSupport', getApiBinding: getQnaApiBinding, setState });
+  useNotificationResource({
+    enabled: resourceSessionReady && (state.screen === 'notificationList' || state.notifModalOpen),
+    getApiBinding: getNotiApiBinding,
+    setState
+  });
+  useAnalysisResources({
+    canBacktrace: canUseReverseProjection(state),
+    canSimulate: canUseScoreSimulation(state),
+    getApiBinding: getAnalysisApiBinding,
+    setState,
+    state,
+    stateRef
+  });
 
   const persistTargetUnivs = useCallback(
     (targetList, targetSlots) => saveTargetUnivs({ ...getUserApiBinding(), targetList, targetSlots }),
@@ -715,7 +760,6 @@ function MobileApp() {
     notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || '',
     hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
     redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
-    expireMobileSessionSilently,
     canAccessBasic: canAccessTier(state, 'basic'),
     canUseScoreSimulation: canUseScoreSimulation(state),
     canUseReverseProjection: canUseReverseProjection(state),
@@ -851,26 +895,6 @@ function MobileApp() {
   }, [state.activeStudySession?.sessionId]);
 
   useEffect(() => {
-    if (!['home', 'ranking'].includes(state.screen) || state.userLoadStatus !== 'ready') return undefined;
-    let cancelled = false;
-    setState({ rankingStatus: 'loading', rankingError: '' });
-    const period = state.screen === 'ranking' ? state.rankingPeriod : 'daily';
-    fetchStudyRanking({ ...getUserApiBinding(), period }).then((result) => {
-      if (cancelled) return;
-      const ranking = result.data || { rows: [], me: null };
-      setState({
-        rankingRows: ranking.rows || [],
-        rankingMe: ranking.me || null,
-        rankingStatus: result.ok ? ((ranking.rows || []).length ? 'ready' : 'empty') : 'error',
-        rankingError: result.error || ''
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getUserApiBinding, state.rankingRefreshTick, state.screen, state.rankingPeriod, state.userLoadStatus]);
-
-  useEffect(() => {
     if (state.screen === 'accountInfo') return;
     if (!state.phoneChangeModalOpen && !state.myProfileEditOpen) return;
     setState({
@@ -925,474 +949,6 @@ function MobileApp() {
     }
   }, [state.selectedPlan, state.targetMajor, state.tab]);
 
-  // 세션이 있으면 사용자 데이터를 불러온다. 사용자별 값은 서버 응답만 신뢰한다.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const userApiBinding = getUserApiBinding();
-    if (typeof userApiBinding.apiFetch !== 'function' || !userApiBinding.userApiUrl) {
-      const retryDelay = Math.min(1200, 250 + userFetchRetryRef.current * 100);
-      setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
-      const timer = globalThis.setTimeout?.(() => {
-        userFetchRetryRef.current += 1;
-        if (userFetchRetryRef.current >= 40) {
-          setState({ userLoadStatus: 'error', userLoadError: '사용자 정보 연결을 준비하지 못했습니다. 다시 시도해주세요.' });
-          return;
-        }
-        setState({ userFetchRetryTick: (stateRef.current.userFetchRetryTick || 0) + 1 });
-      }, retryDelay);
-      return () => {
-        if (timer) globalThis.clearTimeout?.(timer);
-      };
-    }
-    userFetchRetryRef.current = 0;
-    let cancelled = false;
-    setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
-    fetchCurrentUser(userApiBinding).then((result) => {
-      if (cancelled) return;
-      if (!result.ok) {
-        if (result.code === 'AUTH_EXPIRED') {
-          expireMobileSessionSilently();
-          return;
-        }
-        setState({ userLoadStatus: 'error', userLoadError: result.error || '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
-        return;
-      }
-      const userData = result.data;
-      const role = String(userData.role || 'student').toLowerCase();
-      if (role && role !== 'student') {
-        blockNonStudentMobileSession(role);
-        return;
-      }
-      if (userData.role) {
-        try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
-      }
-      const patch = mapUserToStatePatch(userData, stateRef.current);
-      // 초기 사용자 조회 중 폐기된 분석 요청의 서명이 남으면 같은 시험의 첫 계산이 건너뛰어질 수 있다.
-      scoreRequestIdRef.current += 1;
-      scoreFetchSignatureRef.current = '';
-      scoreFetchRetryRef.current = 0;
-      scoreResultRetryRef.current = { signature: '', attempts: 0 };
-      setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
-    }).catch((_error) => {
-      if (cancelled) return;
-      setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getUserApiBinding, state.userFetchRetryTick]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || state.userLoadStatus !== 'ready') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) {
-      setState({ calendarSyncStatus: 'local' });
-      return undefined;
-    }
-    let cancelled = false;
-    setState({ calendarSyncStatus: 'loading' });
-    fetchMobileAdmissionCalendar(getUserApiBinding()).then((result) => {
-      if (cancelled) return;
-      if (!result.ok) {
-        if (result.code === 'AUTH_EXPIRED') {
-          expireMobileSessionSilently();
-          return;
-        }
-        setState({ calendarSyncStatus: 'error' });
-        return;
-      }
-      setState({ personalEvents: result.data || [], calendarSyncStatus: 'ready' });
-    }).catch((_error) => {
-      if (cancelled) return;
-      setState({ calendarSyncStatus: 'error' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getUserApiBinding, state.userLoadStatus]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    let cancelled = false;
-    setState({ universityCatalogStatus: 'loading', universityCatalogError: '' });
-    fetchUniversityCatalog(getAnalysisApiBinding()).then((result) => {
-      if (cancelled) return;
-      setState(result.ok
-        ? { universityCatalog: result.data || [], universityCatalogStatus: 'ready', universityCatalogError: '' }
-        : { universityCatalog: [], universityCatalogStatus: 'error', universityCatalogError: result.error || '대학·학과 목록을 불러오지 못했습니다.' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getAnalysisApiBinding, state.universityCatalogRetryTick]);
-
-  useEffect(() => {
-    if (state.screen !== 'addUniversity' || state.userLoadStatus !== 'ready') return undefined;
-    const examMode = resolveAnalysisExamMode(state);
-    const examData = state.user?.quantitative?.[examMode];
-    let cancelled = false;
-    setState({ universityRecommendationStatus: 'loading', universityRecommendationError: '' });
-    fetchUniversityRecommendations({
-      ...getAnalysisApiBinding(),
-      examData,
-      examMode,
-      savedStream: state.user?.qualitative?.stream || state.obTrack,
-      excludeTargets: state.analysisTargetList
-    }).then((result) => {
-      if (cancelled) return;
-      const recommendations = result.data || [];
-      setState({
-        universityRecommendations: recommendations,
-        universityRecommendationStatus: result.ok && recommendations.length ? 'ready' : 'empty',
-        universityRecommendationError: result.error || ''
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getAnalysisApiBinding, state.screen, state.userLoadStatus, state.universityRecommendationRetryTick]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    let cancelled = false;
-    setState({ proReportsStatus: 'loading' });
-    fetchMobileProReports(getReportApiBinding()).then((result) => {
-      if (cancelled) return;
-      const reports = result.data || [];
-      setState({ proReports: reports, proReportsStatus: result.ok ? (reports.length ? 'ready' : 'empty') : 'error' });
-    }).catch(() => {
-      if (!cancelled) setState({ proReports: [], proReportsStatus: 'error' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getReportApiBinding]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    let cancelled = false;
-    setState({ qnaStatus: 'loading' });
-    fetchMobileQnaHistory(getQnaApiBinding()).then((result) => {
-      if (cancelled) return;
-      const items = result.data || [];
-      setState({ qnaHistory: items, qnaStatus: result.ok ? (items.length ? 'ready' : 'empty') : 'error' });
-    }).catch(() => {
-      if (!cancelled) setState({ qnaHistory: [], qnaStatus: 'error' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getQnaApiBinding]);
-
-  // 세션이 있으면 알림을 로드한다.
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    let cancelled = false;
-    setState({ notiStatus: 'loading' });
-    fetchMobileNotifications(getNotiApiBinding()).then((result) => {
-      if (cancelled) return;
-      const items = result.data || [];
-      setState({ notiList: items, notiStatus: result.ok ? (items.length ? 'ready' : 'empty') : 'error' });
-    }).catch(() => {
-      if (!cancelled) setState({ notiList: [], notiStatus: 'error' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getNotiApiBinding]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    let cancelled = false;
-    setState({ weeklyReportsStatus: 'loading' });
-    fetchMobileWeeklyReports(getReportApiBinding()).then((result) => {
-      if (cancelled) return;
-      const reports = result.data || [];
-      setState({ weeklyReports: reports, weeklyReportsStatus: result.ok ? (reports.length ? 'ready' : 'empty') : 'error' });
-    }).catch(() => {
-      if (!cancelled) setState({ weeklyReports: [], weeklyReportsStatus: 'error' });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [getReportApiBinding]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    const examMode = resolveAnalysisExamMode(state);
-    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
-    const targetList = uniqueTargetList([
-      state.targetMajor,
-      ...(state.analysisTargetList || []),
-      ...(state.homeTargetList || [])
-    ]);
-    if (state.userLoadStatus === 'error') {
-      scoreRequestIdRef.current += 1;
-      scoreFetchSignatureRef.current = '';
-      if (state.analysisApiStatus !== 'error' || state.scoreFetchStatus !== 'error') {
-        setState({
-          analysisApiStatus: 'error',
-          analysisApiError: state.userLoadError || '사용자 정보를 불러오지 못했습니다.',
-          scoreFetchStatus: 'error',
-          scoreFetchSignature: ''
-        });
-      }
-      return undefined;
-    }
-    if (state.userLoadStatus !== 'ready') {
-      scoreRequestIdRef.current += 1;
-      scoreFetchSignatureRef.current = '';
-      if (state.scoreFetchStatus !== 'loading' || state.scoreFetchSignature) {
-        setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: '' });
-      }
-      return undefined;
-    }
-    if (!userScores || !targetList.length) {
-      scoreRequestIdRef.current += 1;
-      scoreFetchRetryRef.current = 0;
-      scoreFetchSignatureRef.current = '';
-      const hasPrevious = (state.analysisResults || []).length || state.lastAnalysisSnapshot?.analysisResults?.length;
-      const scorePatch = stateRef.current.scoreFetchStatus === 'loading'
-        ? { scoreFetchStatus: 'empty', scoreFetchSignature: '' }
-        : { scoreFetchSignature: '' };
-      if (!hasPrevious && state.analysisApiStatus !== 'empty') {
-        setState({ analysisApiStatus: 'empty', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없습니다.' : '', ...scorePatch });
-      } else if (hasPrevious && state.analysisApiStatus !== 'stale') {
-        setState({ analysisApiStatus: 'stale', analysisApiError: !userScores ? '선택한 시험에 입력된 성적이 없어 이전 결과를 보여드리고 있습니다.' : '', ...scorePatch });
-      }
-      return undefined;
-    }
-
-    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
-    if (scoreResultRetryRef.current.signature !== scoreSignature) {
-      scoreResultRetryRef.current = { signature: scoreSignature, attempts: 0 };
-    }
-    const apiBinding = getAnalysisApiBinding();
-    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) {
-      scoreRequestIdRef.current += 1;
-      const retryDelay = Math.min(1200, 250 + scoreFetchRetryRef.current * 100);
-      const timer = globalThis.setTimeout?.(() => {
-        scoreFetchRetryRef.current += 1;
-        if (scoreFetchRetryRef.current >= 40) {
-          setState({ analysisApiStatus: 'error', analysisApiError: '분석 설정을 불러오지 못했습니다.', scoreFetchStatus: 'error' });
-          return;
-        }
-        setState({ scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
-      }, retryDelay);
-      return () => {
-        if (timer) globalThis.clearTimeout?.(timer);
-      };
-    }
-    if (
-      scoreFetchSignatureRef.current === scoreSignature
-      && state.scoreFetchSignature === scoreSignature
-      && (state.scoreFetchStatus === 'loading' || state.scoreFetchStatus === 'ready')
-    ) return undefined;
-    scoreFetchRetryRef.current = 0;
-    const requestId = scoreRequestIdRef.current + 1;
-    scoreRequestIdRef.current = requestId;
-    scoreFetchSignatureRef.current = scoreSignature;
-    simulationFetchSignatureRef.current = '';
-    setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
-    // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
-    fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((result) => {
-      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
-      const payload = result.data || { analysisResults: [], simulationResults: [] };
-      const analysisResults = payload.analysisResults || [];
-      const analysisSimulations = [];
-      const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-      const analysisError = result.ok ? null : { message: result.error, status: result.status, code: result.code };
-      if (canRetryInitialScorePayload({ error: analysisError, resultCount: analysisResults.length }, scoreResultRetryRef.current.attempts)) {
-        scoreResultRetryRef.current.attempts += 1;
-        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
-        globalThis.setTimeout?.(() => {
-          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
-          setState({
-            analysisApiStatus: 'loading',
-            analysisApiError: '',
-            scoreFetchStatus: 'idle',
-            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
-          });
-        }, retryDelay);
-        return;
-      }
-      if (analysisResults.length) scoreResultRetryRef.current.attempts = 0;
-      const nextStatus = analysisResults.length
-        ? 'ready'
-        : analysisError
-          ? (hasPrevious ? 'stale' : 'error')
-          : 'empty';
-      // 홈/분석 단일 출처: 같은 fetch 결과를 scoreCache에도 머지한다. 홈 카드는 이 캐시만 읽으므로
-      // "분석탭 갔다와야 점수가 뜨던" 문제가 사라진다(분석에서 점수가 뜨면 홈에서도 즉시 뜸).
-      const merged = normalizeServerResults(analysisResults, [], scoreSignature);
-      const hasEntries = Object.keys(merged).length > 0;
-      const hasScores = Object.values(merged).some((entry) => entry.available !== false && Number.isFinite(Number(entry.score)));
-      setState({
-        analysisResults,
-        analysisSimulations,
-        analysisResultExamMode: examMode,
-        analysisResultSignature: scoreSignature,
-        lastAnalysisSnapshot: analysisResults.length
-          ? { examMode, targetList, analysisResults, analysisSimulations, updatedAt: Date.now() }
-          : stateRef.current.lastAnalysisSnapshot,
-        analysisApiStatus: nextStatus,
-        analysisApiError: analysisError?.message || (analysisResults.length ? '' : ''),
-        scoreCache: hasEntries ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache,
-        scoreFetchStatus: hasScores ? 'ready' : analysisError ? 'error' : 'empty'
-      });
-    }).catch((error) => {
-      if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
-      if (canRetryInitialScore(error, scoreResultRetryRef.current.attempts)) {
-        scoreResultRetryRef.current.attempts += 1;
-        const retryDelay = 300 * scoreResultRetryRef.current.attempts;
-        globalThis.setTimeout?.(() => {
-          if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
-          setState({
-            analysisApiStatus: 'loading',
-            analysisApiError: '',
-            scoreFetchStatus: 'idle',
-            scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1
-          });
-        }, retryDelay);
-        return;
-      }
-      const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-      setState({
-        analysisApiStatus: hasPrevious ? 'stale' : 'error',
-        analysisApiError: error?.message || '분석 결과를 불러오지 못했습니다.',
-        scoreFetchStatus: stateRef.current.scoreFetchSignature === scoreSignature ? 'error' : stateRef.current.scoreFetchStatus
-      });
-    });
-    return undefined;
-  }, [
-    getAnalysisApiBinding,
-    state.analysisTargetList,
-    state.homeTargetList,
-    state.scoreFetchRetryTick,
-    state.scoreExamKey,
-    state.scoreExamType,
-    state.targetMajor,
-    state.userLoadError,
-    state.userLoadStatus,
-    state.user?.quantitative
-  ]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || state.screen !== 'analysis' || !canUseReverseProjection(state)) {
-      backtraceFetchSignatureRef.current = '';
-      if (state.analysisBacktraceStatus !== 'idle' || state.analysisBacktracePlan || state.analysisBacktraceError) {
-        setState({ analysisBacktraceStatus: 'idle', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: '' });
-      }
-      return undefined;
-    }
-    if (state.userLoadStatus !== 'ready' || state.analysisApiStatus !== 'ready' || !(state.analysisSimulations || []).length) return undefined;
-    const examMode = resolveAnalysisExamMode(state);
-    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
-    const targetMajor = String(state.targetMajor || '').trim();
-    if (!userScores || !targetMajor) return undefined;
-    const signature = `backtrace::${buildScoreSignature(examMode, [targetMajor], userScores)}`;
-    if (backtraceFetchSignatureRef.current === signature && state.analysisBacktraceSignature === signature) return undefined;
-    const apiBinding = getAnalysisApiBinding();
-    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
-    backtraceFetchSignatureRef.current = signature;
-    setState({ analysisBacktraceStatus: 'loading', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: signature });
-    fetchMobileBacktrace({ ...apiBinding, targetMajor, userScores, examMode }).then((result) => {
-      if (backtraceFetchSignatureRef.current !== signature) return;
-      setState({
-        analysisBacktraceStatus: result.ok ? (result.data ? 'ready' : 'empty') : 'error',
-        analysisBacktracePlan: result.data || null,
-        analysisBacktraceError: result.error || '',
-        analysisBacktraceSignature: signature
-      });
-    });
-    return undefined;
-  }, [
-    getAnalysisApiBinding,
-    state.screen,
-    state.targetMajor,
-    state.scoreExamKey,
-    state.scoreExamType,
-    state.analysisApiStatus,
-    state.analysisSimulations,
-    state.userLoadStatus,
-    state.userTier,
-    state.selectedPlan,
-    state.user?.currentSubscription,
-    state.user?.pendingSubscription,
-    state.user?.quantitative
-  ]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
-    if (!canUseScoreSimulation(state)) {
-      simulationFetchSignatureRef.current = '';
-      return undefined;
-    }
-    if (state.userLoadStatus !== 'ready' || state.analysisApiStatus !== 'ready') return undefined;
-
-    const examMode = resolveAnalysisExamMode(state);
-    const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
-    const targetList = uniqueTargetList([
-      state.targetMajor,
-      ...(state.analysisTargetList || []),
-      ...(state.homeTargetList || [])
-    ]);
-    if (!userScores || !targetList.length || !(state.analysisResults || []).length) return undefined;
-
-    const scoreSignature = buildScoreSignature(examMode, targetList, userScores);
-    const simulationSignature = `sim::${scoreSignature}`;
-    if (simulationFetchSignatureRef.current === simulationSignature) return undefined;
-
-    const apiBinding = getAnalysisApiBinding();
-    if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
-
-    simulationFetchSignatureRef.current = simulationSignature;
-    fetchMobileScoreSimulation({ ...apiBinding, targetList, userScores, examMode }).then((result) => {
-      if (simulationFetchSignatureRef.current !== simulationSignature) return;
-      const simulationResults = result.data || [];
-      const currentAnalysisResults = stateRef.current.analysisResults || [];
-      const merged = normalizeServerResults(currentAnalysisResults, simulationResults, scoreSignature);
-      const hasScores = Object.keys(merged).length > 0;
-      setState({
-        analysisSimulations: simulationResults,
-        lastAnalysisSnapshot: currentAnalysisResults.length
-          ? {
-              examMode,
-              targetList,
-              analysisResults: currentAnalysisResults,
-              analysisSimulations: simulationResults,
-              updatedAt: Date.now()
-            }
-          : stateRef.current.lastAnalysisSnapshot,
-        scoreCache: hasScores ? mergeScoreCache(stateRef.current.scoreCache, examMode, merged) : stateRef.current.scoreCache
-      });
-    });
-    return undefined;
-  }, [
-    getAnalysisApiBinding,
-    state.analysisApiStatus,
-    state.analysisResults,
-    state.analysisTargetList,
-    state.homeTargetList,
-    state.scoreExamKey,
-    state.scoreExamType,
-    state.targetMajor,
-    state.userLoadStatus,
-    state.userTier,
-    state.selectedPlan,
-    state.user?.currentSubscription,
-    state.user?.pendingSubscription,
-    state.user?.gracePeriodUntil,
-    state.user?.univChangeRemaining,
-    state.user?.quantitative
-  ]);
 
   // scoreCache는 기본 분석 fetch가 채우고, Basic 이상 시뮬레이션 fetch가 같은 캐시에 보강한다.
 
