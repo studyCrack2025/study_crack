@@ -11,7 +11,48 @@ permissions:
   contents: read
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studycrack-mobile-app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: studycrack-mobile-app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+      - name: Check source contracts
+        run: npm run check
+      - name: Build mobile app bundle
+        run: npm run build
+      - name: Record architecture baseline
+        run: node scripts/report-architecture-baseline.mjs > architecture-baseline.json
+      - name: Install browser runtime
+        run: npx playwright install --with-deps chromium
+      - name: Run mobile browser smoke tests
+        run: npm run test:e2e
+      - name: Upload verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-verification-${{ github.sha }}
+          path: |
+            studycrack-mobile-app/architecture-baseline.json
+            studycrack-mobile-app/playwright-report/
+            studycrack-mobile-app/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

@@ -41,3 +41,6 @@ js/studycrack-mobile.js
 
 # 8. 로컬 개발용 mock 데이터 (절대 커밋 금지)
 js/dev-mock.local.js
+studycrack-mobile-app/test-results/
+studycrack-mobile-app/playwright-report/
+studycrack-mobile-app/architecture-baseline.json
