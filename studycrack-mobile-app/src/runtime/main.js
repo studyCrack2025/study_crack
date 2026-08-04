@@ -48,8 +48,16 @@ import { renderScoreEditModal } from '../screens/profile/renderers.js';
 import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
 import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
-import { createBlankScoreState, fetchMobileAdmissionCalendar, fetchMobileBacktrace, fetchMobileNotifications, fetchMobileProReports, fetchMobileQnaHistory, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchMobileWeeklyReports, fetchStudyRanking, fetchUniversityCatalog, fetchUniversityRecommendations, mapExamDataToScorePatch, requestMobileProReport, saveMobileQna, saveMobileWeeklyCheck, saveNotificationPreferences, saveQualitative, saveQuantitative, saveStudySession, saveTargetUnivs, scoreExamTypeToKey, targetSlotsToList, uploadMobileFile, uploadMobileWeeklyFiles, upsertTargetSlot } from './persistence.js';
-import { createUserDataResetPatch, fetchCurrentUser, mapUserToStatePatch } from './session.js';
+import { fetchMobileAdmissionCalendar, saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
+import { fetchMobileBacktrace, fetchMobileScoreSimulation, fetchMobileTargetAnalysis, fetchUniversityCatalog, fetchUniversityRecommendations } from '../features/analysis/api.js';
+import { createBlankScoreState, mapExamDataToScorePatch, scoreExamTypeToKey } from '../features/analysis/score-model.js';
+import { targetSlotsToList, upsertTargetSlot } from '../features/analysis/target-model.js';
+import { fetchMobileNotifications } from '../features/notifications/api.js';
+import { fetchStudyRanking, saveStudySession } from '../features/planner/api.js';
+import { fetchMobileProReports, fetchMobileWeeklyReports, requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
+import { fetchCurrentUser } from '../features/session/api.js';
+import { fetchMobileQnaHistory, saveMobileQna } from '../features/support/api.js';
+import { createUserDataResetPatch, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildScoreSignature, buildSimulationTargets, buildUniversityCards, canRetryInitialScore, canRetryInitialScorePayload, mergeScoreCache, normalizeServerResults } from './score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
@@ -849,10 +857,11 @@ function MobileApp() {
     const period = state.screen === 'ranking' ? state.rankingPeriod : 'daily';
     fetchStudyRanking({ ...getUserApiBinding(), period }).then((result) => {
       if (cancelled) return;
+      const ranking = result.data || { rows: [], me: null };
       setState({
-        rankingRows: result.rows || [],
-        rankingMe: result.me || null,
-        rankingStatus: result.ok ? ((result.rows || []).length ? 'ready' : 'empty') : 'error',
+        rankingRows: ranking.rows || [],
+        rankingMe: ranking.me || null,
+        rankingStatus: result.ok ? ((ranking.rows || []).length ? 'ready' : 'empty') : 'error',
         rankingError: result.error || ''
       });
     });
@@ -939,12 +948,17 @@ function MobileApp() {
     userFetchRetryRef.current = 0;
     let cancelled = false;
     setState({ ...createUserDataResetPatch(), userLoadStatus: 'loading', userLoadError: '' });
-    fetchCurrentUser(userApiBinding).then((userData) => {
+    fetchCurrentUser(userApiBinding).then((result) => {
       if (cancelled) return;
-      if (!userData) {
-        setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
+      if (!result.ok) {
+        if (result.code === 'AUTH_EXPIRED') {
+          expireMobileSessionSilently();
+          return;
+        }
+        setState({ userLoadStatus: 'error', userLoadError: result.error || '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
         return;
       }
+      const userData = result.data;
       const role = String(userData.role || 'student').toLowerCase();
       if (role && role !== 'student') {
         blockNonStudentMobileSession(role);
@@ -960,13 +974,8 @@ function MobileApp() {
       scoreFetchRetryRef.current = 0;
       scoreResultRetryRef.current = { signature: '', attempts: 0 };
       setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
-    }).catch((error) => {
+    }).catch((_error) => {
       if (cancelled) return;
-      // 인증 만료: alert 없이 세션 정리 후 모바일 로그인 화면으로 1회만 이동.
-      if (error && error.code === 'AUTH_EXPIRED') {
-        expireMobileSessionSilently();
-        return;
-      }
       setState({ userLoadStatus: 'error', userLoadError: '사용자 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
     });
     return () => {
@@ -982,19 +991,19 @@ function MobileApp() {
     }
     let cancelled = false;
     setState({ calendarSyncStatus: 'loading' });
-    fetchMobileAdmissionCalendar(getUserApiBinding()).then((events) => {
+    fetchMobileAdmissionCalendar(getUserApiBinding()).then((result) => {
       if (cancelled) return;
-      if (!events) {
+      if (!result.ok) {
+        if (result.code === 'AUTH_EXPIRED') {
+          expireMobileSessionSilently();
+          return;
+        }
         setState({ calendarSyncStatus: 'error' });
         return;
       }
-      setState({ personalEvents: events, calendarSyncStatus: 'ready' });
-    }).catch((error) => {
+      setState({ personalEvents: result.data || [], calendarSyncStatus: 'ready' });
+    }).catch((_error) => {
       if (cancelled) return;
-      if (error?.code === 'AUTH_EXPIRED') {
-        expireMobileSessionSilently();
-        return;
-      }
       setState({ calendarSyncStatus: 'error' });
     });
     return () => {
@@ -1010,7 +1019,7 @@ function MobileApp() {
     fetchUniversityCatalog(getAnalysisApiBinding()).then((result) => {
       if (cancelled) return;
       setState(result.ok
-        ? { universityCatalog: result.catalog, universityCatalogStatus: 'ready', universityCatalogError: '' }
+        ? { universityCatalog: result.data || [], universityCatalogStatus: 'ready', universityCatalogError: '' }
         : { universityCatalog: [], universityCatalogStatus: 'error', universityCatalogError: result.error || '대학·학과 목록을 불러오지 못했습니다.' });
     });
     return () => {
@@ -1032,9 +1041,10 @@ function MobileApp() {
       excludeTargets: state.analysisTargetList
     }).then((result) => {
       if (cancelled) return;
+      const recommendations = result.data || [];
       setState({
-        universityRecommendations: result.recommendations || [],
-        universityRecommendationStatus: result.ok && result.recommendations?.length ? 'ready' : 'empty',
+        universityRecommendations: recommendations,
+        universityRecommendationStatus: result.ok && recommendations.length ? 'ready' : 'empty',
         universityRecommendationError: result.error || ''
       });
     });
@@ -1048,9 +1058,10 @@ function MobileApp() {
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     setState({ proReportsStatus: 'loading' });
-    fetchMobileProReports(getReportApiBinding()).then((reports) => {
-      if (cancelled || !reports) return;
-      setState({ proReports: reports, proReportsStatus: reports.length ? 'ready' : 'empty' });
+    fetchMobileProReports(getReportApiBinding()).then((result) => {
+      if (cancelled) return;
+      const reports = result.data || [];
+      setState({ proReports: reports, proReportsStatus: result.ok ? (reports.length ? 'ready' : 'empty') : 'error' });
     }).catch(() => {
       if (!cancelled) setState({ proReports: [], proReportsStatus: 'error' });
     });
@@ -1064,9 +1075,10 @@ function MobileApp() {
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     setState({ qnaStatus: 'loading' });
-    fetchMobileQnaHistory(getQnaApiBinding()).then((items) => {
-      if (cancelled || !items) return;
-      setState({ qnaHistory: items, qnaStatus: items.length ? 'ready' : 'empty' });
+    fetchMobileQnaHistory(getQnaApiBinding()).then((result) => {
+      if (cancelled) return;
+      const items = result.data || [];
+      setState({ qnaHistory: items, qnaStatus: result.ok ? (items.length ? 'ready' : 'empty') : 'error' });
     }).catch(() => {
       if (!cancelled) setState({ qnaHistory: [], qnaStatus: 'error' });
     });
@@ -1081,9 +1093,10 @@ function MobileApp() {
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     setState({ notiStatus: 'loading' });
-    fetchMobileNotifications(getNotiApiBinding()).then((items) => {
-      if (cancelled || !items) return;
-      setState({ notiList: items, notiStatus: items.length ? 'ready' : 'empty' });
+    fetchMobileNotifications(getNotiApiBinding()).then((result) => {
+      if (cancelled) return;
+      const items = result.data || [];
+      setState({ notiList: items, notiStatus: result.ok ? (items.length ? 'ready' : 'empty') : 'error' });
     }).catch(() => {
       if (!cancelled) setState({ notiList: [], notiStatus: 'error' });
     });
@@ -1097,9 +1110,10 @@ function MobileApp() {
     if (typeof window.hasClientSession === 'function' && !window.hasClientSession()) return undefined;
     let cancelled = false;
     setState({ weeklyReportsStatus: 'loading' });
-    fetchMobileWeeklyReports(getReportApiBinding()).then((reports) => {
-      if (cancelled || !reports) return;
-      setState({ weeklyReports: reports, weeklyReportsStatus: reports.length ? 'ready' : 'empty' });
+    fetchMobileWeeklyReports(getReportApiBinding()).then((result) => {
+      if (cancelled) return;
+      const reports = result.data || [];
+      setState({ weeklyReports: reports, weeklyReportsStatus: result.ok ? (reports.length ? 'ready' : 'empty') : 'error' });
     }).catch(() => {
       if (!cancelled) setState({ weeklyReports: [], weeklyReportsStatus: 'error' });
     });
@@ -1187,19 +1201,13 @@ function MobileApp() {
     simulationFetchSignatureRef.current = '';
     setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     // cancelled 플래그를 쓰지 않는다(in-flight 응답 유실 버그 방지). staleness는 응답 토큰 가드로만 판정.
-    fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
+    fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode }).then((result) => {
       if (scoreRequestIdRef.current !== requestId || scoreFetchSignatureRef.current !== scoreSignature) return;
-      if (!payload) {
-        const timer = globalThis.setTimeout?.(() => {
-          setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
-        }, 250);
-        if (!timer) setState({ scoreFetchStatus: 'idle', scoreFetchRetryTick: stateRef.current.scoreFetchRetryTick + 1 });
-        return;
-      }
+      const payload = result.data || { analysisResults: [], simulationResults: [] };
       const analysisResults = payload.analysisResults || [];
       const analysisSimulations = [];
       const hasPrevious = (stateRef.current.analysisResults || []).length || stateRef.current.lastAnalysisSnapshot?.analysisResults?.length;
-      const analysisError = payload.analysisError || null;
+      const analysisError = result.ok ? null : { message: result.error, status: result.status, code: result.code };
       if (canRetryInitialScorePayload({ error: analysisError, resultCount: analysisResults.length }, scoreResultRetryRef.current.attempts)) {
         scoreResultRetryRef.current.attempts += 1;
         const retryDelay = 300 * scoreResultRetryRef.current.attempts;
@@ -1297,8 +1305,8 @@ function MobileApp() {
     fetchMobileBacktrace({ ...apiBinding, targetMajor, userScores, examMode }).then((result) => {
       if (backtraceFetchSignatureRef.current !== signature) return;
       setState({
-        analysisBacktraceStatus: result.ok ? (result.plan ? 'ready' : 'empty') : 'error',
-        analysisBacktracePlan: result.plan || null,
+        analysisBacktraceStatus: result.ok ? (result.data ? 'ready' : 'empty') : 'error',
+        analysisBacktracePlan: result.data || null,
         analysisBacktraceError: result.error || '',
         analysisBacktraceSignature: signature
       });
@@ -1346,9 +1354,9 @@ function MobileApp() {
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
 
     simulationFetchSignatureRef.current = simulationSignature;
-    fetchMobileScoreSimulation({ ...apiBinding, targetList, userScores, examMode }).then((payload) => {
+    fetchMobileScoreSimulation({ ...apiBinding, targetList, userScores, examMode }).then((result) => {
       if (simulationFetchSignatureRef.current !== simulationSignature) return;
-      const simulationResults = payload?.simulationResults || [];
+      const simulationResults = result.data || [];
       const currentAnalysisResults = stateRef.current.analysisResults || [];
       const merged = normalizeServerResults(currentAnalysisResults, simulationResults, scoreSignature);
       const hasScores = Object.keys(merged).length > 0;

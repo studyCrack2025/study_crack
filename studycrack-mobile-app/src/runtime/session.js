@@ -2,28 +2,9 @@ import { EMPTY_USER } from '../constants/runtime-defaults.js';
 import {
   createBlankScoreState,
   mapExamDataToScorePatch,
-  normalizeTargetUnivSlots,
-  scoreExamKeyToLabel,
-  targetSlotsToList
-} from './persistence.js';
-
-// 사용자 분석 데이터 호출. 성공 시 백엔드 userData 반환, 그 외 null.
-// 인증 만료(AUTH_EXPIRED)는 상위 부트스트랩이 세션 정리/로그인 이동을 분기하도록 전달한다.
-export async function fetchCurrentUser({ apiFetch, userApiUrl } = {}) {
-  if (typeof apiFetch !== 'function' || !userApiUrl) return null;
-  try {
-    const res = await apiFetch(userApiUrl, {
-      method: 'POST',
-      body: JSON.stringify({ type: 'get_user_analysis' })
-    });
-    if (!res || !res.ok) return null;
-    const data = await res.json().catch(() => null);
-    return data && typeof data === 'object' ? data : null;
-  } catch (error) {
-    if (error && error.code === 'AUTH_EXPIRED') throw error;
-    return null;
-  }
-}
+  scoreExamKeyToLabel
+} from '../features/analysis/score-model.js';
+import { normalizeTargetUnivSlots, targetSlotsToList } from '../features/analysis/target-model.js';
 
 export function createUserDataResetPatch() {
   return {

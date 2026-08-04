@@ -1,5 +1,5 @@
 import { getData } from './action-utils.js';
-import { removeTargetSlot, targetSlotsToList } from '../runtime/persistence.js';
+import { removeTargetSlot, targetSlotsToList } from '../features/analysis/target-model.js';
 
 function noop() {}
 

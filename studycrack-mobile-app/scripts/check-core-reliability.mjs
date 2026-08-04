@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
-import {
-  fetchMobileBacktrace,
-  fetchStudyRanking,
-  saveNotificationPreferences,
-  saveStudySession
-} from '../src/runtime/persistence.js';
+import { saveNotificationPreferences } from '../src/features/account/api.js';
+import { fetchMobileBacktrace } from '../src/features/analysis/api.js';
+import { fetchStudyRanking, saveStudySession } from '../src/features/planner/api.js';
 import { createPlannerHandlers } from '../src/handlers/planner-handlers.js';
 
 function response(body, ok = true, status = 200) {
@@ -29,7 +26,7 @@ assert.equal(prefs.ok, true);
 assert.deepEqual(requests.at(-1).data.notificationPreferences, { planner: false, weekly: true, report: true, billing: true });
 
 const ranking = await fetchStudyRanking({ apiFetch, userApiUrl: '/user', period: 'weekly' });
-assert.equal(ranking.rows[0].seconds, 3600);
+assert.equal(ranking.data.rows[0].seconds, 3600);
 assert.equal(requests.at(-1).data.period, 'weekly');
 
 let rankingRefreshCount = 0;
@@ -62,7 +59,7 @@ const backtrace = await fetchMobileBacktrace({
   userScores: { kor: { raw: 80 } },
   examMode: 'jun'
 });
-assert.equal(backtrace.plan.reachable, true);
+assert.equal(backtrace.data.reachable, true);
 assert.deepEqual(requests.at(-1).targetUniv, { univ: '연세대학교', major: '정치외교학과', date: null });
 assert.equal(requests.at(-1).targetUiMin, 100);
 assert.equal(requests.at(-1).maxTotalRaw, 20);

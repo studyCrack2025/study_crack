@@ -1,5 +1,6 @@
 import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
-import { convertExamScores, scoreExamTypeToKey } from '../runtime/persistence.js';
+import { convertExamScores } from '../features/analysis/api.js';
+import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
 
@@ -502,7 +503,7 @@ export function createProfileHandlers(ctx) {
         }
         const nextQuantitative = {
           ...(ctx.user?.quantitative || {}),
-          [examKey]: converted.examData
+          [examKey]: converted.data
         };
         const result = await persistQuantitative(nextQuantitative);
         if (result && result.ok === false) {
@@ -510,12 +511,12 @@ export function createProfileHandlers(ctx) {
           return false;
         }
 
-        const nextKo = converted.examData.kor.raw;
-        const nextMa = converted.examData.math.raw;
+        const nextKo = converted.data.kor.raw;
+        const nextMa = converted.data.math.raw;
         const nextEnGrade = Number(values.english || 0);
         const nextEnScore = englishGradeToScore(nextEnGrade);
-        const nextIq1 = converted.examData.inq1.raw;
-        const nextIq2 = converted.examData.inq2.raw;
+        const nextIq1 = converted.data.inq1.raw;
+        const nextIq2 = converted.data.inq2.raw;
         setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
         const map = getExamScoresMap();
         map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
@@ -752,16 +753,16 @@ export function createProfileHandlers(ctx) {
       setProfilePhotoUploading(true);
       try {
         const uploadResult = await ctx.uploadProfileImage(file);
-        if (!uploadResult?.ok || !uploadResult.fileUrl) {
+        if (!uploadResult?.ok || !uploadResult.data) {
           alert(uploadResult?.error || '프로필 사진 업로드에 실패했습니다.');
           return false;
         }
-        const updateResult = await updateMemberInfo({ profileImage: uploadResult.fileUrl });
+        const updateResult = await updateMemberInfo({ profileImage: uploadResult.data });
         if (!updateResult.ok) {
           alert(updateResult.error || '프로필 사진 저장에 실패했습니다.');
           return false;
         }
-        setUser((prev) => ({ ...(prev || {}), profileImage: uploadResult.fileUrl }));
+        setUser((prev) => ({ ...(prev || {}), profileImage: uploadResult.data }));
         alert('프로필 사진이 변경되었습니다.');
         return true;
       } finally {

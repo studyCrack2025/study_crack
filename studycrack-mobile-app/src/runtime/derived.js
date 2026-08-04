@@ -8,7 +8,7 @@ import {
   getOfficialAdmissionEvents,
   mergeCalendarEvents
 } from '../constants/admission-calendar.js';
-import { scoreExamTypeToKey } from './persistence.js';
+import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 
 // 런타임 derived view-model: 원시 state에서 화면 renderer가 기대하는 계산값을 파생.
 // 모놀리식 App() 본문의 계산을 도메인별 순수 함수로 이식한다(로직 1:1 유지).

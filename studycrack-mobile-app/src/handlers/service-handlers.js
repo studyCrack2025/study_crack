@@ -1,5 +1,6 @@
 import { getData } from './action-utils.js';
-import { buildMobileWeeklyCheckPayload, markMobileNotificationsRead } from '../runtime/persistence.js';
+import { markMobileNotificationsRead } from '../features/notifications/api.js';
+import { buildMobileWeeklyCheckPayload } from '../features/reports/api.js';
 
 function noop() {}
 
@@ -320,10 +321,10 @@ export function createServiceHandlers(ctx) {
         alert(result?.error || '리포트 요청에 실패했습니다.');
         return false;
       }
-      if (result.report?.key) {
+      if (result.data?.key) {
         setProReports((prev) => {
           const list = Array.isArray(prev) ? prev : [];
-          return [result.report, ...list.filter((item) => item.key !== result.report.key)];
+          return [result.data, ...list.filter((item) => item.key !== result.data.key)];
         });
         setProReportsStatus('ready');
       }
@@ -358,11 +359,11 @@ export function createServiceHandlers(ctx) {
       setQnaSubmitting(true);
       const result = await ctx.persistMobileQna?.({ title, content });
       setQnaSubmitting(false);
-      if (!result?.ok || !result.item) {
+      if (!result?.ok || !result.data) {
         alert(result?.error || '질문 저장에 실패했습니다.');
         return false;
       }
-      setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
+      setQnaHistory((prev) => [result.data, ...(Array.isArray(prev) ? prev : [])]);
       setQnaStatus('ready');
       if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaDraftTitle('');
@@ -510,7 +511,7 @@ export function createServiceHandlers(ctx) {
             alert(uploadResult?.error || '첨부 파일 업로드에 실패했습니다.');
             return false;
           }
-          uploaded = uploadResult;
+          uploaded = uploadResult.data || uploaded;
         }
         const payload = buildMobileWeeklyCheckPayload({
           answers: ctx.coachingAnswers || {},
@@ -529,10 +530,10 @@ export function createServiceHandlers(ctx) {
           alert(result?.error || '주간 점검 저장에 실패했습니다.');
           return false;
         }
-        if (result.report?.weekId) {
+        if (result.data?.weekId) {
           setWeeklyReports((prev) => {
             const list = Array.isArray(prev) ? prev : [];
-            return [result.report, ...list.filter((item) => item.weekId !== result.report.weekId)];
+            return [result.data, ...list.filter((item) => item.weekId !== result.data.weekId)];
           });
           setWeeklyReportsStatus('ready');
         }

@@ -27,7 +27,9 @@ async function walk(path) {
 
 const hotspotPaths = [
   'src/runtime/main.js',
-  'src/runtime/persistence.js',
+  'src/shared/api/client.js',
+  'src/features/analysis/api.js',
+  'src/features/reports/api.js',
   'src/runtime/derived.js',
   'src/handlers/profile-handlers.js'
 ];
@@ -58,7 +60,8 @@ const report = {
   bundles,
   guardrails: {
     runtimeMainMaxLines: 1600,
-    runtimePersistenceMaxLines: 950,
+    sharedApiClientMaxLines: 100,
+    domainApiModuleMaxLines: 250,
     profileHandlersMaxLines: 1150,
     emittedChunkMaxBytes: 500 * 1024
   }

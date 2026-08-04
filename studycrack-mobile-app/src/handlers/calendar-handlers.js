@@ -1,6 +1,6 @@
 import { getData } from './action-utils.js';
 import { PERSONAL_EVENT_LIMITS, normalizePersonalEvent } from '../constants/admission-calendar.js';
-import { deleteMobileAdmissionEvent, upsertMobileAdmissionEvent } from '../runtime/persistence.js';
+import { deleteMobileAdmissionEvent, upsertMobileAdmissionEvent } from '../features/account/api.js';
 
 function noop() {}
 
@@ -147,7 +147,7 @@ export function createCalendarHandlers(ctx = {}) {
           alert(result.error || '일정을 저장하지 못했습니다.');
           return true;
         }
-        setPersonalEvents(result.events);
+        setPersonalEvents(result.data?.events || []);
       } else {
         const next = editId
           ? current.map((e) => (e.id === editId ? normalized : e))
@@ -182,7 +182,7 @@ export function createCalendarHandlers(ctx = {}) {
           alert(result.error || '일정을 삭제하지 못했습니다.');
           return true;
         }
-        setPersonalEvents(result.events);
+        setPersonalEvents(result.data?.events || []);
       } else {
         const next = (ctx.personalEvents || []).filter((e) => e.id !== eventId);
         setPersonalEvents(next);

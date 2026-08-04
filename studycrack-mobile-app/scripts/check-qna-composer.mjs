@@ -37,7 +37,7 @@ const service = createServiceHandlers({
   qnaDraftRef,
   persistMobileQna: async (draft) => {
     submitted = draft;
-    return { ok: true, item: { qnaId: 'qna-test', ...draft } };
+    return { ok: true, data: { qnaId: 'qna-test', ...draft }, error: '', status: 200, code: '' };
   },
   setQnaSubmitting: () => {},
   setQnaHistory: () => {},
