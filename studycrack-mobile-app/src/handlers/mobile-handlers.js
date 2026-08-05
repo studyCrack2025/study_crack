@@ -8,6 +8,7 @@ import { createNavigationHandlers } from './navigation-handlers.js';
 import { createPlannerHandlers } from './planner-handlers.js';
 import { createProfileHandlers } from './profile-handlers.js';
 import { createServiceHandlers } from './service-handlers.js';
+import { requireHandlerStateActions } from '../state/handler-state-actions.js';
 
 export const MOBILE_ACTION_HANDLER_ORDER = [
   'navigation',
@@ -19,15 +20,19 @@ export const MOBILE_ACTION_HANDLER_ORDER = [
   'calendar'
 ];
 
-export function createMobileActionHandlerGroups(ctx = {}) {
+function withStateActions(ctx, actionGroups, group) {
+  return { ...ctx, ...requireHandlerStateActions(actionGroups, group) };
+}
+
+export function createMobileActionHandlerGroups(ctx = {}, stateActions = {}) {
   return {
-    navigation: createNavigationHandlers(ctx),
-    auth: createAuthHandlers(ctx),
-    planner: createPlannerHandlers(ctx),
-    profile: createProfileHandlers(ctx),
-    service: createServiceHandlers(ctx),
-    analysis: createAnalysisHandlers(ctx),
-    calendar: createCalendarHandlers(ctx)
+    navigation: createNavigationHandlers(withStateActions(ctx, stateActions, 'navigation')),
+    auth: createAuthHandlers(withStateActions(ctx, stateActions, 'auth')),
+    planner: createPlannerHandlers(withStateActions(ctx, stateActions, 'planner')),
+    profile: createProfileHandlers(withStateActions(ctx, stateActions, 'profile')),
+    service: createServiceHandlers(withStateActions(ctx, stateActions, 'service')),
+    analysis: createAnalysisHandlers(withStateActions(ctx, stateActions, 'analysis')),
+    calendar: createCalendarHandlers(withStateActions(ctx, stateActions, 'calendar'))
   };
 }
 
@@ -35,23 +40,27 @@ export function getOrderedMobileActionGroups(groups) {
   return MOBILE_ACTION_HANDLER_ORDER.map((key) => groups[key]).filter(Boolean);
 }
 
-export function createMobileActionHandlers(ctx = {}) {
-  return mergeHandlerGroups(...getOrderedMobileActionGroups(createMobileActionHandlerGroups(ctx)));
+export function createMobileActionHandlers(ctx = {}, stateActions = {}) {
+  return mergeHandlerGroups(...getOrderedMobileActionGroups(createMobileActionHandlerGroups(ctx, stateActions)));
 }
 
 export function createMobileActionDispatcher(ctx = {}, options = {}) {
-  return createActionDispatcher(getOrderedMobileActionGroups(createMobileActionHandlerGroups(ctx)), options);
+  return createActionDispatcher(
+    getOrderedMobileActionGroups(createMobileActionHandlerGroups(ctx, options.stateActions)),
+    options
+  );
 }
 
 export function createMobileEventHandlers(ctx = {}, options = {}) {
-  const form = createFormHandlers(ctx);
-  const gesture = createGestureHandlers(ctx);
+  const stateActions = options.stateActions || {};
+  const form = createFormHandlers(withStateActions(ctx, stateActions, 'form'));
+  const gesture = createGestureHandlers(withStateActions(ctx, stateActions, 'gesture'));
   return {
-    dispatchAction: createMobileActionDispatcher(ctx, options),
+    dispatchAction: createMobileActionDispatcher(ctx, { ...options, stateActions }),
     handleBlur: form.handleBlur,
     handleChange: form.handleChange,
     handleInput: form.handleInput,
     gesture,
-    actionHandlers: createMobileActionHandlers(ctx)
+    actionHandlers: createMobileActionHandlers(ctx, stateActions)
   };
 }

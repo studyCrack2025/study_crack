@@ -3,6 +3,7 @@ import { saveNotificationPreferences } from '../src/features/account/api.js';
 import { fetchMobileBacktrace } from '../src/features/analysis/api.js';
 import { fetchStudyRanking, saveStudySession } from '../src/features/planner/api.js';
 import { createPlannerHandlers } from '../src/handlers/planner-handlers.js';
+import { HANDLER_STATE_FIELDS } from '../src/state/handler-state-actions.js';
 
 function response(body, ok = true, status = 200) {
   return { ok, status, json: async () => body };
@@ -30,7 +31,12 @@ assert.equal(ranking.data.rows[0].seconds, 3600);
 assert.equal(requests.at(-1).data.period, 'weekly');
 
 let rankingRefreshCount = 0;
+const plannerStateActions = Object.fromEntries(HANDLER_STATE_FIELDS.planner.map((field) => [
+  `set${field.charAt(0).toUpperCase()}${field.slice(1)}`,
+  () => {}
+]));
 const timerHandlers = createPlannerHandlers({
+  ...plannerStateActions,
   activeStudySession: { sessionId: 'session-5678', subject: '국어', startedAt: new Date(Date.now() - 60000).toISOString(), status: 'running' },
   activeStudySubject: '국어',
   studyTimerRunning: true,
@@ -42,6 +48,7 @@ await timerHandlers.stopStudyTimer();
 assert.equal(rankingRefreshCount, 1);
 
 const duplicateTimerHandlers = createPlannerHandlers({
+  ...plannerStateActions,
   activeStudySession: { sessionId: 'session-duplicate', subject: '영어', startedAt: new Date(Date.now() - 30000).toISOString(), status: 'running' },
   activeStudySubject: '영어',
   studyTimerRunning: true,

@@ -44,9 +44,25 @@ import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { createMobileEventHandlers } from '../handlers/mobile-handlers.js';
 import { getScreenComponent, isDeferredAppScreen, loadAppScreenRegistry, renderMobileScreen } from '../app/screen-registry.js';
+import {
+  canAccessTier,
+  canUseReverseProjection,
+  canUseScoreSimulation,
+  filterTabItemsForTier,
+  resolveScreenAccess
+} from '../app/access-policy.js';
+import { createInitialMobileAppState, shouldLoadDeferredMobileScreens } from '../app/mobile-routing.js';
 import { renderScoreEditModal } from '../screens/profile/renderers.js';
-import { MAIN_TAB_SCREENS, createInitialAppState, createNavigationOps, createStateSetters, hydrateAppState } from './app-state.js';
-import { STORAGE_KEYS, readExamScoresMap, safeStringifySet, writeExamScoresMap } from '../state/storage.js';
+import {
+  MAIN_TAB_SCREENS,
+  appStateReducer,
+  createNavigationOps,
+  selectFlatAppState
+} from './app-state.js';
+import { createHandlerStateActions } from '../state/handler-state-actions.js';
+import { createScreenContext } from '../app/screen-context.js';
+import { useAppStatePersistence } from '../app/use-app-state-persistence.js';
+import { readExamScoresMap, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from './derived.js';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
 import { useAdmissionCalendarResource } from '../features/account/use-admission-calendar-resource.js';
@@ -66,9 +82,18 @@ import { createUserDataResetPatch, mapUserToStatePatch } from './session.js';
 import { buildAnalysisScoreView, buildSimulationTargets, buildUniversityCards, mergeScoreCache, normalizeServerResults } from '../features/analysis/score-store.js';
 import { createScrollOps } from './scroll-ops.js';
 import { createTimerOps } from './timer-ops.js';
-import { clearMobileAuthArtifacts } from './auth-service.js';
 import { attachVisualViewportMetrics } from './visual-viewport.js';
 import { setApiAuthExpiredHandler } from '../shared/api/client.js';
+import {
+  getMobileApiBinding,
+  getMobileFileApiBinding,
+  getMobileRuntimeContext,
+  getMobileScrollY,
+  hasMobileClientSession,
+  markMobileAppBooted,
+  persistMobileUserRole
+} from '../shared/browser/mobile-runtime.js';
+import { blockNonStudentMobileSession, expireMobileSessionSilently } from '../features/session/mobile-session-adapter.js';
 
 const { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } = React;
 
@@ -88,17 +113,7 @@ const touchTargetRef = { current: '' };
 const touchCardRef = { current: null };
 const suppressClickUntilRef = { current: 0 };
 
-function markAppBooted() {
-  if (typeof window === 'undefined') return;
-  window.__studycrackAppBooted = true;
-  window.__studycrackAssetSrc = {
-    ...(window.__studycrackAssetSrc || {}),
-    crackySrc: CRACKY_SRC,
-    onboardingLogoSrc: ONBOARDING_LOGO_SRC
-  };
-}
-
-markAppBooted();
+markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
 
 // 홈 KPI 슬라이더 DOM 상태(원본 getHomeSliderState, 순수 DOM 조회 — 스테일 클로저 회피).
 function getHomeSliderState(doc = globalThis.document) {
@@ -178,124 +193,6 @@ function buildDefaultCoachingSubjects(derived = {}) {
   });
 }
 
-const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3 };
-const SCREEN_REQUIREMENTS = {
-  strategy: 'standard',
-  planner: 'basic',
-  plannerAdd: 'basic',
-  weekly: 'standard',
-  report: 'pro',
-  reportDetail: 'pro',
-  proElite: 'pro',
-  tutor: 'pro'
-};
-const LOCKED_SCREEN_LABELS = {
-  strategy: '학습 코칭',
-  planner: '플래너',
-  plannerAdd: '플래너 작성',
-  weekly: '주간 피드백',
-  report: 'PRO 리포트',
-  reportDetail: '리포트 상세',
-  proElite: 'PRO 전용 리포트',
-  tutor: 'SKY튜터 1:1 피드백'
-};
-
-function getEffectiveTier(state = {}) {
-  const raw = state.userTier || state.selectedPlan || '';
-  return String(raw).toLowerCase();
-}
-
-function normalizeAccessTier(value) {
-  const tier = String(value || '').toLowerCase();
-  return tier === 'test' ? 'basic' : tier;
-}
-
-function parseAccessDate(value) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function pickActiveAccessSubscription(user = {}) {
-  const now = Date.now();
-  const pick = (sub) => {
-    if (!sub || sub.status !== 'active') return null;
-    const tier = normalizeAccessTier(sub.tier);
-    const start = parseAccessDate(sub.startDate);
-    if (start && now < start.getTime()) return null;
-    if (tier === 'basic' || tier === 'starter') return sub;
-    const end = parseAccessDate(sub.endDate) || (start ? new Date(start.getTime() + 28 * 24 * 60 * 60 * 1000) : null);
-    if (end && now > end.getTime()) return null;
-    return sub;
-  };
-  return pick(user.currentSubscription) || pick(user.pendingSubscription);
-}
-
-function canAccessTier(state, requiredTier) {
-  if (!requiredTier) return true;
-  return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
-}
-
-function canUseScoreSimulation(state) {
-  const user = state?.user || {};
-  const activeSub = pickActiveAccessSubscription(user);
-  if (!activeSub) return false;
-  const tier = normalizeAccessTier(activeSub.tier);
-  return ['basic', 'starter', 'standard', 'pro'].includes(tier);
-}
-
-function canUseReverseProjection(state) {
-  return canAccessTier(state, 'standard');
-}
-
-function getRoleLoginPath(role) {
-  if (role === 'admin') return '/admin/login';
-  if (role === 'tutor') return '/tutor/login';
-  return '/login';
-}
-
-async function blockNonStudentMobileSession(role) {
-  if (typeof window === 'undefined') return;
-  try {
-    await window.apiFetch?.(window.CONFIG?.api?.auth, {
-      method: 'POST',
-      body: JSON.stringify({ type: 'logout' })
-    });
-  } catch (_error) {}
-  try {
-    clearMobileAuthArtifacts(window);
-  } catch (_error) {}
-  try {
-    window.alert?.(role === 'tutor'
-      ? '튜터 계정은 튜터 전용 페이지를 이용해주세요.'
-      : '관리자 계정은 관리자 페이지를 이용해주세요.');
-  } catch (_error) {}
-  window.location.replace(getRoleLoginPath(role));
-}
-
-// 인증 만료 시 모바일 로그인 화면으로 보내는 경로. 현재 pathname 기준이되 비정상 경로는 정적 경로로 폴백.
-function getMobileExpiredLoginPath() {
-  const path = (typeof window !== 'undefined' && window.location && window.location.pathname) || '/studycrack-mobile.html';
-  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) return '/studycrack-mobile.html?screen=authLogin';
-  return `${path}?screen=authLogin`;
-}
-
-// 인증 만료 단일 종료 가드: alert 없이 모바일 세션을 정리하고 로그인 화면으로 1회만 이동한다.
-// 동시 다발 401/403이 발생해도 replace는 한 번만 수행된다.
-let mobileSessionExpiring = false;
-function expireMobileSessionSilently() {
-  if (typeof window === 'undefined' || mobileSessionExpiring) return;
-  mobileSessionExpiring = true;
-  try {
-    clearMobileAuthArtifacts(window);
-  } catch (_error) {}
-  window.location.replace(getMobileExpiredLoginPath());
-}
-
-function filterTabItemsForTier() {
-  return TAB_ITEMS;
-}
-
 function buildScoreSelectionPatch(scoreExamType, current) {
   const scoreExamKey = scoreExamTypeToKey(scoreExamType);
   const mapped = mapExamDataToScorePatch(current.user?.quantitative?.[scoreExamKey], current);
@@ -359,65 +256,15 @@ function isTabbarDimmed(state) {
   );
 }
 
-function reducer(state, patch) {
-  return { ...state, ...patch };
-}
-
-const PUBLIC_MOBILE_SCREENS = new Set([
-  'splash',
-  'on1',
-  'on2',
-  'on3',
-  'authLogin',
-  'authSignup',
-  'authFindId',
-  'authFindPw',
-  'privacyPolicy',
-  'termsScreen'
-]);
-
-function isLocalMobilePreview() {
-  if (typeof window === 'undefined' || !window.location) return false;
-  const host = window.location.hostname || '';
-  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
-}
-
-function replaceMobileScreenParam(screen) {
-  if (typeof window === 'undefined' || !window.location || !window.history) return;
-  try {
-    const url = new URL(window.location.href);
-    url.searchParams.set('screen', screen);
-    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
-  } catch (_error) {}
-}
-
-// 모바일 런타임 셸.
-// URL ?screen=<id>는 로컬/디자인 점검 시 초기 화면 지정에만 사용한다.
-// 초기 상태는 localStorage 하이드레이션을 적용(저장 effect와 짝 → 새로고침 간 상태 유지).
-function createInitialAppStateWithScreenParam() {
-  const base = hydrateAppState(createInitialAppState());
-  if (typeof window === 'undefined' || !window.location) return base;
-  const param = new URLSearchParams(window.location.search).get('screen');
-  const hasSession = typeof window.hasClientSession === 'function' && window.hasClientSession();
-  const sessionSafeBase = hasSession
-    ? { ...base, personalEvents: [], calendarSyncStatus: 'loading' }
-    : base;
-  if (hasSession && (param === 'authLogin' || param === 'authSignup')) return { ...sessionSafeBase, screen: 'home', tab: 'home' };
-  if (!hasSession && param && !isLocalMobilePreview() && !PUBLIC_MOBILE_SCREENS.has(param)) {
-    replaceMobileScreenParam('authLogin');
-    return { ...base, screen: 'authLogin', tab: 'home' };
-  }
-  return param
-    ? { ...sessionSafeBase, screen: param, ...(MAIN_TAB_SCREENS.includes(param) ? { tab: param } : {}) }
-    : sessionSafeBase;
-}
-
 function MobileApp() {
-  const [state, setState] = useReducer(reducer, undefined, createInitialAppStateWithScreenParam);
+  const [rootState, dispatchState] = useReducer(appStateReducer, undefined, createInitialMobileAppState);
+  const state = useMemo(() => selectFlatAppState(rootState), [rootState]);
+  const setState = useCallback((patch) => dispatchState({ type: 'app/patch', payload: patch }), []);
   const [appScreenRegistry, setAppScreenRegistry] = useState(null);
   const [appChunkStatus, setAppChunkStatus] = useState('idle');
   const [appChunkRetryTick, setAppChunkRetryTick] = useState(0);
   const stateRef = useRef(state);
+  const rootStateRef = useRef(rootState);
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const userFetchRetryRef = useRef(0);
@@ -433,16 +280,14 @@ function MobileApp() {
   }, []);
   const qnaDraftRef = useRef({ title: '', content: '' });
   stateRef.current = state;
+  rootStateRef.current = rootState;
+  useAppStatePersistence(rootState);
 
   useEffect(() => attachVisualViewportMetrics(), []);
   useEffect(() => setApiAuthExpiredHandler(expireMobileSessionSilently), []);
 
   useEffect(() => {
-    const shouldLoad = isDeferredAppScreen(state.screen)
-      || (state.screen === 'splash'
-        && typeof window !== 'undefined'
-        && typeof window.hasClientSession === 'function'
-        && window.hasClientSession());
+    const shouldLoad = shouldLoadDeferredMobileScreens(state.screen, Boolean(appScreenRegistry));
     if (!shouldLoad || appScreenRegistry) return undefined;
     let active = true;
     setAppChunkStatus('loading');
@@ -461,10 +306,9 @@ function MobileApp() {
     };
   }, [appChunkRetryTick, appScreenRegistry, state.screen]);
 
-  // 상태 키별 setX setter 자동 생성(핸들러 ctx 계약 충족). 키는 고정이라 1회 생성.
-  const setters = useMemo(
-    () => createStateSetters(Object.keys(stateRef.current), { setState, getState: () => stateRef.current }),
-    []
+  const handlerStateActions = useMemo(
+    () => createHandlerStateActions({ setState, getRootState: () => rootStateRef.current }),
+    [setState]
   );
 
   const nav = useMemo(
@@ -474,69 +318,43 @@ function MobileApp() {
         setState,
         onScreenChange: (from) => {
           // 스크롤 저장은 후속 단계. 현재는 위치만 보존 가드.
-          if (typeof window !== 'undefined' && from) {
-            stateRef.current.__lastScrollY = window.scrollY || window.pageYOffset || 0;
-          }
+          if (from) stateRef.current.__lastScrollY = getMobileScrollY();
         }
       }),
     []
   );
 
   const getUserApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || ''
-    }),
+    () => getMobileApiBinding('user', 'userApiUrl'),
     []
   );
 
   const getAnalysisApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || ''
-    }),
+    () => getMobileApiBinding('analysis', 'analysisApiUrl'),
     []
   );
 
   const getReportApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      reportApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.report) || ''
-    }),
+    () => getMobileApiBinding('report', 'reportApiUrl'),
     []
   );
 
   const getQnaApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      qnaApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.qna) || ''
-    }),
+    () => getMobileApiBinding('qna', 'qnaApiUrl'),
     []
   );
 
   const getNotiApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || ''
-    }),
+    () => getMobileApiBinding('noti', 'notiApiUrl'),
     []
   );
 
   const getFileApiBinding = useCallback(
-    () => ({
-      apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-      fetchImpl: (typeof window !== 'undefined' && window.fetch?.bind(window)) || globalThis.fetch,
-      fileApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.file) || ''
-    }),
+    () => getMobileFileApiBinding(),
     []
   );
 
-  const hasClientSession = useCallback(
-    () => typeof window !== 'undefined'
-      && typeof window.hasClientSession === 'function'
-      && window.hasClientSession(),
-    []
-  );
+  const hasClientSession = useCallback(() => hasMobileClientSession(), []);
 
   const applyUserData = useCallback((userData) => {
     const role = String(userData?.role || 'student').toLowerCase();
@@ -544,9 +362,7 @@ function MobileApp() {
       blockNonStudentMobileSession(role);
       return;
     }
-    if (userData?.role) {
-      try { localStorage.setItem('userRole', userData.role); } catch (_error) {}
-    }
+    if (userData?.role) persistMobileUserRole(userData.role);
     const patch = mapUserToStatePatch(userData, stateRef.current);
     setState({ ...patch, userLoadStatus: 'ready', userLoadError: '' });
   }, []);
@@ -663,18 +479,17 @@ function MobileApp() {
   }, [state.screen, state.homeDragOffset]);
 
   const dimmed = isTabbarDimmed(state);
-  const visibleTabItems = filterTabItemsForTier();
+  const visibleTabItems = filterTabItemsForTier(TAB_ITEMS);
 
   const beforeGoto = useCallback(({ target } = {}) => {
-    const required = SCREEN_REQUIREMENTS[target];
-    if (!required || canAccessTier(stateRef.current, required)) return true;
-    const label = LOCKED_SCREEN_LABELS[target] || '선택한 기능';
+    const access = resolveScreenAccess(stateRef.current, target);
+    if (access.allowed) return true;
     setState({
-      upgradePromptTier: required,
-      upgradePromptTarget: label,
+      upgradePromptTier: access.requiredTier,
+      upgradePromptTarget: access.label,
       lockedFeatureTarget: target,
-      lockedFeatureTier: required,
-      lockedFeatureLabel: label,
+      lockedFeatureTier: access.requiredTier,
+      lockedFeatureLabel: access.label,
       ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {})
     });
     nav.goto('lockedFeature');
@@ -684,13 +499,12 @@ function MobileApp() {
   const derivedCtx = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
   const renderExamKey = resolveAnalysisExamMode(state);
   const renderScoreCache = buildRenderScoreCache(state, renderExamKey);
+  const runtimeCtx = getMobileRuntimeContext();
   const baseCtx = {
     ...state,
     isAnalyzing: state.analysisApiStatus === 'loading'
       && !(state.analysisResults || []).length
       && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
-    // 상태 키별 setX setter 전체(핸들러 ctx 계약)
-    ...setters,
     // 화면 renderer가 기대하는 derived view-model(원시 state에서 파생).
     // 라이브 타이머 ref 현재값을 더해 재렌더 시 표시/랭킹/진행률이 base+live로 일관되게 한다.
     ...derivedCtx,
@@ -748,18 +562,9 @@ function MobileApp() {
     goto: nav.goto,
     back: nav.back,
     beforeGoto,
-    // window.CONFIG에서 API URL을 주입한다. 미설정 시 핸들러는 graceful no-op.
-    authApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.auth) || '',
-    analysisApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.analysis) || '',
-    apiBase: (typeof window !== 'undefined' && window.CONFIG?.api) || null,
+    ...runtimeCtx,
     canAccessStandard: canAccessTier(state, 'standard'),
     canAccessPro: canAccessTier(state, 'pro'),
-    // 공용 API/session helper를 재사용한다. 미로드 시 graceful no-op.
-    apiFetch: (typeof window !== 'undefined' && window.apiFetch) || null,
-    userApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.user) || '',
-    notiApiUrl: (typeof window !== 'undefined' && window.CONFIG?.api?.noti) || '',
-    hasClientSession: (typeof window !== 'undefined' && window.hasClientSession) || (() => false),
-    redirectToLogin: (typeof window !== 'undefined' && window.redirectToLogin) || (() => {}),
     canAccessBasic: canAccessTier(state, 'basic'),
     canUseScoreSimulation: canUseScoreSimulation(state),
     canUseReverseProjection: canUseReverseProjection(state),
@@ -803,7 +608,6 @@ function MobileApp() {
       setState({ homeSlideIndex: next, homeSlideMotion: motion || '' });
     },
     // 자주 쓰는 최소 연산 (나머지 도메인 연산은 후속 단계에서 연결)
-    setField: (key, value) => setState({ [key]: value }),
     closeDrawer: () => setState({ drawerOpen: false }),
     selectPlan: (plan) => setState({ checkoutPlan: plan }),
     markOnboardingComplete: () => setState({ loggedIn: true }),
@@ -847,19 +651,21 @@ function MobileApp() {
     scoreJourneyCard: (title) => renderScoreJourneyCard(baseCtx, title)
   };
 
-  const events = useMemo(() => createMobileEventHandlers(ctx), [ctx]);
+  const events = useMemo(
+    () => createMobileEventHandlers(ctx, { stateActions: handlerStateActions }),
+    [ctx, handlerStateActions]
+  );
 
   // HTML fallback timer가 정상 부팅을 인식하도록 플래그를 세운다.
   useEffect(() => {
-    markAppBooted();
+    markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
   }, []);
 
   // 초기 진입 흐름: splash를 잠깐 노출한 뒤 이동.
   // 이미 로그인된 사용자는 바로 홈으로, 미로그인은 소개 화면으로 이동한다.
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
-    const loggedIn =
-      typeof window !== 'undefined' && typeof window.hasClientSession === 'function' && window.hasClientSession();
+    const loggedIn = hasMobileClientSession();
     const dest = loggedIn ? 'home' : 'on1';
     const timer = globalThis.setTimeout?.(() => nav.goto(dest, false), 900);
     return () => {
@@ -927,28 +733,6 @@ function MobileApp() {
   // 재생성되므로 [events]로 재부착 → 핸들러가 항상 현재 state를 본다(스테일 방지). 홈 드래그 move는
   // DOM-direct라 드래그 중 setState가 없어 재부착 thrash가 없다. cleanup이 이전 리스너를 제거.
   useEffect(() => events.gesture?.attachGestureListeners?.(), [events]);
-
-  // localStorage 영속(원본 per-key useEffect 1:1). 변경 시 저장 → hydrateAppState와 짝으로 새로고침 유지.
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.scores, state.scores); }, [state.scores]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.plannerItems, state.plannerItems); }, [state.plannerItems]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.notifications, state.notifications); }, [state.notifications]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords); }, [state.studyRecords]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords); }, [state.studySubjectRecords]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.activeStudySession, state.activeStudySession); }, [state.activeStudySession]);
-  useEffect(() => { safeStringifySet(STORAGE_KEYS.admissionCalendar, state.personalEvents); }, [state.personalEvents]);
-  useEffect(() => {
-    // 문자열 키는 원본과 동일하게 raw 저장(readString과 짝).
-    const ls = globalThis.localStorage;
-    if (!ls?.setItem) return;
-    try {
-      ls.setItem(STORAGE_KEYS.selectedPlan, String(state.selectedPlan ?? ''));
-      ls.setItem(STORAGE_KEYS.selectedUniversity, String(state.targetMajor ?? ''));
-      ls.setItem(STORAGE_KEYS.activeTab, String(state.tab ?? ''));
-    } catch (_error) {
-      /* 저장 실패는 무시(quota/사파리 프라이빗) */
-    }
-  }, [state.selectedPlan, state.targetMajor, state.tab]);
-
 
   // scoreCache는 기본 분석 fetch가 채우고, Basic 이상 시뮬레이션 fetch가 같은 캐시에 보강한다.
 
@@ -1020,7 +804,8 @@ function MobileApp() {
   // JSX 등록 화면은 React 트리만 사용한다. 미등록 보조 화면만 문자열 renderer 경로를 사용한다.
   const ScreenComponent = getScreenComponent(state.screen, appScreenRegistry);
   if (ScreenComponent) {
-    return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, ctx));
+    const screenContext = createScreenContext(state.screen, ctx, handlerStateActions);
+    return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, screenContext));
   }
 
   const rendered = renderMobileScreen(state.screen, ctx, { appRegistry: appScreenRegistry });

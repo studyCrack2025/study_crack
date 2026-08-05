@@ -20,12 +20,12 @@ function extractTabKeys(source) {
   return Array.from(match[1].matchAll(/key:\s*['"]([^'"]+)['"]/g), (item) => item[1]);
 }
 
-const [contractSource, assetsSource, registrySource, tabBarSource, runtimeSource] = await Promise.all([
+const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicySource] = await Promise.all([
   read('fixtures/ui-contract.json'),
   read('src/constants/assets.js'),
   read('src/app/screen-registry.js'),
   read('src/components/tab-bar.js'),
-  read('src/runtime/main.js')
+  read('src/app/access-policy.js')
 ]);
 
 const contract = JSON.parse(contractSource);
@@ -46,7 +46,7 @@ assert.match(
   'Onboarding must use the official StudyCrack logo export'
 );
 
-const simulationFunction = runtimeSource.match(/function\s+canUseScoreSimulation\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+const simulationFunction = accessPolicySource.match(/function\s+canUseScoreSimulation\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
 assert.ok(simulationFunction, 'canUseScoreSimulation was not found');
 assert.ok(!simulationFunction.includes("tier === 'trial'"), 'Trial must not bypass the paid analysis contract');
 assert.deepEqual(
@@ -54,6 +54,6 @@ assert.deepEqual(
   contract.analysis.forwardTiers,
   'Forward score simulation tiers changed'
 );
-assert.match(runtimeSource, /function\s+canUseReverseProjection[\s\S]*?canAccessTier\(state,\s*['"]standard['"]\)/, 'Reverse projection must start at Standard');
+assert.match(accessPolicySource, /function\s+canUseReverseProjection[\s\S]*?canAccessTier\(state,\s*['"]standard['"]\)/, 'Reverse projection must start at Standard');
 
 console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo and plan tiers.`);

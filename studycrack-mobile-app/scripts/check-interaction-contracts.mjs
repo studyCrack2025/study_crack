@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createMobileActionHandlers } from '../src/handlers/mobile-handlers.js';
+import { HANDLER_STATE_FIELDS } from '../src/state/handler-state-actions.js';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = new URL('src/', `file://${appRoot}/`);
@@ -30,11 +31,12 @@ function sortedUnique(values) {
   return [...new Set(values)].sort();
 }
 
-const [interactionSource, uiSource, registrySource, runtimeSource, sourceFiles] = await Promise.all([
+const [interactionSource, uiSource, registrySource, runtimeSource, accessPolicySource, sourceFiles] = await Promise.all([
   read('fixtures/interaction-contract.json'),
   read('fixtures/ui-contract.json'),
   read('src/app/screen-registry.js'),
   read('src/runtime/main.js'),
+  read('src/app/access-policy.js'),
   listSourceFiles(sourceRoot)
 ]);
 
@@ -47,7 +49,12 @@ const discoveredActions = sortedUnique(sourceTexts.flatMap((source) => Array.fro
 )));
 const registeredScreens = extractStringList(registrySource, 'MOBILE_SCREEN_RENDERER_NAMES');
 const fixtureScreens = Object.keys(contract.screens);
-const handlerNames = new Set(Object.keys(createMobileActionHandlers({})));
+const stateActions = Object.fromEntries(Object.entries(HANDLER_STATE_FIELDS).map(([group, fields]) => [
+  group,
+  Object.fromEntries(fields.map((field) => [`set${field.charAt(0).toUpperCase()}${field.slice(1)}`, () => {}]))
+]));
+assert.throws(() => createMobileActionHandlers({}), /state action group이 누락/);
+const handlerNames = new Set(Object.keys(createMobileActionHandlers({}, stateActions)));
 
 assert.equal(contract.schemaVersion, 1, 'Interaction fixture schema version changed unexpectedly');
 assert.deepEqual(contract.viewports, uiContract.viewports, 'Interaction and UI viewport fixtures diverged');
@@ -83,9 +90,9 @@ assert.equal(contract.planFixtures.standard.coaching, true, 'Coaching must be av
 assert.equal(contract.planFixtures.basic.scoreSimulation, true, 'Score simulation must be available from Basic');
 assert.equal(contract.planFixtures.basic.reverseProjection, false, 'Reverse projection must stay locked below Standard');
 assert.equal(contract.planFixtures.standard.reverseProjection, true, 'Reverse projection must be available from Standard');
-assert.match(runtimeSource, /const\s+PLAN_RANK\s*=\s*\{[^}]*free:\s*0[^}]*basic:\s*1[^}]*starter:\s*1[^}]*standard:\s*2[^}]*pro:\s*3[^}]*\}/, 'Runtime plan rank changed');
-assert.match(runtimeSource, /strategy:\s*['"]standard['"]/, 'Coaching access tier changed');
-assert.match(runtimeSource, /planner:\s*['"]basic['"]/, 'Planner access tier changed');
-assert.match(runtimeSource, /function\s+filterTabItemsForTier\s*\([^)]*\)\s*\{\s*return\s+TAB_ITEMS;\s*\}/, 'Bottom tabs must remain visible for locked plans');
+assert.match(accessPolicySource, /const\s+PLAN_RANK\s*=\s*\{[^}]*free:\s*0[^}]*basic:\s*1[^}]*starter:\s*1[^}]*standard:\s*2[^}]*pro:\s*3[^}]*\}/, 'Runtime plan rank changed');
+assert.match(accessPolicySource, /strategy:\s*['"]standard['"]/, 'Coaching access tier changed');
+assert.match(accessPolicySource, /planner:\s*['"]basic['"]/, 'Planner access tier changed');
+assert.match(accessPolicySource, /function\s+filterTabItemsForTier\s*\([^)]*\)\s*\{\s*return\s+items;\s*\}/, 'Bottom tabs must remain visible for locked plans');
 
 console.log(`Interaction contract check passed: ${registeredScreens.length} screens, ${discoveredActions.length} static actions, ${Object.keys(contract.planFixtures).length} plan fixtures.`);

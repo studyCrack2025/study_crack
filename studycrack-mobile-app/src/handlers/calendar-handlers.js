@@ -28,14 +28,14 @@ export function createCalendarHandlers(ctx = {}) {
     alert = globalThis.alert || noop,
     confirm = globalThis.confirm || (() => true),
     preserveScrollAfterStateChange = (fn) => fn?.(),
-    setCalendarSheetOpen = noop,
-    setCalendarSelectedDate = noop,
-    setCalendarMonthAnchor = noop,
-    setCalendarEventFormOpen = noop,
-    setCalendarEventEditId = noop,
-    setCalendarEventDraft = noop,
-    setCalendarSaving = noop,
-    setPersonalEvents = noop
+    setCalendarSheetOpen,
+    setCalendarSelectedDate,
+    setCalendarMonthAnchor,
+    setCalendarEventFormOpen,
+    setCalendarEventEditId,
+    setCalendarEventDraft,
+    setCalendarSaving,
+    setPersonalEvents
   } = ctx;
 
   function usesServerCalendar() {
