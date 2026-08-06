@@ -64,3 +64,33 @@ export function createMobileEventHandlers(ctx = {}, options = {}) {
     actionHandlers: createMobileActionHandlers(ctx, stateActions)
   };
 }
+
+export function createLazyMobileEventHandlers(getContext, options = {}) {
+  if (typeof getContext !== 'function') throw new Error('모바일 event context getter가 필요합니다.');
+  let cachedContext = null;
+  let cachedHandlers = null;
+  const current = () => {
+    const context = getContext();
+    if (!cachedHandlers || cachedContext !== context) {
+      cachedContext = context;
+      cachedHandlers = createMobileEventHandlers(context, options);
+    }
+    return cachedHandlers;
+  };
+  return {
+    dispatchAction: (...args) => current().dispatchAction(...args),
+    handleBlur: (...args) => current().handleBlur(...args),
+    handleChange: (...args) => current().handleChange(...args),
+    handleInput: (...args) => current().handleInput(...args),
+    gesture: {
+      cancelGesture: (...args) => current().gesture.cancelGesture(...args),
+      endGesture: (...args) => current().gesture.endGesture(...args),
+      getActiveGestureTarget: (...args) => current().gesture.getActiveGestureTarget(...args),
+      moveGesture: (...args) => current().gesture.moveGesture(...args),
+      startGesture: (...args) => current().gesture.startGesture(...args)
+    },
+    get actionHandlers() {
+      return current().actionHandlers;
+    }
+  };
+}

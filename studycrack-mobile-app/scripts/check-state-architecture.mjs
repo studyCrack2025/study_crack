@@ -52,13 +52,13 @@ assert.throws(
   /필수 screen action 누락/
 );
 
-const runtimeSource = await readFile(new URL('../src/runtime/main.js', import.meta.url), 'utf8');
+const appSource = await readFile(new URL('../src/app/MobileApp.js', import.meta.url), 'utf8');
 const stateSource = await readFile(new URL('../src/runtime/app-state.js', import.meta.url), 'utf8');
 const schemaSource = await readFile(new URL('../src/state/app-state-schema.js', import.meta.url), 'utf8');
 const persistenceSource = await readFile(new URL('../src/app/use-app-state-persistence.js', import.meta.url), 'utf8');
-assert.doesNotMatch(runtimeSource, /createCompatibilityStateActions|\.\.\.setters/);
-assert.match(runtimeSource, /createScreenContext\(state\.screen, ctx, handlerStateActions\)/);
-assert.match(runtimeSource, /getRootState:\s*\(\)\s*=>\s*rootStateRef\.current/);
+assert.doesNotMatch(appSource, /createCompatibilityStateActions|\.\.\.setters/);
+assert.match(appSource, /createScreenContext\(state\.screen, context, handlerStateActions\)/);
+assert.match(appSource, /getRootState:\s*\(\)\s*=>\s*rootStateRef\.current/);
 assert.doesNotMatch(stateSource, /STORAGE_KEYS|safeStringifySet/);
 assert.doesNotMatch(schemaSource, /from ['"]\.\.\/runtime\//, '순수 state schema가 runtime 계층을 참조하면 안 됩니다.');
 assert.doesNotMatch(persistenceSource, /selectFlatAppState|flatSlice/, 'storage persistence는 필요한 state kind selector만 사용해야 합니다.');

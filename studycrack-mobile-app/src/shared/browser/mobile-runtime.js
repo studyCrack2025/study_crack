@@ -54,6 +54,11 @@ export function getMobileScrollY() {
   return browser?.scrollY || browser?.pageYOffset || 0;
 }
 
+export function getMobileRootElement() {
+  const browser = getBrowser();
+  return browser?.document?.getElementById?.('root') || browser?.document?.body || null;
+}
+
 export function persistMobileUserRole(role) {
   try {
     getBrowser()?.localStorage?.setItem?.('userRole', String(role || ''));
@@ -66,6 +71,10 @@ export function getMobileLocation() {
 
 export function replaceMobileLocation(path) {
   getBrowser()?.location?.replace?.(path);
+}
+
+export function reloadMobileLocation() {
+  getBrowser()?.location?.reload?.();
 }
 
 export function replaceMobileScreenParam(screen) {

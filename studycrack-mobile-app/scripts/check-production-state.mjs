@@ -9,7 +9,7 @@ import {
 } from '../src/runtime/app-state.js';
 import { buildAnalysisDerived } from '../src/runtime/derived.js';
 import { buildAnalysisScoreView, buildUniversityCard } from '../src/features/analysis/score-store.js';
-import { createUserDataResetPatch, mapUserToStatePatch } from '../src/runtime/session.js';
+import { createUserDataResetPatch, mapUserToStatePatch } from '../src/features/session/user-state.js';
 
 function createStorage(values = {}) {
   const data = new Map(Object.entries(values));

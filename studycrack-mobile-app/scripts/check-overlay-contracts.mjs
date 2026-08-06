@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderModal } from '../src/components/modal.js';
-import { readViewportMetrics } from '../src/runtime/visual-viewport.js';
+import { readViewportMetrics } from '../src/shared/browser/visual-viewport.js';
 
 const modal = renderModal({ body: '<p>body</p>', dismissAction: 'closeTest' });
 

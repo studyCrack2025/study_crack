@@ -27,6 +27,9 @@ async function walk(path) {
 
 const hotspotPaths = [
   'src/runtime/main.js',
+  'src/app/MobileApp.js',
+  'src/app/mobile-view-context.js',
+  'src/app/use-mobile-resource-orchestrator.js',
   'src/shared/api/client.js',
   'src/features/analysis/api.js',
   'src/features/reports/api.js',
@@ -59,7 +62,9 @@ const report = {
   hotspots,
   bundles,
   guardrails: {
-    runtimeMainMaxLines: 1600,
+    runtimeMainMaxLines: 60,
+    mobileAppMaxLines: 250,
+    mobileViewContextMaxLines: 320,
     sharedApiClientMaxLines: 100,
     domainApiModuleMaxLines: 250,
     profileHandlersMaxLines: 1150,

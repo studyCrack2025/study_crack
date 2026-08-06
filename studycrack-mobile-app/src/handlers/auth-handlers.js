@@ -8,6 +8,7 @@ import {
 } from '../features/session/auth-service.js';
 import { getData } from './action-utils.js';
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/email-input.js';
+import { reloadMobileLocation } from '../shared/browser/mobile-runtime.js';
 
 function noop() {}
 
@@ -17,9 +18,7 @@ function prevent(event) {
 }
 
 function reloadAppDefault() {
-  if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
-    window.location.reload();
-  }
+  reloadMobileLocation();
 }
 
 function getWindow(ctx) {

@@ -1,10 +1,10 @@
-import { EMPTY_USER } from '../constants/runtime-defaults.js';
+import { EMPTY_USER } from '../../constants/runtime-defaults.js';
 import {
   createBlankScoreState,
   mapExamDataToScorePatch,
   scoreExamKeyToLabel
-} from '../features/analysis/score-model.js';
-import { normalizeTargetUnivSlots, targetSlotsToList } from '../features/analysis/target-model.js';
+} from '../analysis/score-model.js';
+import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-model.js';
 
 export function createUserDataResetPatch() {
   return {

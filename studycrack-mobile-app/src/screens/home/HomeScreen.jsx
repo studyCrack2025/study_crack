@@ -16,6 +16,7 @@ import {
   getHomeScorePresentation
 } from './presentation.js';
 import { HomeOverlays, HomeStudyBreakdown, NotificationPopover } from './HomeOverlays.jsx';
+import { fitSingleLineText } from '../../shared/browser/text-fit.js';
 
 function UniversityCard({ item, scoreTierClass }) {
   const score = getHomeScorePresentation(item);
@@ -74,21 +75,7 @@ function HomeGreeting({ name = '회원' }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || typeof window === 'undefined') return undefined;
-    const fit = () => {
-      el.style.fontSize = '';
-      let size = parseFloat(window.getComputedStyle(el).fontSize) || 18;
-      const min = 12;
-      let guard = 0;
-      while (el.scrollWidth > el.clientWidth + 1 && size > min && guard < 24) {
-        size -= 0.5;
-        el.style.fontSize = `${size}px`;
-        guard += 1;
-      }
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    return fitSingleLineText(el, { minSize: 12, step: 0.5 });
   }, [name]);
   return (
     <p className="home-greeting home-greeting-fit" ref={ref}>안녕하세요, {name}님 👋</p>

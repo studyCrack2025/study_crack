@@ -72,6 +72,7 @@ for (const path of apiModules) {
 await assert.rejects(access(new URL('../src/runtime/persistence.js', import.meta.url)));
 
 const runtimeMain = await readFile(new URL('../src/runtime/main.js', import.meta.url), 'utf8');
+const resourceOrchestrator = await readFile(new URL('../src/app/use-mobile-resource-orchestrator.js', import.meta.url), 'utf8');
 assert.equal(/\bfetch[A-Z][A-Za-z0-9]*\s*\(/.test(runtimeMain), false, 'runtime/main.js must not own domain fetch effects.');
 for (const hookName of [
   'useSession',
@@ -82,7 +83,7 @@ for (const hookName of [
   'useNotificationResource',
   'useAnalysisResources'
 ]) {
-  assert.match(runtimeMain, new RegExp(`\\b${hookName}\\s*\\(`), `runtime/main.js must compose ${hookName}.`);
+  assert.match(resourceOrchestrator, new RegExp(`\\b${hookName}\\s*\\(`), `resource orchestrator must compose ${hookName}.`);
 }
 
 const cancellableResourceHooks = [

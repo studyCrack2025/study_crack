@@ -1,8 +1,9 @@
 // 모바일 자체 인증 서비스.
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
+import { getMobileBrowserServices } from '../../shared/browser/mobile-runtime.js';
 
 function getConfig() {
-  return (typeof window !== 'undefined' && window.CONFIG) || {};
+  return getMobileBrowserServices().browser?.CONFIG || {};
 }
 
 let cachedPool = null;
@@ -15,19 +16,21 @@ function getUserPool() {
 }
 
 function isLocalHost() {
-  const host = (typeof window !== 'undefined' && window.location && window.location.hostname) || '';
+  const host = getMobileBrowserServices().browser?.location?.hostname || '';
   return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local');
 }
 
 async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
+  const browser = getMobileBrowserServices().browser;
+  const storage = browser?.localStorage;
   if (isLocalHost()) {
-    try { localStorage.setItem('refreshToken', refreshToken); } catch (_) {}
+    try { storage?.setItem?.('refreshToken', refreshToken); } catch (_) {}
     return false;
   }
   const authUrl = getConfig().api && getConfig().api.auth;
   if (!authUrl || !accessToken || !idToken || !refreshToken) return false;
   try {
-    const res = await fetch(authUrl, {
+    const res = await browser?.fetch?.(authUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -35,16 +38,14 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
     });
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
-      if (typeof window !== 'undefined' && typeof window.syncTokensFromAuthResponse === 'function') {
-        window.syncTokensFromAuthResponse(data);
-      }
-      try { localStorage.removeItem('refreshToken'); } catch (_) {}
+      browser?.syncTokensFromAuthResponse?.(data);
+      try { storage?.removeItem?.('refreshToken'); } catch (_) {}
       return true;
     }
   } catch (_) {
     // 제한 환경에서는 기존 클라이언트 세션 경로로 폴백한다.
   }
-  try { localStorage.setItem('refreshToken', refreshToken); } catch (_) {}
+  try { storage?.setItem?.('refreshToken', refreshToken); } catch (_) {}
   return false;
 }
 
@@ -52,7 +53,7 @@ function clearPreviousSession() {
   clearMobileAuthArtifacts();
 }
 
-function clearMobileSocialArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
+function clearMobileSocialArtifacts(win = getMobileBrowserServices().browser) {
   const keys = ['socialReturnUrl', 'socialEntry', 'socialState', 'socialLinkMode'];
   try {
     const storage = win?.localStorage || globalThis.localStorage;
@@ -64,7 +65,7 @@ function clearMobileSocialArtifacts(win = typeof window !== 'undefined' ? window
   } catch (_) {}
 }
 
-export function clearMobileAuthArtifacts(win = typeof window !== 'undefined' ? window : undefined) {
+export function clearMobileAuthArtifacts(win = getMobileBrowserServices().browser) {
   try { getUserPool() && getUserPool().getCurrentUser() && getUserPool().getCurrentUser().signOut(); } catch (_) {}
   clearMobileSocialArtifacts(win);
   if (win && typeof win.clearClientSession === 'function') {
