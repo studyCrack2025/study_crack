@@ -5,7 +5,7 @@ import { resolveScreenAccess } from './access-policy.js';
 import { createInitialMobileAppState } from './mobile-routing.js';
 import { createMobileViewContext } from './mobile-view-context.js';
 import { createScreenContext } from './screen-context.js';
-import { getScreenComponent, isDeferredAppScreen, renderMobileScreen } from './screen-registry.js';
+import { getScreenComponent, isDeferredAppScreen } from './screen-registry.js';
 import { useMobileApiController } from './use-mobile-api-controller.js';
 import { useDeferredScreenRegistry, useMobileAppEffects } from './use-mobile-app-effects.js';
 import { useMobileResourceOrchestrator } from './use-mobile-resource-orchestrator.js';
@@ -48,6 +48,28 @@ function DeferredScreenFallback({ onRetry, screen, status }) {
                 onClick: onRetry
               }, '다시 시도')
             : null
+        )
+      )
+    )
+  );
+}
+
+function MissingScreenFallback({ screen }) {
+  return React.createElement(
+    'div',
+    { className: 'app-shell' },
+    React.createElement(
+      'div',
+      { className: 'app-frame' },
+      React.createElement(
+        'div',
+        { className: 'screen app-screen app-content', 'data-screen': screen },
+        React.createElement(
+          'div',
+          { className: 'center init-loading', role: 'status' },
+          React.createElement('h3', null, '화면을 찾을 수 없습니다'),
+          React.createElement('p', { className: 'sub' }, '홈으로 돌아가 다시 시도해 주세요.'),
+          React.createElement('button', { type: 'button', className: 'btn btn-primary mini', 'data-action': 'goto', 'data-target': 'home' }, '홈으로 이동')
         )
       )
     )
@@ -97,7 +119,7 @@ export function MobileApp() {
     return false;
   }, [nav, setState]);
 
-  const context = createMobileViewContext({
+  const viewContext = createMobileViewContext({
     api,
     beforeGoto,
     nav,
@@ -107,8 +129,8 @@ export function MobileApp() {
     state,
     stateRef
   });
-  const contextRef = useRef(context);
-  contextRef.current = context;
+  const contextRef = useRef({ ...state, ...viewContext });
+  contextRef.current = { ...state, ...viewContext };
   const events = useMemo(
     () => createLazyMobileEventHandlers(() => contextRef.current, { stateActions: handlerStateActions }),
     [handlerStateActions]
@@ -149,47 +171,10 @@ export function MobileApp() {
 
   const ScreenComponent = getScreenComponent(state.screen, deferredScreens.registry);
   if (ScreenComponent) {
-    const screenContext = createScreenContext(state.screen, context, handlerStateActions);
+    const screenContext = createScreenContext(state.screen, viewContext, handlerStateActions, state);
     return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, screenContext));
   }
-
-  const rendered = renderMobileScreen(state.screen, context, { appRegistry: deferredScreens.registry });
-  if (rendered && rendered.__mobileShell) {
-    const tabBarHtml = rendered.withTab ? context.tabBarHtml : '';
-    return React.createElement(
-      'div',
-      wrapperProps,
-      React.createElement(
-        'div',
-        { className: 'app-shell' },
-        React.createElement(
-          'div',
-          { className: 'app-frame' },
-          React.createElement('div', {
-            key: 'screen',
-            className: `screen app-screen app-content ${context.dimmed ? 'modal-lock' : ''}`,
-            'data-screen': state.screen,
-            dangerouslySetInnerHTML: { __html: rendered.inner }
-          }),
-          React.createElement('div', {
-            key: 'overlays',
-            className: 'app-screen-overlays',
-            style: { display: 'contents' },
-            dangerouslySetInnerHTML: { __html: rendered.overlays }
-          }),
-          React.createElement('div', {
-            key: 'tabbar',
-            style: { display: 'contents' },
-            dangerouslySetInnerHTML: { __html: tabBarHtml }
-          })
-        )
-      )
-    );
-  }
-  return React.createElement('div', {
-    ...wrapperProps,
-    dangerouslySetInnerHTML: { __html: String(rendered || '') }
-  });
+  return React.createElement('div', wrapperProps, React.createElement(MissingScreenFallback, { screen: state.screen }));
 }
 
 export default MobileApp;

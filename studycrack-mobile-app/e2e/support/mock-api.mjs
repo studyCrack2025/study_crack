@@ -82,7 +82,7 @@ function targetResult(target, index, examMode) {
 function responseFor(payload, state) {
   switch (payload.type) {
     case 'get_user_analysis':
-      return mockUser;
+      return { ...mockUser, computedTier: state.userTier };
     case 'get_admission_calendar':
       return { events: [] };
     case 'get_study_ranking':
@@ -118,17 +118,17 @@ function responseFor(payload, state) {
     case 'get_weekly_reports':
       return { weeklyReports: [] };
     case 'get_qna_list':
-      return { qnaHistory: [] };
+      return { qnaHistory: [{ qnaId: 'qna-e2e', title: '분석 결과 문의', content: '환산점수 기준이 궁금합니다.', status: 'done', answer: '선택한 시험 기준으로 계산됩니다.', createdAt: '2026-08-07T09:00:00.000Z' }] };
     case 'student_get_notifications':
-      return { notifications: [] };
+      return { notifications: [{ notiId: 'noti-e2e', title: '학습 알림', body: '오늘 계획한 국어 학습을 확인해주세요.', isRead: false, createdAt: '2026-08-07T08:00:00.000Z' }] };
     default:
       return { success: true };
   }
 }
 
-export async function installApiMock(page) {
+export async function installApiMock(page, { tier = mockUser.computedTier } = {}) {
   const requests = [];
-  const state = { studySeconds: 0 };
+  const state = { studySeconds: 0, userTier: tier };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     let payload = {};

@@ -11,19 +11,12 @@ export function SecondaryIntro({ aside = null, description = '', eyebrow = '', t
   );
 }
 
-export function SecondaryScreenShell({ children, overlays = null, screen, title }) {
-  return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${overlays ? 'modal-lock' : ''}`} data-screen={screen}>
-          <div className="appbar">
-            <button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button>
-            <div className="title">{title}</div>
-          </div>
-          {children}
-        </div>
-        {overlays ? <div className="app-screen-overlays" style={{ display: 'contents' }}>{overlays}</div> : null}
-      </div>
-    </div>
-  );
+export function SecondaryState({ description = '', kind = 'empty', title }) {
+  const mark = kind === 'loading' ? <i /> : kind === 'error' ? '!' : '—';
+  return <div className={`sc-secondary-state is-${kind}`} role="status"><span aria-hidden="true">{mark}</span><div><b>{title}</b>{description ? <p>{description}</p> : null}</div></div>;
 }
+
+export function SecondaryScreenShell(props) {
+  return <AppScreenShell {...props} />;
+}
+import { AppScreenShell } from './AppScreenShell.jsx';

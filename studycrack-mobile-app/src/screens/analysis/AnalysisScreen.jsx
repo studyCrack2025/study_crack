@@ -1,4 +1,5 @@
 import { AnalysisContent, AnalysisSearchSheet } from './AnalysisContent.jsx';
+import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 
 export function AnalysisScreen(ctx) {
   const {
@@ -6,7 +7,7 @@ export function AnalysisScreen(ctx) {
     isAnalyzing = false,
     analysisApiStatus = 'idle',
     analysisApiError = '',
-    tabBarHtml = ''
+    tab = 'analysis'
   } = ctx;
 
   const isStale = analysisApiStatus === 'stale';
@@ -14,9 +15,12 @@ export function AnalysisScreen(ctx) {
   const showAnalysisBody = !isAnalyzing;
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="analysis">
+    <AppScreenShell
+      screen="analysis"
+      tab={tab}
+      dimmed={dimmed}
+      overlays={<AnalysisSearchSheet {...ctx} />}
+    >
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}`}>
             {isAnalyzing ? (
               <div className="analysis-loading-stage" role="status" aria-live="polite">
@@ -57,10 +61,6 @@ export function AnalysisScreen(ctx) {
               </div>
             ) : null}
           </section>
-        </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }}><AnalysisSearchSheet {...ctx} /></div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </AppScreenShell>
   );
 }

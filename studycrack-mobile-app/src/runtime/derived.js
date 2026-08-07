@@ -81,21 +81,9 @@ function scoreMetric(raw) {
   return { std, pct, grade };
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function renderScoreInfoCard({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
-  const rawText = raw || '-';
-  const stdText = std || '-';
-  const pctText = pct || '-';
-  const gradeText = grade || '-';
-  return `<article class="score-info-subject-card"><div><b>${escapeHtml(subject)}</b><strong>${escapeHtml(rawText)}${rawText !== '-' ? '점' : ''}</strong></div><dl><div><dt>표준</dt><dd>${escapeHtml(stdText)}</dd></div><div><dt>백분위</dt><dd>${escapeHtml(pctText)}</dd></div><div><dt>등급</dt><dd>${escapeHtml(gradeText)}</dd></div></dl></article>`;
+function scoreInfoSubject({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
+  const display = (value) => value === '' || value === null || value === undefined ? '-' : value;
+  return { subject, raw: display(raw), std: display(std), pct: display(pct), grade: display(grade) };
 }
 
 // 현재 입력 성적 기준 평균 점수(원본 liveCurrentScore).
@@ -559,8 +547,7 @@ export function buildAnalysisDerived(state = {}) {
   };
 }
 
-// 성적 정보 화면 derived. 과목별 원점수/표준/백분위/등급 행 HTML을 1:1 생성(원본 scoreInfoDetailList).
-// plannerViewDonutGradient 선례처럼 derived가 표현용 문자열을 반환한다.
+// 성적 정보 화면 derived. React 화면이 표시할 과목별 지표만 구조화한다.
 export function buildScoreInfoDerived(state = {}) {
   const { scores = {}, scoreEditState = {}, scoreExamKey = '', scoreExamType = '', user = {} } = state;
   const examKey = scoreExamKey || scoreExamTypeToKey(scoreExamType);
@@ -574,18 +561,14 @@ export function buildScoreInfoDerived(state = {}) {
       [examData.inq2?.name || '탐구2', examData.inq2],
       ['한국사', examData.hist || examData.history, 'grade-only']
     ];
-    const scoreInfoDetailList = rows
-      .map(([subject, item, type]) => {
-        return renderScoreInfoCard({
-          subject,
-          raw: type === 'grade-only' ? '' : item?.raw,
-          std: item?.std,
-          pct: item?.pct,
-          grade: item?.grd
-        });
-      })
-      .join('');
-    return { scoreInfoDetailList };
+    const scoreInfoSubjects = rows.map(([subject, item, type]) => scoreInfoSubject({
+      subject,
+      raw: type === 'grade-only' ? '' : item?.raw,
+      std: item?.std,
+      pct: item?.pct,
+      grade: item?.grd
+    }));
+    return { scoreInfoSubjects };
   }
   const ses = {
     korean: scoreEditState.korean || {},
@@ -604,25 +587,24 @@ export function buildScoreInfoDerived(state = {}) {
     [ses.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
   ];
 
-  const scoreInfoDetailList =
-    scoreRows
-      .map(([subject, raw, type]) => {
-        if (type === 'grade-only') {
-          const englishGrade = Number(ses.english || 0)
-            || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
-          return renderScoreInfoCard({ subject, grade: englishGrade || '-' });
-        }
-        const m = scoreMetric(raw);
-        const rawText = Number(raw) > 0 ? raw : '-';
-        const stdText = Number(raw) > 0 ? m.std : '-';
-        const pctText = Number(raw) > 0 ? m.pct : '-';
-        const grdText = Number(raw) > 0 ? m.grade : '-';
-        return renderScoreInfoCard({ subject, raw: rawText, std: stdText, pct: pctText, grade: grdText });
-      })
-      .join('') +
-    renderScoreInfoCard({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '-' });
-
-  return { scoreInfoDetailList };
+  const scoreInfoSubjects = scoreRows.map(([subject, raw, type]) => {
+    if (type === 'grade-only') {
+      const englishGrade = Number(ses.english || 0)
+        || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
+      return scoreInfoSubject({ subject, grade: englishGrade });
+    }
+    const metric = scoreMetric(raw);
+    const entered = Number(raw) > 0;
+    return scoreInfoSubject({
+      subject,
+      raw: entered ? raw : '',
+      std: entered ? metric.std : '',
+      pct: entered ? metric.pct : '',
+      grade: entered ? metric.grade : ''
+    });
+  });
+  scoreInfoSubjects.push(scoreInfoSubject({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '' }));
+  return { scoreInfoSubjects };
 }
 
 // 도메인 derived 집계. liveStudySeconds는 라이브 타이머 ref의 현재값(없으면 0).

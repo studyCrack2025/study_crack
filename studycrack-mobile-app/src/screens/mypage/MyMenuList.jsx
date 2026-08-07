@@ -24,11 +24,11 @@ const MENU_GROUPS = [
   }
 ];
 
-function MenuIcon({ icon, name }) {
-  return <span className="my-menu-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon(name, false) }} />;
+function MenuIcon({ name }) {
+  return <span className="my-menu-icon" aria-hidden="true"><Icon name={name} /></span>;
 }
 
-export function MyMenuList({ icon }) {
+export function MyMenuList() {
   return (
     <div className="my-menu-sections">
       {MENU_GROUPS.map((group) => (
@@ -37,9 +37,9 @@ export function MyMenuList({ icon }) {
           <div className="my-menu-group">
             {group.rows.map((row) => (
               <button type="button" className="my-menu-row" data-action="goto" data-target={row.target} key={row.title}>
-                <MenuIcon icon={icon} name={row.icon} />
+                <MenuIcon name={row.icon} />
                 <span className="my-menu-copy"><b>{row.title}</b><small>{row.subtitle}</small></span>
-                <span className="my-menu-chevron" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon('chevron', false) }} />
+                <span className="my-menu-chevron" aria-hidden="true"><Icon name="chevron" /></span>
               </button>
             ))}
           </div>
@@ -48,3 +48,4 @@ export function MyMenuList({ icon }) {
     </div>
   );
 }
+import { Icon } from '../../components/Icon.jsx';

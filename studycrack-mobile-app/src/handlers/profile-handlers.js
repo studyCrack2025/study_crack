@@ -245,6 +245,10 @@ function patchCurrentScoreStep(ctx) {
     ctx.setScoreEditState?.((prev = {}) => ({ ...prev, english: values.english }));
     return { ...state, english: values.english };
   }
+  if (step === 4) {
+    ctx.setScoreEditState?.((prev = {}) => ({ ...prev, history: values.history }));
+    return { ...state, history: values.history };
+  }
   if (step === 5) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,

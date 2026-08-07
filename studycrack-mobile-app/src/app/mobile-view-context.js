@@ -1,15 +1,10 @@
-import { renderAppBar } from '../components/app-bar.js';
-import { renderIcon } from '../components/icon.js';
-import { renderScoreJourneyCard, scoreTierClass } from '../components/score-journey.js';
-import { renderTabBar, TAB_ITEMS } from '../components/tab-bar.js';
-import { renderScoreEditModal } from '../screens/profile/renderers.js';
+import { scoreTierClass } from '../components/score-journey.js';
 import { readExamScoresMap, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from '../runtime/derived.js';
 import {
   canAccessTier,
   canUseReverseProjection,
-  canUseScoreSimulation,
-  filterTabItemsForTier
+  canUseScoreSimulation
 } from './access-policy.js';
 import { createBlankScoreState, mapExamDataToScorePatch, scoreExamTypeToKey } from '../features/analysis/score-model.js';
 import { targetSlotsToList, upsertTargetSlot } from '../features/analysis/target-model.js';
@@ -140,14 +135,7 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
   const selectedMajor = targets.includes(state.targetMajor) ? state.targetMajor : targets[0] || state.targetMajor || '';
   const analysisView = buildAnalysisScoreView(selectedMajor, scoreCache, examKey, state.scoreFetchStatus);
   const dimmed = isTabbarDimmed(state);
-  const tabBarHtml = renderTabBar({
-    tab: state.tab,
-    dimmed,
-    icon: renderIcon,
-    items: filterTabItemsForTier(TAB_ITEMS)
-  });
   const baseContext = {
-    ...state,
     isAnalyzing: state.analysisApiStatus === 'loading'
       && !(state.analysisResults || []).length
       && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
@@ -174,16 +162,8 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
     analysisSimulationTargets: buildSimulationTargets(targets, scoreCache, examKey),
     analysisMajorOptions: targets,
     normalizedTargetMajor: selectedMajor,
-    icon: renderIcon,
-    appbar: (title, showBack) => renderAppBar({ title, showBack }),
-    layout: (inner, withTab, overlays = '') => ({
-      __mobileShell: true,
-      inner: String(inner || ''),
-      withTab: Boolean(withTab),
-      overlays: String(overlays || '')
-    }),
     dimmed,
-    tabBarHtml,
+    tab: state.tab,
     goto: nav.goto,
     back: nav.back,
     beforeGoto,
@@ -212,7 +192,6 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
     getHomeSliderState,
     updatePossibleUnivSlider,
     scoreTierClass,
-    ScoreEditModal: () => renderScoreEditModal(stateRef.current),
     setHomeSlideDom: (index, motion = '') => {
       const { total } = getHomeSliderState();
       const max = Math.max(0, total - 1);
@@ -249,8 +228,5 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
       return true;
     }
   };
-  return {
-    ...baseContext,
-    scoreJourneyCard: (title) => renderScoreJourneyCard(baseContext, title)
-  };
+  return baseContext;
 }

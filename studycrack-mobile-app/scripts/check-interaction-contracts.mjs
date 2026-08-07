@@ -47,7 +47,7 @@ const discoveredActions = sortedUnique(sourceTexts.flatMap((source) => Array.fro
   source.matchAll(/data-action\s*=\s*(?:\{\s*)?['"]([A-Za-z0-9_-]+)['"](?:\s*\})?/g),
   (match) => match[1]
 )));
-const registeredScreens = extractStringList(registrySource, 'MOBILE_SCREEN_RENDERER_NAMES');
+const registeredScreens = extractStringList(registrySource, 'MOBILE_SCREEN_NAMES');
 const fixtureScreens = Object.keys(contract.screens);
 const stateActions = Object.fromEntries(Object.entries(HANDLER_STATE_FIELDS).map(([group, fields]) => [
   group,

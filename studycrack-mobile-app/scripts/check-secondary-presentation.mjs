@@ -3,18 +3,24 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const analysis = read('../src/screens/analysis/AddUniversityScreen.jsx');
-const profile = read('../src/screens/profile/renderers.js');
-const mypage = read('../src/screens/mypage/renderers.js');
+const profile = read('../src/screens/profile/ProfileScreens.jsx');
+const profileModal = read('../src/screens/profile/ScoreEditModal.jsx');
+const mypage = read('../src/screens/mypage/MyPageSecondaryScreens.jsx');
 const account = read('../src/screens/mypage/AccountInfoScreen.jsx');
 const legal = read('../src/screens/mypage/LegalScreens.jsx');
 const secondaryScreen = read('../src/components/SecondaryScreen.jsx');
-const service = read('../src/screens/service/renderers.js');
+const serviceContent = read('../src/screens/service/ServiceContentScreens.jsx');
+const servicePlan = read('../src/screens/service/ServicePlanScreens.jsx');
 const styles = read('../src/styles/components/secondary.css');
 
-for (const source of [profile, mypage, service]) {
-  assert.match(source, /sc-secondary-page/);
-  assert.match(source, /renderSecondaryIntro/);
-}
+assert.match(serviceContent, /sc-secondary-page/);
+assert.match(serviceContent, /SecondaryIntro/);
+assert.match(servicePlan, /sc-secondary-page/);
+assert.match(servicePlan, /SecondaryIntro/);
+assert.match(mypage, /sc-secondary-page/);
+assert.match(mypage, /SecondaryIntro/);
+assert.match(profile, /sc-secondary-page/);
+assert.match(profile, /SecondaryIntro/);
 assert.match(analysis, /sc-secondary-page/);
 assert.match(analysis, /SecondaryIntro/);
 assert.match(analysis, /defaultValue=\{analysisSearchTerm\}/);
@@ -30,9 +36,9 @@ assert.match(profile, /data-action="setRankingPeriod"/);
 assert.doesNotMatch(profile, /ranking-podium|podium-item/);
 assert.match(profile, /data-action="saveQualInfo"/);
 assert.match(profile, /data-action="openScoreEdit"/);
-assert.match(profile, /class="score-grade-input"/);
-assert.match(profile, /class="score-inquiry-grid"/);
-assert.doesNotMatch(profile, /score-grade-grid|score-grade-card|setScoreEditGrade/);
+assert.match(profileModal, /className="score-grade-input"/);
+assert.match(profileModal, /className="score-inquiry-grid"/);
+assert.doesNotMatch(profileModal, /score-grade-grid|score-grade-card|setScoreEditGrade/);
 assert.match(styles, /\.sc-secondary-page\{/);
 
 const scoreStyles = read('../src/styles/screens/score-input.css');
@@ -44,6 +50,9 @@ assert.match(mypage, /role="switch" aria-checked=/);
 assert.match(mypage, /const NOTI_PAGE_SIZE = 7/);
 assert.match(mypage, /data-action="openNotiDetail"/);
 assert.match(mypage, /data-action="openQnaComposer"/);
+assert.match(mypage, /defaultValue=\{qnaDraftTitle\}/);
+assert.match(mypage, /defaultValue=\{qnaDraftContent\}/);
+assert.doesNotMatch(mypage, /dangerouslySetInnerHTML/);
 assert.match(account, /data-action="openPhoneChangeModal"/);
 assert.match(account, /data-action="saveMarketingConsent"/);
 assert.match(account, /data-action="linkSocial"/);
@@ -56,9 +65,13 @@ assert.doesNotMatch(legal, /dangerouslySetInnerHTML/);
 assert.match(secondaryScreen, /export function SecondaryIntro/);
 assert.match(secondaryScreen, /export function SecondaryScreenShell/);
 
-assert.match(service, /data-action="downloadProReport"/);
-assert.match(service, /data-action="openWebPayment"/);
-assert.match(service, /data-action="selectPlan"/);
+assert.match(serviceContent, /data-action="downloadProReport"/);
+assert.match(serviceContent, /data-action="openProRequestModal"/);
+assert.match(serviceContent, /data-action="openQnaComposer"/);
+assert.match(serviceContent, /data-target=\{latest \? 'planner' : 'strategy'\}/);
+assert.match(servicePlan, /data-action="openWebPayment"/);
+assert.match(servicePlan, /data-action="selectPlan"/);
+assert.match(servicePlan, /data-action="selectDuration"/);
 
 for (const selector of [
   '.sc-secondary-page',

@@ -24,12 +24,12 @@ const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicyS
   read('fixtures/ui-contract.json'),
   read('src/constants/assets.js'),
   read('src/app/screen-registry.js'),
-  read('src/components/tab-bar.js'),
+  read('src/components/TabBar.jsx'),
   read('src/app/access-policy.js')
 ]);
 
 const contract = JSON.parse(contractSource);
-const screens = extractStringList(registrySource, 'MOBILE_SCREEN_RENDERER_NAMES');
+const screens = extractStringList(registrySource, 'MOBILE_SCREEN_NAMES');
 const mainTabs = extractTabKeys(tabBarSource);
 
 assert.equal(new Set(screens).size, screens.length, 'Screen registry contains duplicate names');

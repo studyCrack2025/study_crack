@@ -1,6 +1,7 @@
 import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
+import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 
 function PlannerChecklistArt() {
   return (
@@ -123,7 +124,7 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
 export function PlannerScreen(ctx) {
   const {
     dimmed = false,
-    tabBarHtml = '',
+    tab = 'planner',
     plannerCalendarMode,
     plannerCalendarMonthCells,
     plannerEditIndex,
@@ -141,9 +142,12 @@ export function PlannerScreen(ctx) {
   const presentation = buildPlannerPresentation(plannerViewItems);
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
+    <AppScreenShell
+      screen="planner"
+      tab={tab}
+      dimmed={dimmed}
+      overlays={plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}
+    >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <header className="planner-context-head">
               <div><span>오늘의 플래너</span><h3>{plannerMonthLabel} {selectedPlannerDate}일 <small>{selectedPlannerWeekday}요일</small></h3><p>계획을 확인하고, 오늘의 학습 흐름을 이어가세요.</p></div>
@@ -182,10 +186,6 @@ export function PlannerScreen(ctx) {
 
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} />
           </main>
-        </div>
-        <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} />
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </AppScreenShell>
   );
 }

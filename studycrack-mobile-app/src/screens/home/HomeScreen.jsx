@@ -17,6 +17,8 @@ import {
 } from './presentation.js';
 import { HomeOverlays, HomeStudyBreakdown, NotificationPopover } from './HomeOverlays.jsx';
 import { fitSingleLineText } from '../../shared/browser/text-fit.js';
+import { Icon } from '../../components/Icon.jsx';
+import { TabBar } from '../../components/TabBar.jsx';
 
 function UniversityCard({ item, scoreTierClass }) {
   const score = getHomeScorePresentation(item);
@@ -84,7 +86,7 @@ function HomeGreeting({ name = '회원' }) {
 
 // 로그인 직후 홈 진입 로딩: 단순 스피너 대신 홈 레이아웃 스켈레톤을 보여
 // 체감 로딩을 줄이고 실데이터 도착 시 레이아웃 점프(CLS)를 방지한다.
-function HomeLoadingPanel({ tabBarHtml = '', crackySrc = CRACKY_SRC }) {
+function HomeLoadingPanel({ tab = 'home', crackySrc = CRACKY_SRC }) {
   return (
     <div className="app-shell">
       <div className="app-frame">
@@ -112,13 +114,13 @@ function HomeLoadingPanel({ tabBarHtml = '', crackySrc = CRACKY_SRC }) {
             </div>
           </div>
         </div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
+        <TabBar activeTab={tab} />
       </div>
     </div>
   );
 }
 
-function HomeLoadFailure({ message = '', tabBarHtml = '' }) {
+function HomeLoadFailure({ message = '', tab = 'home' }) {
   return (
     <div className="app-shell">
       <div className="app-frame">
@@ -136,7 +138,7 @@ function HomeLoadFailure({ message = '', tabBarHtml = '' }) {
             </div>
           </div>
         </div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
+        <TabBar activeTab={tab} />
       </div>
     </div>
   );
@@ -345,7 +347,7 @@ function HomeReportPreviewCard({ proReports = [], proReportsStatus = 'idle', wee
 export function HomeScreen(ctx) {
   const {
     dimmed = false,
-    tabBarHtml = '',
+    tab = 'home',
     canAccessBasic = false,
     crackySrc = CRACKY_SRC,
     user = {},
@@ -357,7 +359,6 @@ export function HomeScreen(ctx) {
     homeSlideIndex = 0,
     homeSlideMotion = '',
     homeTargets = [],
-    icon = () => '',
     myRank = 0,
     percentile = 0,
     rankingProgress = 0,
@@ -388,10 +389,10 @@ export function HomeScreen(ctx) {
 
   const sessionActive = typeof hasClientSession === 'function' && hasClientSession();
   if (sessionActive && userLoadStatus === 'error') {
-    return <HomeLoadFailure message={userLoadError} tabBarHtml={tabBarHtml} />;
+    return <HomeLoadFailure message={userLoadError} tab={tab} />;
   }
   const profileReady = userLoadStatus === 'ready' || !sessionActive;
-  if (!profileReady) return <HomeLoadingPanel tabBarHtml={tabBarHtml} crackySrc={crackySrc} />;
+  if (!profileReady) return <HomeLoadingPanel tab={tab} crackySrc={crackySrc} />;
 
   const safeHomeSlideIndex = Math.max(0, Number(homeSlideIndex) || 0);
   const homeSlideGapPx = 12;
@@ -421,7 +422,7 @@ export function HomeScreen(ctx) {
                 </div>
                 <div className="home-top-icons">
                   <button type="button" className="home-calendar-btn" data-action="openCalendarSheet" aria-label="수험 일정">
-                    <span className="home-calendar-btn-icon" dangerouslySetInnerHTML={{ __html: icon('calendar', false) }} />
+                    <span className="home-calendar-btn-icon"><Icon name="calendar" /></span>
                     <span className="home-calendar-copy">
                       <strong className="home-calendar-dday">{calendarNearestDdayLabel || '일정'}</strong>
                       <small className="home-calendar-summary">{formatCompactCalendarTitle(calendarNearestEvent)}</small>
@@ -457,7 +458,7 @@ export function HomeScreen(ctx) {
                       className="university-card-slide university-card card slider-card home-add-univ-card"
                       data-action="openAnalysisSearchFromHome"
                     >
-                      <span className="home-add-univ-icon" dangerouslySetInnerHTML={{ __html: icon('plus', false) }} />
+                      <span className="home-add-univ-icon"><Icon name="plus" /></span>
                       <span className="home-add-univ-copy">
                         <b>목표 대학 추가</b>
                         <p>대학과 학과를 검색해 AI 분석에 추가하세요.</p>
@@ -593,12 +594,12 @@ export function HomeScreen(ctx) {
           data-action="openNotificationModal"
           aria-label={unreadCount ? `알림 ${unreadCount}건` : '알림'}
         >
-          <span className="home-notif-fab-icon" dangerouslySetInnerHTML={{ __html: icon('bell', false) }} />
+          <span className="home-notif-fab-icon"><Icon name="bell" /></span>
           {unreadCount ? <span className="home-notif-fab-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
         </button>
         <NotificationPopover {...ctx} />
         <CalendarSheet {...ctx} />
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
+        <TabBar activeTab={tab} dimmed={dimmed} />
       </div>
     </div>
   );

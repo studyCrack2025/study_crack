@@ -1,4 +1,4 @@
-import { SecondaryIntro } from '../../components/SecondaryScreen.jsx';
+import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
 
 function ScreenState({ action = null, description = '', kind = 'empty', title }) {
   return (
@@ -65,7 +65,7 @@ export function AddUniversityScreen(ctx) {
     analysisRecommended = [],
     analysisSearchTerm = '',
     analysisTargetList = [],
-    tabBarHtml = '',
+    tab = 'analysis',
     universityRecommendationError = '',
     universityRecommendationStatus = 'idle',
     universitySelectedName = ''
@@ -74,10 +74,7 @@ export function AddUniversityScreen(ctx) {
     <ScreenState kind={universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty'} title={universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError || '추천 결과가 아직 없어요'} description="성적 입력 상태를 확인한 뒤 다시 추천을 요청해주세요." />
   );
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className="screen app-screen app-content" data-screen="addUniversity">
-          <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">대학 추가</div></div>
+    <SecondaryScreenShell screen="addUniversity" title="대학 추가" tab={tab}>
           <div className="sc-secondary-page add-univ-page">
             <SecondaryIntro eyebrow="TARGET UNIVERSITY" title="희망 대학 추가" description="현재 성적 추천을 확인하거나 대학과 학과를 순서대로 직접 선택하세요." aside={<span className="sc-chip">최대 6개</span>} />
             <section className="sc-secondary-section add-univ-section">
@@ -90,9 +87,6 @@ export function AddUniversityScreen(ctx) {
               <div className="sc-secondary-list add-univ-results"><CatalogResults {...ctx} /></div>
             </section>
           </div>
-        </div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </SecondaryScreenShell>
   );
 }

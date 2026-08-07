@@ -4,57 +4,35 @@ import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
 import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
 import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
-import {
-  renderCustomerSupportScreen,
-  renderNotificationListScreen,
-  renderNotificationSettingsScreen
-} from '../screens/mypage/renderers.js';
+import { CustomerSupportScreen, NotificationListScreen, NotificationSettingsScreen } from '../screens/mypage/MyPageSecondaryScreens.jsx';
 import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
-import {
-  renderQualInfoScreen,
-  renderRankingScreen,
-  renderScoreInfoScreen
-} from '../screens/profile/renderers.js';
-import {
-  renderLockedFeatureScreen,
-  renderPaymentCompleteScreen,
-  renderPaymentScreen,
-  renderProEliteScreen,
-  renderProIntroScreen,
-  renderReportDetailScreen,
-  renderReportScreen,
-  renderTutorScreen,
-  renderWeeklyScreen
-} from '../screens/service/renderers.js';
+import { QualInfoScreen, RankingScreen, ScoreInfoScreen } from '../screens/profile/ProfileScreens.jsx';
+import { ProEliteScreen, ReportDetailScreen, ReportScreen, TutorScreen, WeeklyScreen } from '../screens/service/ServiceContentScreens.jsx';
+import { LockedFeatureScreen, PaymentCompleteScreen, PaymentScreen, ProIntroScreen } from '../screens/service/ServicePlanScreens.jsx';
 
 export const MOBILE_APP_SCREEN_COMPONENTS = {
   accountInfo: AccountInfoScreen,
   addUniversity: AddUniversityScreen,
   analysis: AnalysisScreen,
+  customerSupport: CustomerSupportScreen,
   strategy: CoachingScreen,
   home: HomeScreen,
+  lockedFeature: LockedFeatureScreen,
   my: MyPageScreen,
+  notificationList: NotificationListScreen,
+  notificationSettings: NotificationSettingsScreen,
   planner: PlannerScreen,
-  plannerAdd: PlannerAddScreen
+  plannerAdd: PlannerAddScreen,
+  payment: PaymentScreen,
+  paymentComplete: PaymentCompleteScreen,
+  proElite: ProEliteScreen,
+  proIntro: ProIntroScreen,
+  qualInfo: QualInfoScreen,
+  ranking: RankingScreen,
+  report: ReportScreen,
+  reportDetail: ReportDetailScreen,
+  scoreInfo: ScoreInfoScreen,
+  tutor: TutorScreen,
+  weekly: WeeklyScreen
 };
-
-export function createAppScreenRenderers() {
-  return {
-    customerSupport: renderCustomerSupportScreen,
-    lockedFeature: renderLockedFeatureScreen,
-    notificationSettings: renderNotificationSettingsScreen,
-    notificationList: renderNotificationListScreen,
-    payment: renderPaymentScreen,
-    paymentComplete: renderPaymentCompleteScreen,
-    proElite: renderProEliteScreen,
-    proIntro: renderProIntroScreen,
-    qualInfo: renderQualInfoScreen,
-    ranking: renderRankingScreen,
-    report: renderReportScreen,
-    reportDetail: renderReportDetailScreen,
-    scoreInfo: renderScoreInfoScreen,
-    tutor: renderTutorScreen,
-    weekly: renderWeeklyScreen
-  };
-}

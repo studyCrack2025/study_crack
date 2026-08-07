@@ -45,7 +45,9 @@ assert.match(appSource, /createLazyMobileEventHandlers/);
 assert.doesNotMatch(appSource, /createMobileEventHandlers\(context/);
 assert.match(apiControllerSource, /persistTargetUnivs/);
 assert.match(resourceOrchestratorSource, /useSession/);
+assert.match(resourceOrchestratorSource, /\['customerSupport', 'tutor'\]\.includes\(state\.screen\)/);
 assert.match(viewContextSource, /getMobileRuntimeContext/);
+assert.doesNotMatch(viewContextSource, /const baseContext = \{\s*\.\.\.state/);
 assert.match(effectsSource, /useDeferredScreenRegistry/);
 assert.match(effectsSource, /attachGestureEventBridge/);
 assert.doesNotMatch(effectsSource, /attachGestureListeners\?\.\(\),\s*\[events\]/);
@@ -66,6 +68,7 @@ for (const file of allSourceFiles) {
   if (file.pathname.includes('/shared/browser/')) continue;
   const source = await readFile(file, 'utf8');
   assert.doesNotMatch(source, /\bwindow\./, `window 직접 접근은 shared/browser에서만 허용됩니다: ${file.pathname}`);
+  assert.doesNotMatch(source, /dangerouslySetInnerHTML|tabBarHtml/, `React 화면에 HTML 문자열 bridge가 남아 있습니다: ${file.pathname}`);
 }
 
 const freeState = { userTier: 'free', selectedPlan: 'Free', user: {} };
