@@ -37,7 +37,7 @@
 .analysis-section-head p,.analysis-reverse-card p{margin:5px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.45;word-break:keep-all;}
 .analysis-section-head > b{max-width:100px;display:inline-flex;align-items:center;min-height:30px;padding:0 10px;border-radius:var(--sc-radius-pill);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:11px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .analysis-boost-empty{padding:14px;border:1px dashed var(--sc-border-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:650;line-height:1.5;text-align:center;}
-.analysis-reverse-card{display:grid;gap:12px;padding:16px!important;}
+.analysis-reverse-card{display:grid;gap:12px;padding:16px!important;border-radius:var(--sc-radius-card);box-shadow:var(--sc-shadow-normal);}
 .analysis-reverse-card.locked{border-style:dashed;background:var(--sc-surface)!important;box-shadow:none!important;}
 .analysis-reverse-card .analysis-card-eyebrow{background:var(--sc-surface-subtle);color:var(--sc-brand-navy);}
 .analysis-reverse-card.locked .btn-secondary{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);color:var(--sc-on-brand);}

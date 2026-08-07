@@ -42,7 +42,7 @@
 .loading-box{display:grid;gap:6px;color:var(--sc-brand-navy);font-weight:700;text-align:center;}
 .loading-box .dots{letter-spacing:2px;}
 button:disabled,.disabled,[disabled]{opacity:.5;pointer-events:none;}
-.admission-card{position:relative;width:100%;min-width:0;box-sizing:border-box;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--mobile-card-radius,18px);background:var(--sc-surface-card);overflow:hidden;}
+.admission-card{position:relative;width:100%;min-width:0;box-sizing:border-box;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);overflow:hidden;}
 .plus-one-card{position:relative;width:100%;min-width:0;box-sizing:border-box;background:var(--sc-surface-card);}
 .score-journey-col.current{border:0;background:transparent;box-shadow:none;}
 .sc-card{width:100%;min-width:0;box-sizing:border-box;padding:var(--sc-space-16);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}

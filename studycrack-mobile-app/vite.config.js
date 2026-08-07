@@ -29,7 +29,9 @@ export default defineConfig({
         entryFileNames: 'studycrack-mobile.bundle.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames(assetInfo) {
-          return assetInfo.name?.endsWith('.css') ? 'studycrack-mobile.css' : 'assets/[name]-[hash][extname]';
+          if (assetInfo.name === 'main.css') return 'studycrack-mobile.css';
+          if (assetInfo.name?.endsWith('.css')) return 'chunks/[name]-[hash][extname]';
+          return 'assets/[name]-[hash][extname]';
         },
         format: 'es',
         manualChunks(id) {

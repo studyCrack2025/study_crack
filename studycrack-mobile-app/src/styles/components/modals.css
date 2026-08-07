@@ -23,4 +23,7 @@
 .target-delete-actions .btn-primary.danger{background:var(--sc-state-danger)!important;border-color:var(--sc-state-danger)!important;color:var(--sc-surface-card)!important;}
 .loading-overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;box-sizing:border-box;padding:16px;border-radius:inherit;background:color-mix(in srgb,var(--sc-surface-card) 94%,transparent);}
 .score-edit-modal{width:min(100%,430px);max-height:min(var(--sc-modal-max-height),calc(var(--sc-visual-height) - 32px));overflow:auto;}
-@media (max-width:360px){.profile-detail-actions,.support-btns,.my-profile-edit-actions{flex-direction:column;}.profile-detail-actions .btn,.support-btns .btn,.my-profile-edit-actions .btn{width:100%;}}
+.support-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0;}
+.support-btns .btn{min-height:44px;border-radius:13px;font-weight:900;}
+@media (max-width:390px){.support-btns{grid-template-columns:1fr;}}
+@media (max-width:360px){.support-btns .btn{width:100%;}}

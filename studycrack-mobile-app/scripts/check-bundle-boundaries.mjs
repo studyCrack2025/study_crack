@@ -61,7 +61,25 @@ for (const suffix of deferredModuleSuffixes) {
 }
 
 const cssAsset = assets.find((asset) => asset.fileName === 'studycrack-mobile.css');
+const deferredCssAsset = assets.find((asset) => /^chunks\/screen-registry-app-[\w-]+\.css$/.test(asset.fileName));
 assert.ok(cssAsset, 'stable mobile CSS asset must be emitted');
+assert.ok(deferredCssAsset, 'signed-in screen CSS must be emitted as a deferred hashed chunk');
+const bootstrapCss = String(cssAsset.source);
+const deferredCss = String(deferredCssAsset.source);
+assert.ok(bootstrapCss.length < 90 * 1024, 'bootstrap CSS must remain below 90 KiB');
+assert.ok(deferredCss.length > 100 * 1024, 'signed-in screen styles must remain in the deferred CSS chunk');
+assert.doesNotMatch(bootstrapCss, /\.home-report-preview-grid\b/, 'home feature CSS must not return to the bootstrap asset');
+assert.doesNotMatch(bootstrapCss, /\.analysis-context-head\b/, 'analysis feature CSS must not return to the bootstrap asset');
+assert.doesNotMatch(bootstrapCss, /\.planner-context-head\b/, 'planner feature CSS must not return to the bootstrap asset');
+assert.doesNotMatch(bootstrapCss, /\.my-profile-avatar\b/, 'mypage feature CSS must not return to the bootstrap asset');
+assert.match(deferredCss, /\.home-report-preview-grid\b/, 'deferred CSS must include home feature styles');
+assert.match(deferredCss, /\.analysis-context-head\b/, 'deferred CSS must include analysis feature styles');
+assert.match(deferredCss, /\.planner-context-head\b/, 'deferred CSS must include planner feature styles');
+assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include mypage feature styles');
+assert.ok(
+  appRegistryChunk.viteMetadata?.importedCss?.has(deferredCssAsset.fileName),
+  'signed-in app chunk metadata must preload its deferred CSS asset'
+);
 for (const chunk of chunks) {
   assert.ok(chunk.code.length < 500 * 1024, `${chunk.fileName} must remain below 500 KiB`);
 }
@@ -88,5 +106,5 @@ const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
 console.log(
-  `bundle boundary ok: initial ${formatKiB(initialBytes)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, ${chunks.length} JS chunks`
+  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks`
 );

@@ -59,7 +59,7 @@
 .ob-card{display:grid;gap:var(--sc-space-12);margin:0;padding:var(--sc-space-16);}
 .ob-card .analysis-title{color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.4;}
 .ob-card .ob-score-card{margin:0;padding:var(--sc-space-12);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface);box-shadow:none;}
-.analysis-top{width:100%;min-width:0;box-sizing:border-box;padding:12px;border-radius:var(--mobile-card-radius,18px);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}
+.analysis-top{width:100%;min-width:0;box-sizing:border-box;padding:12px;border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}
 .analysis-v2-summary-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;}
 .analysis-v2-summary-top > div{min-width:0;}
 .analysis-v2-univ{overflow-wrap:anywhere;word-break:keep-all;}

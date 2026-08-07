@@ -15,3 +15,4 @@
 .app-frame,
 .app-screen{min-height:100dvh;}
 @media (min-width:480px){.app-frame{border-radius:var(--sc-radius-card);box-shadow:var(--sc-shadow-raised);}}
+@media (max-width:360px){:root{--mobile-page-gutter:14px;}}
