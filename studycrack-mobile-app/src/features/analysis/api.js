@@ -1,4 +1,6 @@
-import { apiFailure, apiSuccess, postJson } from '../../shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson } from '../../shared/api/client.js';
+import { ANALYSIS_REQUEST_TYPES } from '../../shared/api/request-types.js';
+import { isRecord, validateAnalysisResult, validateModelList } from '../../shared/model/contracts.js';
 import { parseTargetMajor, toAnalysisTargetPayload } from './target-model.js';
 
 function isConvertedMetric(metric) {
@@ -12,7 +14,7 @@ async function convertSubjectScore({ analysisApiUrl, apiFetch, payload }) {
   const result = await postJson({
     apiFetch,
     url: analysisApiUrl,
-    payload: { type: 'convert_score', ...payload },
+    payload: { type: ANALYSIS_REQUEST_TYPES.CONVERT_SCORE, ...payload },
     fallbackError: '성적 환산에 실패했습니다.'
   });
   if (!result.ok) return result;
@@ -68,11 +70,13 @@ export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch, signal 
     apiFetch,
     signal,
     url: analysisApiUrl,
-    payload: { type: 'get_univ_list_only' },
+    payload: { type: ANALYSIS_REQUEST_TYPES.GET_UNIVERSITY_CATALOG },
     fallbackError: '대학·학과 목록을 불러오지 못했습니다.'
   });
   if (!result.ok) return result;
-  const catalog = normalizeUniversityCatalog(result.data);
+  const rawCatalog = Array.isArray(result.data) ? result.data : result.data?.univs;
+  if (!Array.isArray(rawCatalog)) return apiInvalidResponse(result, '대학·학과 목록 응답이 올바르지 않습니다.');
+  const catalog = normalizeUniversityCatalog(rawCatalog);
   return catalog.length
     ? apiSuccess(catalog, { status: result.status })
     : apiFailure('대학·학과 목록이 비어 있습니다.', { status: result.status });
@@ -98,7 +102,7 @@ export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch,
     url: analysisApiUrl,
     fallbackError: '추천 대학을 불러오지 못했습니다.',
     payload: {
-      type: 'get_tutorial_recommendations',
+      type: ANALYSIS_REQUEST_TYPES.GET_TUTORIAL_RECOMMENDATIONS,
       userScores: examData,
       stream: inferRecommendationStream(examData, savedStream),
       totalStdScore,
@@ -107,6 +111,7 @@ export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch,
     }
   });
   if (!result.ok) return result;
+  if (!Array.isArray(result.data?.selected)) return apiInvalidResponse(result, '추천 대학 응답이 올바르지 않습니다.');
   const recommendations = Array.from(new Set((Array.isArray(result.data?.selected) ? result.data.selected : [])
     .map((item) => `${String(item?.school || item?.univ || '').trim()} ${String(item?.major || '').trim()}`.trim())
     .filter((label) => label && label.includes(' '))))
@@ -115,8 +120,7 @@ export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch,
 }
 
 function normalizeAnalysisResults(payload) {
-  const list = Array.isArray(payload) ? payload : (Array.isArray(payload?.results) ? payload.results : (Array.isArray(payload?.data) ? payload.data : []));
-  return list.filter((item) => item && item.univ && item.major);
+  return (Array.isArray(payload) ? payload : []).filter((item) => item && item.univ && item.major);
 }
 
 function normalizeSimulationResults(payload) {
@@ -130,11 +134,25 @@ export async function fetchMobileTargetAnalysis({ analysisApiUrl, apiFetch, exam
     apiFetch,
     signal,
     url: analysisApiUrl,
-    payload: { type: 'analyze_my_targets', targetUnivs, userScores, examMode },
+    payload: { type: ANALYSIS_REQUEST_TYPES.ANALYZE_TARGETS, targetUnivs, userScores, examMode },
     fallbackError: '분석 결과를 불러오지 못했습니다.'
   });
   if (!result.ok) return { ...result, data: { analysisResults: [], simulationResults: [] } };
-  return apiSuccess({ analysisResults: normalizeAnalysisResults(result.data), simulationResults: [] }, { status: result.status });
+  const rawAnalysisResults = Array.isArray(result.data)
+    ? result.data
+    : Array.isArray(result.data?.results)
+      ? result.data.results
+      : Array.isArray(result.data?.data)
+        ? result.data.data
+        : null;
+  if (!rawAnalysisResults) return apiInvalidResponse(result, '대학 분석 결과 응답이 배열이 아닙니다.');
+  const analysisResults = normalizeAnalysisResults(rawAnalysisResults);
+  if (analysisResults.length !== rawAnalysisResults.length) {
+    return apiInvalidResponse(result, '대학 분석 결과의 대학·학과 필드가 올바르지 않습니다.');
+  }
+  const contract = validateModelList(analysisResults, validateAnalysisResult, '대학 분석 결과');
+  if (!contract.ok) return apiInvalidResponse(result, contract.error);
+  return apiSuccess({ analysisResults, simulationResults: [] }, { status: result.status });
 }
 
 export async function fetchMobileScoreSimulation({ analysisApiUrl, apiFetch, examMode, signal, targetList, userScores } = {}) {
@@ -144,11 +162,16 @@ export async function fetchMobileScoreSimulation({ analysisApiUrl, apiFetch, exa
     apiFetch,
     signal,
     url: analysisApiUrl,
-    payload: { type: 'simulate_score_rise', targetUnivs, userScores, examMode },
+    payload: { type: ANALYSIS_REQUEST_TYPES.SIMULATE_SCORE_RISE, targetUnivs, userScores, examMode },
     fallbackError: '시뮬레이션 결과를 불러오지 못했습니다.'
   });
   if (!result.ok) return result;
-  return apiSuccess(normalizeSimulationResults(result.data), { status: result.status });
+  if (!Array.isArray(result.data)) return apiInvalidResponse(result, '점수 시뮬레이션 응답이 배열이 아닙니다.');
+  const simulations = normalizeSimulationResults(result.data);
+  if (simulations.length !== result.data.length || simulations.some((item) => !isRecord(item))) {
+    return apiInvalidResponse(result, '점수 시뮬레이션 결과 필드가 올바르지 않습니다.');
+  }
+  return apiSuccess(simulations, { status: result.status });
 }
 
 export async function fetchMobileBacktrace({ analysisApiUrl, apiFetch, examMode, signal, targetMajor, userScores } = {}) {
@@ -160,8 +183,10 @@ export async function fetchMobileBacktrace({ analysisApiUrl, apiFetch, examMode,
     signal,
     url: analysisApiUrl,
     fallbackError: '필요 원점수 조합을 계산하지 못했습니다.',
-    payload: { type: 'backtrace_required_raw', targetUniv, userScores, examMode, targetUiMin: 100, targetUiMax: 150, maxTotalRaw: 20 }
+    payload: { type: ANALYSIS_REQUEST_TYPES.BACKTRACE_REQUIRED_RAW, targetUniv, userScores, examMode, targetUiMin: 100, targetUiMax: 150, maxTotalRaw: 20 }
   });
   if (!result.ok) return result;
-  return apiSuccess(result.data?.result || result.data?.backtrace_plan || null, { status: result.status });
+  const plan = result.data?.result || result.data?.backtrace_plan || null;
+  if (plan !== null && !isRecord(plan)) return apiInvalidResponse(result, '필요 원점수 조합 응답이 올바르지 않습니다.');
+  return apiSuccess(plan, { status: result.status });
 }

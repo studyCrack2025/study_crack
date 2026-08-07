@@ -1,4 +1,5 @@
 import { clearMobileAuthArtifacts } from './auth-service.js';
+import { AUTH_REQUEST_TYPES } from '../../shared/api/request-types.js';
 import {
   getMobileBrowserServices,
   getMobileLocation,
@@ -16,7 +17,7 @@ export async function blockNonStudentMobileSession(role) {
   try {
     await runtime.apiFetch?.(runtime.api.auth, {
       method: 'POST',
-      body: JSON.stringify({ type: 'logout' })
+      body: JSON.stringify({ type: AUTH_REQUEST_TYPES.LOGOUT })
     });
   } catch (_error) {}
   try {

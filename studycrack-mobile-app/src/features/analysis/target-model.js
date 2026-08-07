@@ -1,3 +1,5 @@
+import { validateTargetSlot } from '../../shared/model/contracts.js';
+
 export function parseTargetMajor(value) {
   const text = String(value || '').trim();
   if (!text) return null;
@@ -62,5 +64,5 @@ export function buildTargetUnivsPayload(targetList = [], nowIso = new Date().toI
 export function toAnalysisTargetPayload(targetList = []) {
   return buildTargetUnivsPayload(targetList)
     .map((item) => item ? { univ: item.univ, major: item.major } : null)
-    .filter((item) => item?.univ && item?.major);
+    .filter((item) => validateTargetSlot(item).ok);
 }

@@ -1,16 +1,17 @@
-import { apiFailure, apiSuccess, postJson } from '../../shared/api/client.js';
+import { apiInvalidResponse, apiSuccess, postJson } from '../../shared/api/client.js';
+import { USER_REQUEST_TYPES } from '../../shared/api/request-types.js';
+import { validateUser } from '../../shared/model/contracts.js';
 
 export async function fetchCurrentUser({ apiFetch, signal, userApiUrl } = {}) {
   const result = await postJson({
     apiFetch,
     signal,
     url: userApiUrl,
-    payload: { type: 'get_user_analysis' },
+    payload: { type: USER_REQUEST_TYPES.GET_CURRENT_USER },
     fallbackError: '사용자 정보를 불러오지 못했습니다.'
   });
   if (!result.ok) return result;
-  if (!result.data || typeof result.data !== 'object') {
-    return apiFailure('사용자 정보 응답이 올바르지 않습니다.', { status: result.status });
-  }
+  const contract = validateUser(result.data);
+  if (!contract.ok) return apiInvalidResponse(result, contract.error);
   return apiSuccess(result.data, { status: result.status });
 }

@@ -1,3 +1,24 @@
+/**
+ * @typedef {'serverResource'|'localDraft'|'ephemeralUi'} FeatureStateKind
+ * @typedef {{ serverResource: Record<string, unknown>, localDraft: Record<string, unknown>, ephemeralUi: Record<string, unknown> }} FeatureState
+ * @typedef {{ type?: string, payload?: Record<string, unknown> }} FeatureAction
+ * @typedef {{
+ *   name: string,
+ *   fieldKinds: Readonly<Record<string, FeatureStateKind>>,
+ *   createInitialState: () => FeatureState,
+ *   reducer: (state?: FeatureState, action?: FeatureAction) => FeatureState,
+ *   actions: { patch: (payload: Record<string, unknown>) => FeatureAction, set: (key: string, value: unknown) => FeatureAction },
+ *   selectors: {
+ *     slice: (rootState: Record<string, FeatureState>) => FeatureState,
+ *     serverResource: (rootState: Record<string, FeatureState>) => Record<string, unknown>|undefined,
+ *     localDraft: (rootState: Record<string, FeatureState>) => Record<string, unknown>|undefined,
+ *     ephemeralUi: (rootState: Record<string, FeatureState>) => Record<string, unknown>|undefined,
+ *     flatSlice: (rootState: Record<string, FeatureState>) => Record<string, unknown>,
+ *     field: (rootState: Record<string, FeatureState>, key: string) => unknown
+ *   }
+ * }} FeatureSlice
+ */
+
 function resolveNextValue(current, next) {
   return typeof next === 'function' ? next(current) : next;
 }
@@ -28,6 +49,11 @@ function validateInitialState(name, initialState) {
   }
 }
 
+/**
+ * @param {string} name
+ * @param {() => FeatureState} createInitialState
+ * @returns {Readonly<FeatureSlice>}
+ */
 export function createFeatureSlice(name, createInitialState) {
   if (!name || typeof createInitialState !== 'function') {
     throw new TypeError('feature slice는 name과 initial state factory가 필요합니다.');

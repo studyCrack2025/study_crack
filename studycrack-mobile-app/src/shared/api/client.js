@@ -1,5 +1,10 @@
 let authExpiredHandler = null;
 
+/**
+ * @template T
+ * @typedef {{ ok: true, data: T, error: '', status: number, code: string }|{ ok: false, data: T|null, error: string, status: number, code: string }} ApiResult
+ */
+
 export function setApiAuthExpiredHandler(handler) {
   authExpiredHandler = typeof handler === 'function' ? handler : null;
   return () => {
@@ -12,12 +17,22 @@ function notifyAuthExpired(result) {
   return result;
 }
 
+/** @template T @param {T} data @returns {ApiResult<T>} */
 export function apiSuccess(data = null, { code = '', status = 200 } = {}) {
   return { ok: true, data, error: '', status, code };
 }
 
+/** @returns {ApiResult<unknown>} */
 export function apiFailure(error, { code = '', data = null, status = 0 } = {}) {
   return { ok: false, data, error: String(error || '요청을 처리하지 못했습니다.'), status, code };
+}
+
+/** @returns {ApiResult<unknown>} */
+export function apiInvalidResponse(result, error = '서버 응답 형식이 올바르지 않습니다.') {
+  return apiFailure(error, {
+    code: 'INVALID_RESPONSE',
+    status: Number(result?.status || 0)
+  });
 }
 
 async function readResponseBody(response) {

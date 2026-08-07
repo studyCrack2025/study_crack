@@ -1,4 +1,12 @@
-import { apiFailure, apiSuccess, postJson } from '../../shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson } from '../../shared/api/client.js';
+import { SUPPORT_REQUEST_TYPES } from '../../shared/api/request-types.js';
+import { isRecord, validateModelList } from '../../shared/model/contracts.js';
+
+function validateQnaItem(value) {
+  return isRecord(value) && typeof value.qnaId === 'string'
+    ? { ok: true, value }
+    : { ok: false, error: '문의 항목 필드가 올바르지 않습니다.' };
+}
 
 export function normalizeQnaHistory(payload) {
   const list = Array.isArray(payload?.qnaHistory) ? payload.qnaHistory : (Array.isArray(payload) ? payload : []);
@@ -14,8 +22,12 @@ export function normalizeQnaHistory(payload) {
 }
 
 export async function fetchMobileQnaHistory({ apiFetch, qnaApiUrl, signal } = {}) {
-  const result = await postJson({ apiFetch, signal, url: qnaApiUrl, payload: { type: 'get_qna_list' }, fallbackError: '문의 내역을 불러오지 못했습니다.' });
-  return result.ok ? apiSuccess(normalizeQnaHistory(result.data), { status: result.status }) : result;
+  const result = await postJson({ apiFetch, signal, url: qnaApiUrl, payload: { type: SUPPORT_REQUEST_TYPES.GET_QNA_LIST }, fallbackError: '문의 내역을 불러오지 못했습니다.' });
+  if (!result.ok) return result;
+  const list = Array.isArray(result.data?.qnaHistory) ? result.data.qnaHistory : (Array.isArray(result.data) ? result.data : null);
+  const contract = validateModelList(list, validateQnaItem, '문의 목록');
+  if (!contract.ok) return apiInvalidResponse(result, contract.error);
+  return apiSuccess(normalizeQnaHistory(list), { status: result.status });
 }
 
 export async function saveMobileQna({ apiFetch, content, qnaApiUrl, title } = {}) {
@@ -25,7 +37,7 @@ export async function saveMobileQna({ apiFetch, content, qnaApiUrl, title } = {}
   const result = await postJson({
     apiFetch,
     url: qnaApiUrl,
-    payload: { type: 'save_qna', data: { title: safeTitle, content: safeContent } },
+    payload: { type: SUPPORT_REQUEST_TYPES.SAVE_QNA, data: { title: safeTitle, content: safeContent } },
     fallbackError: '질문 저장에 실패했습니다.'
   });
   if (!result.ok) return result;

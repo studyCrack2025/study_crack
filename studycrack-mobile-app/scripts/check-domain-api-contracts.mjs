@@ -1,7 +1,27 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-import { apiFailure, apiSuccess, postJson, setApiAuthExpiredHandler } from '../src/shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson, setApiAuthExpiredHandler } from '../src/shared/api/client.js';
+import {
+  ANALYSIS_REQUEST_TYPES,
+  AUTH_REQUEST_TYPES,
+  NOTIFICATION_REQUEST_TYPES,
+  REPORT_REQUEST_TYPES,
+  SUPPORT_REQUEST_TYPES,
+  USER_REQUEST_TYPES
+} from '../src/shared/api/request-types.js';
+import {
+  validateAnalysisResult,
+  validateExamScores,
+  validateModelList,
+  validateNotification,
+  validatePlannerItem,
+  validateStudySession,
+  validateSubscription,
+  validateTargetSlot,
+  validateUser,
+  validateWeeklyReport
+} from '../src/shared/model/contracts.js';
 
 const envelopeKeys = ['code', 'data', 'error', 'ok', 'status'];
 
@@ -15,6 +35,28 @@ function assertEnvelope(result) {
 
 assertEnvelope(apiSuccess({ value: 1 }));
 assertEnvelope(apiFailure('실패'));
+const invalidResponse = apiInvalidResponse({ status: 200 }, '계약 오류');
+assertEnvelope(invalidResponse);
+assert.equal(invalidResponse.code, 'INVALID_RESPONSE');
+assert.equal(invalidResponse.status, 200);
+
+const modelContracts = [
+  [validateSubscription, { tier: 'basic', status: 'active' }, { tier: 'basic' }],
+  [validateExamScores, { kor: { raw: 80 }, eng: { grd: 2 } }, []],
+  [validateTargetSlot, { univ: '연세대학교', major: '정치외교학과' }, { univ: '', major: '' }],
+  [validateUser, { role: 'student', name: '테스트', computedTier: 'basic' }, { role: 'student', name: '테스트' }],
+  [validateAnalysisResult, { univ: '연세대학교', major: '정치외교학과', converted_score: 120 }, { univ: '연세대학교', major: '정치외교학과' }],
+  [validatePlannerItem, { id: 'pl-1', date: '2026-08-08', subject: '수학' }, { id: 'pl-1', subject: '수학' }],
+  [validateStudySession, { sessionId: 'session-1', subject: '수학', durationSeconds: 600 }, { subject: '수학', durationSeconds: -1 }],
+  [validateNotification, { notiId: 'n-1', title: '알림', body: '내용' }, { title: '알림' }],
+  [validateWeeklyReport, { weekId: '260801', title: '주간 점검' }, { title: '주간 점검' }]
+];
+for (const [validator, validValue, invalidValue] of modelContracts) {
+  assert.equal(validator(validValue).ok, true, `${validator.name} must accept its public model.`);
+  assert.equal(validator(invalidValue).ok, false, `${validator.name} must reject an invalid model.`);
+}
+assert.equal(validateModelList([{ notiId: 'n-1' }], validateNotification, '알림').ok, true);
+assert.equal(validateModelList([{ title: '알림' }], validateNotification, '알림').ok, false);
 
 const success = await postJson({
   apiFetch: async () => ({ ok: true, status: 201, json: async () => ({ saved: true }) }),
@@ -67,6 +109,32 @@ for (const path of apiModules) {
   assert.equal(/\bthrow\b/.test(source), false, `${path} must return the API envelope instead of throwing.`);
   assert.equal(/return\s+null\b/.test(source), false, `${path} must not encode API failure as null.`);
   assert.equal(/return\s+\[\]/.test(source), false, `${path} must not encode API failure as an empty list.`);
+}
+
+const requestTypeGroups = [
+  USER_REQUEST_TYPES,
+  ANALYSIS_REQUEST_TYPES,
+  NOTIFICATION_REQUEST_TYPES,
+  REPORT_REQUEST_TYPES,
+  SUPPORT_REQUEST_TYPES,
+  AUTH_REQUEST_TYPES
+];
+const requestTypeValues = requestTypeGroups.flatMap((group) => Object.values(group));
+assert.equal(new Set(requestTypeValues).size, requestTypeValues.length, 'Request type values must have one owner.');
+const requestConsumers = [
+  ...apiModules,
+  'src/features/session/auth-service.js',
+  'src/features/session/mobile-session-adapter.js'
+];
+for (const path of requestConsumers) {
+  const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+  for (const requestType of requestTypeValues) {
+    assert.equal(
+      source.includes(`'${requestType}'`) || source.includes(`\"${requestType}\"`),
+      false,
+      `${path} must import the shared constant for ${requestType}.`
+    );
+  }
 }
 
 await assert.rejects(access(new URL('../src/runtime/persistence.js', import.meta.url)));

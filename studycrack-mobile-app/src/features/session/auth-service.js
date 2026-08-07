@@ -1,6 +1,7 @@
 // 모바일 자체 인증 서비스.
 import { AuthenticationDetails, CognitoUser, CognitoUserAttribute, CognitoUserPool } from 'amazon-cognito-identity-js';
 import { getMobileBrowserServices } from '../../shared/browser/mobile-runtime.js';
+import { AUTH_REQUEST_TYPES } from '../../shared/api/request-types.js';
 
 function getConfig() {
   return getMobileBrowserServices().browser?.CONFIG || {};
@@ -34,7 +35,7 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ type: 'register_login_cookies', accessToken, idToken, refreshToken })
+      body: JSON.stringify({ type: AUTH_REQUEST_TYPES.REGISTER_LOGIN_COOKIES, accessToken, idToken, refreshToken })
     });
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -140,21 +141,21 @@ async function postAuthJson({ authApiUrl, fetchImpl = globalThis.fetch, payload 
 }
 
 export async function requestSignupEmailCode({ authApiUrl, email, fetchImpl } = {}) {
-  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'send_email_auth', email } });
+  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: AUTH_REQUEST_TYPES.SEND_EMAIL_AUTH, email } });
 }
 
 export async function verifySignupEmailCode({ authApiUrl, code, email, fetchImpl } = {}) {
-  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'verify_code', email, code } });
+  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: AUTH_REQUEST_TYPES.VERIFY_CODE, email, code } });
   if (data?.success === false) throw new Error(data?.error || 'VERIFY_FAILED');
   return data;
 }
 
 export async function requestSignupSmsCode({ authApiUrl, fetchImpl, phone } = {}) {
-  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'send_sms_auth', phone } });
+  return postAuthJson({ authApiUrl, fetchImpl, payload: { type: AUTH_REQUEST_TYPES.SEND_SMS_AUTH, phone } });
 }
 
 export async function verifySignupSmsCode({ authApiUrl, code, fetchImpl, phone } = {}) {
-  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: 'verify_code', phone, code } });
+  const data = await postAuthJson({ authApiUrl, fetchImpl, payload: { type: AUTH_REQUEST_TYPES.VERIFY_CODE, phone, code } });
   if (data?.success === false) throw new Error(data?.error || 'VERIFY_FAILED');
   return data;
 }
@@ -191,7 +192,7 @@ export async function signUpWithEmail({ authApiUrl, email, fetchImpl, password, 
     await postAuthJson({
       authApiUrl,
       fetchImpl,
-      payload: { type: 'update_profile', userId: signup.userSub, data: profileData }
+      payload: { type: AUTH_REQUEST_TYPES.UPDATE_PROFILE, userId: signup.userSub, data: profileData }
     });
     return { ok: true, userSub: signup.userSub };
   } catch (error) {

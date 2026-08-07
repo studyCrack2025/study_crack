@@ -1,5 +1,6 @@
 import { normalizePlannerItems } from '../../state/planner-storage.js';
 import { STORAGE_KEYS, safeParse, safeStringifySet } from '../../state/storage.js';
+import { validatePlannerItem } from '../../shared/model/contracts.js';
 
 function removeLegacyDemoPlannerItems(items) {
   return (Array.isArray(items) ? items : []).filter((item) => !String(item?.id || '').startsWith('pl-default-'));
@@ -15,9 +16,13 @@ export function hydratePlannerStorage(storage = globalThis.localStorage) {
     ? activeStudySession
     : null;
 
+  const normalizedPlannerItems = Array.isArray(plannerItems)
+    ? normalizePlannerItems(removeLegacyDemoPlannerItems(plannerItems)).filter((item) => validatePlannerItem(item).ok)
+    : null;
+
   return {
     ...(Array.isArray(plannerItems)
-      ? { plannerItems: normalizePlannerItems(removeLegacyDemoPlannerItems(plannerItems)) }
+      ? { plannerItems: normalizedPlannerItems }
       : {}),
     ...(Array.isArray(studyRecords) ? { studyRecords } : {}),
     ...(Array.isArray(studySubjectRecords) ? { studySubjectRecords } : {}),

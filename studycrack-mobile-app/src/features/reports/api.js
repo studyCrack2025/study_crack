@@ -1,4 +1,12 @@
-import { apiFailure, apiSuccess, postJson } from '../../shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson } from '../../shared/api/client.js';
+import { REPORT_REQUEST_TYPES } from '../../shared/api/request-types.js';
+import { isRecord, validateModelList, validateWeeklyReport } from '../../shared/model/contracts.js';
+
+function validateProReport(value) {
+  return isRecord(value) && typeof value.key === 'string' && Boolean(value.key.trim())
+    ? { ok: true, value }
+    : { ok: false, error: 'PRO 리포트 필드가 올바르지 않습니다.' };
+}
 
 function normalizeProReports(payload) {
   return (Array.isArray(payload?.reports) ? payload.reports : [])
@@ -17,10 +25,14 @@ export async function fetchMobileProReports({ apiFetch, reportApiUrl, signal } =
     apiFetch,
     signal,
     url: reportApiUrl,
-    payload: { type: 'get_pro_reports', data: { requesterRole: 'student' } },
+    payload: { type: REPORT_REQUEST_TYPES.GET_PRO_REPORTS, data: { requesterRole: 'student' } },
     fallbackError: 'PRO 리포트를 불러오지 못했습니다.'
   });
-  return result.ok ? apiSuccess(normalizeProReports(result.data), { status: result.status }) : result;
+  if (!result.ok) return result;
+  const list = Array.isArray(result.data?.reports) ? result.data.reports : null;
+  const contract = validateModelList(list, validateProReport, 'PRO 리포트 목록');
+  if (!contract.ok) return apiInvalidResponse(result, contract.error);
+  return apiSuccess(normalizeProReports({ reports: list }), { status: result.status });
 }
 
 export async function requestMobileProReport({ apiFetch, reportApiUrl, requestText } = {}) {
@@ -29,10 +41,11 @@ export async function requestMobileProReport({ apiFetch, reportApiUrl, requestTe
   const result = await postJson({
     apiFetch,
     url: reportApiUrl,
-    payload: { type: 'request_pro_report', data: { requestText: safeText } },
+    payload: { type: REPORT_REQUEST_TYPES.REQUEST_PRO_REPORT, data: { requestText: safeText } },
     fallbackError: '리포트 요청에 실패했습니다.'
   });
   if (!result.ok) return result;
+  if (typeof result.data?.targetKey !== 'string') return apiInvalidResponse(result, '리포트 요청 응답이 올바르지 않습니다.');
   return apiSuccess({
     key: String(result.data?.targetKey || ''),
     reportLink: '',
@@ -62,10 +75,14 @@ export async function fetchMobileWeeklyReports({ apiFetch, reportApiUrl, signal 
     apiFetch,
     signal,
     url: reportApiUrl,
-    payload: { type: 'get_weekly_reports' },
+    payload: { type: REPORT_REQUEST_TYPES.GET_WEEKLY_REPORTS },
     fallbackError: '주간 리포트를 불러오지 못했습니다.'
   });
-  return result.ok ? apiSuccess(normalizeWeeklyReports(result.data), { status: result.status }) : result;
+  if (!result.ok) return result;
+  const list = Array.isArray(result.data?.weeklyReports) ? result.data.weeklyReports : null;
+  const contract = validateModelList(list, validateWeeklyReport, '주간 리포트 목록');
+  if (!contract.ok) return apiInvalidResponse(result, contract.error);
+  return apiSuccess(normalizeWeeklyReports({ weeklyReports: list }), { status: result.status });
 }
 
 function fallbackMimeType(fileName = '') {
@@ -83,10 +100,13 @@ export async function uploadMobileFile({ apiFetch, fetchImpl = globalThis.fetch,
   const presign = await postJson({
     apiFetch,
     url: fileApiUrl,
-    payload: { type: 'get_presigned_url', data: { fileName: encodeURIComponent(fileName), fileType, folder } },
+    payload: { type: REPORT_REQUEST_TYPES.GET_PRESIGNED_URL, data: { fileName: encodeURIComponent(fileName), fileType, folder } },
     fallbackError: '파일 업로드 URL 발급에 실패했습니다.'
   });
   if (!presign.ok) return presign;
+  if (!isRecord(presign.data?.fields) || typeof presign.data?.uploadUrl !== 'string' || typeof presign.data?.fileUrl !== 'string') {
+    return apiInvalidResponse(presign, '파일 업로드 URL 응답이 올바르지 않습니다.');
+  }
   try {
     const formData = new FormData();
     Object.entries(presign.data?.fields || {}).forEach(([key, value]) => formData.append(key, value));
@@ -188,7 +208,7 @@ export async function saveMobileWeeklyCheck({ apiFetch, payload, reportApiUrl } 
   const result = await postJson({
     apiFetch,
     url: reportApiUrl,
-    payload: { type: 'save_weekly_check', data: payload },
+    payload: { type: REPORT_REQUEST_TYPES.SAVE_WEEKLY_CHECK, data: payload },
     fallbackError: '주간 점검 저장에 실패했습니다.'
   });
   if (!result.ok) return result;
