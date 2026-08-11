@@ -15,6 +15,9 @@ export function createGamificationInitialState() {
       habitatDays: [],
       habitatStatus: 'idle',
       habitatError: '',
+      pendingDraw: null,
+      pendingDrawStatus: 'idle',
+      pendingDrawError: '',
       gameRefreshTick: 0
     },
     localDraft: {
@@ -23,6 +26,8 @@ export function createGamificationInitialState() {
     ephemeralUi: {
       aquariumActionError: '',
       aquariumActionStatus: 'idle',
+      aquariumDrawRevealStep: 0,
+      aquariumMode: 'view',
       aquariumResult: null,
       aquariumSelectedFishId: '',
       aquariumStarterSpeciesId: '',

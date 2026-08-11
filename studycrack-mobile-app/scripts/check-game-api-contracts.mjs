@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { claimStudyReward, fetchGameProfile, fetchStudyHabitat, renameFish, setActiveFish } from '../src/features/gamification/api.js';
+import { acknowledgeFishDraw, claimStudyReward, drawFish, fetchGameProfile, fetchPendingDraw, fetchStudyHabitat, renameFish, setActiveFish } from '../src/features/gamification/api.js';
 import { GAME_REQUEST_TYPES } from '../src/shared/api/request-types.js';
 
 function response(body, ok = true, status = 200) {
@@ -15,6 +15,7 @@ const profile = {
 };
 const payloads = [];
 const fish = { fishId: 'fish_contract_1', speciesId: 'clownfish', name: '코랄', level: 1, exp: 0, progressPct: 0 };
+const drawResult = { requestId: 'draw-contract', speciesId: 'clownfish', rarity: 'common', duplicate: false, expGranted: 0, shellsRefunded: 0, cost: 30, createdAt: '2026-08-11T00:00:00.000Z' };
 const apiFetch = async (_url, options) => {
   const payload = JSON.parse(options.body);
   payloads.push(payload);
@@ -24,6 +25,9 @@ const apiFetch = async (_url, options) => {
   }
   if (payload.type === GAME_REQUEST_TYPES.SET_ACTIVE_FISH) return response({ profile: { ...profile, activeFishIds: [payload.data.fishId, null, null] } });
   if (payload.type === GAME_REQUEST_TYPES.RENAME_FISH) return response({ fish: { ...fish, name: payload.data.name } });
+  if (payload.type === GAME_REQUEST_TYPES.GET_PENDING_DRAW) return response({ pending: null, profile });
+  if (payload.type === GAME_REQUEST_TYPES.DRAW_FISH) return response({ result: { ...drawResult, requestId: payload.data.requestId }, profile, fish });
+  if (payload.type === GAME_REQUEST_TYPES.ACKNOWLEDGE_DRAW) return response({ profile, alreadyAcknowledged: false });
   return response({ sessionId: payload.data.sessionId, durationSeconds: 1800, reward: { shells: 2, food: 1 }, profile });
 };
 
@@ -51,6 +55,20 @@ const renamed = await renameFish({ apiFetch, fishId: fish.fishId, gameApiUrl: '/
 assert.equal(renamed.ok, true);
 assert.equal(renamed.data.fish.name, '코랄별');
 assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.RENAME_FISH);
+
+const pending = await fetchPendingDraw({ apiFetch, gameApiUrl: '/game' });
+assert.equal(pending.ok, true);
+assert.equal(pending.data.pending, null);
+assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.GET_PENDING_DRAW);
+
+const drawn = await drawFish({ apiFetch, gameApiUrl: '/game', requestId: drawResult.requestId });
+assert.equal(drawn.ok, true);
+assert.equal(drawn.data.result.speciesId, 'clownfish');
+assert.equal(payloads.at(-1).data.requestId, drawResult.requestId);
+
+const acknowledged = await acknowledgeFishDraw({ apiFetch, gameApiUrl: '/game', requestId: drawResult.requestId });
+assert.equal(acknowledged.ok, true);
+assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.ACKNOWLEDGE_DRAW);
 
 const invalid = await fetchGameProfile({
   gameApiUrl: '/game',

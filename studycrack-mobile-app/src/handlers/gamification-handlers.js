@@ -35,7 +35,38 @@ function validFishName(name) {
 }
 
 function aquariumBusy(status) {
-  return ['claiming-starter', 'feeding', 'renaming', 'updating-slot'].includes(status);
+  return ['acknowledging-draw', 'claiming-starter', 'drawing', 'feeding', 'renaming', 'sharing', 'updating-slot'].includes(status);
+}
+
+function aquariumSharePayload(ctx) {
+  const fishCount = Math.max(0, Number(ctx.fishCount) || 0);
+  const streakDays = Math.max(0, Number(ctx.gameProfile?.streakDays) || 0);
+  const baseUrl = `${globalThis.location?.origin || ''}/studycrack-mobile.html`;
+  return {
+    title: 'StudyCrack 공부 수조',
+    text: `공부로 키운 나의 수조: 물고기 ${fishCount}/12종 · 연속 학습 ${streakDays}일`,
+    url: baseUrl
+  };
+}
+
+async function copyAquariumShareText(payload, documentRef) {
+  const shareText = `${payload.text}\n${payload.url}`;
+  if (globalThis.navigator?.clipboard?.writeText) {
+    await globalThis.navigator.clipboard.writeText(shareText);
+    return;
+  }
+  const document = documentRef || globalThis.document;
+  if (!document?.body || typeof document.execCommand !== 'function') throw new Error('공유 링크를 복사할 수 없습니다.');
+  const textarea = document.createElement('textarea');
+  textarea.value = shareText;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('공유 링크를 복사할 수 없습니다.');
 }
 
 export function createGamificationHandlers(ctx) {
@@ -146,6 +177,108 @@ export function createGamificationHandlers(ctx) {
       ctx.setAquariumResult(null);
       ctx.setAquariumActionError('');
       ctx.setAquariumActionStatus('idle');
+      return true;
+    },
+    openAquariumCatalog() {
+      ctx.setAquariumMode('catalog');
+      ctx.setAquariumActionError('');
+      return true;
+    },
+    openAquariumDraw() {
+      ctx.setAquariumMode('draw');
+      ctx.setAquariumDrawRevealStep(0);
+      ctx.setAquariumActionError('');
+      return true;
+    },
+    openAquariumShare() {
+      ctx.setAquariumMode('share');
+      ctx.setAquariumActionError('');
+      ctx.setAquariumActionStatus('idle');
+      ctx.setAquariumResult(null);
+      return true;
+    },
+    closeAquariumMode() {
+      ctx.setAquariumMode('view');
+      ctx.setAquariumDrawRevealStep(0);
+      ctx.setAquariumActionError('');
+      return true;
+    },
+    async startAquariumDraw() {
+      if (ctx.pendingDraw || aquariumBusy(ctx.aquariumActionStatus) || ctx.pendingDrawStatus !== 'ready') return false;
+      if (Number(ctx.gameProfile?.shellBalance) < 30) {
+        ctx.setAquariumActionStatus('error');
+        ctx.setAquariumActionError('조개가 30개 이상 있어야 물고기를 만날 수 있어요.');
+        return true;
+      }
+      const drawRequestId = ctx.activeDrawRequestId || requestId('draw');
+      ctx.setActiveDrawRequestId(drawRequestId);
+      ctx.setAquariumActionStatus('drawing');
+      ctx.setAquariumActionError('');
+      const response = await ctx.startAquariumFishDraw(drawRequestId);
+      if (!response?.ok) {
+        ctx.setAquariumActionStatus('error');
+        ctx.setAquariumActionError(response?.error || '물고기를 뽑지 못했습니다.');
+        return true;
+      }
+      const { fish, profile, result } = response.data;
+      ctx.setGameProfile(profile);
+      ctx.setPendingDraw({ fish, result });
+      ctx.setPendingDrawStatus('ready');
+      ctx.setPendingDrawError('');
+      ctx.setFishInventory((items) => replaceFish(items, fish));
+      ctx.setFishCatalog((items) => (items || []).map((item) => item.speciesId === fish.speciesId ? { ...item, owned: true } : item));
+      ctx.setFishCount((count) => result.duplicate ? Number(count) || 0 : Number(count || 0) + 1);
+      ctx.setAquariumDrawRevealStep(0);
+      ctx.setAquariumActionStatus('success');
+      return true;
+    },
+    advanceAquariumDrawReveal() {
+      if (!ctx.pendingDraw || aquariumBusy(ctx.aquariumActionStatus)) return false;
+      ctx.setAquariumDrawRevealStep((step) => Math.min(3, Number(step || 0) + 1));
+      return true;
+    },
+    async acknowledgeAquariumDraw({ actionEl }) {
+      const requestIdValue = ctx.pendingDraw?.result?.requestId;
+      if (!requestIdValue || aquariumBusy(ctx.aquariumActionStatus)) return false;
+      ctx.setAquariumActionStatus('acknowledging-draw');
+      ctx.setAquariumActionError('');
+      const response = await ctx.acknowledgeAquariumFishDraw(requestIdValue);
+      if (!response?.ok) {
+        ctx.setAquariumActionStatus('error');
+        ctx.setAquariumActionError(response?.error || '뽑기 결과를 확인하지 못했습니다.');
+        return true;
+      }
+      ctx.setGameProfile(response.data.profile);
+      ctx.setPendingDraw(null);
+      ctx.setActiveDrawRequestId('');
+      ctx.setAquariumDrawRevealStep(0);
+      ctx.setAquariumMode(getData(actionEl, 'target') === 'catalog' ? 'catalog' : 'view');
+      ctx.setAquariumActionStatus('idle');
+      return true;
+    },
+    async shareAquarium() {
+      if (aquariumBusy(ctx.aquariumActionStatus)) return false;
+      const payload = aquariumSharePayload(ctx);
+      ctx.setAquariumActionStatus('sharing');
+      ctx.setAquariumActionError('');
+      ctx.setAquariumResult(null);
+      try {
+        if (typeof globalThis.navigator?.share === 'function') {
+          await globalThis.navigator.share(payload);
+          ctx.setAquariumResult({ type: 'share', method: 'native' });
+        } else {
+          await copyAquariumShareText(payload, ctx.document);
+          ctx.setAquariumResult({ type: 'share', method: 'clipboard' });
+        }
+        ctx.setAquariumActionStatus('success');
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          ctx.setAquariumActionStatus('idle');
+          return true;
+        }
+        ctx.setAquariumActionStatus('error');
+        ctx.setAquariumActionError('수조를 공유하지 못했습니다. 잠시 후 다시 시도해주세요.');
+      }
       return true;
     }
   };

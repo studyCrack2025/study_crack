@@ -79,6 +79,35 @@ export function validateRenameFishResponse(value) {
   return contract(isRecord(value) && fish.ok, value, '물고기 이름 변경 응답이 올바르지 않습니다.');
 }
 
+export function validateDrawResult(value) {
+  const valid = isRecord(value) && typeof value.requestId === 'string' && typeof value.speciesId === 'string'
+    && ['common', 'rare', 'epic'].includes(value.rarity) && typeof value.duplicate === 'boolean'
+    && Number.isFinite(Number(value.expGranted)) && Number.isFinite(Number(value.shellsRefunded))
+    && Number.isFinite(Number(value.cost)) && typeof value.createdAt === 'string';
+  return contract(valid, value, '물고기 뽑기 결과가 올바르지 않습니다.');
+}
+
+export function validateDrawResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  const fish = validateFish(value?.fish);
+  const result = validateDrawResult(value?.result);
+  return contract(isRecord(value) && profile.ok && fish.ok && result.ok, value, '물고기 뽑기 응답이 올바르지 않습니다.');
+}
+
+export function validatePendingDrawResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  if (!isRecord(value) || !profile.ok) return contract(false, value, '미확인 뽑기 응답이 올바르지 않습니다.');
+  if (value.pending === null) return contract(true, value);
+  return validateDrawResponse(value).ok
+    ? contract(true, value)
+    : contract(false, value, '미확인 뽑기 응답이 올바르지 않습니다.');
+}
+
+export function validateDrawAcknowledgeResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  return contract(isRecord(value) && profile.ok, value, '뽑기 결과 확인 응답이 올바르지 않습니다.');
+}
+
 export function normalizeGameProfileResponse(value) {
   return {
     gameProfile: value.profile,

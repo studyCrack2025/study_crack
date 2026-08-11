@@ -12,6 +12,7 @@ const ICON_PATHS = Object.freeze({
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   plus: <path d="M12 5v14M5 12h14" />,
   report: <><path d="M6 2h9l5 5v15H6z" /><path d="M15 2v5h5" /></>,
+  share: <><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" /></>,
   shield: <><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" /><path d="M9 12l2 2 4-4" /></>,
   target: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></>,
   timer: <><circle cx="12" cy="13" r="8" /><path d="M9 2h6M12 5v2M12 13l3-2M18 7l1.5-1.5" /></>,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { claimStarterFish, claimStudyReward, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
+import { acknowledgeFishDraw, claimStarterFish, claimStudyReward, drawFish, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
 import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
 import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
 import { requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
@@ -59,6 +59,14 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     (fishId, name) => renameFish({ ...getGameApiBinding(), fishId, name }),
     [getGameApiBinding]
   );
+  const startAquariumFishDraw = useCallback(
+    (requestId) => drawFish({ ...getGameApiBinding(), requestId }),
+    [getGameApiBinding]
+  );
+  const acknowledgeAquariumFishDraw = useCallback(
+    (requestId) => acknowledgeFishDraw({ ...getGameApiBinding(), requestId }),
+    [getGameApiBinding]
+  );
   const completeStudySession = useCallback(
     (sessionId, onPhase) => completeStudyRewardPipeline({
       sessionId,
@@ -115,6 +123,8 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     feedAquariumFish,
     updateAquariumActiveFish,
     updateAquariumFishName,
+    startAquariumFishDraw,
+    acknowledgeAquariumFishDraw,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,
@@ -141,6 +151,8 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     feedAquariumFish,
     updateAquariumActiveFish,
     updateAquariumFishName,
+    startAquariumFishDraw,
+    acknowledgeAquariumFishDraw,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,

@@ -179,6 +179,66 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await expectNoHorizontalOverflow(page);
 });
 
+test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤 도감에 반영한다', async ({ page }, testInfo) => {
+  await installAuthenticatedSession(page);
+  await page.addInitScript(() => {
+    window.__aquariumSharePayloads = [];
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (payload) => window.__aquariumSharePayloads.push(payload)
+    });
+  });
+  const api = await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+
+  await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
+  await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
+  await page.locator('[data-action="openAquariumDraw"]').click();
+  await page.getByRole('button', { name: '조개 30개로 뽑기' }).click();
+  await expect(page.getByRole('button', { name: '상자 열기 1단계' })).toBeVisible();
+  await page.getByRole('button', { name: '상자 열기 1단계' }).click();
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: '상자 열기 1단계' })).toBeVisible();
+  await page.getByRole('button', { name: '상자 열기 1단계' }).click();
+  await page.getByRole('button', { name: '상자 열기 2단계' }).click();
+  await page.getByRole('button', { name: '상자 열기 3단계' }).click();
+  await expect(page.getByRole('heading', { name: '나비고기' })).toBeVisible();
+  await page.getByRole('button', { name: '도감에서 확인하기' }).click();
+
+  await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeVisible();
+  await expect(page.locator('.aquarium-collection-summary')).toContainText('2 / 12');
+  await expect(page.locator('.aquarium-catalog-group.rarity-rare')).toContainText('나비고기');
+  await expect(page.locator('.aquarium-mode-header')).toHaveCSS('display', 'grid');
+  await expect(page.locator('.aquarium-catalog-group article').first()).toHaveCSS('display', 'grid');
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'draw_fish').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_pending_draw').length).toBeGreaterThan(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'acknowledge_fish_draw').length).toBe(1);
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`aquarium-catalog-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`aquarium-catalog-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: '수조로 돌아가기' }).click();
+  await page.locator('[data-action="openAquariumShare"]').click();
+  await expect(page.getByRole('heading', { name: '나의 공부 수조' })).toBeVisible();
+  await expect(page.locator('.aquarium-share-card')).toContainText('개인정보와 입시 성적은 공유 카드에 포함되지 않습니다.');
+  await page.getByRole('button', { name: '수조 공유하기' }).click();
+  await expect(page.getByText('수조 공유를 완료했어요.')).toBeVisible();
+  const sharePayload = await page.evaluate(() => window.__aquariumSharePayloads.at(-1));
+  expect(sharePayload.title).toBe('StudyCrack 공부 수조');
+  expect(sharePayload.text).toContain('물고기 2/12종');
+  expect(sharePayload.text).not.toContain('예시학생');
+  expect(sharePayload.url).toMatch(/\/studycrack-mobile\.html$/);
+  const shareScreenshotPath = testInfo.outputPath('aquarium-share-390.png');
+  await page.screenshot({ path: shareScreenshotPath, fullPage: true });
+  await testInfo.attach('aquarium-share-390.png', { path: shareScreenshotPath, contentType: 'image/png' });
+  await expectNoHorizontalOverflow(page);
+});
+
 test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);

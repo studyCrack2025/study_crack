@@ -16,9 +16,10 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'studyTimerRunning', 'studyTimerTick', 'timerPhase'
   ]),
   gamification: Object.freeze([
-    'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
-    'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'fishCount', 'fishInventory',
-    'gameProfile', 'gameRefreshTick'
+    'activeDrawRequestId', 'activeFish', 'aquariumActionError', 'aquariumActionStatus',
+    'aquariumDrawRevealStep', 'aquariumMode', 'aquariumResult', 'aquariumSelectedFishId',
+    'aquariumStarterSpeciesId', 'fishCatalog', 'fishCount', 'fishInventory', 'gameProfile',
+    'gameRefreshTick', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus'
   ]),
   planner: Object.freeze([
     'expandedBreakdownSubject', 'plannerCalendarMode', 'plannerDraft', 'plannerEditIndex', 'plannerItems',

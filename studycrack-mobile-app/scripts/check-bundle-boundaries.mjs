@@ -23,8 +23,8 @@ assert.ok(appRegistryChunk, 'deferred app screen registry chunk must be emitted'
 assert.notEqual(appRegistryChunk.fileName, entryChunk.fileName, 'signed-in app screens must not be bundled into the entry');
 assert.match(
   entryChunk.code,
-  /["']\/studycrack-mobile-app\/dist\/chunks\//,
-  'entry imports must resolve from the deployed mobile dist path'
+  /["']\.\/chunks\//,
+  'entry imports must resolve relative to the stable mobile dist entry'
 );
 assert.doesNotMatch(entryChunk.code, /["']\/chunks\//, 'entry must not request chunks from the site root');
 assert.ok(
@@ -79,6 +79,11 @@ assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include my
 assert.ok(
   appRegistryChunk.viteMetadata?.importedCss?.has(deferredCssAsset.fileName),
   'signed-in app chunk metadata must preload its deferred CSS asset'
+);
+assert.match(
+  entryChunk.code,
+  new RegExp(deferredCssAsset.fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+  'entry preload map must request the deferred screen CSS asset'
 );
 for (const chunk of chunks) {
   assert.ok(chunk.code.length < 500 * 1024, `${chunk.fileName} must remain below 500 KiB`);

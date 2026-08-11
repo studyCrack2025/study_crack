@@ -10,6 +10,21 @@ const SCORE_BY_EXAM = {
   jun: [142, 131]
 };
 
+const FISH_CATALOG = [
+  ['clownfish', '흰동가리', '코랄', 'common', true, ['#FF7A5C', '#FFF4D8']],
+  ['blue_damsel', '파랑돔', '마루', 'common', true, ['#3F6FD9', '#9DD9F2']],
+  ['yellowtail_damsel', '노랑꼬리돔', '리프', 'common', true, ['#274B87', '#F5C84C']],
+  ['striped_sardine', '줄무늬정어리', '모아', 'common', false, ['#B9C7D8', '#1B3A6B']],
+  ['butterflyfish', '나비고기', '나비', 'rare', false, ['#FFF4DC', '#F3CF55']],
+  ['mandarinfish', '만다린피시', '루나', 'rare', false, ['#2EAE9B', '#FF7A5C']],
+  ['seahorse', '해마', '해온', 'rare', false, ['#E8B94F', '#74C9B8']],
+  ['pufferfish', '복어', '몽실', 'rare', false, ['#F8E7BE', '#2EAE9B']],
+  ['emperor_angelfish', '황제엔젤피시', '솔라', 'epic', false, ['#1B3A6B', '#E8B94F']],
+  ['lionfish', '라이언피시', '레오', 'epic', false, ['#8E4250', '#FFF4D8']],
+  ['blue_tang', '블루탱', '웨이브', 'epic', false, ['#3275D8', '#F5C84C']],
+  ['manta_ray', '만타가오리', '오로라', 'epic', false, ['#24364F', '#7FC7D1']]
+].map(([speciesId, displayName, defaultName, rarity, starter, colors]) => ({ speciesId, displayName, defaultName, rarity, starter, colors }));
+
 export const mockUser = {
   role: 'student',
   name: '테스트학생',
@@ -164,13 +179,13 @@ function responseFor(payload, state) {
     case 'get_fish_catalog':
       return {
         catalogVersion: 'fish-v1',
-        catalog: [
-          { speciesId: 'clownfish', displayName: '흰동가리', defaultName: '코랄', rarity: 'common', starter: true, colors: ['#FF7A5C', '#FFF4D8'], owned: false },
-          { speciesId: 'blue_damsel', displayName: '파랑돔', defaultName: '마루', rarity: 'common', starter: true, colors: ['#3F6FD9', '#9DD9F2'], owned: false },
-          { speciesId: 'yellowtail_damsel', displayName: '노랑꼬리돔', defaultName: '리프', rarity: 'common', starter: true, colors: ['#274B87', '#F5C84C'], owned: false }
-        ],
+        catalog: FISH_CATALOG.map((fish) => ({ ...fish, owned: state.fishInventory.some((item) => item.speciesId === fish.speciesId) })),
         inventory: state.fishInventory
       };
+    case 'get_pending_draw':
+      return state.pendingDraw
+        ? { ...state.pendingDraw, profile: state.gameProfile, fish: state.pendingDraw.fish }
+        : { pending: null, profile: state.gameProfile };
     case 'claim_starter_fish': {
       const speciesId = payload.data?.speciesId || 'clownfish';
       const names = { clownfish: ['흰동가리', '코랄'], blue_damsel: ['파랑돔', '마루'], yellowtail_damsel: ['노랑꼬리돔', '리프'] };
@@ -206,6 +221,20 @@ function responseFor(payload, state) {
       state.activeFish = state.activeFish.map((fish) => fish?.fishId === updated.fishId ? updated : fish);
       return { fish: updated };
     }
+    case 'draw_fish': {
+      if (state.pendingDraw) return { ...state.pendingDraw, alreadyDrawn: true, profile: state.gameProfile, fish: state.pendingDraw.fish };
+      const requestId = payload.data?.requestId || 'draw-e2e';
+      const fish = { fishId: 'fish_draw_e2e', speciesId: 'butterflyfish', speciesName: '나비고기', rarity: 'rare', name: '나비', customName: '', level: 1, exp: 0, currentLevelExp: 0, nextLevelExp: 30, progressPct: 0, growthStage: 'young', source: 'draw' };
+      const result = { requestId, speciesId: fish.speciesId, rarity: fish.rarity, duplicate: false, protectedDraw: true, expGranted: 0, shellsRefunded: 0, cost: 30, levelBefore: 0, levelAfter: 1, createdAt: new Date().toISOString() };
+      state.fishInventory = [...state.fishInventory, fish];
+      state.gameProfile = { ...state.gameProfile, shellBalance: state.gameProfile.shellBalance - 30, activeDrawRequestId: requestId, drawPity: { rareIn: 9, epicIn: 29 } };
+      state.pendingDraw = { result, fish };
+      return { result, profile: state.gameProfile, fish, alreadyDrawn: false };
+    }
+    case 'acknowledge_fish_draw':
+      state.pendingDraw = null;
+      state.gameProfile = { ...state.gameProfile, activeDrawRequestId: null };
+      return { profile: state.gameProfile, alreadyAcknowledged: false };
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
     case 'claim_study_reward':
@@ -234,7 +263,8 @@ export async function installApiMock(page, { tier = mockUser.computedTier } = {}
     activeStudySession: null,
     activeFish: [],
     fishInventory: [],
-    gameProfile: { shellBalance: 2, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], dailyReward: {} },
+    gameProfile: { shellBalance: 62, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
+    pendingDraw: null,
     studySeconds: 0,
     userTier: tier
   };

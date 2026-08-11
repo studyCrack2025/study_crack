@@ -3,10 +3,13 @@ import { GAME_REQUEST_TYPES } from '../../shared/api/request-types.js';
 import {
   normalizeGameProfileResponse,
   validateActiveFishResponse,
+  validateDrawAcknowledgeResponse,
+  validateDrawResponse,
   validateFeedFishResponse,
   validateFishCatalogResponse,
   validateGameProfileResponse,
   validateHabitatResponse,
+  validatePendingDrawResponse,
   validateRenameFishResponse,
   validateStarterClaimResponse,
   validateStudyRewardResponse
@@ -73,5 +76,26 @@ export function renameFish({ apiFetch, fishId, gameApiUrl, name, signal } = {}) 
   return gameRequest({
     apiFetch, gameApiUrl, signal, data: { fishId, name }, type: GAME_REQUEST_TYPES.RENAME_FISH,
     fallbackError: '물고기 이름을 변경하지 못했습니다.', validator: validateRenameFishResponse
+  });
+}
+
+export function fetchPendingDraw({ apiFetch, gameApiUrl, signal } = {}) {
+  return gameRequest({
+    apiFetch, gameApiUrl, signal, type: GAME_REQUEST_TYPES.GET_PENDING_DRAW,
+    fallbackError: '미확인 뽑기 결과를 불러오지 못했습니다.', validator: validatePendingDrawResponse
+  });
+}
+
+export function drawFish({ apiFetch, gameApiUrl, requestId, signal } = {}) {
+  return gameRequest({
+    apiFetch, gameApiUrl, signal, data: { requestId }, type: GAME_REQUEST_TYPES.DRAW_FISH,
+    fallbackError: '물고기를 뽑지 못했습니다.', validator: validateDrawResponse
+  });
+}
+
+export function acknowledgeFishDraw({ apiFetch, gameApiUrl, requestId, signal } = {}) {
+  return gameRequest({
+    apiFetch, gameApiUrl, signal, data: { requestId }, type: GAME_REQUEST_TYPES.ACKNOWLEDGE_DRAW,
+    fallbackError: '뽑기 결과를 확인하지 못했습니다.', validator: validateDrawAcknowledgeResponse
   });
 }
