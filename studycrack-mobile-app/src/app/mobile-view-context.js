@@ -183,6 +183,7 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
     studyTimerSecondsRef: timerOps.studyTimerSecondsRef,
     startLiveStudyTimer: timerOps.startLiveStudyTimer,
     stopLiveStudyTimer: timerOps.stopLiveStudyTimer,
+    syncLiveStudyTimer: timerOps.syncLiveStudyTimer,
     syncLiveStudyTimerUi: timerOps.syncLiveStudyTimerUi,
     ...gestureRefs,
     ...refs,

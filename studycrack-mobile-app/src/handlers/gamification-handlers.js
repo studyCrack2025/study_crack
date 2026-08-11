@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { withOperationLock } from '../shared/async/operation-lock.js';
 
 function requestId(prefix) {
   return globalThis.crypto?.randomUUID?.() || `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -79,24 +80,26 @@ export function createGamificationHandlers(ctx) {
     async claimStarterFish() {
       const speciesId = ctx.aquariumStarterSpeciesId;
       if (!speciesId || aquariumBusy(ctx.aquariumActionStatus)) return false;
-      ctx.setAquariumActionStatus('claiming-starter');
-      ctx.setAquariumActionError('');
-      const result = await ctx.claimAquariumStarter(speciesId);
-      if (!result?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(result?.error || '첫 물고기를 선택하지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, 'aquarium-starter', async () => {
+        ctx.setAquariumActionStatus('claiming-starter');
+        ctx.setAquariumActionError('');
+        const result = await ctx.claimAquariumStarter(speciesId);
+        if (!result?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(result?.error || '첫 물고기를 선택하지 못했습니다.');
+          return true;
+        }
+        const fish = result.data.fish;
+        ctx.setGameProfile(result.data.profile);
+        ctx.setActiveFish([null, fish, null]);
+        ctx.setFishInventory((items) => replaceFish(items, fish));
+        ctx.setFishCount((count) => Math.max(1, Number(count) || 0));
+        ctx.setAquariumSelectedFishId(fish.fishId);
+        ctx.setAquariumResult({ type: 'starter', fish });
+        ctx.setAquariumActionStatus('success');
+        ctx.setGameRefreshTick((tick) => Number(tick || 0) + 1);
         return true;
-      }
-      const fish = result.data.fish;
-      ctx.setGameProfile(result.data.profile);
-      ctx.setActiveFish([null, fish, null]);
-      ctx.setFishInventory((items) => replaceFish(items, fish));
-      ctx.setFishCount((count) => Math.max(1, Number(count) || 0));
-      ctx.setAquariumSelectedFishId(fish.fishId);
-      ctx.setAquariumResult({ type: 'starter', fish });
-      ctx.setAquariumActionStatus('success');
-      ctx.setGameRefreshTick((tick) => Number(tick || 0) + 1);
-      return true;
+      });
     },
     selectAquariumFish({ actionEl }) {
       const fishId = getData(actionEl, 'fish-id');
@@ -113,41 +116,45 @@ export function createGamificationHandlers(ctx) {
         ? activeFish.find((item) => item?.fishId === ctx.aquariumSelectedFishId)
         : activeFish.find(Boolean);
       if (!fish || aquariumBusy(ctx.aquariumActionStatus)) return false;
-      ctx.setAquariumActionStatus('feeding');
-      ctx.setAquariumActionError('');
-      const result = await ctx.feedAquariumFish(fish.fishId, requestId('feed'));
-      if (!result?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(result?.error || '먹이를 주지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, `aquarium-feed:${fish.fishId}`, async () => {
+        ctx.setAquariumActionStatus('feeding');
+        ctx.setAquariumActionError('');
+        const result = await ctx.feedAquariumFish(fish.fishId, requestId('feed'));
+        if (!result?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(result?.error || '먹이를 주지 못했습니다.');
+          return true;
+        }
+        const updated = result.data.fish;
+        ctx.setGameProfile(result.data.profile);
+        ctx.setActiveFish((items) => (items || []).map((item) => item?.fishId === updated.fishId ? updated : item));
+        ctx.setFishInventory((items) => replaceFish(items, updated));
+        ctx.setAquariumResult({ type: 'feed', fish: updated, expGranted: result.data.expGranted, levelUp: result.data.levelUp, waterGain: result.data.waterGain });
+        ctx.setAquariumActionStatus('success');
         return true;
-      }
-      const updated = result.data.fish;
-      ctx.setGameProfile(result.data.profile);
-      ctx.setActiveFish((items) => (items || []).map((item) => item?.fishId === updated.fishId ? updated : item));
-      ctx.setFishInventory((items) => replaceFish(items, updated));
-      ctx.setAquariumResult({ type: 'feed', fish: updated, expGranted: result.data.expGranted, levelUp: result.data.levelUp, waterGain: result.data.waterGain });
-      ctx.setAquariumActionStatus('success');
-      return true;
+      });
     },
     async setAquariumFishSlot({ actionEl }) {
       const fishId = ctx.aquariumSelectedFishId;
       const slot = getData(actionEl, 'slot');
       if (!fishId || !AQUARIUM_SLOTS.includes(slot) || aquariumBusy(ctx.aquariumActionStatus)) return false;
       const remove = currentSlot(ctx.activeFish, fishId) === slot;
-      ctx.setAquariumActionStatus('updating-slot');
-      ctx.setAquariumActionError('');
-      const result = await ctx.updateAquariumActiveFish(remove ? '' : fishId, slot);
-      if (!result?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(result?.error || '수조 배치를 변경하지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, `aquarium-slot:${fishId}`, async () => {
+        ctx.setAquariumActionStatus('updating-slot');
+        ctx.setAquariumActionError('');
+        const result = await ctx.updateAquariumActiveFish(remove ? '' : fishId, slot);
+        if (!result?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(result?.error || '수조 배치를 변경하지 못했습니다.');
+          return true;
+        }
+        const profile = result.data.profile;
+        ctx.setGameProfile(profile);
+        ctx.setActiveFish(projectActiveFish(profile, ctx.fishInventory));
+        ctx.setAquariumResult({ type: 'slot', fishId, remove, slot });
+        ctx.setAquariumActionStatus('success');
         return true;
-      }
-      const profile = result.data.profile;
-      ctx.setGameProfile(profile);
-      ctx.setActiveFish(projectActiveFish(profile, ctx.fishInventory));
-      ctx.setAquariumResult({ type: 'slot', fishId, remove, slot });
-      ctx.setAquariumActionStatus('success');
-      return true;
+      });
     },
     async saveAquariumFishName() {
       const fishId = ctx.aquariumSelectedFishId;
@@ -158,20 +165,22 @@ export function createGamificationHandlers(ctx) {
         ctx.setAquariumActionError('이름은 한글, 영문, 숫자로 10자까지 입력해주세요.');
         return true;
       }
-      ctx.setAquariumActionStatus('renaming');
-      ctx.setAquariumActionError('');
-      const result = await ctx.updateAquariumFishName(fishId, name);
-      if (!result?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(result?.error || '물고기 이름을 변경하지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, `aquarium-rename:${fishId}`, async () => {
+        ctx.setAquariumActionStatus('renaming');
+        ctx.setAquariumActionError('');
+        const result = await ctx.updateAquariumFishName(fishId, name);
+        if (!result?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(result?.error || '물고기 이름을 변경하지 못했습니다.');
+          return true;
+        }
+        const fish = result.data.fish;
+        ctx.setFishInventory((items) => replaceFish(items, fish));
+        ctx.setActiveFish((items) => (items || []).map((item) => item?.fishId === fish.fishId ? fish : item));
+        ctx.setAquariumResult({ type: 'rename', fish });
+        ctx.setAquariumActionStatus('success');
         return true;
-      }
-      const fish = result.data.fish;
-      ctx.setFishInventory((items) => replaceFish(items, fish));
-      ctx.setActiveFish((items) => (items || []).map((item) => item?.fishId === fish.fishId ? fish : item));
-      ctx.setAquariumResult({ type: 'rename', fish });
-      ctx.setAquariumActionStatus('success');
-      return true;
+      });
     },
     dismissAquariumResult() {
       ctx.setAquariumResult(null);
@@ -210,27 +219,29 @@ export function createGamificationHandlers(ctx) {
         ctx.setAquariumActionError('조개가 30개 이상 있어야 물고기를 만날 수 있어요.');
         return true;
       }
-      const drawRequestId = ctx.activeDrawRequestId || requestId('draw');
-      ctx.setActiveDrawRequestId(drawRequestId);
-      ctx.setAquariumActionStatus('drawing');
-      ctx.setAquariumActionError('');
-      const response = await ctx.startAquariumFishDraw(drawRequestId);
-      if (!response?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(response?.error || '물고기를 뽑지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, 'aquarium-draw', async () => {
+        const drawRequestId = ctx.activeDrawRequestId || requestId('draw');
+        ctx.setActiveDrawRequestId(drawRequestId);
+        ctx.setAquariumActionStatus('drawing');
+        ctx.setAquariumActionError('');
+        const response = await ctx.startAquariumFishDraw(drawRequestId);
+        if (!response?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(response?.error || '물고기를 뽑지 못했습니다.');
+          return true;
+        }
+        const { fish, profile, result } = response.data;
+        ctx.setGameProfile(profile);
+        ctx.setPendingDraw({ fish, result });
+        ctx.setPendingDrawStatus('ready');
+        ctx.setPendingDrawError('');
+        ctx.setFishInventory((items) => replaceFish(items, fish));
+        ctx.setFishCatalog((items) => (items || []).map((item) => item.speciesId === fish.speciesId ? { ...item, owned: true } : item));
+        ctx.setFishCount((count) => result.duplicate ? Number(count) || 0 : Number(count || 0) + 1);
+        ctx.setAquariumDrawRevealStep(0);
+        ctx.setAquariumActionStatus('success');
         return true;
-      }
-      const { fish, profile, result } = response.data;
-      ctx.setGameProfile(profile);
-      ctx.setPendingDraw({ fish, result });
-      ctx.setPendingDrawStatus('ready');
-      ctx.setPendingDrawError('');
-      ctx.setFishInventory((items) => replaceFish(items, fish));
-      ctx.setFishCatalog((items) => (items || []).map((item) => item.speciesId === fish.speciesId ? { ...item, owned: true } : item));
-      ctx.setFishCount((count) => result.duplicate ? Number(count) || 0 : Number(count || 0) + 1);
-      ctx.setAquariumDrawRevealStep(0);
-      ctx.setAquariumActionStatus('success');
-      return true;
+      });
     },
     advanceAquariumDrawReveal() {
       if (!ctx.pendingDraw || aquariumBusy(ctx.aquariumActionStatus)) return false;
@@ -240,21 +251,23 @@ export function createGamificationHandlers(ctx) {
     async acknowledgeAquariumDraw({ actionEl }) {
       const requestIdValue = ctx.pendingDraw?.result?.requestId;
       if (!requestIdValue || aquariumBusy(ctx.aquariumActionStatus)) return false;
-      ctx.setAquariumActionStatus('acknowledging-draw');
-      ctx.setAquariumActionError('');
-      const response = await ctx.acknowledgeAquariumFishDraw(requestIdValue);
-      if (!response?.ok) {
-        ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError(response?.error || '뽑기 결과를 확인하지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, `aquarium-draw-ack:${requestIdValue}`, async () => {
+        ctx.setAquariumActionStatus('acknowledging-draw');
+        ctx.setAquariumActionError('');
+        const response = await ctx.acknowledgeAquariumFishDraw(requestIdValue);
+        if (!response?.ok) {
+          ctx.setAquariumActionStatus('error');
+          ctx.setAquariumActionError(response?.error || '뽑기 결과를 확인하지 못했습니다.');
+          return true;
+        }
+        ctx.setGameProfile(response.data.profile);
+        ctx.setPendingDraw(null);
+        ctx.setActiveDrawRequestId('');
+        ctx.setAquariumDrawRevealStep(0);
+        ctx.setAquariumMode(getData(actionEl, 'target') === 'catalog' ? 'catalog' : 'view');
+        ctx.setAquariumActionStatus('idle');
         return true;
-      }
-      ctx.setGameProfile(response.data.profile);
-      ctx.setPendingDraw(null);
-      ctx.setActiveDrawRequestId('');
-      ctx.setAquariumDrawRevealStep(0);
-      ctx.setAquariumMode(getData(actionEl, 'target') === 'catalog' ? 'catalog' : 'view');
-      ctx.setAquariumActionStatus('idle');
-      return true;
+      });
     },
     async shareAquarium() {
       if (aquariumBusy(ctx.aquariumActionStatus)) return false;

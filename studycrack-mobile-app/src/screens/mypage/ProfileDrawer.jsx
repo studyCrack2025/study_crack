@@ -46,6 +46,7 @@ export function ProfileDrawer({ drawerOpen = false, gameProfile = null, gameProf
         <p className="profile-drawer-plan">{plan.periodLabel}</p>
         <section className="profile-drawer-stats" aria-label="공부와 수조 요약"><div><span>이번 주 공부</span><b>{weeklyStudy}</b></div><div><span>보유 조개</span><b>{shells}</b></div><div><span>연속 학습</span><b>{streak}</b></div></section>
         {studySummaryStatus === 'error' || gameProfileStatus === 'error' ? <p className="profile-drawer-resource-note">일부 공부·수조 통계는 잠시 표시할 수 없어요. 계정 기능은 계속 이용할 수 있습니다.</p> : null}
+        {gameProfileStatus === 'unavailable' ? <p className="profile-drawer-resource-note">수조 기능은 계정별로 순차 적용 중입니다.</p> : null}
         <nav className="profile-drawer-menu" aria-label="마이 메뉴">{PROFILE_MENU.map((item) => <button type="button" data-action="drawerGoto" data-target={item.target} key={item.target}><span><Icon name={item.icon} /></span><b>{item.label}</b><Icon name="chevron" /></button>)}</nav>
       </aside>
     </div>

@@ -128,9 +128,17 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(page.getByText('테스트학생님의 공부를 기록해요.')).toBeVisible();
 
   await page.getByRole('button', { name: '공부 시작' }).click();
-  await page.getByRole('button', { name: '국어 - 독서', exact: true }).click();
+  await page.getByRole('button', { name: '국어 - 독서', exact: true }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'start_study_session').length).toBe(1);
   await page.waitForTimeout(1100);
-  await page.getByRole('button', { name: '공부 완료', exact: true }).click();
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+  await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
 
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'start_study_session').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'complete_study_session').length).toBe(1);
@@ -221,7 +229,10 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
 
   await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '먹이 주기' }).click();
+  await page.getByRole('button', { name: '먹이 주기' }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
   await expect(page.getByText('EXP +10')).toBeVisible();
   await page.locator('[data-field="aquariumFishName"]').fill('마루별');
   await page.locator('[data-action="saveAquariumFishName"]').click();
@@ -253,7 +264,10 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
   await page.locator('[data-action="openAquariumDraw"]').click();
-  await page.getByRole('button', { name: '조개 30개로 뽑기' }).click();
+  await page.getByRole('button', { name: '조개 30개로 뽑기' }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
   await expect(page.getByRole('button', { name: '상자 열기 1단계' })).toBeVisible();
   await page.getByRole('button', { name: '상자 열기 1단계' }).click();
 

@@ -99,7 +99,17 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
       return undefined;
     }
     timerOps.startLiveStudyTimer(session.startedAt, (seconds) => setState({ studyTimerTick: seconds }));
-    return () => timerOps.stopLiveStudyTimer();
+    const syncAfterResume = () => timerOps.syncLiveStudyTimer();
+    const documentRef = globalThis.document;
+    globalThis.addEventListener?.('pageshow', syncAfterResume);
+    globalThis.addEventListener?.('focus', syncAfterResume);
+    documentRef?.addEventListener?.('visibilitychange', syncAfterResume);
+    return () => {
+      globalThis.removeEventListener?.('pageshow', syncAfterResume);
+      globalThis.removeEventListener?.('focus', syncAfterResume);
+      documentRef?.removeEventListener?.('visibilitychange', syncAfterResume);
+      timerOps.stopLiveStudyTimer();
+    };
   }, [setState, state.activeStudySession?.sessionId, timerOps]);
 
   useEffect(() => {

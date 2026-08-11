@@ -112,6 +112,7 @@ export function RewardPanel({ activeStudySession, completionError, rewardPending
 }
 
 export function StudyHabitatCard({ gameProfileError = '', gameProfileStatus = 'idle', habitatDays = [], habitatStatus = 'idle' }) {
+  if (gameProfileStatus === 'unavailable' || habitatStatus === 'unavailable') return null;
   const habitatStreak = calculateHabitatStreak(habitatDays);
   return (
     <section className="timer-habitat-card sc-card">

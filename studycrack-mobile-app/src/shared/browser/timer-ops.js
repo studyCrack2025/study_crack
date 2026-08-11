@@ -11,6 +11,7 @@ export function createTimerOps(options = {}) {
   const formatHms = options.formatHms || defaultFormatHms;
   const setIntervalFn = options.setInterval || globalThis.setInterval?.bind(globalThis);
   const clearIntervalFn = options.clearInterval || globalThis.clearInterval?.bind(globalThis);
+  const now = options.now || (() => Date.now());
 
   const studyTimerSecondsRef = { current: 0 };
   const studyTimerIntervalRef = { current: null };
@@ -25,17 +26,23 @@ export function createTimerOps(options = {}) {
     });
   };
 
-  const startLiveStudyTimer = (startedAt = Date.now(), onTick = null) => {
+  let tickListener = null;
+
+  const syncLiveStudyTimer = () => {
+    if (!studyTimerStartedAtRef.current) return studyTimerSecondsRef.current;
+    studyTimerSecondsRef.current = Math.max(0, Math.floor((now() - studyTimerStartedAtRef.current) / 1000));
+    syncLiveStudyTimerUi(studyTimerSecondsRef.current);
+    tickListener?.(studyTimerSecondsRef.current);
+    return studyTimerSecondsRef.current;
+  };
+
+  const startLiveStudyTimer = (startedAt = now(), onTick = null) => {
     if (studyTimerIntervalRef.current) clearIntervalFn?.(studyTimerIntervalRef.current);
-    studyTimerStartedAtRef.current = Number(new Date(startedAt).getTime()) || Date.now();
-    const update = () => {
-      studyTimerSecondsRef.current = Math.max(0, Math.floor((Date.now() - studyTimerStartedAtRef.current) / 1000));
-      syncLiveStudyTimerUi(studyTimerSecondsRef.current);
-      onTick?.(studyTimerSecondsRef.current);
-    };
-    update();
+    studyTimerStartedAtRef.current = Number(new Date(startedAt).getTime()) || now();
+    tickListener = onTick;
+    syncLiveStudyTimer();
     studyTimerIntervalRef.current = setIntervalFn?.(() => {
-      update();
+      syncLiveStudyTimer();
     }, 1000);
   };
 
@@ -44,12 +51,14 @@ export function createTimerOps(options = {}) {
       clearIntervalFn?.(studyTimerIntervalRef.current);
       studyTimerIntervalRef.current = null;
     }
+    tickListener = null;
   };
 
   return {
     studyTimerSecondsRef,
     studyTimerIntervalRef,
     studyTimerStartedAtRef,
+    syncLiveStudyTimer,
     syncLiveStudyTimerUi,
     startLiveStudyTimer,
     stopLiveStudyTimer

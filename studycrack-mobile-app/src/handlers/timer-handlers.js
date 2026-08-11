@@ -1,5 +1,6 @@
 import { getTodayDateKey } from '../constants/runtime-defaults.js';
 import { createStudySessionCandidate } from '../features/study/session-model.js';
+import { withOperationLock } from '../shared/async/operation-lock.js';
 import { getData } from './action-utils.js';
 
 function setRefValue(ref, value) {
@@ -69,29 +70,31 @@ function applyCompletedSession(ctx, completion) {
 
 async function beginStudy(ctx, subject, plannerItemId = '', storedCandidate = null) {
   if (!subject || ['starting-session', 'settling-session', 'claiming-reward'].includes(ctx.timerPhase)) return false;
-  const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, plannerItemId });
-  ctx.setTimerPhase('starting-session');
-  ctx.setCompletionError('');
-  ctx.setRewardResult(null);
-  ctx.setActiveStudySession(candidate);
-  const response = await ctx.startStudySession(candidate);
-  if (!response?.ok) {
-    ctx.setTimerPhase('recoverable-error');
-    ctx.setCompletionError(response?.error || '공부 시작을 기록하지 못했습니다. 다시 시도해주세요.');
+  return withOperationLock(ctx.operationLocksRef, 'study-start', async () => {
+    const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, plannerItemId });
+    ctx.setTimerPhase('starting-session');
+    ctx.setCompletionError('');
+    ctx.setRewardResult(null);
+    ctx.setActiveStudySession(candidate);
+    const response = await ctx.startStudySession(candidate);
+    if (!response?.ok) {
+      ctx.setTimerPhase('recoverable-error');
+      ctx.setCompletionError(response?.error || '공부 시작을 기록하지 못했습니다. 다시 시도해주세요.');
+      return true;
+    }
+    const session = { ...candidate, ...response.data, subject, plannerItemId, status: 'running' };
+    ctx.setActiveStudySession(session);
+    ctx.setActiveStudySubject(subject);
+    ctx.setActivePlannerItemId(plannerItemId);
+    ctx.setStudySubjectSheetOpen(false);
+    ctx.setStudySubjectSheetOnlyPlanned(false);
+    ctx.setStudyTimerRunning(true);
+    ctx.setTimerPhase('running');
+    setRefValue(ctx.studyTimerSecondsRef, 0);
+    ctx.startLiveStudyTimer?.(session.startedAt, (seconds) => ctx.setStudyTimerTick(seconds));
+    ctx.syncLiveStudyTimerUi?.(0);
     return true;
-  }
-  const session = { ...candidate, ...response.data, subject, plannerItemId, status: 'running' };
-  ctx.setActiveStudySession(session);
-  ctx.setActiveStudySubject(subject);
-  ctx.setActivePlannerItemId(plannerItemId);
-  ctx.setStudySubjectSheetOpen(false);
-  ctx.setStudySubjectSheetOnlyPlanned(false);
-  ctx.setStudyTimerRunning(true);
-  ctx.setTimerPhase('running');
-  setRefValue(ctx.studyTimerSecondsRef, 0);
-  ctx.startLiveStudyTimer?.(session.startedAt, (seconds) => ctx.setStudyTimerTick(seconds));
-  ctx.syncLiveStudyTimerUi?.(0);
-  return true;
+  });
 }
 
 export function createTimerHandlers(ctx) {
@@ -136,44 +139,48 @@ export function createTimerHandlers(ctx) {
     async stopStudyTimer() {
       const session = ctx.activeStudySession;
       if (!session || !['running', 'recoverable-error'].includes(ctx.timerPhase)) return false;
-      ctx.setStudyTimerRunning(false);
-      ctx.stopLiveStudyTimer?.();
-      ctx.setCompletionError('');
-      const result = await ctx.completeStudySession(session.sessionId, (phase) => ctx.setTimerPhase(phase));
-      if (!result.completion?.ok) {
-        ctx.setStudyTimerRunning(true);
-        ctx.startLiveStudyTimer?.(session.startedAt, (seconds) => ctx.setStudyTimerTick(seconds));
-        ctx.setTimerPhase('recoverable-error');
-        ctx.setCompletionError(result.completion?.error || '공부 완료를 확인하지 못했습니다. 기록은 유지됩니다.');
+      return withOperationLock(ctx.operationLocksRef, `study-complete:${session.sessionId}`, async () => {
+        ctx.setStudyTimerRunning(false);
+        ctx.stopLiveStudyTimer?.();
+        ctx.setCompletionError('');
+        const result = await ctx.completeStudySession(session.sessionId, (phase) => ctx.setTimerPhase(phase));
+        if (!result.completion?.ok) {
+          ctx.setStudyTimerRunning(true);
+          ctx.startLiveStudyTimer?.(session.startedAt, (seconds) => ctx.setStudyTimerTick(seconds));
+          ctx.setTimerPhase('recoverable-error');
+          ctx.setCompletionError(result.completion?.error || '공부 완료를 확인하지 못했습니다. 기록은 유지됩니다.');
+          return true;
+        }
+        applyCompletedSession(ctx, result.completion.data);
+        if (!result.reward?.ok) {
+          ctx.setRewardPendingSessionId(session.sessionId);
+          ctx.setTimerPhase('recoverable-error');
+          ctx.setCompletionError(result.reward?.error || '공부 기록은 저장됐지만 보상을 불러오지 못했습니다.');
+          return true;
+        }
+        ctx.setRewardPendingSessionId('');
+        applyRewardState(ctx, result.reward.data);
+        ctx.setTimerPhase('rewarded');
         return true;
-      }
-      applyCompletedSession(ctx, result.completion.data);
-      if (!result.reward?.ok) {
-        ctx.setRewardPendingSessionId(session.sessionId);
-        ctx.setTimerPhase('recoverable-error');
-        ctx.setCompletionError(result.reward?.error || '공부 기록은 저장됐지만 보상을 불러오지 못했습니다.');
-        return true;
-      }
-      ctx.setRewardPendingSessionId('');
-      applyRewardState(ctx, result.reward.data);
-      ctx.setTimerPhase('rewarded');
-      return true;
+      });
     },
     async retryStudyReward() {
       const sessionId = ctx.rewardPendingSessionId;
       if (!sessionId || ctx.timerPhase === 'claiming-reward') return false;
-      ctx.setTimerPhase('claiming-reward');
-      ctx.setCompletionError('');
-      const result = await ctx.claimCompletedStudyReward(sessionId);
-      if (!result?.ok) {
-        ctx.setTimerPhase('recoverable-error');
-        ctx.setCompletionError(result?.error || '보상을 다시 확인하지 못했습니다.');
+      return withOperationLock(ctx.operationLocksRef, `study-reward:${sessionId}`, async () => {
+        ctx.setTimerPhase('claiming-reward');
+        ctx.setCompletionError('');
+        const result = await ctx.claimCompletedStudyReward(sessionId);
+        if (!result?.ok) {
+          ctx.setTimerPhase('recoverable-error');
+          ctx.setCompletionError(result?.error || '보상을 다시 확인하지 못했습니다.');
+          return true;
+        }
+        ctx.setRewardPendingSessionId('');
+        applyRewardState(ctx, result.data);
+        ctx.setTimerPhase('rewarded');
         return true;
-      }
-      ctx.setRewardPendingSessionId('');
-      applyRewardState(ctx, result.data);
-      ctx.setTimerPhase('rewarded');
-      return true;
+      });
     },
     dismissRewardResult() {
       ctx.setRewardResult(null);

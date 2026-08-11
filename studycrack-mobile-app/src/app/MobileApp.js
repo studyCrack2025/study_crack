@@ -85,6 +85,7 @@ export function MobileApp() {
   const plannerContentRef = useRef('');
   const plannerCustomMinutesRef = useRef('');
   const qnaDraftRef = useRef({ title: '', content: '' });
+  const operationLocksRef = useRef(new Set());
   stateRef.current = state;
   rootStateRef.current = rootState;
   useAppStatePersistence(rootState);
@@ -123,7 +124,7 @@ export function MobileApp() {
     api,
     beforeGoto,
     nav,
-    refs: { plannerContentRef, plannerCustomMinutesRef, qnaDraftRef },
+    refs: { operationLocksRef, plannerContentRef, plannerCustomMinutesRef, qnaDraftRef },
     retryUserLoad,
     setState,
     state,

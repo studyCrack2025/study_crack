@@ -21,11 +21,15 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
       const catalog = catalogResult.status === 'fulfilled' ? catalogResult.value : null;
       const pending = pendingResult.status === 'fulfilled' ? pendingResult.value : null;
       const pendingPayload = pending?.ok && pending.data?.result ? { result: pending.data.result, fish: pending.data.fish } : null;
+      const gameUnavailable = profile?.code === 'GAME_DISABLED';
       setState({
         ...(profile?.ok ? {
           ...profile.data,
           gameProfileStatus: 'ready',
           gameProfileError: ''
+        } : gameUnavailable ? {
+          gameProfileStatus: 'unavailable',
+          gameProfileError: profile?.error || '수조 기능을 순차적으로 준비하고 있습니다.'
         } : {
           gameProfileStatus: 'error',
           gameProfileError: profile?.error || '수조 상태를 불러오지 못했습니다.'
@@ -33,6 +37,10 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
         ...(habitat?.ok ? {
           habitatDays: habitat.data.days || [],
           habitatStatus: 'ready',
+          habitatError: ''
+        } : gameUnavailable || habitat?.code === 'GAME_DISABLED' ? {
+          habitatDays: [],
+          habitatStatus: 'unavailable',
           habitatError: ''
         } : {
           habitatStatus: 'error',
