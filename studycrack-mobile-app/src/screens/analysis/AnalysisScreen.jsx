@@ -31,7 +31,7 @@ export function AnalysisScreen(ctx) {
                     <i />
                   </div>
                   <div>
-                    <span>AI 분석 진행 중</span>
+                    <span>환산 분석 진행 중</span>
                     <b>목표 대학 기준 환산점수를 계산하고 있어요</b>
                     <p>현재 점수와 과목별 원점수 1점 효과를 확인합니다.</p>
                   </div>
@@ -42,7 +42,7 @@ export function AnalysisScreen(ctx) {
             {showAnalysisBody ? (
               <div className="analysis-content-stage">
                 <header className="analysis-context-head">
-                  <div><span>AI 성적 분석</span><h3>분석</h3><p>환산점수와 과목별 효율을 한눈에 확인하세요.</p></div>
+                  <div><span>대학별 성적 분석</span><h3>분석</h3><p>환산점수와 과목별 효율을 한눈에 확인하세요.</p></div>
                   <i aria-hidden="true"><b /><b /><b /></i>
                 </header>
                 {isStale && (

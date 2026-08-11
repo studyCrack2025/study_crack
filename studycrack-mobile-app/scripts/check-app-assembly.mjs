@@ -82,12 +82,18 @@ const standardState = {
   selectedPlan: 'Standard',
   user: { currentSubscription: { status: 'active', tier: 'standard' } }
 };
+const expiredStandardState = {
+  userTier: 'standard',
+  selectedPlan: 'Standard',
+  user: { currentSubscription: { status: 'active', tier: 'standard', startDate: '2025-01-01T00:00:00.000Z', endDate: '2025-01-29T00:00:00.000Z' } }
+};
 
 assert.equal(canAccessTier(freeState, 'basic'), false);
 assert.equal(canAccessTier(basicState, 'basic'), true);
 assert.equal(canUseScoreSimulation(basicState), true);
 assert.equal(canUseReverseProjection(basicState), false);
 assert.equal(canUseReverseProjection(standardState), true);
+assert.equal(canUseReverseProjection(expiredStandardState), false);
 assert.deepEqual(resolveScreenAccess(freeState, 'planner'), {
   allowed: false,
   requiredTier: 'basic',

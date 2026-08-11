@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildAnalysisPresentation } from '../src/screens/analysis/presentation.js';
+import { buildServerSimRows } from '../src/runtime/derived.js';
 
 const negativeRange = buildAnalysisPresentation({
   rows: [{ subject: '국어', gainNum: 10, baseUiScore: -50, afterUiScore: -40, idx: 0 }],
@@ -47,5 +48,17 @@ const nearStart = buildAnalysisPresentation({
   scoreView: { hasScore: true, pending: false, score: 1 }
 });
 assert.equal(nearStart.previewLabelAlign, 'start');
+
+const partialServerRows = buildServerSimRows({
+  base_ui_score: 42,
+  sim_data: {
+    kor: { name: '국어', uiDiff: 2.4, afterUiScore: 44.4 }
+  }
+});
+assert.deepEqual(partialServerRows.map((row) => row.key), ['kor', 'math', 'inq1', 'inq2']);
+assert.equal(partialServerRows[0].gainNum, 2.4);
+assert.equal(partialServerRows[1].unavailable, true);
+assert.equal(partialServerRows[1].afterUiScore, 42);
+assert.deepEqual(buildServerSimRows({}), []);
 
 console.log('analysis-presentation contracts passed');

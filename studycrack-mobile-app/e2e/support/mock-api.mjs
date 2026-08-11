@@ -128,7 +128,16 @@ function studySummary(state) {
 function responseFor(payload, state) {
   switch (payload.type) {
     case 'get_user_analysis':
-      return { ...mockUser, computedTier: state.userTier };
+      return {
+        ...mockUser,
+        computedTier: state.userTier,
+        currentSubscription: state.userTier === 'free' ? null : {
+          status: 'active',
+          tier: state.userTier,
+          startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date(Date.now() + 27 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      };
     case 'get_admission_calendar':
       return { events: [] };
     case 'get_study_ranking':
@@ -148,14 +157,20 @@ function responseFor(payload, state) {
     case 'analyze_my_targets':
       return (payload.targetUnivs || []).map((target, index) => targetResult(target, index, payload.examMode));
     case 'simulate_score_rise':
-      return (payload.targetUnivs || []).map((target) => ({
-        univ: target.univ,
-        major: target.major,
-        subjects: [
-          { subject: '국어', converted_score: 3 },
-          { subject: '수학', converted_score: 2 }
-        ]
-      }));
+      return (payload.targetUnivs || []).map((target, index) => {
+        const baseUiScore = targetResult(target, index, payload.examMode).converted_score;
+        return {
+          univ: target.univ,
+          major: target.major,
+          base_ui_score: baseUiScore,
+          sim_data: {
+            kor: { name: '국어', uiDiff: 3.2, afterUiScore: baseUiScore + 3.2, rawNeeded: 1 },
+            math: { name: '수학', uiDiff: 2.4, afterUiScore: baseUiScore + 2.4, rawNeeded: 1 },
+            inq1: { name: '탐구1', uiDiff: 1.1, afterUiScore: baseUiScore + 1.1, rawNeeded: 1 },
+            inq2: { name: '탐구2', uiDiff: 0.8, afterUiScore: baseUiScore + 0.8, rawNeeded: 1 }
+          }
+        };
+      });
     case 'backtrace_required_raw':
       return { result: { reachable: true, minTotalRaw: 6, items: [{ subject: '국어', rawIncrease: 3 }] } };
     case 'start_study_session':

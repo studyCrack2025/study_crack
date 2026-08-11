@@ -24,6 +24,7 @@ function rawNeededText(row = {}) {
 }
 
 function simulationStatusText(row = {}, isBest = false) {
+  if (row.unavailable) return '계산 대기';
   if (isBest && Number(row.gainNum || 0) > 0) return '가장 크게 반영';
   if (Number(row.gainNum || 0) > 0) return '반영 있음';
   return rawNeededText(row) || '변동 대기';
@@ -36,7 +37,7 @@ function SimulationTable({ rows = [], selectedSubject = '' }) {
   const activeSubject = selectedSubject || rows[0]?.subject || '';
   return (
     <div className="analysis-sim-table" role="table" aria-label="과목별 원점수 1점 상승의 환산점수 효과">
-      <div className="analysis-sim-table-head" role="row"><span>과목</span><span>환산 효과</span><span>+1점 적용 후</span></div>
+      <div className="analysis-sim-table-head" role="row"><span>과목</span><span>환산점수 변화</span><span>적용 결과</span></div>
       {rows.map((row) => {
         const active = activeSubject === row.subject;
         const before = clampAnalysisScore(row.baseUiScore);

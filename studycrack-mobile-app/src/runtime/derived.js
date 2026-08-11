@@ -290,14 +290,16 @@ function findTargetItem(list = [], targetMajor = '') {
 const SIM_SUBJECT_ORDER = ['kor', 'math', 'inq1', 'inq2'];
 const SIM_SUBJECT_FALLBACK = { kor: '국어', math: '수학', inq1: '탐구1', inq2: '탐구2' };
 
-function buildServerSimRows(simulation) {
+export function buildServerSimRows(simulation) {
   const simData = simulation?.sim_data || {};
+  const hasSimulationData = SIM_SUBJECT_ORDER.some((key) => Object.hasOwn(simData, key));
+  if (!hasSimulationData) return [];
   const baseUiScore = Number(simulation?.base_ui_score);
   const hasBaseUiScore = Number.isFinite(baseUiScore);
   return SIM_SUBJECT_ORDER
     .map((key, idx) => {
-      const item = simData[key];
-      if (!item) return null;
+      const item = simData[key] || {};
+      const unavailable = !Object.hasOwn(simData, key);
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
       const afterUiScore = Number(item.afterUiScore ?? item.after_ui_score);
@@ -307,19 +309,19 @@ function buildServerSimRows(simulation) {
         key,
         subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
         gain: `+${rounded.toFixed(rounded >= 10 ? 0 : 1)}점`,
-        desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
+        desc: item.msg || (unavailable ? '과목 환산 결과를 확인하고 있습니다.' : rounded > 0 ? '원점수 상승분이 환산점수에 반영됩니다.' : '현재 조건에서는 환산점수 변화가 없습니다.'),
         gainNum: rounded,
         baseUiScore: hasBaseUiScore ? baseUiScore : null,
         afterUiScore: Number.isFinite(afterUiScore) ? afterUiScore : (hasBaseUiScore ? baseUiScore + rounded : null),
         rawNeeded,
         firstPositiveUiDiff: Number(item.firstPositiveUiDiff ?? item.first_positive_ui_diff ?? 0) || 0,
         isEvaporation: rounded <= 0,
+        unavailable,
         needsBacktrace: simulation?.needs_backtrace === true,
         backtracePlan: simulation?.backtrace_plan || null,
         idx
       };
-    })
-    .filter(Boolean);
+    });
 }
 
 // 홈 화면 derived.

@@ -54,6 +54,13 @@ assert.deepEqual(
   contract.analysis.forwardTiers,
   'Forward score simulation tiers changed'
 );
-assert.match(accessPolicySource, /function\s+canUseReverseProjection[\s\S]*?canAccessTier\(state,\s*['"]standard['"]\)/, 'Reverse projection must start at Standard');
+const reverseFunction = accessPolicySource.match(/function\s+canUseReverseProjection\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+assert.ok(reverseFunction, 'canUseReverseProjection was not found');
+assert.match(reverseFunction, /pickActiveAccessSubscription/, 'Reverse projection must require an active subscription');
+assert.deepEqual(
+  Array.from(reverseFunction.matchAll(/['"](standard|pro)['"]/g), (item) => item[1]),
+  contract.analysis.reverseTiers,
+  'Reverse projection tiers changed'
+);
 
 console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo and plan tiers.`);

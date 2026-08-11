@@ -95,6 +95,7 @@ test('React 하단 탭은 화면 전환과 잠금 화면에서도 활성 상태�
 
   await page.locator('.tabbar [data-tab="strategy"]').click();
   await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
+  await expect(page.locator('.coach-preview .coaching-process-step')).toHaveCount(3);
   await expect(page.locator('.tabbar [data-tab="strategy"]')).toHaveAttribute('aria-current', 'page');
 });
 
@@ -297,15 +298,19 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await expectNoHorizontalOverflow(page);
 });
 
-test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }) => {
+test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
-  const api = await installApiMock(page);
+  const api = await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
   const examSelect = page.locator('[data-field="scoreExamType"]');
   const targetSelect = page.locator('[data-field="analysisTargetMajor"]');
   await expect(examSelect).toBeVisible();
   await expect(page.locator('.analysis-result-overview strong')).toHaveText('142점');
+  await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
+  await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
+  await expect(page.getByText('Standard Exclusive')).toBeVisible();
+  await expect(page.locator('[data-screen="analysis"]')).not.toContainText('합격확률');
 
   await targetSelect.selectOption({ label: '고려대학교 경영학과' });
   await expect(page.locator('.analysis-result-overview strong')).toHaveText('131점');
@@ -313,7 +318,14 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
   await examSelect.selectOption({ label: '3월 모의고사' });
   await expect(page.locator('.analysis-result-overview strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
-  await expectNoHorizontalOverflow(page);
+  expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`analysis-basic-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`analysis-basic-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
 });
 
 test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 후 동작한다', async ({ page }) => {
@@ -344,9 +356,22 @@ test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 
   await expectNoHorizontalOverflow(page);
 });
 
-test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입력 계약을 유지한다', async ({ page }) => {
+test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입력 계약을 유지한다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'pro' });
+
+  await page.goto('/studycrack-mobile.html?screen=strategy');
+  await expect(page.locator('.coaching-process-step')).toHaveCount(3);
+  await expect(page.locator('.coaching-process-step b')).toHaveText(['학습 성향 분석', '목표 대학 분석', '합격 설계']);
+  await expect(page.locator('.coach-step-progress')).toHaveCount(0);
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`coaching-process-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`coaching-process-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
 
   await page.goto('/studycrack-mobile.html?screen=report');
   await expect(page.getByRole('heading', { name: '맞춤 전략 리포트' })).toBeVisible();
@@ -383,6 +408,10 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await page.getByRole('button', { name: 'PRO 플랜 보기' }).click();
 
   await expect(page.locator('[data-screen="proIntro"]')).toBeVisible();
+  await expect(page.locator('.plan-console-detail')).toContainText('합격권 최소 원점수 역산');
+  await page.locator('[data-action="selectPlan"][data-plan="Basic"]').click();
+  await expect(page.locator('.plan-console-detail')).toContainText('전 과목 원점수 +1 환산 효율');
+  await expect(page.locator('.plan-console-detail')).toContainText('25,000원 / 4주');
   await page.locator('[data-action="selectPlan"][data-plan="Pro"]').click();
   await expect(page.locator('.plan-console-detail')).toContainText('149,000원 / 4주');
   await page.locator('.plan-console-cta[data-target="payment"]').click();

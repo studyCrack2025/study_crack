@@ -64,7 +64,9 @@ export function canUseScoreSimulation(state) {
 }
 
 export function canUseReverseProjection(state) {
-  return canAccessTier(state, 'standard');
+  const activeSubscription = pickActiveAccessSubscription(state?.user || {});
+  if (!activeSubscription) return false;
+  return ['standard', 'pro'].includes(normalizeAccessTier(activeSubscription.tier));
 }
 
 export function resolveScreenAccess(state, target) {

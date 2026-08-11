@@ -2,6 +2,12 @@ function safeText(value = '') {
   return String(value || '').trim();
 }
 
+export const COACHING_PROCESS_STEPS = [
+  { number: '01', title: '학습 성향 분석', description: 'MBTI + 기초조사서' },
+  { number: '02', title: '목표 대학 분석', description: '대학별 환산점수' },
+  { number: '03', title: '합격 설계', description: '주간 플래너 + 루틴' }
+];
+
 export function formatCoachingWeekLabel(weekId = '') {
   const value = safeText(weekId);
   const match = value.match(/^(\d{2})(\d{2})(\d{2})$/);
