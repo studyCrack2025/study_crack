@@ -5,6 +5,7 @@ import '../styles/screens/home-overlays.css';
 import '../styles/screens/home-base.css';
 import '../styles/screens/home.css';
 import '../styles/screens/timer.css';
+import '../styles/screens/aquarium.css';
 import '../styles/screens/analysis-base.css';
 import '../styles/screens/analysis-unified.css';
 import '../styles/screens/analysis.css';
@@ -20,6 +21,7 @@ import '../styles/screens/mypage.css';
 import '../styles/screens/ranking.css';
 import '../styles/screens/score-input.css';
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
+import { AquariumScreen } from '../screens/aquarium/AquariumScreen.jsx';
 import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
 import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
@@ -35,6 +37,7 @@ import { LockedFeatureScreen, PaymentCompleteScreen, PaymentScreen, ProIntroScre
 
 export const MOBILE_APP_SCREEN_COMPONENTS = {
   timer: TimerScreen,
+  aquarium: AquariumScreen,
   accountInfo: AccountInfoScreen,
   addUniversity: AddUniversityScreen,
   analysis: AnalysisScreen,

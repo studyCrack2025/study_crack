@@ -7,6 +7,7 @@ import { Ob1Screen, Ob2Screen } from '../screens/onboarding/SurveyScreens.jsx';
 
 const MOBILE_SCREEN_NAMES = [
   'timer',
+  'aquarium',
   'home',
   'analysis',
   'addUniversity',
@@ -51,6 +52,7 @@ const MOBILE_SCREEN_NAMES = [
 
 export const DEFERRED_APP_SCREEN_NAMES = [
   'timer',
+  'aquarium',
   'home',
   'analysis',
   'addUniversity',

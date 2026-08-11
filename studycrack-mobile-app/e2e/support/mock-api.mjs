@@ -157,10 +157,55 @@ function responseFor(payload, state) {
       return { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
     case 'get_game_profile':
       return {
-        profile: { shellBalance: 0, foodBalance: 0, waterQuality: 100, activeFishIds: [], dailyReward: {} },
-        activeFish: [],
-        fishCount: 0
+        profile: state.gameProfile,
+        activeFish: state.activeFish,
+        fishCount: state.fishInventory.length
       };
+    case 'get_fish_catalog':
+      return {
+        catalogVersion: 'fish-v1',
+        catalog: [
+          { speciesId: 'clownfish', displayName: '흰동가리', defaultName: '코랄', rarity: 'common', starter: true, colors: ['#FF7A5C', '#FFF4D8'], owned: false },
+          { speciesId: 'blue_damsel', displayName: '파랑돔', defaultName: '마루', rarity: 'common', starter: true, colors: ['#3F6FD9', '#9DD9F2'], owned: false },
+          { speciesId: 'yellowtail_damsel', displayName: '노랑꼬리돔', defaultName: '리프', rarity: 'common', starter: true, colors: ['#274B87', '#F5C84C'], owned: false }
+        ],
+        inventory: state.fishInventory
+      };
+    case 'claim_starter_fish': {
+      const speciesId = payload.data?.speciesId || 'clownfish';
+      const names = { clownfish: ['흰동가리', '코랄'], blue_damsel: ['파랑돔', '마루'], yellowtail_damsel: ['노랑꼬리돔', '리프'] };
+      const fish = { fishId: 'fish_starter_e2e', speciesId, speciesName: names[speciesId][0], rarity: 'common', name: names[speciesId][1], customName: '', level: 1, exp: 0, currentLevelExp: 0, nextLevelExp: 30, progressPct: 0, growthStage: 'young', source: 'starter' };
+      state.fishInventory = [fish];
+      state.activeFish = [null, fish, null];
+      state.gameProfile = { ...state.gameProfile, starterState: 'claimed', selectedFishId: fish.fishId, activeFishIds: [null, fish.fishId, null] };
+      return { profile: state.gameProfile, fish, alreadyClaimed: false };
+    }
+    case 'feed_fish': {
+      const fish = state.fishInventory.find((item) => item?.fishId === payload.data?.fishId);
+      const updated = { ...fish, exp: fish.exp + 10, currentLevelExp: fish.currentLevelExp + 10, progressPct: 33 };
+      state.fishInventory = state.fishInventory.map((item) => item?.fishId === updated.fishId ? updated : item);
+      state.activeFish = state.activeFish.map((item) => item?.fishId === updated.fishId ? updated : item);
+      state.gameProfile = { ...state.gameProfile, foodBalance: state.gameProfile.foodBalance - 1 };
+      return { requestId: payload.data?.requestId, profile: state.gameProfile, fish: updated, expGranted: 10, waterGain: 0, levelUp: false };
+    }
+    case 'set_active_fish': {
+      const slots = ['left', 'center', 'right'];
+      const slotIndex = slots.indexOf(payload.data?.slot);
+      const fishId = payload.data?.fishId || null;
+      const activeFishIds = state.gameProfile.activeFishIds.map((id) => id === fishId ? null : id);
+      activeFishIds[slotIndex] = fishId;
+      state.gameProfile = { ...state.gameProfile, activeFishIds };
+      state.activeFish = activeFishIds.map((id) => state.fishInventory.find((fish) => fish.fishId === id) || null);
+      return { profile: state.gameProfile };
+    }
+    case 'rename_fish': {
+      const name = String(payload.data?.name || '').trim() || '마루';
+      const current = state.fishInventory.find((fish) => fish.fishId === payload.data?.fishId);
+      const updated = { ...current, customName: name, name };
+      state.fishInventory = state.fishInventory.map((fish) => fish.fishId === updated.fishId ? updated : fish);
+      state.activeFish = state.activeFish.map((fish) => fish?.fishId === updated.fishId ? updated : fish);
+      return { fish: updated };
+    }
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
     case 'claim_study_reward':
@@ -168,7 +213,7 @@ function responseFor(payload, state) {
         sessionId: payload.data?.sessionId,
         durationSeconds: state.studySeconds,
         reward: { shells: 0, food: 0 },
-        profile: { shellBalance: 0, foodBalance: 0, waterQuality: 100, activeFishIds: [], dailyReward: {} }
+        profile: state.gameProfile
       };
     case 'get_pro_reports':
       return { reports: [] };
@@ -185,7 +230,14 @@ function responseFor(payload, state) {
 
 export async function installApiMock(page, { tier = mockUser.computedTier } = {}) {
   const requests = [];
-  const state = { activeStudySession: null, studySeconds: 0, userTier: tier };
+  const state = {
+    activeStudySession: null,
+    activeFish: [],
+    fishInventory: [],
+    gameProfile: { shellBalance: 2, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], dailyReward: {} },
+    studySeconds: 0,
+    userTier: tier
+  };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     let payload = {};

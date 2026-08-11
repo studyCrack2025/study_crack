@@ -8,6 +8,7 @@ const ICON_PATHS = Object.freeze({
   check: <path d="M20 6L9 17l-5-5" />,
   chevron: <path d="M9 6l6 6-6 6" />,
   home: <><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>,
+  fish: <><path d="M4 12 1 8v8l3-4c3-5 10-7 17 0-7 7-14 5-17 0Z" /><circle cx="16" cy="10" r="1" /></>,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   plus: <path d="M12 5v14M5 12h14" />,
   report: <><path d="M6 2h9l5 5v15H6z" /><path d="M15 2v5h5" /></>,

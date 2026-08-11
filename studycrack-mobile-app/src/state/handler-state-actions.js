@@ -15,6 +15,11 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'studySubjectRecords', 'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummaryRefreshTick',
     'studyTimerRunning', 'studyTimerTick', 'timerPhase'
   ]),
+  gamification: Object.freeze([
+    'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
+    'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'fishCount', 'fishInventory',
+    'gameProfile', 'gameRefreshTick'
+  ]),
   planner: Object.freeze([
     'expandedBreakdownSubject', 'plannerCalendarMode', 'plannerDraft', 'plannerEditIndex', 'plannerItems',
     'selectedDate', 'showStudyBreakdown'

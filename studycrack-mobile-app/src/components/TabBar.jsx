@@ -4,9 +4,9 @@ import { Icon } from './Icon.jsx';
 export const TAB_ITEMS = [
   { key: 'timer', label: '타이머', icon: 'timer' },
   { key: 'planner', label: '플래너', icon: 'calendar' },
+  { key: 'aquarium', label: '수조', icon: 'fish' },
   { key: 'analysis', label: '분석', icon: 'chart' },
-  { key: 'strategy', label: '학습 코칭', icon: 'target' },
-  { key: 'my', label: '마이', icon: 'user' }
+  { key: 'strategy', label: '학습 코칭', icon: 'target' }
 ];
 
 export function TabBar({ activeTab = 'timer', dimmed = false }) {

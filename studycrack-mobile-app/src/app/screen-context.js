@@ -19,6 +19,12 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'universityRecommendationError', 'universityRecommendationStatus', 'universitySelectedName'
   ]),
   analysis: Object.freeze(ANALYSIS_CONTEXT_KEYS),
+  aquarium: Object.freeze([
+    'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
+    'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
+    'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
+    'gameProfileError', 'gameProfileStatus', 'tab'
+  ]),
   authFindId: Object.freeze([]),
   authFindPw: Object.freeze([]),
   authLogin: Object.freeze([

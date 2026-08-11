@@ -1,6 +1,6 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { claimStudyReward } from '../features/gamification/api.js';
+import { claimStarterFish, claimStudyReward, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
 import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
 import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
 import { requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
@@ -41,6 +41,22 @@ export function useMobileApiController({ setState, stateRef } = {}) {
   );
   const claimCompletedStudyReward = useCallback(
     (sessionId) => claimStudyReward({ ...getGameApiBinding(), sessionId }),
+    [getGameApiBinding]
+  );
+  const claimAquariumStarter = useCallback(
+    (speciesId) => claimStarterFish({ ...getGameApiBinding(), speciesId }),
+    [getGameApiBinding]
+  );
+  const feedAquariumFish = useCallback(
+    (fishId, requestId) => feedFish({ ...getGameApiBinding(), fishId, requestId }),
+    [getGameApiBinding]
+  );
+  const updateAquariumActiveFish = useCallback(
+    (fishId, slot) => setActiveFish({ ...getGameApiBinding(), fishId, slot }),
+    [getGameApiBinding]
+  );
+  const updateAquariumFishName = useCallback(
+    (fishId, name) => renameFish({ ...getGameApiBinding(), fishId, name }),
     [getGameApiBinding]
   );
   const completeStudySession = useCallback(
@@ -95,6 +111,10 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     startStudySession,
     completeStudySession,
     claimCompletedStudyReward,
+    claimAquariumStarter,
+    feedAquariumFish,
+    updateAquariumActiveFish,
+    updateAquariumFishName,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,
@@ -117,6 +137,10 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     startStudySession,
     completeStudySession,
     claimCompletedStudyReward,
+    claimAquariumStarter,
+    feedAquariumFish,
+    updateAquariumActiveFish,
+    updateAquariumFishName,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,

@@ -59,6 +59,7 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
   useGameProfileResource({
     enabled: resourceSessionReady && ['home', 'timer', 'aquarium'].includes(state.screen),
     getApiBinding: api.getGameApiBinding,
+    includeCatalog: state.screen === 'aquarium',
     refreshTick: state.gameRefreshTick,
     setState
   });

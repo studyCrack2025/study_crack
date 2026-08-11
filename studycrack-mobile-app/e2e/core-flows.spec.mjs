@@ -152,6 +152,33 @@ test('인증된 사용자는 스플래시 뒤 전용 타이머를 기본 화면�
   await expectNoHorizontalOverflow(page);
 });
 
+test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하고 복원한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+
+  await expect(page.locator('[data-screen="aquarium"]')).toBeVisible();
+  await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
+  await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
+
+  await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '먹이 주기' }).click();
+  await expect(page.getByText('EXP +10')).toBeVisible();
+  await page.locator('[data-field="aquariumFishName"]').fill('마루별');
+  await page.locator('[data-action="saveAquariumFishName"]').click();
+  await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
+  await page.locator('[data-action="setAquariumFishSlot"][data-slot="left"]').click();
+  await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_starter_fish').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'feed_fish').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'rename_fish').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'set_active_fish').length).toBe(1);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
+  await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
+  await expectNoHorizontalOverflow(page);
+});
+
 test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { claimStudyReward, fetchGameProfile, fetchStudyHabitat } from '../src/features/gamification/api.js';
+import { claimStudyReward, fetchGameProfile, fetchStudyHabitat, renameFish, setActiveFish } from '../src/features/gamification/api.js';
 import { GAME_REQUEST_TYPES } from '../src/shared/api/request-types.js';
 
 function response(body, ok = true, status = 200) {
@@ -14,6 +14,7 @@ const profile = {
   dailyReward: {}
 };
 const payloads = [];
+const fish = { fishId: 'fish_contract_1', speciesId: 'clownfish', name: '코랄', level: 1, exp: 0, progressPct: 0 };
 const apiFetch = async (_url, options) => {
   const payload = JSON.parse(options.body);
   payloads.push(payload);
@@ -21,6 +22,8 @@ const apiFetch = async (_url, options) => {
   if (payload.type === GAME_REQUEST_TYPES.GET_HABITAT) {
     return response({ days: [{ date: '2026-08-11', studySeconds: 1800, stage: 2 }], streakDays: 1 });
   }
+  if (payload.type === GAME_REQUEST_TYPES.SET_ACTIVE_FISH) return response({ profile: { ...profile, activeFishIds: [payload.data.fishId, null, null] } });
+  if (payload.type === GAME_REQUEST_TYPES.RENAME_FISH) return response({ fish: { ...fish, name: payload.data.name } });
   return response({ sessionId: payload.data.sessionId, durationSeconds: 1800, reward: { shells: 2, food: 1 }, profile });
 };
 
@@ -38,6 +41,16 @@ const reward = await claimStudyReward({ apiFetch, gameApiUrl: '/game', sessionId
 assert.equal(reward.ok, true);
 assert.equal(reward.data.reward.shells, 2);
 assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.CLAIM_STUDY_REWARD);
+
+const placement = await setActiveFish({ apiFetch, fishId: fish.fishId, gameApiUrl: '/game', slot: 'left' });
+assert.equal(placement.ok, true);
+assert.equal(payloads.at(-1).data.slot, 'left');
+assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.SET_ACTIVE_FISH);
+
+const renamed = await renameFish({ apiFetch, fishId: fish.fishId, gameApiUrl: '/game', name: '코랄별' });
+assert.equal(renamed.ok, true);
+assert.equal(renamed.data.fish.name, '코랄별');
+assert.equal(payloads.at(-1).type, GAME_REQUEST_TYPES.RENAME_FISH);
 
 const invalid = await fetchGameProfile({
   gameApiUrl: '/game',

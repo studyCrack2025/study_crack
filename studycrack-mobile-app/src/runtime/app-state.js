@@ -21,7 +21,7 @@ export {
 } from '../state/app-state-schema.js';
 
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
-export const MAIN_TAB_SCREENS = ['timer', 'planner', 'analysis', 'strategy', 'my'];
+export const MAIN_TAB_SCREENS = ['timer', 'planner', 'aquarium', 'analysis', 'strategy'];
 
 // 동기 hydrate adapter를 app 계층에서 조합한다. 각 storage key의 정규화 책임은 feature가 소유한다.
 export function hydrateAppState(state = {}, storage = globalThis.localStorage) {

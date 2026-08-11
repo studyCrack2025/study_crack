@@ -4,6 +4,10 @@ export function createGamificationInitialState() {
   return {
     serverResource: {
       activeFish: [],
+      fishCatalog: [],
+      fishCatalogError: '',
+      fishCatalogStatus: 'idle',
+      fishInventory: [],
       fishCount: 0,
       gameProfile: null,
       gameProfileStatus: 'idle',
@@ -17,10 +21,14 @@ export function createGamificationInitialState() {
       activeDrawRequestId: ''
     },
     ephemeralUi: {
+      aquariumActionError: '',
+      aquariumActionStatus: 'idle',
+      aquariumResult: null,
+      aquariumSelectedFishId: '',
+      aquariumStarterSpeciesId: '',
       gameError: ''
     }
   };
 }
 
 export const gamificationSlice = createFeatureSlice('gamification', createGamificationInitialState);
-

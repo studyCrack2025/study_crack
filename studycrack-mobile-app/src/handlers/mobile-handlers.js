@@ -4,6 +4,7 @@ import { createCalendarHandlers } from './calendar-handlers.js';
 import { createActionDispatcher, mergeHandlerGroups } from './dispatch.js';
 import { createFormHandlers } from './form-handlers.js';
 import { createGestureHandlers } from './gesture-handlers.js';
+import { createGamificationHandlers } from './gamification-handlers.js';
 import { createNavigationHandlers } from './navigation-handlers.js';
 import { createPlannerHandlers } from './planner-handlers.js';
 import { createTimerHandlers } from './timer-handlers.js';
@@ -15,6 +16,7 @@ export const MOBILE_ACTION_HANDLER_ORDER = [
   'navigation',
   'auth',
   'timer',
+  'gamification',
   'planner',
   'profile',
   'service',
@@ -31,6 +33,7 @@ export function createMobileActionHandlerGroups(ctx = {}, stateActions = {}) {
     navigation: createNavigationHandlers(withStateActions(ctx, stateActions, 'navigation')),
     auth: createAuthHandlers(withStateActions(ctx, stateActions, 'auth')),
     timer: createTimerHandlers(withStateActions(ctx, stateActions, 'timer')),
+    gamification: createGamificationHandlers(withStateActions(ctx, stateActions, 'gamification')),
     planner: createPlannerHandlers(withStateActions(ctx, stateActions, 'planner')),
     profile: createProfileHandlers(withStateActions(ctx, stateActions, 'profile')),
     service: createServiceHandlers(withStateActions(ctx, stateActions, 'service')),

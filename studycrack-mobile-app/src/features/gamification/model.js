@@ -4,6 +4,13 @@ function contract(ok, value, error = '') {
   return ok ? { ok: true, value } : { ok: false, error };
 }
 
+export function validateFish(value) {
+  const valid = isRecord(value) && typeof value.fishId === 'string' && typeof value.speciesId === 'string'
+    && typeof value.name === 'string' && Number.isInteger(Number(value.level))
+    && Number.isFinite(Number(value.exp)) && Number.isFinite(Number(value.progressPct));
+  return contract(valid, value, '물고기 응답이 올바르지 않습니다.');
+}
+
 export function validateGameProfile(value) {
   const valid = isRecord(value)
     && Number.isFinite(Number(value.shellBalance))
@@ -39,6 +46,39 @@ export function validateStudyRewardResponse(value) {
   return contract(valid, value, '공부 보상 응답이 올바르지 않습니다.');
 }
 
+export function validateFishCatalogResponse(value) {
+  const validCatalog = Array.isArray(value?.catalog) && value.catalog.every((fish) => (
+    isRecord(fish) && typeof fish.speciesId === 'string' && typeof fish.displayName === 'string'
+      && ['common', 'rare', 'epic'].includes(fish.rarity) && Array.isArray(fish.colors)
+  ));
+  const validInventory = Array.isArray(value?.inventory) && value.inventory.every((fish) => validateFish(fish).ok);
+  return contract(isRecord(value) && validCatalog && validInventory, value, '물고기 카탈로그 응답이 올바르지 않습니다.');
+}
+
+export function validateStarterClaimResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  const fish = validateFish(value?.fish);
+  return contract(isRecord(value) && profile.ok && fish.ok, value, '첫 물고기 선택 응답이 올바르지 않습니다.');
+}
+
+export function validateFeedFishResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  const fish = validateFish(value?.fish);
+  const valid = isRecord(value) && profile.ok && fish.ok && typeof value.requestId === 'string'
+    && Number.isFinite(Number(value.expGranted)) && Number.isFinite(Number(value.waterGain));
+  return contract(valid, value, '먹이 주기 응답이 올바르지 않습니다.');
+}
+
+export function validateActiveFishResponse(value) {
+  const profile = validateGameProfile(value?.profile);
+  return contract(isRecord(value) && profile.ok, value, '물고기 배치 응답이 올바르지 않습니다.');
+}
+
+export function validateRenameFishResponse(value) {
+  const fish = validateFish(value?.fish);
+  return contract(isRecord(value) && fish.ok, value, '물고기 이름 변경 응답이 올바르지 않습니다.');
+}
+
 export function normalizeGameProfileResponse(value) {
   return {
     gameProfile: value.profile,
@@ -46,4 +86,3 @@ export function normalizeGameProfileResponse(value) {
     fishCount: Number(value.fishCount) || 0
   };
 }
-
