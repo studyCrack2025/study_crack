@@ -19,6 +19,7 @@ import { HomeOverlays, HomeStudyBreakdown, NotificationPopover } from './HomeOve
 import { fitSingleLineText } from '../../shared/browser/text-fit.js';
 import { Icon } from '../../components/Icon.jsx';
 import { TabBar } from '../../components/TabBar.jsx';
+import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from './StudyGamificationPanels.jsx';
 
 function UniversityCard({ item, scoreTierClass }) {
   const score = getHomeScorePresentation(item);
@@ -368,7 +369,19 @@ export function HomeScreen(ctx) {
     proReports = [],
     proReportsStatus = 'idle',
     showStudyBreakdown = false,
+    activeStudySession = null,
+    completionError = '',
+    gameProfileError = '',
+    gameProfileStatus = 'idle',
+    habitatDays = [],
+    habitatStatus = 'idle',
+    rewardPendingSessionId = '',
+    rewardResult = null,
+    studySummary = null,
+    studySummaryStatus = 'idle',
     studyTimerRunning = false,
+    studyTimerTick = 0,
+    timerPhase = 'idle',
     todayPlannerItems = [],
     todayPlannerProgress = 0,
     todayPlannerTotalMinutes = 0,
@@ -404,7 +417,25 @@ export function HomeScreen(ctx) {
     '--home-slide-transition': slideTransition
   };
   const rankingShine = ['gold', 'platinum', 'diamond'].includes(rankTier) ? 'rank-shine' : '';
-  const missionSubjectRows = buildMissionSubjectRows(todayPlannerItems, todaySubjectsWithTimer);
+  const hasServerSummary = studySummaryStatus === 'ready' && studySummary?.available !== false;
+  const serverTodaySeconds = hasServerSummary ? Math.max(0, Number(studySummary?.today?.totalSeconds) || 0) : 0;
+  const runningSeconds = studyTimerRunning ? Math.max(0, Number(studyTimerTick) || 0) : 0;
+  const displayedTodaySeconds = hasServerSummary ? serverTodaySeconds + runningSeconds : todayStudySeconds;
+  const displayedSubjectSeconds = hasServerSummary
+    ? Object.fromEntries((studySummary?.today?.subjects || []).map((row) => [row.subject, Number(row.seconds) || 0]))
+    : { ...todaySubjectsWithTimer };
+  if (hasServerSummary && studyTimerRunning && activeStudySession?.subject) {
+    displayedSubjectSeconds[activeStudySession.subject] = (displayedSubjectSeconds[activeStudySession.subject] || 0) + runningSeconds;
+  }
+  const displayedPlannerProgress = todayPlannerTotalMinutes
+    ? Math.min(100, Math.round((displayedTodaySeconds / (todayPlannerTotalMinutes * 60)) * 100))
+    : todayPlannerProgress;
+  const displayedWeekSeconds = hasServerSummary
+    ? (Number(studySummary?.week?.totalSeconds) || 0) + runningSeconds
+    : displayedTodaySeconds;
+  const missionSubjectRows = buildMissionSubjectRows(todayPlannerItems, displayedSubjectSeconds);
+  const timerBusy = ['starting-session', 'settling-session', 'claiming-reward'].includes(timerPhase);
+  const canCompleteStudy = Boolean(activeStudySession) && ['running', 'recoverable-error'].includes(timerPhase);
 
   return (
     <div className="app-shell">
@@ -486,39 +517,40 @@ export function HomeScreen(ctx) {
                       <span className="home-card-eyebrow">오늘 미션</span>
                       <h2>오늘의 학습을 이어가세요</h2>
                     </div>
-                    <span className="home-mini-badge">{studyTimerRunning ? '진행 중' : `${todayPlannerProgress}%`}</span>
+                    <span className="home-mini-badge">{studyTimerRunning ? '진행 중' : `${displayedPlannerProgress}%`}</span>
                   </div>
                   <div className="study-timer-row">
                     <div className="home-timer-copy">
                       <span>오늘 누적 공부</span>
-                      <b className="timer premium-clock" data-study-base-seconds={todayRecord?.studyTime || 0}>
-                        {formatHms(todayStudySeconds)}
+                      <b className="timer premium-clock" data-study-base-seconds={hasServerSummary ? serverTodaySeconds : (todayRecord?.studyTime || 0)}>
+                        {formatHms(displayedTodaySeconds)}
                       </b>
                     </div>
                     <div className="timer-actions">
                       <button
                         className={`btn btn-primary mini ${studyTimerRunning ? 'disabled' : ''}`}
                         data-action="openStudySubjectSheet"
-                        disabled={studyTimerRunning}
+                        disabled={studyTimerRunning || Boolean(activeStudySession) || timerBusy}
                       >
                         공부 시작
                       </button>
                       <button
-                        className={`btn btn-secondary mini ${studyTimerRunning ? '' : 'disabled'}`}
+                        className={`btn btn-secondary mini ${canCompleteStudy ? '' : 'disabled'}`}
                         data-action="stopStudyTimer"
-                        disabled={!studyTimerRunning}
+                        disabled={!canCompleteStudy || timerBusy}
                       >
-                        정지
+                        {timerPhase === 'recoverable-error' ? '완료 다시 확인' : '공부 완료'}
                       </button>
                     </div>
                   </div>
+                  <RewardPanel activeStudySession={activeStudySession} completionError={completionError} rewardPendingSessionId={rewardPendingSessionId} rewardResult={rewardResult} timerPhase={timerPhase} />
                   {canAccessBasic && todayPlannerItems.length ? (
                     <div className="home-mission-plan">
                       <div className="home-mission-progress-head">
                         <span>{todayPlannerItems.length}개 계획</span>
                         <b>목표 {formatMinutesLabel(todayPlannerTotalMinutes)}</b>
                       </div>
-                      <div className="home-mission-progress"><i style={{ width: `${todayPlannerProgress}%` }} /></div>
+                      <div className="home-mission-progress"><i style={{ width: `${displayedPlannerProgress}%` }} /></div>
                       <div className="home-mission-subjects">
                         {missionSubjectRows.map((row) => (
                           <div className="home-mission-subject" key={row.subject}>
@@ -549,15 +581,16 @@ export function HomeScreen(ctx) {
                   <div className="home-card-head">
                     <div>
                       <span className="home-card-eyebrow">학습 흐름</span>
-                      <h2>오늘의 기록</h2>
+                      <h2>이번 주 공부 흐름</h2>
                     </div>
                     <span className="home-mini-badge">오늘 기준</span>
                   </div>
                   <div className="home-flow-stats">
-                    <div><span>공부 시간</span><b>{formatMinutesLabel(Math.round(todayStudySeconds / 60))}</b></div>
-                    <div><span>완료율</span><b>{todayPlannerProgress}%</b></div>
+                    <div><span>오늘 공부</span><b>{formatMinutesLabel(Math.round(displayedTodaySeconds / 60))}</b></div>
+                    <div><span>이번 주</span><b>{formatMinutesLabel(Math.round(displayedWeekSeconds / 60))}</b></div>
                     <div><span>계획</span><b>{todayPlannerItems.length}개</b></div>
                   </div>
+                  <StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={runningSeconds} summary={studySummary} status={studySummaryStatus} />
                   <button
                     type="button"
                     className={`home-ranking-row rank-tier-${rankTier} ${rankingShine}`}
@@ -575,6 +608,8 @@ export function HomeScreen(ctx) {
                     <span className="home-ranking-chevron" aria-hidden="true">›</span>
                   </button>
                 </section>
+
+                <StudyHabitatCard gameProfileError={gameProfileError} gameProfileStatus={gameProfileStatus} habitatDays={habitatDays} habitatStatus={habitatStatus} />
 
                 <HomeReportPreviewCard
                   proReports={proReports}

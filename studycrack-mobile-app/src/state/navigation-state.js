@@ -6,7 +6,7 @@ export function createNavigationInitialState() {
     localDraft: {},
     ephemeralUi: {
       screen: 'splash',
-      tab: 'home',
+      tab: 'timer',
       history: [],
       loading: true,
       loadingFadeOut: false,

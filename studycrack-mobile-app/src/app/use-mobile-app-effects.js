@@ -69,7 +69,7 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
 
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
-    const destination = hasMobileClientSession() ? 'home' : 'on1';
+    const destination = hasMobileClientSession() ? 'timer' : 'on1';
     const timer = globalThis.setTimeout?.(() => nav.goto(destination, false), 900);
     return () => {
       if (timer) globalThis.clearTimeout?.(timer);

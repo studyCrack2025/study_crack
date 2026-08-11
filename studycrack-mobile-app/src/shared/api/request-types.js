@@ -3,12 +3,30 @@ export const USER_REQUEST_TYPES = Object.freeze({
   GET_ADMISSION_CALENDAR: 'get_admission_calendar',
   GET_CURRENT_USER: 'get_user_analysis',
   GET_STUDY_RANKING: 'get_study_ranking',
+  GET_STUDY_SUMMARY: 'get_study_summary',
+  START_STUDY_SESSION: 'start_study_session',
+  COMPLETE_STUDY_SESSION: 'complete_study_session',
   RECORD_STUDY_SESSION: 'record_study_session',
   UPDATE_MEMBER_INFO: 'update_member_info',
   UPDATE_QUALITATIVE: 'update_qual',
   UPDATE_QUANTITATIVE: 'update_quan',
   UPDATE_TARGET_UNIVERSITIES: 'update_target_univs',
   UPSERT_ADMISSION_EVENT: 'upsert_admission_calendar_event'
+});
+
+export const GAME_REQUEST_TYPES = Object.freeze({
+  ACKNOWLEDGE_DRAW: 'acknowledge_fish_draw',
+  CLAIM_STARTER_FISH: 'claim_starter_fish',
+  CLAIM_STUDY_REWARD: 'claim_study_reward',
+  DRAW_FISH: 'draw_fish',
+  FEED_FISH: 'feed_fish',
+  GET_CATALOG: 'get_fish_catalog',
+  GET_FISH_DETAIL: 'get_fish_detail',
+  GET_HABITAT: 'get_study_habitat',
+  GET_PENDING_DRAW: 'get_pending_draw',
+  GET_PROFILE: 'get_game_profile',
+  RENAME_FISH: 'rename_fish',
+  SET_ACTIVE_FISH: 'set_active_fish'
 });
 
 export const ANALYSIS_REQUEST_TYPES = Object.freeze({

@@ -95,15 +95,6 @@ export function validatePlannerItem(value) {
 }
 
 /** @returns {ContractResult} */
-export function validateStudySession(value) {
-  const valid = isRecord(value) && isText(value.sessionId) && Boolean(value.sessionId.trim())
-    && isText(value.subject) && Boolean(value.subject.trim()) && isFiniteNumber(value.durationSeconds)
-    && Number(value.durationSeconds) >= 1
-    && isOptionalText(value.startedAt) && isOptionalText(value.endedAt);
-  return contract(valid, value, '공부 세션 필드가 올바르지 않습니다.');
-}
-
-/** @returns {ContractResult} */
 export function validateNotification(value) {
   const id = value?.notiId || value?.id;
   const valid = isRecord(value) && isText(id) && Boolean(id.trim())

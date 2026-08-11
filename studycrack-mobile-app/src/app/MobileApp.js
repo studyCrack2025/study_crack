@@ -68,8 +68,8 @@ function MissingScreenFallback({ screen }) {
           'div',
           { className: 'center init-loading', role: 'status' },
           React.createElement('h3', null, '화면을 찾을 수 없습니다'),
-          React.createElement('p', { className: 'sub' }, '홈으로 돌아가 다시 시도해 주세요.'),
-          React.createElement('button', { type: 'button', className: 'btn btn-primary mini', 'data-action': 'goto', 'data-target': 'home' }, '홈으로 이동')
+          React.createElement('p', { className: 'sub' }, '타이머로 돌아가 다시 시도해 주세요.'),
+          React.createElement('button', { type: 'button', className: 'btn btn-primary mini', 'data-action': 'goto', 'data-target': 'timer' }, '타이머로 이동')
         )
       )
     )

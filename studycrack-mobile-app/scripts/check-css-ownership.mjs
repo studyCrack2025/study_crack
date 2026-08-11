@@ -43,7 +43,8 @@ const expectedDeferredStyles = new Set([
   'screens/ranking.css',
   'screens/reports.css',
   'screens/score-input.css',
-  'screens/service.css'
+  'screens/service.css',
+  'screens/timer.css'
 ]);
 
 async function listCss(directory) {

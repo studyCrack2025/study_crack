@@ -31,6 +31,7 @@ export function getMobileRuntimeContext() {
     analysisApiUrl: browser?.CONFIG?.api?.analysis || '',
     apiBase: browser?.CONFIG?.api || null,
     apiFetch: browser?.apiFetch || null,
+    gameApiUrl: browser?.CONFIG?.api?.game || '',
     userApiUrl: browser?.CONFIG?.api?.user || '',
     notiApiUrl: browser?.CONFIG?.api?.noti || '',
     hasClientSession: browser?.hasClientSession || (() => false),

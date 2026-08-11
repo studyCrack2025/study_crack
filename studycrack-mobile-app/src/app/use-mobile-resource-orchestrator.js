@@ -4,11 +4,13 @@ import { useAdmissionCalendarResource } from '../features/account/use-admission-
 import { useAnalysisResources } from '../features/analysis/use-analysis-resources.js';
 import { useNotificationResource } from '../features/notifications/use-notification-resource.js';
 import { useRankingResource } from '../features/planner/use-ranking-resource.js';
+import { useGameProfileResource } from '../features/gamification/use-game-profile-resource.js';
 import { useReportResources } from '../features/reports/use-report-resources.js';
 import { useSession } from '../features/session/use-session.js';
 import { createUserDataResetPatch, mapUserToStatePatch } from '../features/session/user-state.js';
 import { blockNonStudentMobileSession } from '../features/session/mobile-session-adapter.js';
 import { useSupportResource } from '../features/support/use-support-resource.js';
+import { useStudySummaryResource } from '../features/study/use-study-summary-resource.js';
 import { persistMobileUserRole } from '../shared/browser/mobile-runtime.js';
 
 const { useCallback, useRef } = React;
@@ -48,10 +50,22 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
 
   const resourceSessionReady = state.userLoadStatus === 'ready' && api.hasClientSession();
   useRankingResource({
-    enabled: resourceSessionReady && ['home', 'ranking'].includes(state.screen),
+    enabled: resourceSessionReady && ['home', 'timer', 'ranking'].includes(state.screen),
     getApiBinding: api.getUserApiBinding,
     period: state.screen === 'ranking' ? state.rankingPeriod : 'daily',
     refreshTick: state.rankingRefreshTick,
+    setState
+  });
+  useGameProfileResource({
+    enabled: resourceSessionReady && ['home', 'timer', 'aquarium'].includes(state.screen),
+    getApiBinding: api.getGameApiBinding,
+    refreshTick: state.gameRefreshTick,
+    setState
+  });
+  useStudySummaryResource({
+    enabled: resourceSessionReady && ['home', 'timer'].includes(state.screen),
+    getApiBinding: api.getUserApiBinding,
+    refreshTick: state.studySummaryRefreshTick,
     setState
   });
   useAdmissionCalendarResource({

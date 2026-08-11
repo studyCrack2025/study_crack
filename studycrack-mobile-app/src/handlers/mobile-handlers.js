@@ -6,6 +6,7 @@ import { createFormHandlers } from './form-handlers.js';
 import { createGestureHandlers } from './gesture-handlers.js';
 import { createNavigationHandlers } from './navigation-handlers.js';
 import { createPlannerHandlers } from './planner-handlers.js';
+import { createTimerHandlers } from './timer-handlers.js';
 import { createProfileHandlers } from './profile-handlers.js';
 import { createServiceHandlers } from './service-handlers.js';
 import { requireHandlerStateActions } from '../state/handler-state-actions.js';
@@ -13,6 +14,7 @@ import { requireHandlerStateActions } from '../state/handler-state-actions.js';
 export const MOBILE_ACTION_HANDLER_ORDER = [
   'navigation',
   'auth',
+  'timer',
   'planner',
   'profile',
   'service',
@@ -28,6 +30,7 @@ export function createMobileActionHandlerGroups(ctx = {}, stateActions = {}) {
   return {
     navigation: createNavigationHandlers(withStateActions(ctx, stateActions, 'navigation')),
     auth: createAuthHandlers(withStateActions(ctx, stateActions, 'auth')),
+    timer: createTimerHandlers(withStateActions(ctx, stateActions, 'timer')),
     planner: createPlannerHandlers(withStateActions(ctx, stateActions, 'planner')),
     profile: createProfileHandlers(withStateActions(ctx, stateActions, 'profile')),
     service: createServiceHandlers(withStateActions(ctx, stateActions, 'service')),

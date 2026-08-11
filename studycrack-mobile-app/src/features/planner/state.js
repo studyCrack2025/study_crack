@@ -5,9 +5,6 @@ export function createPlannerInitialState() {
   return {
     serverResource: {
       plannerItems: [],
-      studyRecords: [],
-      studySubjectRecords: [],
-      activeStudySession: null,
       rankingRows: [],
       rankingStatus: 'idle',
       rankingError: '',
@@ -22,12 +19,6 @@ export function createPlannerInitialState() {
       selectedDate: TODAY_DATE,
       plannerCalendarMode: 'week',
       plannerEditIndex: null,
-      studyTimerRunning: false,
-      studyTimerTick: 0,
-      activeStudySubject: '',
-      activePlannerItemId: '',
-      studySubjectSheetOpen: false,
-      studySubjectSheetOnlyPlanned: false,
       showStudyBreakdown: false,
       expandedBreakdownSubject: ''
     }

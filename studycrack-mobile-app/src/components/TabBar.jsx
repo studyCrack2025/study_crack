@@ -2,14 +2,14 @@ import { filterTabItemsForTier } from '../app/access-policy.js';
 import { Icon } from './Icon.jsx';
 
 export const TAB_ITEMS = [
-  { key: 'home', label: '홈', icon: 'home' },
+  { key: 'timer', label: '타이머', icon: 'timer' },
+  { key: 'planner', label: '플래너', icon: 'calendar' },
   { key: 'analysis', label: '분석', icon: 'chart' },
   { key: 'strategy', label: '학습 코칭', icon: 'target' },
-  { key: 'planner', label: '플래너', icon: 'calendar' },
   { key: 'my', label: '마이', icon: 'user' }
 ];
 
-export function TabBar({ activeTab = 'home', dimmed = false }) {
+export function TabBar({ activeTab = 'timer', dimmed = false }) {
   const items = filterTabItemsForTier(TAB_ITEMS);
   return (
     <nav className={`tabbar bottom-tab ${dimmed ? 'is-muted' : ''}`} aria-label="주요 메뉴">

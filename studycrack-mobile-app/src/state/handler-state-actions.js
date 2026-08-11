@@ -8,11 +8,16 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'signupEmailSending', 'signupError', 'signupForm', 'signupSmsSending', 'signupStep',
     'signupSubmitting', 'signupTerms', 'signupVerifiedEmail', 'signupVerifiedPhone'
   ]),
+  timer: Object.freeze([
+    'activePlannerItemId', 'activeStudySession', 'activeStudySubject', 'completionError',
+    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRefreshTick', 'lastCompletedSession',
+    'notifModalOpen', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecords',
+    'studySubjectRecords', 'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummaryRefreshTick',
+    'studyTimerRunning', 'studyTimerTick', 'timerPhase'
+  ]),
   planner: Object.freeze([
-    'activePlannerItemId', 'activeStudySession', 'activeStudySubject', 'expandedBreakdownSubject',
-    'notifModalOpen', 'plannerCalendarMode', 'plannerDraft', 'plannerEditIndex', 'plannerItems',
-    'selectedDate', 'showStudyBreakdown', 'studyRecords', 'studySubjectRecords',
-    'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studyTimerRunning', 'studyTimerTick'
+    'expandedBreakdownSubject', 'plannerCalendarMode', 'plannerDraft', 'plannerEditIndex', 'plannerItems',
+    'selectedDate', 'showStudyBreakdown'
   ]),
   profile: Object.freeze([
     'history', 'loggedIn', 'logoutModalOpen', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep',

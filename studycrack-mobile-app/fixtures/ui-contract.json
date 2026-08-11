@@ -87,8 +87,9 @@
     { "width": 430, "height": 932 }
   ],
   "states": ["loading", "ready", "empty", "error", "locked", "updating"],
-  "mainTabs": ["home", "analysis", "strategy", "planner", "my"],
+  "mainTabs": ["timer", "planner", "analysis", "strategy", "my"],
   "screens": [
+    "timer",
     "home",
     "analysis",
     "addUniversity",

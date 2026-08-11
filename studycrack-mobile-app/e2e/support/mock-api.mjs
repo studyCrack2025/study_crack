@@ -79,6 +79,37 @@ function targetResult(target, index, examMode) {
   };
 }
 
+function studySummary(state) {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + (now.getDay() === 0 ? -6 : 1 - now.getDay()));
+  const dateKey = (value) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  const todayDate = dateKey(now);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    const isToday = dateKey(date) === todayDate;
+    return {
+      date: dateKey(date),
+      totalSeconds: isToday ? state.studySeconds : 0,
+      sessionCount: isToday && state.studySeconds ? 1 : 0,
+      subjects: isToday && state.studySeconds ? [{ subject: '국어', seconds: state.studySeconds }] : []
+    };
+  });
+  return {
+    today: days.find((day) => day.date === todayDate),
+    week: {
+      startDate: days[0].date,
+      endDate: days[6].date,
+      totalSeconds: state.studySeconds,
+      sessionCount: state.studySeconds ? 1 : 0,
+      subjects: state.studySeconds ? [{ subject: '국어', seconds: state.studySeconds }] : [],
+      days
+    },
+    available: true
+  };
+}
+
 function responseFor(payload, state) {
   switch (payload.type) {
     case 'get_user_analysis':
@@ -90,6 +121,8 @@ function responseFor(payload, state) {
         rows: [{ rank: 1, name: '테*트', seconds: state.studySeconds }],
         me: { rank: 1, seconds: state.studySeconds }
       };
+    case 'get_study_summary':
+      return studySummary(state);
     case 'get_univ_list_only':
       return [
         { univName: '고려대학교', majors: ['경영학과', '정치외교학과'] },
@@ -110,9 +143,33 @@ function responseFor(payload, state) {
       }));
     case 'backtrace_required_raw':
       return { result: { reachable: true, minTotalRaw: 6, items: [{ subject: '국어', rawIncrease: 3 }] } };
-    case 'record_study_session':
-      state.studySeconds = Math.max(1, Number(payload.data?.durationSeconds) || 1);
-      return { success: true };
+    case 'start_study_session':
+      state.activeStudySession = {
+        sessionId: payload.data?.sessionId,
+        subject: payload.data?.subject,
+        plannerItemId: payload.data?.plannerItemId || '',
+        status: 'running',
+        startedAt: new Date(Date.now() - 2000).toISOString()
+      };
+      return state.activeStudySession;
+    case 'complete_study_session':
+      state.studySeconds = 2;
+      return { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
+    case 'get_game_profile':
+      return {
+        profile: { shellBalance: 0, foodBalance: 0, waterQuality: 100, activeFishIds: [], dailyReward: {} },
+        activeFish: [],
+        fishCount: 0
+      };
+    case 'get_study_habitat':
+      return { days: [], streakDays: 0 };
+    case 'claim_study_reward':
+      return {
+        sessionId: payload.data?.sessionId,
+        durationSeconds: state.studySeconds,
+        reward: { shells: 0, food: 0 },
+        profile: { shellBalance: 0, foodBalance: 0, waterQuality: 100, activeFishIds: [], dailyReward: {} }
+      };
     case 'get_pro_reports':
       return { reports: [] };
     case 'get_weekly_reports':
@@ -128,7 +185,7 @@ function responseFor(payload, state) {
 
 export async function installApiMock(page, { tier = mockUser.computedTier } = {}) {
   const requests = [];
-  const state = { studySeconds: 0, userTier: tier };
+  const state = { activeStudySession: null, studySeconds: 0, userTier: tier };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     let payload = {};

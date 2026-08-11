@@ -1,5 +1,4 @@
 {
-  "src/styles/components/secondary.css": ["is-error"],
   "src/styles/foundation/base.css": ["ios-scroll-root"],
   "src/styles/screens/analysis.css": ["is-end", "is-start"],
   "src/styles/screens/home-overlays.css": ["is-full", "is-open", "noti-list-empty"],

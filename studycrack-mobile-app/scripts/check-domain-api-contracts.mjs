@@ -5,6 +5,7 @@ import { apiFailure, apiInvalidResponse, apiSuccess, postJson, setApiAuthExpired
 import {
   ANALYSIS_REQUEST_TYPES,
   AUTH_REQUEST_TYPES,
+  GAME_REQUEST_TYPES,
   NOTIFICATION_REQUEST_TYPES,
   REPORT_REQUEST_TYPES,
   SUPPORT_REQUEST_TYPES,
@@ -16,7 +17,6 @@ import {
   validateModelList,
   validateNotification,
   validatePlannerItem,
-  validateStudySession,
   validateSubscription,
   validateTargetSlot,
   validateUser,
@@ -47,7 +47,6 @@ const modelContracts = [
   [validateUser, { role: 'student', name: '테스트', computedTier: 'basic' }, { role: 'student', name: '테스트' }],
   [validateAnalysisResult, { univ: '연세대학교', major: '정치외교학과', converted_score: 120 }, { univ: '연세대학교', major: '정치외교학과' }],
   [validatePlannerItem, { id: 'pl-1', date: '2026-08-08', subject: '수학' }, { id: 'pl-1', subject: '수학' }],
-  [validateStudySession, { sessionId: 'session-1', subject: '수학', durationSeconds: 600 }, { subject: '수학', durationSeconds: -1 }],
   [validateNotification, { notiId: 'n-1', title: '알림', body: '내용' }, { title: '알림' }],
   [validateWeeklyReport, { weekId: '260801', title: '주간 점검' }, { title: '주간 점검' }]
 ];
@@ -98,10 +97,12 @@ releaseAuthExpiredHandler();
 const apiModules = [
   'src/features/account/api.js',
   'src/features/analysis/api.js',
+  'src/features/gamification/api.js',
   'src/features/notifications/api.js',
   'src/features/planner/api.js',
   'src/features/reports/api.js',
   'src/features/session/api.js',
+  'src/features/study/api.js',
   'src/features/support/api.js'
 ];
 for (const path of apiModules) {
@@ -117,7 +118,8 @@ const requestTypeGroups = [
   NOTIFICATION_REQUEST_TYPES,
   REPORT_REQUEST_TYPES,
   SUPPORT_REQUEST_TYPES,
-  AUTH_REQUEST_TYPES
+  AUTH_REQUEST_TYPES,
+  GAME_REQUEST_TYPES
 ];
 const requestTypeValues = requestTypeGroups.flatMap((group) => Object.values(group));
 assert.equal(new Set(requestTypeValues).size, requestTypeValues.length, 'Request type values must have one owner.');
@@ -149,7 +151,8 @@ for (const hookName of [
   'useReportResources',
   'useSupportResource',
   'useNotificationResource',
-  'useAnalysisResources'
+  'useAnalysisResources',
+  'useGameProfileResource'
 ]) {
   assert.match(resourceOrchestrator, new RegExp(`\\b${hookName}\\s*\\(`), `resource orchestrator must compose ${hookName}.`);
 }
@@ -159,6 +162,7 @@ const cancellableResourceHooks = [
   'src/features/account/use-admission-calendar-resource.js',
   'src/features/analysis/use-score-resources.js',
   'src/features/analysis/use-university-resources.js',
+  'src/features/gamification/use-game-profile-resource.js',
   'src/features/notifications/use-notification-resource.js',
   'src/features/planner/use-ranking-resource.js',
   'src/features/reports/use-report-resources.js',

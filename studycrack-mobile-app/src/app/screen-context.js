@@ -38,16 +38,19 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'lockedFeatureLabel', 'lockedFeatureTarget', 'lockedFeatureTier', 'tab', 'upgradePromptTarget', 'upgradePromptTier'
   ]),
   home: Object.freeze([
+    'activeStudySession', 'activeStudySubject', 'completionError',
     'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
     'breakdownDetailMap', 'breakdownSubjects', 'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells',
     'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
     'calendarSelectedDate', 'calendarSelectedEvents', 'calendarSheetOpen', 'calendarSyncStatus',
     'calendarWeekdays', 'canAccessBasic', 'crackySrc', 'dimmed', 'formatHms', 'formatMinutesLabel',
     'drawerOpen', 'expandedBreakdownSubject', 'hasClientSession', 'homeDragOffset', 'homeSlideIndex',
+    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'habitatDays', 'habitatStatus',
     'homeSlideMotion', 'homeTargets', 'myRank', 'notiList', 'notiStatus', 'notifModalOpen',
     'percentile', 'plannedScheduleOptions', 'proReports', 'proReportsStatus', 'rankTier', 'rankTierLabel',
-    'rankingProgress', 'rankingTotal', 'scoreExamType', 'scoreTierClass', 'showStudyBreakdown',
-    'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studyTimerRunning', 'tab',
+    'rankingProgress', 'rankingTotal', 'rewardPendingSessionId', 'rewardResult', 'scoreExamType', 'scoreTierClass', 'showStudyBreakdown',
+    'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus',
+    'studyTimerRunning', 'studyTimerTick', 'tab', 'timerPhase',
     'targetDeleteCandidate', 'targetDeleteError', 'targetDeleteModalOpen', 'targetDeleteSaving',
     'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayRecord', 'todayStudySeconds', 'todaySubjectsWithTimer', 'user',
@@ -107,6 +110,14 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen', 'coachingStep',
     'coachingSubjectRows', 'coachingSubmitting', 'coachingTrend', 'coachingView', 'dimmed',
     'tab', 'weeklyReports', 'weeklyReportsStatus'
+  ]),
+  timer: Object.freeze([
+    'activeStudySession', 'canAccessBasic', 'completionError', 'dimmed', 'formatHms', 'formatMinutesLabel',
+    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'habitatDays', 'habitatStatus', 'hasClientSession',
+    'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySubjectSheetOnlyPlanned',
+    'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
+    'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
+    'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'
   ]),
   tutor: Object.freeze([
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'

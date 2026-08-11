@@ -3,6 +3,8 @@ import { overlaySlice } from './overlay-state.js';
 import { sessionSlice } from '../features/session/state.js';
 import { analysisSlice } from '../features/analysis/state.js';
 import { plannerSlice } from '../features/planner/state.js';
+import { studySlice } from '../features/study/state.js';
+import { gamificationSlice } from '../features/gamification/state.js';
 import { coachingSlice } from '../features/coaching/state.js';
 import { accountSlice } from '../features/account/state.js';
 import { notificationsSlice } from '../features/notifications/state.js';
@@ -13,7 +15,9 @@ export const APP_STATE_SLICES = Object.freeze([
   navigationSlice,
   sessionSlice,
   analysisSlice,
+  studySlice,
   plannerSlice,
+  gamificationSlice,
   coachingSlice,
   accountSlice,
   notificationsSlice,

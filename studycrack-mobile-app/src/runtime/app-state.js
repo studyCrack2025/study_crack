@@ -1,6 +1,7 @@
 import { hydrateNavigationStorage } from './navigation-storage.js';
 import { hydrateAnalysisStorage } from '../features/analysis/storage.js';
 import { hydratePlannerStorage } from '../features/planner/storage.js';
+import { hydrateStudyStorage } from '../features/study/storage.js';
 import { hydrateAccountStorage } from '../features/account/storage.js';
 import { hydrateNotificationsStorage } from '../features/notifications/storage.js';
 import { notificationsSlice } from '../features/notifications/state.js';
@@ -20,7 +21,7 @@ export {
 } from '../state/app-state-schema.js';
 
 // 메인 탭과 매핑되는 screen id (goto 시 탭 동기화 대상). 원본 App().goto와 동일.
-export const MAIN_TAB_SCREENS = ['home', 'analysis', 'strategy', 'planner', 'my'];
+export const MAIN_TAB_SCREENS = ['timer', 'planner', 'analysis', 'strategy', 'my'];
 
 // 동기 hydrate adapter를 app 계층에서 조합한다. 각 storage key의 정규화 책임은 feature가 소유한다.
 export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
@@ -30,6 +31,7 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   const patch = {
     ...hydrateAnalysisStorage(storage),
     ...hydratePlannerStorage(storage),
+    ...hydrateStudyStorage(storage),
     ...hydrateAccountStorage(storage),
     ...hydrateNavigationStorage(storage),
     ...(notificationPatch.notifications
@@ -56,7 +58,7 @@ export function createNavigationOps({ getState, setState, onScreenChange } = {})
   function back() {
     const state = getState();
     onScreenChange?.(state.screen, null);
-    if (!state.history.length) return goto('home', false);
+    if (!state.history.length) return goto('timer', false);
     const clone = [...state.history];
     const prev = clone.pop();
     setState({ history: clone, screen: prev, ...(MAIN_TAB_SCREENS.includes(prev) ? { tab: prev } : {}) });

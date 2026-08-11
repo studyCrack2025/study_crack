@@ -47,7 +47,7 @@ export function createNavigationHandlers(ctx) {
     completeOnboarding(payload) {
       const task = () => {
         markOnboardingComplete?.();
-        goto?.('home', false);
+        goto?.('timer', false);
       };
       preserveScroll ? preserveScroll(task, payload) : task();
       return true;

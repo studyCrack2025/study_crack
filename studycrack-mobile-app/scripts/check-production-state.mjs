@@ -25,7 +25,9 @@ assert.deepEqual(Object.keys(initialRoot), [
   'navigation',
   'session',
   'analysis',
+  'study',
   'planner',
+  'gamification',
   'coaching',
   'account',
   'notifications',
@@ -35,6 +37,8 @@ assert.deepEqual(Object.keys(initialRoot), [
 ]);
 assert.equal(APP_STATE_FIELD_OWNERS.scoreCache, 'analysis');
 assert.equal(APP_STATE_FIELD_OWNERS.plannerItems, 'planner');
+assert.equal(APP_STATE_FIELD_OWNERS.activeStudySession, 'study');
+assert.equal(APP_STATE_FIELD_OWNERS.gameProfile, 'gamification');
 assert.equal(APP_STATE_FIELD_KINDS.scoreCache, 'serverResource');
 assert.equal(APP_STATE_FIELD_KINDS.plannerDraft, 'localDraft');
 assert.equal(APP_STATE_FIELD_KINDS.scoreEditOpen, 'ephemeralUi');

@@ -84,10 +84,11 @@ test('로그인 세션의 사용자와 최초 환산점수가 홈에서 함께 �
 test('React 하단 탭은 화면 전환과 잠금 화면에서도 활성 상태를 유지한다', async ({ page }) => {
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
-  await page.goto('/studycrack-mobile.html?screen=home');
+  await page.goto('/studycrack-mobile.html?screen=timer');
 
   const tabbar = page.locator('.tabbar');
-  await expect(tabbar.locator('[data-tab="home"]')).toHaveAttribute('aria-current', 'page');
+  await expect(tabbar.locator('[data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
+  await expect(tabbar.locator('button')).toHaveCount(5);
   await tabbar.locator('[data-tab="analysis"]').click();
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
   await expect(page.locator('.tabbar [data-tab="analysis"]')).toHaveAttribute('aria-current', 'page');
@@ -118,19 +119,37 @@ test('대학 검색은 한글 입력 후 대학과 학과를 순서대로 선택
   await expectNoHorizontalOverflow(page);
 });
 
-test('공부 타이머 저장 뒤 랭킹 데이터가 다시 조회된다', async ({ page }) => {
+test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', async ({ page }) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
-  await page.goto('/studycrack-mobile.html?screen=home');
-  await expect(page.getByText('안녕하세요, 테스트학생님')).toBeVisible();
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  await expect(page.locator('[data-screen="timer"]')).toBeVisible();
+  await expect(page.getByText('테스트학생님의 공부를 기록해요.')).toBeVisible();
 
   await page.getByRole('button', { name: '공부 시작' }).click();
   await page.getByRole('button', { name: '국어 - 독서', exact: true }).click();
   await page.waitForTimeout(1100);
-  await page.getByRole('button', { name: '정지', exact: true }).click();
+  await page.getByRole('button', { name: '공부 완료', exact: true }).click();
 
-  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'record_study_session').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'start_study_session').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'complete_study_session').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_study_reward').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_ranking').length).toBeGreaterThan(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBeGreaterThan(1);
+  await expect(page.locator('.timer-week-summary')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('인증된 사용자는 스플래시 뒤 전용 타이머를 기본 화면으로 사용한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=splash');
+
+  await expect(page.locator('[data-screen="timer"]')).toBeVisible({ timeout: 2500 });
+  await expect(page.locator('.tabbar [data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: '공부 시작' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '학습 대시보드' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
 });
 
 test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }) => {

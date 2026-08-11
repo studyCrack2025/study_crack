@@ -235,4 +235,4 @@ assert.match(termsModalComponent, /<Modal dismissAction="closeTermsModal"/);
 assert.doesNotMatch(authComponent, /dangerouslySetInnerHTML/);
 assert.doesNotMatch(legalComponent, /dangerouslySetInnerHTML/);
 
-console.log('renderer ownership boundary ok: all 40 screens are JSX-owned across bootstrap and deferred app registries');
+console.log('renderer ownership boundary ok: all 41 screens are JSX-owned across bootstrap and deferred app registries');

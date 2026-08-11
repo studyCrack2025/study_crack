@@ -28,11 +28,11 @@ export function createInitialMobileAppState() {
     : base;
 
   if (hasSession && (screen === 'authLogin' || screen === 'authSignup')) {
-    return appStateReducer(sessionSafeBase, { type: 'app/patch', payload: { screen: 'home', tab: 'home' } });
+    return appStateReducer(sessionSafeBase, { type: 'app/patch', payload: { screen: 'timer', tab: 'timer' } });
   }
   if (!hasSession && screen && !isLocalMobilePreview() && !PUBLIC_MOBILE_SCREENS.has(screen)) {
     replaceMobileScreenParam('authLogin');
-    return appStateReducer(base, { type: 'app/patch', payload: { screen: 'authLogin', tab: 'home' } });
+    return appStateReducer(base, { type: 'app/patch', payload: { screen: 'authLogin', tab: 'timer' } });
   }
   return screen
     ? appStateReducer(sessionSafeBase, {

@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   selectedPlan: 'selectedPlan',
   selectedUniversity: 'selectedUniversity',
   activeStudySession: 'activeStudySession',
+  rewardPendingSessionId: 'studyRewardPendingSessionId',
   studyRecords: 'studyRecords',
   studySubjectRecords: 'studySubjectRecords',
   user: 'user'

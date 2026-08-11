@@ -4,6 +4,7 @@ import '../styles/components/drawers.css';
 import '../styles/screens/home-overlays.css';
 import '../styles/screens/home-base.css';
 import '../styles/screens/home.css';
+import '../styles/screens/timer.css';
 import '../styles/screens/analysis-base.css';
 import '../styles/screens/analysis-unified.css';
 import '../styles/screens/analysis.css';
@@ -22,6 +23,7 @@ import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
 import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import { HomeScreen } from '../screens/home/HomeScreen.jsx';
+import { TimerScreen } from '../screens/timer/TimerScreen.jsx';
 import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
 import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
 import { CustomerSupportScreen, NotificationListScreen, NotificationSettingsScreen } from '../screens/mypage/MyPageSecondaryScreens.jsx';
@@ -32,6 +34,7 @@ import { ProEliteScreen, ReportDetailScreen, ReportScreen, TutorScreen, WeeklySc
 import { LockedFeatureScreen, PaymentCompleteScreen, PaymentScreen, ProIntroScreen } from '../screens/service/ServicePlanScreens.jsx';
 
 export const MOBILE_APP_SCREEN_COMPONENTS = {
+  timer: TimerScreen,
   accountInfo: AccountInfoScreen,
   addUniversity: AddUniversityScreen,
   analysis: AnalysisScreen,

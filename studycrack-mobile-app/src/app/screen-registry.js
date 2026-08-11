@@ -6,6 +6,7 @@ import { Ob4Screen, Ob5Screen } from '../screens/onboarding/ResultScreens.jsx';
 import { Ob1Screen, Ob2Screen } from '../screens/onboarding/SurveyScreens.jsx';
 
 const MOBILE_SCREEN_NAMES = [
+  'timer',
   'home',
   'analysis',
   'addUniversity',
@@ -49,6 +50,7 @@ const MOBILE_SCREEN_NAMES = [
 ];
 
 export const DEFERRED_APP_SCREEN_NAMES = [
+  'timer',
   'home',
   'analysis',
   'addUniversity',

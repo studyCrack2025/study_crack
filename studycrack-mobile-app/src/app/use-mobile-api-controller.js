@@ -1,6 +1,8 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { saveStudySession } from '../features/planner/api.js';
+import { claimStudyReward } from '../features/gamification/api.js';
+import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
+import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
 import { requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
 import { saveMobileQna } from '../features/support/api.js';
 import {
@@ -17,6 +19,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
   const getReportApiBinding = useCallback(() => getMobileApiBinding('report', 'reportApiUrl'), []);
   const getQnaApiBinding = useCallback(() => getMobileApiBinding('qna', 'qnaApiUrl'), []);
   const getNotiApiBinding = useCallback(() => getMobileApiBinding('noti', 'notiApiUrl'), []);
+  const getGameApiBinding = useCallback(() => getMobileApiBinding('game', 'gameApiUrl'), []);
   const getFileApiBinding = useCallback(() => getMobileFileApiBinding(), []);
   const hasClientSession = useCallback(() => hasMobileClientSession(), []);
 
@@ -32,9 +35,22 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     (qualitative) => saveQualitative({ ...getUserApiBinding(), qualitative }),
     [getUserApiBinding]
   );
-  const persistStudySession = useCallback(
-    (session) => saveStudySession({ ...getUserApiBinding(), session }),
+  const startStudySession = useCallback(
+    (session) => startServerStudySession({ ...getUserApiBinding(), session }),
     [getUserApiBinding]
+  );
+  const claimCompletedStudyReward = useCallback(
+    (sessionId) => claimStudyReward({ ...getGameApiBinding(), sessionId }),
+    [getGameApiBinding]
+  );
+  const completeStudySession = useCallback(
+    (sessionId, onPhase) => completeStudyRewardPipeline({
+      sessionId,
+      onPhase,
+      completeSession: (id) => completeServerStudySession({ ...getUserApiBinding(), sessionId: id }),
+      claimReward: claimCompletedStudyReward
+    }),
+    [claimCompletedStudyReward, getUserApiBinding]
   );
   const refreshStudyRanking = useCallback(() => {
     setState({ rankingRefreshTick: Number(stateRef.current.rankingRefreshTick || 0) + 1 });
@@ -70,12 +86,15 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
+    getGameApiBinding,
     getFileApiBinding,
     hasClientSession,
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
-    persistStudySession,
+    startStudySession,
+    completeStudySession,
+    claimCompletedStudyReward,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,
@@ -89,12 +108,15 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
+    getGameApiBinding,
     getFileApiBinding,
     hasClientSession,
     persistTargetUnivs,
     persistQuantitative,
     persistQualitative,
-    persistStudySession,
+    startStudySession,
+    completeStudySession,
+    claimCompletedStudyReward,
     refreshStudyRanking,
     persistNotificationPreferences,
     persistMobileQna,

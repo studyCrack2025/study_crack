@@ -7,6 +7,8 @@ import { persistNotificationsStorage } from '../features/notifications/storage.j
 import { notificationsSlice } from '../features/notifications/state.js';
 import { persistPlannerStorage } from '../features/planner/storage.js';
 import { plannerSlice } from '../features/planner/state.js';
+import { persistStudyStorage } from '../features/study/storage.js';
+import { studySlice } from '../features/study/state.js';
 import { persistNavigationStorage } from '../runtime/navigation-storage.js';
 import { navigationSlice } from '../state/navigation-state.js';
 
@@ -16,6 +18,8 @@ export function useAppStatePersistence(rootState) {
   const analysisResource = analysisSlice.selectors.serverResource(rootState);
   const analysisDraft = analysisSlice.selectors.localDraft(rootState);
   const plannerResource = plannerSlice.selectors.serverResource(rootState);
+  const studyResource = studySlice.selectors.serverResource(rootState);
+  const studyDraft = studySlice.selectors.localDraft(rootState);
   const notificationResource = notificationsSlice.selectors.serverResource(rootState);
   const accountResource = accountSlice.selectors.serverResource(rootState);
   const navigationUi = navigationSlice.selectors.ephemeralUi(rootState);
@@ -26,12 +30,18 @@ export function useAppStatePersistence(rootState) {
 
   useEffect(() => {
     persistPlannerStorage({
-      activeStudySession: plannerResource.activeStudySession,
-      plannerItems: plannerResource.plannerItems,
-      studyRecords: plannerResource.studyRecords,
-      studySubjectRecords: plannerResource.studySubjectRecords
+      plannerItems: plannerResource.plannerItems
     });
-  }, [plannerResource.activeStudySession, plannerResource.plannerItems, plannerResource.studyRecords, plannerResource.studySubjectRecords]);
+  }, [plannerResource.plannerItems]);
+
+  useEffect(() => {
+    persistStudyStorage({
+      activeStudySession: studyDraft.activeStudySession,
+      rewardPendingSessionId: studyDraft.rewardPendingSessionId,
+      studyRecords: studyResource.studyRecords,
+      studySubjectRecords: studyResource.studySubjectRecords
+    });
+  }, [studyDraft.activeStudySession, studyDraft.rewardPendingSessionId, studyResource.studyRecords, studyResource.studySubjectRecords]);
 
   useEffect(() => {
     persistNotificationsStorage({ notifications: notificationResource.notifications });
