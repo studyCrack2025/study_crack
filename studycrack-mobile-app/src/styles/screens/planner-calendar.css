@@ -42,7 +42,7 @@
 .planner-calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
 .planner-calendar-month-day{position:relative;min-height:42px;border:1px solid transparent;border-radius:12px;background:var(--sc-surface-canvas);color:var(--sc-ink);font-weight:900;font-family:inherit;}
 .planner-calendar-month-day b{font-size:13px;}
-.planner-calendar-month-day span{position:absolute;right:5px;bottom:4px;min-width:15px;height:15px;border-radius:999px;background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:9px;line-height:15px;}
+.planner-calendar-month-day span{position:absolute;right:4px;top:4px;min-width:12px;height:12px;border-radius:999px;background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:8px;line-height:12px;}
 .planner-calendar-month-day.active{background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .planner-calendar-month-day.active span{background:var(--sc-on-brand);color:var(--sc-brand-navy);}
 .planner-calendar-month-day.is-today:not(.active){border-color:var(--sc-brand-navy);background:var(--sc-surface-subtle);}

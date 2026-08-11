@@ -23,12 +23,14 @@ button:active,.btn:active,.my-menu-row:active,.notify-row:active,.faq-row:active
 .sc-modal,.sc-sheet,.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
 .planner-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
 .side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
-.app-screen-overlays > *{animation:none !important;}
-.app-screen-overlays > * > *{animation:none !important;}
+.profile-drawer{animation-name:drawerSlideInRight;animation-duration:300ms;}
+.app-screen-overlays > *:not(.profile-drawer-overlay){animation:none !important;}
+.app-screen-overlays > *:not(.profile-drawer-overlay) > *{animation:none !important;}
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes surfaceLiftIn{from{opacity:.001;transform:translate3d(0,12px,0) scale(.985);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes bottomSheetIn{from{opacity:.001;transform:translate3d(0,28px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 @keyframes drawerSlideIn{from{opacity:.001;transform:translate3d(-18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+@keyframes drawerSlideInRight{from{opacity:.001;transform:translate3d(18px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
 .timer-screen-v2 > *,.aquarium-screen > *,.home-content > *,.analysis-v2 > *,.planner-screen > *,.my-page > *{animation:contentRiseIn 340ms var(--ease-enter) both;}
 .timer-screen-v2 > *:nth-child(2),.aquarium-screen > *:nth-child(2),.home-content > *:nth-child(2),.analysis-v2 > *:nth-child(2),.planner-screen > *:nth-child(2),.my-page > *:nth-child(2){animation-delay:35ms;}
 .timer-screen-v2 > *:nth-child(3),.aquarium-screen > *:nth-child(3),.home-content > *:nth-child(3),.analysis-v2 > *:nth-child(3),.planner-screen > *:nth-child(3),.my-page > *:nth-child(3){animation-delay:70ms;}

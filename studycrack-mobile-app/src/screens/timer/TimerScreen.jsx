@@ -3,6 +3,7 @@ import { Icon } from '../../components/Icon.jsx';
 import { StudySubjectSheet } from '../home/HomeOverlays.jsx';
 import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from '../home/StudyGamificationPanels.jsx';
 import { defaultFormatHms, defaultFormatMinutesLabel } from '../home/presentation.js';
+import { ProfileDrawer } from '../mypage/ProfileDrawer.jsx';
 
 function TimerLoadingScreen({ tab = 'timer' }) {
   return (
@@ -36,7 +37,7 @@ function TimerHeader({ gameProfile = null, user = {} }) {
   return (
     <header className="timer-v2-header">
       <div className="timer-v2-heading"><span>오늘의 집중</span><h1>타이머</h1><p>{user?.name ? `${user.name}님의 공부를 기록해요.` : '공부를 시작하고 성장 기록을 남겨보세요.'}</p></div>
-      <button type="button" className="timer-v2-profile" data-action="goto" data-target="my" aria-label="마이페이지"><Icon name="user" /></button>
+      <button type="button" className="timer-v2-profile" data-action="openDrawer" aria-label="프로필 메뉴 열기"><Icon name="user" /></button>
       <div className="timer-v2-wallet" aria-label="게임 재화"><span>조개 <b>{shells}</b></span><span>먹이 <b>{food}</b></span></div>
     </header>
   );
@@ -88,6 +89,7 @@ export function TimerScreen(ctx) {
     canAccessBasic = false,
     completionError = '',
     dimmed = false,
+    drawerOpen = false,
     formatHms = defaultFormatHms,
     formatMinutesLabel = defaultFormatMinutesLabel,
     gameProfile = null,
@@ -98,6 +100,7 @@ export function TimerScreen(ctx) {
     hasClientSession = () => false,
     rewardPendingSessionId = '',
     rewardResult = null,
+    selectedPlan = '',
     studySummary = null,
     studySummaryStatus = 'idle',
     studySubjectSheetOpen = false,
@@ -122,9 +125,10 @@ export function TimerScreen(ctx) {
   const baseTodaySeconds = hasServerSummary ? Math.max(0, Number(studySummary?.today?.totalSeconds) || 0) : Math.max(0, Number(todayStudySeconds) || 0);
   const displayedTodaySeconds = baseTodaySeconds + liveSeconds;
   const displayedPlannerProgress = todayPlannerTotalMinutes ? Math.min(100, Math.round((displayedTodaySeconds / (todayPlannerTotalMinutes * 60)) * 100)) : todayPlannerProgress;
+  const overlays = studySubjectSheetOpen || drawerOpen ? <><StudySubjectSheet {...ctx} /><ProfileDrawer drawerOpen={drawerOpen} gameProfile={gameProfile} gameProfileStatus={gameProfileStatus} selectedPlan={selectedPlan} studySummary={studySummary} studySummaryStatus={studySummaryStatus} user={user} /></> : null;
 
   return (
-    <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlays={studySubjectSheetOpen ? <StudySubjectSheet {...ctx} /> : null}>
+    <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlays={overlays}>
       <main className="timer-screen-v2">
         <TimerHeader gameProfile={gameProfile} user={user} />
         <TimerControlCard activeStudySession={activeStudySession} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} />

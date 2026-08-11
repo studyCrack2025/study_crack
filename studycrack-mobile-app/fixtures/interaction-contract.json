@@ -20,7 +20,7 @@
     "pro": { "rank": 3, "mainTabsVisible": true, "planner": true, "coaching": true, "scoreSimulation": true, "reverseProjection": true }
   },
   "screens": {
-    "timer": { "profile": "main", "actions": ["openStudySubjectSheet", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "goRanking", "retryInit"] },
+    "timer": { "profile": "main", "actions": ["openDrawer", "closeDrawer", "drawerGoto", "openStudySubjectSheet", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "goRanking", "retryInit"] },
     "aquarium": { "profile": "main", "actions": ["selectStarterCandidate", "claimStarterFish", "selectAquariumFish", "feedAquariumFish", "setAquariumFishSlot", "saveAquariumFishName", "dismissAquariumResult", "openAquariumCatalog", "openAquariumDraw", "openAquariumShare", "closeAquariumMode", "startAquariumDraw", "advanceAquariumDrawReveal", "acknowledgeAquariumDraw", "shareAquarium", "retryGameResources", "goto"] },
     "home": { "profile": "main", "actions": ["setHomeSlide", "openCalendarSheet", "openStudySubjectSheet", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "openNotificationModal", "goRanking", "openAnalysisSearchFromHome", "removeAnalysisTarget", "retryInit"] },
     "analysis": { "profile": "main", "actions": ["selectTarget", "setScoreView", "highlightSimSubject", "openAnalysisSearchFromHome"] },
@@ -135,6 +135,7 @@
     "openCalendarSheet",
     "openChangePassword",
     "openCoachingSheet",
+    "openDrawer",
     "openExamFilePicker",
     "openFindEmailModal",
     "openKakaoSupport",

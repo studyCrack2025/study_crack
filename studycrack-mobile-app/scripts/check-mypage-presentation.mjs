@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildMyPagePresentation, getLongestStudyStreak } from '../src/screens/mypage/presentation.js';
+import { buildMyPagePresentation, buildPlanPresentation, getLongestStudyStreak } from '../src/screens/mypage/presentation.js';
 import { buildSocialProviders, buildSubscriptionSummary, displayAccountEmail, displayAccountName } from '../src/screens/mypage/account-presentation.js';
 
 const records = [
@@ -36,5 +36,7 @@ assert.equal(displayAccountName({}), '회원');
 assert.equal(displayAccountEmail({ email: 'hidden@social.studycrack.co.kr' }), '소셜 계정 이메일 미제공');
 assert.equal(buildSubscriptionSummary({ currentSubscription: { tier: 'starter' } }, 'Starter').lifetime, true);
 assert.deepEqual(buildSocialProviders({ authProvider: 'google' }).map(({ isLinked, isPrimary }) => [isLinked, isPrimary]), [[true, true], [false, false]]);
+assert.deepEqual(buildPlanPresentation({ computedTier: 'basic' }), { key: 'basic', label: 'Basic', periodLabel: '평생 이용' });
+assert.deepEqual(buildPlanPresentation({ currentSubscription: { tier: 'standard', endDate: '2026-08-31T00:00:00.000Z' } }), { key: 'standard', label: 'Standard', periodLabel: '2026.08.31까지 이용' });
 
 console.log('mypage-presentation contracts passed');

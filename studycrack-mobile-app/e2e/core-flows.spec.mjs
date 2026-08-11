@@ -152,6 +152,64 @@ test('인증된 사용자는 스플래시 뒤 전용 타이머를 기본 화면�
   await expectNoHorizontalOverflow(page);
 });
 
+test('타이머 프로필 서랍은 공부·수조 요약과 기존 마이 기능을 연결한다', async ({ page }, testInfo) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=timer');
+
+  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toContainText('테스트학생님');
+  await expect(drawer).toContainText('Basic');
+  await expect(drawer).toContainText('보유 조개');
+  await expect(drawer).toContainText('62개');
+  await expect(drawer).toContainText('연속 학습');
+  await expect.poll(async () => {
+    const drawerBox = await drawer.boundingBox();
+    const frameBox = await page.locator('.app-frame').boundingBox();
+    if (!drawerBox || !frameBox) return Number.POSITIVE_INFINITY;
+    return Math.abs(drawerBox.x + drawerBox.width - (frameBox.x + frameBox.width));
+  }).toBeLessThan(2);
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`profile-drawer-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`profile-drawer-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+  await drawer.getByRole('button', { name: '계정정보 관리' }).click();
+  await expect(page.locator('[data-screen="accountInfo"]')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한다', async ({ page }, testInfo) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+
+  await expect(page.getByRole('heading', { name: '오늘 할 일' })).toBeVisible();
+  const progressBox = await page.locator('.planner-progress-card').boundingBox();
+  const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
+  const calendarBox = await page.locator('.planner-calendar-section').boundingBox();
+  expect(progressBox).not.toBeNull();
+  expect(tasksBox).not.toBeNull();
+  expect(calendarBox).not.toBeNull();
+  expect(tasksBox.y).toBeGreaterThan(progressBox.y);
+  expect(calendarBox.y).toBeGreaterThan(tasksBox.y);
+  await page.getByRole('button', { name: '계획 완료' }).click();
+  await expect(page.locator('.planner-progress-head')).toContainText('100% 완료');
+  await page.getByRole('button', { name: '월', exact: true }).click();
+  await expect(page.locator('.planner-calendar-month-panel')).toBeVisible();
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`planner-month-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`planner-month-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+});
+
 test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하고 복원한다', async ({ page }) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);

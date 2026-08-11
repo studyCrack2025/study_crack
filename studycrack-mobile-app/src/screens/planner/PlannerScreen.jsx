@@ -2,6 +2,7 @@ import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
+import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 
 function PlannerChecklistArt() {
   return (
@@ -140,6 +141,8 @@ export function PlannerScreen(ctx) {
 
   const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
   const presentation = buildPlannerPresentation(plannerViewItems);
+  const isToday = selectedPlannerDateKey === TODAY_DATE;
+  const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
 
   return (
     <AppScreenShell
@@ -150,30 +153,14 @@ export function PlannerScreen(ctx) {
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <header className="planner-context-head">
-              <div><span>오늘의 플래너</span><h3>{plannerMonthLabel} {selectedPlannerDate}일 <small>{selectedPlannerWeekday}요일</small></h3><p>계획을 확인하고, 오늘의 학습 흐름을 이어가세요.</p></div>
+              <div><span>오늘의 플래너</span><h3>플래너</h3><p>해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요.</p></div>
               <PlannerChecklistArt />
             </header>
-
-            <section className="card planner-calendar-card">
-              <div className="planner-inline-calendar-toolbar">
-                <PlannerCalendarSegment activeMode={calendarMode} />
-                <div className="planner-inline-calendar-nav">
-                  <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
-                  <button type="button" data-action="plannerCalendarToday">오늘</button>
-                  <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
-                </div>
-              </div>
-              {calendarMode === 'month' ? (
-                <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
-              ) : (
-                <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
-              )}
-            </section>
 
             <PlannerProgress presentation={presentation} />
 
             <section className="planner-tasks-section">
-              <div className="planner-section-head"><div><span>{selectedPlannerDate}일</span><h4>학습 계획</h4></div><button type="button" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
+              <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
               <div className="planner-plan-list">
                 {plannerViewItems.length ? (
                   plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
@@ -181,6 +168,25 @@ export function PlannerScreen(ctx) {
                   <EmptyState className="planner-empty-day" title="아직 등록한 계획이 없어요" description="실행할 과목과 시간을 추가해 하루 목표를 만들어 보세요." />
                 )}
                 <button type="button" className="planner-add-cta" data-action="openPlannerAddPage">{selectedPlannerDate}일 계획 추가</button>
+              </div>
+            </section>
+
+            <section className="planner-calendar-section">
+              <div className="planner-section-head"><div><span>일정 탐색</span><h4>다른 날짜 보기</h4></div></div>
+              <div className="card planner-calendar-card">
+                <div className="planner-inline-calendar-toolbar">
+                  <PlannerCalendarSegment activeMode={calendarMode} />
+                  <div className="planner-inline-calendar-nav">
+                    <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
+                    <button type="button" data-action="plannerCalendarToday">오늘</button>
+                    <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
+                  </div>
+                </div>
+                {calendarMode === 'month' ? (
+                  <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
+                ) : (
+                  <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
+                )}
               </div>
             </section>
 

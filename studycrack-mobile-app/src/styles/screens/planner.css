@@ -27,6 +27,7 @@
 .planner-progress-stats span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;white-space:nowrap;}
 .planner-progress-stats b{overflow:hidden;color:var(--sc-ink);font-size:clamp(11px,3.2vw,12px);font-weight:850;text-overflow:ellipsis;white-space:nowrap;}
 .planner-tasks-section{display:grid;gap:10px;}
+.planner-calendar-section{display:grid;gap:10px;}
 .planner-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px;}
 .planner-section-head span{display:block;color:var(--sc-brand-navy);font-size:var(--sc-type-micro);font-weight:800;}
 .planner-section-head h4{margin:2px 0 0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:900;line-height:1.3;}

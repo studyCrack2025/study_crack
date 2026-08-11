@@ -42,7 +42,7 @@ function formatDate(value = '') {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function buildPlanPresentation(user = {}, selectedPlan = '') {
+export function buildPlanPresentation(user = {}, selectedPlan = '') {
   const key = planKey(user, selectedPlan);
   const label = PLAN_LABELS[key] || safeText(selectedPlan) || '이용권 없음';
   const subscription = user?.currentSubscription && typeof user.currentSubscription === 'object' ? user.currentSubscription : null;

@@ -118,10 +118,10 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'tab', 'weeklyReports', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
-    'activeStudySession', 'canAccessBasic', 'completionError', 'dimmed', 'formatHms', 'formatMinutesLabel',
+    'activeStudySession', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'formatHms', 'formatMinutesLabel',
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'habitatDays', 'habitatStatus', 'hasClientSession',
     'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySubjectSheetOnlyPlanned',
-    'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
+    'selectedPlan', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
     'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'
   ]),
