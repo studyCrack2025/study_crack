@@ -117,6 +117,7 @@ function buildRenderScoreCache(state = {}, examKey = '') {
 export function isTabbarDimmed(state = {}) {
   return Boolean(
     state.coachingSheetOpen
+      || state.gameRulesOpen
       || state.studySubjectSheetOpen
       || state.plannerEditIndex !== null
       || state.drawerOpen

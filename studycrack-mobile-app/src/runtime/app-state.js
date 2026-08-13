@@ -45,12 +45,13 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
 // onScreenChange: 화면 전환 시 부수효과(스크롤 저장 등) 훅. 브라우저 의존은 셸이 주입.
 export function createNavigationOps({ getState, setState, onScreenChange } = {}) {
   function goto(next, addHistory = true) {
+    const target = next === 'home' ? 'analysis' : next;
     const state = getState();
-    if (!next || next === state.screen) return false;
-    onScreenChange?.(state.screen, next);
-    const patch = { screen: next };
-    if (addHistory && state.screen !== next) patch.history = [...state.history, state.screen];
-    if (MAIN_TAB_SCREENS.includes(next)) patch.tab = next;
+    if (!target || target === state.screen) return false;
+    onScreenChange?.(state.screen, target);
+    const patch = { screen: target };
+    if (addHistory && state.screen !== target) patch.history = [...state.history, state.screen];
+    if (MAIN_TAB_SCREENS.includes(target)) patch.tab = target;
     setState(patch);
     return true;
   }
@@ -61,7 +62,8 @@ export function createNavigationOps({ getState, setState, onScreenChange } = {})
     if (!state.history.length) return goto('timer', false);
     const clone = [...state.history];
     const prev = clone.pop();
-    setState({ history: clone, screen: prev, ...(MAIN_TAB_SCREENS.includes(prev) ? { tab: prev } : {}) });
+    const target = prev === 'home' ? 'analysis' : prev;
+    setState({ history: clone, screen: target, ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
     return true;
   }
 

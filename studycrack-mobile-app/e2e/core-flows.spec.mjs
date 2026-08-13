@@ -128,11 +128,14 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(page.getByText('테스트학생님의 공부를 기록해요.')).toBeVisible();
 
   await page.getByRole('button', { name: '공부 시작' }).click();
-  await page.getByRole('button', { name: '국어 - 독서', exact: true }).evaluate((button) => {
+  await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
+  await expect(page.locator('[data-field="studyStartActivity"]')).toHaveValue('독서');
+  await page.locator('.study-start-confirm').evaluate((button) => {
     button.click();
     button.click();
   });
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'start_study_session').length).toBe(1);
+  await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'start_study_session')?.payload?.data?.activity).toBe('독서');
   await page.waitForTimeout(1100);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
   await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
@@ -157,7 +160,7 @@ test('인증된 사용자는 스플래시 뒤 전용 타이머를 기본 화면�
   await expect(page.locator('[data-screen="timer"]')).toBeVisible({ timeout: 2500 });
   await expect(page.locator('.tabbar [data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('button', { name: '공부 시작' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '학습 대시보드' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /환산 분석/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 

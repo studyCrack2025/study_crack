@@ -2,6 +2,7 @@ import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
+import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 
 function PlannerChecklistArt() {
@@ -152,10 +153,7 @@ export function PlannerScreen(ctx) {
       overlays={plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <header className="planner-context-head">
-              <div><span>오늘의 플래너</span><h3>플래너</h3><p>해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요.</p></div>
-              <PlannerChecklistArt />
-            </header>
+            <AppContextHeader className="planner-context-head" description="해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요." eyebrow="오늘의 플래너" title="플래너" tone="positive" visual={<PlannerChecklistArt />} />
 
             <PlannerProgress presentation={presentation} />
 

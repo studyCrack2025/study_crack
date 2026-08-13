@@ -12,6 +12,7 @@ export function createGamificationInitialState() {
       gameProfile: null,
       gameProfileStatus: 'idle',
       gameProfileError: '',
+      gameRules: null,
       habitatDays: [],
       habitatStatus: 'idle',
       habitatError: '',
@@ -31,6 +32,7 @@ export function createGamificationInitialState() {
       aquariumResult: null,
       aquariumSelectedFishId: '',
       aquariumStarterSpeciesId: '',
+      gameRulesOpen: false,
       gameError: ''
     }
   };

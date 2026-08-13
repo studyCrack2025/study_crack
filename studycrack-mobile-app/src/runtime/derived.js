@@ -378,6 +378,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   const plannedScheduleOptions = todayPlannerItems.map((item) => ({
     id: item.id,
     subject: item.subject || '기타',
+    activity: item.content || '',
     label: `${item.subject || '기타'}${item.content ? ` - ${item.content}` : ''}`
   }));
 

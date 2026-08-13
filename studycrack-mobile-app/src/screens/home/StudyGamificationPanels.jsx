@@ -1,4 +1,5 @@
 import { selectRecentHabitat } from '../../features/gamification/selectors.js';
+import { useState } from 'react';
 
 const STUDY_WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -50,18 +51,25 @@ export function StudyWeekSummary({ activeSubject = '', liveSeconds = 0, summary 
   );
 }
 
-export function HabitatStrip({ days = [], status = 'idle' }) {
+const HABITAT_STAGE_FALLBACK = ['기록 대기', '물결 시작', '수초 성장', '활기찬 서식지', '풍성한 서식지'];
+
+function habitatDayLabel(dateKey = '') {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? '' : `${date.getUTCMonth() + 1}월 ${date.getUTCDate()}일`;
+}
+
+export function HabitatStrip({ days = [], onSelect = () => {}, selectedDate = '', status = 'idle' }) {
   const recent = selectRecentHabitat(days, 7);
   if (status === 'loading') return <div className="timer-habitat-loading">최근 공부 기록을 불러오고 있어요.</div>;
   if (!recent.length) return <div className="timer-habitat-empty">첫 공부를 완료하면 이곳에 하루의 서식지가 생겨요.</div>;
   return (
     <div className="timer-habitat-days" aria-label="최근 7일 공부 서식지">
       {recent.map((day) => (
-        <div className="timer-habitat-day" data-stage={day.stage} key={day.date}>
+        <button type="button" className={`timer-habitat-day ${selectedDate === day.date ? 'is-selected' : ''}`} data-stage={day.stage} onClick={() => onSelect(day.date)} key={day.date}>
           <span className="timer-habitat-scene"><i /><i /><i /></span>
           <b>{day.date.slice(5).replace('-', '.')}</b>
           <small>{Math.round((Number(day.studySeconds) || 0) / 60)}분</small>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -70,20 +78,23 @@ export function HabitatStrip({ days = [], status = 'idle' }) {
 function calculateHabitatStreak(days = []) {
   let streak = 0;
   for (let index = days.length - 1; index >= 0; index -= 1) {
-    if ((Number(days[index]?.studySeconds) || 0) <= 0) break;
+    if ((Number(days[index]?.studySeconds) || 0) < 600) break;
     streak += 1;
   }
   return streak;
 }
 
-export function HabitatMonth({ days = [] }) {
+export function HabitatMonth({ days = [], onSelect = () => {}, selectedDate = '' }) {
   if (!days.length) return null;
+  const firstDate = new Date(`${days[0].date}T00:00:00.000Z`);
+  const leadingCells = Number.isNaN(firstDate.getTime()) ? 0 : (firstDate.getUTCDay() + 6) % 7;
   return (
-    <div className="timer-habitat-month" aria-label="최근 30일 공부 서식지">
+    <div className="timer-habitat-month-wrap"><div className="timer-habitat-weekdays" aria-hidden="true">{STUDY_WEEK_LABELS.map((label) => <span key={label}>{label}</span>)}</div><div className="timer-habitat-month" aria-label="최근 30일 공부 서식지">
+      {Array.from({ length: leadingCells }, (_, index) => <span className="timer-habitat-blank" key={`blank-${index}`} />)}
       {days.slice(-30).map((day) => (
-        <span className="timer-habitat-cell" data-stage={day.stage} key={day.date} title={`${day.date} ${Math.round((Number(day.studySeconds) || 0) / 60)}분`}><i /></span>
+        <button type="button" className={`timer-habitat-cell ${selectedDate === day.date ? 'is-selected' : ''}`} data-stage={day.stage} onClick={() => onSelect(day.date)} key={day.date} title={`${day.date} ${Math.round((Number(day.studySeconds) || 0) / 60)}분`}><small>{Number(day.date.slice(-2))}</small><i /></button>
       ))}
-    </div>
+    </div></div>
   );
 }
 
@@ -111,14 +122,20 @@ export function RewardPanel({ activeStudySession, completionError, rewardPending
   );
 }
 
-export function StudyHabitatCard({ gameProfileError = '', gameProfileStatus = 'idle', habitatDays = [], habitatStatus = 'idle' }) {
+export function StudyHabitatCard({ gameProfileError = '', gameProfileStatus = 'idle', gameRules = null, habitatDays = [], habitatStatus = 'idle' }) {
+  const [selectedDate, setSelectedDate] = useState('');
   if (gameProfileStatus === 'unavailable' || habitatStatus === 'unavailable') return null;
   const habitatStreak = calculateHabitatStreak(habitatDays);
+  const selectedDay = habitatDays.find((day) => day.date === selectedDate) || habitatDays[habitatDays.length - 1] || null;
+  const stageLabels = Array.isArray(gameRules?.habitatStages) ? gameRules.habitatStages.map((stage) => stage.label) : HABITAT_STAGE_FALLBACK;
   return (
     <section className="timer-habitat-card sc-card">
       <div className="timer-section-head"><div><span>최근 30일</span><h2>공부 서식지</h2></div><b>{habitatStreak ? `${habitatStreak}일 연속` : '첫 기록 대기'}</b></div>
-      <HabitatStrip days={habitatDays} status={habitatStatus} />
-      <HabitatMonth days={habitatDays} />
+      <p className="timer-habitat-intro">하루 공부 시간이 길어질수록 날짜의 물결과 수초가 풍성해져요.</p>
+      <HabitatStrip days={habitatDays} onSelect={setSelectedDate} selectedDate={selectedDay?.date || ''} status={habitatStatus} />
+      <HabitatMonth days={habitatDays} onSelect={setSelectedDate} selectedDate={selectedDay?.date || ''} />
+      {selectedDay ? <div className="timer-habitat-detail"><span><b>{habitatDayLabel(selectedDay.date)}</b><small>{stageLabels[Number(selectedDay.stage)] || HABITAT_STAGE_FALLBACK[0]}</small></span><strong>{minutesLabel(selectedDay.studySeconds)}</strong></div> : null}
+      <div className="timer-habitat-legend"><span><i data-stage="0" />기록 대기</span><span><i data-stage="2" />성장 중</span><span><i data-stage="4" />풍성함</span></div>
       {gameProfileStatus === 'error' ? <div className="timer-game-error"><p>{gameProfileError}</p><button type="button" data-action="retryGameResources">다시 불러오기</button></div> : null}
     </section>
   );

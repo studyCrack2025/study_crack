@@ -28,6 +28,11 @@ export function validateGameProfileResponse(value) {
   return contract(valid, value, '게임 프로필 응답이 올바르지 않습니다.');
 }
 
+function validateGameRules(value) {
+  return isRecord(value) && isRecord(value.dailyCaps) && Array.isArray(value.rewardTiers) && Array.isArray(value.habitatStages)
+    && isRecord(value.fishCare) && Number.isFinite(Number(value.drawCostShells));
+}
+
 export function validateHabitatResponse(value) {
   const validDays = Array.isArray(value?.days) && value.days.every((day) => (
     isRecord(day) && /^\d{4}-\d{2}-\d{2}$/.test(day.date || '')
@@ -112,6 +117,7 @@ export function normalizeGameProfileResponse(value) {
   return {
     gameProfile: value.profile,
     activeFish: Array.isArray(value.activeFish) ? value.activeFish : [],
-    fishCount: Number(value.fishCount) || 0
+    fishCount: Number(value.fishCount) || 0,
+    gameRules: validateGameRules(value.rules) ? value.rules : null
   };
 }

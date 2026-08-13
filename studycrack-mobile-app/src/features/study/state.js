@@ -13,7 +13,8 @@ export function createStudyInitialState() {
     },
     localDraft: {
       activeStudySession: null,
-      rewardPendingSessionId: ''
+      rewardPendingSessionId: '',
+      studyStartDraft: { subject: '', activity: '', plannerItemId: '' }
     },
     ephemeralUi: {
       activePlannerItemId: '',
@@ -22,6 +23,7 @@ export function createStudyInitialState() {
       rewardResult: null,
       studySubjectSheetOnlyPlanned: false,
       studySubjectSheetOpen: false,
+      studySessionDetailsOpen: false,
       studyTimerRunning: false,
       studyTimerTick: 0,
       timerPhase: 'idle'

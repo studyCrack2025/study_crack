@@ -1,11 +1,5 @@
 .planner-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .planner-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.planner-context-head{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px;}
-.planner-context-head > div{min-width:0;}
-.planner-context-head > div > span{display:block;color:var(--sc-brand-navy);font-size:var(--sc-type-micro);font-weight:800;line-height:1.2;}
-.planner-context-head h3{margin:3px 0 0;color:var(--sc-ink);font-size:clamp(18px,5.3vw,var(--sc-type-title));font-weight:900;line-height:1.22;letter-spacing:0;}
-.planner-context-head h3 small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;white-space:nowrap;}
-.planner-context-head p{margin:4px 0 0;color:var(--sc-ink-muted);font-size:clamp(11px,3.1vw,var(--sc-type-caption));font-weight:600;line-height:1.35;word-break:keep-all;}
 .planner-checklist-art{position:relative;display:block;width:38px;height:38px;flex:0 0 38px;color:var(--sc-brand-navy);}
 .planner-checklist-pen{position:absolute;left:3px;top:7px;width:5px;height:25px;border:2px solid currentColor;border-radius:999px;}
 .planner-checklist-pen::after{content:"";position:absolute;left:50%;bottom:-6px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:6px solid currentColor;transform:translateX(-50%);}
@@ -65,4 +59,4 @@
 .planner-feedback-copy p{margin:4px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.4;word-break:keep-all;}
 .planner-feedback-card > button{width:100%;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 10px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;white-space:nowrap;}
 .planner-feedback-card > button b{font-size:18px;font-weight:600;line-height:1;}
-@media (max-width:340px),(max-height:740px){.app-screen[data-screen="planner"] .planner-context-head{min-height:54px;}.app-screen[data-screen="planner"] .planner-context-head p{display:none;}.app-screen[data-screen="planner"] .planner-progress-card{gap:8px;padding:12px;}.app-screen[data-screen="planner"] .planner-empty-day{padding:11px;}.app-screen[data-screen="planner"] .planner-feedback-card{gap:8px;padding:12px;}.app-screen[data-screen="planner"] .planner-feedback-copy p{display:none;}}
+@media (max-width:340px),(max-height:740px){.app-screen[data-screen="planner"] .planner-progress-card{gap:8px;padding:12px;}.app-screen[data-screen="planner"] .planner-empty-day{padding:11px;}.app-screen[data-screen="planner"] .planner-feedback-card{gap:8px;padding:12px;}.app-screen[data-screen="planner"] .planner-feedback-copy p{display:none;}}

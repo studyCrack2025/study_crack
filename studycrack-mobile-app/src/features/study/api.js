@@ -19,13 +19,14 @@ export async function fetchStudySummary({ apiFetch, signal, userApiUrl } = {}) {
 export async function startServerStudySession({ apiFetch, session, userApiUrl } = {}) {
   const id = validateStudySessionId(session?.sessionId);
   const subject = String(session?.subject || '').trim();
-  if (!id.ok || !subject) return apiInvalidResponse({}, '시작할 공부 세션 정보가 올바르지 않습니다.');
+  const activity = String(session?.activity || '').trim();
+  if (!id.ok || !subject || !activity) return apiInvalidResponse({}, '시작할 공부 세션 정보가 올바르지 않습니다.');
   const response = await postJson({
     apiFetch,
     url: userApiUrl,
     payload: {
       type: USER_REQUEST_TYPES.START_STUDY_SESSION,
-      data: { sessionId: id.value, subject, plannerItemId: String(session?.plannerItemId || '') }
+      data: { sessionId: id.value, subject, activity: activity.slice(0, 80), plannerItemId: String(session?.plannerItemId || '') }
     },
     fallbackError: '공부 시작을 기록하지 못했습니다.'
   });

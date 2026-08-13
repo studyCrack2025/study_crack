@@ -1,6 +1,7 @@
 import '../styles/components/navigation.css';
 import '../styles/components/sheets.css';
 import '../styles/components/drawers.css';
+import '../styles/components/context-header.css';
 import '../styles/screens/home-overlays.css';
 import '../styles/screens/home-base.css';
 import '../styles/screens/home.css';

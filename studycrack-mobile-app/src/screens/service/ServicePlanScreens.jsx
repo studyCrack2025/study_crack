@@ -1,7 +1,8 @@
 import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
+import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 import { PLAN_META } from '../../constants/plans.js';
 import { TODAY_DATE } from '../../constants/runtime-defaults.js';
-import { CoachingProcess } from '../coaching/CoachingScreen.jsx';
+import { CoachingMark, CoachingProcess } from '../coaching/CoachingScreen.jsx';
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
 const BENEFIT_ICONS = ['chat', 'target', 'chart', 'calendar', 'check'];
@@ -67,12 +68,8 @@ function ProLockedPreview() {
   return <div className="locked-preview pro-preview"><div className="pro-elite-hero"><span className="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>2주 단위로 목표 대학 도달 전략을 정리합니다.</p></div><div className="pro-elite-list"><div className="pro-elite-item"><div><b>6월 2주차 PRO 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span className="pro-elite-download">PDF</span></div><div className="qna-card"><div className="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>답변 대기</span></div><em>PRO</em></div><p className="qna-question">주간 학습 흐름과 질문을 남기면 튜터 답변이 연결됩니다.</p></div></div></div>;
 }
 
-function CoachingMark() {
-  return <span className="coaching-mark" aria-hidden="true"><i /><i /><i /></span>;
-}
-
 function CoachingLockedPreview() {
-  return <div className="locked-preview coach-preview"><header className="coaching-context"><div><span>학습 코칭</span><h2>선배와 함께 다음 주를 설계해요</h2><p>주간 기록을 점검하고, 바로 실행할 피드백을 받아보세요.</p></div><CoachingMark /></header><CoachingProcess /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coaching-history-row coaching-session-row"><span className="coaching-session-status"><i /></span><span className="coaching-session-copy"><small>이번 주 · SKY 튜터</small><b>주간 학습 점검</b><em>검토 대기</em></span><strong>›</strong></div></div></section></div>;
+  return <div className="locked-preview coach-preview"><AppContextHeader className="coaching-context" description="주간 기록을 점검하고, 바로 실행할 피드백을 받아보세요." eyebrow="주간 학습 점검" title="학습 코칭" tone="positive" visual={<CoachingMark />} /><CoachingProcess /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coaching-history-row coaching-session-row"><span className="coaching-session-status"><i /></span><span className="coaching-session-copy"><small>이번 주 · SKY 튜터</small><b>주간 학습 점검</b><em>검토 대기</em></span><strong>›</strong></div></div></section></div>;
 }
 
 function LockedFeaturePreview({ target = '' }) {

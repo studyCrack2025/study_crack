@@ -4,10 +4,16 @@ function isSummarySubject(value) {
   return isRecord(value) && typeof value.subject === 'string' && Number.isFinite(Number(value.seconds));
 }
 
+function isSummarySession(value) {
+  return isRecord(value) && typeof value.subject === 'string' && typeof value.activity === 'string'
+    && Number.isFinite(Number(value.durationSeconds)) && typeof value.startedAt === 'string' && typeof value.endedAt === 'string';
+}
+
 function isSummaryDay(value) {
   return isRecord(value) && /^\d{4}-\d{2}-\d{2}$/.test(String(value.date || ''))
     && Number.isFinite(Number(value.totalSeconds)) && Number.isFinite(Number(value.sessionCount))
-    && Array.isArray(value.subjects) && value.subjects.every(isSummarySubject);
+    && Array.isArray(value.subjects) && value.subjects.every(isSummarySubject)
+    && (value.sessions === undefined || (Array.isArray(value.sessions) && value.sessions.every(isSummarySession)));
 }
 
 export function validateStudySummary(value) {

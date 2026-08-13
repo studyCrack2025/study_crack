@@ -7,6 +7,10 @@ function setRefValue(ref, value) {
   if (ref && typeof ref === 'object') ref.current = value;
 }
 
+function inputValue(ctx, selector) {
+  return String((ctx.document || globalThis.document)?.querySelector?.(selector)?.value || '');
+}
+
 function mutateStudyRecord(records, date, elapsed) {
   const list = Array.isArray(records) ? records : [];
   const index = list.findIndex((row) => row.date === date);
@@ -49,6 +53,7 @@ function applyCompletedSession(ctx, completion) {
   const duration = Math.max(1, Number(completion.durationSeconds) || 1);
   const subject = ctx.activeStudySubject || ctx.activeStudySession?.subject || '기타';
   const plannerItemId = ctx.activePlannerItemId || ctx.activeStudySession?.plannerItemId || '';
+  const activity = completion.activity || ctx.activeStudySession?.activity || `${subject} 학습`;
   const date = getTodayDateKey(new Date(completion.endedAt || Date.now()));
   ctx.setStudyRecords((records) => mutateStudyRecord(records, date, duration));
   ctx.setStudySubjectRecords((records) => mutateSubjectRecord(records, date, subject, duration));
@@ -57,7 +62,7 @@ function applyCompletedSession(ctx, completion) {
       item.id === plannerItemId ? { ...item, doneMinutes: (Number(item.doneMinutes) || 0) + Math.round(duration / 60) } : item
     )));
   }
-  ctx.setLastCompletedSession({ ...completion, subject, plannerItemId });
+  ctx.setLastCompletedSession({ ...completion, subject, activity, plannerItemId });
   ctx.setActiveStudySession(null);
   ctx.setActiveStudySubject('');
   ctx.setActivePlannerItemId('');
@@ -68,10 +73,10 @@ function applyCompletedSession(ctx, completion) {
   ctx.setStudySummaryRefreshTick((value) => Number(value || 0) + 1);
 }
 
-async function beginStudy(ctx, subject, plannerItemId = '', storedCandidate = null) {
+async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCandidate = null) {
   if (!subject || ['starting-session', 'settling-session', 'claiming-reward'].includes(ctx.timerPhase)) return false;
   return withOperationLock(ctx.operationLocksRef, 'study-start', async () => {
-    const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, plannerItemId });
+    const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, activity, plannerItemId });
     ctx.setTimerPhase('starting-session');
     ctx.setCompletionError('');
     ctx.setRewardResult(null);
@@ -82,12 +87,13 @@ async function beginStudy(ctx, subject, plannerItemId = '', storedCandidate = nu
       ctx.setCompletionError(response?.error || '공부 시작을 기록하지 못했습니다. 다시 시도해주세요.');
       return true;
     }
-    const session = { ...candidate, ...response.data, subject, plannerItemId, status: 'running' };
+    const session = { ...candidate, ...response.data, subject, activity, plannerItemId, status: 'running' };
     ctx.setActiveStudySession(session);
     ctx.setActiveStudySubject(subject);
     ctx.setActivePlannerItemId(plannerItemId);
     ctx.setStudySubjectSheetOpen(false);
     ctx.setStudySubjectSheetOnlyPlanned(false);
+    ctx.setStudyStartDraft({ subject: '', activity: '', plannerItemId: '' });
     ctx.setStudyTimerRunning(true);
     ctx.setTimerPhase('running');
     setRefValue(ctx.studyTimerSecondsRef, 0);
@@ -98,16 +104,14 @@ async function beginStudy(ctx, subject, plannerItemId = '', storedCandidate = nu
 }
 
 export function createTimerHandlers(ctx) {
-  const {
-    preserveScrollAfterStateChange = (fn) => fn?.(),
-    prompt = globalThis.prompt
-  } = ctx;
+  const { preserveScrollAfterStateChange = (fn) => fn?.() } = ctx;
   return {
     openStudySubjectSheet() {
       preserveScrollAfterStateChange(() => {
         ctx.setNotifModalOpen(false);
         ctx.setCompletionError('');
         ctx.setStudySubjectSheetOnlyPlanned(false);
+        ctx.setStudyStartDraft({ subject: '', activity: '', plannerItemId: '' });
         ctx.setStudySubjectSheetOpen(true);
       });
       return true;
@@ -117,24 +121,28 @@ export function createTimerHandlers(ctx) {
       preserveScrollAfterStateChange(() => {
         ctx.setStudySubjectSheetOnlyPlanned(false);
         ctx.setStudySubjectSheetOpen(false);
+        ctx.setStudyStartDraft({ subject: '', activity: '', plannerItemId: '' });
       });
       return true;
     },
-    selectStudySubjectCustom() {
-      const custom = prompt?.('과목명을 입력하세요', '기타');
-      return custom ? beginStudy(ctx, custom, '') : false;
-    },
-    selectSelfStudy() {
-      return beginStudy(ctx, '기타', '');
-    },
     selectStudySubject({ actionEl }) {
       const subject = getData(actionEl, 'study-subject');
-      return subject ? beginStudy(ctx, subject, getData(actionEl, 'study-item-id')) : false;
+      if (!subject) return false;
+      ctx.setStudyStartDraft({ subject, activity: getData(actionEl, 'study-activity'), plannerItemId: getData(actionEl, 'study-item-id') });
+      ctx.setStudySubjectSheetOpen(true);
+      return true;
+    },
+    confirmStudyStart() {
+      const draft = ctx.studyStartDraft || {};
+      const subject = String(draft.subject === '기타' ? inputValue(ctx, '[data-field="studyStartCustomSubject"]') : draft.subject || '').trim().slice(0, 30);
+      const activity = inputValue(ctx, '[data-field="studyStartActivity"]').trim().slice(0, 80);
+      if (!subject || !activity) return false;
+      return beginStudy(ctx, subject, activity, String(draft.plannerItemId || ''));
     },
     retryStudyStart() {
       const session = ctx.activeStudySession;
       if (!session || session.status !== 'starting') return false;
-      return beginStudy(ctx, session.subject, session.plannerItemId || '', session);
+      return beginStudy(ctx, session.subject, session.activity || '학습 기록', session.plannerItemId || '', session);
     },
     async stopStudyTimer() {
       const session = ctx.activeStudySession;
@@ -186,6 +194,18 @@ export function createTimerHandlers(ctx) {
       ctx.setRewardResult(null);
       ctx.setCompletionError('');
       ctx.setTimerPhase('idle');
+      return true;
+    },
+    toggleStudySessionDetails() {
+      ctx.setStudySessionDetailsOpen((open) => !open);
+      return true;
+    },
+    openGameRules() {
+      ctx.setGameRulesOpen(true);
+      return true;
+    },
+    closeGameRules() {
+      ctx.setGameRulesOpen(false);
       return true;
     },
     retryGameResources() {

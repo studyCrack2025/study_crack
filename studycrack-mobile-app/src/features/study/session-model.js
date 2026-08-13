@@ -24,10 +24,11 @@ export function validateServerStudySession(value) {
   return result(valid, value, '공부 세션 응답이 올바르지 않습니다.');
 }
 
-export function createStudySessionCandidate({ plannerItemId = '', sessionId, subject } = {}) {
+export function createStudySessionCandidate({ activity = '', plannerItemId = '', sessionId, subject } = {}) {
   return {
     sessionId: String(sessionId || '').trim(),
     subject: String(subject || '').trim().slice(0, 30),
+    activity: String(activity || '').trim().slice(0, 80),
     plannerItemId: String(plannerItemId || '').trim().slice(0, 100),
     status: 'starting'
   };
@@ -42,9 +43,9 @@ export function normalizeStoredStudySession(value) {
   return {
     sessionId: sessionId.value,
     subject: subject.slice(0, 30),
+    activity: String(value.activity || '').trim().slice(0, 80),
     plannerItemId: String(value.plannerItemId || '').slice(0, 100),
     status: value.status,
     ...(value.startedAt ? { startedAt: value.startedAt } : {})
   };
 }
-
