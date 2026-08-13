@@ -266,7 +266,7 @@ function responseFor(payload, state) {
     case 'get_qna_list':
       return { qnaHistory: [{ qnaId: 'qna-e2e', title: '분석 결과 문의', content: '환산점수 기준이 궁금합니다.', status: 'done', answer: '선택한 시험 기준으로 계산됩니다.', createdAt: '2026-08-07T09:00:00.000Z' }] };
     case 'student_get_notifications':
-      return { notifications: [{ notiId: 'noti-e2e', title: '학습 알림', body: '오늘 계획한 국어 학습을 확인해주세요.', isRead: false, createdAt: '2026-08-07T08:00:00.000Z' }] };
+      return { notifications: [{ id: 'noti-e2e', title: '학습 알림', message: '학습 알림', detail: '오늘 계획한 국어 학습을 확인해주세요.', actionType: 'planner', isRead: false, createdAt: '2026-08-07T08:00:00.000Z' }] };
     default:
       return { success: true };
   }

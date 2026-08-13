@@ -22,6 +22,7 @@ import {
   validateUser,
   validateWeeklyReport
 } from '../src/shared/model/contracts.js';
+import { normalizeNotifications } from '../src/features/notifications/api.js';
 
 const envelopeKeys = ['code', 'data', 'error', 'ok', 'status'];
 
@@ -54,6 +55,21 @@ for (const [validator, validValue, invalidValue] of modelContracts) {
   assert.equal(validator(validValue).ok, true, `${validator.name} must accept its public model.`);
   assert.equal(validator(invalidValue).ok, false, `${validator.name} must reject an invalid model.`);
 }
+
+const legacyNotifications = normalizeNotifications({ notifications: [
+  { id: 'legacy-detail', title: '주간 점검', message: '주간 점검', detail: '이번 주 피드백이 도착했어요.', actionType: 'weekly_report' },
+  { id: 'legacy-message-only', message: '새 알림이 도착했어요.' }
+] });
+assert.deepEqual(legacyNotifications[0], {
+  notiId: 'legacy-detail',
+  title: '주간 점검',
+  body: '이번 주 피드백이 도착했어요.',
+  type: 'weekly_report',
+  isRead: false,
+  createdAt: ''
+});
+assert.equal(legacyNotifications[1].title, '새 알림이 도착했어요.');
+assert.equal(legacyNotifications[1].body, '');
 assert.equal(validateModelList([{ notiId: 'n-1' }], validateNotification, '알림').ok, true);
 assert.equal(validateModelList([{ title: '알림' }], validateNotification, '알림').ok, false);
 

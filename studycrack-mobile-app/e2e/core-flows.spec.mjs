@@ -149,6 +149,10 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_ranking').length).toBeGreaterThan(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBeGreaterThan(1);
   await expect(page.locator('.timer-week-summary')).toBeVisible();
+  await page.locator('.timer-week-day.is-today').click();
+  await expect(page.locator('.timer-day-subjects')).toContainText('00:00:02');
+  await expect(page.locator('.timer-day-subjects [data-subject-tone="korean"]')).toContainText('국어');
+  await expect(page.locator('.timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -280,6 +284,12 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await page.getByRole('button', { name: '상자 열기 2단계' }).click();
   await page.getByRole('button', { name: '상자 열기 3단계' }).click();
   await expect(page.getByRole('heading', { name: '나비고기' })).toBeVisible();
+  await expect(page.locator('.aquarium-result-ring')).toBeVisible();
+  await expect(page.locator('.aquarium-result-burst i')).toHaveCount(10);
+  await expect(page.locator('.aquarium-result-halo .fish-species-butterflyfish')).toBeVisible();
+  const drawScreenshotPath = testInfo.outputPath('aquarium-draw-result-390.png');
+  await page.screenshot({ path: drawScreenshotPath, fullPage: true });
+  await testInfo.attach('aquarium-draw-result-390.png', { path: drawScreenshotPath, contentType: 'image/png' });
   await page.getByRole('button', { name: '도감에서 확인하기' }).click();
 
   await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeVisible();

@@ -4,14 +4,18 @@ import { validateModelList, validateNotification } from '../../shared/model/cont
 
 export function normalizeNotifications(payload) {
   const list = Array.isArray(payload?.notifications) ? payload.notifications : (Array.isArray(payload) ? payload : []);
-  return list.filter((item) => item && (item.notiId || item.id)).map((item) => ({
-    notiId: String(item.notiId || item.id || ''),
-    title: item.title || '알림',
-    body: item.body || item.message || '',
-    type: item.type || '',
-    isRead: item.isRead === true,
-    createdAt: item.createdAt || ''
-  }));
+  return list.filter((item) => item && (item.notiId || item.id)).map((item) => {
+    const title = String(item.title || item.message || '알림').trim() || '알림';
+    const body = String(item.body || item.detail || (item.message !== title ? item.message : '') || '').trim();
+    return {
+      notiId: String(item.notiId || item.id || ''),
+      title,
+      body,
+      type: item.type || item.actionType || '',
+      isRead: item.isRead === true,
+      createdAt: item.createdAt || ''
+    };
+  });
 }
 
 export async function fetchMobileNotifications({ apiFetch, notiApiUrl, signal } = {}) {

@@ -99,7 +99,8 @@ export function validateNotification(value) {
   const id = value?.notiId || value?.id;
   const valid = isRecord(value) && isText(id) && Boolean(id.trim())
     && isOptionalText(value.title) && isOptionalText(value.body)
-    && isOptionalText(value.message) && isOptionalText(value.type) && isOptionalText(value.createdAt);
+    && isOptionalText(value.message) && isOptionalText(value.detail) && isOptionalText(value.actionType)
+    && isOptionalText(value.type) && isOptionalText(value.createdAt);
   return contract(valid, value, '알림 필드가 올바르지 않습니다.');
 }
 

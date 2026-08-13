@@ -191,11 +191,21 @@
 .aquarium-draw-box.step-2 .aquarium-chest{animation:aquariumChestShake .3s ease-in-out infinite;box-shadow:0 0 0 12px color-mix(in srgb,var(--sc-state-threshold) 18%,transparent);}
 .aquarium-draw-light{position:absolute;z-index:-1;left:50%;top:43%;width:230px;height:230px;border-radius:50%;background:color-mix(in srgb,var(--sc-state-threshold) 18%,transparent);transform:translate(-50%,-50%) scale(.8);opacity:.45;transition:transform var(--sc-motion-screen) var(--ease-enter),opacity var(--sc-motion-screen) var(--ease-enter);}
 .aquarium-draw-box.step-2 .aquarium-draw-light{transform:translate(-50%,-50%) scale(1);opacity:1;}
-.aquarium-draw-result{animation:aquariumResultIn var(--sc-motion-screen) var(--ease-enter);}
-.aquarium-result-halo{width:200px;height:160px;display:grid;place-items:center;margin:4px 0;border-radius:50%;background:color-mix(in srgb,var(--sc-surface-positive) 70%,transparent);}
-.aquarium-result-halo .aquarium-fish-svg{width:180px;max-width:100%;animation:aquariumResultFish var(--sc-motion-screen) var(--ease-enter);}
-.aquarium-draw-result.rarity-rare .aquarium-result-halo{background:color-mix(in srgb,var(--sc-info-blue) 9%,var(--sc-surface-card));}
-.aquarium-draw-result.rarity-epic .aquarium-result-halo{background:var(--sc-surface-threshold);}
+.aquarium-draw-result{position:relative;isolation:isolate;animation:aquariumResultIn var(--sc-motion-screen) var(--ease-enter);}
+.aquarium-draw-result.rarity-rare{border-color:color-mix(in srgb,var(--sc-info-blue) 38%,var(--sc-line-subtle));}
+.aquarium-draw-result.rarity-epic{border-color:color-mix(in srgb,var(--sc-state-threshold) 68%,var(--sc-line-subtle));box-shadow:0 14px 40px color-mix(in srgb,var(--sc-state-threshold) 22%,transparent);}
+.aquarium-result-halo{position:relative;width:210px;height:168px;display:grid;place-items:center;margin:4px 0;border-radius:50%;background:color-mix(in srgb,var(--sc-surface-positive) 70%,transparent);}
+.aquarium-result-halo .aquarium-fish-svg{z-index:2;width:184px;max-width:100%;animation:aquariumResultFish 520ms var(--ease-spring);}
+.aquarium-result-ring{position:absolute;inset:14px;border:1px solid color-mix(in srgb,var(--sc-action-positive) 35%,transparent);border-radius:50%;animation:aquariumResultRing 1.8s ease-out infinite;}
+.aquarium-draw-result.rarity-rare .aquarium-result-halo{background:color-mix(in srgb,var(--sc-info-blue) 11%,var(--sc-surface-card));}
+.aquarium-draw-result.rarity-rare .aquarium-result-ring{border-color:color-mix(in srgb,var(--sc-info-blue) 55%,transparent);box-shadow:0 0 24px color-mix(in srgb,var(--sc-info-blue) 24%,transparent);}
+.aquarium-draw-result.rarity-epic .aquarium-result-halo{background:radial-gradient(circle,color-mix(in srgb,var(--sc-state-threshold) 28%,var(--sc-surface-card)),var(--sc-surface-card) 68%);}
+.aquarium-draw-result.rarity-epic .aquarium-result-ring{border:2px solid color-mix(in srgb,var(--sc-state-threshold) 68%,transparent);box-shadow:0 0 34px color-mix(in srgb,var(--sc-state-threshold) 34%,transparent);}
+.aquarium-result-burst{position:absolute;z-index:0;top:64px;left:50%;width:1px;height:1px;pointer-events:none;}
+.aquarium-draw-result > :not(.aquarium-result-burst){position:relative;z-index:1;}
+.aquarium-result-burst i{--particle-angle:calc(var(--particle-index) * 36deg);position:absolute;width:6px;height:6px;border-radius:50%;background:var(--sc-action-positive);transform:rotate(var(--particle-angle)) translateY(-90px);animation:aquariumResultParticle 1.7s ease-in-out infinite;animation-delay:calc(var(--particle-index) * -80ms);}
+.aquarium-draw-result.rarity-rare .aquarium-result-burst i{width:7px;height:7px;background:var(--sc-info-blue);}
+.aquarium-draw-result.rarity-epic .aquarium-result-burst i{width:8px;height:8px;border-radius:2px;background:var(--sc-state-threshold);box-shadow:0 0 10px color-mix(in srgb,var(--sc-state-threshold) 75%,transparent);}
 .aquarium-result-reward{width:100%;max-width:320px;display:grid;gap:3px;padding:var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);text-align:left;}
 .aquarium-result-reward span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}
 .aquarium-result-reward b{color:var(--sc-brand-navy);font-size:var(--sc-type-body);}
@@ -230,6 +240,8 @@
 @keyframes aquariumChestFloat{from{transform:translateY(3px);}to{transform:translateY(-6px);}}
 @keyframes aquariumChestShake{0%,100%{transform:rotate(0);}25%{transform:rotate(-3deg) translateX(-2px);}75%{transform:rotate(3deg) translateX(2px);}}
 @keyframes aquariumResultIn{from{opacity:0;transform:translateY(12px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
-@keyframes aquariumResultFish{from{opacity:0;transform:scale(.72);}to{opacity:1;transform:scale(1);}}
+@keyframes aquariumResultFish{0%{opacity:0;transform:scale(.58) rotate(-5deg);}70%{opacity:1;transform:scale(1.06) rotate(1deg);}100%{opacity:1;transform:scale(1) rotate(0);}}
+@keyframes aquariumResultRing{0%{opacity:.75;transform:scale(.72);}70%,100%{opacity:0;transform:scale(1.18);}}
+@keyframes aquariumResultParticle{0%,100%{opacity:.18;transform:rotate(var(--particle-angle)) translateY(-72px) scale(.65);}45%{opacity:1;transform:rotate(var(--particle-angle)) translateY(-104px) scale(1);}}
 @media (max-width:360px){.aquarium-wallet span{min-width:0;}.aquarium-scene{min-height:260px;}.aquarium-fish{width:102px;}.aquarium-starter-grid{gap:5px;}.aquarium-next-actions{grid-template-columns:1fr;}.aquarium-next-actions button{min-height:72px;}.aquarium-catalog-group > div{gap:6px;}.aquarium-catalog-group article{min-height:148px;padding:10px 5px;}.aquarium-catalog-sprite{width:98px;height:78px;}.aquarium-draw-ready,.aquarium-draw-box,.aquarium-draw-result{min-height:390px;}.aquarium-share-card .aquarium-scene{min-height:220px;}.aquarium-share-stats{gap:5px;}.aquarium-share-stats > div{padding:10px 4px;}}
-@media (prefers-reduced-motion:reduce){.aquarium-fish,.aquarium-bubbles i,.aquarium-plants i,.aquarium-draw-box .aquarium-chest,.aquarium-draw-result,.aquarium-result-halo .aquarium-fish-svg{animation:none;}}
+@media (prefers-reduced-motion:reduce){.aquarium-fish,.aquarium-bubbles i,.aquarium-plants i,.aquarium-draw-box .aquarium-chest,.aquarium-draw-result,.aquarium-result-halo .aquarium-fish-svg,.aquarium-result-ring,.aquarium-result-burst i{animation:none;}}
