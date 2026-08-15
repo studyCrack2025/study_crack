@@ -53,10 +53,11 @@ export function RankingScreen(ctx) {
   return (
     <SecondaryScreenShell screen="ranking" title="공부 랭킹">
       <section className="sc-secondary-page ranking-page">
-        <SecondaryIntro eyebrow="STUDY RANKING" title="공부 기록 순위" description="실제 누적 공부 시간을 기준으로 같은 기간의 순위를 확인해요." aside={<span className="sc-chip">{periodLabel}</span>} />
+        <SecondaryIntro eyebrow="STUDY RANKING" title="나의 공부 순위" description="실제 누적 공부 시간을 기준으로 같은 기간의 순위를 확인해요." aside={<span className="sc-chip">{periodLabel}</span>} />
         <section className="sc-secondary-section ranking-summary">
-          <div className="ranking-summary-main"><span>내 순위</span><b>{myRank}</b><p>{rankingMe ? `${formatHms(rankingMe.seconds)} 공부` : '공부를 시작하면 집계됩니다.'}</p></div>
-          <div className="ranking-summary-stats"><div><span>티어</span><b className={myTier.toLowerCase()}>{myTier}</b></div><div><span>전체</span><b>{rankingTotal ? `${rankingTotal}명` : '—'}</b></div><div><span>상위</span><b>{percentile ? `${percentile}%` : '—'}</b></div></div>
+          <div className="ranking-summary-main"><span>{periodLabel} 내 순위</span><b>{myRank}</b><p>{rankingMe ? `${formatHms(rankingMe.seconds)} 집중했어요` : '공부를 시작하면 집계됩니다.'}</p></div>
+          <div className="ranking-summary-tier"><span>현재 티어</span><b className={myTier.toLowerCase()}>{myTier}</b></div>
+          <div className="ranking-summary-stats"><div><span>참여</span><b>{rankingTotal ? `${rankingTotal}명` : '—'}</b></div><div><span>상위</span><b>{percentile ? `${percentile}%` : '—'}</b></div><div><span>기준</span><b>{periodLabel}</b></div></div>
         </section>
         <div className="sc-secondary-segmented ranking-tabs">{RANKING_PERIODS.map(([key, label]) => <button type="button" className={rankingPeriod === key ? 'active' : ''} data-action="setRankingPeriod" data-ranking-period={key} key={key}>{label}</button>)}</div>
         <RankingBoard formatHms={formatHms} rankingError={rankingError} rankingMe={rankingMe} rankingRows={rankingRows} rankingStatus={rankingStatus} />

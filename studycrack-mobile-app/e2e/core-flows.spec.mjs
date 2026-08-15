@@ -147,7 +147,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   const api = await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('[data-screen="timer"]')).toBeVisible();
-  await expect(page.getByText('테스트학생님의 공부를 기록해요.')).toBeVisible();
+  await expect(page.getByText('테스트학생님의 오늘 공부를 기록해요.')).toBeVisible();
 
   await page.getByRole('button', { name: '공부 시작' }).click();
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
@@ -236,7 +236,7 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   expect(tasksBox.y).toBeGreaterThan(progressBox.y);
   expect(calendarBox.y).toBeGreaterThan(tasksBox.y);
   await page.getByRole('button', { name: '계획 완료' }).click();
-  await expect(page.locator('.planner-progress-head')).toContainText('100% 완료');
+  await expect(page.locator('.planner-progress-head')).toContainText('1/1 완료');
   await page.getByRole('button', { name: '월', exact: true }).click();
   await expect(page.locator('.planner-calendar-month-panel')).toBeVisible();
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {

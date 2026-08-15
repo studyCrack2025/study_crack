@@ -55,5 +55,5 @@ export function FishSprite({ colors = FALLBACK_COLORS, fishId = '', growthStage 
   if (speciesId === 'emperor_angelfish') artwork = <Angelfish accent={accent} primary={primary} />;
   if (speciesId === 'lionfish') artwork = <Lionfish accent={accent} primary={primary} />;
   if (speciesId === 'manta_ray') artwork = <MantaRay accent={accent} primary={primary} />;
-  return <svg className={`aquarium-fish-svg fish-species-${safeSpeciesId} fish-id-${safeId || 'unknown'}`} style={{ '--fish-scale': scale }} viewBox="0 0 160 96" aria-hidden="true">{artwork}<title>{safeSpeciesId}</title></svg>;
+  return <svg className={`aquarium-fish-svg fish-species-${safeSpeciesId} fish-id-${safeId || 'unknown'}`} style={{ '--fish-scale': scale }} viewBox="0 0 160 96" aria-hidden="true">{artwork}</svg>;
 }
