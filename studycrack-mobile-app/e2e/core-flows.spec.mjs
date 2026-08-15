@@ -369,17 +369,17 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
   const examSelect = page.locator('[data-field="scoreExamType"]');
   const targetSelect = page.locator('[data-field="analysisTargetMajor"]');
   await expect(examSelect).toBeVisible();
-  await expect(page.locator('.analysis-result-overview strong')).toHaveText('142점');
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
   await expect(page.getByText('Standard Exclusive')).toBeVisible();
   await expect(page.locator('[data-screen="analysis"]')).not.toContainText('합격확률');
 
   await targetSelect.selectOption({ label: '고려대학교 경영학과' });
-  await expect(page.locator('.analysis-result-overview strong')).toHaveText('131점');
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('131점');
   await examSelect.selectOption({ label: '6월 평가원' });
   await examSelect.selectOption({ label: '3월 모의고사' });
-  await expect(page.locator('.analysis-result-overview strong')).toHaveText('118점');
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
@@ -389,6 +389,20 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
     await page.screenshot({ path: screenshotPath, fullPage: true });
     await testInfo.attach(`analysis-basic-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
   }
+});
+
+test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보여준다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { tier: 'standard' });
+  await page.goto('/studycrack-mobile.html?screen=analysis');
+
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
+  await expect(page.locator('.analysis-sim-effect')).toHaveText(['+3.2점', '+2.4점', '+1.1점', '+0.8점']);
+  await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
+  await expect(page.locator('.analysis-reverse-plan')).toContainText('국어 +3점 / 수학 +2점 / 탐구1 +1점');
+  await expect(page.locator('.analysis-reverse-plan')).toContainText('151점 도달');
+  expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(true);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 후 동작한다', async ({ page }) => {
@@ -414,8 +428,24 @@ test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 
   const scoreDialog = page.getByRole('dialog');
   await scoreDialog.locator('[data-field="v2e-korean-common"]').fill('60');
   await scoreDialog.locator('[data-field="v2e-korean-elective"]').fill('24');
-  await scoreDialog.getByRole('button', { name: '저장하고 다음' }).click();
+  await scoreDialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(scoreDialog.locator('.score-step-panel-head b')).toHaveText('수학');
+  await scoreDialog.locator('[data-field="v2e-math-common"]').fill('50');
+  await scoreDialog.locator('[data-field="v2e-math-elective"]').fill('20');
+  await scoreDialog.getByRole('button', { name: '다음', exact: true }).click();
+  await scoreDialog.locator('[data-field="v2e-english"]').fill('2');
+  await scoreDialog.getByRole('button', { name: '다음', exact: true }).click();
+  await scoreDialog.locator('[data-field="v2e-history"]').fill('1');
+  await scoreDialog.getByRole('button', { name: '다음', exact: true }).click();
+  await scoreDialog.locator('[data-field="v2e-inq1-subject"]').selectOption({ label: '생활과 윤리' });
+  await scoreDialog.locator('[data-field="v2e-inq1-score"]').fill('45');
+  await scoreDialog.getByRole('button', { name: '다음', exact: true }).click();
+  await scoreDialog.locator('[data-field="v2e-inq2-subject"]').selectOption({ label: '사회·문화' });
+  await scoreDialog.locator('[data-field="v2e-inq2-score"]').fill('43');
+  await scoreDialog.getByRole('button', { name: '전체 성적 저장' }).click();
+  await expect(scoreDialog).toBeHidden();
+  await expect(page.locator('.score-info-subject-card').filter({ hasText: '생활과 윤리' })).toContainText('45점');
+  await expect(page.locator('.score-info-subject-card').filter({ hasText: '사회·문화' })).toContainText('43점');
   await expectNoHorizontalOverflow(page);
 });
 

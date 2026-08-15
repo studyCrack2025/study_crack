@@ -11,6 +11,8 @@ assert.equal(negativeRange.currentScore, 0);
 assert.equal(negativeRange.afterScore, 0);
 assert.equal(negativeRange.previewWidthPct, 0);
 assert.equal(negativeRange.hasPreview, false);
+assert.equal(negativeRange.sortedRows[0].displayGain, '+0.0점');
+assert.equal(negativeRange.sortedRows[0].isBest, false);
 
 const visibleGain = buildAnalysisPresentation({
   rows: [{ subject: '수학', gainNum: 10, baseUiScore: 50, afterUiScore: 60, idx: 0 }],
@@ -21,6 +23,7 @@ assert.equal(visibleGain.currentScore, 50);
 assert.equal(visibleGain.afterScore, 60);
 assert.equal(visibleGain.previewWidthPct, 4);
 assert.equal(visibleGain.hasPreview, true);
+assert.equal(visibleGain.sortedRows[0].displayGain, '+10점');
 
 const selectedAbsolute = buildAnalysisPresentation({
   rows: [

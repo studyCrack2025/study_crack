@@ -252,16 +252,16 @@ function patchCurrentScoreStep(ctx) {
   if (step === 5) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      inquiry1: { ...(prev.inquiry1 || {}), score: values.inquiry1Score }
+      inquiry1: { ...(prev.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score }
     }));
-    return { ...state, inquiry1: { ...(state.inquiry1 || {}), score: values.inquiry1Score } };
+    return { ...state, inquiry1: { ...(state.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score } };
   }
   if (step === 6) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      inquiry2: { ...(prev.inquiry2 || {}), score: values.inquiry2Score }
+      inquiry2: { ...(prev.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score }
     }));
-    return { ...state, inquiry2: { ...(state.inquiry2 || {}), score: values.inquiry2Score } };
+    return { ...state, inquiry2: { ...(state.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score } };
   }
   return state;
 }

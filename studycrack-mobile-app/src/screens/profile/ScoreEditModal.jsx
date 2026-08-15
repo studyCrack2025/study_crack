@@ -102,11 +102,11 @@ export function ScoreEditModal({ scoreEditOpen = false, scoreEditState = {}, sco
   const doneCount = SCORE_STEPS.filter((item) => isSubjectSaved(quantitative, item.key)).length;
   const progressPct = Math.round((doneCount / SCORE_STEPS.length) * 100);
   const isLast = step === SCORE_STEPS.length;
-  const primaryLabel = scoreSubjectSaving ? '저장 중…' : isLast ? '저장하고 완료' : '저장하고 다음';
+  const primaryLabel = scoreSubjectSaving ? '저장 중…' : isLast ? '전체 성적 저장' : '다음';
   return (
     <Modal dismissAction="closeScoreEdit" panelClass="score-edit-modal score-stepper-modal">
-      <div className="score-onepage-head"><div><p className="home-modal-title">성적 입력</p><p className="sub">과목을 선택해 하나씩 입력하고 저장해요.</p></div><button type="button" className="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
-      <div className="score-stepper-progress"><div className="score-stepper-bar"><i style={{ width: `${progressPct}%` }} /></div><span>{doneCount} / {SCORE_STEPS.length} 저장됨</span></div>
+      <div className="score-onepage-head"><div><p className="home-modal-title">성적 입력</p><p className="sub">시험 성적을 과목별로 확인하고 마지막 단계에서 한 번에 저장해요.</p></div><button type="button" className="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
+      <div className="score-stepper-progress"><div className="score-stepper-bar"><i style={{ width: `${progressPct}%` }} /></div><span>{doneCount} / {SCORE_STEPS.length} 입력됨</span></div>
       <div className="score-step-rail">{SCORE_STEPS.map((item) => { const active = item.step === step; const done = isSubjectSaved(quantitative, item.key); return <span className={`score-step-dot ${active ? 'active' : ''} ${done ? 'done' : ''}`} aria-current={active ? 'step' : 'false'} key={item.key}>{done && !active ? '✓' : item.name}</span>; })}</div>
       <div className="score-stepper-body"><ScoreStepPanel state={scoreEditState} step={step} /></div>
       <div className="score-stepper-actions"><button type="button" className="btn btn-secondary score-step-nav" data-action="scoreStepPrev" disabled={step === 1}>이전</button><button type="button" className="btn btn-primary score-step-save" data-action="saveScoreSubject" disabled={scoreSubjectSaving}>{primaryLabel}</button></div>

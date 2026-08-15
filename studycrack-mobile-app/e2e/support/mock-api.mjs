@@ -172,7 +172,11 @@ function responseFor(payload, state) {
         };
       });
     case 'backtrace_required_raw':
-      return { result: { reachable: true, minTotalRaw: 6, items: [{ subject: '국어', rawIncrease: 3 }] } };
+      return { result: { reachable: true, minTotalRaw: 6, bySubject: { kor: 3, math: 2, inq1: 1, inq2: 0 }, expected: { uiScore: 151.2 } } };
+    case 'convert_score': {
+      const raw = Number(payload.score || 0);
+      return { std: Math.max(1, raw + 50), pct: Math.max(1, Math.min(100, raw + 35)), grd: Math.max(1, Math.min(9, Math.ceil((100 - raw) / 10))) };
+    }
     case 'start_study_session':
       state.activeStudySession = {
         sessionId: payload.data?.sessionId,
