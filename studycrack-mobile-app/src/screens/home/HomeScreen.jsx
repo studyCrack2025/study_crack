@@ -622,7 +622,7 @@ export function HomeScreen(ctx) {
             </div>
           </div>
         </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }}><HomeOverlays {...ctx} /></div>
+        <div className="app-screen-overlays"><HomeOverlays {...ctx} /></div>
         <button
           type="button"
           className="home-notif-fab"

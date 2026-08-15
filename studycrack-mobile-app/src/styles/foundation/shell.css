@@ -8,6 +8,8 @@
 .screen{overflow:hidden;overflow-x:hidden;padding:0;}
 .app-content{flex:1;overflow-y:visible;padding:var(--sc-space-16) var(--mobile-page-gutter);padding-bottom:calc(var(--sc-tabbar-height) + var(--sc-space-16) + env(safe-area-inset-bottom));box-sizing:border-box;z-index:1;}
 .app-content.modal-lock{overflow:hidden;}
+.app-screen-overlays{position:absolute;inset:0;z-index:490;display:block;pointer-events:none;}
+.app-screen-overlays > *{pointer-events:auto;}
 .app-shell,
 .screen,
 .app-content{position:relative;}

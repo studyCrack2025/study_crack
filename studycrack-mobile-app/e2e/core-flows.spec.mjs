@@ -13,15 +13,19 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
   await email.fill('student@example.com');
   await expect(email).toHaveValue('student@example.com');
 
-  await page.getByRole('button', { name: '이메일 찾기' }).click();
+  const findEmailButton = page.getByRole('button', { name: '이메일 찾기' });
+  await findEmailButton.click();
   const findDialog = page.getByRole('dialog', { name: '이메일 찾기' });
   await expect(findDialog).toBeVisible();
+  await expect(findDialog.getByRole('button', { name: '닫기' })).toBeFocused();
   const box = await findDialog.boundingBox();
   const viewport = page.viewportSize();
   expect(box).not.toBeNull();
   expect(viewport).not.toBeNull();
   expect(Math.abs((box.y + box.height / 2) - viewport.height / 2)).toBeLessThan(viewport.height * 0.2);
-  await findDialog.getByRole('button', { name: '닫기' }).click();
+  await findDialog.press('Escape');
+  await expect(findDialog).toBeHidden();
+  await expect(findEmailButton).toBeFocused();
 
   await page.getByRole('button', { name: '비밀번호 찾기' }).click();
   await expect(page.getByRole('dialog', { name: '비밀번호 재설정' })).toBeVisible();

@@ -1,4 +1,5 @@
 import { Icon } from '../../components/Icon.jsx';
+import { useOverlayDialog } from '../../components/useOverlayDialog.js';
 import { buildPlanPresentation } from './presentation.js';
 
 const PROFILE_MENU = [
@@ -27,6 +28,7 @@ function profileMeta(user = {}) {
 }
 
 export function ProfileDrawer({ drawerOpen = false, gameProfile = null, gameProfileStatus = 'idle', selectedPlan = '', studySummary = null, studySummaryStatus = 'idle', user = {} }) {
+  const { onKeyDown, overlayRef, panelRef } = useOverlayDialog({ dismissAction: 'closeDrawer', open: drawerOpen });
   if (!drawerOpen) return null;
   const plan = buildPlanPresentation(user, selectedPlan);
   const summaryReady = studySummaryStatus === 'ready' && studySummary?.available !== false;
@@ -36,8 +38,8 @@ export function ProfileDrawer({ drawerOpen = false, gameProfile = null, gameProf
   const streak = gameReady ? `${Math.max(0, Number(gameProfile.streakDays) || 0)}일` : '확인 중';
   const name = String(user?.name || '').trim() || '회원';
   return (
-    <div className="sc-overlay drawer-overlay profile-drawer-overlay" data-action="closeDrawer">
-      <aside className="side-drawer profile-drawer" data-action="noopModal" role="dialog" aria-modal="true" aria-label="프로필 메뉴">
+    <div ref={overlayRef} className="sc-overlay drawer-overlay profile-drawer-overlay" data-action="closeDrawer">
+      <aside ref={panelRef} className="side-drawer profile-drawer" data-action="noopModal" role="dialog" aria-modal="true" aria-label="프로필 메뉴" tabIndex={-1} onKeyDown={onKeyDown}>
         <header className="profile-drawer-head"><span>MY STUDYCRACK</span><button type="button" data-action="closeDrawer" aria-label="프로필 메뉴 닫기">×</button></header>
         <section className="profile-drawer-identity">
           <span className="profile-drawer-avatar">{user?.profileImage ? <img src={user.profileImage} alt="프로필 사진" /> : <Icon name="user" />}</span>

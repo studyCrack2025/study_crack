@@ -18,15 +18,15 @@ export function TabBar({ activeTab = 'timer', dimmed = false }) {
         return (
           <button
             type="button"
-            className={active ? 'active' : ''}
+            className={`${active ? 'active ' : ''}${item.key === 'aquarium' ? 'is-aquarium' : ''}`.trim()}
             data-action="tab"
             data-tab={item.key}
             aria-label={item.label}
             aria-current={active ? 'page' : undefined}
             key={item.key}
           >
-            <Icon name={item.icon} primary={active} />
-            <span>{item.label}</span>
+            <span className="tabbar-icon"><Icon name={item.icon} primary={active} /></span>
+            <span className="tabbar-label">{item.label}</span>
           </button>
         );
       })}

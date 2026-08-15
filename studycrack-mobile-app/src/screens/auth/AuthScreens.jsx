@@ -1,4 +1,5 @@
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { Modal } from '../../components/Modal.jsx';
 import { TermsModal } from '../../components/TermsModal.jsx';
 
 function Logo({ src = STUDYCRACK_LOGO_SRC, compact = false }) {
@@ -36,8 +37,7 @@ function SocialButtons({ suffix = '로그인' }) {
 
 function FindEmailModal({ foundEmailMasked = '' }) {
   return (
-    <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeFindEmailModal">
-      <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="find-email-title">
+    <Modal ariaLabel="이메일 찾기" dismissAction="closeFindEmailModal" overlayClass="find-email-modal-backdrop" panelClass="find-email-modal auth-recovery-modal">
         <div className="sc-modal-head auth-recovery-head">
           <div className="auth-recovery-copy">
             <span className="auth-recovery-eyebrow">계정 복구</span>
@@ -54,16 +54,14 @@ function FindEmailModal({ foundEmailMasked = '' }) {
           {foundEmailMasked && <div className="find-email-result"><span>확인된 이메일</span><b>{foundEmailMasked}</b></div>}
         </div>
         <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action={foundEmailMasked ? 'closeFindEmailModal' : 'findEmailByNamePhone'}>{foundEmailMasked ? '로그인으로 돌아가기' : '이메일 찾기'}</button></div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
 function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
   const isRequest = step === 'request';
   return (
-    <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeResetPasswordModal">
-      <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+    <Modal ariaLabel="비밀번호 재설정" dismissAction="closeResetPasswordModal" overlayClass="find-email-modal-backdrop" panelClass="find-email-modal auth-recovery-modal">
         <div className="sc-modal-head auth-recovery-head">
           <div className="auth-recovery-copy">
             <span className="auth-recovery-eyebrow">{isRequest ? '계정 복구' : '인증 코드 확인'}</span>
@@ -86,8 +84,7 @@ function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
           </div>
         </div>
         <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action={isRequest ? 'requestResetPasswordCode' : 'submitResetPassword'} disabled={sending}>{isRequest ? (sending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료'}</button></div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -96,7 +93,7 @@ function AuthShell({ children, overlays = null, screen }) {
     <div className="app-shell">
       <div className="app-frame">
         <div className="screen app-screen app-content" data-screen={screen}>{children}</div>
-        {overlays ? <div className="app-screen-overlays" style={{ display: 'contents' }}>{overlays}</div> : null}
+        {overlays ? <div className="app-screen-overlays">{overlays}</div> : null}
       </div>
     </div>
   );

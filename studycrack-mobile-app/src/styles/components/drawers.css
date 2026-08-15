@@ -1,10 +1,10 @@
 /* Shared side-drawer shell. */
 .drawer-overlay{align-items:stretch;justify-content:flex-start;padding:0;}
-.side-drawer{width:min(72%,280px);min-width:240px;height:100%;box-sizing:border-box;background:var(--sc-surface-card);padding:18px 14px;box-shadow:var(--sc-shadow-raised);overflow-y:auto;}
+.side-drawer{width:min(82%,340px);min-width:240px;height:100%;box-sizing:border-box;border-right:1px solid var(--sc-line-subtle);background:var(--sc-surface-card);padding:calc(var(--sc-space-16) + env(safe-area-inset-top)) var(--sc-space-16) calc(var(--sc-space-20) + env(safe-area-inset-bottom));box-shadow:var(--sc-shadow-overlay);overflow-y:auto;outline:0;}
 .side-drawer h3{margin:0 0 12px;}
 .side-drawer .my-row{display:flex;align-items:center;justify-content:space-between;white-space:nowrap;word-break:keep-all;}
 .side-drawer .my-row span{flex-shrink:0;}
-.profile-drawer-overlay{top:0;height:100%;align-items:stretch;justify-content:flex-end;}
+.profile-drawer-overlay{align-items:stretch;justify-content:flex-end;}
 .profile-drawer{width:min(90%,360px);min-width:0;display:flex;flex-direction:column;gap:var(--sc-space-16);padding:calc(var(--sc-space-16) + env(safe-area-inset-top,0px)) clamp(var(--sc-space-12),4vw,var(--sc-space-16)) calc(var(--sc-space-24) + env(safe-area-inset-bottom,0px));background:var(--sc-surface-card);}
 .profile-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);}
 .profile-drawer-head > span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:850;}

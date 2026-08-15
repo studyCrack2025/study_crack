@@ -16,7 +16,7 @@ export function AppScreenShell({
           {title ? <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">{title}</div></div> : null}
           {children}
         </div>
-        {overlays ? <div className="app-screen-overlays" style={{ display: 'contents' }}>{overlays}</div> : null}
+        {overlays ? <div className="app-screen-overlays">{overlays}</div> : null}
         {afterScreen}
         {tab ? <TabBar activeTab={tab} dimmed={dimmed} /> : null}
       </div>

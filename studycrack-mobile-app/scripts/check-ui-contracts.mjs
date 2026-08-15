@@ -35,6 +35,8 @@ const mainTabs = extractTabKeys(tabBarSource);
 assert.equal(new Set(screens).size, screens.length, 'Screen registry contains duplicate names');
 assert.deepEqual(screens, contract.screens, 'Screen registry does not match the 40-screen UI contract');
 assert.deepEqual(mainTabs, contract.mainTabs, 'Bottom navigation does not match the five-tab UI contract');
+assert.match(tabBarSource, /className="tabbar-icon"/, 'Bottom navigation icons need a stable visual wrapper');
+assert.match(tabBarSource, /item\.key === 'aquarium'/, 'The center aquarium action must remain visually distinct');
 assert.match(
   assetsSource,
   new RegExp(`export\\s+const\\s+${contract.brand.logoExport}\\s*=\\s*['"]${contract.brand.logoAsset.replaceAll('.', '\\.')}['"]`),

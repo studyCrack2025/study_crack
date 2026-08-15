@@ -1,5 +1,6 @@
 import { Modal } from '../../components/Modal.jsx';
 import { Sheet } from '../../components/Sheet.jsx';
+import { useOverlayDialog } from '../../components/useOverlayDialog.js';
 import { useState } from 'react';
 import { defaultFormatHms } from './presentation.js';
 
@@ -108,10 +109,11 @@ export function StudySubjectSheet({
 }
 
 export function HomeDrawer({ drawerOpen = false, menuItems = DEFAULT_MENU_ITEMS }) {
+  const { onKeyDown, overlayRef, panelRef } = useOverlayDialog({ dismissAction: 'closeDrawer', open: drawerOpen });
   if (!drawerOpen) return null;
   return (
-    <div className="sc-overlay home-modal-overlay drawer-overlay" data-action="closeDrawer">
-      <aside className="side-drawer" data-action="noopModal"><h3>메뉴</h3>{menuItems.map(([target, label]) => <button className="my-row" data-action="drawerGoto" data-target={target} key={target}>{label}<span aria-hidden="true">›</span></button>)}</aside>
+    <div ref={overlayRef} className="sc-overlay home-modal-overlay drawer-overlay" data-action="closeDrawer">
+      <aside ref={panelRef} className="side-drawer" data-action="noopModal" role="dialog" aria-modal="true" aria-label="메뉴" tabIndex={-1} onKeyDown={onKeyDown}><h3>메뉴</h3>{menuItems.map(([target, label]) => <button className="my-row" data-action="drawerGoto" data-target={target} key={target}>{label}<span aria-hidden="true">›</span></button>)}</aside>
     </div>
   );
 }

@@ -12,20 +12,16 @@
 .card,.home-result-card-v3,.home-add-univ-card,.planner-item,.score-info-card,.mobile-account-card,.my-profile-hero,.my-insight-card,.my-study-stats,.my-menu-group,.support-direct-card,.support-qna-card,.faq-card,.settings-list,.notify-card,.plan-console-detail,.locked-feature-preview-wrap{transition:transform var(--motion-base) var(--ease-standard),box-shadow var(--motion-base) var(--ease-standard),border-color var(--motion-base) var(--ease-standard),background-color var(--motion-base) var(--ease-standard),opacity var(--motion-base) ease;}
 button,.btn,.my-menu-row,.notify-row,.faq-row,.analysis-search-row,.analysis-rec-card,.planner-input,.ob1-pill,.plan-console-selector button,.tabbar button{transition:transform var(--motion-fast) var(--ease-standard),background-color var(--motion-fast) ease,color var(--motion-fast) ease,border-color var(--motion-fast) ease,box-shadow var(--motion-fast) ease,opacity var(--motion-fast) ease,filter var(--motion-fast) ease;}
 button:active,.btn:active,.my-menu-row:active,.notify-row:active,.faq-row:active,.analysis-search-row:active,.analysis-rec-card:active,.planner-item:active,.plan-console-selector button:active{transform:translate3d(0,1px,0) scale(.992);filter:brightness(.985);}
-.tabbar button::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;border-radius:999px;background:var(--sc-brand-navy);opacity:0;transform:translate3d(-50%,4px,0) scale(.7);transition:opacity var(--motion-base) ease,transform var(--motion-base) var(--ease-spring),width var(--motion-base) var(--ease-standard);}
-.tabbar button.active::after{width:16px;opacity:1;transform:translate3d(-50%,0,0) scale(1);}
 .tabbar button:active{transform:none;filter:none;}
 .home-kpi-track,.score-journey-track,.possible-univ-track{will-change:transform;transition-timing-function:var(--ease-enter) !important;}
 .home-kpi-indicator i,.possible-univ-dot,.slider-dot{transition:width var(--motion-base) var(--ease-standard),background-color var(--motion-base) ease,opacity var(--motion-base) ease,transform var(--motion-base) var(--ease-spring);}
 .home-kpi-indicator i.active,.possible-univ-dot.active,.slider-dot.active{transform:scale(1.05);}
 .home-result-gauge i,.progress > span,.track i,.fill,.score-info-subject-card strong{transition-duration:var(--motion-slow) !important;transition-timing-function:var(--ease-enter) !important;}
 .sc-overlay,.home-modal-overlay,.planner-sheet-overlay,.analysis-search-overlay,.terms-modal-backdrop,.drawer-overlay,.find-email-modal-backdrop{animation:overlayFadeIn var(--motion-base) ease both;}
-.sc-modal,.sc-sheet,.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.find-email-modal{animation:surfaceLiftIn 300ms var(--ease-enter) both;will-change:opacity,transform;}
-.planner-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:340ms;}
-.side-drawer{animation-name:drawerSlideIn;animation-duration:300ms;}
-.profile-drawer{animation-name:drawerSlideInRight;animation-duration:300ms;}
-.app-screen-overlays > *:not(.profile-drawer-overlay){animation:none !important;}
-.app-screen-overlays > *:not(.profile-drawer-overlay) > *{animation:none !important;}
+.sc-modal,.sc-sheet,.home-modal,.planner-sheet,.analysis-search-modal,.terms-modal,.side-drawer,.profile-detail-modal,.qna-modal,.phone-change-modal,.my-profile-edit-modal,.pro-request-modal,.find-email-modal{animation:surfaceLiftIn 260ms var(--ease-enter) both;will-change:opacity,transform;}
+.planner-sheet,.analysis-search-modal{animation-name:bottomSheetIn;animation-duration:280ms;}
+.side-drawer{animation-name:drawerSlideIn;animation-duration:260ms;}
+.profile-drawer{animation-name:drawerSlideInRight;animation-duration:260ms;}
 @keyframes overlayFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes surfaceLiftIn{from{opacity:.001;transform:translate3d(0,12px,0) scale(.985);}to{opacity:1;transform:translate3d(0,0,0) scale(1);}}
 @keyframes bottomSheetIn{from{opacity:.001;transform:translate3d(0,28px,0);}to{opacity:1;transform:translate3d(0,0,0);}}
