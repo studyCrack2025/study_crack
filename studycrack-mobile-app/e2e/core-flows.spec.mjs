@@ -76,14 +76,14 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
   await expectNoHorizontalOverflow(page);
 });
 
-test('로그인 세션의 사용자와 최초 환산점수가 홈에서 함께 로드된다', async ({ page }, testInfo) => {
+test('로그인 세션의 사용자와 최초 환산점수가 분석에서 함께 로드된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   const startedAt = Date.now();
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
-  await expect(page.getByText('안녕하세요, 테스트학생님')).toBeVisible();
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
   await page.waitForTimeout(100);
@@ -550,9 +550,10 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await expect(page.getByText('안녕하세요, 테스트학생님')).toBeVisible();
+  await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
 
-  await page.goto('/studycrack-mobile.html?screen=report');
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await page.getByRole('button', { name: /PRO 리포트/ }).click();
   await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PRO 리포트 기능은 PRO 플랜에서 열려요' })).toBeVisible();
   await page.getByRole('button', { name: 'PRO 플랜 보기' }).click();

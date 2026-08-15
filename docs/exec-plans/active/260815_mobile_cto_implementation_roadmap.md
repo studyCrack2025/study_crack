@@ -728,6 +728,17 @@ Contracts:
 - `docs/exec-plans/current.md` 동기화와 완료 계획 이관 판단
 - G0~G8 각 단계의 390x844 reference parity 캡처 보존
 
+### 13.6 구현 결과 (2026-08-16)
+
+- 기존 `HomeScreen`, `HomeOverlays`, home presentation과 홈 전용 CSS 3개를 제거하고 screen registry·context·resource orchestrator의 home 소유 필드를 함께 정리했다.
+- 저장 URL이나 과거 링크의 `screen=home`은 `analysis`로 정규화하며 주소도 replace한다. 인증 사용자 기본 진입은 `timer`를 유지한다.
+- 홈의 공부·보상 panel은 timer 소유로 이동했고, 입시 일정 sheet는 planner 소유 컴포넌트로 옮겨 기능 진입을 보존했다.
+- 홈 제거 과정에서 사라진 PRO 리포트 진입을 MY 학습 서비스에 복구하고, Basic 계정은 실제 사용자 클릭 경로에서 잠금 preview와 플랜 안내를 거치도록 검증했다.
+- home presentation 검사와 stale UI fixture를 제거하고 release transition, bundle boundary, dead code, CSS ownership 검사를 현재 41개 화면·5개 탭 계약으로 갱신했다.
+- `npm run check`, production build, CSS duplicate/dead selector 감사, architecture baseline과 Playwright 18개 전체 흐름을 통과했다. 로컬 청크 로딩에서도 bootstrap·deferred 404가 없었다.
+- 모바일 앱 기준 104개 파일이 변경됐고 G0 이전 대비 1,152줄 추가·1,683줄 삭제로 순 531줄 감소했다. backend Lambda, API Gateway, DynamoDB 변경은 없다.
+- 로컬 구현·회귀 검증은 완료했다. dev 로그인 → 새로고침 → 새 탭 → 로그아웃과 실데이터 smoke 통과 후 이 계획을 `completed`로 이관하고 main 승격을 검토한다.
+
 ## 14. 본선에서 제외하는 선택 Backend
 
 아래 항목은 G0~G8과 같은 구현·배포에 포함하지 않는다.
@@ -822,13 +833,4 @@ backend source가 실제 변경된 경우에만 사용자가 해당 Lambda를 �
 - 정적 배포와 선택 backend 배포를 분리하고 rollback checklist를 작성했다.
 - 서버 플래너, 비회원 진단, 수조 theme, 알림 소비 확장을 본선에서 제외했다.
 - 이번 CMP-08 자체에서는 런타임·Lambda·API Gateway·DynamoDB를 변경하지 않았다.
-- G0 Foundation, G1 공통 Shell·Navigation·Overlay와 G2 인증·가입·Onboarding 구현·검증을 완료했다. 다음 작업은 G3 공부·플래너·랭킹 구현이다.
-
-### 13.6 2026-08-16  
-#- **  ;
-set +tttttttext-fit cccccccsspppppppresentationoooooooverlayh  . `screen=home`, history,   legacy home  legacy home  analysis .
-set +H .
-#- **;
-set +.
-#- **;
-set +H                                                                                  G8 release-complete  main  .
+- G0 Foundation부터 G8 legacy·성능 마감까지 로컬 구현과 회귀 검증을 완료했다. 다음 작업은 GitHub Actions dev 배포와 인증·실데이터 smoke다.

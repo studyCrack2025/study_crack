@@ -10,6 +10,7 @@ const MENU_GROUPS = [
     label: '학습 서비스',
     rows: [
       { icon: 'chart', target: 'weekly', title: '학습 리포트', subtitle: '주간 점검과 튜터 피드백 확인' },
+      { icon: 'report', target: 'report', title: 'PRO 리포트', subtitle: '맞춤 전략 리포트 확인과 새 분석 요청' },
       { icon: 'bolt', target: 'proIntro', title: '플랜 · 결제', subtitle: '이용 기능과 구독 상태 확인' }
     ]
   },

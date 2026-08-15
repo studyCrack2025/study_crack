@@ -1,18 +1,18 @@
-### 2026-08- .DS_Store .claude .git .github .gitignore .idea AGENTS.md ARCHITECTURE.md CLAUDE.md IMG_2648.jpeg MOBILE_DEVELOPMENT.md README.md admin_detail.html admin_index.html admin_login.html analysis.html assets backend-backup black change-password.html checkout-transfer.html checkout.html css docs favicon.ico index.html js login.html mbti_download.html mbti_survey.html mypage.html mypage_tutor.html payment.html promo.html promotion_kcc01.html qna.html robots.txt serve.json service.html signup.html signup_tutor.html sitemap.xml social-callback.html studycrack-mobile-app studycrack-mobile.html success.html survey.html tools tutor_login                        ;    .html  tutorial;.html welcome.html 16 G8 Legacy Home  
-
-set +H      timer .
-set +H .   analysis secondary  .
-set +H . `npm run check` production , dead selector  0 unused export .
-#set +H 
-# G8 ;
-  .DS_Store .claude .git .github .gitignore .idea AGENTS.md ARCHITECTURE.md CLAUDE.md IMG_2648.jpeg MOBILE_DEVELOPMENT.md README.md admin_detail.html admin_index.html admin_login.html analysis.html assets backend-backup black change-password.html checkout-transfer.html checkout.html css docs favicon.ico index.html js login.html mbti_download.html mbti_survey.html mypage.html mypage_tutor.html payment.html promo.html promotion_kcc01.html qna.html robots.txt serve.json service.html signup.html signup_tutor.html sitemap.xml social-callback.html studycrack-mobile-app studycrack-mobile.html success.html survey.html tools tutor_login.html tutorial.html welcome.AAAAAAAPI DDDDDDDynamoDB gatewaylambda .
-
----
-# 현재 개발 현황 (2026-08-15)
+# 현재 개발 현황 (2026-08-16)
 
 현재 브랜치: `dev-mobile-main`
 
 ---
+
+## 2026-08-16 — CTO 전달본 G8 Legacy·성능 로컬 마감 완료
+
+- **홈 레거시 제거**: `HomeScreen`, home overlay·presentation과 홈 전용 CSS를 제거하고 registry·screen context·resource 소유권을 정리했다. 과거 `screen=home` 링크는 `analysis`로 안전하게 정규화한다.
+- **기능 재배치**: 공부·보상 panel은 timer, 입시 일정 sheet는 planner로 이동했다. 대학 환산·랭킹·알림 진입을 유지하고 MY 학습 서비스에 PRO 리포트 진입을 복구해 Basic 계정의 잠금·플랜 안내도 실제 클릭 경로로 연결했다.
+- **구조 마감**: 앱은 41개 화면·5개 주 탭, 34개 CSS 소유 파일, 5개 JS chunk를 사용한다. dead code·unused export·신규 dead selector는 0건이다.
+- **규모**: G0 이전 대비 모바일 앱 104개 파일에서 1,152줄을 추가하고 1,683줄을 제거해 순 531줄 감소했다. production build는 281개 모듈이며 초기 JS 526.6KiB, bootstrap CSS 77.8KiB다.
+- **검증**: `npm run check`, production build, CSS 감사, architecture baseline, Playwright 18개 전체 흐름과 `git diff --check`를 통과했다.
+- **backend 영향**: 전체 G0~G8에서 Lambda, API Gateway, DynamoDB 변경 없음. GitHub Actions 정적 배포만 해당한다.
+- **남은 배포 조건**: dev에서 로그인 → 새로고침 → 새 탭 → 로그아웃과 환산점수·공부·수조 실데이터 smoke를 통과한 뒤 active 계획을 completed로 이관하고 main 승격을 검토한다.
 
 ## 2026-08-15 — CTO 전달본 G7 MY·계정·알림·지원 구현 완료
 
