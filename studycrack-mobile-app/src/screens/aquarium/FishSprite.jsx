@@ -46,6 +46,7 @@ function StandardFish({ accent, primary, speciesId }) {
 export function FishSprite({ colors = FALLBACK_COLORS, fishId = '', growthStage = 'young', speciesId = 'clownfish' }) {
   const [primary, accent] = colors.length >= 2 ? colors : FALLBACK_COLORS;
   const safeId = String(fishId || speciesId).replace(/[^A-Za-z0-9_-]/g, '');
+  const safeSpeciesId = String(speciesId).replace(/[^A-Za-z0-9_-]/g, '') || 'unknown';
   const scale = { young: .78, growing: .9, adult: 1, master: 1.08 }[growthStage] || .82;
   let artwork = <StandardFish accent={accent} primary={primary} speciesId={speciesId} />;
   if (speciesId === 'seahorse') artwork = <Seahorse accent={accent} primary={primary} />;
@@ -54,5 +55,5 @@ export function FishSprite({ colors = FALLBACK_COLORS, fishId = '', growthStage 
   if (speciesId === 'emperor_angelfish') artwork = <Angelfish accent={accent} primary={primary} />;
   if (speciesId === 'lionfish') artwork = <Lionfish accent={accent} primary={primary} />;
   if (speciesId === 'manta_ray') artwork = <MantaRay accent={accent} primary={primary} />;
-  return <svg className={`aquarium-fish-svg fish-species-${safeId || 'unknown'}`} style={{ '--fish-scale': scale }} viewBox="0 0 160 96" aria-hidden="true">{artwork}<title>{safeId}</title></svg>;
+  return <svg className={`aquarium-fish-svg fish-species-${safeSpeciesId} fish-id-${safeId || 'unknown'}`} style={{ '--fish-scale': scale }} viewBox="0 0 160 96" aria-hidden="true">{artwork}<title>{safeSpeciesId}</title></svg>;
 }
