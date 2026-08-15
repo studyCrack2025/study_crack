@@ -248,7 +248,7 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   }
 });
 
-test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하고 복원한다', async ({ page }) => {
+test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하고 복원한다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=aquarium');
@@ -275,7 +275,15 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.reload();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
-  await expectNoHorizontalOverflow(page);
+  for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+    const screenshotPath = testInfo.outputPath(`aquarium-main-${viewport.width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach(`aquarium-main-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.aquarium-fish.slot-left')).toHaveCSS('animation-name', 'none');
 });
 
 test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤 도감에 반영한다', async ({ page }, testInfo) => {
@@ -293,7 +301,7 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
   await page.locator('[data-action="openAquariumDraw"]').click();
-  await page.getByRole('button', { name: '조개 30개로 뽑기' }).evaluate((button) => {
+  await page.getByRole('button', { name: '조개 30개로 만나기' }).evaluate((button) => {
     button.click();
     button.click();
   });
@@ -319,6 +327,12 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await expect(page.locator('.aquarium-catalog-group.rarity-rare')).toContainText('나비고기');
   await expect(page.locator('.aquarium-mode-header')).toHaveCSS('display', 'grid');
   await expect(page.locator('.aquarium-catalog-group article').first()).toHaveCSS('display', 'grid');
+  await page.getByRole('button', { name: '획득', exact: true }).click();
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(2);
+  await page.getByRole('button', { name: '미획득', exact: true }).click();
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(10);
+  await page.getByRole('button', { name: '전체', exact: true }).click();
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(12);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'draw_fish').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_pending_draw').length).toBeGreaterThan(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'acknowledge_fish_draw').length).toBe(1);

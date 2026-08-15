@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
-import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { FishSprite } from './FishSprite.jsx';
 
@@ -12,14 +12,51 @@ const AQUARIUM_SLOTS = [
 const RARITY_LABELS = { common: '일반', rare: '희귀', epic: '영웅' };
 const RARITY_CLASSES = { common: 'rarity-common', rare: 'rarity-rare', epic: 'rarity-epic' };
 const DRAW_STEP_CLASSES = ['step-0', 'step-1', 'step-2', 'step-3'];
+const CATALOG_FILTERS = [
+  { id: 'all', label: '전체' },
+  { id: 'owned', label: '획득' },
+  { id: 'locked', label: '미획득' }
+];
 
 function catalogMeta(catalog, speciesId) {
   return catalog.find((item) => item.speciesId === speciesId) || { colors: ['#3F6FD9', '#9DD9F2'], displayName: '물고기', rarity: 'common' };
 }
 
-function AquariumScene({ activeFish = [], catalog = [], selectedFishId = '' }) {
+function playAquariumRevealSound(rarity = 'common') {
+  try {
+    const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+    if (!AudioContext) return;
+    const context = new AudioContext();
+    const notes = rarity === 'epic' ? [523, 659, 784, 1046] : rarity === 'rare' ? [523, 659, 784] : [523, 659];
+    const master = context.createGain();
+    master.gain.setValueAtTime(0.0001, context.currentTime);
+    master.gain.exponentialRampToValueAtTime(0.065, context.currentTime + 0.03);
+    master.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 1.35);
+    master.connect(context.destination);
+    notes.forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const start = context.currentTime + index * 0.11;
+      oscillator.type = index % 2 ? 'sine' : 'triangle';
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.7, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.42);
+      oscillator.connect(gain).connect(master);
+      oscillator.start(start);
+      oscillator.stop(start + 0.46);
+    });
+    void context.resume();
+    globalThis.setTimeout(() => void context.close(), 1500);
+  } catch {
+    // Audio is enhancement-only; browser restrictions must not interrupt the reward flow.
+  }
+}
+
+function AquariumScene({ activeFish = [], catalog = [], selectedFishId = '', streakDays = null, waterQuality = null }) {
   return (
     <section className="aquarium-scene" aria-label="나의 공부 수조">
+      {waterQuality !== null ? <div className="aquarium-scene-hud"><span><small>연속 학습</small><b>{Math.max(0, Number(streakDays) || 0)}일</b></span><span><small>수질</small><b>{waterQuality}%</b></span></div> : null}
       <div className="aquarium-water-line" />
       <div className="aquarium-rays"><i /><i /></div>
       <div className="aquarium-bubbles"><i /><i /><i /><i /></div>
@@ -38,6 +75,10 @@ function AquariumScene({ activeFish = [], catalog = [], selectedFishId = '' }) {
       })}
     </section>
   );
+}
+
+function AquariumHabitatHeader({ fishCount = 0, profile }) {
+  return <header className="aquarium-habitat-header"><div><span>STUDYCRACK AQUARIUM</span><h1>나의 공부 수조</h1><p>집중한 시간이 물고기의 성장으로 남아요.</p></div><div className="aquarium-wallet"><span>조개 <b>{Number(profile?.shellBalance) || 0}</b></span><span>먹이 <b>{Number(profile?.foodBalance) || 0}</b></span><small>{fishCount}마리와 함께하는 중</small></div></header>;
 }
 
 function StarterPanel({ actionError = '', actionStatus = 'idle', catalog = [], selectedSpeciesId = '' }) {
@@ -101,16 +142,17 @@ function AquariumModeHeader({ eyebrow, title, description }) {
 }
 
 function FishCatalogPanel({ catalog = [], inventory = [], profile }) {
+  const [filter, setFilter] = useState('all');
   const ownedSpecies = new Set(inventory.map((fish) => fish.speciesId));
   const ownedCount = catalog.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length;
   const total = catalog.length || 12;
   const collectionPct = Math.round((ownedCount / total) * 100);
   return <div className="aquarium-mode-shell aquarium-catalog-view">
-    <AquariumModeHeader eyebrow="COLLECTION" title="물고기 도감" description="공부로 조개를 모아 새로운 친구를 발견해보세요." />
-    <section className="aquarium-collection-summary"><div><span>수집한 물고기</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section>
+    <div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /><section className="aquarium-collection-summary"><div><span>발견한 친구</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section></div>
     <button type="button" className="aquarium-draw-entry" data-action="openAquariumDraw" disabled={profile?.starterState !== 'claimed'}><span>조개 {Number(profile?.shellBalance) || 0}개</span><b>새 물고기 만나기</b><small>{profile?.starterState === 'claimed' ? '한 번에 조개 30개' : '첫 물고기를 먼저 선택해주세요'}</small><i aria-hidden="true">›</i></button>
+    <div className="aquarium-catalog-filter" role="group" aria-label="도감 필터">{CATALOG_FILTERS.map((item) => <button type="button" className={filter === item.id ? 'is-active' : ''} aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} key={item.id}>{item.label}</button>)}</div>
     <div className="aquarium-catalog-groups">{['common', 'rare', 'epic'].map((rarity) => {
-      const rows = catalog.filter((fish) => fish.rarity === rarity);
+      const rows = catalog.filter((fish) => fish.rarity === rarity).filter((fish) => filter === 'all' || (filter === 'owned' ? fish.owned || ownedSpecies.has(fish.speciesId) : !(fish.owned || ownedSpecies.has(fish.speciesId))));
       if (!rows.length) return null;
       return <section className={`aquarium-catalog-group ${RARITY_CLASSES[rarity]}`} key={rarity}><header><div><span>{rarity.toUpperCase()}</span><b>{RARITY_LABELS[rarity]}</b></div><small>{rows.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length} / {rows.length}</small></header><div>{rows.map((fish) => {
         const owned = fish.owned || ownedSpecies.has(fish.speciesId);
@@ -136,12 +178,14 @@ function DrawResult({ actionError, actionStatus, catalog, pendingDraw }) {
 }
 
 function FishDrawPanel({ actionError = '', actionStatus = 'idle', catalog = [], pendingDraw = null, pendingDrawError = '', pendingDrawStatus = 'idle', profile, revealStep = 0 }) {
+  const [soundOn, setSoundOn] = useState(true);
   const drawing = actionStatus === 'drawing';
-  if (pendingDraw && revealStep >= 3) return <div className="aquarium-mode-shell aquarium-draw-view"><AquariumModeHeader eyebrow="FISH DRAW" title="새로운 만남" description="수조에 찾아온 친구를 확인해보세요." /><DrawResult actionError={actionError} actionStatus={actionStatus} catalog={catalog} pendingDraw={pendingDraw} /></div>;
+  const rarity = pendingDraw?.result?.rarity || 'common';
+  if (pendingDraw && revealStep >= 3) return <div className="aquarium-mode-shell aquarium-draw-view"><AquariumModeHeader eyebrow="DISCOVERY" title="새로운 만남" description="오늘의 공부가 데려온 친구를 확인해보세요." /><DrawResult actionError={actionError} actionStatus={actionStatus} catalog={catalog} pendingDraw={pendingDraw} /></div>;
   return <div className="aquarium-mode-shell aquarium-draw-view">
-    <AquariumModeHeader eyebrow="FISH DRAW" title="물고기 뽑기" description="공부로 모은 조개를 열어 새로운 친구를 만나보세요." />
+    <AquariumModeHeader eyebrow="DISCOVERY" title="새로운 친구 만나기" description="공부로 모은 조개를 열어 수조의 다음 친구를 발견해보세요." />
     <DrawPity profile={profile} />
-    {pendingDraw ? <section className={`aquarium-draw-box ${DRAW_STEP_CLASSES[revealStep] || DRAW_STEP_CLASSES[0]}`}><div className="aquarium-draw-light" /><button type="button" data-action="advanceAquariumDrawReveal" aria-label={`상자 열기 ${revealStep + 1}단계`}><span className="aquarium-chest"><i /><b /></span></button><h2>{revealStep === 0 ? '상자를 세 번 눌러주세요' : revealStep === 1 ? '안에서 움직임이 느껴져요' : '마지막으로 한 번 더!'}</h2><p>{3 - revealStep}번 더 누르면 새로운 친구가 나타나요.</p></section> : <section className="aquarium-draw-ready"><div className="aquarium-sealed-chest"><i /><b /></div><span>한 번 뽑기</span><h2>어떤 친구가 기다리고 있을까요?</h2><p>결과는 서버에서 먼저 안전하게 확정되며, 중간에 나가도 다시 확인할 수 있어요.</p><div className="aquarium-draw-cost"><span>보유 조개</span><b>{Number(profile?.shellBalance) || 0}</b><i /><span>필요 조개</span><b>30</b></div>{pendingDrawError ? <p className="aquarium-action-error" role="alert">{pendingDrawError}</p> : null}{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="startAquariumDraw" disabled={drawing || pendingDrawStatus !== 'ready' || Number(profile?.shellBalance) < 30}>{drawing ? '결과를 확정하는 중...' : Number(profile?.shellBalance) < 30 ? '조개가 더 필요해요' : '조개 30개로 뽑기'}</button></section>}
+    {pendingDraw ? <section className={`aquarium-draw-box ${DRAW_STEP_CLASSES[revealStep] || DRAW_STEP_CLASSES[0]}`}><div className="aquarium-draw-light" /><button type="button" className="aquarium-sound-toggle" aria-label={soundOn ? '축하 효과음 끄기' : '축하 효과음 켜기'} onClick={() => setSoundOn((enabled) => !enabled)}><Icon name={soundOn ? 'bell' : 'alert'} /></button><button type="button" data-action="advanceAquariumDrawReveal" aria-label={`상자 열기 ${revealStep + 1}단계`} onClick={() => { if (soundOn && revealStep === 2) playAquariumRevealSound(rarity); }}><span className="aquarium-chest"><i /><b /></span></button><span>오늘의 공부 보상</span><h2>{revealStep === 0 ? '상자를 세 번 눌러주세요' : revealStep === 1 ? '안에서 움직임이 느껴져요' : '마지막으로 한 번 더!'}</h2><p>{3 - revealStep}번 더 누르면 새로운 친구가 나타나요.</p></section> : <section className="aquarium-draw-ready"><div className="aquarium-sealed-chest"><i /><b /></div><span>DISCOVERY</span><h2>어떤 친구가 기다리고 있을까요?</h2><p>결과는 서버에서 먼저 확정돼요. 중간에 나가도 같은 결과를 이어서 확인할 수 있습니다.</p><div className="aquarium-draw-cost"><span>보유 조개</span><b>{Number(profile?.shellBalance) || 0}</b><i /><span>필요 조개</span><b>30</b></div>{pendingDrawError ? <p className="aquarium-action-error" role="alert">{pendingDrawError}</p> : null}{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="startAquariumDraw" disabled={drawing || pendingDrawStatus !== 'ready' || Number(profile?.shellBalance) < 30}>{drawing ? '결과를 확정하는 중...' : Number(profile?.shellBalance) < 30 ? '조개가 더 필요해요' : '조개 30개로 만나기'}</button></section>}
   </div>;
 }
 
@@ -202,9 +246,9 @@ export function AquariumScreen(ctx) {
   return (
     <AppScreenShell screen="aquarium" tab={tab} dimmed={dimmed}>
       <main className="aquarium-screen">
-        <AppContextHeader className="aquarium-header" description="집중한 시간으로 물고기와 수조를 함께 키워보세요." eyebrow="공부가 자라는 곳" icon="fish" meta={<div className="aquarium-wallet"><span>조개 <b>{Number(gameProfile?.shellBalance) || 0}</b></span><span>먹이 <b>{Number(gameProfile?.foodBalance) || 0}</b></span></div>} title="나의 수조" tone="positive" />
+        <AquariumHabitatHeader fishCount={fishCount || fishInventory.length} profile={gameProfile} />
         {loading ? <div className="aquarium-loading" role="status"><i /><b>수조를 채우고 있어요</b></div> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
-          <div className="aquarium-scene-wrap"><AquariumScene activeFish={activeFish} catalog={fishCatalog} selectedFishId={selectedFish?.fishId || ''} /><div className="aquarium-quality"><div><span>수질</span><b>{waterQuality}</b></div><span><i style={{ width: `${waterQuality}%` }} /></span><small>{waterQuality >= 85 ? '맑음' : waterQuality >= 65 ? '안정' : '돌봄 필요'}</small></div></div>
+          <div className="aquarium-scene-wrap"><AquariumScene activeFish={activeFish} catalog={fishCatalog} selectedFishId={selectedFish?.fishId || ''} streakDays={gameProfile?.streakDays} waterQuality={waterQuality} /><div className="aquarium-quality"><div><span>수질</span><b>{waterQuality}</b></div><span><i style={{ width: `${waterQuality}%` }} /></span><small>{waterQuality >= 85 ? '맑음' : waterQuality >= 65 ? '안정' : '돌봄 필요'}</small></div></div>
           {gameProfile?.starterState === 'selectable' ? <StarterPanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} selectedSpeciesId={aquariumStarterSpeciesId} /> : null}
           {gameProfile?.starterState === 'locked' ? <LockedStarterPanel /> : null}
           {gameProfile?.starterState === 'claimed' ? <FishCarePanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} activeSlot={activeSlot} fish={selectedFish} foodBalance={Number(gameProfile?.foodBalance) || 0} meta={selectedMeta} result={aquariumResult} /> : null}
