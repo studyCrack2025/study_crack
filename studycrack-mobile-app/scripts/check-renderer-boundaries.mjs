@@ -13,8 +13,6 @@ const [
   analysisComponent,
   analysisContentComponent,
   authComponent,
-  homeComponent,
-  homeOverlaysComponent,
   legalComponent,
   mypageComponent,
   introComponent,
@@ -39,8 +37,6 @@ const [
   read('../src/screens/analysis/AnalysisScreen.jsx'),
   read('../src/screens/analysis/AnalysisContent.jsx'),
   read('../src/screens/auth/AuthScreens.jsx'),
-  read('../src/screens/home/HomeScreen.jsx'),
-  read('../src/screens/home/HomeOverlays.jsx'),
   read('../src/screens/mypage/LegalScreens.jsx'),
   read('../src/screens/mypage/MyPageScreen.jsx'),
   read('../src/screens/onboarding/IntroScreens.jsx'),
@@ -69,7 +65,6 @@ const jsxScreenNames = [
   'authSignup',
   'customerSupport',
   'strategy',
-  'home',
   'lockedFeature',
   'my',
   'notificationList',
@@ -122,8 +117,6 @@ const fullScreenRenderers = [
   'renderAuthFindPwScreen',
   'renderAuthLoginScreen',
   'renderAuthSignupScreen',
-  'renderHomeScreen',
-  'renderHomeView',
   'renderMyPageScreen',
   'renderCustomerSupportScreen',
   'renderNotificationListScreen',
@@ -160,14 +153,6 @@ assert.match(addUniversityComponent, /defaultValue=\{analysisSearchTerm\}/);
 assert.doesNotMatch(addUniversityComponent, /renderUniversityResultsOnly|analysisSearchLiveTermRef/);
 assert.match(authComponent, /export function AuthFindIdScreen/);
 assert.match(authComponent, /export function AuthFindPwScreen/);
-assert.match(homeComponent, /<HomeStudyBreakdown/);
-assert.match(homeComponent, /<HomeOverlays/);
-assert.match(homeComponent, /<NotificationPopover/);
-assert.match(homeOverlaysComponent, /export function HomeOverlays/);
-assert.match(homeOverlaysComponent, /export function HomeStudyBreakdown/);
-assert.match(homeOverlaysComponent, /export function NotificationPopover/);
-assert.match(homeOverlaysComponent, /defaultValue=\{analysisSearchTerm\}/);
-assert.doesNotMatch(homeOverlaysComponent, /dangerouslySetInnerHTML/);
 assert.match(legalComponent, /export function SettingsTermsPickerScreen/);
 assert.match(legalComponent, /export function SettingsMainScreen/);
 assert.match(legalComponent, /export function PrivacyPolicyScreen/);

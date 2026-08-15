@@ -56,8 +56,8 @@
 .danger-zone{border-color:color-mix(in srgb,var(--sc-state-danger) 24%,transparent);background:var(--sc-surface-urgent);}
 .account-edit-modal{display:grid;gap:18px;padding:20px;border:1px solid var(--sc-line-subtle);border-radius:20px;background:var(--sc-surface-card);box-shadow:var(--sc-shadow-overlay);}
 .account-edit-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;}
-.account-edit-head .home-modal-title{margin:0;font-size:19px;line-height:1.25;color:var(--sc-ink);font-weight:950;}
-.account-edit-head p:not(.home-modal-title){margin:6px 0 0;font-size:12px;line-height:1.5;color:var(--sc-ink-muted);font-weight:750;}
+.account-edit-head .sc-modal-padded-title{margin:0;font-size:19px;line-height:1.25;color:var(--sc-ink);font-weight:950;}
+.account-edit-head p:not(.sc-modal-padded-title){margin:6px 0 0;font-size:12px;line-height:1.5;color:var(--sc-ink-muted);font-weight:750;}
 .account-edit-close{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-family:inherit;font-size:14px;font-weight:900;transition:background-color .18s ease,color .18s ease;}
 .account-edit-close:active{background:var(--sc-line-subtle);color:var(--sc-ink);}
 .account-edit-fields{display:grid;gap:7px;}

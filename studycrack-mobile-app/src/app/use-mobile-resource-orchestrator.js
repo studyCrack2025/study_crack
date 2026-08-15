@@ -50,27 +50,27 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
 
   const resourceSessionReady = state.userLoadStatus === 'ready' && api.hasClientSession();
   useRankingResource({
-    enabled: resourceSessionReady && ['home', 'timer', 'ranking'].includes(state.screen),
+    enabled: resourceSessionReady && ['timer', 'ranking'].includes(state.screen),
     getApiBinding: api.getUserApiBinding,
     period: state.screen === 'ranking' ? state.rankingPeriod : 'daily',
     refreshTick: state.rankingRefreshTick,
     setState
   });
   useGameProfileResource({
-    enabled: resourceSessionReady && ['home', 'timer', 'aquarium'].includes(state.screen),
+    enabled: resourceSessionReady && ['timer', 'aquarium'].includes(state.screen),
     getApiBinding: api.getGameApiBinding,
     includeCatalog: state.screen === 'aquarium',
     refreshTick: state.gameRefreshTick,
     setState
   });
   useStudySummaryResource({
-    enabled: resourceSessionReady && ['home', 'timer'].includes(state.screen),
+    enabled: resourceSessionReady && ['timer'].includes(state.screen),
     getApiBinding: api.getUserApiBinding,
     refreshTick: state.studySummaryRefreshTick,
     setState
   });
   useAdmissionCalendarResource({
-    enabled: state.userLoadStatus === 'ready' && state.screen === 'home',
+    enabled: state.userLoadStatus === 'ready' && state.screen === 'planner',
     getApiBinding: api.getUserApiBinding,
     hasSession: api.hasClientSession,
     setState

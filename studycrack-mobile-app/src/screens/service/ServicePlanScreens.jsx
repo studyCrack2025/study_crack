@@ -79,7 +79,7 @@ function LockedFeaturePreview({ target = '' }) {
 }
 
 export function LockedFeatureScreen(ctx) {
-  const { lockedFeatureLabel = '', lockedFeatureTarget = '', lockedFeatureTier = '', tab = 'home', upgradePromptTarget = '', upgradePromptTier = '' } = ctx;
+  const { lockedFeatureLabel = '', lockedFeatureTarget = '', lockedFeatureTier = '', tab = 'timer', upgradePromptTarget = '', upgradePromptTier = '' } = ctx;
   const label = lockedFeatureLabel || upgradePromptTarget || '선택한 기능';
   const tier = requiredTierLabel(lockedFeatureTier || upgradePromptTier || 'standard');
   const panel = <section className={`locked-feature-panel ${lockedFeatureTarget === 'strategy' ? 'locked-feature-panel-inline' : ''}`}><span className="badge">잠긴 기능</span><h3>{label} 기능은 {tier} 플랜에서 열려요</h3><p>{lockedFeatureTarget === 'strategy' ? '아래 화면처럼 주간 점검과 튜터 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.' : '아래 화면처럼 플래너와 피드백이 연결되며, 업그레이드 후 바로 이어서 사용할 수 있어요.'}</p><div className="locked-feature-actions"><button type="button" className="btn btn-primary" data-action="goto" data-target="proIntro">{tier} 플랜 보기</button>{lockedFeatureTarget === 'strategy' ? null : <button type="button" className="btn btn-secondary" data-action="back">돌아가기</button>}</div></section>;

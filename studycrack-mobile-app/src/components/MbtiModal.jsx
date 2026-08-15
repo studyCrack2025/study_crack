@@ -7,7 +7,7 @@ function MbtiIntro() {
   return (
     <div className="mbti-survey-intro">
       <span className="mbti-survey-eyebrow">학습 성향 진단</span>
-      <p className="home-modal-title">나의 학습 유형 찾기</p>
+      <p className="sc-modal-padded-title">나의 학습 유형 찾기</p>
       <p className="mbti-survey-lead">36개의 질문에 직관적으로 답하면 나만의 학습 유형 코드를 알려드려요.</p>
       <ul className="mbti-survey-points">
         <li>학습 접근법 · 변화 적응력 · 사고 방식 · 계획 스타일 4가지를 진단해요.</li>

@@ -204,13 +204,13 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openAnalysisSearchFromHome() {
+    openAnalysisSearch() {
       goto?.('addUniversity');
       return true;
     },
 
     closeUniversityModal({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('home-modal-overlay')) return false;
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-modal-padded-overlay')) return false;
       preserveScrollAfterStateChange(() => {
         setUniversityModalOpen(false);
         setAnalysisSearchOpen(false);
@@ -238,7 +238,7 @@ export function createServiceHandlers(ctx) {
     },
 
     closeNotificationModal({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('home-modal-overlay')) return false;
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-modal-padded-overlay')) return false;
       preserveScrollAfterStateChange(() => setNotifModalOpen(false));
       return true;
     },

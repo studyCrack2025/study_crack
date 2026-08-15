@@ -99,7 +99,7 @@ assert.deepEqual(resolveScreenAccess(freeState, 'planner'), {
   requiredTier: 'basic',
   label: '플래너'
 });
-const tabs = [{ id: 'home' }, { id: 'analysis' }];
+const tabs = [{ id: 'timer' }, { id: 'analysis' }];
 assert.equal(filterTabItemsForTier(tabs), tabs, '잠긴 플랜도 하단 탭 자체는 유지해야 합니다.');
 
 console.log(`app assembly contracts passed: bootstrap ${bootstrapLines}, MobileApp ${appLines}, browser globals behind adapters.`);

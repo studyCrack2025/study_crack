@@ -43,7 +43,7 @@ assert.equal(scheduled, null);
 function memoryStorage(tab) {
   return { getItem: () => tab };
 }
-assert.equal(hydrateNavigationStorage(memoryStorage('home')).tab, 'timer');
+assert.equal(hydrateNavigationStorage(memoryStorage('home')).tab, 'analysis');
 assert.equal(hydrateNavigationStorage(memoryStorage('my')).tab, 'timer');
 assert.equal(hydrateNavigationStorage(memoryStorage('aquarium')).tab, 'aquarium');
 

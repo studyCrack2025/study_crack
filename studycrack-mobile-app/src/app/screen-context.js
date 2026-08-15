@@ -43,25 +43,6 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   lockedFeature: Object.freeze([
     'lockedFeatureLabel', 'lockedFeatureTarget', 'lockedFeatureTier', 'tab', 'upgradePromptTarget', 'upgradePromptTier'
   ]),
-  home: Object.freeze([
-    'activeStudySession', 'activeStudySubject', 'completionError',
-    'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
-    'breakdownDetailMap', 'breakdownSubjects', 'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells',
-    'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
-    'calendarSelectedDate', 'calendarSelectedEvents', 'calendarSheetOpen', 'calendarSyncStatus',
-    'calendarWeekdays', 'canAccessBasic', 'crackySrc', 'dimmed', 'formatHms', 'formatMinutesLabel',
-    'drawerOpen', 'expandedBreakdownSubject', 'hasClientSession', 'homeDragOffset', 'homeSlideIndex',
-    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'habitatDays', 'habitatStatus',
-    'homeSlideMotion', 'homeTargets', 'myRank', 'notiList', 'notiStatus', 'notifModalOpen',
-    'percentile', 'plannedScheduleOptions', 'proReports', 'proReportsStatus', 'rankTier', 'rankTierLabel',
-    'rankingProgress', 'rankingTotal', 'rewardPendingSessionId', 'rewardResult', 'scoreExamType', 'scoreTierClass', 'showStudyBreakdown',
-    'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus',
-    'studyTimerRunning', 'studyTimerTick', 'tab', 'timerPhase',
-    'targetDeleteCandidate', 'targetDeleteError', 'targetDeleteModalOpen', 'targetDeleteSaving',
-    'todayPlannerItems', 'todayPlannerProgress',
-    'todayPlannerTotalMinutes', 'todayRecord', 'todayStudySeconds', 'todaySubjectsWithTimer', 'user',
-    'universityModalOpen', 'userLoadError', 'userLoadStatus', 'weeklyReports', 'weeklyReportsStatus'
-  ]),
   my: Object.freeze([
     'dimmed', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep', 'plannerItems',
     'profileDetailModalOpen', 'profilePhotoUploading', 'selectedPlan', 'studyRecords',
@@ -88,6 +69,8 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   planner: Object.freeze([
     'dimmed', 'plannerCalendarMode', 'plannerCalendarMonthCells', 'plannerEditIndex', 'plannerEditItem',
     'plannerFeedback', 'plannerMonthLabel', 'plannerViewItems', 'plannerWeekDates',
+    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
+    'calendarSelectedDate', 'calendarSelectedEvents', 'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays', 'personalEvents',
     'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
   ]),
   plannerAdd: Object.freeze(['selectedPlannerDate', 'selectedPlannerDateKey']),

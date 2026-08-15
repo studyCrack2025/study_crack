@@ -80,11 +80,10 @@ test('로그인 세션의 사용자와 최초 환산점수가 홈에서 함께 �
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   const startedAt = Date.now();
-  await page.goto('/studycrack-mobile.html?screen=home');
+  await page.goto('/studycrack-mobile.html?screen=analysis');
 
-  await expect(page.locator('[data-screen="home"]')).toBeVisible();
+  await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
   await expect(page.getByText('안녕하세요, 테스트학생님')).toBeVisible();
-  await expect(page.locator('.home-result-score strong').first()).toHaveText('142점');
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
   await page.waitForTimeout(100);
@@ -92,7 +91,7 @@ test('로그인 세션의 사용자와 최초 환산점수가 홈에서 함께 �
   for (const deferredType of ['get_univ_list_only', 'get_tutorial_recommendations', 'get_pro_reports', 'get_weekly_reports', 'get_qna_list', 'student_get_notifications']) {
     expect(initialRequestTypes).not.toContain(deferredType);
   }
-  await testInfo.attach('home-initial-load-baseline.json', {
+  await testInfo.attach('analysis-initial-load-baseline.json', {
     body: Buffer.from(JSON.stringify({
       readyMs: Date.now() - startedAt,
       requestCount: api.requests.length,
@@ -550,10 +549,10 @@ test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입�
 test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다', async ({ page }) => {
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
-  await page.goto('/studycrack-mobile.html?screen=home');
+  await page.goto('/studycrack-mobile.html?screen=analysis');
   await expect(page.getByText('안녕하세요, 테스트학생님')).toBeVisible();
 
-  await page.locator('[data-action="goto"][data-target="report"]').click();
+  await page.goto('/studycrack-mobile.html?screen=report');
   await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PRO 리포트 기능은 PRO 플랜에서 열려요' })).toBeVisible();
   await page.getByRole('button', { name: 'PRO 플랜 보기' }).click();

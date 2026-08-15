@@ -21,7 +21,9 @@ export function createInitialMobileAppState() {
   const base = hydrateAppState(createInitialAppState());
   const location = getMobileLocation();
   if (!location) return base;
-  const screen = new URLSearchParams(location.search).get('screen');
+  const requestedScreen = new URLSearchParams(location.search).get('screen');
+  const screen = requestedScreen === 'home' ? 'analysis' : requestedScreen;
+  if (requestedScreen === 'home') replaceMobileScreenParam('analysis');
   const hasSession = hasMobileClientSession();
   const sessionSafeBase = hasSession
     ? appStateReducer(base, { type: 'app/patch', payload: { personalEvents: [], calendarSyncStatus: 'loading' } })

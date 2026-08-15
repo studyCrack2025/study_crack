@@ -2,9 +2,9 @@ import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { Modal } from '../../components/Modal.jsx';
-import { StudySubjectSheet } from '../home/HomeOverlays.jsx';
-import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from '../home/StudyGamificationPanels.jsx';
-import { defaultFormatHms, defaultFormatMinutesLabel } from '../home/presentation.js';
+import { StudySubjectSheet } from './TimerOverlays.jsx';
+import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from './StudyGamificationPanels.jsx';
+import { defaultFormatHms, defaultFormatMinutesLabel } from './presentation.js';
 import { ProfileDrawer } from '../mypage/ProfileDrawer.jsx';
 
 function TimerLoadingScreen({ tab = 'timer' }) {

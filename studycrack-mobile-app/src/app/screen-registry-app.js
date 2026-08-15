@@ -2,9 +2,6 @@ import '../styles/components/navigation.css';
 import '../styles/components/sheets.css';
 import '../styles/components/drawers.css';
 import '../styles/components/context-header.css';
-import '../styles/screens/home-overlays.css';
-import '../styles/screens/home-base.css';
-import '../styles/screens/home.css';
 import '../styles/screens/timer.css';
 import '../styles/screens/aquarium.css';
 import '../styles/screens/analysis-base.css';
@@ -25,7 +22,6 @@ import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { AquariumScreen } from '../screens/aquarium/AquariumScreen.jsx';
 import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
 import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
-import { HomeScreen } from '../screens/home/HomeScreen.jsx';
 import { TimerScreen } from '../screens/timer/TimerScreen.jsx';
 import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
 import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
@@ -44,7 +40,6 @@ export const MOBILE_APP_SCREEN_COMPONENTS = {
   analysis: AnalysisScreen,
   customerSupport: CustomerSupportScreen,
   strategy: CoachingScreen,
-  home: HomeScreen,
   lockedFeature: LockedFeatureScreen,
   my: MyPageScreen,
   notificationList: NotificationListScreen,

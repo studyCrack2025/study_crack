@@ -28,12 +28,8 @@ function restoreScroll(ctx, y) {
 
 function findUniversitySearchInput(actionEl) {
   return actionEl
-    ?.closest?.('.analysis-search-inline, .analysis-search-sticky, .home-modal, .add-univ-page')
+    ?.closest?.('.analysis-search-inline, .analysis-search-sticky, .sc-modal, .add-univ-page')
     ?.querySelector?.('[data-field="analysisSearchTerm"]') || null;
-}
-
-function clampHomeSlide(index, homeTargets = []) {
-  return Math.max(0, Math.min(index, homeTargets.length));
 }
 
 function getPossibleSlider(actionEl) {
@@ -60,10 +56,6 @@ export function createAnalysisHandlers(ctx) {
     setAnalysisSearchOpen,
     setAnalysisSearchTerm,
     setAnalysisTargetList,
-    setHomeDragOffset,
-    setHomeSlideIndex,
-    setHomeSlideMotion,
-    setHomeTargetList,
     setScoreDragOffset,
     setScoreSlideMotion,
     setTargetMajor,
@@ -113,22 +105,6 @@ export function createAnalysisHandlers(ctx) {
         setScoreSlideMotion(nextView === 'target' ? 'motion-next' : 'motion-prev');
         return nextView;
       });
-      return true;
-    },
-
-    setHomeSlide({ actionEl }) {
-      const index = Number(getData(actionEl, 'slide-index'));
-      if (Number.isNaN(index)) return false;
-      // 인디케이터 점 클릭도 슬라이더와 동일하게 state 단일 출처로 커밋(DOM 역산 setHomeSlideDom 제거).
-      setHomeDragOffset(0);
-      markStableScrollPosition();
-      setHomeSlideIndex((prev) => {
-        const next = clampHomeSlide(index, ctx.homeTargets || []);
-        if (next === prev) return prev;
-        setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
-        return next;
-      });
-      restoreIfUnexpectedTopJump();
       return true;
     },
 
@@ -251,8 +227,8 @@ export function createAnalysisHandlers(ctx) {
     removeAnalysisTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
-      const homeTargetList = ctx.homeTargetList || [];
-      if (homeTargetList.length <= 1) {
+      const analysisTargetList = ctx.analysisTargetList || [];
+      if (analysisTargetList.length <= 1) {
         alert('최소 1개 대학은 유지해야 합니다.');
         return false;
       }
@@ -275,23 +251,23 @@ export function createAnalysisHandlers(ctx) {
       if (ctx.targetDeleteSaving) return true;
       const major = ctx.targetDeleteCandidate;
       if (!major) return false;
-      const homeTargetList = ctx.homeTargetList || [];
-      if (homeTargetList.length <= 1) {
+      const analysisTargetList = ctx.analysisTargetList || [];
+      if (analysisTargetList.length <= 1) {
         alert('최소 1개 대학은 유지해야 합니다.');
         setTargetDeleteModalOpen(false);
         setTargetDeleteCandidate('');
         return false;
       }
-      const nextSlots = removeTargetSlot(ctx.targetUnivSlots, major, homeTargetList);
-      const nextHome = targetSlotsToList(nextSlots);
+      const nextSlots = removeTargetSlot(ctx.targetUnivSlots, major, analysisTargetList);
+      const nextTargets = targetSlotsToList(nextSlots);
       const nextAnalysis = (ctx.analysisTargetList || []).filter((value) => value !== major);
-      if (!nextHome.length) {
+      if (!nextTargets.length) {
         alert('최소 1개 대학은 유지해야 합니다.');
         return false;
       }
       setTargetDeleteSaving(true);
       setTargetDeleteError('');
-      const result = await persistTargetUnivs(nextHome, nextSlots);
+      const result = await persistTargetUnivs(nextTargets, nextSlots);
       if (result && result.ok === false) {
         setTargetDeleteSaving(false);
         setTargetDeleteError(result.error || '목표 대학 저장에 실패했습니다.');
@@ -299,12 +275,8 @@ export function createAnalysisHandlers(ctx) {
       }
       setTargetUnivSlots(nextSlots);
       setAnalysisTargetList(nextAnalysis);
-      setHomeTargetList(() => {
-        setHomeSlideIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, nextHome.length - 1))));
-        return nextHome;
-      });
       if (ctx.targetMajor === major) {
-        setTargetMajor(nextAnalysis[0] || nextHome[0] || ctx.analysisRecommended?.[0] || '');
+        setTargetMajor(nextAnalysis[0] || nextTargets[0] || ctx.analysisRecommended?.[0] || '');
       }
       setTargetDeleteSaving(false);
       setTargetDeleteModalOpen(false);

@@ -26,7 +26,6 @@
 .section{margin-bottom:12px;}
 .crackie{display:block;width:90px;max-width:100%;height:auto;object-fit:contain;}
 .splash{width:100%;height:100%;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;background:linear-gradient(150deg,var(--sc-brand-navy) 0%,var(--sc-brand-navy-deep) 100%);color:var(--sc-surface-card);text-align:center;}
-.home-container{display:flex;flex-direction:column;}
 .mobile-card-stack{width:100%;min-width:0;display:grid;gap:var(--mobile-stack-gap);}
 .study-subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;}
 .study-start-head{display:grid;gap:4px;}
@@ -57,7 +56,6 @@
 .loading-box{display:grid;gap:6px;color:var(--sc-brand-navy);font-weight:700;text-align:center;}
 .loading-box .dots{letter-spacing:2px;}
 button:disabled,.disabled,[disabled]{opacity:.5;pointer-events:none;}
-.admission-card{position:relative;width:100%;min-width:0;box-sizing:border-box;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);overflow:hidden;}
 .plus-one-card{position:relative;width:100%;min-width:0;box-sizing:border-box;background:var(--sc-surface-card);}
 .score-journey-col.current{border:0;background:transparent;box-shadow:none;}
 .sc-card{width:100%;min-width:0;box-sizing:border-box;padding:var(--sc-space-16);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}

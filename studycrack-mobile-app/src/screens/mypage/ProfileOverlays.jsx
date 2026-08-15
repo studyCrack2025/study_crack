@@ -39,7 +39,7 @@ export function ProfileDetailModal({ profileDetailModalOpen = false, profilePhot
   const periodValue = subscription.lifetime ? '평생 이용' : (subscription.endDate || (subscription.hasPlan ? '정보 없음' : '이용권 없음'));
   return (
     <Modal panelClass="profile-detail-modal" dismissAction="closeProfileDetailModal">
-      <div className="profile-detail-modal-head"><p className="home-modal-title">계정 및 구독 정보</p><button type="button" className="qna-modal-close" data-action="closeProfileDetailModal" aria-label="닫기">✕</button></div>
+      <div className="profile-detail-modal-head"><p className="sc-modal-padded-title">계정 및 구독 정보</p><button type="button" className="qna-modal-close" data-action="closeProfileDetailModal" aria-label="닫기">✕</button></div>
       <div className="profile-detail-hero"><div className="profile-photo-large"><ProfileAvatar user={user} /></div><div className="profile-photo-copy"><strong>{displayAccountName(user)}</strong><span>{displayPlanStatus(selectedPlan)}</span></div></div>
       <div className="profile-photo-actions">
         <label className="profile-photo-pick"><input className="profile-photo-input" type="file" accept="image/*" data-profile-photo-input /><svg className="profile-photo-pick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg><span className="profile-photo-pick-text">사진 선택</span></label>
@@ -61,7 +61,7 @@ export function ProfileDetailModal({ profileDetailModalOpen = false, profilePhot
 export function ProfileEditModal({ myProfileEditOpen = false, myProfileNameDraft = '' }) {
   return (
     <Modal open={myProfileEditOpen} panelClass="my-profile-edit-modal account-edit-modal" dismissAction="closeMyProfileEdit">
-      <div className="account-edit-head"><div><p className="home-modal-title">이름 변경</p><p>서비스에서 사용할 이름을 입력해주세요.</p></div><CloseButton action="closeMyProfileEdit" /></div>
+      <div className="account-edit-head"><div><p className="sc-modal-padded-title">이름 변경</p><p>서비스에서 사용할 이름을 입력해주세요.</p></div><CloseButton action="closeMyProfileEdit" /></div>
       <div className="account-edit-fields"><label htmlFor="mobile-profile-name">새 이름</label><input id="mobile-profile-name" className="planner-input" data-field="myProfileNameDraft" defaultValue={myProfileNameDraft} autoComplete="name" maxLength="30" placeholder="이름" /><small>변경한 이름은 프로필과 학습 리포트에 함께 표시됩니다.</small></div>
       <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeMyProfileEdit">취소</button><button type="button" className="btn btn-primary" data-action="saveMyProfileEdit">저장</button></div>
     </Modal>
@@ -74,7 +74,7 @@ export function PhoneChangeModal({ myProfilePhoneCodeDraft = '', myProfilePhoneD
   const title = verify ? '인증번호 확인' : (user?.phone ? '전화번호 변경' : '전화번호 등록');
   return (
     <Modal panelClass="phone-change-modal account-edit-modal" dismissAction="closePhoneChangeModal">
-      <div className="account-edit-head"><div><p className="home-modal-title">{title}</p><p>{verify ? '문자로 받은 6자리 번호를 입력해주세요.' : '중요한 결제 및 서비스 안내에 사용할 번호를 인증합니다.'}</p></div><CloseButton action="closePhoneChangeModal" /></div>
+      <div className="account-edit-head"><div><p className="sc-modal-padded-title">{title}</p><p>{verify ? '문자로 받은 6자리 번호를 입력해주세요.' : '중요한 결제 및 서비스 안내에 사용할 번호를 인증합니다.'}</p></div><CloseButton action="closePhoneChangeModal" /></div>
       {verify ? <div className="account-edit-fields"><label htmlFor="mobile-phone-code">인증번호</label><input id="mobile-phone-code" className="planner-input" data-field="myProfilePhoneCodeDraft" inputMode="numeric" autoComplete="one-time-code" maxLength="6" defaultValue={myProfilePhoneCodeDraft} placeholder="6자리 인증번호" /><small>{myProfilePhoneDraft || '입력한 번호'}로 발송된 번호를 입력해주세요.</small></div> : <div className="account-edit-fields"><label htmlFor="mobile-phone-number">휴대폰 번호</label><input id="mobile-phone-number" className="planner-input" data-field="myProfilePhoneDraft" inputMode="numeric" autoComplete="tel" maxLength="11" defaultValue={myProfilePhoneDraft} placeholder="01012345678" /><small>하이픈 없이 숫자 11자리를 입력해주세요.</small></div>}
       <div className="account-edit-actions">
         {verify ? <><button type="button" className="btn btn-secondary" data-action="requestPhoneChange" disabled={phoneChangeSending}>{phoneChangeSending ? '재전송 중' : '재전송'}</button><button type="button" className="btn btn-primary" data-action="verifyPhoneChange">인증 후 변경</button></> : <><button type="button" className="btn btn-secondary" data-action="closePhoneChangeModal">취소</button><button type="button" className="btn btn-primary" data-action="requestPhoneChange" disabled={phoneChangeSending}>{phoneChangeSending ? '전송 중' : '인증번호 받기'}</button></>}
@@ -86,7 +86,7 @@ export function PhoneChangeModal({ myProfilePhoneCodeDraft = '', myProfilePhoneD
 export function WithdrawModal({ withdrawModalOpen = false, withdrawPassword = '' }) {
   return (
     <Modal open={withdrawModalOpen} panelClass="account-edit-modal" dismissAction="closeWithdrawModal">
-      <div className="account-edit-head"><div><p className="home-modal-title">회원탈퇴</p><p>현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p></div><CloseButton action="closeWithdrawModal" /></div>
+      <div className="account-edit-head"><div><p className="sc-modal-padded-title">회원탈퇴</p><p>현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p></div><CloseButton action="closeWithdrawModal" /></div>
       <div className="account-edit-fields"><label htmlFor="mobile-withdraw-password">현재 비밀번호</label><input id="mobile-withdraw-password" className="planner-input" type="password" data-field="withdrawPassword" defaultValue={withdrawPassword} autoComplete="current-password" placeholder="현재 비밀번호" /></div>
       <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button type="button" className="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div>
     </Modal>

@@ -1,5 +1,6 @@
 import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
+import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { AppContextHeader } from '../../components/AppContextHeader.jsx';
@@ -147,7 +148,7 @@ export function PlannerScreen(ctx) {
       screen="planner"
       tab={tab}
       dimmed={dimmed}
-      overlays={plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}
+      overlays={<>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}<AdmissionCalendarSheet {...ctx} /></>}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <AppContextHeader className="planner-context-head" description="해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요." eyebrow="DAILY PLAN" title="오늘의 플래너" tone="positive" visual={<PlannerChecklistArt />} />
@@ -167,7 +168,7 @@ export function PlannerScreen(ctx) {
             </section>
 
             <section className="planner-calendar-section">
-              <div className="planner-section-head"><div><span>일정 탐색</span><h4>다른 날짜 보기</h4></div></div>
+              <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="btn btn-secondary mini" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
               <div className="card planner-calendar-card">
                 <div className="planner-inline-calendar-toolbar">
                   <PlannerCalendarSegment activeMode={calendarMode} />

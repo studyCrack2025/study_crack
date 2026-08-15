@@ -49,7 +49,6 @@ const initialModules = new Set(
 const deferredModuleSuffixes = [
   '/src/screens/analysis/AnalysisScreen.jsx',
   '/src/screens/coaching/CoachingScreen.jsx',
-  '/src/screens/home/HomeScreen.jsx',
   '/src/screens/mypage/MyPageScreen.jsx',
   '/src/screens/planner/PlannerScreen.jsx'
 ];
@@ -68,10 +67,8 @@ const bootstrapCss = String(cssAsset.source);
 const deferredCss = String(deferredCssAsset.source);
 assert.ok(bootstrapCss.length < 90 * 1024, 'bootstrap CSS must remain below 90 KiB');
 assert.ok(deferredCss.length > 100 * 1024, 'signed-in screen styles must remain in the deferred CSS chunk');
-assert.doesNotMatch(bootstrapCss, /\.home-report-preview-grid\b/, 'home feature CSS must not return to the bootstrap asset');
 assert.doesNotMatch(bootstrapCss, /\.app-context-header\b/, 'signed-in context header CSS must not return to the bootstrap asset');
 assert.doesNotMatch(bootstrapCss, /\.my-profile-avatar\b/, 'mypage feature CSS must not return to the bootstrap asset');
-assert.match(deferredCss, /\.home-report-preview-grid\b/, 'deferred CSS must include home feature styles');
 assert.match(deferredCss, /\.app-context-header\b/, 'deferred CSS must include the shared signed-in context header');
 assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include mypage feature styles');
 assert.ok(
