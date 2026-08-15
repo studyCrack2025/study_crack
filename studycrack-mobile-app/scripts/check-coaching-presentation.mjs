@@ -12,8 +12,11 @@ assert.equal(presentation.feedbackReady, true);
 assert.equal(presentation.submitted, true);
 assert.equal(presentation.sessions[0].statusLabel, '피드백 도착');
 assert.equal(presentation.feedback[0].summary, '수학 복습 시간을 먼저 확보하세요.');
+assert.equal(presentation.statusSummary.title, '피드백 도착');
+assert.equal(presentation.statusSummary.tone, 'ready');
 assert.equal(formatCoachingWeekLabel('260704'), '2026년 7월 4주차');
 assert.equal(buildCoachingPresentation([], 'loading').isLoading, true);
+assert.equal(buildCoachingPresentation([], 'loading').statusSummary.tone, 'loading');
 assert.deepEqual(COACHING_PROCESS_STEPS.map((step) => step.title), ['학습 성향 분석', '목표 대학 분석', '합격 설계']);
 assert.equal(COACHING_PROCESS_STEPS[1].description, '대학별 환산점수');
 

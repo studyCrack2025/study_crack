@@ -68,10 +68,13 @@ assert.match(secondaryScreen, /export function SecondaryScreenShell/);
 assert.match(serviceContent, /data-action="downloadProReport"/);
 assert.match(serviceContent, /data-action="openProRequestModal"/);
 assert.match(serviceContent, /data-action="openQnaComposer"/);
+assert.match(serviceContent, /proReportsStatus === 'error'/);
 assert.match(serviceContent, /data-target=\{latest \? 'planner' : 'strategy'\}/);
 assert.match(servicePlan, /data-action="openWebPayment"/);
 assert.match(servicePlan, /data-action="selectPlan"/);
 assert.match(servicePlan, /data-action="selectDuration"/);
+assert.match(servicePlan, /aria-pressed=\{active\}/);
+assert.match(servicePlan, /웹 결제는 4주 단위로 최종 확인됩니다/);
 
 for (const selector of [
   '.sc-secondary-page',

@@ -14,11 +14,12 @@ export function CoachingMark() {
   return <span className="coaching-mark" aria-hidden="true"><i /><i /><i /></span>;
 }
 
-function CoachingHero({ submitted = false }) {
+function CoachingHero({ statusSummary, submitted = false }) {
+  const summary = statusSummary || {};
   return (
     <section className="coaching-hero">
-      <div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div>
-      <CoachingMark />
+      <div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>{summary.title || '이번 주 공부, 혼자 고민하지 마세요'}</h3><p>{summary.description || '학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.'}</p></div>
+      <div className="coaching-week-status" data-status={summary.tone || 'empty'}><small>{summary.eyebrow || '이번 주 코칭'}</small><CoachingMark /></div>
       <button type="button" data-action="openCoachingSheet">{submitted ? '이번 주 점검 수정하기' : '이번 주 코칭 신청하기'}<b aria-hidden="true">›</b></button>
     </section>
   );
@@ -140,5 +141,5 @@ export function CoachingScreen(ctx) {
   const presentation = buildCoachingPresentation(weeklyReports, weeklyReportsStatus);
   const activeView = coachingView === 'feedback' ? 'feedback' : 'sessions';
   const rows = activeView === 'feedback' ? presentation.feedback : presentation.sessions;
-  return <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}><main className="coach-page coaching-screen"><AppContextHeader className="coaching-context" description="주간 기록을 점검하고, 바로 실행할 피드백을 받아보세요." eyebrow="주간 학습 점검" title="학습 코칭" tone="positive" visual={<CoachingMark />} /><CoachingProcess /><CoachingHero submitted={presentation.submitted} /><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div><CoachingSegment active={activeView} /><div className="coaching-history-list">{rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : <CoachingEmpty view={activeView} loading={presentation.isLoading} />}</div>{activeView === 'sessions' && !presentation.isLoading ? <button type="button" className="coaching-new-request" data-action="openCoachingSheet"><span>+</span><b>새 학습 점검 작성</b><small>이번 주 기록과 질문 남기기</small></button> : null}</section></main></AppScreenShell>;
+  return <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}><main className="coach-page coaching-screen"><AppContextHeader className="coaching-context" description="주간 기록을 점검하고, 바로 실행할 피드백을 받아보세요." eyebrow="주간 학습 점검" title="학습 코칭" tone="positive" visual={<CoachingMark />} /><CoachingHero statusSummary={presentation.statusSummary} submitted={presentation.submitted} /><CoachingProcess /><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div><CoachingSegment active={activeView} /><div className="coaching-history-list">{rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : <CoachingEmpty view={activeView} loading={presentation.isLoading} />}</div>{activeView === 'sessions' && !presentation.isLoading ? <button type="button" className="coaching-new-request" data-action="openCoachingSheet"><span>+</span><b>새 학습 점검 작성</b><small>이번 주 기록과 질문 남기기</small></button> : null}</section></main></AppScreenShell>;
 }

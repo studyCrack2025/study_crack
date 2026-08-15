@@ -58,12 +58,20 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
     summary: feedbackSummary(report)
   }));
 
+  const latest = sessions[0] || null;
+  const statusSummary = status === 'loading'
+    ? { eyebrow: '이번 주 코칭', title: '점검 기록 확인 중', description: '제출 내역을 불러오고 있어요.', tone: 'loading' }
+    : latest
+      ? { eyebrow: latest.weekLabel, title: latest.statusLabel, description: `${latest.tutorName} · ${latest.dateLabel}`, tone: latest.feedbackReady ? 'ready' : 'pending' }
+      : { eyebrow: '이번 주 코칭', title: '새 점검을 시작해 보세요', description: '기록을 보내면 SKY 튜터의 피드백이 연결돼요.', tone: 'empty' };
+
   return {
     feedback,
     feedbackReady: feedback.length > 0,
     isLoading: status === 'loading',
-    latest: sessions[0] || null,
+    latest,
     sessions,
+    statusSummary,
     submitted: sessions.length > 0
   };
 }

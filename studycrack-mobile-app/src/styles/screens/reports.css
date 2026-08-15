@@ -1,17 +1,16 @@
 /* Weekly coaching and report list layouts. */
-.weekly-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;}
-.weekly-head h3{margin:0;color:var(--sc-ink-strong);font-size:19px;font-weight:800;}
-.weekly-back{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--sc-line-subtle);border-radius:12px;background:var(--sc-surface-card);color:var(--sc-ink);font:inherit;}
-.weekly-range{margin:0;color:var(--sc-ink-muted);font-size:13.5px;font-weight:600;}
-.weekly-rate{display:flex;align-items:flex-start;justify-content:space-between;padding:15px;border-radius:18px;}
-.weekly-rate h2{margin:6px 0 0;color:var(--sc-brand-navy);font-size:40px;font-weight:800;line-height:1;}
-.weekly-feedback{padding:14px;border-radius:18px;overflow:hidden;}
+.weekly-summary{grid-template-columns:repeat(2,minmax(0,1fr));background:var(--sc-surface-card);}
+.weekly-summary > div{min-width:0;display:grid;gap:4px;}
+.weekly-summary > div + div{padding-left:var(--sc-space-12);border-left:1px solid var(--sc-line-subtle);}
+.weekly-summary span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;}
+.weekly-summary b{min-width:0;overflow:hidden;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
+.weekly-feedback{overflow:hidden;}
 .weekly-feedback-body{display:grid;grid-template-columns:minmax(0,1fr) clamp(56px,17vw,68px);gap:clamp(8px,2.5vw,10px);align-items:end;min-width:0;}
 .weekly-feedback-list{display:grid;gap:6px;min-width:0;}
 .weekly-feedback-list .feedback-item{min-width:0;margin:0;align-items:flex-start;overflow-wrap:anywhere;word-break:keep-all;}
 .weekly-feedback-list .feedback-item svg{flex:0 0 auto;}
 .weekly-char{position:static;align-self:end;width:clamp(56px,17vw,68px);max-width:100%;height:auto;object-fit:contain;}
-.weekly-next{position:static;min-height:52px;margin-top:0;}
+.weekly-next{position:static;width:100%;min-height:48px;margin:0;}
 .report-desc{margin:4px 0 0;color:var(--sc-ink-muted);font-size:13.5px;}
 .report-main{display:grid;gap:6px;padding:14px;border-radius:18px;text-align:center;}
 .report-main h2{margin:0;color:var(--sc-brand-navy);font-size:36px;line-height:1;}

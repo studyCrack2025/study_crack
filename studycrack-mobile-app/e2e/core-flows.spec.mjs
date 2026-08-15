@@ -454,6 +454,8 @@ test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입�
   await installApiMock(page, { tier: 'pro' });
 
   await page.goto('/studycrack-mobile.html?screen=strategy');
+  await expect(page.locator('.coaching-week-status')).toContainText('이번 주 코칭');
+  await expect(page.locator('.coaching-hero')).toContainText('새 점검을 시작해 보세요');
   await expect(page.locator('.coaching-process-step')).toHaveCount(3);
   await expect(page.locator('.coaching-process-step b')).toHaveText(['학습 성향 분석', '목표 대학 분석', '합격 설계']);
   await expect(page.locator('.coach-step-progress')).toHaveCount(0);
@@ -465,6 +467,11 @@ test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입�
     await testInfo.attach(`coaching-process-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
   }
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: '이번 주 코칭 신청하기' }).click();
+  const coachingDialog = page.getByRole('dialog');
+  await expect(coachingDialog.locator('.coach-step-progress')).toContainText('1 / 8');
+  await expect(coachingDialog.locator('.coach-sheet-footer')).toBeVisible();
+  await coachingDialog.getByRole('button', { name: '닫기' }).click();
 
   await page.goto('/studycrack-mobile.html?screen=report');
   await expect(page.getByRole('heading', { name: '맞춤 전략 리포트' })).toBeVisible();
@@ -511,6 +518,9 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
 
   await expect(page.locator('[data-screen="payment"]')).toBeVisible();
   await page.locator('[data-action="selectDuration"][data-duration="8주"]').click();
+  await expect(page.locator('.plan-console-term')).toContainText('8주');
+  await expect(page.locator('.plan-console-term')).toContainText('웹 결제는 4주 단위');
+  await expect(page.locator('[data-action="selectDuration"][data-duration="8주"]')).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: '웹 결제로 계속하기' }).click();
   await page.waitForURL(/\/payment\?/);
   const paymentUrl = new URL(page.url());
