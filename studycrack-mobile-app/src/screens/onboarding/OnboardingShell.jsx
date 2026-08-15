@@ -15,9 +15,11 @@ export function OnboardingScreenShell({ bubble, children, crackySrc = CRACKY_SRC
         <div className="screen app-screen app-content" data-screen={screen}>
           <div className="onboarding-container">
             <div className="content">
-              <OnboardingProgress step={step} />
-              <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">{title}</div></div>
-              <p className="sub ob-subcopy">{subcopy}</p>
+              <header className="ob-shell-head">
+                <OnboardingProgress step={step} />
+                <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">{title}</div></div>
+                <p className="sub ob-subcopy">{subcopy}</p>
+              </header>
               <OnboardingBubble crackySrc={crackySrc}>{bubble}</OnboardingBubble>
               {children}
             </div>

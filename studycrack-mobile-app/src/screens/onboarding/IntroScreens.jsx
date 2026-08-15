@@ -4,7 +4,7 @@ function IntroScreen({ activeDot, children, description, nextLabel = '다음', n
   return (
     <div className="app-shell"><div className="app-frame"><div className="screen app-screen app-content" data-screen={screen}>
       <div className="onboarding-shot">
-        <div className="onboarding-shot-head"><h2>{title}</h2><p>{description}</p></div>
+        <div className="onboarding-shot-head"><span className="onboarding-kicker">STUDYCRACK STRATEGY</span><h2>{title}</h2><p>{description}</p></div>
         <div className="onboarding-center">{children}</div>
         <img src={CRACKY_SRC} className={`onboarding-character ${screen}`} alt="크랙이" />
         <div className="onboarding-shot-dots">{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
@@ -15,11 +15,11 @@ function IntroScreen({ activeDot, children, description, nextLabel = '다음', n
 }
 
 export function SplashScreen({ crackyHiSrc = CRACKY_HI_SRC, studycrackLogoSrc = STUDYCRACK_LOGO_SRC }) {
-  return <div className="app-shell"><div className="app-frame"><div className="splash splash-v2"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><p>합격까지 가장 빠른 전략</p><div className="splash-progress" aria-hidden="true"><i /></div></div></div></div>;
+  return <div className="app-shell"><div className="app-frame"><div className="splash splash-v2"><div className="splash-brand"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><div className="splash-brand-copy"><span>ADMISSIONS PLATFORM</span><h1>STUDY CRACK</h1><p>합격까지 가장 빠른 전략</p></div></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><div className="splash-progress" aria-hidden="true"><i /></div></div></div></div>;
 }
 
 export function On1Screen() {
-  return <IntroScreen screen="on1" activeDot={0} nextTarget="on2" title={<><span className="accent">데이터 기반으로</span>{'\n'}내 합격 가능성을 분석해요</>} description={'흔들리지 않는 방향을\n제시해드립니다.'}>
+  return <IntroScreen screen="on1" activeDot={0} nextTarget="on2" title={<><span className="accent">데이터 기반으로</span>{'\n'}지원학과 환산점수를 분석해요</>} description={'대학별 반영 방식에 맞춘\n현재 위치를 확인할 수 있어요.'}>
     <div className="onboarding-card data"><div className="onboarding-label">지원학과 환산 점수</div><div className="onboarding-score">128<em>점</em></div><svg className="onboarding-graph data" viewBox="0 0 320 124" aria-hidden="true"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--sc-info-blue)" stopOpacity="0.28" /><stop offset="100%" stopColor="var(--sc-info-blue)" stopOpacity="0" /></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)" /><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="var(--sc-blue)" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="310" cy="10" r="5" fill="var(--sc-blue)" /></svg></div>
   </IntroScreen>;
 }

@@ -32,6 +32,24 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
   await expectNoHorizontalOverflow(page);
 });
 
+test('회원가입은 약관부터 시작하고 전문 확인 뒤 다음 인증 단계로 이동한다', async ({ page }) => {
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=authSignup');
+
+  await expect(page.locator('.signup-progress-item.active')).toContainText('약관');
+  await page.getByRole('button', { name: '전문보기' }).first().click();
+  const termsDialog = page.getByRole('dialog', { name: '스터디크랙 이용약관' });
+  await expect(termsDialog).toBeVisible();
+  await expect(termsDialog.locator('.terms-modal-body')).toContainText('제 1 장 총 칙');
+  await termsDialog.getByRole('button', { name: '닫기' }).click();
+
+  await page.locator('.auth-terms-check-row.all input').check();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '기본 정보와 휴대폰을 확인할게요' })).toBeVisible();
+  await expect(page.locator('.signup-progress-item.active')).toContainText('본인 인증');
+  await expectNoHorizontalOverflow(page);
+});
+
 test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로로 이어진다', async ({ page }) => {
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=splash');

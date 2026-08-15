@@ -145,8 +145,11 @@ export function AuthLoginScreen(ctx) {
         <div className="auth-entry-layout">
           <header className="auth-brand-block">
             <Logo src={studycrackLogoSrc} />
-            <h1 className="auth-wordmark">StudyCrack</h1>
-            <p className="auth-title">합격 전략을 시작해볼까요?</p>
+            <div className="auth-brand-copy">
+              <span className="auth-brand-eyebrow">ADMISSIONS PLATFORM</span>
+              <h1 className="auth-wordmark">STUDY CRACK</h1>
+              <p className="auth-title">오늘의 실행을 합격 전략으로 연결하세요.</p>
+            </div>
           </header>
           <div className="auth-unified-card">
             <div className="auth-form-stack">
@@ -166,6 +169,7 @@ export function AuthLoginScreen(ctx) {
             </div>
             <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
           </div>
+          <p className="auth-entry-footnote">환산 분석 · 플래너 · 학습 코칭을 한 곳에서</p>
         </div>
       </div>
     </AuthShell>
@@ -325,8 +329,10 @@ export function AuthSignupScreen(ctx) {
     <AuthShell screen="authSignup" overlays={overlays}>
       <div className="signup-page">
         <div className="signup-form-card">
-          <Logo src={studycrackLogoSrc} compact />
-          <SignupProgress step={step} />
+          <header className="signup-topbar">
+            <SignupProgress step={step} />
+            <Logo src={studycrackLogoSrc} compact />
+          </header>
           <SignupStep ctx={ctx} step={step} />
           {signupError && <p className="auth-error signup-error" role="alert">{signupError}</p>}
           <div className="signup-stage-actions">
