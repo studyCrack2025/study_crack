@@ -416,7 +416,7 @@ test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 
 
   await page.goto('/studycrack-mobile.html?screen=customerSupport');
   await expect(page.getByText('분석 결과 문의')).toBeVisible();
-  await page.getByRole('button', { name: '문의 작성' }).click();
+  await page.getByRole('button', { name: /일반 문의/ }).click();
   const qnaDialog = page.getByRole('dialog');
   await qnaDialog.locator('[data-field="qnaDraftTitle"]').fill('성적 입력 문의');
   await qnaDialog.locator('[data-field="qnaDraftContent"]').fill('국어 공통 점수 기준이 궁금합니다.');
@@ -446,6 +446,57 @@ test('알림 상세·문의 작성·성적 입력 보조 화면이 React 전환 
   await expect(scoreDialog).toBeHidden();
   await expect(page.locator('.score-info-subject-card').filter({ hasText: '생활과 윤리' })).toContainText('45점');
   await expect(page.locator('.score-info-subject-card').filter({ hasText: '사회·문화' })).toContainText('43점');
+  await expectNoHorizontalOverflow(page);
+});
+
+test('MY 계정·알림·지원 흐름은 실제 구독과 수신 계약을 유지한다', async ({ page }, testInfo) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { tier: 'standard' });
+
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await expect(page.locator('.my-profile-hero')).toContainText('Standard');
+  await expect(page.locator('.my-profile-subscription')).toContainText('까지 이용');
+  await expectNoHorizontalOverflow(page);
+
+  await page.locator('.my-profile-hero').click();
+  const profileDialog = page.getByRole('dialog');
+  await expect(profileDialog).toContainText('계정 및 구독 정보');
+  await expect(profileDialog).toContainText('Standard');
+  await profileDialog.getByRole('button', { name: '닫기' }).click();
+
+  await page.goto('/studycrack-mobile.html?screen=accountInfo');
+  await expect(page.locator('.account-subscription-card')).toContainText('다음 결제 안내');
+  await expect(page.locator('.mobile-social-row')).toHaveCount(2);
+  await page.getByRole('button', { name: '등록', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('전화번호 등록');
+  await page.getByRole('button', { name: '닫기' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  await page.goto('/studycrack-mobile.html?screen=notificationSettings');
+  await expect(page.getByRole('switch')).toHaveCount(2);
+  await expect(page.getByText('주간 점검 알림')).toHaveCount(0);
+  await expect(page.getByText('결제/구독 알림')).toHaveCount(0);
+  await page.getByRole('switch').first().click();
+  await expect.poll(() => api.requests.some(({ payload }) => payload.type === 'update_member_info' && payload.data?.notificationPreferences?.planner === false)).toBe(true);
+
+  await page.goto('/studycrack-mobile.html?screen=notificationList');
+  await page.getByRole('button', { name: /학습 알림/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('오늘 계획한 국어 학습을 확인해주세요.');
+  await expect.poll(() => api.requests.some(({ payload }) => payload.type === 'student_read_notification' && payload.data?.notiId === 'noti-e2e')).toBe(true);
+  await page.getByRole('button', { name: '닫기' }).click();
+
+  await page.goto('/studycrack-mobile.html?screen=customerSupport');
+  await page.getByRole('button', { name: /데이터 오류 신고/ }).click();
+  const qnaDialog = page.getByRole('dialog');
+  await expect(qnaDialog.locator('[data-field="qnaDraftTitle"]')).toHaveValue('[데이터 오류 신고] ');
+  await expect(qnaDialog.locator('[data-field="qnaDraftContent"]')).toContainText('오류가 발생한 화면:');
+  await qnaDialog.locator('[data-field="qnaDraftContent"]').fill('분석 화면에서 환산점수가 다르게 보여요.');
+  await expect(qnaDialog.locator('[data-field="qnaDraftContent"]')).toHaveValue('분석 화면에서 환산점수가 다르게 보여요.');
+  await qnaDialog.getByRole('button', { name: '취소' }).click();
+
+  const screenshotPath = testInfo.outputPath('g7-account-support-390.png');
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await testInfo.attach('g7-account-support-390.png', { path: screenshotPath, contentType: 'image/png' });
   await expectNoHorizontalOverflow(page);
 });
 

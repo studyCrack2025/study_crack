@@ -21,7 +21,9 @@ export function displayAccountName(user = {}) {
 }
 
 export function displayAccountPlan(plan = '') {
-  return String(plan || '').trim() || '미구독';
+  const raw = String(plan || '').trim();
+  const labels = { basic: 'Basic', free: 'Free', pro: 'Pro', standard: 'Standard', starter: 'Starter', test: 'Basic', trial: 'Free' };
+  return labels[raw.toLowerCase()] || raw || '미구독';
 }
 
 export function displayPlanStatus(plan = '') {
@@ -44,16 +46,23 @@ function formatSubscriptionDate(value) {
 export function buildSubscriptionSummary(user = {}, selectedPlan = '') {
   const current = user?.currentSubscription && typeof user.currentSubscription === 'object' ? user.currentSubscription : null;
   const pending = user?.pendingSubscription && typeof user.pendingSubscription === 'object' ? user.pendingSubscription : null;
-  const planLabel = displayAccountPlan(selectedPlan);
+  const planLabel = displayAccountPlan(current?.tier || user?.computedTier || selectedPlan);
   const tier = current?.tier || selectedPlan;
   const hasPlan = planLabel !== '미구독';
   const lifetime = hasPlan && isLifetimePlan(tier);
   const startDate = current ? formatSubscriptionDate(current.startDate) : '';
   const endDate = current ? formatSubscriptionDate(current.endDate) : '';
+  const renewalLine = !hasPlan
+    ? '이용권 없음'
+    : lifetime
+      ? '별도 갱신 없이 이용'
+      : endDate
+        ? `${endDate} 전 연장 필요`
+        : '이용 기간 확인 중';
   const pendingLine = pending?.tier
     ? `다음 플랜 ${displayAccountPlan(pending.tier)}${pending.startDate ? ` · ${formatSubscriptionDate(pending.startDate)} 시작` : ''}`
     : '';
-  return { planLabel, hasPlan, lifetime, startDate, endDate, pendingLine };
+  return { planLabel, hasPlan, lifetime, startDate, endDate, renewalLine, pendingLine };
 }
 
 export function canViewTutorInfo(plan = '', user = {}) {

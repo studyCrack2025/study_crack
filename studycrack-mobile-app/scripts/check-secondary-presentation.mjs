@@ -48,8 +48,13 @@ assert.doesNotMatch(scoreStyles, /\.score-grade-grid\{|\.score-grade-card\{/);
 
 assert.match(mypage, /role="switch" aria-checked=/);
 assert.match(mypage, /const NOTI_PAGE_SIZE = 7/);
+assert.match(mypage, /\['planner', '플래너 알림'/);
+assert.match(mypage, /\['report', '리포트 알림'/);
+assert.doesNotMatch(mypage, /\['weekly', '주간 점검 알림'/);
+assert.doesNotMatch(mypage, /\['billing', '결제\/구독 알림'/);
 assert.match(mypage, /data-action="openNotiDetail"/);
 assert.match(mypage, /data-action="openQnaComposer"/);
+assert.match(mypage, /\[데이터 오류 신고\]/);
 assert.match(mypage, /defaultValue=\{qnaDraftTitle\}/);
 assert.match(mypage, /defaultValue=\{qnaDraftContent\}/);
 assert.doesNotMatch(mypage, /dangerouslySetInnerHTML/);

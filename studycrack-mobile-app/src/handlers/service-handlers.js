@@ -337,8 +337,12 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openQnaComposer() {
-      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
+    openQnaComposer({ actionEl } = {}) {
+      const title = getData(actionEl, 'qna-title');
+      const content = getData(actionEl, 'qna-content');
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title, content };
+      setQnaDraftTitle(title);
+      setQnaDraftContent(content);
       setQnaComposerOpen(true);
       return true;
     },

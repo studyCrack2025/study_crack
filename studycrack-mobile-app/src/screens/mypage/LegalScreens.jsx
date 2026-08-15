@@ -49,6 +49,7 @@ export function SettingsMainScreen({ logoutModalOpen = false }) {
         <SecondaryIntro eyebrow="SETTINGS" title="설정" description="계정과 약관, 로그인 상태를 관리합니다." />
         <div className="sc-secondary-list settings-list">
           <button type="button" className="sc-secondary-row" data-action="goto" data-target="accountInfo"><span className="sc-secondary-row-main"><b>계정 정보</b><p>프로필과 로그인 계정 관리</p></span><span aria-hidden="true">›</span></button>
+          <button type="button" className="sc-secondary-row" data-action="goto" data-target="notificationSettings"><span className="sc-secondary-row-main"><b>알림 설정</b><p>플래너와 리포트 안내 관리</p></span><span aria-hidden="true">›</span></button>
           <button type="button" className="sc-secondary-row" data-action="goto" data-target="settingsTermsPicker"><span className="sc-secondary-row-main"><b>약관 보기</b><p>이용약관과 개인정보 처리방침</p></span><span aria-hidden="true">›</span></button>
           <button type="button" className="sc-secondary-row" data-action="openLogoutModal"><span className="sc-secondary-row-main"><b>로그아웃</b><p>현재 기기에서 로그인 종료</p></span><span aria-hidden="true">›</span></button>
         </div>

@@ -35,6 +35,8 @@ assert.equal(buildMyPagePresentation({ user: {} }).mbti.empty, true);
 assert.equal(displayAccountName({}), '회원');
 assert.equal(displayAccountEmail({ email: 'hidden@social.studycrack.co.kr' }), '소셜 계정 이메일 미제공');
 assert.equal(buildSubscriptionSummary({ currentSubscription: { tier: 'starter' } }, 'Starter').lifetime, true);
+assert.equal(buildSubscriptionSummary({ currentSubscription: { tier: 'pro', endDate: '2026-08-31T00:00:00.000Z' } }, 'Basic').planLabel, 'Pro');
+assert.equal(buildSubscriptionSummary({ currentSubscription: { tier: 'pro', endDate: '2026-08-31T00:00:00.000Z' } }, 'Basic').renewalLine, '2026.08.31 전 연장 필요');
 assert.deepEqual(buildSocialProviders({ authProvider: 'google' }).map(({ isLinked, isPrimary }) => [isLinked, isPrimary]), [[true, true], [false, false]]);
 assert.deepEqual(buildPlanPresentation({ computedTier: 'basic' }), { key: 'basic', label: 'Basic', periodLabel: '평생 이용' });
 assert.deepEqual(buildPlanPresentation({ currentSubscription: { tier: 'standard', endDate: '2026-08-31T00:00:00.000Z' } }), { key: 'standard', label: 'Standard', periodLabel: '2026.08.31까지 이용' });

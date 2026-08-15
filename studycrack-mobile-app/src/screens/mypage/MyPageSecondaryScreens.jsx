@@ -3,9 +3,7 @@ import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../comp
 
 const NOTIFICATION_ROWS = [
   ['planner', '플래너 알림', '오늘 계획을 잊지 않도록 알려드려요'],
-  ['weekly', '주간 점검 알림', '매주 점검 시점을 알려드려요'],
-  ['report', '프로 보고서 알림', '새 리포트 이용 가능일을 알려드려요'],
-  ['billing', '결제/구독 알림', '다음 결제일을 미리 알려드려요']
+  ['report', '리포트 알림', '새 주간·PRO 리포트가 준비되면 알려드려요']
 ];
 const NOTI_PAGE_SIZE = 7;
 const FAQS = [
@@ -55,7 +53,7 @@ function QnaHistory({ qnaHistory = [], qnaStatus = 'idle' }) {
 export function NotificationSettingsScreen({ notifications = {} }) {
   return (
     <SecondaryScreenShell screen="notificationSettings" title="알림 설정">
-      <div className="sc-secondary-page notification-settings-page"><SecondaryIntro eyebrow="NOTIFICATIONS" title="알림 설정" description="필요한 학습·리포트·결제 안내만 골라 받을 수 있어요." /><section className="sc-secondary-section"><div className="sc-secondary-section-head"><div><h3>수신 항목</h3><p>변경 내용은 계정에 바로 저장됩니다.</p></div></div><div className="sc-secondary-list notify-card">{NOTIFICATION_ROWS.map(([key, title, description]) => <button type="button" className="sc-secondary-row notify-row" data-action="toggleNotification" data-notify-key={key} key={key}><div className="sc-secondary-row-main"><b>{title}</b><p>{description}</p></div><span className={`notify-switch ${notifications[key] ? 'on' : ''}`} role="switch" aria-checked={notifications[key] ? 'true' : 'false'}><i /></span></button>)}</div></section></div>
+      <div className="sc-secondary-page notification-settings-page"><SecondaryIntro eyebrow="NOTIFICATIONS" title="알림 설정" description="실제로 발송되는 학습 알림만 선택할 수 있어요." /><section className="sc-secondary-section"><div className="sc-secondary-section-head"><div><h3>선택 알림</h3><p>변경 내용은 계정에 바로 저장됩니다.</p></div></div><div className="sc-secondary-list notify-card">{NOTIFICATION_ROWS.map(([key, title, description]) => <button type="button" className="sc-secondary-row notify-row" data-action="toggleNotification" data-notify-key={key} key={key}><div className="sc-secondary-row-main"><b>{title}</b><p>{description}</p></div><span className={`notify-switch ${notifications[key] ? 'on' : ''}`} role="switch" aria-checked={notifications[key] ? 'true' : 'false'}><i /></span></button>)}</div><p className="notification-required-note">결제·계정 보안처럼 서비스 이용에 꼭 필요한 안내는 이 설정과 별도로 발송될 수 있습니다.</p></section></div>
     </SecondaryScreenShell>
   );
 }
@@ -78,6 +76,7 @@ export function NotificationListScreen({ notiDetailId = '', notiList = [], notiP
   const start = page * NOTI_PAGE_SIZE;
   const pageItems = list.slice(start, start + NOTI_PAGE_SIZE);
   const selected = notiDetailId ? list.find((item, index) => String(item.notiId || item.id || item.notificationId || index) === String(notiDetailId)) : null;
+  const unreadCount = list.filter((item) => item?.isRead !== true).length;
   let content = null;
   if (!list.length) {
     const kind = notiStatus === 'loading' ? 'loading' : notiStatus === 'error' ? 'error' : 'empty';
@@ -89,7 +88,7 @@ export function NotificationListScreen({ notiDetailId = '', notiList = [], notiP
   const overlays = <NotificationDetail item={selected} />;
   return (
     <SecondaryScreenShell screen="notificationList" title="알림" overlays={selected ? overlays : null}>
-      <div className="sc-secondary-page notification-list-page"><SecondaryIntro eyebrow="INBOX" title="알림" description={list.length ? '읽지 않은 항목은 파란 점으로 표시됩니다.' : '학습과 서비스 이용에 필요한 소식을 모아봤어요.'} aside={list.length ? <span className="sc-badge">{list.length}개</span> : null} />{content}</div>
+      <div className="sc-secondary-page notification-list-page"><SecondaryIntro eyebrow="INBOX" title="알림" description={list.length ? '읽지 않은 항목은 파란 점으로 표시됩니다.' : '학습과 서비스 이용에 필요한 소식을 모아봤어요.'} aside={<div className="notification-intro-tools">{unreadCount ? <span>안 읽음 {unreadCount}</span> : null}<button type="button" className="notification-settings-link" data-action="goto" data-target="notificationSettings">설정</button></div>} />{content}</div>
     </SecondaryScreenShell>
   );
 }
@@ -101,7 +100,7 @@ export function CustomerSupportScreen(ctx) {
     <SecondaryScreenShell screen="customerSupport" title="고객센터" overlays={qnaComposerOpen ? overlays : null}>
       <div className="sc-secondary-page support-page">
         <SecondaryIntro eyebrow="HELP CENTER" title="무엇을 도와드릴까요?" description="문의 내역을 확인하거나 새로운 질문을 바로 남겨보세요." aside={<span className="sc-badge">평일 10:00–18:00</span>} />
-        <section className="sc-secondary-section support-direct-card"><div className="sc-secondary-section-head"><div><h3>1:1 문의</h3><p>현재 상황을 구체적으로 적으면 더 빠르게 확인할 수 있어요.</p></div></div><div className="support-btns"><button type="button" className="btn btn-primary" data-action="openQnaComposer">문의 작성</button><button type="button" className="btn btn-secondary" data-action="openKakaoSupport">카카오톡</button></div></section>
+        <section className="sc-secondary-section support-direct-card"><div className="sc-secondary-section-head"><div><h3>1:1 문의</h3><p>현재 상황을 구체적으로 적으면 더 빠르게 확인할 수 있어요.</p></div></div><div className="support-action-grid"><button type="button" className="support-action-card primary" data-action="openQnaComposer"><b>일반 문의</b><span>결제·계정·서비스 이용 질문</span></button><button type="button" className="support-action-card" data-action="openQnaComposer" data-qna-title="[데이터 오류 신고] " data-qna-content="오류가 발생한 화면:\n기준 시험:\n선택한 대학·학과:\n확인한 문제:\n"><b>데이터 오류 신고</b><span>성적·대학·환산 결과 문제</span></button></div><button type="button" className="support-kakao-link" data-action="openKakaoSupport">카카오톡으로 문의하기</button></section>
         <section className="sc-secondary-section support-qna-card"><div className="sc-secondary-section-head support-section-head"><div><h3>내 문의 내역</h3><p>최근 문의와 답변 상태입니다.</p></div>{qnaHistory.length ? <span className="sc-badge">{qnaHistory.length}건</span> : null}</div><div className="sc-secondary-list qna-list compact"><QnaHistory qnaHistory={qnaHistory} qnaStatus={qnaStatus} /></div></section>
         <section className="sc-secondary-section faq-card"><div className="sc-secondary-section-head"><div><h3>자주 묻는 질문</h3><p>많이 찾는 내용을 먼저 확인해보세요.</p></div></div><div className="sc-secondary-list">{FAQS.map(([id, question, answer]) => <button type="button" className={`sc-secondary-row faq-row ${openFaq === id ? 'active open' : ''}`} data-action="toggleFaq" data-faq-id={id} aria-expanded={openFaq === id ? 'true' : 'false'} key={id}><div className="sc-secondary-row-main"><b>{question}</b>{openFaq === id ? <p>{answer}</p> : null}</div><span aria-hidden="true">›</span></button>)}</div></section>
       </div>

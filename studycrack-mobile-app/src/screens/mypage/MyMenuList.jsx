@@ -19,7 +19,7 @@ const MENU_GROUPS = [
       { icon: 'user', target: 'accountInfo', title: '계정정보 관리', subtitle: '프로필, 전화번호와 소셜 계정' },
       { icon: 'bell', target: 'notificationList', title: '알림', subtitle: '받은 알림과 상세 내용 확인' },
       { icon: 'chat', target: 'customerSupport', title: '문의 · FAQ', subtitle: '1:1 문의와 자주 묻는 질문' },
-      { icon: 'shield', target: 'settingsMain', title: '약관 · 설정', subtitle: '약관, 알림 설정과 로그아웃' }
+      { icon: 'shield', target: 'settingsMain', title: '약관 · 설정', subtitle: '서비스 약관과 로그아웃' }
     ]
   }
 ];

@@ -1,7 +1,6 @@
 {
   "src/styles/foundation/base.css": ["ios-scroll-root"],
   "src/styles/screens/analysis.css": ["is-end", "is-start"],
-  "src/styles/screens/home-overlays.css": ["is-full", "is-open", "noti-list-empty"],
   "src/styles/screens/locked-splash.css": ["locked-coach-page", "splash-bolt", "splash-brand-mark", "splash-card"],
   "src/styles/screens/mypage-support.css": ["qna-answer", "score-info-detail-row", "score-info-detail-table"],
   "src/styles/screens/onboarding.css": ["ob-score-card"],

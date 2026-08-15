@@ -1,4 +1,5 @@
 import { getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
+import { buildSubscriptionSummary } from './account-presentation.js';
 
 const PLAN_LABELS = {
   basic: 'Basic',
@@ -125,11 +126,12 @@ export function buildMyPagePresentation({ liveStudySeconds = 0, mbtiResult = '',
     + Math.max(0, Number(liveStudySeconds) || 0);
   const completedCount = (Array.isArray(plannerItems) ? plannerItems : []).filter((item) => item?.done === true).length;
   const plan = buildPlanPresentation(user, selectedPlan);
+  const subscription = buildSubscriptionSummary(user, selectedPlan);
   const mbti = buildMbtiPresentation(user, mbtiResult);
 
   return {
     mbti,
-    plan,
+    plan: { ...plan, renewalLine: subscription.renewalLine, pendingLine: subscription.pendingLine },
     profile: {
       avatarUrl: safeText(user?.profileImage),
       meta: buildProfileMeta(user),
