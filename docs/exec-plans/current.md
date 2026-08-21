@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-08-21 — FishDex Approved V2 FD-03 서버 카탈로그·호환 migration 완료
+
+- **활성 카탈로그**: `fish-catalog.v2.mjs`에 승인 자산 85종을 등록하고 `speciesId`, FishDex ID, `assetKey`, 한국어 이름, category, motion, 희귀도, 지급 가능 상태를 단일 계약으로 고정했다. 분포는 Common 21, Rare 30, Epic 16, Legendary 8, Special 10이다.
+- **스타터·호환**: 신규 스타터는 구피·네온테트라·퍼큘라흰동가리다. 기존 7종의 직접 대응 ID는 보존하고 이미지가 없는 기존 5종은 보유·먹이·배치·과거 DRAW 복원 전용 legacy resolver로 남겼다. legacy·pending·Special은 신규 draw 후보에 들어가지 않는다.
+- **지연 migration**: PROFILE schema를 2로 올리고 최초 게임 요청에서 `fish-v2`를 한 번만 조건부 저장한다. 재화·수질·배치·보상·pending 상태를 유지하며 FISH와 DRAW 원본 레코드는 일괄 수정하지 않는다.
+- **프론트 계약**: 모바일 응답 검증기와 도감 그룹이 다섯 희귀도를 수용한다. 서버가 제공하는 85개 `assetKey`는 FD-01 manifest와 FD-02 `FishArtwork`로 연결되며 legacy는 SVG fallback을 유지한다.
+- **검증**: Gamification Node test 35개, 모바일 `npm run check`, production build, Playwright 18개 전체 흐름과 `git diff --check`가 통과했다.
+- **배포 영향**: `StudyCrack_Gamification` Lambda 재배포가 필요하다. DynamoDB 새 테이블·속성 정의·GSI 작업은 없고 PROFILE 필드는 요청 시 additive migration된다. 모바일 정적 변경은 GitHub Actions 배포만 사용한다.
+- **다음 단계**: FD-04에서 Legendary 확률·천장·중복 보상과 Special의 업적·운영 지급 경로를 확정한다.
+
 ## 2026-08-21 — FishDex Approved V2 FD-02 renderer 연결 완료
 
 - **단일 renderer**: `FishArtwork`가 generated manifest를 소비하고 수조·스타터·보유 목록·관리·도감·Discovery·공유·플래너의 물고기 표현을 맡는다.

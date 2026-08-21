@@ -52,9 +52,10 @@ export function validateStudyRewardResponse(value) {
 }
 
 export function validateFishCatalogResponse(value) {
+  const supportedRarities = ['common', 'rare', 'epic', 'legendary', 'special'];
   const validCatalog = Array.isArray(value?.catalog) && value.catalog.every((fish) => (
     isRecord(fish) && typeof fish.speciesId === 'string' && typeof fish.displayName === 'string'
-      && ['common', 'rare', 'epic'].includes(fish.rarity) && Array.isArray(fish.colors)
+      && supportedRarities.includes(fish.rarity) && Array.isArray(fish.colors)
   ));
   const validInventory = Array.isArray(value?.inventory) && value.inventory.every((fish) => validateFish(fish).ok);
   return contract(isRecord(value) && validCatalog && validInventory, value, '물고기 카탈로그 응답이 올바르지 않습니다.');
@@ -86,7 +87,7 @@ export function validateRenameFishResponse(value) {
 
 export function validateDrawResult(value) {
   const valid = isRecord(value) && typeof value.requestId === 'string' && typeof value.speciesId === 'string'
-    && ['common', 'rare', 'epic'].includes(value.rarity) && typeof value.duplicate === 'boolean'
+    && ['common', 'rare', 'epic', 'legendary', 'special'].includes(value.rarity) && typeof value.duplicate === 'boolean'
     && Number.isFinite(Number(value.expGranted)) && Number.isFinite(Number(value.shellsRefunded))
     && Number.isFinite(Number(value.cost)) && typeof value.createdAt === 'string';
   return contract(valid, value, '물고기 뽑기 결과가 올바르지 않습니다.');

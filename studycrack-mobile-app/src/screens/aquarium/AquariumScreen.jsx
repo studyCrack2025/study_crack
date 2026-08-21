@@ -9,8 +9,9 @@ const AQUARIUM_SLOTS = [
   { className: 'slot-right', id: 'right', label: '오른쪽' }
 ];
 
-const RARITY_LABELS = { common: '일반', rare: '희귀', epic: '영웅' };
-const RARITY_CLASSES = { common: 'rarity-common', rare: 'rarity-rare', epic: 'rarity-epic' };
+const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary', 'special'];
+const RARITY_LABELS = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설', special: '스페셜' };
+const RARITY_CLASSES = { common: 'rarity-common', rare: 'rarity-rare', epic: 'rarity-epic', legendary: 'rarity-legendary', special: 'rarity-special' };
 const DRAW_STEP_CLASSES = ['step-0', 'step-1', 'step-2', 'step-3'];
 const CATALOG_FILTERS = [
   { id: 'all', label: '전체' },
@@ -151,7 +152,7 @@ function FishCatalogPanel({ catalog = [], inventory = [], profile }) {
     <div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /><section className="aquarium-collection-summary"><div><span>발견한 친구</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section></div>
     <button type="button" className="aquarium-draw-entry" data-action="openAquariumDraw" disabled={profile?.starterState !== 'claimed'}><span>조개 {Number(profile?.shellBalance) || 0}개</span><b>새 물고기 만나기</b><small>{profile?.starterState === 'claimed' ? '한 번에 조개 30개' : '첫 물고기를 먼저 선택해주세요'}</small><i aria-hidden="true">›</i></button>
     <div className="aquarium-catalog-filter" role="group" aria-label="도감 필터">{CATALOG_FILTERS.map((item) => <button type="button" className={filter === item.id ? 'is-active' : ''} aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} key={item.id}>{item.label}</button>)}</div>
-    <div className="aquarium-catalog-groups">{['common', 'rare', 'epic'].map((rarity) => {
+    <div className="aquarium-catalog-groups">{RARITY_ORDER.map((rarity) => {
       const rows = catalog.filter((fish) => fish.rarity === rarity).filter((fish) => filter === 'all' || (filter === 'owned' ? fish.owned || ownedSpecies.has(fish.speciesId) : !(fish.owned || ownedSpecies.has(fish.speciesId))));
       if (!rows.length) return null;
       return <section className={`aquarium-catalog-group ${RARITY_CLASSES[rarity]}`} key={rarity}><header><div><span>{rarity.toUpperCase()}</span><b>{RARITY_LABELS[rarity]}</b></div><small>{rows.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length} / {rows.length}</small></header><div>{rows.map((fish) => {
