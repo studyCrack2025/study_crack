@@ -25,12 +25,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 6. claude/codex reference 관련 추가 데이터 및 마크다운용 폴더
-backend-backup/
-CLAUDE.md
-AGENTS.md
-ARCHITECTURE.md
-docs/
+# 6. 내부 운영 문서와 백엔드 사본 (공개 저장소 추적 금지)
+# 이미 추적된 파일은 ignore만으로 보호되지 않으므로 index에서도 제거해야 한다.
+/backend-backup/
+/CLAUDE.md
+/AGENTS.md
+/ARCHITECTURE.md
+/docs/
 # 모바일 앱 모듈 구조 안내 문서(내부용, 공개 레포 비노출)
 studycrack-mobile-app/README.md
 studycrack-mobile-app/src/README.md
