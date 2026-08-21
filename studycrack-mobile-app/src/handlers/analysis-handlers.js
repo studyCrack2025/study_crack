@@ -48,6 +48,8 @@ export function createAnalysisHandlers(ctx) {
     keepScrollPosition = noop,
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
+    requestAnalysisCalculation = noop,
+    resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
     setActiveScoreView,
     setAddingUniversity,
@@ -133,6 +135,7 @@ export function createAnalysisHandlers(ctx) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
       if (!confirm(`${major} 분석을 보시겠어요?`)) return false;
+      resetAnalysisCalculation();
       setTargetMajor(major);
       goto?.('analysis');
       return true;
@@ -191,12 +194,18 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
+    calculateAnalysisScore() {
+      requestAnalysisCalculation();
+      return true;
+    },
+
     simulateBarGain({ actionEl, event }) {
       event?.preventDefault?.();
       event?.stopPropagation?.();
       const y = getScrollY(ctx);
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
+      resetAnalysisCalculation();
       setTargetMajor(major);
       setAnalysisBarProjectionTarget(major);
       restoreScroll(ctx, y);
@@ -276,6 +285,7 @@ export function createAnalysisHandlers(ctx) {
       setTargetUnivSlots(nextSlots);
       setAnalysisTargetList(nextAnalysis);
       if (ctx.targetMajor === major) {
+        resetAnalysisCalculation();
         setTargetMajor(nextAnalysis[0] || nextTargets[0] || ctx.analysisRecommended?.[0] || '');
       }
       setTargetDeleteSaving(false);
@@ -287,6 +297,7 @@ export function createAnalysisHandlers(ctx) {
     selectTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       preserveScrollAfterStateChange(() => {
+        resetAnalysisCalculation();
         setTargetMajor(major);
         afterSafariViewportStable(() => setTargetOpen(false));
       });

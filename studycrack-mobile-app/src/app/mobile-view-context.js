@@ -75,8 +75,11 @@ function buildScoreSelectionPatch(scoreExamType, current) {
       scoreExamType,
       scoreExamKey,
       ...mapped,
-      analysisApiStatus: 'loading',
-      analysisApiError: ''
+      analysisCalculationRequested: false,
+      analysisApiStatus: 'idle',
+      analysisApiError: '',
+      scoreFetchStatus: 'idle',
+      scoreFetchSignature: ''
     };
   }
   const blankScoreState = createBlankScoreState();
@@ -88,6 +91,7 @@ function buildScoreSelectionPatch(scoreExamType, current) {
     scoreEditState: blankScoreState,
     analysisResults: [],
     analysisSimulations: [],
+    analysisCalculationRequested: false,
     analysisApiStatus: 'empty',
     analysisApiError: '선택한 시험에 입력된 성적이 없습니다.'
   };
@@ -206,6 +210,31 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
     getExamScoresMap: readExamScoresMap,
     saveExamScoresMap: writeExamScoresMap,
     applyScoreExamSelection: (scoreExamType) => setState(buildScoreSelectionPatch(scoreExamType, stateRef.current)),
+    requestAnalysisCalculation: () => {
+      const current = stateRef.current;
+      setState({
+        analysisCalculationRequested: true,
+        analysisApiStatus: 'loading',
+        analysisApiError: '',
+        analysisResults: [],
+        analysisSimulations: [],
+        analysisResultSignature: '',
+        scoreFetchStatus: 'idle',
+        scoreFetchSignature: '',
+        scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1,
+        analysisBacktraceStatus: 'idle',
+        analysisBacktracePlan: null,
+        analysisBacktraceError: '',
+        analysisBacktraceSignature: ''
+      });
+    },
+    resetAnalysisCalculation: () => setState({
+      analysisCalculationRequested: false,
+      analysisApiStatus: 'idle',
+      analysisApiError: '',
+      scoreFetchStatus: 'idle',
+      scoreFetchSignature: ''
+    }),
     ...api,
     ensureCoachingSubjectRows: () => {
       const current = stateRef.current;
@@ -222,7 +251,12 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
         targetUnivSlots: nextSlots,
         analysisTargetList: nextAnalysis,
         homeTargetList: nextHome,
-        targetMajor: current.targetMajor || major
+        targetMajor: current.targetMajor || major,
+        analysisCalculationRequested: false,
+        analysisApiStatus: 'idle',
+        analysisApiError: '',
+        scoreFetchStatus: 'idle',
+        scoreFetchSignature: ''
       });
       api.persistTargetUnivs(nextHome, nextSlots).then((result) => {
         notifySaveFailure(result, '목표 대학 저장에 실패했습니다.');

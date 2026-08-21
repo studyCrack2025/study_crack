@@ -141,6 +141,8 @@ function ReverseProjectionCard({
 export function AnalysisContent(ctx) {
   const {
     analysisHighlightedSubject = '',
+    analysisCalculationRequested = false,
+    analysisApiStatus = 'idle',
     analysisMajorOptions = [],
     analysisStatus = '',
     analysisSelected = {},
@@ -169,6 +171,8 @@ export function AnalysisContent(ctx) {
   const targetOptions = Array.from(new Set([normalizedTargetMajor, ...analysisMajorOptions].filter(Boolean)));
   const activeSubject = selectedRow?.subject || '';
   const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
+  const showCalculationPrompt = !scoreView.hasScore
+    && (!analysisCalculationRequested || ['empty', 'error'].includes(analysisApiStatus));
   const selectedEffectText = selectedRow && scoreView.hasScore
     ? `${selectedRow.subject} 원점수 +1 적용 시 ${formatPoint(currentScore)}점 → ${formatPoint(afterScore)}점`
     : '과목을 선택하면 상승 후 환산점수를 함께 보여드려요.';
@@ -176,9 +180,11 @@ export function AnalysisContent(ctx) {
   const safePct = 60;
   return (
     <div className="analysis-unified">
-      <section className="analysis-live-score" aria-label="현재 대학별 환산점수">
-        <div className="analysis-live-score-main"><span>LIVE 환산점수</span><strong>{currentScoreText}</strong><p>0–250점 기준 · 실제 저장 성적 반영</p></div>
-        <div className="analysis-live-score-target"><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>
+      <section className={`analysis-live-score ${showCalculationPrompt ? 'is-calculate' : ''}`} aria-label="현재 대학별 환산점수">
+        <div className="analysis-live-score-main"><span>{showCalculationPrompt ? '환산점수 준비' : 'LIVE 환산점수'}</span><strong>{showCalculationPrompt ? '점수를 확인해볼까요?' : currentScoreText}</strong><p>{showCalculationPrompt ? '저장된 성적과 희망 대학 기준으로 계산합니다.' : '0–250점 기준 · 실제 저장 성적 반영'}</p></div>
+        {showCalculationPrompt
+          ? <button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button>
+          : <div className="analysis-live-score-target"><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>}
       </section>
       <div className="card analysis-result-card">
         <div className="analysis-result-head">

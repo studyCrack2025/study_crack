@@ -60,6 +60,7 @@ export function createAnalysisInitialState() {
       scoreExamKey: 'mar'
     },
     ephemeralUi: {
+      analysisCalculationRequested: false,
       targetOpen: false,
       selectedUniversityIndex: 0,
       targetDeleteModalOpen: false,

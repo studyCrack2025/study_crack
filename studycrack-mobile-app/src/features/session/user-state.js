@@ -25,6 +25,7 @@ export function createUserDataResetPatch() {
     analysisSimulations: [],
     analysisResultExamMode: '',
     analysisResultSignature: '',
+    analysisCalculationRequested: false,
     analysisApiStatus: 'idle',
     analysisApiError: '',
     lastAnalysisSnapshot: null,

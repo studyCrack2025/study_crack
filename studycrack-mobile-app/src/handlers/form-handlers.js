@@ -213,6 +213,7 @@ export function createFormHandlers(ctx) {
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
+    resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
     setAnalysisSearchTerm,
     setCoachingAnswers,
@@ -412,7 +413,10 @@ export function createFormHandlers(ctx) {
         return { handled: true, field };
       }
       preserveScrollAfterStateChange(() => {
-        if (target.value) setTargetMajor(target.value);
+        if (target.value) {
+          resetAnalysisCalculation();
+          setTargetMajor(target.value);
+        }
       });
       return { handled: true, field };
     }
@@ -466,7 +470,10 @@ export function createFormHandlers(ctx) {
         goto?.('addUniversity');
         return { handled: true, field };
       }
-      if (value) setTargetMajor(value);
+      if (value) {
+        resetAnalysisCalculation();
+        setTargetMajor(value);
+      }
     }
     const isPending = ctx.isIOSSafari?.() && ctx.isObSurveyScreen?.();
     if (field === 'obSchoolName') setPendingOrState({ field, isPending, setter: setObSchoolName, target, value });

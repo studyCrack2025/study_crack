@@ -18,7 +18,7 @@ export function useAnalysisResources({ canBacktrace, canSimulate, getApiBinding,
   useScoreResources({
     canBacktrace,
     canSimulate,
-    enabled: ['analysis'].includes(state.screen),
+    enabled: state.screen === 'analysis' && state.analysisCalculationRequested === true,
     getApiBinding,
     setState,
     state,

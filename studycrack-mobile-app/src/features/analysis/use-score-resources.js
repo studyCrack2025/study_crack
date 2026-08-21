@@ -39,7 +39,13 @@ export function useScoreResources({ canBacktrace, canSimulate, enabled, getApiBi
   }, [state.userLoadStatus]);
 
   useEffect(() => {
-    if (!enabled) return undefined;
+    if (!enabled) {
+      requestKeyRef.current += 1;
+      scoreSignatureRef.current = '';
+      simulationSignatureRef.current = '';
+      backtraceSignatureRef.current = '';
+      return undefined;
+    }
     const examMode = resolveAnalysisExamMode(state);
     const userScores = state.user?.quantitative?.[examMode] || state.user?.quantitative?.active;
     const targetList = uniqueTargetList([state.targetMajor, ...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);

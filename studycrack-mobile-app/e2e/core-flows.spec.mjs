@@ -6,6 +6,18 @@ import {
   installAuthenticatedSession
 } from './support/mock-api.mjs';
 
+async function readLockedScreenAlignment(page) {
+  return page.locator('[data-screen="lockedFeature"]').evaluate((screen) => {
+    const back = screen.querySelector('.appbar .back-btn')?.getBoundingClientRect();
+    const title = screen.querySelector('.appbar .title')?.getBoundingClientRect();
+    const preview = screen.querySelector('.locked-feature-preview-wrap')?.getBoundingClientRect();
+    return back && title && preview ? {
+      centerDelta: Math.abs((back.top + back.height / 2) - (title.top + title.height / 2)),
+      leftDelta: Math.abs(back.left - preview.left)
+    } : null;
+  });
+}
+
 test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작한다', async ({ page }) => {
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
@@ -77,13 +89,16 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
   await expectNoHorizontalOverflow(page);
 });
 
-test('로그인 세션의 사용자와 최초 환산점수가 분석에서 함께 로드된다', async ({ page }, testInfo) => {
+test('로그인 세션의 환산점수는 사용자가 계산을 요청한 뒤 로드된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   const startedAt = Date.now();
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: '점수 계산하기' })).toBeVisible();
+  expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets')).toBe(false);
+  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
@@ -443,6 +458,7 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
   await expect(analysisContent).not.toHaveClass(/modal-lock/);
   expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   await expect(examSelect).toBeVisible();
+  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
@@ -453,6 +469,7 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('131점');
   await examSelect.selectOption({ label: '6월 평가원' });
   await examSelect.selectOption({ label: '3월 모의고사' });
+  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
@@ -470,6 +487,7 @@ test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보�
   const api = await installApiMock(page, { tier: 'standard' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
+  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-effect')).toHaveText(['+3.2점', '+2.4점', '+1.1점', '+0.8점']);
   await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
@@ -628,12 +646,26 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
+  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
 
   await page.goto('/studycrack-mobile.html?screen=my');
+  await page.getByRole('button', { name: /학습 리포트/ }).click();
+  await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '주간 피드백 기능은 STANDARD 플랜에서 열려요' })).toBeVisible();
+  const weeklyAlignment = await readLockedScreenAlignment(page);
+  expect(weeklyAlignment).not.toBeNull();
+  expect(weeklyAlignment.centerDelta).toBeLessThanOrEqual(1);
+  expect(weeklyAlignment.leftDelta).toBeLessThanOrEqual(1);
+  await page.getByRole('button', { name: '뒤로가기' }).click();
+
   await page.getByRole('button', { name: /PRO 리포트/ }).click();
   await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'PRO 리포트 기능은 PRO 플랜에서 열려요' })).toBeVisible();
+  const lockedAlignment = await readLockedScreenAlignment(page);
+  expect(lockedAlignment).not.toBeNull();
+  expect(lockedAlignment.centerDelta).toBeLessThanOrEqual(1);
+  expect(lockedAlignment.leftDelta).toBeLessThanOrEqual(1);
   await page.getByRole('button', { name: 'PRO 플랜 보기' }).click();
 
   await expect(page.locator('[data-screen="proIntro"]')).toBeVisible();

@@ -1,7 +1,7 @@
 const ANALYSIS_CONTEXT_KEYS = [
   'analysisApiError', 'analysisApiStatus', 'analysisBacktraceError', 'analysisBacktracePlan',
   'analysisBacktraceStatus', 'analysisHighlightedSubject', 'analysisMajorOptions', 'analysisScoreView',
-  'analysisSelected', 'analysisSimRecommendedIndex', 'analysisSimRows', 'analysisStatus',
+  'analysisSelected', 'analysisSimRecommendedIndex', 'analysisSimRows', 'analysisStatus', 'analysisCalculationRequested',
   'canAccessStandard', 'canUseReverseProjection', 'dimmed', 'isAnalyzing', 'normalizedTargetMajor',
   'scoreExamType', 'scoreTierClass', 'scores', 'tab'
 ];
