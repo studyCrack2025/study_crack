@@ -1,0 +1,2653 @@
+{
+  "version": "fishdex-assets-v2",
+  "sourceCollection": "StudyCrack_FishDex_Approved_V2",
+  "activeCount": 85,
+  "pendingIds": [
+    "100",
+    "133",
+    "134",
+    "135"
+  ],
+  "variants": {
+    "grid256": 256,
+    "detail512": 512,
+    "habitat768": 768
+  },
+  "entries": [
+    {
+      "dexId": "001",
+      "slug": "guppy",
+      "assetKey": "fishdex-001-guppy",
+      "source": "studycrack-fishdex-001-guppy.png",
+      "sourceSha256": "93d51874632a4123c02fb12da308fc36101204529e3d66584a04ce8b4a460a87",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1311,
+        "height": 942,
+        "x": 304,
+        "y": 456
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-001-guppy.webp",
+          "bytes": 10242,
+          "sha256": "e25cade39f94d907ae244db8f7caa0ee5757aee5f93048a9fbb055e59215ad24"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-001-guppy.webp",
+          "bytes": 19552,
+          "sha256": "dc161a3e9f1efcf403d1dd2ca35078d22b667d4ea5b06786a46a85d316516f12"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-001-guppy.webp",
+          "bytes": 26048,
+          "sha256": "dae11b5738350adc2024fa668337f1dd0bcf9066dde6050a4f7220704a577a43"
+        }
+      }
+    },
+    {
+      "dexId": "002",
+      "slug": "endler-guppy",
+      "assetKey": "fishdex-002-endler-guppy",
+      "source": "studycrack-fishdex-002-endler-guppy.png",
+      "sourceSha256": "9d55d033d20e600266b1ea029222eaaa4585c5196933f6745446f90169bee468",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1269,
+        "height": 582,
+        "x": 336,
+        "y": 649
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-002-endler-guppy.webp",
+          "bytes": 6402,
+          "sha256": "53d8407aa491c14204528a0966e4c6814d969d75535bcdcc7e82ed28569a239c"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-002-endler-guppy.webp",
+          "bytes": 12684,
+          "sha256": "6704de49c3f1e2c5978315ca03e4a6af58ab3e2666055ee936f25363a10dc106"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-002-endler-guppy.webp",
+          "bytes": 19240,
+          "sha256": "acbfdf09cf51553e06a617079d3f089b7b33e9b2d3ef155a7d15300f538efce6"
+        }
+      }
+    },
+    {
+      "dexId": "003",
+      "slug": "neon-tetra",
+      "assetKey": "fishdex-003-neon-tetra",
+      "source": "studycrack-fishdex-003-neon-tetra.png",
+      "sourceSha256": "8651d32e294baca08654733df9edce9b3e12e1577d396ee8eeb8c195cf500f10",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 814,
+        "height": 355,
+        "x": 590,
+        "y": 749
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-003-neon-tetra.webp",
+          "bytes": 5992,
+          "sha256": "ab3cda7633397bb1912de018a889156d1726bcaa29ff039196e7d9fdd5394463"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-003-neon-tetra.webp",
+          "bytes": 11314,
+          "sha256": "50a2dbccc7af23a94ea6ba8fe3b4fbfbda8fb6c8543bd2c53a42d393b16ae536"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-003-neon-tetra.webp",
+          "bytes": 17776,
+          "sha256": "ea8a8711325673497421c77bf4133803baa51d3f47e1ae4164621803aebaa7f1"
+        }
+      }
+    },
+    {
+      "dexId": "004",
+      "slug": "cardinal-tetra",
+      "assetKey": "fishdex-004-cardinal-tetra",
+      "source": "studycrack-fishdex-004-cardinal-tetra.png",
+      "sourceSha256": "eb654ddec90811bd344bf941ab1f23b25e5afbad68122997c3e0b5868735515e",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1457,
+        "height": 647,
+        "x": 245,
+        "y": 620
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-004-cardinal-tetra.webp",
+          "bytes": 7948,
+          "sha256": "de5f1ede61be74d3582b9220ad97bb5e7f61aa396bba529cfcf94c29cab137c9"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-004-cardinal-tetra.webp",
+          "bytes": 16224,
+          "sha256": "14a200f6aa3d13c50386f6e4092a6c5f967b62b34cc558ba54d70859b251c57f"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-004-cardinal-tetra.webp",
+          "bytes": 25074,
+          "sha256": "40e8d39a6892048af97a00c30af223172d05f842f26a83edfd18b07a4437d631"
+        }
+      }
+    },
+    {
+      "dexId": "005",
+      "slug": "ember-tetra",
+      "assetKey": "fishdex-005-ember-tetra",
+      "source": "studycrack-fishdex-005-ember-tetra.png",
+      "sourceSha256": "09142729702dc1ff3aed2a57659c9265408bb3bd745b178c0ce787b143272a77",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1121,
+        "height": 882,
+        "x": 407,
+        "y": 486
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-005-ember-tetra.webp",
+          "bytes": 8218,
+          "sha256": "2d92ac897b5b50cf44a10cbf9f25a6d3a5ef0e1e496f3bc4d07ac85538564806"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-005-ember-tetra.webp",
+          "bytes": 15730,
+          "sha256": "03b2575c1a413621095f8ee49faeddf10c536c6e4cd26f82da52f9637e54f8d7"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-005-ember-tetra.webp",
+          "bytes": 24260,
+          "sha256": "699ff1317f5fbf5d58739690dc5df949f15693e1b9e620b4240f880aab1d987e"
+        }
+      }
+    },
+    {
+      "dexId": "006",
+      "slug": "glowlight-tetra",
+      "assetKey": "fishdex-006-glowlight-tetra",
+      "source": "studycrack-fishdex-006-glowlight-tetra.png",
+      "sourceSha256": "5495c06d817ea317f236a9ee090c1ede780a92e130ae4ad1cb819c9872806dbb",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1253,
+        "height": 675,
+        "x": 334,
+        "y": 607
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-006-glowlight-tetra.webp",
+          "bytes": 6964,
+          "sha256": "63466982e06d73ab8b42d2f843d59a082752129d81ae13d4b460bae8fd6e4bbb"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-006-glowlight-tetra.webp",
+          "bytes": 12736,
+          "sha256": "6c9848b1de9ae3963ac90d09954640b924bf4a23bc4b08d2b1f718cfa7fc4859"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-006-glowlight-tetra.webp",
+          "bytes": 19542,
+          "sha256": "348305f8556383dfeb014227909ef47d449182c29a1d40d2a715e69d81ea3f21"
+        }
+      }
+    },
+    {
+      "dexId": "007",
+      "slug": "rummy-nose-tetra",
+      "assetKey": "fishdex-007-rummy-nose-tetra",
+      "source": "studycrack-fishdex-007-rummy-nose-tetra.png",
+      "sourceSha256": "af359c14d16b11cade7edcd1c001ef7ecf4496ca926ce8487f64474bd9f1dd54",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1467,
+        "height": 763,
+        "x": 240,
+        "y": 565
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-007-rummy-nose-tetra.webp",
+          "bytes": 6328,
+          "sha256": "efe3476970c552299de2ec678b4fc577ab90c98530b57163c6b81c3ba5e5f8ce"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-007-rummy-nose-tetra.webp",
+          "bytes": 12216,
+          "sha256": "95655fbc3594ae331a2043857bf952279634c01f9d77b8262a4a3044455a3c7c"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-007-rummy-nose-tetra.webp",
+          "bytes": 18872,
+          "sha256": "645be9e4d1ec5099c19eda0cc97fe09d0aee83e5067dbdbd37eb6074516e2cf0"
+        }
+      }
+    },
+    {
+      "dexId": "008",
+      "slug": "harlequin-rasbora",
+      "assetKey": "fishdex-008-harlequin-rasbora",
+      "source": "studycrack-fishdex-008-harlequin-rasbora.png",
+      "sourceSha256": "0255cb0e7863195f069692178c7f6b610ae11222341cd02e29aaeccc17193f5c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1521,
+        "height": 900,
+        "x": 211,
+        "y": 499
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-008-harlequin-rasbora.webp",
+          "bytes": 8122,
+          "sha256": "1c3f80c8d8ad5aff7196d76347dab1ffbb8e43084e2ee121f7895e1097704aee"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-008-harlequin-rasbora.webp",
+          "bytes": 15716,
+          "sha256": "c6ce76afd7d2b0787d0a8080992c5c3693a1e604ce9ab67b62601d45078cdffc"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-008-harlequin-rasbora.webp",
+          "bytes": 23816,
+          "sha256": "63e4de2cb8de8bfed62e6ead73061936fbed3019f5bf7c484c65219e89339a2f"
+        }
+      }
+    },
+    {
+      "dexId": "009",
+      "slug": "zebra-danio",
+      "assetKey": "fishdex-009-zebra-danio",
+      "source": "studycrack-fishdex-009-zebra-danio.png",
+      "sourceSha256": "274b965b8d50dd675e0de32fc10ce62d1a6338f0b52a13c8ef8c9fc9151e1496",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1632,
+        "height": 649,
+        "x": 158,
+        "y": 606
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-009-zebra-danio.webp",
+          "bytes": 6654,
+          "sha256": "4cf2b887b55098ba0ed6fedbf8f90013266f3fdd583fc138c6196b9e5fedcf52"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-009-zebra-danio.webp",
+          "bytes": 12842,
+          "sha256": "157e5a1af4f840a8d9b91b2b1fe9ca48edbbf2edf51e2fc9a549887bdb1da470"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-009-zebra-danio.webp",
+          "bytes": 19216,
+          "sha256": "7fa435fc46f7b2e86d6f42919fe635892595360a1623aa1b816edca6d79c032a"
+        }
+      }
+    },
+    {
+      "dexId": "010",
+      "slug": "cherry-barb",
+      "assetKey": "fishdex-010-cherry-barb",
+      "source": "studycrack-fishdex-010-cherry-barb.png",
+      "sourceSha256": "cfe1fe698651b5b88ed07d46ece94414d975fb620529a8a0d8f5759e3e06a4d7",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1387,
+        "height": 1028,
+        "x": 277,
+        "y": 442
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-010-cherry-barb.webp",
+          "bytes": 7360,
+          "sha256": "2f8444e73638cc22e3899918f7f753eedd31afdea21e67bbeeb3ba4df1fff76b"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-010-cherry-barb.webp",
+          "bytes": 13312,
+          "sha256": "387d1fa4725ffe170908fac53e85c843c062ecdf85e92f76c1dfcc7197e22a6e"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-010-cherry-barb.webp",
+          "bytes": 20412,
+          "sha256": "10ecd7d202faf55e989b7f46dd46f9f7e987b10279f9d75af1247b3034409c5d"
+        }
+      }
+    },
+    {
+      "dexId": "011",
+      "slug": "platy",
+      "assetKey": "fishdex-011-platy",
+      "source": "studycrack-fishdex-011-platy.png",
+      "sourceSha256": "349f79832df773a31a5c5521af74ac494fdf2d2ad36d0b3f689abfaa99b3c035",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1295,
+        "height": 917,
+        "x": 310,
+        "y": 481
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-011-platy.webp",
+          "bytes": 7260,
+          "sha256": "85a4da612d074c46742d221ccf0132fe95630c58724409f021eecf2b5964959b"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-011-platy.webp",
+          "bytes": 13928,
+          "sha256": "cae8ca787c7b1cc1ef57fbd9f75a712ab10092f0fd3a0cf74870ae7c9f2fddbb"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-011-platy.webp",
+          "bytes": 20984,
+          "sha256": "46fe539966b6e24b2c173cc83694263a58736d8a50e284a41355eb41e8175d90"
+        }
+      }
+    },
+    {
+      "dexId": "012",
+      "slug": "black-molly",
+      "assetKey": "fishdex-012-black-molly",
+      "source": "studycrack-fishdex-012-black-molly.png",
+      "sourceSha256": "134e715a3b77062d56f782fe2c8f9557c7528fdbcd0a8f70b810fd553a251689",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1477,
+        "height": 1008,
+        "x": 241,
+        "y": 418
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-012-black-molly.webp",
+          "bytes": 7214,
+          "sha256": "02d09da138593f5d7d84acb01fd8b5b9897fea4308ae3d614d5cd96916c15bcd"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-012-black-molly.webp",
+          "bytes": 13348,
+          "sha256": "82f577d9ac256ea11e07bf7455fc144321c15c285dbad7afdd0cbb07384ab94c"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-012-black-molly.webp",
+          "bytes": 21122,
+          "sha256": "45ba4352fb857c3dafff2e0dd45ba7eaf144664fdcb0277921a0737f740adfcc"
+        }
+      }
+    },
+    {
+      "dexId": "013",
+      "slug": "swordtail",
+      "assetKey": "fishdex-013-swordtail",
+      "source": "studycrack-fishdex-013-swordtail.png",
+      "sourceSha256": "a6edd9af42707251bd095b48916b58809846018e3465fee8e6ef86dffb34bb7d",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1626,
+        "height": 649,
+        "x": 147,
+        "y": 603
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-013-swordtail.webp",
+          "bytes": 5578,
+          "sha256": "7e59ff6a4991af6405ea34f6d004bb528c9a828d0a8af590c14190ac5d155269"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-013-swordtail.webp",
+          "bytes": 10910,
+          "sha256": "eb66c8fc479f9dca8b6136659e776196b33e076d4d342df01111f3e521643480"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-013-swordtail.webp",
+          "bytes": 16846,
+          "sha256": "9c5799454c2110cbf0c2d0e19dcc2cf57adeeea0dc35c00f16ab86a456733a59"
+        }
+      }
+    },
+    {
+      "dexId": "014",
+      "slug": "corydoras",
+      "assetKey": "fishdex-014-corydoras",
+      "source": "studycrack-fishdex-014-corydoras.png",
+      "sourceSha256": "27f1f3a5ce4bd350904351f37c43babecd7b6722ec16a2a18bda42bfad192b30",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1519,
+        "height": 941,
+        "x": 215,
+        "y": 444
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-014-corydoras.webp",
+          "bytes": 8856,
+          "sha256": "4bc0bffbc5fe895121481d2766a12f00ed0c513173152ce2ecf866d41b691839"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-014-corydoras.webp",
+          "bytes": 16182,
+          "sha256": "f0638f741741d5c55bdd96f7dae71ed1a87de3cc13d7951b53613f13d4de7ebe"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-014-corydoras.webp",
+          "bytes": 25630,
+          "sha256": "a78529e8662f70657eb8df2ce7d01e19b23abadd645fe1c24e110ac989e42904"
+        }
+      }
+    },
+    {
+      "dexId": "015",
+      "slug": "otocinclus",
+      "assetKey": "fishdex-015-otocinclus",
+      "source": "studycrack-fishdex-015-otocinclus.png",
+      "sourceSha256": "b229e7706125a493eb5940457fb415ae248a50aff6846cb17d9e260e18e80a0f",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1420,
+        "height": 615,
+        "x": 264,
+        "y": 627
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-015-otocinclus.webp",
+          "bytes": 7858,
+          "sha256": "3e913086ee9740b2bf06f6d019ed4c7fc5382564c73801ea36ba699df5150021"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-015-otocinclus.webp",
+          "bytes": 15624,
+          "sha256": "46c37cea8c5cb0bf1c0c6e7faad25b25c5a19e98de5eaffaa6e2e368b22ce139"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-015-otocinclus.webp",
+          "bytes": 23600,
+          "sha256": "20bfc077eb664d7de93a4e4f7c7534d2dd34890b2c9c84ca03575d8e7bcec6f9"
+        }
+      }
+    },
+    {
+      "dexId": "016",
+      "slug": "white-cloud-minnow",
+      "assetKey": "fishdex-016-white-cloud-minnow",
+      "source": "studycrack-fishdex-016-white-cloud-minnow.png",
+      "sourceSha256": "1a66909bfa49b49c356164f5f6362c79fdfd62babe80e6188debcf191f7b90d6",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1126,
+        "height": 396,
+        "x": 413,
+        "y": 750
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-016-white-cloud-minnow.webp",
+          "bytes": 4484,
+          "sha256": "98b5cdfd213245f70127e065c2f1519f224a1f3d269eb95a738dc208af8e4dcf"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-016-white-cloud-minnow.webp",
+          "bytes": 9086,
+          "sha256": "80121a6132c15f281075621d7b7778b94246d5223ea58c386471a579f8e0d52f"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-016-white-cloud-minnow.webp",
+          "bytes": 14094,
+          "sha256": "c8481dd2b9a513abe449f151a7465cfba07e7bc0f9193f926453de824ce2ae49"
+        }
+      }
+    },
+    {
+      "dexId": "020",
+      "slug": "penguin-tetra",
+      "assetKey": "fishdex-020-penguin-tetra",
+      "source": "studycrack-fishdex-020-penguin-tetra.png",
+      "sourceSha256": "7445771df81076f8122b548728919e8f0e8bd96c78053dab2ee9eba8080f5a55",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1374,
+        "height": 839,
+        "x": 278,
+        "y": 525
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-020-penguin-tetra.webp",
+          "bytes": 7360,
+          "sha256": "5b54edf291e2b63bd8c030900988dd668e25fd3580c92e9ea081c3e630aa8d27"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-020-penguin-tetra.webp",
+          "bytes": 14704,
+          "sha256": "4e68f53e93c9f8c73e7a3b06ed1448b211101ac51256a57d066e43bcf5f650e1"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-020-penguin-tetra.webp",
+          "bytes": 22250,
+          "sha256": "97adc41a5119e34fa3258df6d082b7c47cdf99b60791d10999c9e8ae6fc05d7e"
+        }
+      }
+    },
+    {
+      "dexId": "023",
+      "slug": "bronze-corydoras",
+      "assetKey": "fishdex-023-bronze-corydoras",
+      "source": "studycrack-fishdex-023-bronze-corydoras.png",
+      "sourceSha256": "c047056800bbcf8247b17d9f28cdab9a91eee713c0c7fda22ca43ecf2cfc2d7b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1633,
+        "height": 1008,
+        "x": 159,
+        "y": 406
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-023-bronze-corydoras.webp",
+          "bytes": 10712,
+          "sha256": "39c3da05ae9a109789c49bc793b2661ad6b37c524b4aadb578a2e067466658c5"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-023-bronze-corydoras.webp",
+          "bytes": 23050,
+          "sha256": "5dd9da56c23daf2ed2628e7e6c2307e2eed6cfd7b9f600ea3c0800fbe5c78d25"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-023-bronze-corydoras.webp",
+          "bytes": 35104,
+          "sha256": "af03ccd82fc6a04bd23b8c125ed1294933de25fd768ac88c71fd56bae3335d1f"
+        }
+      }
+    },
+    {
+      "dexId": "024",
+      "slug": "pygmy-corydoras",
+      "assetKey": "fishdex-024-pygmy-corydoras",
+      "source": "studycrack-fishdex-024-pygmy-corydoras.png",
+      "sourceSha256": "a75ca70a37fd0a05036ec20093d9ddcb3925167bf786f302133f744e443485d5",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1107,
+        "height": 735,
+        "x": 411,
+        "y": 576
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-024-pygmy-corydoras.webp",
+          "bytes": 9162,
+          "sha256": "cfc5d00d6f922557994db8a9dc11eea73d60555e1b88c24719c1cd063a27f884"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-024-pygmy-corydoras.webp",
+          "bytes": 18660,
+          "sha256": "531ed55ec0e384ea843fca6606c26eb07c2c7cdf690d0f74f8315aa48370239f"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-024-pygmy-corydoras.webp",
+          "bytes": 27366,
+          "sha256": "fc6ecaa9c537288e0e919a55cc4926f178f0dd717ad8648cf7725701dca82135"
+        }
+      }
+    },
+    {
+      "dexId": "028",
+      "slug": "glass-shrimp",
+      "assetKey": "fishdex-028-glass-shrimp",
+      "source": "studycrack-fishdex-028-glass-shrimp.png",
+      "sourceSha256": "f3f73d105331d1e4e8406b8339467db2f94a65c892ac38488f76c3d00722f40b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1290,
+        "height": 1040,
+        "x": 329,
+        "y": 405
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-028-glass-shrimp.webp",
+          "bytes": 10800,
+          "sha256": "1b6a1561d817f94e2b42fd9ddb8f98d007ebc18d358734c1de58ddc6ce2212d1"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-028-glass-shrimp.webp",
+          "bytes": 22606,
+          "sha256": "898e884f88b087d0816483954093c5209232eb0d3634334047f934724b6ded9c"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-028-glass-shrimp.webp",
+          "bytes": 34460,
+          "sha256": "266d0b73626808ab9f4d2d75c2204f5a9e97cc9e46d407c4694220d255d13335"
+        }
+      }
+    },
+    {
+      "dexId": "030",
+      "slug": "cherry-shrimp",
+      "assetKey": "fishdex-030-cherry-shrimp",
+      "source": "studycrack-fishdex-030-cherry-shrimp.png",
+      "sourceSha256": "98fdc8a8df759d23701e19ffc7403c7ffcf03294a491898b2595ab882e313254",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1244,
+        "height": 914,
+        "x": 353,
+        "y": 489
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-030-cherry-shrimp.webp",
+          "bytes": 8984,
+          "sha256": "ec897efd920b703dcb254f28d14761544f6e87d53cfb02e9539c1b712cf544d2"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-030-cherry-shrimp.webp",
+          "bytes": 18408,
+          "sha256": "dae5e81c81f615d999324ba3333022cc9f00da0abbdc57764e61b80a58099f54"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-030-cherry-shrimp.webp",
+          "bytes": 28604,
+          "sha256": "f24981e80e30fb3e01f5b1a395f3008e0723a1d34014833de89d6a00ed7d5cfd"
+        }
+      }
+    },
+    {
+      "dexId": "031",
+      "slug": "betta",
+      "assetKey": "fishdex-031-betta",
+      "source": "studycrack-fishdex-031-betta.png",
+      "sourceSha256": "be0a51a81ce4b723a1150b6ff654bab406cf32b9b01820ddafc8f70ab2525ef5",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1582,
+        "height": 1293,
+        "x": 168,
+        "y": 301
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-031-betta.webp",
+          "bytes": 12524,
+          "sha256": "7a0244a420ff5707ede2c502ed91543996a0439e51d4c0d6c7cb1cbab6c58e95"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-031-betta.webp",
+          "bytes": 25268,
+          "sha256": "52263af52bfa655d88cf71c45e14806181257b910318b985f1ea2b4f1ecfc0b9"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-031-betta.webp",
+          "bytes": 35966,
+          "sha256": "cbebae69963a2f35574d11050a6ed018dd29159a7f765c3d486dba89da7b9cb3"
+        }
+      }
+    },
+    {
+      "dexId": "032",
+      "slug": "crowntail-betta",
+      "assetKey": "fishdex-032-crowntail-betta",
+      "source": "studycrack-fishdex-032-crowntail-betta.png",
+      "sourceSha256": "3c59f4634d44c589999c96e1610c458bb59b4512fe0e440398f8eb7c85731890",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1502,
+        "height": 1466,
+        "x": 209,
+        "y": 182
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-032-crowntail-betta.webp",
+          "bytes": 17312,
+          "sha256": "125eb8d7293f2b31db1b8be0f506c4494161e106537de34322e2a4c48f3868d8"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-032-crowntail-betta.webp",
+          "bytes": 36812,
+          "sha256": "0901139d766444a5a31f32c776f88efd09661e61dcef7282d48c289c61216a61"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-032-crowntail-betta.webp",
+          "bytes": 56510,
+          "sha256": "3626544fd793a0368fab5ce20ef40544afa63191c856ff830bc04a9df9c3737d"
+        }
+      }
+    },
+    {
+      "dexId": "035",
+      "slug": "dwarf-gourami",
+      "assetKey": "fishdex-035-dwarf-gourami",
+      "source": "studycrack-fishdex-035-dwarf-gourami.png",
+      "sourceSha256": "5d07aaf332645ee0e3ceb2212b750d001aa4d5a3ab4af03e46fe9f2388aab962",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1526,
+        "height": 1164,
+        "x": 200,
+        "y": 377
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-035-dwarf-gourami.webp",
+          "bytes": 10978,
+          "sha256": "e2497c9289bd4532e66cf3c895f28aabfc64a8a551c6d732ac659f8850398c4d"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-035-dwarf-gourami.webp",
+          "bytes": 23802,
+          "sha256": "e7cee87bbbb2bc449091d19c9ab51aced107e1b846a629d34389a1faa9d4b714"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-035-dwarf-gourami.webp",
+          "bytes": 34190,
+          "sha256": "52bfdd9949673f2b6dd82976365408f1a0fd371be29935a91676b970e3c9bab0"
+        }
+      }
+    },
+    {
+      "dexId": "040",
+      "slug": "goldfish",
+      "assetKey": "fishdex-040-goldfish",
+      "source": "studycrack-fishdex-040-goldfish.png",
+      "sourceSha256": "25009b77ceacb3b9a52fb37b620982dc7f08aabe4b30c9a0694024ded5970a1b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1545,
+        "height": 1043,
+        "x": 204,
+        "y": 420
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-040-goldfish.webp",
+          "bytes": 9066,
+          "sha256": "e008e669767164e476a562206da688671f1d8f449cee31797d11c8b5c8cf19ca"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-040-goldfish.webp",
+          "bytes": 18134,
+          "sha256": "f85e81e77ad42f2ec434a0dbedca293af2a822e5dffc081188ae47468521de45"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-040-goldfish.webp",
+          "bytes": 26166,
+          "sha256": "b6b04c2ad71bc27631c1170adf1bd04af6789b73d6e59a224a48a9946106f1bd"
+        }
+      }
+    },
+    {
+      "dexId": "041",
+      "slug": "oranda",
+      "assetKey": "fishdex-041-oranda",
+      "source": "studycrack-fishdex-041-oranda.png",
+      "sourceSha256": "5103dfb6da12cad98b6b1bcd7b3890f09e7a7ca90825af5e4cef2757a27e874f",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1560,
+        "height": 1268,
+        "x": 193,
+        "y": 325
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-041-oranda.webp",
+          "bytes": 12802,
+          "sha256": "492f9e35b513f107ae8803d71d1b966b7b0c3188ad27557256c631fd0df959e3"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-041-oranda.webp",
+          "bytes": 25614,
+          "sha256": "4eb974f151e2a82b51c3917f03f8c14bd66365594e99c5a0963de623b7b9b61d"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-041-oranda.webp",
+          "bytes": 37478,
+          "sha256": "4372c70b5d1f94f2b49ab3acd2e8a912c9d5aba3160a1f11850618ff416a6dd6"
+        }
+      }
+    },
+    {
+      "dexId": "042",
+      "slug": "ryukin",
+      "assetKey": "fishdex-042-ryukin",
+      "source": "studycrack-fishdex-042-ryukin.png",
+      "sourceSha256": "61abc25c11f20b6f2b6320565280d1d5fa8b81ecd45ee530ed937de41ccc31a1",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1522,
+        "height": 1070,
+        "x": 221,
+        "y": 404
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-042-ryukin.webp",
+          "bytes": 9450,
+          "sha256": "74e5e7b2f64ac7ff650aa7d74ad83df692ba1f53d2de84b10ad88b25cf7279dd"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-042-ryukin.webp",
+          "bytes": 18248,
+          "sha256": "583a89593507c8cea4249fdbf95efd3f9595120653f759f6fd5408e80edb197a"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-042-ryukin.webp",
+          "bytes": 25878,
+          "sha256": "1597bb907728c219d843f595e911f5e101319f9b90ee4169d6e3954c731eedbd"
+        }
+      }
+    },
+    {
+      "dexId": "045",
+      "slug": "percula-clownfish",
+      "assetKey": "fishdex-045-percula-clownfish",
+      "source": "studycrack-fishdex-045-percula-clownfish.png",
+      "sourceSha256": "5aad6c01b6321db8ba51445c11df5ef3ddc51e46648cd93db4ed2e7b6665d33d",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1556,
+        "height": 1057,
+        "x": 196,
+        "y": 412
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-045-percula-clownfish.webp",
+          "bytes": 9132,
+          "sha256": "cea43ed029c71bdd7cfdeaeae2d6a26cb92e2ceecaf652b68a0034c1f98dff12"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-045-percula-clownfish.webp",
+          "bytes": 17826,
+          "sha256": "ebc7eb9494c45d0cee26725a948b0fa2cb53fec9a025ab486ccfbc50df05cf45"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-045-percula-clownfish.webp",
+          "bytes": 25426,
+          "sha256": "c3c1af758e8d46876768b194f9224d330f0d613ba2970dfc0d810302bcc2300a"
+        }
+      }
+    },
+    {
+      "dexId": "046",
+      "slug": "tomato-clownfish",
+      "assetKey": "fishdex-046-tomato-clownfish",
+      "source": "studycrack-fishdex-046-tomato-clownfish.png",
+      "sourceSha256": "8cc1ad3cdde4fcb815c10b6a8ec0a9b918b42103cc51e5cf934e18fb6cb84a20",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1758,
+        "height": 1537,
+        "x": 0,
+        "y": 383
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-046-tomato-clownfish.webp",
+          "bytes": 7570,
+          "sha256": "f27d05f0d740dbbb4dace49414ab0efb23d71c8cc60ebf010ec7d3b91eeba428"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-046-tomato-clownfish.webp",
+          "bytes": 14802,
+          "sha256": "588c75a3195c9c7a9cbdb4fe27cc1712364c719cbf5b2f68bc21c27f611969ea"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-046-tomato-clownfish.webp",
+          "bytes": 22722,
+          "sha256": "a6a7821e5c5f388440e3e9f91e221fb8fc53caf58c5ce7e10568c862ad1f3c69"
+        }
+      }
+    },
+    {
+      "dexId": "047",
+      "slug": "maroon-clownfish",
+      "assetKey": "fishdex-047-maroon-clownfish",
+      "source": "studycrack-fishdex-047-maroon-clownfish.png",
+      "sourceSha256": "45814423c048413fa1de2a75516011296a418ef735b52d09fe5bdfccc298646c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1619,
+        "height": 1139,
+        "x": 181,
+        "y": 362
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-047-maroon-clownfish.webp",
+          "bytes": 8162,
+          "sha256": "6c06edcc9964e376ec4adfc1a0c98317a2093d33269923f910dea39f2a091e19"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-047-maroon-clownfish.webp",
+          "bytes": 15714,
+          "sha256": "1bd340fc5961e834f772a7fda42dedc23c251433cd20e130c2d274e19ffb9c62"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-047-maroon-clownfish.webp",
+          "bytes": 23718,
+          "sha256": "54ba034a0d567cbd9f6e3bbbd10b39a3b26d918a732baf5ec563a4733dcdcd40"
+        }
+      }
+    },
+    {
+      "dexId": "051",
+      "slug": "purple-tang",
+      "assetKey": "fishdex-051-purple-tang",
+      "source": "studycrack-fishdex-051-purple-tang.png",
+      "sourceSha256": "284031529c0ff37b136f41034e3ec4cc58d9b2b225633110444609fd38928724",
+      "cleanupApplied": true,
+      "bounds": {
+        "width": 1554,
+        "height": 1195,
+        "x": 169,
+        "y": 361
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-051-purple-tang.webp",
+          "bytes": 8558,
+          "sha256": "75f4b3dcfb07719a03479e9008a5ad2405b8fdfc091e00752d26fff1705e4cf8"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-051-purple-tang.webp",
+          "bytes": 18610,
+          "sha256": "f0bd557b28891ad8c79724ceeff9dd7a91a848d0c3ab212381094b9d9ac6e675"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-051-purple-tang.webp",
+          "bytes": 28470,
+          "sha256": "1be6f4ebbc5b56cdb7574c368d811fdc51389a804bbb178dcb2131a8e6aaa45f"
+        }
+      }
+    },
+    {
+      "dexId": "052",
+      "slug": "powder-blue-tang",
+      "assetKey": "fishdex-052-powder-blue-tang",
+      "source": "studycrack-fishdex-052-powder-blue-tang.png",
+      "sourceSha256": "357e9625c8e2ea23b164cefc34e4940e487b4f086c94f0ee6ebdb40d25037637",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1451,
+        "height": 1087,
+        "x": 241,
+        "y": 420
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-052-powder-blue-tang.webp",
+          "bytes": 8424,
+          "sha256": "8ab3cee5c2ed51b554fb3f3a984774c3a72d8b59f6480b92a9223af416be8334"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-052-powder-blue-tang.webp",
+          "bytes": 16094,
+          "sha256": "41e30745e46692a9a59a2deca8309ebe5b1c9e81f136c000327ec676eebc6ff9"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-052-powder-blue-tang.webp",
+          "bytes": 25834,
+          "sha256": "c3ca6f2a2a3c5286d0344bc2def78e76b3757038bf8455a0db943fb16eccddc3"
+        }
+      }
+    },
+    {
+      "dexId": "053",
+      "slug": "royal-gramma",
+      "assetKey": "fishdex-053-royal-gramma",
+      "source": "studycrack-fishdex-053-royal-gramma.png",
+      "sourceSha256": "d6a24bc195e6d15016f2b7fd33cda34897258d93a9da57ab8203485b1bf217be",
+      "cleanupApplied": true,
+      "bounds": {
+        "width": 1558,
+        "height": 1167,
+        "x": 169,
+        "y": 378
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-053-royal-gramma.webp",
+          "bytes": 8810,
+          "sha256": "d6d1d6dae758d33057434370140b95686d20fba1f594ca91d4fe0e0f3e079f62"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-053-royal-gramma.webp",
+          "bytes": 18910,
+          "sha256": "dbbf952d7d4786bca322969233dd1c711f1f97bd87767bcb694be7520112818b"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-053-royal-gramma.webp",
+          "bytes": 29704,
+          "sha256": "3dac7b3ee27bfde7b870ea579395ac67c36215107e9301ead7440a2d785ebc11"
+        }
+      }
+    },
+    {
+      "dexId": "054",
+      "slug": "firefish",
+      "assetKey": "fishdex-054-firefish",
+      "source": "studycrack-fishdex-054-firefish.png",
+      "sourceSha256": "c49f9dc03544772f33dda030b75f0b2c4221e3a878c4aacd6d254d60198f3c6f",
+      "cleanupApplied": true,
+      "bounds": {
+        "width": 1525,
+        "height": 1066,
+        "x": 194,
+        "y": 352
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-054-firefish.webp",
+          "bytes": 12590,
+          "sha256": "eebef45585a9ee0bf4312714a2e434c958d4df59f6d5bb165d561f18e492f1f4"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-054-firefish.webp",
+          "bytes": 30654,
+          "sha256": "a674cf6c09e22773dbf547b8e2e3df377d981a96d520832d59c6ddb2b57f1cc0"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-054-firefish.webp",
+          "bytes": 52650,
+          "sha256": "1ef2253febad1da08191b0389d96edc7bc68b95321499c10e98af3bc5c8e56ff"
+        }
+      }
+    },
+    {
+      "dexId": "055",
+      "slug": "banggai-cardinalfish",
+      "assetKey": "fishdex-055-banggai-cardinalfish",
+      "source": "studycrack-fishdex-055-banggai-cardinalfish.png",
+      "sourceSha256": "377769aa269b93d4860a7f5923609554e5b0f54eb1b86e6e11ba39fa3f23f769",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1389,
+        "height": 1585,
+        "x": 290,
+        "y": 155
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-055-banggai-cardinalfish.webp",
+          "bytes": 11452,
+          "sha256": "4082e6a7840c3e67e5de1da4174143551015371292f15134fc8d48c4b628b439"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-055-banggai-cardinalfish.webp",
+          "bytes": 23262,
+          "sha256": "a97314a440e443cc0a389351f481a829d6c5b9b499fb2d8e868de255ec121f16"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-055-banggai-cardinalfish.webp",
+          "bytes": 36568,
+          "sha256": "cca21d60ccbdcedb02351087d11759d1df6c4282e13ccf1d27558e702305b679"
+        }
+      }
+    },
+    {
+      "dexId": "056",
+      "slug": "pajama-cardinalfish",
+      "assetKey": "fishdex-056-pajama-cardinalfish",
+      "source": "studycrack-fishdex-056-pajama-cardinalfish.png",
+      "sourceSha256": "d3ddf7fa86bc5821d39923eb93c74c9f048ed2911b9ee00c6406ea703fece1b5",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1582,
+        "height": 1191,
+        "x": 172,
+        "y": 375
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-056-pajama-cardinalfish.webp",
+          "bytes": 8386,
+          "sha256": "03ee90595d2ecb5633151c089d173b1b6c73e1e5920005d0b0bcb0ad23cf05cd"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-056-pajama-cardinalfish.webp",
+          "bytes": 16844,
+          "sha256": "c25142808d23836aa3a53fb1f84911656fa08fc96b4abefe63d2529140efe577"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-056-pajama-cardinalfish.webp",
+          "bytes": 24030,
+          "sha256": "26db76391676cc5472d63d73f2717773cc638270b5f2632360d15e1a8dabee02"
+        }
+      }
+    },
+    {
+      "dexId": "057",
+      "slug": "mandarin-fish",
+      "assetKey": "fishdex-057-mandarin-fish",
+      "source": "studycrack-fishdex-057-mandarin-fish.png",
+      "sourceSha256": "a438418c5a6af2343f700d8185ccbd945e7379bca2909c2593fb5b2378d29626",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1572,
+        "height": 1080,
+        "x": 204,
+        "y": 408
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-057-mandarin-fish.webp",
+          "bytes": 14194,
+          "sha256": "b9c91aaa2d3c71f60d99dde33afe39006be2ce476af252f519266f5a3a077fa0"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-057-mandarin-fish.webp",
+          "bytes": 30268,
+          "sha256": "c62568864f9062181dfea7cf6954760c99d85bcd9a8f6be0fabe06499a87d8b0"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-057-mandarin-fish.webp",
+          "bytes": 47692,
+          "sha256": "8fa867ff57f4d1f1a28ce00ea042d0829453c1e737c758728754c9bbc068009b"
+        }
+      }
+    },
+    {
+      "dexId": "058",
+      "slug": "spotted-goby",
+      "assetKey": "fishdex-058-spotted-goby",
+      "source": "studycrack-fishdex-058-spotted-goby.png",
+      "sourceSha256": "c833561d7609bc1cb053fab5a954579a347a4512e05174b7ce18e64e708e8b8c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1615,
+        "height": 562,
+        "x": 150,
+        "y": 678
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-058-spotted-goby.webp",
+          "bytes": 6584,
+          "sha256": "809085801bf0a934332f0d61e4b754f68bc69cd510aa0f68336d11b5977d3b93"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-058-spotted-goby.webp",
+          "bytes": 12232,
+          "sha256": "e35ee4e32657d24e173928a5b44cce494988bd6547077a686e5c28a6fc88c2bf"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-058-spotted-goby.webp",
+          "bytes": 17972,
+          "sha256": "f08a607c605e6199d55983fb66fc3f5000a6acc601b392ba43a2e336c58e0455"
+        }
+      }
+    },
+    {
+      "dexId": "059",
+      "slug": "lawnmower-blenny",
+      "assetKey": "fishdex-059-lawnmower-blenny",
+      "source": "studycrack-fishdex-059-lawnmower-blenny.png",
+      "sourceSha256": "a7533395f8950594f39a0982d8e1d82dd572f064c6a75946cbf354fe6d72bc05",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1564,
+        "height": 1053,
+        "x": 197,
+        "y": 412
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-059-lawnmower-blenny.webp",
+          "bytes": 9922,
+          "sha256": "11d6e7b66e0469890981d022335280886f0c2333288fe42b52027e73cb45b32a"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-059-lawnmower-blenny.webp",
+          "bytes": 18220,
+          "sha256": "f34981001cc3e92298e59587db5ca6b1a1b7f8db47bf1659bc155d1f9040d855"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-059-lawnmower-blenny.webp",
+          "bytes": 27050,
+          "sha256": "8c249d3c6e984775606007ae6e951c6e5cef10734b910fcc0cd43d7bea8b7f20"
+        }
+      }
+    },
+    {
+      "dexId": "060",
+      "slug": "butterflyfish",
+      "assetKey": "fishdex-060-butterflyfish",
+      "source": "studycrack-fishdex-060-butterflyfish.png",
+      "sourceSha256": "a75dfeb2a18a2be583af6cfa967780cf1e0c72266e1ecd5e8f54069981c82441",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1482,
+        "height": 1194,
+        "x": 271,
+        "y": 337
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-060-butterflyfish.webp",
+          "bytes": 9852,
+          "sha256": "23772059c911ec06a4e4e63175c7f32472d301d5481d31195dd3ba8ce03b0861"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-060-butterflyfish.webp",
+          "bytes": 19422,
+          "sha256": "1fa818e32e2d75318b71fe712d29af1662440cd2427f1dc34a0ae91dd9ca54ea"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-060-butterflyfish.webp",
+          "bytes": 27526,
+          "sha256": "cf64098b47d9362743edb43d7abfd5cc6e9a00c15ed15595f0f7cef00736a8f2"
+        }
+      }
+    },
+    {
+      "dexId": "061",
+      "slug": "pufferfish",
+      "assetKey": "fishdex-061-pufferfish",
+      "source": "studycrack-fishdex-061-pufferfish.png",
+      "sourceSha256": "edf10d94a1e9b8475ad55585b7cb637f98a098abd0ffb2b4dfcf5188be497d84",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1500,
+        "height": 1245,
+        "x": 210,
+        "y": 323
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-061-pufferfish.webp",
+          "bytes": 9432,
+          "sha256": "9734fd974d7440b2f8582eecf04a366d539df72cb734c04b643dacdc54442fd5"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-061-pufferfish.webp",
+          "bytes": 18494,
+          "sha256": "b1ba1f515b98a1867a489a8a70accaef8349a468de65c36a6735c354599a5c06"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-061-pufferfish.webp",
+          "bytes": 25818,
+          "sha256": "117d8730ea44667352f82ee03c62263639902642da4bb32c03717dbedb181962"
+        }
+      }
+    },
+    {
+      "dexId": "065",
+      "slug": "longhorn-cowfish",
+      "assetKey": "fishdex-065-longhorn-cowfish",
+      "source": "studycrack-fishdex-065-longhorn-cowfish.png",
+      "sourceSha256": "3f34fd9ef99fd112d1439cb19836618e535ebd2b041384e58835f29873bfc459",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1730,
+        "height": 1296,
+        "x": 104,
+        "y": 289
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-065-longhorn-cowfish.webp",
+          "bytes": 10902,
+          "sha256": "af04701145f2222be2b8eacacce6851beabf0b346c5cff3ab2c96c8c075f66bb"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-065-longhorn-cowfish.webp",
+          "bytes": 23594,
+          "sha256": "f533529b4108ebc4e2b14941263b7b09d685264877fa230cf6e8655a92689b51"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-065-longhorn-cowfish.webp",
+          "bytes": 35480,
+          "sha256": "b215e9eb591b68da08ac40775f2746c37708a6ce49e4d53fd884396e27f2508a"
+        }
+      }
+    },
+    {
+      "dexId": "066",
+      "slug": "seahorse",
+      "assetKey": "fishdex-066-seahorse",
+      "source": "studycrack-fishdex-066-seahorse.png",
+      "sourceSha256": "2460f563c04768f5603269a8cb54d2e59b412ba2763062b506262244206ec9f3",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 882,
+        "height": 1606,
+        "x": 535,
+        "y": 132
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-066-seahorse.webp",
+          "bytes": 9550,
+          "sha256": "2c9c9d8b9df3543900986290bead231cf07ba238d22c60c6e840dcb2149b0892"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-066-seahorse.webp",
+          "bytes": 18382,
+          "sha256": "cfb763a5fcba4b6bb11297d93b3e149734cadb8828bed1f86bb98764ec0d6ec5"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-066-seahorse.webp",
+          "bytes": 27534,
+          "sha256": "d2d71de8df9c0bbf85841a300b57494888abc2cb9283effe91c0001a793bcd9d"
+        }
+      }
+    },
+    {
+      "dexId": "067",
+      "slug": "golden-white-cloud",
+      "assetKey": "fishdex-067-golden-white-cloud",
+      "source": "studycrack-fishdex-067-golden-white-cloud.png",
+      "sourceSha256": "31e55033720aa8026fbba97652f7efc71c49a764fd362f267e52bea0a1a035b8",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1255,
+        "height": 544,
+        "x": 339,
+        "y": 647
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-067-golden-white-cloud.webp",
+          "bytes": 7062,
+          "sha256": "9ec893329ac49670c1866adeb2e1601a21990e6041617cf5347c2039f12a54e3"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-067-golden-white-cloud.webp",
+          "bytes": 13998,
+          "sha256": "59e345df5b3e40c104213e0d98481f375f5722ce18f19b84154e627f978287af"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-067-golden-white-cloud.webp",
+          "bytes": 21070,
+          "sha256": "213c7f15012797e485199afd8a3721851bb04c8e1928e34bd73dd599725c9d7a"
+        }
+      }
+    },
+    {
+      "dexId": "069",
+      "slug": "pearlscale-goldfish",
+      "assetKey": "fishdex-069-pearlscale-goldfish",
+      "source": "studycrack-fishdex-069-pearlscale-goldfish.png",
+      "sourceSha256": "b1dd98a22886771a83be3862a6d19a4dc174878a37e75424c5e229764a912c0a",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1604,
+        "height": 1285,
+        "x": 154,
+        "y": 304
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-069-pearlscale-goldfish.webp",
+          "bytes": 14220,
+          "sha256": "bdcd5fa1897809f6a265fb932e75fe3f99ef3bef81bdf9dea152c24349788729"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-069-pearlscale-goldfish.webp",
+          "bytes": 31312,
+          "sha256": "d13f4ba5710720eb092b0f8651b6c4053b7af58dd7f341b93b0209844331e90e"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-069-pearlscale-goldfish.webp",
+          "bytes": 47950,
+          "sha256": "57846ba81aa355ab55c270a41368b683633f5a24b49e77535b46e3f7ee5197e5"
+        }
+      }
+    },
+    {
+      "dexId": "070",
+      "slug": "butterflytail-goldfish",
+      "assetKey": "fishdex-070-butterflytail-goldfish",
+      "source": "studycrack-fishdex-070-butterflytail-goldfish.png",
+      "sourceSha256": "54d9d634cfd7337d86e0726afd073776673d072ba0e4168c0ff1fdc514988a34",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1712,
+        "height": 1164,
+        "x": 108,
+        "y": 374
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-070-butterflytail-goldfish.webp",
+          "bytes": 14800,
+          "sha256": "4e50fc1115b324321e5d8c65c82bc2a1f580e479d9c28a95a1228da433aefc8d"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-070-butterflytail-goldfish.webp",
+          "bytes": 35368,
+          "sha256": "579867ffc3eca362c48a712c52cfb474ecadd1ff675e4edeceba6bdc013cc684"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-070-butterflytail-goldfish.webp",
+          "bytes": 60236,
+          "sha256": "8239e6e3c884f278c40e1bfcbccde92b81e362040f48faf386b6640c9a05f30f"
+        }
+      }
+    },
+    {
+      "dexId": "071",
+      "slug": "balloon-molly",
+      "assetKey": "fishdex-071-balloon-molly",
+      "source": "studycrack-fishdex-071-balloon-molly.png",
+      "sourceSha256": "b039bea469d5b9464465a9cdf6d774d97273a8452c04141c09c9bf946137556e",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1480,
+        "height": 1279,
+        "x": 219,
+        "y": 296
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-071-balloon-molly.webp",
+          "bytes": 9976,
+          "sha256": "39812e63cc1df75863c0abe8b40ad8104c130db87398412cb6bdc63a197c69c3"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-071-balloon-molly.webp",
+          "bytes": 19936,
+          "sha256": "c64fd6429a9eb065c5f027eaf4ae5e25a8adc3fe83a2735b412ab126d5d3f133"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-071-balloon-molly.webp",
+          "bytes": 28920,
+          "sha256": "dbcd13c187892288e1d8f850809811e7b5115853f532d7031dc6e978d7afad17"
+        }
+      }
+    },
+    {
+      "dexId": "073",
+      "slug": "freshwater-stingray",
+      "assetKey": "fishdex-073-freshwater-stingray",
+      "source": "studycrack-fishdex-073-freshwater-stingray.png",
+      "sourceSha256": "31fe23fdb638d364f6446d432ebd00b415f4ce43ec3450a76fdbd295745cb2c8",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1717,
+        "height": 1199,
+        "x": 100,
+        "y": 326
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-073-freshwater-stingray.webp",
+          "bytes": 10580,
+          "sha256": "11c60230ede8d14e407105ace2e5d5e3bb8cacaf392dbe095498fc282ac2bf1b"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-073-freshwater-stingray.webp",
+          "bytes": 22826,
+          "sha256": "01e7512dbf03a00ddd89bc553fdc398f049952ba86c4e97c5992b8839eca4ac7"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-073-freshwater-stingray.webp",
+          "bytes": 33848,
+          "sha256": "4945f2016b4def10d1d6fb5b1d2e3dfae1aa41fb16d8a852ab9d090ac434ca4b"
+        }
+      }
+    },
+    {
+      "dexId": "075",
+      "slug": "epaulette-shark",
+      "assetKey": "fishdex-075-epaulette-shark",
+      "source": "studycrack-fishdex-075-epaulette-shark.png",
+      "sourceSha256": "557344d8d6a56c2678072cb99ceddaff5231a207ba950edb24ee81f50af7117b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1793,
+        "height": 835,
+        "x": 72,
+        "y": 524
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-075-epaulette-shark.webp",
+          "bytes": 7114,
+          "sha256": "cff180bce88a7e77f30b6ac6665d25057bc5f56ad3bbdea1f9118c662aac3d98"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-075-epaulette-shark.webp",
+          "bytes": 14010,
+          "sha256": "7810b4c3a8187c0517e096432dfaf2e8d74e81e671fe76f1c93b4aa31a7fda79"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-075-epaulette-shark.webp",
+          "bytes": 22428,
+          "sha256": "0ae3e482b2caf77a7a6267f22cab7f0f7b37a09ca82b62db5b80c281e69db5d6"
+        }
+      }
+    },
+    {
+      "dexId": "076",
+      "slug": "lionfish",
+      "assetKey": "fishdex-076-lionfish",
+      "source": "studycrack-fishdex-076-lionfish.png",
+      "sourceSha256": "7841675ea76dc2355bb21fedb8d9562e01e0c628a5f8f9f7e7f05d2029e40ace",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1586,
+        "height": 1593,
+        "x": 195,
+        "y": 157
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-076-lionfish.webp",
+          "bytes": 20692,
+          "sha256": "0d5a167a7e376a98060ce2c4f1c78067e739d99d5e8d16c3ba391fec9a70a2da"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-076-lionfish.webp",
+          "bytes": 44146,
+          "sha256": "cf1b7ae2bc4a1b7482289cf221218cd238b9ecb70735d704438d8a8980ffe685"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-076-lionfish.webp",
+          "bytes": 69490,
+          "sha256": "5775b727a36fd4c74af803e033a7ea0ded5af05cc82a31d50ca0b08d07edef25"
+        }
+      }
+    },
+    {
+      "dexId": "079",
+      "slug": "octopus",
+      "assetKey": "fishdex-079-octopus",
+      "source": "studycrack-fishdex-079-octopus.png",
+      "sourceSha256": "3b6ed29c2bee259019f24915a6b8a42c35d95f226e2ca9c895f7b5fba1274cfc",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1498,
+        "height": 1500,
+        "x": 212,
+        "y": 178
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-079-octopus.webp",
+          "bytes": 16530,
+          "sha256": "828f300ef3ca40ab28f2c9a8c3608396b745dfdcc84382b756effdd36aeadccf"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-079-octopus.webp",
+          "bytes": 36528,
+          "sha256": "768b6e2875db4528a0fb1000a533b4d72b843ab0e4844c822d35c42bd0e5deeb"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-079-octopus.webp",
+          "bytes": 58548,
+          "sha256": "5a12aced9cdc1bad3d51ed97631c52d421f1ba4d289272c90cef3f457e715e5a"
+        }
+      }
+    },
+    {
+      "dexId": "082",
+      "slug": "nautilus",
+      "assetKey": "fishdex-082-nautilus",
+      "source": "studycrack-fishdex-082-nautilus.png",
+      "sourceSha256": "ea52d09103b83571cd848f9513b1ab0f5ced71a85f50df38c7816e1a5c9e1e2a",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1497,
+        "height": 1320,
+        "x": 211,
+        "y": 268
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-082-nautilus.webp",
+          "bytes": 14346,
+          "sha256": "f10811418e37ab458fbe743198dc613745a63bde56f3e3822ad112313df91dac"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-082-nautilus.webp",
+          "bytes": 31414,
+          "sha256": "ee3417286c46fc699bc642dfc628ba176b822a202433aded1652740406f80ac4"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-082-nautilus.webp",
+          "bytes": 48694,
+          "sha256": "0f7bc7af927139387038c5393212a541b175278b9e5f32bbe2e4a776f8b26bcb"
+        }
+      }
+    },
+    {
+      "dexId": "083",
+      "slug": "moon-jellyfish",
+      "assetKey": "fishdex-083-moon-jellyfish",
+      "source": "studycrack-fishdex-083-moon-jellyfish.png",
+      "sourceSha256": "036a870aa544d8afe19fc2ad70be7dff141b731fd1c64178b67d333f94a59952",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1139,
+        "height": 1232,
+        "x": 390,
+        "y": 328
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-083-moon-jellyfish.webp",
+          "bytes": 11280,
+          "sha256": "3631b8eaef531934cedc4d7b42eef08de69cda65863f591c549a6b8e938d662e"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-083-moon-jellyfish.webp",
+          "bytes": 22714,
+          "sha256": "79bcee1cac5474f015d159515316f89f63be728c15926c473dbad1eca4f5baa6"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-083-moon-jellyfish.webp",
+          "bytes": 34288,
+          "sha256": "2d33f847097b97a50d6b504c25bb4c8f7baf194a9ae391e008b15b76ef43702b"
+        }
+      }
+    },
+    {
+      "dexId": "084",
+      "slug": "lions-mane-jellyfish",
+      "assetKey": "fishdex-084-lions-mane-jellyfish",
+      "source": "studycrack-fishdex-084-lions-mane-jellyfish.png",
+      "sourceSha256": "04aaa6198acfe6431317fae7b3e411e7c098f56a8843802e8a8cf44e80943254",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1324,
+        "height": 1662,
+        "x": 297,
+        "y": 119
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-084-lions-mane-jellyfish.webp",
+          "bytes": 19296,
+          "sha256": "9819a9fd4ff779c64ec5907a6652e1a25677aec1d48b589f853e3cfb9f25df33"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-084-lions-mane-jellyfish.webp",
+          "bytes": 44724,
+          "sha256": "379eec197bc5239655c60e79e5799f5565517ea7d6ced941beea06a39e9d47dd"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-084-lions-mane-jellyfish.webp",
+          "bytes": 70700,
+          "sha256": "2ec9e2a7c9c637ce55d86990238cf3c32216d12b9b6e17b7fd346e0b2dbecd36"
+        }
+      }
+    },
+    {
+      "dexId": "089",
+      "slug": "nudibranch",
+      "assetKey": "fishdex-089-nudibranch",
+      "source": "studycrack-fishdex-089-nudibranch.png",
+      "sourceSha256": "62e20ef13cf70f09ad064ddb1396712b0cbbbcfaad63f87b1714fb9c3a5ffd79",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1513,
+        "height": 881,
+        "x": 192,
+        "y": 494
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-089-nudibranch.webp",
+          "bytes": 11186,
+          "sha256": "99af05427ba42b117f52cf8de910307357dd993ac71e4c5e9cf6d2b256d17d35"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-089-nudibranch.webp",
+          "bytes": 23660,
+          "sha256": "00693222a39db1b4cd0d487875afceea430cf42dc9ffb59895fb06f10e3b19ca"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-089-nudibranch.webp",
+          "bytes": 34006,
+          "sha256": "29ea47371a81872eba2d976446c8419b5faa49f77d5dac87ec41bdc6d11ba310"
+        }
+      }
+    },
+    {
+      "dexId": "090",
+      "slug": "axolotl",
+      "assetKey": "fishdex-090-axolotl",
+      "source": "studycrack-fishdex-090-axolotl.png",
+      "sourceSha256": "98e9253f2c675a9c34353cc3a8bdef1b2a794d8a619c4f0504eea8de708a31a5",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1611,
+        "height": 870,
+        "x": 140,
+        "y": 526
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-090-axolotl.webp",
+          "bytes": 8934,
+          "sha256": "fa5b1aae0de0573e0074974b3e9c2ec78bf7e07c67c681897b0ac2678531aad7"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-090-axolotl.webp",
+          "bytes": 17824,
+          "sha256": "82247f66771c9ad4b2454c27e0ebc74994651197d6d9b66afb612450eb3396c6"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-090-axolotl.webp",
+          "bytes": 26142,
+          "sha256": "f3995bd73af075b6dfae86039021073454594c30f7fa760f4bb98b9505f9a36f"
+        }
+      }
+    },
+    {
+      "dexId": "094",
+      "slug": "penguin",
+      "assetKey": "fishdex-094-penguin",
+      "source": "studycrack-fishdex-094-penguin.png",
+      "sourceSha256": "cd202e5db121ed2e66c180527a92eff1e4d410caf81defbde4ed0ba8c97a81ad",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1289,
+        "height": 1061,
+        "x": 335,
+        "y": 415
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-094-penguin.webp",
+          "bytes": 7982,
+          "sha256": "0cb2762bed3a7ddef4247ef19fb761bf492327069f59861b629bc2389c77a288"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-094-penguin.webp",
+          "bytes": 15682,
+          "sha256": "8250239ed1de6b1f3ab8540bba9c631af78865386f8168983afd2c924d64dd2c"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-094-penguin.webp",
+          "bytes": 24000,
+          "sha256": "2699fdbdfd43b8f3fae7a836a3c7c2b7ce64252a027d50c55d425d29bdbd2005"
+        }
+      }
+    },
+    {
+      "dexId": "096",
+      "slug": "green-sea-turtle",
+      "assetKey": "fishdex-096-green-sea-turtle",
+      "source": "studycrack-fishdex-096-green-sea-turtle.png",
+      "sourceSha256": "2b3a21cb17bdc894abbbe99ae4c0486b7e99193fc831a31264210e2dee7568fd",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1619,
+        "height": 988,
+        "x": 148,
+        "y": 473
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-096-green-sea-turtle.webp",
+          "bytes": 8878,
+          "sha256": "40014c60c7e08be22de29100e05c0338bf51435bdd3d3eb09641fb99dc9ae0dc"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-096-green-sea-turtle.webp",
+          "bytes": 19336,
+          "sha256": "e22e6995772885604a026a0a9a943abc764e591d550e54a2f852fc2230af0f6e"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-096-green-sea-turtle.webp",
+          "bytes": 28220,
+          "sha256": "caff716f70bceaa55f7703664ad8169d7e0dc0dc96c5c559f5af6dd619bb89c2"
+        }
+      }
+    },
+    {
+      "dexId": "101",
+      "slug": "sailfish",
+      "assetKey": "fishdex-101-sailfish",
+      "source": "studycrack-fishdex-101-sailfish.png",
+      "sourceSha256": "032b0acd05ae26ccb0d909583322d5d7329656709478c2811f7eb9441ffe4ba0",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1803,
+        "height": 1075,
+        "x": 58,
+        "y": 364
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-101-sailfish.webp",
+          "bytes": 8192,
+          "sha256": "f5d79d4c5c66611f9ae8631ea08c235aefb027e038edea7bbcb145d774d44691"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-101-sailfish.webp",
+          "bytes": 17962,
+          "sha256": "a23c153a0174ce96556e91ac9dc832109cf1cd7c41a64d40564e048f1c32cfe1"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-101-sailfish.webp",
+          "bytes": 28846,
+          "sha256": "686bfdc465967576c4c8fb7fcea5157ec4b20770484354aafbd5c2ea98113a5e"
+        }
+      }
+    },
+    {
+      "dexId": "103",
+      "slug": "swordfish",
+      "assetKey": "fishdex-103-swordfish",
+      "source": "studycrack-fishdex-103-swordfish.png",
+      "sourceSha256": "2ff0a5d19293971d1daf4a43258e37b14c948ffa6ce180fe367c67e7a980498c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1804,
+        "height": 1022,
+        "x": 62,
+        "y": 422
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-103-swordfish.webp",
+          "bytes": 7820,
+          "sha256": "d7437ee8c3260f3f64a45a9c45cd70c566e1187705bc4a3db738fb82a56e51e2"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-103-swordfish.webp",
+          "bytes": 16478,
+          "sha256": "b8985f7b63915b26f17898aafc078e49c6f440da7c22a5cd9ba2ff47c7a57711"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-103-swordfish.webp",
+          "bytes": 25856,
+          "sha256": "c46ab59219d0ac6015106bb210cd04648d256936075acd3c0a4b272648c4c37f"
+        }
+      }
+    },
+    {
+      "dexId": "106",
+      "slug": "hammerhead-shark",
+      "assetKey": "fishdex-106-hammerhead-shark",
+      "source": "studycrack-fishdex-106-hammerhead-shark.png",
+      "sourceSha256": "fd6e00b6b813bc006b4776dc36d2e4cfc728cf6be8bed1889b5500678c844ea8",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1791,
+        "height": 845,
+        "x": 73,
+        "y": 510
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-106-hammerhead-shark.webp",
+          "bytes": 6536,
+          "sha256": "6ef614f647de0a80928775f813aae565e1eda549187551766a8d891348951ba5"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-106-hammerhead-shark.webp",
+          "bytes": 13316,
+          "sha256": "616a41c531ab3e80d4da95cc197b965a3da771212a4941d146b4d10b8668113b"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-106-hammerhead-shark.webp",
+          "bytes": 20542,
+          "sha256": "5dd9c23e27f317fdf088ff9f01836c85cdde472c3ded53e16db51a0afcb2060e"
+        }
+      }
+    },
+    {
+      "dexId": "109",
+      "slug": "dolphin",
+      "assetKey": "fishdex-109-dolphin",
+      "source": "studycrack-fishdex-109-dolphin.png",
+      "sourceSha256": "dee704d14698b675adfc0f3934f05f4144b23eee3e8242b4cd7cb4d40d34909e",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1472,
+        "height": 1300,
+        "x": 231,
+        "y": 272
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-109-dolphin.webp",
+          "bytes": 7078,
+          "sha256": "353b90553b7972f2739f78a766e94fc266128ed24d63be8c94e2be9f8da6a6f6"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-109-dolphin.webp",
+          "bytes": 14404,
+          "sha256": "7e8332e1fe332224baabe159a10b76ef795cc37134761d8d650c7f14eece04c0"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-109-dolphin.webp",
+          "bytes": 21798,
+          "sha256": "83b439da386f7e41ec3ee7a8a6df82ab47ef7eda675c4fe96af16f8eabc39842"
+        }
+      }
+    },
+    {
+      "dexId": "111",
+      "slug": "blue-marlin",
+      "assetKey": "fishdex-111-blue-marlin",
+      "source": "studycrack-fishdex-111-blue-marlin.png",
+      "sourceSha256": "887c1903747e505899025bbbe8bb188e95659aa3ca576553bfa70c565adf043e",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1802,
+        "height": 1018,
+        "x": 66,
+        "y": 421
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-111-blue-marlin.webp",
+          "bytes": 7642,
+          "sha256": "f0d920ad8828d0afc3fa5aec1cd14f90ab1320b11154df1aa080351c54bdbd07"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-111-blue-marlin.webp",
+          "bytes": 15646,
+          "sha256": "3ff02b2f38b193b2b96491f72c6aa6df34e0dafbadbb81774e8949fc20e0e074"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-111-blue-marlin.webp",
+          "bytes": 23586,
+          "sha256": "61ab40147c29debe4ff198c991fbef57074bbd30969fa92cc351c74c8fb9f402"
+        }
+      }
+    },
+    {
+      "dexId": "112",
+      "slug": "black-marlin",
+      "assetKey": "fishdex-112-black-marlin",
+      "source": "studycrack-fishdex-112-black-marlin.png",
+      "sourceSha256": "369e1810f10347c500f6dd401443168b138f62642c8e0b33d58942ca37453723",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1803,
+        "height": 1075,
+        "x": 67,
+        "y": 372
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-112-black-marlin.webp",
+          "bytes": 7974,
+          "sha256": "29a77188af8415ddce6c363087820d4f997c384502f4c08d35333fc65091518d"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-112-black-marlin.webp",
+          "bytes": 16990,
+          "sha256": "d3d98addaba2c66e2803404c0c65e234e2be934e34335560213d4ad1cbece2ca"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-112-black-marlin.webp",
+          "bytes": 26550,
+          "sha256": "de9611a951b4c15787e330e438114c927b9a2fd3fb990bd5e15c84f0e0fb548b"
+        }
+      }
+    },
+    {
+      "dexId": "114",
+      "slug": "grand-bluefin-tuna",
+      "assetKey": "fishdex-114-grand-bluefin-tuna",
+      "source": "studycrack-fishdex-114-grand-bluefin-tuna.png",
+      "sourceSha256": "cd49471f267234ab2d6598f167aead0df26b74173e75765807ad067faf9add31",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1834,
+        "height": 1223,
+        "x": 44,
+        "y": 303
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-114-grand-bluefin-tuna.webp",
+          "bytes": 10260,
+          "sha256": "3bff2b2617bebee89339aa83443cdde2a311c01a8903f76c3e96f8272df5ebdc"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-114-grand-bluefin-tuna.webp",
+          "bytes": 24560,
+          "sha256": "7c36547b7c2a8282e147db7988da619bbebdcba7cb3f73c9a5e2417198cc794d"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-114-grand-bluefin-tuna.webp",
+          "bytes": 37870,
+          "sha256": "801b010f18453d2069e88654380dc4dc88124ca98fb152162155f1379f6519b2"
+        }
+      }
+    },
+    {
+      "dexId": "117",
+      "slug": "whale-shark",
+      "assetKey": "fishdex-117-whale-shark",
+      "source": "studycrack-fishdex-117-whale-shark.png",
+      "sourceSha256": "3aa0923154220f247aa88e042ae68dd37ce01ff14673c920ca261ce798857a62",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1859,
+        "height": 1463,
+        "x": 0,
+        "y": 457
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-117-whale-shark.webp",
+          "bytes": 10508,
+          "sha256": "bfe9ab42af34f43078c7ecb76f5be4ab1b2c1a2b08703e1f16226b6ae4d83232"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-117-whale-shark.webp",
+          "bytes": 23272,
+          "sha256": "0a922eef9f4ca20f62ac4be87fc7e434575c9368b54833057a262c27f5a86554"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-117-whale-shark.webp",
+          "bytes": 34820,
+          "sha256": "fb8956473b911487f1fdc2c724633cdc25fe521097e2941128ecd1e73edf88a5"
+        }
+      }
+    },
+    {
+      "dexId": "119",
+      "slug": "humpback-whale",
+      "assetKey": "fishdex-119-humpback-whale",
+      "source": "studycrack-fishdex-119-humpback-whale.png",
+      "sourceSha256": "ec13766a380097178f5c1b743c1580e76bcce47d11b47e21fd30838fa18e0159",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1847,
+        "height": 948,
+        "x": 36,
+        "y": 459
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-119-humpback-whale.webp",
+          "bytes": 10514,
+          "sha256": "2f639fe05ec48a5e02c1755a235049de8f33c8c676401b562bda311dd4088544"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-119-humpback-whale.webp",
+          "bytes": 24862,
+          "sha256": "103dc9d36f0a8873fdafa1fa7cc57f2d71749c0f77eafbc4b954dcf93989be96"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-119-humpback-whale.webp",
+          "bytes": 35522,
+          "sha256": "1cacd4ebe8fa59d35bdad1fe5a6c071eca9bec03f50a1e76ce13b0530d6c8866"
+        }
+      }
+    },
+    {
+      "dexId": "122",
+      "slug": "great-hammerhead",
+      "assetKey": "fishdex-122-great-hammerhead",
+      "source": "studycrack-fishdex-122-great-hammerhead.png",
+      "sourceSha256": "02089494320ceb2c626e9fd976817edbd6bb3b36726300111482e5f8790ee47b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1839,
+        "height": 884,
+        "x": 49,
+        "y": 484
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-122-great-hammerhead.webp",
+          "bytes": 7044,
+          "sha256": "2ed945bd26175ab38b3f86c9816a1e31eaece7f47e78d81da0ea4c113c85924d"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-122-great-hammerhead.webp",
+          "bytes": 13600,
+          "sha256": "31b001b7b13c3fac06394b80cf84919b431395c4c41e9a32018eb66cf467fc40"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-122-great-hammerhead.webp",
+          "bytes": 21566,
+          "sha256": "39c11d779ed21d42d73bd1ffe0652c911beae014dec4038489aa5ee017e2f74f"
+        }
+      }
+    },
+    {
+      "dexId": "125",
+      "slug": "ocean-sunfish",
+      "assetKey": "fishdex-125-ocean-sunfish",
+      "source": "studycrack-fishdex-125-ocean-sunfish.png",
+      "sourceSha256": "edd72355c0638341e68f2dfc28724f87d8cb6bac61a16a187e7d084c79c06f29",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1701,
+        "height": 1755,
+        "x": 0,
+        "y": 165
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-125-ocean-sunfish.webp",
+          "bytes": 9334,
+          "sha256": "174ce2ba01f4123c5a3f197f9319dc0631b85426ebec0c3a343ef2d5951a0c03"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-125-ocean-sunfish.webp",
+          "bytes": 18342,
+          "sha256": "8a5b407034781ce7a597cafa8fa8ca06d27abd2fbe9eea9ad2c2e22759750738"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-125-ocean-sunfish.webp",
+          "bytes": 26964,
+          "sha256": "c834232a5932294d8c05426249bfe01900ba68a7652a6aee8ea1de77a4cca645"
+        }
+      }
+    },
+    {
+      "dexId": "126",
+      "slug": "oarfish",
+      "assetKey": "fishdex-126-oarfish",
+      "source": "studycrack-fishdex-126-oarfish.png",
+      "sourceSha256": "a9997ad11a19de23e250b5f211210fa3a842a26b2c04aabb1ae032fdde79bda7",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 875,
+        "height": 1814,
+        "x": 526,
+        "y": 56
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-126-oarfish.webp",
+          "bytes": 11440,
+          "sha256": "9e4fac441bb597fb9d54a55d346da1e81cd1329457885f5ec7e269a7e831eb02"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-126-oarfish.webp",
+          "bytes": 30344,
+          "sha256": "c38eab79678079ee62668f36b82739bc9909927ee45dfd9772d633e190e6e013"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-126-oarfish.webp",
+          "bytes": 49694,
+          "sha256": "b02a25c04ab1f3af8fb93716d4ee57efc5a3b774ff04eae035ab484bacde1f5e"
+        }
+      }
+    },
+    {
+      "dexId": "127",
+      "slug": "coelacanth",
+      "assetKey": "fishdex-127-coelacanth",
+      "source": "studycrack-fishdex-127-coelacanth.png",
+      "sourceSha256": "48b35150af459cb70d49ba9f5b50506acb6880202678f7c1286aaf1c18dadcf9",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1648,
+        "height": 1130,
+        "x": 144,
+        "y": 383
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-127-coelacanth.webp",
+          "bytes": 13064,
+          "sha256": "4bef180e820810fd4c30cec3f5424515aa8c807a771f538d18cc4e81359df415"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-127-coelacanth.webp",
+          "bytes": 21686,
+          "sha256": "1a9c3f3eb02f4f8102ebf0793a154da29f8403972c9cca477d9759cd85071ac4"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-127-coelacanth.webp",
+          "bytes": 36156,
+          "sha256": "e37fe6153de7a7c1acdf86f534b7d8df7ba6720f287cb8b4b16c35e8447dc5a6"
+        }
+      }
+    },
+    {
+      "dexId": "130",
+      "slug": "japanese-medaka",
+      "assetKey": "fishdex-130-japanese-medaka",
+      "source": "studycrack-fishdex-130-japanese-medaka.png",
+      "sourceSha256": "587b123273d4479d6b49e39a44f1128f1a5dbf24fc33304370ea13c2b4060013",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1122,
+        "height": 394,
+        "x": 414,
+        "y": 755
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-130-japanese-medaka.webp",
+          "bytes": 4342,
+          "sha256": "4e7c2b5f1b30811e99952feea6d1821e98ca70e6e3ea791ee15743eced1c3bc7"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-130-japanese-medaka.webp",
+          "bytes": 9492,
+          "sha256": "8e48fffb9b52a15bd66e8c42c0c9d847cea640fcf33b67f1de532788cc9c1b4f"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-130-japanese-medaka.webp",
+          "bytes": 14386,
+          "sha256": "5a761dd4ed9d460a99cba6fe9903e421b4f621312508df3442f504b128e74760"
+        }
+      }
+    },
+    {
+      "dexId": "131",
+      "slug": "giant-clam",
+      "assetKey": "fishdex-131-giant-clam",
+      "source": "studycrack-fishdex-131-giant-clam.png",
+      "sourceSha256": "4e0b7573bf051bed602542acf50d7301a282f1627303ce74a862db0bc8982ef5",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1554,
+        "height": 1475,
+        "x": 180,
+        "y": 210
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-131-giant-clam.webp",
+          "bytes": 18864,
+          "sha256": "f7b5de35b938a750daf1c7b460ef46f00a057995d2ebf3fe81c1056906ec48cd"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-131-giant-clam.webp",
+          "bytes": 39568,
+          "sha256": "ed86ea856642c9ceb76efa3ba076d1eca336853f442593f0b3680acf5d769819"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-131-giant-clam.webp",
+          "bytes": 59546,
+          "sha256": "d0e562f75ccfee5578b07f18cb3439b8f7ddc52ea13473619c8f81d48d4fe378"
+        }
+      }
+    },
+    {
+      "dexId": "132",
+      "slug": "clown-goby",
+      "assetKey": "fishdex-132-clown-goby",
+      "source": "studycrack-fishdex-132-clown-goby.png",
+      "sourceSha256": "215a206106682fd01d8748b57d88579a5a7126f18801e664337e14882b12179d",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1203,
+        "height": 787,
+        "x": 358,
+        "y": 546
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-132-clown-goby.webp",
+          "bytes": 8522,
+          "sha256": "9d58d6af6a2f8849f84d7877123def4ec72106f856ab2f86860c1b941de8cd28"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-132-clown-goby.webp",
+          "bytes": 16210,
+          "sha256": "ee61a8a35ab404728a0228ce0e627021b29f70101da36f517fb5621e55a91826"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-132-clown-goby.webp",
+          "bytes": 24576,
+          "sha256": "04c4ee1930228d9b263fc02e0d5a596112a7034302f976c6d38ebc65f4d1ad61"
+        }
+      }
+    },
+    {
+      "dexId": "136",
+      "slug": "giant-grouper",
+      "assetKey": "fishdex-136-giant-grouper",
+      "source": "studycrack-fishdex-136-giant-grouper.png",
+      "sourceSha256": "aabc7fa89d798058b9fec433acd24fc6c5bfec5d57c2de1f767bc7d5df8e8e2c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1684,
+        "height": 1246,
+        "x": 131,
+        "y": 321
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-136-giant-grouper.webp",
+          "bytes": 12274,
+          "sha256": "81f270f1088ab28ce29f96f8119af956d9eb75ecd2edce45efc994443e9ff138"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-136-giant-grouper.webp",
+          "bytes": 25780,
+          "sha256": "0621c3b4cfeae1305a37792f60677af40df37543b41d223f3b7bb4398a322c0c"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-136-giant-grouper.webp",
+          "bytes": 36828,
+          "sha256": "ef015ddf438bb9295aa0d4a4efdc897e96eefdd2f07819dd6c2e48814922cec5"
+        }
+      }
+    },
+    {
+      "dexId": "139",
+      "slug": "crack-guide",
+      "assetKey": "fishdex-139-crack-guide",
+      "source": "studycrack-fishdex-139-crack-guide.png",
+      "sourceSha256": "1d553bd76b430d683fd13ea9c8420fb63e7373fe7e05222b642f28b02d0c2855",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1334,
+        "height": 1633,
+        "x": 298,
+        "y": 111
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-139-crack-guide.webp",
+          "bytes": 12110,
+          "sha256": "7ba266bf0016298b20be66d8867b16ed79d34f0836f745fdeedb2c103809017b"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-139-crack-guide.webp",
+          "bytes": 29256,
+          "sha256": "ec8d208968b64e1453827940ddc435f275bfe8b501b311182982df78a46ec717"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-139-crack-guide.webp",
+          "bytes": 45208,
+          "sha256": "97e4f5f37afdfcfd94d995e474f78dcc49bacd3d3ca745f914c9cf813c197a8d"
+        }
+      }
+    },
+    {
+      "dexId": "140",
+      "slug": "formula-octopus",
+      "assetKey": "fishdex-140-formula-octopus",
+      "source": "studycrack-fishdex-140-formula-octopus.png",
+      "sourceSha256": "98b4028c62a78872627c4fc3507f59a91989db959b34dc2b4e156b0eb58a959f",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1512,
+        "height": 1557,
+        "x": 211,
+        "y": 142
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-140-formula-octopus.webp",
+          "bytes": 18922,
+          "sha256": "3197dd2a7efae23d5d5514b06f22668cc2fc87156a6928a3079a460835c0ff42"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-140-formula-octopus.webp",
+          "bytes": 40082,
+          "sha256": "4160ae862509a11053dae4122d5987bb63f3e4313468562d86b824e04da0f4bc"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-140-formula-octopus.webp",
+          "bytes": 63440,
+          "sha256": "6ad0a9f74658c3d456d46b730ba02be622a56ca3b470725d887b01222e2058e6"
+        }
+      }
+    },
+    {
+      "dexId": "141",
+      "slug": "diver-crack",
+      "assetKey": "fishdex-141-diver-crack",
+      "source": "studycrack-fishdex-141-diver-crack.png",
+      "sourceSha256": "0ff3e56c9023a5ba61c4f37011e9d00d5f94f03b34a4dc02261e84f7d3fe374b",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1560,
+        "height": 1416,
+        "x": 220,
+        "y": 228
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-141-diver-crack.webp",
+          "bytes": 14138,
+          "sha256": "65f370b289c289523d092a236b1da0a01ab4055384a2044fea2e67a120ad18c7"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-141-diver-crack.webp",
+          "bytes": 33466,
+          "sha256": "9dd06687780c9474ec2f45276aced0b7498b93b59e960b89800c4ba3593bb997"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-141-diver-crack.webp",
+          "bytes": 51922,
+          "sha256": "a34aab3639005031b99be2355e0b0dbcf3f54aacc6e4c56589c60ae8f0f22fea"
+        }
+      }
+    },
+    {
+      "dexId": "142",
+      "slug": "professor-crack",
+      "assetKey": "fishdex-142-professor-crack",
+      "source": "studycrack-fishdex-142-professor-crack.png",
+      "sourceSha256": "d221400f968c3600c9dff9c7d5f958cae87e80113201e13c8194970ea32e6877",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1464,
+        "height": 1613,
+        "x": 159,
+        "y": 144
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-142-professor-crack.webp",
+          "bytes": 13800,
+          "sha256": "526e499805f22ce462aa5ba65ebca8e09522662edd865adbfe0b6e598c05323d"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-142-professor-crack.webp",
+          "bytes": 33620,
+          "sha256": "f61fa587d77ecb4852e3c3468ba4a4b5b8626c593db574bbc3abfdecb02394f8"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-142-professor-crack.webp",
+          "bytes": 52364,
+          "sha256": "3cdbfa42d9b669e13de6f0f41e2a6099aea879e0855e9415ee944aa88dac8d94"
+        }
+      }
+    },
+    {
+      "dexId": "143",
+      "slug": "graduation-crack",
+      "assetKey": "fishdex-143-graduation-crack",
+      "source": "studycrack-fishdex-143-graduation-crack.png",
+      "sourceSha256": "4ceed510b193ab9ce7fcf6c5d5c0b5b411320c3316460f30fc1660de1d9132c6",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1322,
+        "height": 1593,
+        "x": 284,
+        "y": 126
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-143-graduation-crack.webp",
+          "bytes": 14812,
+          "sha256": "d24a59774f767d361f47c23c1f3a00df9603dcc1da4bb23315658a7e3ba34067"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-143-graduation-crack.webp",
+          "bytes": 35418,
+          "sha256": "e223135af999f98ff091e7c7f044ed2dd17f1b67bdf232d542df4d413e7cc2cb"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-143-graduation-crack.webp",
+          "bytes": 54908,
+          "sha256": "3ea697181cf94fe6edcf99354d1ae7e7244986def59e56ccef6862465d0d4124"
+        }
+      }
+    },
+    {
+      "dexId": "144",
+      "slug": "mikado-butterflyfish",
+      "assetKey": "fishdex-144-mikado-butterflyfish",
+      "source": "studycrack-fishdex-144-mikado-butterflyfish.png",
+      "sourceSha256": "cb5c9d169237e2d8498fa848ec032369c4aae32b810b845250354ca03c7a0f60",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1514,
+        "height": 1522,
+        "x": 256,
+        "y": 138
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-144-mikado-butterflyfish.webp",
+          "bytes": 11258,
+          "sha256": "594fb246ebedc4668148b347f753d107c23f05e4ecb7fd3350151dc26d7b9f6f"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-144-mikado-butterflyfish.webp",
+          "bytes": 21752,
+          "sha256": "59526cb761108844a93a27e7ea8ffcd1da100b645c9a202258f31fb17f17da8e"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-144-mikado-butterflyfish.webp",
+          "bytes": 31290,
+          "sha256": "3ed4c86e4c6dc2c42631e4e7de9fbda347cd09c8b0ac8b3ed58e09ebd1e234b7"
+        }
+      }
+    },
+    {
+      "dexId": "145",
+      "slug": "crown-jellyfish",
+      "assetKey": "fishdex-145-crown-jellyfish",
+      "source": "studycrack-fishdex-145-crown-jellyfish.png",
+      "sourceSha256": "95b0ec2f38220a5cf5b9e1893ed73d703a7e9454389a355cbfa62ccf44ba0824",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1321,
+        "height": 1599,
+        "x": 288,
+        "y": 201
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-145-crown-jellyfish.webp",
+          "bytes": 14068,
+          "sha256": "a728cd39599a39344f860b2b9e224e95a150c1d7b053f18527a1e979f97cb09e"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-145-crown-jellyfish.webp",
+          "bytes": 31616,
+          "sha256": "1673337bec7c02286d2d1d5ef271e1b7e61d88d78b290305bb905388fa0e2505"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-145-crown-jellyfish.webp",
+          "bytes": 48046,
+          "sha256": "f0f958d4dbdfd6243b425819cde5f81014df4b2822800343cc558ecdee856254"
+        }
+      }
+    },
+    {
+      "dexId": "146",
+      "slug": "ribbon-butterflyfish",
+      "assetKey": "fishdex-146-ribbon-butterflyfish",
+      "source": "studycrack-fishdex-146-ribbon-butterflyfish.png",
+      "sourceSha256": "65dff99ab580a45874e8ef7cb36f3417f0a74468ac48451929a93af0985f77c7",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1487,
+        "height": 1564,
+        "x": 238,
+        "y": 138
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-146-ribbon-butterflyfish.webp",
+          "bytes": 16822,
+          "sha256": "95a3f30287030397035a0152a73555b439e899213375f8aa1c6463496864bdc8"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-146-ribbon-butterflyfish.webp",
+          "bytes": 35944,
+          "sha256": "f18498e571685b52b61a7383d4ba1f18730996f056ff255f694e16d7c80f933f"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-146-ribbon-butterflyfish.webp",
+          "bytes": 56734,
+          "sha256": "f901fd62a4786043bab765afc1a5067b6aff2a6586ee112bd1b6955e217a554b"
+        }
+      }
+    },
+    {
+      "dexId": "148",
+      "slug": "aurora-manta",
+      "assetKey": "fishdex-148-aurora-manta",
+      "source": "studycrack-fishdex-148-aurora-manta.png",
+      "sourceSha256": "f385b2c1b13f2830356b10a221cb32c6a35e03bd52f6989d2f55129c00eb342c",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1787,
+        "height": 1092,
+        "x": 61,
+        "y": 341
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-148-aurora-manta.webp",
+          "bytes": 10116,
+          "sha256": "66224d906a6ad71f604d9c1d040bd07a88b02a39e1b1b1f8fc3b0e9d8f35940c"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-148-aurora-manta.webp",
+          "bytes": 21972,
+          "sha256": "989eb4f147390f9525ddd064dec4d4145658638d2b5f9f5bda70d1f3f259c518"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-148-aurora-manta.webp",
+          "bytes": 33292,
+          "sha256": "4b6c80f6ccd96c52a907ffed07490c14ae1905214e1dc7708c03c97aaccbf352"
+        }
+      }
+    },
+    {
+      "dexId": "150",
+      "slug": "admission-guardian-crack",
+      "assetKey": "fishdex-150-admission-guardian-crack",
+      "source": "studycrack-fishdex-150-admission-guardian-crack.png",
+      "sourceSha256": "dc30f823a238a2933102ae16c58b95367e626ee7e9abe19ea8db6e42af8748f9",
+      "cleanupApplied": false,
+      "bounds": {
+        "width": 1371,
+        "height": 1677,
+        "x": 291,
+        "y": 128
+      },
+      "outputs": {
+        "grid256": {
+          "path": "grid-256/fishdex-150-admission-guardian-crack.webp",
+          "bytes": 13824,
+          "sha256": "68266f6c0530c90882b7f22a34eedcd6da9a6533750d4a41798a275be1c4ebe6"
+        },
+        "detail512": {
+          "path": "detail-512/fishdex-150-admission-guardian-crack.webp",
+          "bytes": 32490,
+          "sha256": "70e06f5ddc552690ed7afa3e4532c93f3227999e81904ccd148995f223478bac"
+        },
+        "habitat768": {
+          "path": "habitat-768/fishdex-150-admission-guardian-crack.webp",
+          "bytes": 50758,
+          "sha256": "f6ec3db96086239f0473efa57d77f59217de78faadedd29e2e1e121edc6b5d23"
+        }
+      }
+    }
+  ]
+}

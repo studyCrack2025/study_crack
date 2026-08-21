@@ -1,8 +1,17 @@
-# 현재 개발 현황 (2026-08-16)
+# 현재 개발 현황 (2026-08-21)
 
 현재 브랜치: `dev-mobile-main`
 
 ---
+
+## 2026-08-21 — FishDex Approved V2 FD-01 자산 파이프라인 완료
+
+- **승인 원본 검증**: `StudyCrack_FishDex_Approved_V2`의 85개 PNG에 대해 ID·slug·중복·1920x1920 RGBA·pending/retired 종 유입을 검사한다.
+- **runtime 파생 자산**: 투명 영역을 기준으로 trim·정규화한 256/512/768 WebP 255개와 checksum manifest를 생성했다. 총 배포 자산은 5.25MiB다.
+- **배경 정제**: ID 051·053·054의 낮은 alpha texture만 파생 자산 단계에서 제거했으며 흰색과 navy 배경에서 사각 배경 및 가장자리 이상이 없음을 확인했다. 승인 원본은 수정하지 않았다.
+- **자동 계약**: `npm run fishdex:build`, `npm run fishdex:check`를 추가하고 전체 `npm run check`에 자산 무결성 검사를 포함했다.
+- **backend 영향**: 없음. 이번 FD-01은 앱 정적 자산과 빌드 도구만 변경한다.
+- **다음 단계**: FD-02에서 generated manifest를 소비하는 `FishArtwork` renderer와 legacy SVG fallback을 구현해 기존 12종 서버 정책을 유지한 채 화면 call site를 교체한다.
 
 ## 2026-08-16 — CTO 전달본 G8 Legacy·성능 로컬 마감 완료
 
