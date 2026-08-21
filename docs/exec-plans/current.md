@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-08-21 — FishDex Approved V2 FD-02 renderer 연결 완료
+
+- **단일 renderer**: `FishArtwork`가 generated manifest를 소비하고 수조·스타터·보유 목록·관리·도감·Discovery·공유·플래너의 물고기 표현을 맡는다.
+- **fish-v1 호환**: 승인 이미지가 대응되는 기존 7종은 WebP로 전환했고, 대응되지 않는 파랑돔·노랑꼬리돔·줄무늬정어리·황제엔젤피시·블루탱은 기존 SVG fallback을 유지한다.
+- **상태·성능**: grid/detail/habitat별 responsive source, 고정 1:1 shell, lazy/eager 우선순위, fade-in, 로드 실패 fallback과 reduced-motion 처리를 적용했다. 초기 bundle은 유지되고 deferred app chunk는 276.9KiB다.
+- **검증**: 전체 `npm run check`, production build, CSS/dead-code 계약과 320·390·430px 수조·도감·Discovery·공유 Playwright 2개 흐름을 통과했다.
+- **backend 영향**: 없음. fish-v1 catalog와 보상 정책은 그대로다.
+- **다음 단계**: FD-03에서 85종 fish-v2 catalog, `assetKey`·희귀도·category·motion 메타데이터와 기존 보유종 지연 migration을 서버에 추가한다.
+
 ## 2026-08-21 — FishDex Approved V2 FD-01 자산 파이프라인 완료
 
 - **승인 원본 검증**: `StudyCrack_FishDex_Approved_V2`의 85개 PNG에 대해 ID·slug·중복·1920x1920 RGBA·pending/retired 종 유입을 검사한다.

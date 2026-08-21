@@ -13,8 +13,8 @@
 .planner-progress-head h4{margin:3px 0 0;color:var(--sc-ink);font-size:24px;font-weight:900;line-height:1.15;}
 .planner-progress-head h4 small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:750;}
 .planner-progress-fish{width:52px;height:52px;display:grid!important;place-items:center;flex:0 0 52px;border:1px solid color-mix(in srgb,var(--sc-action-positive) 24%,var(--sc-border-subtle));border-radius:16px;background:var(--sc-surface-positive);overflow:hidden;}
-.planner-progress-fish .aquarium-fish-svg{width:48px;filter:drop-shadow(0 4px 5px color-mix(in srgb,var(--sc-brand-navy-deep) 16%,transparent));transition:transform var(--sc-motion-panel) var(--ease-enter);}
-.planner-progress-fish.is-complete .aquarium-fish-svg{transform:scale(var(--fish-scale,1)) translateX(2px);}
+.planner-progress-fish .aquarium-fish-svg,.planner-progress-fish .aquarium-fish-artwork{width:48px;filter:drop-shadow(0 4px 5px color-mix(in srgb,var(--sc-brand-navy-deep) 16%,transparent));transition:transform var(--sc-motion-panel) var(--ease-enter);}
+.planner-progress-fish.is-complete .aquarium-fish-svg,.planner-progress-fish.is-complete .aquarium-fish-artwork{transform:scale(var(--fish-scale,1)) translateX(2px);}
 .planner-progress-track{height:7px;overflow:hidden;border-radius:var(--sc-radius-pill);background:var(--sc-line-subtle);}
 .planner-progress-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--sc-brand-navy),var(--sc-action-positive));transition:width var(--sc-motion-panel) ease;}
 .planner-progress-caption{display:flex;align-items:center;justify-content:space-between;gap:10px;}

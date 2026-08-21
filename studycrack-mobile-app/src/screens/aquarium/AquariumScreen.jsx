@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { Icon } from '../../components/Icon.jsx';
-import { FishSprite } from './FishSprite.jsx';
+import { FishArtwork } from './FishArtwork.jsx';
 
 const AQUARIUM_SLOTS = [
   { className: 'slot-left', id: 'left', label: '왼쪽' },
@@ -68,7 +68,7 @@ function AquariumScene({ activeFish = [], catalog = [], selectedFishId = '', str
         const meta = catalogMeta(catalog, fish.speciesId);
         return (
           <button type="button" className={`aquarium-fish ${slot.className} ${selectedFishId === fish.fishId ? 'is-selected' : ''}`} data-action="selectAquariumFish" data-fish-id={fish.fishId} aria-label={`${fish.name} 선택`} key={fish.fishId}>
-            <FishSprite colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} speciesId={fish.speciesId} />
+            <FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="habitat" />
             <span>{fish.name}</span>
           </button>
         );
@@ -86,7 +86,7 @@ function StarterPanel({ actionError = '', actionStatus = 'idle', catalog = [], s
   return (
     <section className="aquarium-starter sc-card">
       <div className="aquarium-section-head"><div><span>첫 번째 친구</span><h2>함께 성장할 물고기를 골라주세요</h2><p>선택한 물고기는 수조 가운데에서 공부 보상을 기다려요.</p></div></div>
-      <div className="aquarium-starter-grid">{starters.map((fish) => <button type="button" className={selectedSpeciesId === fish.speciesId ? 'is-selected' : ''} data-action="selectStarterCandidate" data-species-id={fish.speciesId} key={fish.speciesId}><FishSprite colors={fish.colors} speciesId={fish.speciesId} /><b>{fish.displayName}</b><small>{fish.defaultName}</small></button>)}</div>
+      <div className="aquarium-starter-grid">{starters.map((fish) => <button type="button" className={selectedSpeciesId === fish.speciesId ? 'is-selected' : ''} data-action="selectStarterCandidate" data-species-id={fish.speciesId} key={fish.speciesId}><FishArtwork assetKey={fish.assetKey} colors={fish.colors} speciesId={fish.speciesId} variant="grid" /><b>{fish.displayName}</b><small>{fish.defaultName}</small></button>)}</div>
       {actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}
       <button type="button" className="btn btn-primary" data-action="claimStarterFish" disabled={!selectedSpeciesId || actionStatus === 'claiming-starter'}>{actionStatus === 'claiming-starter' ? '수조에 데려오는 중...' : '이 물고기와 시작하기'}</button>
     </section>
@@ -123,10 +123,10 @@ function FishInventoryPanel({ actionError = '', actionStatus = 'idle', activeFis
       <div className="aquarium-inventory-grid">{inventory.map((fish) => {
         const meta = catalogMeta(catalog, fish.speciesId);
         const slot = AQUARIUM_SLOTS.find((item, index) => activeFish[index]?.fishId === fish.fishId);
-        return <button type="button" className={selectedFish?.fishId === fish.fishId ? 'is-selected' : ''} data-action="selectAquariumFish" data-fish-id={fish.fishId} aria-label={`${fish.name} 관리`} key={fish.fishId}><FishSprite colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} speciesId={fish.speciesId} /><span><b>{fish.name}</b><small>Lv.{fish.level} · {RARITY_LABELS[meta.rarity] || '일반'}</small></span>{slot ? <em>{slot.label}</em> : null}</button>;
+        return <button type="button" className={selectedFish?.fishId === fish.fishId ? 'is-selected' : ''} data-action="selectAquariumFish" data-fish-id={fish.fishId} aria-label={`${fish.name} 관리`} key={fish.fishId}><FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} speciesId={fish.speciesId} variant="grid" /><span><b>{fish.name}</b><small>Lv.{fish.level} · {RARITY_LABELS[meta.rarity] || '일반'}</small></span>{slot ? <em>{slot.label}</em> : null}</button>;
       })}</div>
       {selectedFish ? <div className="aquarium-manage-detail">
-        <div className="aquarium-manage-summary"><FishSprite colors={selectedMeta.colors} fishId={selectedFish.fishId} growthStage={selectedFish.growthStage} speciesId={selectedFish.speciesId} /><div><span>{selectedMeta.displayName}</span><b>{selectedFish.name}</b><small>{activeSlot ? `${AQUARIUM_SLOTS.find((slot) => slot.id === activeSlot)?.label}에 배치 중` : '현재 수조 밖에 있어요'}</small></div></div>
+        <div className="aquarium-manage-summary"><FishArtwork assetKey={selectedMeta.assetKey} colors={selectedMeta.colors} fishId={selectedFish.fishId} growthStage={selectedFish.growthStage} speciesId={selectedFish.speciesId} variant="detail" /><div><span>{selectedMeta.displayName}</span><b>{selectedFish.name}</b><small>{activeSlot ? `${AQUARIUM_SLOTS.find((slot) => slot.id === activeSlot)?.label}에 배치 중` : '현재 수조 밖에 있어요'}</small></div></div>
         <div className="aquarium-slot-control"><span>수조 위치</span><div>{AQUARIUM_SLOTS.map((slot) => <button type="button" className={activeSlot === slot.id ? 'is-active' : ''} data-action="setAquariumFishSlot" data-slot={slot.id} disabled={busy} key={slot.id}><b>{slot.label}</b><small>{activeSlot === slot.id ? '해제' : '배치'}</small></button>)}</div></div>
         <div className="aquarium-rename-control"><label htmlFor="aquarium-fish-name">이름 변경</label><div><input id="aquarium-fish-name" className="planner-input" data-field="aquariumFishName" defaultValue={selectedFish.name} key={selectedFish.fishId} maxLength="20" autoComplete="off" placeholder="물고기 이름" /><button type="button" className="btn btn-secondary" data-action="saveAquariumFishName" disabled={busy}>{actionStatus === 'renaming' ? '저장 중...' : '저장'}</button></div><small>한글, 영문, 숫자로 공백 제외 10자까지 입력할 수 있어요.</small></div>
       </div> : null}
@@ -157,7 +157,7 @@ function FishCatalogPanel({ catalog = [], inventory = [], profile }) {
       return <section className={`aquarium-catalog-group ${RARITY_CLASSES[rarity]}`} key={rarity}><header><div><span>{rarity.toUpperCase()}</span><b>{RARITY_LABELS[rarity]}</b></div><small>{rows.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length} / {rows.length}</small></header><div>{rows.map((fish) => {
         const owned = fish.owned || ownedSpecies.has(fish.speciesId);
         const ownedFish = inventory.find((item) => item.speciesId === fish.speciesId);
-        return <article className={owned ? 'is-owned' : 'is-locked'} key={fish.speciesId}><div className="aquarium-catalog-sprite"><FishSprite colors={fish.colors} fishId={ownedFish?.fishId} growthStage={ownedFish?.growthStage} speciesId={fish.speciesId} /></div><b>{owned ? fish.displayName : '???'}</b><small>{owned ? `Lv.${ownedFish?.level || 1} · ${fish.defaultName}` : '아직 만나지 못했어요'}</small></article>;
+        return <article className={owned ? 'is-owned' : 'is-locked'} key={fish.speciesId}><div className="aquarium-catalog-sprite"><FishArtwork assetKey={fish.assetKey} colors={fish.colors} fishId={ownedFish?.fishId} growthStage={ownedFish?.growthStage} speciesId={fish.speciesId} variant="grid" /></div><b>{owned ? fish.displayName : '???'}</b><small>{owned ? `Lv.${ownedFish?.level || 1} · ${fish.defaultName}` : '아직 만나지 못했어요'}</small></article>;
       })}</div></section>;
     })}</div>
   </div>;
@@ -174,7 +174,7 @@ function DrawResult({ actionError, actionStatus, catalog, pendingDraw }) {
   const meta = catalogMeta(catalog, fish.speciesId);
   const duplicate = Boolean(result.duplicate);
   const rarity = result.rarity || 'common';
-  return <section className={`aquarium-draw-result ${RARITY_CLASSES[rarity] || RARITY_CLASSES.common}`} aria-live="polite"><div className="aquarium-result-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, index) => <i style={{ '--particle-index': index }} key={index} />)}</div><span>{duplicate ? '다시 만난 친구' : `${RARITY_LABELS[rarity] || '일반'} 물고기 발견`}</span><div className="aquarium-result-halo"><i className="aquarium-result-ring" aria-hidden="true" /><FishSprite colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} speciesId={fish.speciesId} /></div><h2>{meta.displayName}</h2><p>{fish.name} · {RARITY_LABELS[rarity] || '일반'}</p><div className="aquarium-result-reward">{duplicate ? <><span>중복 성장 보상</span><b>EXP +{Number(result.expGranted) || 0}</b>{Number(result.shellsRefunded) > 0 ? <small>최대 레벨 보상으로 조개 {result.shellsRefunded}개를 돌려받았어요.</small> : <small>기존 물고기의 성장 경험치로 합쳐졌어요.</small>}</> : <><span>도감 등록 완료</span><b>{rarity === 'epic' ? '특별한 친구가 수조에 합류했어요' : '새 물고기가 수조에 합류했어요'}</b><small>도감에서 생김새와 성장 상태를 다시 확인할 수 있어요.</small></>}</div>{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="acknowledgeAquariumDraw" data-target="catalog" disabled={actionStatus === 'acknowledging-draw'}>{actionStatus === 'acknowledging-draw' ? '결과를 저장하는 중...' : '도감에서 확인하기'}</button></section>;
+  return <section className={`aquarium-draw-result ${RARITY_CLASSES[rarity] || RARITY_CLASSES.common}`} aria-live="polite"><div className="aquarium-result-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, index) => <i style={{ '--particle-index': index }} key={index} />)}</div><span>{duplicate ? '다시 만난 친구' : `${RARITY_LABELS[rarity] || '일반'} 물고기 발견`}</span><div className="aquarium-result-halo"><i className="aquarium-result-ring" aria-hidden="true" /><FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="detail" /></div><h2>{meta.displayName}</h2><p>{fish.name} · {RARITY_LABELS[rarity] || '일반'}</p><div className="aquarium-result-reward">{duplicate ? <><span>중복 성장 보상</span><b>EXP +{Number(result.expGranted) || 0}</b>{Number(result.shellsRefunded) > 0 ? <small>최대 레벨 보상으로 조개 {result.shellsRefunded}개를 돌려받았어요.</small> : <small>기존 물고기의 성장 경험치로 합쳐졌어요.</small>}</> : <><span>도감 등록 완료</span><b>{rarity === 'epic' ? '특별한 친구가 수조에 합류했어요' : '새 물고기가 수조에 합류했어요'}</b><small>도감에서 생김새와 성장 상태를 다시 확인할 수 있어요.</small></>}</div>{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="acknowledgeAquariumDraw" data-target="catalog" disabled={actionStatus === 'acknowledging-draw'}>{actionStatus === 'acknowledging-draw' ? '결과를 저장하는 중...' : '도감에서 확인하기'}</button></section>;
 }
 
 function FishDrawPanel({ actionError = '', actionStatus = 'idle', catalog = [], pendingDraw = null, pendingDrawError = '', pendingDrawStatus = 'idle', profile, revealStep = 0 }) {
