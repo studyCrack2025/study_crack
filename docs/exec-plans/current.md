@@ -12,7 +12,8 @@
 - **획득 표현**: Legendary와 Special에 등급별 공개 문구·음향·halo·particle 표현을 추가하고 reduced-motion 설정은 기존 계약을 유지한다.
 - **검증**: 모바일 `npm run check`, production build, `git diff --check`, Playwright 19개 전체 흐름과 Gamification Node test 39개가 통과했다.
 - **배포 영향**: FD-03~05 묶음은 `StudyCrack_Gamification` Lambda 재배포가 필요하다. 정적 프론트는 GitHub Actions로 배포한다. 배포 후 dev allowlist 실계정 smoke가 남아 있다.
-- **다음 단계**: FD-06은 ID 100·133·134·135의 승인 PNG가 입고된 뒤 89종, Epic 17종, Legendary 11종으로 동시에 활성화한다. 현재 네 파일은 존재하지 않으며 pending 차단이 정상 동작한다.
+- **출시 범위 확정**: 승인된 85종을 현재 정식 catalog로 고정했다. ID 100·133·134·135는 승인 PNG가 없어 별도 후속 계획으로 분리했으며, 입고 전까지 manifest·API·도감·뽑기에 노출하지 않는다.
+- **문서 정리**: 85종 적용 계획은 구현 완료로 이관하고 실제 dev 계정 검증은 `260706_mobile_dev_smoke_backlog.md` 한곳에서 추적한다. 89종 확장은 `260821_mobile_fishdex_89_species_deferred.md`에서 재개 조건과 계약을 관리한다.
 
 ## 2026-08-21 — FishDex Approved V2 FD-04 5등급 보상 정책 완료
 
