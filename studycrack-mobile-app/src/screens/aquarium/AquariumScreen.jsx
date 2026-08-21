@@ -167,7 +167,8 @@ function FishCatalogPanel({ catalog = [], inventory = [], profile }) {
 function DrawPity({ profile }) {
   const rareIn = Math.max(0, Number(profile?.drawPity?.rareIn) || 0);
   const epicIn = Math.max(0, Number(profile?.drawPity?.epicIn) || 0);
-  return <div className="aquarium-pity"><div><span>희귀 확정까지</span><b>{rareIn ? `${rareIn}회` : '이번 뽑기'}</b></div><div><span>영웅 확정까지</span><b>{epicIn ? `${epicIn}회` : '이번 뽑기'}</b></div></div>;
+  const legendaryIn = Math.max(0, Number(profile?.drawPity?.legendaryIn) || 0);
+  return <div className="aquarium-pity"><div><span>희귀 확정</span><b>{rareIn ? `${rareIn}회 후` : '이번 뽑기'}</b></div><div><span>영웅 확정</span><b>{epicIn ? `${epicIn}회 후` : '이번 뽑기'}</b></div><div><span>전설 확정</span><b>{legendaryIn ? `${legendaryIn}회 후` : '이번 뽑기'}</b></div></div>;
 }
 
 function DrawResult({ actionError, actionStatus, catalog, pendingDraw }) {

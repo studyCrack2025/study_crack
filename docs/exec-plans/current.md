@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-08-21 — FishDex Approved V2 FD-04 5등급 보상 정책 완료
+
+- **일반 뽑기**: `draw-v2`를 도입해 Common/Rare/Epic/Legendary를 70/25/4/1로 고정하고 Rare 10회·Epic 30회·Legendary 100회 천장을 적용했다.
+- **중복 보상**: 등급별 EXP 30/80/180/400, Lv.10 조개 환급 10/20/30/50을 서버 정책 상수로 통합했다. 첫 3회 미획득 우선과 pending 복원·요청 멱등성은 그대로 유지한다.
+- **Special 경계**: Special은 일반 draw pool에서 제외했다. API Gateway 요청이 진입할 수 없는 내부 이벤트와 `AWARD#requestId` 원장으로 업적·이벤트·운영 지급만 허용하며 중복은 EXP 500으로 처리한다.
+- **지연 migration**: PROFILE schema를 3으로 올려 기존 재화·보유·배치·pending을 보존하면서 Legendary 천장 카운터와 `draw-v2` 버전을 additive하게 보충한다.
+- **화면 안내**: 서버 공개 rules DTO가 확률·천장을 제공하고, 수조는 희귀·영웅·전설 천장을 모두 표시한다. 도움말은 4등급 확률과 Special 별도 획득 경로를 같은 서버 값으로 안내한다.
+- **검증**: Gamification Node test 39개와 모바일 `npm run check`, production build, CSS ownership·dead selector·중복 감사, `git diff --check`, Playwright 18개 전체 흐름이 통과했다.
+- **배포 영향**: `StudyCrack_Gamification` Lambda 재배포가 필요하다. 새 DynamoDB 테이블·GSI·실행 역할 권한은 필요 없으며 기존 `StudyCrack_Game` 테이블에 PROFILE·DRAW·AWARD 레코드를 사용한다.
+- **다음 단계**: FD-05에서 85종 도감·획득·수조 공개 화면과 네트워크·실계정 호환을 집중 검증한다.
+
 ## 2026-08-21 — FishDex Approved V2 FD-03 서버 카탈로그·호환 migration 완료
 
 - **활성 카탈로그**: `fish-catalog.v2.mjs`에 승인 자산 85종을 등록하고 `speciesId`, FishDex ID, `assetKey`, 한국어 이름, category, motion, 희귀도, 지급 가능 상태를 단일 계약으로 고정했다. 분포는 Common 21, Rare 30, Epic 16, Legendary 8, Special 10이다.

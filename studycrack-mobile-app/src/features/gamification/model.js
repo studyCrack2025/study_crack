@@ -29,8 +29,14 @@ export function validateGameProfileResponse(value) {
 }
 
 function validateGameRules(value) {
+  const drawPolicyValid = value?.drawPolicy === undefined || (
+    isRecord(value.drawPolicy)
+      && typeof value.drawPolicy.version === 'string'
+      && isRecord(value.drawPolicy.oddsBasisPoints)
+      && isRecord(value.drawPolicy.pityLimits)
+  );
   return isRecord(value) && isRecord(value.dailyCaps) && Array.isArray(value.rewardTiers) && Array.isArray(value.habitatStages)
-    && isRecord(value.fishCare) && Number.isFinite(Number(value.drawCostShells));
+    && isRecord(value.fishCare) && Number.isFinite(Number(value.drawCostShells)) && drawPolicyValid;
 }
 
 export function validateHabitatResponse(value) {

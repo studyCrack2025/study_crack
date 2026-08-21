@@ -194,10 +194,10 @@
 .aquarium-draw-view .aquarium-mode-header span{color:color-mix(in srgb,var(--sc-state-threshold) 82%,var(--sc-surface-card));}
 .aquarium-draw-view .aquarium-mode-header h1{color:var(--sc-surface-card);}
 .aquarium-draw-view .aquarium-mode-header p{color:color-mix(in srgb,var(--sc-surface-card) 58%,transparent);}
-.aquarium-pity{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-8);}
+.aquarium-pity{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sc-space-8);}
 .aquarium-pity > div{display:grid;gap:3px;padding:var(--sc-space-12);border:1px solid color-mix(in srgb,var(--sc-surface-card) 12%,transparent);border-radius:var(--sc-radius-control);background:color-mix(in srgb,var(--sc-surface-card) 7%,transparent);box-shadow:var(--sc-shadow-normal);}
 .aquarium-pity span{color:color-mix(in srgb,var(--sc-surface-card) 50%,transparent);font-size:var(--sc-type-micro);font-weight:700;}
-.aquarium-pity b{color:var(--sc-surface-card);font-size:var(--sc-type-body);}
+.aquarium-pity b{color:var(--sc-surface-card);font-size:var(--sc-type-caption);}
 .aquarium-draw-ready,.aquarium-draw-box,.aquarium-draw-result{min-height:430px;display:grid;justify-items:center;align-content:center;gap:var(--sc-space-8);padding:var(--sc-space-24) var(--sc-space-16);border:1px solid color-mix(in srgb,var(--sc-surface-card) 13%,transparent);border-radius:var(--sc-radius-card);background:color-mix(in srgb,var(--sc-brand-navy-deep) 76%,transparent);box-shadow:var(--sc-shadow-raised);text-align:center;overflow:hidden;}
 .aquarium-draw-ready > span,.aquarium-draw-box > span,.aquarium-draw-result > span{padding:5px 9px;border-radius:var(--sc-radius-pill);background:color-mix(in srgb,var(--sc-action-positive) 16%,transparent);color:color-mix(in srgb,var(--sc-action-positive) 76%,var(--sc-surface-card));font-size:var(--sc-type-micro);font-weight:800;}
 .aquarium-draw-ready h2,.aquarium-draw-box h2,.aquarium-draw-result h2{margin:0;color:var(--sc-surface-card);font-size:var(--sc-type-section);line-height:1.35;letter-spacing:0;}

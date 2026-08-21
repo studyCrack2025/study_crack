@@ -144,6 +144,10 @@
 .timer-rules-stages small{color:var(--sc-ink-muted);font-size:9px;}
 .timer-rules-care{display:grid;gap:6px;}
 .timer-rules-care span{padding:9px 10px;border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
+.timer-rules-odds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+.timer-rules-odds span{min-width:0;display:grid;justify-items:center;gap:2px;padding:9px 4px;border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);text-align:center;}
+.timer-rules-odds b{color:var(--sc-ink-strong);font-size:var(--sc-type-micro);}
+.timer-rules-odds small{color:var(--sc-brand-blue);font-size:var(--sc-type-caption);font-weight:900;}
 .timer-v2-actions{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:var(--sc-space-8);}
 .timer-v2-actions .btn{min-height:48px;padding:0 var(--sc-space-12);}
 .timer-v2-actions .icon{width:18px;height:18px;stroke:currentColor;}
