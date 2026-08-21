@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-08-21 — FishDex Approved V2 FD-05 85종 도감 공개 로컬 완료
+
+- **5등급 도감**: Common·Rare·Epic·Legendary·Special 그룹과 서버 기준 수집 분모를 표시한다. 전체·획득·미획득 상태 필터에 민물·바닷물고기·무척추·해양생물·크랙이 생태 필터를 추가했다.
+- **구버전 호환**: category가 없는 기존 12종 응답에서는 생태 필터를 숨기며 보유·미보유 필터와 등급별 전체 분모는 그대로 유지한다.
+- **성능**: 85개 이미지는 native lazy loading과 `content-visibility`를 사용한다. 도감 최초 진입에서 화면 밖 이미지를 전부 요청하지 않는지, 320·390·430px에서 수평 overflow가 없는지 자동 검증한다.
+- **획득 표현**: Legendary와 Special에 등급별 공개 문구·음향·halo·particle 표현을 추가하고 reduced-motion 설정은 기존 계약을 유지한다.
+- **검증**: 모바일 `npm run check`, production build, `git diff --check`, Playwright 19개 전체 흐름과 Gamification Node test 39개가 통과했다.
+- **배포 영향**: FD-03~05 묶음은 `StudyCrack_Gamification` Lambda 재배포가 필요하다. 정적 프론트는 GitHub Actions로 배포한다. 배포 후 dev allowlist 실계정 smoke가 남아 있다.
+- **다음 단계**: FD-06은 ID 100·133·134·135의 승인 PNG가 입고된 뒤 89종, Epic 17종, Legendary 11종으로 동시에 활성화한다. 현재 네 파일은 존재하지 않으며 pending 차단이 정상 동작한다.
+
 ## 2026-08-21 — FishDex Approved V2 FD-04 5등급 보상 정책 완료
 
 - **일반 뽑기**: `draw-v2`를 도입해 Common/Rare/Epic/Legendary를 70/25/4/1로 고정하고 Rare 10회·Epic 30회·Legendary 100회 천장을 적용했다.

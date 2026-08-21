@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import fishDexManifest from '../src/assets/fishdex/v2/manifest.generated.json' with { type: 'json' };
 import {
   expectNoHorizontalOverflow,
   installApiMock,
@@ -358,6 +359,60 @@ test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤
   await page.screenshot({ path: shareScreenshotPath, fullPage: true });
   await testInfo.attach('aquarium-share-390.png', { path: shareScreenshotPath, contentType: 'image/png' });
   await expectNoHorizontalOverflow(page);
+});
+
+test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 이미지를 지연 로드한다', async ({ page }, testInfo) => {
+  const rarities = [...Array(21).fill('common'), ...Array(30).fill('rare'), ...Array(16).fill('epic'), ...Array(8).fill('legendary'), ...Array(10).fill('special')];
+  const categories = ['freshwater', 'marine_fish', 'marine_invertebrate', 'marine_wildlife', 'mascot'];
+  const catalog = fishDexManifest.entries.map((entry, index) => ({
+    speciesId: entry.slug.replaceAll('-', '_'),
+    dexId: entry.dexId,
+    assetKey: entry.assetKey,
+    displayName: `FishDex ${entry.dexId}`,
+    defaultName: entry.slug,
+    rarity: rarities[index],
+    category: categories[index % categories.length],
+    starter: index < 3,
+    colors: ['#3F6FD9', '#9DD9F2']
+  }));
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { fishCatalog: catalog });
+  const starter = { fishId: 'fish_fd05_owned', speciesId: catalog[0].speciesId, speciesName: catalog[0].displayName, rarity: 'common', name: '첫 친구', customName: '', level: 2, exp: 30, currentLevelExp: 0, nextLevelExp: 90, progressPct: 0, growthStage: 'young', source: 'starter' };
+  api.state.fishInventory = [starter];
+  api.state.activeFish = [null, starter, null];
+  api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeFishIds: [null, starter.fishId, null], drawPity: { rareIn: 10, epicIn: 30, legendaryIn: 100 } };
+
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+  await page.getByRole('button', { name: /물고기 도감/ }).click();
+  await expect(page.locator('.aquarium-catalog-group')).toHaveCount(5);
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(85);
+  await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 85');
+  await expect(page.locator('.aquarium-catalog-group.rarity-common > header')).toContainText('1 / 21');
+  await expect(page.locator('.aquarium-catalog-group.rarity-special > header')).toContainText('0 / 10');
+  await expect(page.locator('.aquarium-catalog-group img[loading="lazy"]')).toHaveCount(85);
+
+  const initiallyLoaded = await page.evaluate(() => performance.getEntriesByType('resource').filter((entry) => entry.name.includes('fishdex-')).length);
+  expect(initiallyLoaded).toBeGreaterThan(0);
+  expect(initiallyLoaded).toBeLessThan(85);
+
+  await page.getByRole('button', { name: '민물', exact: true }).click();
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(17);
+  await expect(page.locator('.aquarium-catalog-selection')).toContainText('민물');
+  await expect(page.locator('.aquarium-catalog-selection')).toContainText('17종');
+  await page.getByRole('button', { name: '획득', exact: true }).click();
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(1);
+  await expect(page.locator('.aquarium-catalog-group.rarity-common > header')).toContainText('1 / 5');
+
+  await page.getByRole('button', { name: '전체', exact: true }).click();
+  await page.getByRole('button', { name: '모든 생태', exact: true }).click();
+  for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await expectNoHorizontalOverflow(page);
+  }
+  const screenshotPath = testInfo.outputPath('fishdex-85-catalog-390.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: screenshotPath });
+  await testInfo.attach('fishdex-85-catalog-390.png', { path: screenshotPath, contentType: 'image/png' });
 });
 
 test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }, testInfo) => {

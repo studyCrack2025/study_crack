@@ -171,6 +171,12 @@
 .aquarium-catalog-filter{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}
 .aquarium-catalog-filter button{min-width:0;min-height:36px;padding:6px;border:0;border-radius:calc(var(--sc-radius-control) - 4px);background:transparent;color:var(--sc-ink-muted);font:inherit;font-size:var(--sc-type-caption);font-weight:800;}
 .aquarium-catalog-filter button.is-active{background:var(--sc-surface-card);color:var(--sc-brand-blue);box-shadow:var(--sc-shadow-normal);}
+.aquarium-catalog-categories{display:flex;overflow-x:auto;gap:6px;margin-inline:calc(var(--sc-space-8) * -1);padding:0 var(--sc-space-8) 2px;scrollbar-width:none;overscroll-behavior-inline:contain;}
+.aquarium-catalog-categories::-webkit-scrollbar{display:none;}
+.aquarium-catalog-categories button{flex:none;min-height:34px;padding:7px 12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-card);color:var(--sc-ink-muted);font:inherit;font-size:var(--sc-type-micro);font-weight:800;white-space:nowrap;}
+.aquarium-catalog-categories button.is-active{border-color:color-mix(in srgb,var(--sc-info-blue) 35%,var(--sc-line-subtle));background:color-mix(in srgb,var(--sc-info-blue) 8%,var(--sc-surface-card));color:var(--sc-info-blue);}
+.aquarium-catalog-selection{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);padding:0 2px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
+.aquarium-catalog-selection b{color:var(--sc-ink-strong);font-size:var(--sc-type-caption);}
 .aquarium-catalog-groups{display:grid;gap:var(--sc-card-gap);}
 .aquarium-catalog-group{min-width:0;display:grid;gap:var(--sc-space-12);}
 .aquarium-catalog-group > header{display:flex;align-items:end;justify-content:space-between;gap:var(--sc-space-12);padding:0 2px;}
@@ -179,7 +185,7 @@
 .aquarium-catalog-group > header b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);}
 .aquarium-catalog-group > header small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
 .aquarium-catalog-group > div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-8);}
-.aquarium-catalog-group article{min-width:0;min-height:160px;display:grid;place-items:center;align-content:center;gap:3px;padding:var(--sc-space-12) var(--sc-space-8);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);text-align:center;}
+.aquarium-catalog-group article{min-width:0;min-height:160px;display:grid;place-items:center;align-content:center;gap:3px;padding:var(--sc-space-12) var(--sc-space-8);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);text-align:center;content-visibility:auto;contain-intrinsic-size:auto 160px;}
 .aquarium-catalog-group article.is-owned{border-color:color-mix(in srgb,var(--sc-action-positive) 30%,var(--sc-line-subtle));}
 .aquarium-catalog-group article.is-locked{background:var(--sc-surface-subtle);}
 .aquarium-catalog-sprite{width:112px;max-width:100%;height:88px;display:grid;place-items:center;}
@@ -189,6 +195,11 @@
 .aquarium-catalog-group article > small{overflow:hidden;max-width:100%;color:var(--sc-ink-muted);font-size:9px;text-overflow:ellipsis;white-space:nowrap;}
 .aquarium-catalog-group.rarity-rare article.is-owned{border-color:color-mix(in srgb,var(--sc-info-blue) 42%,var(--sc-line-subtle));background:color-mix(in srgb,var(--sc-info-blue) 8%,var(--sc-surface-card));}
 .aquarium-catalog-group.rarity-epic article.is-owned{border-color:color-mix(in srgb,var(--sc-state-threshold) 52%,var(--sc-line-subtle));background:var(--sc-surface-threshold);}
+.aquarium-catalog-group.rarity-legendary article.is-owned{border-color:color-mix(in srgb,var(--sc-rank-gold-accent) 62%,var(--sc-line-subtle));background:color-mix(in srgb,var(--sc-rank-gold-accent) 9%,var(--sc-surface-card));}
+.aquarium-catalog-group.rarity-special article.is-owned{border-color:color-mix(in srgb,var(--sc-action-positive) 48%,var(--sc-line-subtle));background:var(--sc-surface-positive);}
+.aquarium-catalog-empty{display:grid;justify-items:center;gap:4px;padding:var(--sc-space-24) var(--sc-space-16);border:1px dashed var(--sc-line-strong);border-radius:var(--sc-radius-card);background:var(--sc-surface-subtle);text-align:center;}
+.aquarium-catalog-empty b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);}
+.aquarium-catalog-empty p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.45;}
 .aquarium-draw-view{padding:var(--sc-space-12);border:1px solid color-mix(in srgb,var(--sc-info-blue) 25%,transparent);border-radius:var(--sc-radius-card);background:linear-gradient(165deg,color-mix(in srgb,var(--sc-info-blue) 34%,var(--sc-brand-navy-deep)),var(--sc-brand-navy-deep) 42%,color-mix(in srgb,var(--sc-brand-navy-deep) 90%,var(--sc-brand-navy)));box-shadow:var(--sc-shadow-raised);}
 .aquarium-draw-view .aquarium-mode-header > button{border-color:color-mix(in srgb,var(--sc-surface-card) 16%,transparent);background:color-mix(in srgb,var(--sc-surface-card) 9%,transparent);color:var(--sc-surface-card);box-shadow:none;}
 .aquarium-draw-view .aquarium-mode-header span{color:color-mix(in srgb,var(--sc-state-threshold) 82%,var(--sc-surface-card));}
@@ -224,6 +235,8 @@
 .aquarium-draw-result{position:relative;isolation:isolate;animation:aquariumResultIn var(--sc-motion-screen) var(--ease-enter);}
 .aquarium-draw-result.rarity-rare{border-color:color-mix(in srgb,var(--sc-info-blue) 60%,transparent);}
 .aquarium-draw-result.rarity-epic{border-color:color-mix(in srgb,var(--sc-state-threshold) 68%,transparent);box-shadow:0 14px 40px color-mix(in srgb,var(--sc-state-threshold) 22%,transparent);}
+.aquarium-draw-result.rarity-legendary{border-color:color-mix(in srgb,var(--sc-rank-gold-accent) 78%,transparent);box-shadow:0 16px 44px color-mix(in srgb,var(--sc-rank-gold-accent) 28%,transparent);}
+.aquarium-draw-result.rarity-special{border-color:color-mix(in srgb,var(--sc-action-positive) 72%,transparent);box-shadow:0 16px 44px color-mix(in srgb,var(--sc-action-positive) 24%,transparent);}
 .aquarium-result-halo{position:relative;width:210px;height:168px;display:grid;place-items:center;margin:4px 0;border-radius:50%;background:color-mix(in srgb,var(--sc-surface-positive) 70%,transparent);}
 .aquarium-result-halo .aquarium-fish-svg,.aquarium-result-halo .aquarium-fish-artwork{z-index:2;width:184px;max-width:100%;animation:aquariumResultFish 520ms var(--ease-spring);}
 .aquarium-result-ring{position:absolute;inset:14px;border:1px solid color-mix(in srgb,var(--sc-action-positive) 35%,transparent);border-radius:50%;animation:aquariumResultRing 1.8s ease-out infinite;}
@@ -231,11 +244,17 @@
 .aquarium-draw-result.rarity-rare .aquarium-result-ring{border-color:color-mix(in srgb,var(--sc-info-blue) 55%,transparent);box-shadow:0 0 24px color-mix(in srgb,var(--sc-info-blue) 24%,transparent);}
 .aquarium-draw-result.rarity-epic .aquarium-result-halo{background:radial-gradient(circle,color-mix(in srgb,var(--sc-state-threshold) 28%,var(--sc-surface-card)),var(--sc-surface-card) 68%);}
 .aquarium-draw-result.rarity-epic .aquarium-result-ring{border:2px solid color-mix(in srgb,var(--sc-state-threshold) 68%,transparent);box-shadow:0 0 34px color-mix(in srgb,var(--sc-state-threshold) 34%,transparent);}
+.aquarium-draw-result.rarity-legendary .aquarium-result-halo{background:radial-gradient(circle,color-mix(in srgb,var(--sc-rank-gold-accent) 34%,var(--sc-surface-card)),var(--sc-surface-card) 70%);}
+.aquarium-draw-result.rarity-legendary .aquarium-result-ring{border:2px solid color-mix(in srgb,var(--sc-rank-gold-accent) 78%,transparent);box-shadow:0 0 40px color-mix(in srgb,var(--sc-rank-gold-accent) 38%,transparent);}
+.aquarium-draw-result.rarity-special .aquarium-result-halo{background:radial-gradient(circle,color-mix(in srgb,var(--sc-action-positive) 30%,var(--sc-surface-card)),var(--sc-surface-card) 70%);}
+.aquarium-draw-result.rarity-special .aquarium-result-ring{border:2px solid color-mix(in srgb,var(--sc-action-positive) 72%,transparent);box-shadow:0 0 40px color-mix(in srgb,var(--sc-action-positive) 34%,transparent);}
 .aquarium-result-burst{position:absolute;z-index:0;top:64px;left:50%;width:1px;height:1px;pointer-events:none;}
 .aquarium-draw-result > :not(.aquarium-result-burst){position:relative;z-index:1;}
 .aquarium-result-burst i{--particle-angle:calc(var(--particle-index) * 36deg);position:absolute;width:6px;height:6px;border-radius:50%;background:var(--sc-action-positive);transform:rotate(var(--particle-angle)) translateY(-90px);animation:aquariumResultParticle 1.7s ease-in-out infinite;animation-delay:calc(var(--particle-index) * -80ms);}
 .aquarium-draw-result.rarity-rare .aquarium-result-burst i{width:7px;height:7px;background:var(--sc-info-blue);}
 .aquarium-draw-result.rarity-epic .aquarium-result-burst i{width:8px;height:8px;border-radius:2px;background:var(--sc-state-threshold);box-shadow:0 0 10px color-mix(in srgb,var(--sc-state-threshold) 75%,transparent);}
+.aquarium-draw-result.rarity-legendary .aquarium-result-burst i{width:8px;height:8px;border-radius:2px;background:var(--sc-rank-gold-accent);box-shadow:0 0 12px color-mix(in srgb,var(--sc-rank-gold-accent) 82%,transparent);}
+.aquarium-draw-result.rarity-special .aquarium-result-burst i{width:8px;height:8px;background:var(--sc-action-positive);box-shadow:0 0 12px color-mix(in srgb,var(--sc-action-positive) 76%,transparent);}
 .aquarium-result-reward{width:100%;max-width:320px;display:grid;gap:3px;padding:var(--sc-space-12);border:1px solid color-mix(in srgb,var(--sc-surface-card) 10%,transparent);border-radius:var(--sc-radius-control);background:color-mix(in srgb,var(--sc-surface-card) 7%,transparent);text-align:left;}
 .aquarium-result-reward span{color:color-mix(in srgb,var(--sc-surface-card) 50%,transparent);font-size:var(--sc-type-micro);font-weight:800;}
 .aquarium-result-reward b{color:var(--sc-surface-card);font-size:var(--sc-type-body);}

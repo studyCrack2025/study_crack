@@ -18,6 +18,8 @@ const CATALOG_FILTERS = [
   { id: 'owned', label: '획득' },
   { id: 'locked', label: '미획득' }
 ];
+const CATEGORY_ORDER = ['all', 'freshwater', 'marine_fish', 'marine_invertebrate', 'marine_wildlife', 'mascot'];
+const CATEGORY_LABELS = { all: '모든 생태', freshwater: '민물', marine_fish: '바닷물고기', marine_invertebrate: '무척추', marine_wildlife: '해양생물', mascot: '크랙이' };
 
 function catalogMeta(catalog, speciesId) {
   return catalog.find((item) => item.speciesId === speciesId) || { colors: ['#3F6FD9', '#9DD9F2'], displayName: '물고기', rarity: 'common' };
@@ -28,7 +30,7 @@ function playAquariumRevealSound(rarity = 'common') {
     const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
     if (!AudioContext) return;
     const context = new AudioContext();
-    const notes = rarity === 'epic' ? [523, 659, 784, 1046] : rarity === 'rare' ? [523, 659, 784] : [523, 659];
+    const notes = rarity === 'special' ? [659, 784, 988, 1318, 1568] : rarity === 'legendary' ? [392, 523, 659, 784, 1046] : rarity === 'epic' ? [523, 659, 784, 1046] : rarity === 'rare' ? [523, 659, 784] : [523, 659];
     const master = context.createGain();
     master.gain.setValueAtTime(0.0001, context.currentTime);
     master.gain.exponentialRampToValueAtTime(0.065, context.currentTime + 0.03);
@@ -144,23 +146,30 @@ function AquariumModeHeader({ eyebrow, title, description }) {
 
 function FishCatalogPanel({ catalog = [], inventory = [], profile }) {
   const [filter, setFilter] = useState('all');
+  const [category, setCategory] = useState('all');
   const ownedSpecies = new Set(inventory.map((fish) => fish.speciesId));
   const ownedCount = catalog.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length;
   const total = catalog.length || 12;
   const collectionPct = Math.round((ownedCount / total) * 100);
+  const availableCategories = CATEGORY_ORDER.filter((item) => item === 'all' || catalog.some((fish) => fish.category === item));
+  const categoryCatalog = catalog.filter((fish) => category === 'all' || fish.category === category);
+  const visibleCatalog = categoryCatalog.filter((fish) => filter === 'all' || (filter === 'owned' ? fish.owned || ownedSpecies.has(fish.speciesId) : !(fish.owned || ownedSpecies.has(fish.speciesId))));
   return <div className="aquarium-mode-shell aquarium-catalog-view">
     <div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /><section className="aquarium-collection-summary"><div><span>발견한 친구</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section></div>
     <button type="button" className="aquarium-draw-entry" data-action="openAquariumDraw" disabled={profile?.starterState !== 'claimed'}><span>조개 {Number(profile?.shellBalance) || 0}개</span><b>새 물고기 만나기</b><small>{profile?.starterState === 'claimed' ? '한 번에 조개 30개' : '첫 물고기를 먼저 선택해주세요'}</small><i aria-hidden="true">›</i></button>
     <div className="aquarium-catalog-filter" role="group" aria-label="도감 필터">{CATALOG_FILTERS.map((item) => <button type="button" className={filter === item.id ? 'is-active' : ''} aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} key={item.id}>{item.label}</button>)}</div>
+    {availableCategories.length > 2 ? <div className="aquarium-catalog-categories" role="group" aria-label="생태 분류">{availableCategories.map((item) => <button type="button" className={category === item ? 'is-active' : ''} aria-pressed={category === item} onClick={() => setCategory(item)} key={item}>{CATEGORY_LABELS[item] || item}</button>)}</div> : null}
+    <div className="aquarium-catalog-selection"><span>{CATEGORY_LABELS[category] || '모든 생태'}</span><b>{visibleCatalog.length}종</b></div>
     <div className="aquarium-catalog-groups">{RARITY_ORDER.map((rarity) => {
-      const rows = catalog.filter((fish) => fish.rarity === rarity).filter((fish) => filter === 'all' || (filter === 'owned' ? fish.owned || ownedSpecies.has(fish.speciesId) : !(fish.owned || ownedSpecies.has(fish.speciesId))));
+      const rarityCatalog = categoryCatalog.filter((fish) => fish.rarity === rarity);
+      const rows = rarityCatalog.filter((fish) => filter === 'all' || (filter === 'owned' ? fish.owned || ownedSpecies.has(fish.speciesId) : !(fish.owned || ownedSpecies.has(fish.speciesId))));
       if (!rows.length) return null;
-      return <section className={`aquarium-catalog-group ${RARITY_CLASSES[rarity]}`} key={rarity}><header><div><span>{rarity.toUpperCase()}</span><b>{RARITY_LABELS[rarity]}</b></div><small>{rows.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length} / {rows.length}</small></header><div>{rows.map((fish) => {
+      return <section className={`aquarium-catalog-group ${RARITY_CLASSES[rarity]}`} key={rarity}><header><div><span>{rarity.toUpperCase()}</span><b>{RARITY_LABELS[rarity]}</b></div><small>{rarityCatalog.filter((fish) => fish.owned || ownedSpecies.has(fish.speciesId)).length} / {rarityCatalog.length}</small></header><div>{rows.map((fish) => {
         const owned = fish.owned || ownedSpecies.has(fish.speciesId);
         const ownedFish = inventory.find((item) => item.speciesId === fish.speciesId);
-        return <article className={owned ? 'is-owned' : 'is-locked'} key={fish.speciesId}><div className="aquarium-catalog-sprite"><FishArtwork assetKey={fish.assetKey} colors={fish.colors} fishId={ownedFish?.fishId} growthStage={ownedFish?.growthStage} speciesId={fish.speciesId} variant="grid" /></div><b>{owned ? fish.displayName : '???'}</b><small>{owned ? `Lv.${ownedFish?.level || 1} · ${fish.defaultName}` : '아직 만나지 못했어요'}</small></article>;
+        return <article className={owned ? 'is-owned' : 'is-locked'} data-category={fish.category || 'unknown'} data-rarity={rarity} key={fish.speciesId}><div className="aquarium-catalog-sprite"><FishArtwork assetKey={fish.assetKey} colors={fish.colors} fishId={ownedFish?.fishId} growthStage={ownedFish?.growthStage} speciesId={fish.speciesId} variant="grid" /></div><b>{owned ? fish.displayName : '???'}</b><small>{owned ? `Lv.${ownedFish?.level || 1} · ${fish.defaultName}` : '아직 만나지 못했어요'}</small></article>;
       })}</div></section>;
-    })}</div>
+    })}{visibleCatalog.length ? null : <div className="aquarium-catalog-empty"><b>조건에 맞는 물고기가 없어요</b><p>획득 상태나 생태 분류를 바꿔 다시 확인해주세요.</p></div>}</div>
   </div>;
 }
 
@@ -176,7 +185,8 @@ function DrawResult({ actionError, actionStatus, catalog, pendingDraw }) {
   const meta = catalogMeta(catalog, fish.speciesId);
   const duplicate = Boolean(result.duplicate);
   const rarity = result.rarity || 'common';
-  return <section className={`aquarium-draw-result ${RARITY_CLASSES[rarity] || RARITY_CLASSES.common}`} aria-live="polite"><div className="aquarium-result-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, index) => <i style={{ '--particle-index': index }} key={index} />)}</div><span>{duplicate ? '다시 만난 친구' : `${RARITY_LABELS[rarity] || '일반'} 물고기 발견`}</span><div className="aquarium-result-halo"><i className="aquarium-result-ring" aria-hidden="true" /><FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="detail" /></div><h2>{meta.displayName}</h2><p>{fish.name} · {RARITY_LABELS[rarity] || '일반'}</p><div className="aquarium-result-reward">{duplicate ? <><span>중복 성장 보상</span><b>EXP +{Number(result.expGranted) || 0}</b>{Number(result.shellsRefunded) > 0 ? <small>최대 레벨 보상으로 조개 {result.shellsRefunded}개를 돌려받았어요.</small> : <small>기존 물고기의 성장 경험치로 합쳐졌어요.</small>}</> : <><span>도감 등록 완료</span><b>{rarity === 'epic' ? '특별한 친구가 수조에 합류했어요' : '새 물고기가 수조에 합류했어요'}</b><small>도감에서 생김새와 성장 상태를 다시 확인할 수 있어요.</small></>}</div>{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="acknowledgeAquariumDraw" data-target="catalog" disabled={actionStatus === 'acknowledging-draw'}>{actionStatus === 'acknowledging-draw' ? '결과를 저장하는 중...' : '도감에서 확인하기'}</button></section>;
+  const discoveryCopy = rarity === 'special' ? '특별한 여정의 친구가 합류했어요' : rarity === 'legendary' ? '전설적인 친구가 수조에 합류했어요' : rarity === 'epic' ? '특별한 친구가 수조에 합류했어요' : '새 물고기가 수조에 합류했어요';
+  return <section className={`aquarium-draw-result ${RARITY_CLASSES[rarity] || RARITY_CLASSES.common}`} aria-live="polite"><div className="aquarium-result-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, index) => <i style={{ '--particle-index': index }} key={index} />)}</div><span>{duplicate ? '다시 만난 친구' : `${RARITY_LABELS[rarity] || '일반'} 물고기 발견`}</span><div className="aquarium-result-halo"><i className="aquarium-result-ring" aria-hidden="true" /><FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="detail" /></div><h2>{meta.displayName}</h2><p>{fish.name} · {RARITY_LABELS[rarity] || '일반'}</p><div className="aquarium-result-reward">{duplicate ? <><span>중복 성장 보상</span><b>EXP +{Number(result.expGranted) || 0}</b>{Number(result.shellsRefunded) > 0 ? <small>최대 레벨 보상으로 조개 {result.shellsRefunded}개를 돌려받았어요.</small> : <small>기존 물고기의 성장 경험치로 합쳐졌어요.</small>}</> : <><span>도감 등록 완료</span><b>{discoveryCopy}</b><small>도감에서 생김새와 성장 상태를 다시 확인할 수 있어요.</small></>}</div>{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}<button type="button" className="btn btn-primary" data-action="acknowledgeAquariumDraw" data-target="catalog" disabled={actionStatus === 'acknowledging-draw'}>{actionStatus === 'acknowledging-draw' ? '결과를 저장하는 중...' : '도감에서 확인하기'}</button></section>;
 }
 
 function FishDrawPanel({ actionError = '', actionStatus = 'idle', catalog = [], pendingDraw = null, pendingDrawError = '', pendingDrawStatus = 'idle', profile, revealStep = 0 }) {

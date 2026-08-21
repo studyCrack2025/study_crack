@@ -198,7 +198,7 @@ function responseFor(payload, state) {
     case 'get_fish_catalog':
       return {
         catalogVersion: 'fish-v1',
-        catalog: FISH_CATALOG.map((fish) => ({ ...fish, owned: state.fishInventory.some((item) => item.speciesId === fish.speciesId) })),
+        catalog: state.fishCatalog.map((fish) => ({ ...fish, owned: state.fishInventory.some((item) => item.speciesId === fish.speciesId) })),
         inventory: state.fishInventory
       };
     case 'get_pending_draw':
@@ -276,11 +276,12 @@ function responseFor(payload, state) {
   }
 }
 
-export async function installApiMock(page, { tier = mockUser.computedTier } = {}) {
+export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
   const requests = [];
   const state = {
     activeStudySession: null,
     activeFish: [],
+    fishCatalog,
     fishInventory: [],
     gameProfile: { shellBalance: 62, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
     pendingDraw: null,
