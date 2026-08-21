@@ -123,6 +123,8 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
 
 export function PlannerScreen(ctx) {
   const {
+    calendarEventFormOpen = false,
+    calendarSheetOpen = false,
     dimmed = false,
     tab = 'planner',
     plannerCalendarMode,
@@ -142,13 +144,15 @@ export function PlannerScreen(ctx) {
   const presentation = buildPlannerPresentation(plannerViewItems);
   const isToday = selectedPlannerDateKey === TODAY_DATE;
   const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
+  const plannerOverlayOpen = plannerEditIndex !== null || calendarSheetOpen || calendarEventFormOpen;
 
   return (
     <AppScreenShell
       screen="planner"
       tab={tab}
       dimmed={dimmed}
-      overlays={<>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}<AdmissionCalendarSheet {...ctx} /></>}
+      overlayOpen={plannerOverlayOpen}
+      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <AppContextHeader className="planner-context-head" description="해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요." eyebrow="DAILY PLAN" title="오늘의 플래너" tone="positive" visual={<PlannerChecklistArt />} />
@@ -156,7 +160,7 @@ export function PlannerScreen(ctx) {
             <PlannerProgress presentation={presentation} />
 
             <section className="planner-tasks-section">
-              <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
+              <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" className="planner-add-icon" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
               <div className="planner-plan-list">
                 {plannerViewItems.length ? (
                   plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
@@ -168,7 +172,7 @@ export function PlannerScreen(ctx) {
             </section>
 
             <section className="planner-calendar-section">
-              <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="btn btn-secondary mini" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
+              <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
               <div className="card planner-calendar-card">
                 <div className="planner-inline-calendar-toolbar">
                   <PlannerCalendarSegment activeMode={calendarMode} />

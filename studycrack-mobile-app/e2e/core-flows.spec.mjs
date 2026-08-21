@@ -111,6 +111,14 @@ test('React 하단 탭은 화면 전환과 잠금 화면에서도 활성 상태�
   const tabbar = page.locator('.tabbar');
   await expect(tabbar.locator('[data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
   await expect(tabbar.locator('button')).toHaveCount(5);
+  const normalTabOffsets = await tabbar.locator('button:not(.is-aquarium)').evaluateAll((buttons) => buttons.map((button) => {
+    const icon = button.querySelector('.tabbar-icon').getBoundingClientRect();
+    const label = button.querySelector('.tabbar-label').getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    const groupCenter = (Math.min(icon.top, label.top) + Math.max(icon.bottom, label.bottom)) / 2;
+    return Math.abs(groupCenter - (rect.top + rect.height / 2));
+  }));
+  expect(Math.max(...normalTabOffsets)).toBeLessThanOrEqual(1);
   await tabbar.locator('[data-tab="analysis"]').click();
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
   await expect(page.locator('.tabbar [data-tab="analysis"]')).toHaveAttribute('aria-current', 'page');
@@ -227,6 +235,15 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   await page.goto('/studycrack-mobile.html?screen=planner');
 
   await expect(page.getByRole('heading', { name: '오늘 할 일' })).toBeVisible();
+  const plannerContent = page.locator('.app-content');
+  await expect(plannerContent).not.toHaveClass(/modal-lock/);
+  expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
+  await page.getByRole('button', { name: '수험 일정' }).click();
+  await expect(plannerContent).toHaveClass(/modal-lock/);
+  expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('hidden');
+  await page.locator('.calendar-sheet-overlay').getByRole('button', { name: '닫기' }).click();
+  await expect(plannerContent).not.toHaveClass(/modal-lock/);
+  expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
   const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
   const calendarBox = await page.locator('.planner-calendar-section').boundingBox();
@@ -422,6 +439,9 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
 
   const examSelect = page.locator('[data-field="scoreExamType"]');
   const targetSelect = page.locator('[data-field="analysisTargetMajor"]');
+  const analysisContent = page.locator('[data-screen="analysis"]');
+  await expect(analysisContent).not.toHaveClass(/modal-lock/);
+  expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   await expect(examSelect).toBeVisible();
   await expect(page.locator('.analysis-live-score-main strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
@@ -519,8 +539,11 @@ test('MY 계정·알림·지원 흐름은 실제 구독과 수신 계약을 유�
   await profileDialog.getByRole('button', { name: '닫기' }).click();
 
   await page.goto('/studycrack-mobile.html?screen=accountInfo');
+  expect(await page.locator('[data-screen="accountInfo"]').evaluate((element) => getComputedStyle(element).animationName)).toBe('mobileScreenEnter');
   await expect(page.locator('.account-subscription-card')).toContainText('다음 결제 안내');
   await expect(page.locator('.mobile-social-row')).toHaveCount(2);
+  await expect(page.locator('.account-danger-utility')).toBeVisible();
+  await expect(page.locator('.account-withdraw-link')).toHaveText('탈퇴하기');
   await page.getByRole('button', { name: '등록', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('전화번호 등록');
   await page.getByRole('button', { name: '닫기' }).click();

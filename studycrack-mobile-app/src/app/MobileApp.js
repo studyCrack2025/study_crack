@@ -16,7 +16,6 @@ import {
   createNavigationOps,
   selectFlatAppState
 } from '../runtime/app-state.js';
-import { getMobileScrollY } from '../shared/browser/mobile-runtime.js';
 import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
@@ -97,10 +96,7 @@ export function MobileApp() {
   );
   const nav = useMemo(() => createNavigationOps({
     getState: () => stateRef.current,
-    setState,
-    onScreenChange: (from) => {
-      if (from) stateRef.current.__lastScrollY = getMobileScrollY();
-    }
+    setState
   }), [setState]);
   const api = useMobileApiController({ setState, stateRef });
   const { retryUserLoad } = useMobileResourceOrchestrator({ api, setState, state, stateRef });

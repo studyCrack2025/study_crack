@@ -8,6 +8,7 @@ export function AnalysisScreen(ctx) {
     isAnalyzing = false,
     analysisApiStatus = 'idle',
     analysisApiError = '',
+    analysisSearchOpen = false,
     tab = 'analysis'
   } = ctx;
 
@@ -20,7 +21,8 @@ export function AnalysisScreen(ctx) {
       screen="analysis"
       tab={tab}
       dimmed={dimmed}
-      overlays={<AnalysisSearchSheet {...ctx} />}
+      overlayOpen={analysisSearchOpen}
+      overlays={analysisSearchOpen ? <AnalysisSearchSheet {...ctx} /> : null}
     >
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}`}>
             {isAnalyzing ? (

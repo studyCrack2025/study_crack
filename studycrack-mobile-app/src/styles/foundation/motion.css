@@ -1,4 +1,4 @@
-.app-screen[data-screen="timer"],.app-screen[data-screen="aquarium"],.app-screen[data-screen="analysis"],.app-screen[data-screen="strategy"],.app-screen[data-screen="planner"],.app-screen[data-screen="my"]{animation:mobileScreenEnter var(--motion-page) var(--ease-enter) both;will-change:opacity,transform;}
+.app-screen[data-screen]{animation:mobileScreenEnter var(--motion-page) var(--ease-enter) both;will-change:opacity,transform;}
 .app-screen[data-screen="on1"],.app-screen[data-screen="on2"],.app-screen[data-screen="on3"]{animation:onboardingSceneIn 420ms var(--ease-enter) both;will-change:opacity,transform;}
 .app-screen[data-screen^="on"] .onboarding-shot-head{animation:onboardingItemIn 480ms 70ms var(--ease-enter) both;}
 .app-screen[data-screen^="on"] .onboarding-center{animation:onboardingItemIn 520ms 130ms var(--ease-enter) both;}

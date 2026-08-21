@@ -55,10 +55,10 @@ export function AccountInfoScreen(ctx) {
           <SectionHead title="소셜 계정 연동" description="Google과 Naver 계정을 연결하거나 해제합니다." badge="2개 제공" />
           <div className="mobile-social-list"><SocialAccountRows user={user} /></div>
         </section>
-        <section className="sc-secondary-section mobile-account-card danger-zone">
-          <SectionHead title="계정 탈퇴" description="탈퇴하면 학습 기록과 계정 정보를 복구할 수 없습니다." />
-          <button type="button" className="btn btn-secondary account-full-btn" data-action="openWithdrawModal">회원탈퇴</button>
-        </section>
+        <footer className="account-danger-utility">
+          <div><b>계정 탈퇴</b><p>탈퇴하면 학습 기록과 계정 정보를 복구할 수 없습니다.</p></div>
+          <button type="button" className="account-withdraw-link" data-action="openWithdrawModal">탈퇴하기</button>
+        </footer>
       </div>
     </SecondaryScreenShell>
   );

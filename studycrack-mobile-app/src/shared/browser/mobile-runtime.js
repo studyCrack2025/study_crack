@@ -50,11 +50,6 @@ export function markMobileAppBooted({ crackySrc, onboardingLogoSrc } = {}) {
   };
 }
 
-export function getMobileScrollY() {
-  const browser = getBrowser();
-  return browser?.scrollY || browser?.pageYOffset || 0;
-}
-
 export function getMobileRootElement() {
   const browser = getBrowser();
   return browser?.document?.getElementById?.('root') || browser?.document?.body || null;

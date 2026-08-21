@@ -53,7 +53,11 @@
 .social-action-btn{height:30px;border-radius:9px;padding:0 9px;font-size:11px;font-weight:900;font-family:inherit;}
 .social-action-btn.link-btn{border:1px solid var(--sc-line-strong);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);}
 .social-action-btn.unlink-btn{border:1px solid color-mix(in srgb,var(--sc-state-danger) 26%,transparent);background:var(--sc-surface-urgent);color:var(--sc-state-danger);}
-.danger-zone{border-color:color-mix(in srgb,var(--sc-state-danger) 24%,transparent);background:var(--sc-surface-urgent);}
+.account-danger-utility{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 0;color:var(--sc-ink-subtle);}
+.account-danger-utility b{display:block;font-size:var(--sc-type-caption);font-weight:800;line-height:1.35;}
+.account-danger-utility p{margin:3px 0 0;font-size:var(--sc-type-micro);font-weight:650;line-height:1.45;}
+.account-withdraw-link{min-width:68px;min-height:40px;flex:0 0 auto;padding:0 8px;border:0;background:transparent;color:var(--sc-ink-subtle);font:inherit;font-size:var(--sc-type-caption);font-weight:750;text-decoration:underline;text-underline-offset:3px;}
+.account-withdraw-link:focus-visible{outline:2px solid var(--sc-focus-ring);outline-offset:2px;}
 .account-edit-modal{display:grid;gap:18px;padding:20px;border:1px solid var(--sc-line-subtle);border-radius:20px;background:var(--sc-surface-card);box-shadow:var(--sc-shadow-overlay);}
 .account-edit-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;}
 .account-edit-head .sc-modal-padded-title{margin:0;font-size:19px;line-height:1.25;color:var(--sc-ink);font-weight:950;}

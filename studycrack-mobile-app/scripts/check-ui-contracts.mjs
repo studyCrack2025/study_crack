@@ -20,12 +20,15 @@ function extractTabKeys(source) {
   return Array.from(match[1].matchAll(/key:\s*['"]([^'"]+)['"]/g), (item) => item[1]);
 }
 
-const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicySource] = await Promise.all([
+const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicySource, navigationStyles, motionStyles, shellStyles] = await Promise.all([
   read('fixtures/ui-contract.json'),
   read('src/constants/assets.js'),
   read('src/app/screen-registry.js'),
   read('src/components/TabBar.jsx'),
-  read('src/app/access-policy.js')
+  read('src/app/access-policy.js'),
+  read('src/styles/components/navigation.css'),
+  read('src/styles/foundation/motion.css'),
+  read('src/styles/foundation/shell.css')
 ]);
 
 const contract = JSON.parse(contractSource);
@@ -37,6 +40,10 @@ assert.deepEqual(screens, contract.screens, 'Screen registry does not match the 
 assert.deepEqual(mainTabs, contract.mainTabs, 'Bottom navigation does not match the five-tab UI contract');
 assert.match(tabBarSource, /className="tabbar-icon"/, 'Bottom navigation icons need a stable visual wrapper');
 assert.match(tabBarSource, /item\.key === 'aquarium'/, 'The center aquarium action must remain visually distinct');
+assert.match(navigationStyles, /\.tabbar button\{[^}]*justify-content:center/, 'Normal bottom navigation items must center the icon and label as one group');
+assert.match(navigationStyles, /\.tabbar button\.is-aquarium\{[^}]*justify-content:flex-end/, 'The raised aquarium action must keep its dedicated geometry');
+assert.match(motionStyles, /\.app-screen\[data-screen\]\{animation:mobileScreenEnter/, 'Every registered app screen must share the screen-enter motion');
+assert.match(shellStyles, /\.app-content\{[^}]*overflow-y:auto/, 'The app content element must remain the explicit vertical scroll owner');
 assert.match(
   assetsSource,
   new RegExp(`export\\s+const\\s+${contract.brand.logoExport}\\s*=\\s*['"]${contract.brand.logoAsset.replaceAll('.', '\\.')}['"]`),
