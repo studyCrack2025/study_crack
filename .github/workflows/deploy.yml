@@ -114,7 +114,7 @@ jobs:
             --exclude "*" --include "*.html" \
             --cache-control "no-cache, no-store, must-revalidate"
 
-          # KCC 프로모션 원본을 공개 clean URL에도 배포한다.
+          # KCC 프로모션은 루트 HTML 파일을 사용자-facing clean URL로도 배포한다.
           aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01 \
             --content-type "text/html; charset=utf-8" \
             --cache-control "no-cache, no-store, must-revalidate"
