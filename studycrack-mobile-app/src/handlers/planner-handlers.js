@@ -1,4 +1,4 @@
-import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
+import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
@@ -95,10 +95,6 @@ function dotForSubject(subject = '') {
   return 'sci';
 }
 
-function setRefValue(ref, value) {
-  if (ref && typeof ref === 'object') ref.current = value;
-}
-
 function getRefValue(ref, fallback = '') {
   return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
 }
@@ -110,9 +106,9 @@ function toPlannerDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = FIXED_TODAY_DATE, fallback = FIXED_TODAY_DATE) {
+function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
   const raw = String(value || '').trim();
-  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(FIXED_TODAY_DATE).split('-')[2]) || 1;
+  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(TODAY_DATE).split('-')[2]) || 1;
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
     : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
@@ -130,58 +126,8 @@ function addPlannerMonths(date, months) {
   return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
 }
 
-function mutateStudyRecord(records, today, elapsed) {
-  const idx = records.findIndex((row) => row.date === today);
-  if (idx >= 0) {
-    const clone = [...records];
-    clone[idx] = { ...clone[idx], studyTime: (clone[idx].studyTime || 0) + elapsed };
-    return clone;
-  }
-  return [...records, { date: today, studyTime: elapsed }];
-}
-
-function mutateSubjectRecord(records, today, subject, elapsed) {
-  const idx = records.findIndex((row) => row.date === today);
-  if (idx >= 0) {
-    const clone = [...records];
-    const oldSubjects = clone[idx].subjects || {};
-    clone[idx] = {
-      ...clone[idx],
-      subjects: {
-        ...oldSubjects,
-        [subject]: (oldSubjects[subject] || 0) + elapsed
-      }
-    };
-    return clone;
-  }
-  return [...records, { date: today, subjects: { [subject]: elapsed } }];
-}
-
-function startStudyTimer(ctx, subject, plannerItemId = '') {
-  const {
-    setActivePlannerItemId = noop,
-    setActiveStudySubject = noop,
-    setStudySubjectSheetOnlyPlanned = noop,
-    setStudySubjectSheetOpen = noop,
-    setStudyTimerRunning = noop,
-    startLiveStudyTimer = noop,
-    studyTimerSecondsRef,
-    syncLiveStudyTimerUi = noop
-  } = ctx;
-
-  setActiveStudySubject(subject);
-  setActivePlannerItemId(plannerItemId);
-  setStudySubjectSheetOpen(false);
-  setStudySubjectSheetOnlyPlanned(false);
-  setStudyTimerRunning(true);
-  setRefValue(studyTimerSecondsRef, 0);
-  startLiveStudyTimer();
-  syncLiveStudyTimerUi(0);
-}
-
 export function createPlannerHandlers(ctx) {
   const {
-    afterSafariViewportStable = (fn) => fn?.(),
     centerPlannerDate = noop,
     goto,
     plannerCalendarMode = 'week',
@@ -192,51 +138,23 @@ export function createPlannerHandlers(ctx) {
     plannerEditItem = null,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    prompt = globalThis.prompt,
     requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
-    setActivePlannerItemId = noop,
-    setActiveStudySubject = noop,
-    setExpandedBreakdownSubject = noop,
-    setNotifModalOpen = noop,
-    setPlannerCalendarOpen = noop,
-    setPlannerCalendarMode = noop,
-    setPlannerDraft = noop,
-    setPlannerEditIndex = noop,
-    setPlannerItems = noop,
-    setSelectedDate = noop,
-    setShowStudyBreakdown = noop,
-    setStudyRecords = noop,
-    setStudySubjectRecords = noop,
-    setStudySubjectSheetOnlyPlanned = noop,
-    setStudySubjectSheetOpen = noop,
-    setStudyTimerRunning = noop,
-    startLiveStudyTimer = noop,
-    stopLiveStudyTimer = noop,
-    studyTimerSecondsRef,
-    syncLiveStudyTimerUi = noop,
-    todayDate = FIXED_TODAY_DATE
+    setExpandedBreakdownSubject,
+    setPlannerCalendarMode,
+    setPlannerDraft,
+    setPlannerEditIndex,
+    setPlannerItems,
+    setSelectedDate,
+    setShowStudyBreakdown,
+    todayDate = TODAY_DATE
   } = ctx;
 
   return {
     openPlannerAddPage() {
-      setPlannerCalendarOpen(false);
       goto?.('plannerAdd');
-      return true;
-    },
-
-    openPlannerCalendar() {
-      preserveY(() => {
-        setPlannerCalendarOpen(false);
-        setPlannerCalendarMode(plannerCalendarMode === 'month' ? 'week' : 'month');
-      });
-      return true;
-    },
-
-    closePlannerCalendar() {
-      afterSafariViewportStable(() => setPlannerCalendarOpen(false));
       return true;
     },
 
@@ -284,9 +202,6 @@ export function createPlannerHandlers(ctx) {
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      if (!actionEl?.closest?.('.planner-calendar-sheet')) {
-        afterSafariViewportStable(() => setPlannerCalendarOpen(false));
-      }
       requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;
@@ -299,16 +214,6 @@ export function createPlannerHandlers(ctx) {
 
     closePlannerEdit() {
       setPlannerEditIndex(null);
-      return true;
-    },
-
-    setPlannerSubject({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, subject: getData(actionEl, 'planner-subject') }));
-      return true;
-    },
-
-    setPlannerDuration({ actionEl }) {
-      setPlannerDraft((prev) => ({ ...prev, durationChoice: getData(actionEl, 'planner-duration') }));
       return true;
     },
 
@@ -395,68 +300,6 @@ export function createPlannerHandlers(ctx) {
           : item
       )));
       setPlannerEditIndex(null);
-      return true;
-    },
-
-    openStudySubjectSheet() {
-      preserveScrollAfterStateChange(() => {
-        setNotifModalOpen(false);
-        setStudySubjectSheetOnlyPlanned(true);
-        setStudySubjectSheetOpen(true);
-      });
-      return true;
-    },
-
-    closeStudySubjectSheet({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('planner-sheet-overlay')) return false;
-      preserveScrollAfterStateChange(() => {
-        setStudySubjectSheetOnlyPlanned(false);
-        setStudySubjectSheetOpen(false);
-      });
-      return true;
-    },
-
-    selectStudySubjectCustom() {
-      const custom = prompt?.('과목명을 입력하세요', '기타');
-      if (!custom) return false;
-      startStudyTimer(ctx, custom, '');
-      return true;
-    },
-
-    selectSelfStudy() {
-      startStudyTimer(ctx, '기타', '');
-      return true;
-    },
-
-    selectStudySubject({ actionEl }) {
-      const subject = getData(actionEl, 'study-subject');
-      const plannerItemId = getData(actionEl, 'study-item-id');
-      if (!subject) return false;
-      startStudyTimer(ctx, subject, plannerItemId);
-      return true;
-    },
-
-    stopStudyTimer() {
-      setStudyTimerRunning(false);
-      stopLiveStudyTimer();
-      const elapsed = Number(getRefValue(studyTimerSecondsRef, 0)) || 0;
-      const activeSubject = typeof ctx.getActiveStudySubject === 'function' ? ctx.getActiveStudySubject() : ctx.activeStudySubject;
-      const activePlannerItemId = typeof ctx.getActivePlannerItemId === 'function' ? ctx.getActivePlannerItemId() : ctx.activePlannerItemId;
-      setStudyRecords((prev) => mutateStudyRecord(prev, todayDate, elapsed));
-      if (activeSubject) {
-        setStudySubjectRecords((prev) => mutateSubjectRecord(prev, todayDate, activeSubject, elapsed));
-        if (activePlannerItemId) {
-          setPlannerItems((prev) => prev.map((item) => (
-            item.id === activePlannerItemId
-              ? { ...item, doneMinutes: (item.doneMinutes || 0) + Math.round(elapsed / 60) }
-              : item
-          )));
-        }
-      }
-      setRefValue(studyTimerSecondsRef, 0);
-      syncLiveStudyTimerUi(0);
-      setActiveStudySubject('');
-      setActivePlannerItemId('');
       return true;
     },
 

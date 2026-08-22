@@ -1,0 +1,13 @@
+.sc-overlay--sheet{position:absolute;left:0;right:0;top:min(var(--sc-visual-offset-top),calc(100% - 1px));z-index:510;width:100%;height:min(100%,var(--sc-visual-height));display:flex;align-items:flex-end;justify-content:center;box-sizing:border-box;overflow:hidden;background:var(--sc-overlay-bg);backdrop-filter:blur(var(--sc-overlay-blur));-webkit-backdrop-filter:blur(var(--sc-overlay-blur));overscroll-behavior:contain;}
+.analysis-search-overlay{z-index:520;}
+.sc-sheet{position:relative;width:100%;max-width:430px;max-height:min(var(--sc-sheet-max-height),calc(var(--sc-visual-height) - 8px));margin:0 auto;box-sizing:border-box;border:1px solid var(--sc-line-subtle);border-bottom:0;border-radius:20px 20px 0 0;background:var(--sc-surface-card);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sc-shadow-sheet);outline:0;}
+.planner-sheet{padding:0 var(--sc-space-20) var(--sc-space-20);padding-bottom:max(var(--sc-space-20),env(safe-area-inset-bottom));overflow:auto;}
+.analysis-search-modal{padding:0;background:var(--sc-surface-subtle);}
+.sc-sheet-handle,.notif-sheet-handle{width:42px;height:4px;flex:0 0 4px;margin:9px auto 7px;border-radius:999px;background:var(--sc-line-strong);}
+.sc-sheet-head{min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);box-sizing:border-box;padding:var(--sc-space-12) var(--sc-space-20);border-bottom:1px solid var(--sc-line-subtle);background:var(--sc-surface-card);}
+.sc-sheet-body{flex:1 1 auto;min-height:0;padding:var(--sc-space-16) var(--sc-space-20);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.sc-sheet-footer{flex:0 0 auto;min-height:68px;display:flex;align-items:center;gap:var(--sc-space-8);box-sizing:border-box;padding:var(--sc-space-12) var(--sc-space-20) max(var(--sc-space-12),env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);background:var(--sc-surface-card);}
+.planner-sheet-close{position:absolute;right:16px;top:16px;display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);}
+.planner-sheet-block{margin-top:16px;}
+.planner-sheet-block label{display:block;margin-bottom:8px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
+@keyframes sheetRiseIn{from{transform:translateY(28px);opacity:.7;}to{transform:translateY(0);opacity:1;}}

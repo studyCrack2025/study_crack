@@ -5,8 +5,10 @@ import {
   signUpWithEmail,
   verifySignupEmailCode,
   verifySignupSmsCode
-} from '../runtime/auth-service.js';
+} from '../features/session/auth-service.js';
 import { getData } from './action-utils.js';
+import { isValidEmailAddress, sanitizeEmailInput } from '../utils/email-input.js';
+import { reloadMobileLocation } from '../shared/browser/mobile-runtime.js';
 
 function noop() {}
 
@@ -16,9 +18,7 @@ function prevent(event) {
 }
 
 function reloadAppDefault() {
-  if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
-    window.location.reload();
-  }
+  reloadMobileLocation();
 }
 
 function getWindow(ctx) {
@@ -103,10 +103,6 @@ function readSignupTermValues(ctx) {
     acc[key] = input ? input.checked === true : previous[key] === true;
     return acc;
   }, {});
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
 }
 
 function isValidSignupPassword(password) {
@@ -214,24 +210,24 @@ export function createAuthHandlers(ctx) {
     signUpWithEmailImpl = signUpWithEmail,
     verifySignupEmailCodeImpl = verifySignupEmailCode,
     verifySignupSmsCodeImpl = verifySignupSmsCode,
-    setAuthError = noop,
-    setAuthSubmitting = noop,
-    setFindEmailModalOpen = noop,
-    setFoundEmailMasked = noop,
-    setResetPasswordEmail = noop,
-    setResetPasswordModalOpen = noop,
-    setResetPasswordSending = noop,
-    setResetPasswordStep = noop,
-    setSignupEmailSending = noop,
-    setSignupError = noop,
-    setSignupForm = noop,
-    setSignupSmsSending = noop,
-    setSignupStep = noop,
-    setSignupSubmitting = noop,
-    setSignupTerms = noop,
-    setSignupVerifiedEmail = noop,
-    setSignupVerifiedPhone = noop,
-    setOpenTermsType = noop
+    setAuthError,
+    setAuthSubmitting,
+    setFindEmailModalOpen,
+    setFoundEmailMasked,
+    setResetPasswordEmail,
+    setResetPasswordModalOpen,
+    setResetPasswordSending,
+    setResetPasswordStep,
+    setSignupEmailSending,
+    setSignupError,
+    setSignupForm,
+    setSignupSmsSending,
+    setSignupStep,
+    setSignupSubmitting,
+    setSignupTerms,
+    setSignupVerifiedEmail,
+    setSignupVerifiedPhone,
+    setOpenTermsType
   } = ctx;
 
   function captureSignupState() {
@@ -243,6 +239,18 @@ export function createAuthHandlers(ctx) {
   }
 
   return {
+    toggleLoginPasswordVisibility({ actionEl, event }) {
+      prevent(event);
+      const input = query(ctx, '[data-login-password]');
+      if (!input) return false;
+      const reveal = input.type === 'password';
+      input.type = reveal ? 'text' : 'password';
+      actionEl.textContent = reveal ? '숨김' : '보기';
+      actionEl.setAttribute('aria-label', reveal ? '비밀번호 숨기기' : '비밀번호 보기');
+      input.focus?.({ preventScroll: true });
+      return true;
+    },
+
     openFindEmailModal({ event }) {
       event?.preventDefault?.();
       setFindEmailModalOpen(true);
@@ -353,31 +361,6 @@ export function createAuthHandlers(ctx) {
       return false;
     },
 
-    toggleSignupAllTerms({ actionEl }) {
-      const { fields } = captureSignupState();
-      const checked = actionEl?.checked === true;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({
-        standard: checked,
-        service: checked,
-        privacy: checked,
-        refund: checked,
-        marketing: checked
-      });
-      return true;
-    },
-
-    toggleSignupTerm({ actionEl }) {
-      const { fields, termValues } = captureSignupState();
-      const key = actionEl?.getAttribute?.('data-signup-term');
-      if (!key) return false;
-      setSignupError('');
-      setSignupForm(fields);
-      setSignupTerms({ ...termValues, [key]: actionEl?.checked === true });
-      return true;
-    },
-
     openSignupTermsModal({ actionEl }) {
       captureSignupState();
       setOpenTermsType(actionEl?.getAttribute?.('data-terms-type') || 'standard');
@@ -412,7 +395,7 @@ export function createAuthHandlers(ctx) {
         }
       }
       if (step === 3) {
-        if (!isValidEmail(fields.email)) {
+        if (!isValidEmailAddress(fields.email)) {
           setSignupError('이메일 형식을 확인해주세요.');
           return false;
         }
@@ -430,7 +413,7 @@ export function createAuthHandlers(ctx) {
       prevent(event);
       const { fields } = captureSignupState();
       const { email } = fields;
-      if (!isValidEmail(email)) {
+      if (!isValidEmailAddress(email)) {
         setSignupError('이메일 형식을 확인해주세요.');
         return false;
       }
@@ -453,7 +436,7 @@ export function createAuthHandlers(ctx) {
       prevent(event);
       const { fields } = captureSignupState();
       const { email, emailCode } = fields;
-      if (!isValidEmail(email) || !emailCode) {
+      if (!isValidEmailAddress(email) || !emailCode) {
         setSignupError('이메일과 인증번호를 입력해주세요.');
         return false;
       }
@@ -519,7 +502,7 @@ export function createAuthHandlers(ctx) {
       const { fields, terms } = captureSignupState();
       const phone = normalizeCognitoPhone(fields.phoneRaw);
       const referral = fields.referral === 'etc' ? fields.referralEtc : fields.referral;
-      if (!isValidEmail(fields.email)) {
+      if (!isValidEmailAddress(fields.email)) {
         setSignupError('이메일 형식을 확인해주세요.');
         return false;
       }
@@ -597,10 +580,14 @@ export function createAuthHandlers(ctx) {
 
     async loginSuccess({ event }) {
       prevent(event);
-      const email = getInputValue(ctx, '[data-field="loginEmail"]').trim();
+      const email = sanitizeEmailInput(getInputValue(ctx, '[data-field="loginEmail"]')).trim();
       const password = getInputValue(ctx, '[data-login-password]');
       if (!email || !password) {
         setAuthError('이메일과 비밀번호를 입력해주세요.');
+        return false;
+      }
+      if (!isValidEmailAddress(email)) {
+        setAuthError('올바른 이메일 주소를 입력해주세요.');
         return false;
       }
       setAuthError('');

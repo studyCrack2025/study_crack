@@ -1,3 +1,5 @@
+import { sanitizeEmailInputElement } from '../utils/email-input.js';
+
 function noop() {}
 
 const SCORE_KEY_MAX = {
@@ -157,12 +159,13 @@ function updateV2eSelectState(setScoreEditState, field, value) {
 
 function updateScoreStateFromField({ alert, field, setScoreState, target, value }) {
   const [, subject, key] = field.split('-');
-  let normalizedValue = value;
+  const normalizedValue = value;
   const max = SCORE_FIELD_MAX[`${subject}-${key}`];
   if (max && Number(value) > max) {
-    alert('성적을 정확히 입력해주세요');
-    normalizedValue = String(max);
-    target.value = normalizedValue;
+    target.setAttribute?.('aria-invalid', 'true');
+    alert(`${max}점 이하의 점수를 입력해주세요.`);
+  } else {
+    target.removeAttribute?.('aria-invalid');
   }
   if (subject === 'english' || subject === 'history') {
     setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
@@ -210,42 +213,45 @@ export function createFormHandlers(ctx) {
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    renderUniversityResultsOnly = noop,
+    resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
-    setAnalysisSearchTerm = noop,
-    setCoachingAnswers = noop,
-    setCoachingExamFiles = noop,
-    setCoachingExamScores = noop,
-    setCoachingMonth = noop,
-    setCoachingPlannerFiles = noop,
-    setCoachingSubjectRows = noop,
-    setMyProfileNameDraft = noop,
-    setObGoalText = noop,
-    setObGradeStatus = noop,
-    setObQuestionText = noop,
-    setObSchoolName = noop,
-    setObTrack = noop,
-    setProEliteMonth = noop,
-    setProRequestText = noop,
-    setQnaDraftContent = noop,
-    setQnaDraftTitle = noop,
-    setScoreEditState = noop,
-    setScores = noop,
-    setScoreState = noop,
-    setStudyDifficulty = noop,
-    setStudyHours = noop,
-    setStrongSubject = noop,
-    setTargetMajor = noop,
+    setAnalysisSearchTerm,
+    setCoachingAnswers,
+    setCoachingExamFiles,
+    setCoachingExamScores,
+    setCoachingMonth,
+    setCoachingPlannerFiles,
+    setCoachingSubjectRows,
+    setMyProfileNameDraft,
+    setObGoalText,
+    setObGradeStatus,
+    setObQuestionText,
+    setObSchoolName,
+    setObTrack,
+    setProEliteMonth,
+    setProRequestText,
+    setQnaDraftContent,
+    setQnaDraftTitle,
+    setScoreEditState,
+    setScores,
+    setScoreState,
+    setStudyDifficulty,
+    setStudyHours,
+    setStrongSubject,
+    setTargetMajor,
     setTimeout = globalThis.setTimeout || ((fn) => fn()),
-    setWeakSubject = noop,
-    setMyProfilePhoneCodeDraft = noop,
-    setMyProfilePhoneDraft = noop,
-    setWithdrawPassword = noop
+    setWeakSubject,
+    setMyProfilePhoneCodeDraft,
+    setMyProfilePhoneDraft,
+    setWithdrawPassword
   } = ctx;
 
   function handleInput(event) {
     const target = event?.target;
     if (!target?.getAttribute) return { handled: false };
+    if (target.hasAttribute('data-email-input')) {
+      sanitizeEmailInputElement(target);
+    }
     const scoreKey = target.getAttribute('data-score-key');
     if (scoreKey) {
       normalizeNumberInput(target, SCORE_KEY_MAX[scoreKey], alert);
@@ -253,6 +259,19 @@ export function createFormHandlers(ctx) {
     }
 
     const field = target.getAttribute('data-field');
+    if (['v2e-english', 'v2e-history'].includes(field) && target.classList?.contains('score-grade-input')) {
+      const grade = String(target.value || '').replace(/[^1-9]+/g, '').slice(0, 1);
+      if (target.value !== grade) target.value = grade;
+      target.setAttribute('aria-invalid', grade ? 'false' : 'true');
+      return { handled: true, field };
+    }
+    if (field?.startsWith('v2e-') && target.classList?.contains('score-direct-input')) {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 3);
+      if (target.value !== numeric) target.value = numeric;
+      const max = Number(target.getAttribute('data-score-max') || 0);
+      target.setAttribute('aria-invalid', max && Number(numeric) > max ? 'true' : 'false');
+      return { handled: true, field };
+    }
     if (field === 'coachPlannerFiles') {
       const files = Array.from(target.files || []);
       if (files.length) setCoachingPlannerFiles((prev) => [...prev, ...files].slice(0, 5));
@@ -267,16 +286,25 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'coachingMonth') setCoachingMonth(target.value);
     if (field === 'proEliteMonth') setProEliteMonth(target.value);
-    if (field === 'qnaDraftTitle') setQnaDraftTitle(target.value);
-    if (field === 'qnaDraftContent') setQnaDraftContent(target.value);
+    if (field === 'qnaDraftTitle' || field === 'qnaDraftContent') {
+      const key = field === 'qnaDraftTitle' ? 'title' : 'content';
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current[key] = target.value;
+      return { handled: true, field };
+    }
     if (field === 'analysisSearchTerm') {
-      if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);
-      renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
-    if (field === 'myProfilePhoneDraft') setMyProfilePhoneDraft(target.value);
-    if (field === 'myProfilePhoneCodeDraft') setMyProfilePhoneCodeDraft(target.value);
+    if (field === 'myProfilePhoneDraft') {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 11);
+      if (target.value !== numeric) target.value = numeric;
+      setMyProfilePhoneDraft(numeric);
+    }
+    if (field === 'myProfilePhoneCodeDraft') {
+      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 6);
+      if (target.value !== numeric) target.value = numeric;
+      setMyProfilePhoneCodeDraft(numeric);
+    }
     if (field === 'marketingAgreed') {
       const checked = target.checked === true;
       ctx.setUser?.((prev) => ({ ...(prev || {}), marketingAgreed: checked }));
@@ -293,11 +321,10 @@ export function createFormHandlers(ctx) {
     }
     if (field === 'scoreExamType') applyScoreExamSelection(target.value);
     if (field === 'obExamType') applyObExamSelection(target.value);
-    restoreIfUnexpectedTopJump();
-
     const coachAnswer = target.getAttribute('data-coach-answer');
     const coachPlan = target.getAttribute('data-coach-plan');
     const coachActual = target.getAttribute('data-coach-actual');
+    if (!coachAnswer && !coachPlan && !coachActual) restoreIfUnexpectedTopJump();
     if (coachAnswer) {
       const countEl = query(ctx, `[data-coach-count="${coachAnswer}"]`);
       if (countEl) countEl.textContent = `${target.value.length}/200`;
@@ -386,7 +413,10 @@ export function createFormHandlers(ctx) {
         return { handled: true, field };
       }
       preserveScrollAfterStateChange(() => {
-        if (target.value) setTargetMajor(target.value);
+        if (target.value) {
+          resetAnalysisCalculation();
+          setTargetMajor(target.value);
+        }
       });
       return { handled: true, field };
     }
@@ -440,7 +470,10 @@ export function createFormHandlers(ctx) {
         goto?.('addUniversity');
         return { handled: true, field };
       }
-      if (value) setTargetMajor(value);
+      if (value) {
+        resetAnalysisCalculation();
+        setTargetMajor(value);
+      }
     }
     const isPending = ctx.isIOSSafari?.() && ctx.isObSurveyScreen?.();
     if (field === 'obSchoolName') setPendingOrState({ field, isPending, setter: setObSchoolName, target, value });

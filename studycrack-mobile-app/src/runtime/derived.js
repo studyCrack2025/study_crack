@@ -1,5 +1,4 @@
-import { FIXED_TODAY_DATE } from '../constants/mock-data.js';
-import { ANALYSIS_PROFILES, ANALYSIS_RECOMMENDED, ANALYSIS_SEARCH_SEED } from '../constants/universities.js';
+import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import {
   computeDday,
   eventCoversDate,
@@ -9,7 +8,7 @@ import {
   getOfficialAdmissionEvents,
   mergeCalendarEvents
 } from '../constants/admission-calendar.js';
-import { scoreExamTypeToKey } from './persistence.js';
+import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 
 // 런타임 derived view-model: 원시 state에서 화면 renderer가 기대하는 계산값을 파생.
 // 모놀리식 App() 본문의 계산을 도메인별 순수 함수로 이식한다(로직 1:1 유지).
@@ -25,11 +24,11 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = FIXED_TODAY_DATE) {
+function parsePlannerDate(value = TODAY_DATE) {
   const raw = String(value || '').trim();
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
-    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(FIXED_TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
+    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
   const [year, month, day] = source.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -38,7 +37,7 @@ function addPlannerDays(date, days) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-function normalizePlannerDateKey(value = FIXED_TODAY_DATE) {
+function normalizePlannerDateKey(value = TODAY_DATE) {
   return toDateKey(parsePlannerDate(value));
 }
 
@@ -82,21 +81,9 @@ function scoreMetric(raw) {
   return { std, pct, grade };
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function renderScoreInfoCard({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
-  const rawText = raw || '-';
-  const stdText = std || '-';
-  const pctText = pct || '-';
-  const gradeText = grade || '-';
-  return `<article class="score-info-subject-card"><div><b>${escapeHtml(subject)}</b><strong>${escapeHtml(rawText)}${rawText !== '-' ? '점' : ''}</strong></div><dl><div><dt>표준</dt><dd>${escapeHtml(stdText)}</dd></div><div><dt>백분위</dt><dd>${escapeHtml(pctText)}</dd></div><div><dt>등급</dt><dd>${escapeHtml(gradeText)}</dd></div></dl></article>`;
+function scoreInfoSubject({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
+  const display = (value) => value === '' || value === null || value === undefined ? '-' : value;
+  return { subject, raw: display(raw), std: display(std), pct: display(pct), grade: display(grade) };
 }
 
 // 현재 입력 성적 기준 평균 점수(원본 liveCurrentScore).
@@ -113,7 +100,7 @@ function computeLiveCurrentScore(scores = {}) {
 
 // 플래너 화면 derived.
 export function buildPlannerDerived(state = {}) {
-  const { plannerItems = [], selectedDate = FIXED_TODAY_DATE, plannerEditIndex = null } = state;
+  const { plannerItems = [], selectedDate = TODAY_DATE, plannerEditIndex = null } = state;
 
   const selectedDateObject = parsePlannerDate(selectedDate);
   const selectedPlannerDateKey = toDateKey(selectedDateObject);
@@ -156,7 +143,7 @@ export function buildPlannerDerived(state = {}) {
         date: dateKey,
         blank: false,
         isSelected: selectedPlannerDateKey === dateKey,
-        isToday: FIXED_TODAY_DATE === dateKey,
+        isToday: TODAY_DATE === dateKey,
         count: items.length,
         minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
       };
@@ -227,7 +214,7 @@ function computeHomeTargets(state = {}) {
     scoreExamKey = '',
     scoreExamType = ''
   } = state;
-  // 홈 AI 점수는 서버 환산점수(converted_score)만 표시한다. 대학과 무관한 라이브 점수로 폴백하면
+  // 홈 환산 점수는 서버 환산점수(converted_score)만 표시한다. 대학과 무관한 라이브 점수로 폴백하면
   // 비동기 로드 중 서버↔라이브↔0이 뒤바뀌어 "점수가 그때그때 다르고 0으로 리셋"되는 불안정이 생긴다(웹엔 없는 현상).
   // 재요청 중에는 examMode가 일치하는 직전 확정 스냅샷으로 폴백해 확정 점수를 유지하고, 없으면 분석중 스켈레톤을 보인다.
   const currentExamMode = scoreExamKey || scoreExamTypeToKey(scoreExamType);
@@ -303,14 +290,16 @@ function findTargetItem(list = [], targetMajor = '') {
 const SIM_SUBJECT_ORDER = ['kor', 'math', 'inq1', 'inq2'];
 const SIM_SUBJECT_FALLBACK = { kor: '국어', math: '수학', inq1: '탐구1', inq2: '탐구2' };
 
-function buildServerSimRows(simulation) {
+export function buildServerSimRows(simulation) {
   const simData = simulation?.sim_data || {};
+  const hasSimulationData = SIM_SUBJECT_ORDER.some((key) => Object.hasOwn(simData, key));
+  if (!hasSimulationData) return [];
   const baseUiScore = Number(simulation?.base_ui_score);
   const hasBaseUiScore = Number.isFinite(baseUiScore);
   return SIM_SUBJECT_ORDER
     .map((key, idx) => {
-      const item = simData[key];
-      if (!item) return null;
+      const item = simData[key] || {};
+      const unavailable = !Object.hasOwn(simData, key);
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
       const afterUiScore = Number(item.afterUiScore ?? item.after_ui_score);
@@ -320,19 +309,19 @@ function buildServerSimRows(simulation) {
         key,
         subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
         gain: `+${rounded.toFixed(rounded >= 10 ? 0 : 1)}점`,
-        desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
+        desc: item.msg || (unavailable ? '과목 환산 결과를 확인하고 있습니다.' : rounded > 0 ? '원점수 상승분이 환산점수에 반영됩니다.' : '현재 조건에서는 환산점수 변화가 없습니다.'),
         gainNum: rounded,
         baseUiScore: hasBaseUiScore ? baseUiScore : null,
         afterUiScore: Number.isFinite(afterUiScore) ? afterUiScore : (hasBaseUiScore ? baseUiScore + rounded : null),
         rawNeeded,
         firstPositiveUiDiff: Number(item.firstPositiveUiDiff ?? item.first_positive_ui_diff ?? 0) || 0,
         isEvaporation: rounded <= 0,
+        unavailable,
         needsBacktrace: simulation?.needs_backtrace === true,
         backtracePlan: simulation?.backtrace_plan || null,
         idx
       };
-    })
-    .filter(Boolean);
+    });
 }
 
 // 홈 화면 derived.
@@ -354,7 +343,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
 
   // 오늘 플래너 요약
   const byDate = groupPlannerByDate(plannerItems);
-  const todayDateKey = String(Number(FIXED_TODAY_DATE.split('-')[2]));
+  const todayDateKey = TODAY_DATE;
   const todayPlannerItems = byDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerSubjectSummary = Object.entries(
@@ -372,7 +361,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   // 원본 todayStudySeconds = (todayRecord?.studyTime||0) + liveStudySeconds(타이머 ref).
   // derived는 순수 함수라 라이브 ref가 없어 정지 상태(liveStudySeconds=0)와 동일하게 누적 기록만 반영.
   // 라이브 타이머 가산은 후속 effect 단계에서 연결한다.
-  const todayKey = FIXED_TODAY_DATE;
+  const todayKey = TODAY_DATE;
   const todayRecord = studyRecords.find((item) => item.date === todayKey) || null;
   const todayStudySeconds = (todayRecord?.studyTime || 0) + live;
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
@@ -389,6 +378,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   const plannedScheduleOptions = todayPlannerItems.map((item) => ({
     id: item.id,
     subject: item.subject || '기타',
+    activity: item.content || '',
     label: `${item.subject || '기타'}${item.content ? ` - ${item.content}` : ''}`
   }));
 
@@ -406,11 +396,13 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
     return acc;
   }, {});
 
-  const myRank = Math.max(1, 160 - Math.floor(todayStudySeconds / 60));
-  const percentile = Math.max(1, Math.min(100, 100 - Math.floor(todayStudySeconds / 120)));
-  const rankingProgress = Math.max(5, 100 - percentile);
-  const rankTier = percentile <= 5 ? 'diamond' : percentile <= 15 ? 'platinum' : percentile <= 30 ? 'gold' : percentile <= 60 ? 'silver' : 'bronze';
-  const rankTierLabel = rankTier === 'diamond' ? 'DIAMOND' : rankTier === 'platinum' ? 'PLATINUM' : rankTier === 'gold' ? 'GOLD' : rankTier === 'silver' ? 'SILVER' : 'BRONZE';
+  const rankingMe = state.rankingStatus === 'ready' ? state.rankingMe : null;
+  const myRank = Number(rankingMe?.rank) || 0;
+  const rankingTotal = Number(rankingMe?.total) || 0;
+  const percentile = myRank && rankingTotal ? Math.max(1, Math.min(100, Math.ceil((myRank / rankingTotal) * 100))) : 0;
+  const rankingProgress = percentile ? Math.max(5, 100 - percentile) : 0;
+  const rankTierLabel = String(rankingMe?.tier || 'BRONZE').toUpperCase();
+  const rankTier = rankTierLabel.toLowerCase();
 
   return {
     liveCurrentScore,
@@ -426,6 +418,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
     breakdownSubjects,
     breakdownDetailMap,
     myRank,
+    rankingTotal,
     percentile,
     rankingProgress,
     rankTier,
@@ -436,12 +429,13 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
 // 분석 화면 derived.
 export function buildAnalysisDerived(state = {}) {
   const {
-    scores = {},
     targetMajor = '',
     analysisTargetList = [],
     homeTargetList = [],
     analysisSearchTerm = '',
     universityCatalog = [],
+    universitySelectedName = '',
+    universityRecommendations = [],
     analysisResults = [],
     analysisSimulations = [],
     lastAnalysisSnapshot = null
@@ -449,51 +443,40 @@ export function buildAnalysisDerived(state = {}) {
   const effectiveAnalysisResults = analysisResults.length ? analysisResults : (lastAnalysisSnapshot?.analysisResults || []);
   const effectiveAnalysisSimulations = analysisSimulations.length ? analysisSimulations : (lastAnalysisSnapshot?.analysisSimulations || []);
 
-  const liveCurrentScore = computeLiveCurrentScore(scores);
-
   const serverSelected = findTargetItem(effectiveAnalysisResults, targetMajor);
   const serverSimulation = findTargetItem(effectiveAnalysisSimulations, targetMajor);
   const serverScore = Number(serverSelected?.converted_score);
   const hasServerScore = Number.isFinite(serverScore);
-  const analysisBaseProfile = ANALYSIS_PROFILES[targetMajor] || ANALYSIS_PROFILES['연세대학교 경영학과'];
   const analysisSelected = {
-    ...analysisBaseProfile,
-    score: hasServerScore ? Math.round(serverScore) : liveCurrentScore,
-    verdict: serverSelected?.status || analysisBaseProfile.verdict,
-    verdictColor: serverSelected?.color || analysisBaseProfile.verdictColor,
-    aiGrade: serverSelected?.status || analysisBaseProfile.aiGrade,
-    comment: serverSelected?.msg || analysisBaseProfile.comment,
-    sim: (analysisBaseProfile.sim || []).map((r, idx) => {
-      const boost = Math.max(0, Math.round((liveCurrentScore - 60) / 10));
-      const g = Number(String(r[1]).replace(/[^0-9.-]/g, '')) || 0;
-      const totalGain = Math.round(g + boost);
-      return [r[0], `+${totalGain}점`, r[2], idx === 0];
-    })
+    score: hasServerScore ? Math.round(serverScore) : 0,
+    verdict: serverSelected?.status || '',
+    verdictColor: serverSelected?.color || '',
+    aiGrade: serverSelected?.status || '',
+    comment: serverSelected?.msg || '',
+    sim: []
   };
 
-  const analysisRecommended = ANALYSIS_RECOMMENDED;
+  const analysisRecommended = universityRecommendations;
   const hasUniversityCatalog = Array.isArray(universityCatalog) && universityCatalog.length;
-  const catalogPool = hasUniversityCatalog
-    ? universityCatalog
-    : ANALYSIS_SEARCH_SEED;
-  const recommendedSearchPool = hasUniversityCatalog ? [] : analysisRecommended;
-  const analysisSearchPool = Array.from(
-    new Set([...catalogPool, ...(analysisTargetList || []), ...(homeTargetList || []), ...recommendedSearchPool])
-  ).filter(Boolean);
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
-  const analysisSearchList = analysisSearchPool
-    .filter((name) => {
-      if (!normalizedSearchTerm) return true;
-      return String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm);
-    })
-    .slice(0, normalizedSearchTerm ? 80 : 30);
+  const normalizeCatalogKey = (value) => String(value || '').trim().replace(/\s+/g, '');
+  const selectedUniversityKey = normalizeCatalogKey(universitySelectedName);
+  const selectedCatalog = hasUniversityCatalog
+    ? universityCatalog.find((item) => normalizeCatalogKey(item.univName) === selectedUniversityKey)
+    : null;
+  const universityNames = hasUniversityCatalog ? universityCatalog.map((item) => item.univName) : [];
+  const analysisSearchList = (universitySelectedName
+    ? (selectedCatalog?.majors || []).map((major) => `${universitySelectedName} ${major}`)
+    : universityNames)
+    .filter((name) => !normalizedSearchTerm || String(name).toLowerCase().replace(/\s+/g, '').includes(normalizedSearchTerm))
+    .slice(0, normalizedSearchTerm ? 80 : 40);
 
   const analysisGaugeFill = Math.min((analysisSelected.score / 250) * 100, 100);
   const analysisGaugeColor =
-    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316');
-  const analysisStatus = serverSelected?.status || (analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험');
+    serverSelected?.color || (hasServerScore ? (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#2563EB' : '#F97316') : '');
+  const analysisStatus = serverSelected?.status || (hasServerScore ? (analysisSelected.score >= 150 ? '초안정' : analysisSelected.score >= 100 ? '적정' : '위험') : '');
   const analysisStatusColor =
-    serverSelected?.color || (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316');
+    serverSelected?.color || (hasServerScore ? (analysisSelected.score >= 150 ? '#22C55E' : analysisSelected.score >= 100 ? '#0B6BFF' : '#F97316') : '');
 
   const serverSimRows = buildServerSimRows(serverSimulation);
   const analysisSimRows = serverSimRows.length ? serverSimRows : [];
@@ -526,10 +509,6 @@ export function buildAnalysisDerived(state = {}) {
     ? targetMajor
     : analysisMajorOptions[0] || targetMajor || '';
 
-  const analysisSimulationBaseOrder = Array.from(
-    new Set([...(targetMajor ? [targetMajor] : []), ...(analysisTargetList || []), ...(homeTargetList || [])])
-  ).filter(Boolean);
-  const homeTargets = computeHomeTargets(state);
   const serverSimulationTargets = (effectiveAnalysisResults || [])
     .map((item) => {
       const major = targetFullName(item);
@@ -544,26 +523,13 @@ export function buildAnalysisDerived(state = {}) {
       };
     })
     .filter(Boolean);
-  const fallbackSimulationTargets = (analysisSimulationBaseOrder.length ? analysisSimulationBaseOrder : [targetMajor])
-    .filter(Boolean)
-    .map((major) => {
-      const base = homeTargets.find((item) => item.major === major) || homeTargets[0];
-      const score = Number(base?.score || liveCurrentScore || 0);
-      const cut = Number(base?.cut || 100);
-      return {
-        major,
-        label: compactTargetLabel(major),
-        score,
-        cut,
-        gap: score - cut
-      };
-    });
-  const analysisSimulationTargets = serverSimulationTargets.length ? serverSimulationTargets : fallbackSimulationTargets;
+  const analysisSimulationTargets = serverSimulationTargets;
 
   return {
     analysisSelected,
     analysisRecommended,
     analysisSearchList,
+    universitySelectedName,
     analysisGaugeFill,
     analysisGaugeColor,
     analysisTargetScore,
@@ -584,8 +550,7 @@ export function buildAnalysisDerived(state = {}) {
   };
 }
 
-// 성적 정보 화면 derived. 과목별 원점수/표준/백분위/등급 행 HTML을 1:1 생성(원본 scoreInfoDetailList).
-// plannerViewDonutGradient 선례처럼 derived가 표현용 문자열을 반환한다.
+// 성적 정보 화면 derived. React 화면이 표시할 과목별 지표만 구조화한다.
 export function buildScoreInfoDerived(state = {}) {
   const { scores = {}, scoreEditState = {}, scoreExamKey = '', scoreExamType = '', user = {} } = state;
   const examKey = scoreExamKey || scoreExamTypeToKey(scoreExamType);
@@ -599,18 +564,14 @@ export function buildScoreInfoDerived(state = {}) {
       [examData.inq2?.name || '탐구2', examData.inq2],
       ['한국사', examData.hist || examData.history, 'grade-only']
     ];
-    const scoreInfoDetailList = rows
-      .map(([subject, item, type]) => {
-        return renderScoreInfoCard({
-          subject,
-          raw: type === 'grade-only' ? '' : item?.raw,
-          std: item?.std,
-          pct: item?.pct,
-          grade: item?.grd
-        });
-      })
-      .join('');
-    return { scoreInfoDetailList };
+    const scoreInfoSubjects = rows.map(([subject, item, type]) => scoreInfoSubject({
+      subject,
+      raw: type === 'grade-only' ? '' : item?.raw,
+      std: item?.std,
+      pct: item?.pct,
+      grade: item?.grd
+    }));
+    return { scoreInfoSubjects };
   }
   const ses = {
     korean: scoreEditState.korean || {},
@@ -629,25 +590,24 @@ export function buildScoreInfoDerived(state = {}) {
     [ses.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
   ];
 
-  const scoreInfoDetailList =
-    scoreRows
-      .map(([subject, raw, type]) => {
-        if (type === 'grade-only') {
-          const englishGrade = Number(ses.english || 0)
-            || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
-          return renderScoreInfoCard({ subject, grade: englishGrade || '-' });
-        }
-        const m = scoreMetric(raw);
-        const rawText = Number(raw) > 0 ? raw : '-';
-        const stdText = Number(raw) > 0 ? m.std : '-';
-        const pctText = Number(raw) > 0 ? m.pct : '-';
-        const grdText = Number(raw) > 0 ? m.grade : '-';
-        return renderScoreInfoCard({ subject, raw: rawText, std: stdText, pct: pctText, grade: grdText });
-      })
-      .join('') +
-    renderScoreInfoCard({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '-' });
-
-  return { scoreInfoDetailList };
+  const scoreInfoSubjects = scoreRows.map(([subject, raw, type]) => {
+    if (type === 'grade-only') {
+      const englishGrade = Number(ses.english || 0)
+        || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
+      return scoreInfoSubject({ subject, grade: englishGrade });
+    }
+    const metric = scoreMetric(raw);
+    const entered = Number(raw) > 0;
+    return scoreInfoSubject({
+      subject,
+      raw: entered ? raw : '',
+      std: entered ? metric.std : '',
+      pct: entered ? metric.pct : '',
+      grade: entered ? metric.grade : ''
+    });
+  });
+  scoreInfoSubjects.push(scoreInfoSubject({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '' }));
+  return { scoreInfoSubjects };
 }
 
 // 도메인 derived 집계. liveStudySeconds는 라이브 타이머 ref의 현재값(없으면 0).
@@ -659,7 +619,7 @@ function pad2(n) {
 
 // 수험 일정 캘린더 파생: 병합 일정, 최근접 일정/D-day, 월간 그리드, 선택일 일정.
 export function buildCalendarDerived(state = {}) {
-  const today = FIXED_TODAY_DATE;
+  const today = TODAY_DATE;
   const personalEvents = Array.isArray(state.personalEvents) ? state.personalEvents : [];
   const todayYear = Number(today.slice(0, 4));
   const officialEvents = getOfficialAdmissionEvents(todayYear);

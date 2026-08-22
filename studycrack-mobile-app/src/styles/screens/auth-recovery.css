@@ -1,0 +1,14 @@
+.find-email-modal.auth-recovery-modal{width:min(100%,360px);max-height:min(var(--sc-modal-max-height),560px);display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:0;box-sizing:border-box;padding:0;overflow:hidden;background:var(--sc-surface);}
+.auth-recovery-head{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:start;}
+.auth-recovery-copy{min-width:0;display:grid;gap:var(--sc-space-4);}
+.auth-recovery-eyebrow{color:var(--sc-blue);font-size:var(--sc-type-micro);font-weight:800;line-height:1.3;}
+.find-email-modal.auth-recovery-modal .close-btn{position:static;}
+.find-email-modal.auth-recovery-modal h3{margin:0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.3;letter-spacing:0;}
+.find-email-modal.auth-recovery-modal .sub{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;word-break:keep-all;}
+.auth-recovery-body{display:grid;gap:var(--sc-space-12);}
+.auth-recovery-fields{display:grid;gap:var(--sc-space-8);}
+.find-email-modal.auth-recovery-modal .planner-input{height:48px;padding:0 14px;border:1px solid var(--sc-border-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);font-size:16px;}
+.auth-recovery-submit{min-height:48px;border-radius:var(--sc-radius-control);font-size:var(--sc-type-body);font-weight:800;}
+.find-email-result{display:grid;gap:var(--sc-space-4);margin:0;padding:var(--sc-space-12);border:1px solid color-mix(in srgb,var(--sc-action-positive) 34%,transparent);border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);text-align:left;font-weight:700;line-height:1.45;}
+.find-email-result span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:800;}
+.find-email-result b{color:var(--sc-ink-strong);font-size:15px;}

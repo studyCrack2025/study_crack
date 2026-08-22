@@ -118,7 +118,3 @@ export function getMbtiProfile(code = '') {
   const normalized = normalizeMbtiCode(code) || 'CSDR';
   return { code: normalized, ...MBTI_TYPE_PROFILES[normalized], subjects: MBTI_RECOMMENDED_SUBJECTS[normalized] || [] };
 }
-
-export function countMbtiAnswered(answers = []) {
-  return (answers || []).filter((v) => v === 1 || v === 2).length;
-}

@@ -1,0 +1,12 @@
+/* Mobile app base document rules. */
+*{box-sizing:border-box;}
+html,body{height:100%;min-height:100%;height:-webkit-fill-available;min-height:-webkit-fill-available;margin:0;overflow:auto;touch-action:manipulation;overscroll-behavior:none;}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;background:var(--sc-canvas);color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.45;letter-spacing:0;word-break:keep-all;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+button{max-width:100%;font:inherit;letter-spacing:0;}
+input,select,textarea{max-width:100%;font:inherit;font-size:16px;letter-spacing:0;color:var(--sc-ink);}
+input::placeholder,textarea::placeholder{color:var(--sc-ink-subtle);opacity:1;}
+img,svg{max-width:100%;}
+button:not(:disabled){cursor:pointer;}
+#root{width:100%;height:100dvh;min-height:100dvh;display:block;padding:0;place-items:initial;}
+.ios-scroll-root{width:100%;min-height:100dvh;overflow-anchor:none;}
+@supports (-webkit-touch-callout:none){#root{height:-webkit-fill-available;min-height:-webkit-fill-available;}.ios-scroll-root{min-height:-webkit-fill-available;}}

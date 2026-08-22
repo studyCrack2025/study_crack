@@ -1,17 +1,5 @@
 import { getData } from './action-utils.js';
 
-export const NAVIGATION_ACTIONS = new Set([
-  'back',
-  'completeOnboarding',
-  'drawerGoto',
-  'goRanking',
-  'goto',
-  'noopModal',
-  'retryInit',
-  'startStandard',
-  'tab'
-]);
-
 export function createNavigationHandlers(ctx) {
   const {
     back,
@@ -59,7 +47,7 @@ export function createNavigationHandlers(ctx) {
     completeOnboarding(payload) {
       const task = () => {
         markOnboardingComplete?.();
-        goto?.('home', false);
+        goto?.('timer', false);
       };
       preserveScroll ? preserveScroll(task, payload) : task();
       return true;

@@ -70,14 +70,14 @@ export function createGestureHandlers(ctx) {
     markStableScrollPosition = noop,
     requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
-    setActiveScoreView = noop,
-    setHomeDragOffset = noop,
+    setActiveScoreView,
+    setHomeDragOffset,
     setHomeSlideDom = noop,
-    setHomeSlideIndex = noop,
-    setHomeSlideMotion = noop,
+    setHomeSlideIndex,
+    setHomeSlideMotion,
     setScoreCardDom = noop,
-    setScoreDragOffset = noop,
-    setScoreSlideMotion = noop,
+    setScoreDragOffset,
+    setScoreSlideMotion,
     suppressClickUntilRef,
     waitAndSyncHomeSliderDom = noop
   } = ctx;
@@ -239,55 +239,56 @@ export function createGestureHandlers(ctx) {
     return true;
   }
 
-  function attachGestureListeners(targetDocument = getDocument(ctx)) {
-    if (!targetDocument?.addEventListener) return noop;
-    const onNativeTouchStart = (event) => startGesture(event.target, getTouchClientX(event), getTouchClientY(event));
-    const onNativeTouchMove = (event) => {
-      const handled = moveGesture(getTouchClientX(event), getTouchClientY(event));
-      if (handled && getRefValue(ctx.touchTargetRef, '') === 'home') event.preventDefault?.();
-    };
-    const onNativeTouchEnd = (event) => endGesture(getTouchClientX(event), getTouchClientY(event));
-    const onNativeTouchCancel = () => cancelGesture();
-    const onPointerDown = (event) => {
-      if (event.pointerType !== 'mouse' || event.button !== 0) return;
-      startGesture(event.target, event.clientX, event.clientY);
-    };
-    const onPointerMove = (event) => {
-      if (event.pointerType === 'mouse') moveGesture(event.clientX, event.clientY);
-    };
-    const onPointerUp = (event) => {
-      if (event.pointerType === 'mouse') endGesture(event.clientX, event.clientY);
-    };
-    const onPointerCancel = (event) => {
-      if (event.pointerType === 'mouse') cancelGesture();
-    };
-
-    targetDocument.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
-    targetDocument.addEventListener('touchmove', onNativeTouchMove, { passive: false, capture: true });
-    targetDocument.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
-    targetDocument.addEventListener('touchcancel', onNativeTouchCancel, { passive: true, capture: true });
-    targetDocument.addEventListener('pointerdown', onPointerDown, true);
-    targetDocument.addEventListener('pointermove', onPointerMove, true);
-    targetDocument.addEventListener('pointerup', onPointerUp, true);
-    targetDocument.addEventListener('pointercancel', onPointerCancel, true);
-
-    return () => {
-      targetDocument.removeEventListener('touchstart', onNativeTouchStart, true);
-      targetDocument.removeEventListener('touchmove', onNativeTouchMove, true);
-      targetDocument.removeEventListener('touchend', onNativeTouchEnd, true);
-      targetDocument.removeEventListener('touchcancel', onNativeTouchCancel, true);
-      targetDocument.removeEventListener('pointerdown', onPointerDown, true);
-      targetDocument.removeEventListener('pointermove', onPointerMove, true);
-      targetDocument.removeEventListener('pointerup', onPointerUp, true);
-      targetDocument.removeEventListener('pointercancel', onPointerCancel, true);
-    };
-  }
-
   return {
-    attachGestureListeners,
     cancelGesture,
     endGesture,
+    getActiveGestureTarget: () => getRefValue(ctx.touchTargetRef, ''),
     moveGesture,
     startGesture
+  };
+}
+
+export function attachGestureEventBridge(getHandlers, targetDocument = globalThis.document) {
+  if (!targetDocument?.addEventListener || typeof getHandlers !== 'function') return noop;
+  const current = () => getHandlers() || {};
+  const onNativeTouchStart = (event) => current().startGesture?.(event.target, getTouchClientX(event), getTouchClientY(event));
+  const onNativeTouchMove = (event) => {
+    const handlers = current();
+    const handled = handlers.moveGesture?.(getTouchClientX(event), getTouchClientY(event));
+    if (handled && handlers.getActiveGestureTarget?.() === 'home') event.preventDefault?.();
+  };
+  const onNativeTouchEnd = (event) => current().endGesture?.(getTouchClientX(event), getTouchClientY(event));
+  const onNativeTouchCancel = () => current().cancelGesture?.();
+  const onPointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button === 0) current().startGesture?.(event.target, event.clientX, event.clientY);
+  };
+  const onPointerMove = (event) => {
+    if (event.pointerType === 'mouse') current().moveGesture?.(event.clientX, event.clientY);
+  };
+  const onPointerUp = (event) => {
+    if (event.pointerType === 'mouse') current().endGesture?.(event.clientX, event.clientY);
+  };
+  const onPointerCancel = (event) => {
+    if (event.pointerType === 'mouse') current().cancelGesture?.();
+  };
+
+  targetDocument.addEventListener('touchstart', onNativeTouchStart, { passive: true, capture: true });
+  targetDocument.addEventListener('touchmove', onNativeTouchMove, { passive: false, capture: true });
+  targetDocument.addEventListener('touchend', onNativeTouchEnd, { passive: true, capture: true });
+  targetDocument.addEventListener('touchcancel', onNativeTouchCancel, { passive: true, capture: true });
+  targetDocument.addEventListener('pointerdown', onPointerDown, true);
+  targetDocument.addEventListener('pointermove', onPointerMove, true);
+  targetDocument.addEventListener('pointerup', onPointerUp, true);
+  targetDocument.addEventListener('pointercancel', onPointerCancel, true);
+
+  return () => {
+    targetDocument.removeEventListener('touchstart', onNativeTouchStart, true);
+    targetDocument.removeEventListener('touchmove', onNativeTouchMove, true);
+    targetDocument.removeEventListener('touchend', onNativeTouchEnd, true);
+    targetDocument.removeEventListener('touchcancel', onNativeTouchCancel, true);
+    targetDocument.removeEventListener('pointerdown', onPointerDown, true);
+    targetDocument.removeEventListener('pointermove', onPointerMove, true);
+    targetDocument.removeEventListener('pointerup', onPointerUp, true);
+    targetDocument.removeEventListener('pointercancel', onPointerCancel, true);
   };
 }

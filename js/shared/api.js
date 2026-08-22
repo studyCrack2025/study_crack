@@ -21,13 +21,18 @@ function isPublicRoute(pathname) {
 }
 
 function hasClientSession() {
-    return !!(
-        localStorage.getItem('userId') ||
+    const hasBearerToken = !!(
         sessionStorage.getItem('accessToken') ||
         localStorage.getItem('accessToken') ||
-        localStorage.getItem('token') ||
-        localStorage.getItem('refreshToken')
+        localStorage.getItem('token')
     );
+    const hasRefreshToken = !!localStorage.getItem('refreshToken');
+
+    // 로컬 점검 환경에서는 userId 같은 잔여 프로필 값만으로 세션을 인정하지 않는다.
+    if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL) return hasBearerToken || hasRefreshToken;
+
+    // dev/prod의 HttpOnly 쿠키 세션은 JS에서 토큰을 직접 확인할 수 없다.
+    return !!(localStorage.getItem('userId') || hasBearerToken || hasRefreshToken);
 }
 
 function enforceClientSessionOnPageShow(event) {
@@ -147,6 +152,20 @@ function getSharedPayloadFromToken(token) {
     }
 }
 
+function isSharedBearerTokenFresh(token, minimumValiditySeconds = 30) {
+    if (!token) return false;
+    const payload = getSharedPayloadFromToken(token);
+    if (!Number.isFinite(Number(payload.exp))) return true;
+    return Number(payload.exp) * 1000 > Date.now() + minimumValiditySeconds * 1000;
+}
+
+function createSharedAuthExpiredError(status = 401) {
+    const error = new Error('Auth expired');
+    error.code = 'AUTH_EXPIRED';
+    error.status = status;
+    return error;
+}
+
 async function clearServerSessionCookies() {
     if (IS_LOCAL) return;
     try {
@@ -235,6 +254,19 @@ function tryRefreshToken() {
 async function apiFetch(url, options = {}) {
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
+
+    // 로컬 점검 환경에서는 만료된 인증 정보로 보호 요청을 보내기 전에 갱신을 끝낸다.
+    // 여러 화면 요청이 동시에 시작되어도 tryRefreshToken의 single-flight를 공유한다.
+    if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL && hasClientSession()) {
+        const currentBearerToken = getSharedBearerToken();
+        if (!isSharedBearerTokenFresh(currentBearerToken)) {
+            const refreshed = await tryRefreshToken();
+            if (!refreshed || !isSharedBearerTokenFresh(getSharedBearerToken(), 0)) {
+                throw createSharedAuthExpiredError(401);
+            }
+        }
+    }
+
     const bearerToken = getSharedBearerToken();
     if (bearerToken && !options.headers.Authorization) {
         options.headers.Authorization = `Bearer ${bearerToken}`;
@@ -262,9 +294,7 @@ async function apiFetch(url, options = {}) {
                     throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
                 }
             }
-            const expiredError = new Error('Auth expired');
-            expiredError.code = 'AUTH_EXPIRED';
-            expiredError.status = response.status;
+            const expiredError = createSharedAuthExpiredError(response.status);
             if (isPublicRoute(window.location.pathname)) {
                 return Promise.reject(expiredError);
             }
@@ -279,8 +309,8 @@ async function apiFetch(url, options = {}) {
         } catch (e) { /* ignore */ }
         throw new Error(errorMessage);
     } catch (error) {
-        // 예상된 인증 만료는 호출처에서 조용히 처리한다.
-        if (!error || error.code !== 'AUTH_EXPIRED') {
+        // 예상된 인증 만료와 화면 전환에 따른 요청 취소는 호출처에서 조용히 처리한다.
+        if ((!error || error.code !== 'AUTH_EXPIRED') && error?.name !== 'AbortError') {
             console.error('API 통신 실패:', error);
         }
         throw error;
