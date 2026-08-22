@@ -31,6 +31,8 @@ jobs:
         run: npm audit --omit=dev
       - name: Check source contracts
         run: npm run check
+      - name: Check web SEO contracts
+        run: node ../tools/check_seo_contract.mjs
       - name: Build mobile app bundle
         run: npm run build
       - name: Record architecture baseline
@@ -110,6 +112,11 @@ jobs:
           # HTML은 항상 재검증되도록 짧은 캐시
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
             --exclude "*" --include "*.html" \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+          # KCC 프로모션 원본을 공개 clean URL에도 배포한다.
+          aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01 \
+            --content-type "text/html; charset=utf-8" \
             --cache-control "no-cache, no-store, must-revalidate"
 
           # 버전 쿼리 붙는 정적 자산은 장기 캐시
