@@ -5,7 +5,7 @@ export function TermsModal({ openTermsType = '', termsContent = TERMS_CONTENT })
   if (!openTermsType) return null;
   const content = termsContent[openTermsType] || {};
   return (
-    <Modal dismissAction="closeTermsModal" overlayClass="terms-modal-backdrop" panelClass="terms-modal">
+    <Modal dismissAction="closeTermsModal" ariaLabel={content.title || '약관'} overlayClass="terms-modal-backdrop" panelClass="terms-modal">
       <div className="sc-modal-head terms-modal-head">
         <p className="terms-modal-title">{content.title || '약관'}</p>
         <button type="button" className="sc-overlay-close terms-modal-close" data-action="closeTermsModal" aria-label="닫기">×</button>

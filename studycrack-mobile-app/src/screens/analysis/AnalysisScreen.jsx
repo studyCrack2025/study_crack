@@ -1,4 +1,6 @@
 import { AnalysisContent, AnalysisSearchSheet } from './AnalysisContent.jsx';
+import { AppScreenShell } from '../../components/AppScreenShell.jsx';
+import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 
 export function AnalysisScreen(ctx) {
   const {
@@ -6,7 +8,8 @@ export function AnalysisScreen(ctx) {
     isAnalyzing = false,
     analysisApiStatus = 'idle',
     analysisApiError = '',
-    tabBarHtml = ''
+    analysisSearchOpen = false,
+    tab = 'analysis'
   } = ctx;
 
   const isStale = analysisApiStatus === 'stale';
@@ -14,9 +17,13 @@ export function AnalysisScreen(ctx) {
   const showAnalysisBody = !isAnalyzing;
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="analysis">
+    <AppScreenShell
+      screen="analysis"
+      tab={tab}
+      dimmed={dimmed}
+      overlayOpen={analysisSearchOpen}
+      overlays={analysisSearchOpen ? <AnalysisSearchSheet {...ctx} /> : null}
+    >
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}`}>
             {isAnalyzing ? (
               <div className="analysis-loading-stage" role="status" aria-live="polite">
@@ -27,7 +34,7 @@ export function AnalysisScreen(ctx) {
                     <i />
                   </div>
                   <div>
-                    <span>AI 분석 진행 중</span>
+                    <span>환산 분석 진행 중</span>
                     <b>목표 대학 기준 환산점수를 계산하고 있어요</b>
                     <p>현재 점수와 과목별 원점수 1점 효과를 확인합니다.</p>
                   </div>
@@ -37,10 +44,7 @@ export function AnalysisScreen(ctx) {
 
             {showAnalysisBody ? (
               <div className="analysis-content-stage">
-                <header className="analysis-context-head">
-                  <div><span>AI 성적 분석</span><h3>분석</h3><p>환산점수와 과목별 효율을 한눈에 확인하세요.</p></div>
-                  <i aria-hidden="true"><b /><b /><b /></i>
-                </header>
+                <AppContextHeader className="analysis-context-head" description="환산점수와 과목별 효율을 한눈에 확인하세요." eyebrow="대학별 성적 분석" icon="chart" title="분석" />
                 {isStale && (
                   <div className="analysis-stale-note" role="status" aria-live="polite">
                     <i aria-hidden="true" />
@@ -57,10 +61,6 @@ export function AnalysisScreen(ctx) {
               </div>
             ) : null}
           </section>
-        </div>
-        <div className="app-screen-overlays" style={{ display: 'contents' }}><AnalysisSearchSheet {...ctx} /></div>
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </AppScreenShell>
   );
 }

@@ -2,21 +2,9 @@ import { defineConfig } from 'vite';
 
 const MOBILE_DIST_BASE = '/studycrack-mobile-app/dist/';
 
-function absoluteMobileChunkImports() {
-  return {
-    name: 'absolute-mobile-chunk-imports',
-    generateBundle(_outputOptions, bundle) {
-      const entry = Object.values(bundle).find((output) => output.type === 'chunk' && output.isEntry);
-      if (!entry) return;
-      entry.code = entry.code.replace(/(["'])\.?\/?chunks\//g, `$1${MOBILE_DIST_BASE}chunks/`);
-    }
-  };
-}
-
 // Runtime entry and output name are shared by local preview and the deployment workflow.
 export default defineConfig({
   base: MOBILE_DIST_BASE,
-  plugins: [absoluteMobileChunkImports()],
   esbuild: {
     jsx: 'automatic'
   },
@@ -29,7 +17,9 @@ export default defineConfig({
         entryFileNames: 'studycrack-mobile.bundle.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames(assetInfo) {
-          return assetInfo.name?.endsWith('.css') ? 'studycrack-mobile.css' : 'assets/[name]-[hash][extname]';
+          if (assetInfo.name === 'main.css') return 'studycrack-mobile.css';
+          if (assetInfo.name?.endsWith('.css')) return 'chunks/[name]-[hash][extname]';
+          return 'assets/[name]-[hash][extname]';
         },
         format: 'es',
         manualChunks(id) {

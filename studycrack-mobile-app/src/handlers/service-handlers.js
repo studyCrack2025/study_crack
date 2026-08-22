@@ -1,5 +1,6 @@
 import { getData } from './action-utils.js';
-import { buildMobileWeeklyCheckPayload, markMobileNotificationsRead } from '../runtime/persistence.js';
+import { markMobileNotificationsRead } from '../features/notifications/api.js';
+import { buildMobileWeeklyCheckPayload } from '../features/reports/api.js';
 
 function noop() {}
 
@@ -106,41 +107,44 @@ export function createServiceHandlers(ctx) {
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
     prompt = globalThis.prompt,
-    setAnalysisSearchOpen = noop,
-    setCoachingDropReasons = noop,
-    setCoachingExamFiles = noop,
-    setCoachingExamScores = noop,
-    setCoachingExamType = noop,
-    setCheckoutPlan = noop,
-    setCoachingPlannerFiles = noop,
-    setCoachingSheetOpen = noop,
-    setCoachingSubmitting = noop,
-    setCoachingStep = noop,
-    setCoachingSubjectRows = noop,
-    setCoachingSubmitted = noop,
-    setCoachingTrend = noop,
-    setCoachingView = noop,
-    setDrawerOpen = noop,
-    setDuration = noop,
-    setField = noop,
-    setHistory = noop,
-    setNotifModalOpen = noop,
-    setProRequestModalOpen = noop,
-    setProReports = noop,
-    setProReportsStatus = noop,
-    setProRequestSubmitting = noop,
-    setProRequestText = noop,
-    setQnaComposerOpen = noop,
-    setQnaDraftContent = noop,
-    setQnaDraftTitle = noop,
-    setQnaHistory = noop,
-    setQnaStatus = noop,
-    setQnaSubmitting = noop,
-    setTargetMajor = noop,
-    setTargetOpen = noop,
-    setUniversityModalOpen = noop,
-    setWeeklyReports = noop,
-    setWeeklyReportsStatus = noop,
+    setAnalysisSearchOpen,
+    setCoachingDropReasons,
+    setCoachingExamFiles,
+    setCoachingExamScores,
+    setCoachingExamType,
+    setCheckoutPlan,
+    setCoachingPlannerFiles,
+    setCoachingSheetOpen,
+    setCoachingSubmitting,
+    setCoachingStep,
+    setCoachingSubjectRows,
+    setCoachingSubmitted,
+    setCoachingTrend,
+    setCoachingView,
+    setDrawerOpen,
+    setDuration,
+    setHistory,
+    setNotiDetailId,
+    setNotiExpandedId,
+    setNotiList,
+    setNotiPage,
+    setNotifModalOpen,
+    setProRequestModalOpen,
+    setProReports,
+    setProReportsStatus,
+    setProRequestSubmitting,
+    setProRequestText,
+    setQnaComposerOpen,
+    setQnaDraftContent,
+    setQnaDraftTitle,
+    setQnaHistory,
+    setQnaStatus,
+    setQnaSubmitting,
+    setTargetMajor,
+    setTargetOpen,
+    setUniversityModalOpen,
+    setWeeklyReports,
+    setWeeklyReportsStatus,
     syncStep1FromDom,
     window = getWindow(ctx)
   } = ctx;
@@ -200,13 +204,13 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openAnalysisSearchFromHome() {
+    openAnalysisSearch() {
       goto?.('addUniversity');
       return true;
     },
 
     closeUniversityModal({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('home-modal-overlay')) return false;
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-modal-padded-overlay')) return false;
       preserveScrollAfterStateChange(() => {
         setUniversityModalOpen(false);
         setAnalysisSearchOpen(false);
@@ -234,7 +238,7 @@ export function createServiceHandlers(ctx) {
     },
 
     closeNotificationModal({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('home-modal-overlay')) return false;
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-modal-padded-overlay')) return false;
       preserveScrollAfterStateChange(() => setNotifModalOpen(false));
       return true;
     },
@@ -245,11 +249,11 @@ export function createServiceHandlers(ctx) {
       const list = ctx.notiList || [];
       const index = id ? list.findIndex((n, idx) => String(n.notiId || n.id || n.notificationId || idx) === String(id)) : -1;
       setNotifModalOpen(false);
-      setField('notiPage', index >= 0 ? Math.floor(index / NOTI_PAGE_SIZE) : 0);
-      setField('notiExpandedId', '');
-      setField('notiDetailId', id || '');
+      setNotiPage(index >= 0 ? Math.floor(index / NOTI_PAGE_SIZE) : 0);
+      setNotiExpandedId('');
+      setNotiDetailId(id || '');
       if (id) {
-        setField('notiList', list.map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
+        setNotiList(list.map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
         markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
       }
       goto?.('notificationList');
@@ -260,34 +264,34 @@ export function createServiceHandlers(ctx) {
     notiNextPage() {
       const total = (ctx.notiList || []).length;
       const maxPage = Math.max(0, Math.ceil(total / NOTI_PAGE_SIZE) - 1);
-      setField('notiPage', Math.min(maxPage, (ctx.notiPage || 0) + 1));
+      setNotiPage(Math.min(maxPage, (ctx.notiPage || 0) + 1));
       return true;
     },
 
     notiPrevPage() {
-      setField('notiPage', Math.max(0, (ctx.notiPage || 0) - 1));
+      setNotiPage(Math.max(0, (ctx.notiPage || 0) - 1));
       return true;
     },
 
     toggleNotiDetail({ actionEl }) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
-      setField('notiExpandedId', ctx.notiExpandedId === id ? '' : id);
+      setNotiExpandedId(ctx.notiExpandedId === id ? '' : id);
       return true;
     },
 
     openNotiDetail({ actionEl }) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
-      setField('notiDetailId', id);
-      setField('notiList', (ctx.notiList || []).map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
+      setNotiDetailId(id);
+      setNotiList((ctx.notiList || []).map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
       markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
       return true;
     },
 
     closeNotiDetail({ actionEl, isOverlaySelfClick }) {
       if (!isOverlaySelfClick && actionEl?.classList?.contains?.('noti-detail-overlay')) return false;
-      setField('notiDetailId', '');
+      setNotiDetailId('');
       return true;
     },
 
@@ -320,10 +324,10 @@ export function createServiceHandlers(ctx) {
         alert(result?.error || '리포트 요청에 실패했습니다.');
         return false;
       }
-      if (result.report?.key) {
+      if (result.data?.key) {
         setProReports((prev) => {
           const list = Array.isArray(prev) ? prev : [];
-          return [result.report, ...list.filter((item) => item.key !== result.report.key)];
+          return [result.data, ...list.filter((item) => item.key !== result.data.key)];
         });
         setProReportsStatus('ready');
       }
@@ -333,8 +337,12 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openQnaComposer() {
-      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
+    openQnaComposer({ actionEl } = {}) {
+      const title = getData(actionEl, 'qna-title');
+      const content = getData(actionEl, 'qna-content');
+      if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title, content };
+      setQnaDraftTitle(title);
+      setQnaDraftContent(content);
       setQnaComposerOpen(true);
       return true;
     },
@@ -358,11 +366,11 @@ export function createServiceHandlers(ctx) {
       setQnaSubmitting(true);
       const result = await ctx.persistMobileQna?.({ title, content });
       setQnaSubmitting(false);
-      if (!result?.ok || !result.item) {
+      if (!result?.ok || !result.data) {
         alert(result?.error || '질문 저장에 실패했습니다.');
         return false;
       }
-      setQnaHistory((prev) => [result.item, ...(Array.isArray(prev) ? prev : [])]);
+      setQnaHistory((prev) => [result.data, ...(Array.isArray(prev) ? prev : [])]);
       setQnaStatus('ready');
       if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title: '', content: '' };
       setQnaDraftTitle('');
@@ -510,7 +518,7 @@ export function createServiceHandlers(ctx) {
             alert(uploadResult?.error || '첨부 파일 업로드에 실패했습니다.');
             return false;
           }
-          uploaded = uploadResult;
+          uploaded = uploadResult.data || uploaded;
         }
         const payload = buildMobileWeeklyCheckPayload({
           answers: ctx.coachingAnswers || {},
@@ -529,10 +537,10 @@ export function createServiceHandlers(ctx) {
           alert(result?.error || '주간 점검 저장에 실패했습니다.');
           return false;
         }
-        if (result.report?.weekId) {
+        if (result.data?.weekId) {
           setWeeklyReports((prev) => {
             const list = Array.isArray(prev) ? prev : [];
-            return [result.report, ...list.filter((item) => item.weekId !== result.report.weekId)];
+            return [result.data, ...list.filter((item) => item.weekId !== result.data.weekId)];
           });
           setWeeklyReportsStatus('ready');
         }

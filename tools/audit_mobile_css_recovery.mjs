@@ -9,7 +9,8 @@ const STYLE_ROOT = join(APP_ROOT, 'src/styles');
 const ENTRY_PATH = join(APP_ROOT, 'src/runtime/main.js');
 const REMOVED_STYLE_FILES = [
   'design-v2.css',
-  'layout/mobile-bridge.css'
+  'layout/mobile-bridge.css',
+  'layout/mobile-layout-system.css'
 ];
 const CONTRACTS = [
   { file: 'foundation/shell.css', selector: '.app-frame', properties: ['width', 'min-width', 'max-width', 'height', 'display', 'overflow'], values: { display: ['flex'] } },
@@ -25,15 +26,9 @@ const CONTRACTS = [
   { file: 'screens/auth.css', selector: '.auth-unified-card', properties: ['width', 'max-width', 'min-width', 'display', 'gap', 'padding'], values: { display: ['grid'] } },
   { file: 'screens/auth.css', selector: '.auth-sso-btn', properties: ['width', 'min-width', 'min-height', 'display', 'grid-template-columns', 'align-items', 'padding'], values: { display: ['grid'] } },
   { file: 'screens/auth-recovery.css', selector: '.find-email-modal.auth-recovery-modal', properties: ['width', 'max-height', 'display', 'grid-template-rows', 'box-sizing', 'overflow'], values: { display: ['grid'] } },
-  { file: 'layout/mobile-layout-system.css', selector: '.home-content', properties: ['width', 'min-width', 'max-width', 'box-sizing', 'display', 'gap', 'padding'], values: { display: ['grid'] }, allowedFiles: ['layout/mobile-layout-system.css', 'foundation/motion.css'] },
-  { file: 'screens/home.css', selector: '.home-report-preview-grid', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] } },
-  { file: 'screens/home.css', selector: '.kpi-row.score-row', properties: ['display', 'grid-template-columns', 'gap'], values: { display: ['grid'] }, allowedFiles: ['screens/home.css', 'screens/home-base.css'] },
-  { file: 'screens/home.css', selector: '.kpi-row.score-row .kpi-item', properties: ['min-width', 'min-height', 'display', 'grid-template-columns', 'align-items', 'gap', 'padding'], values: { display: ['grid'] } },
   { file: 'screens/analysis-unified.css', selector: '.analysis-loading-stage', properties: ['min-height', 'display', 'place-items', 'padding'], values: { display: ['grid'] } },
-  { file: 'screens/analysis-unified.css', selector: '.analysis-result-card', properties: ['display', 'gap', 'padding', 'overflow'], values: { display: ['grid'] }, allowedFiles: ['screens/analysis-unified.css', 'layout/mobile-layout-system.css'] },
+  { file: 'screens/analysis-unified.css', selector: '.analysis-result-card', properties: ['display', 'gap', 'padding', 'overflow'], values: { display: ['grid'] } },
   { file: 'screens/planner.css', selector: '.planner-plan-list', properties: ['display', 'gap', 'padding-bottom'], values: { display: ['grid'] } },
-  { file: 'layout/mobile-layout-system.css', selector: '.coach-title-card .top-card-head', properties: ['min-height', 'padding', 'display', 'grid-template-columns', 'gap', 'align-items'], values: { display: ['grid'] } },
-  { file: 'layout/mobile-layout-system.css', selector: '.top-infographic', properties: ['box-sizing', 'display', 'align-items', 'justify-content', 'padding'], values: { display: ['flex'] } },
   { file: 'screens/mypage.css', selector: '.my-page', properties: ['width', 'min-width', 'max-width', 'display', 'gap', 'padding', 'box-sizing'], values: { display: ['grid'] }, allowedFiles: ['screens/mypage.css', 'foundation/motion.css'] },
   { file: 'screens/mypage-data.css', selector: '.account-marketing-row .notify-switch', properties: ['position', 'width', 'height', 'padding', 'border-radius'] }
 ];

@@ -1,5 +1,5 @@
 import { getData } from './action-utils.js';
-import { removeTargetSlot, targetSlotsToList } from '../runtime/persistence.js';
+import { removeTargetSlot, targetSlotsToList } from '../features/analysis/target-model.js';
 
 function noop() {}
 
@@ -28,20 +28,8 @@ function restoreScroll(ctx, y) {
 
 function findUniversitySearchInput(actionEl) {
   return actionEl
-    ?.closest?.('.analysis-search-inline, .analysis-search-sticky, .home-modal, .add-univ-page')
+    ?.closest?.('.analysis-search-inline, .analysis-search-sticky, .sc-modal, .add-univ-page')
     ?.querySelector?.('[data-field="analysisSearchTerm"]') || null;
-}
-
-function getRefValue(ref, fallback = '') {
-  return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
-}
-
-function setRefValue(ref, value) {
-  if (ref && typeof ref === 'object') ref.current = value;
-}
-
-function clampHomeSlide(index, homeTargets = []) {
-  return Math.max(0, Math.min(index, homeTargets.length));
 }
 
 function getPossibleSlider(actionEl) {
@@ -60,31 +48,31 @@ export function createAnalysisHandlers(ctx) {
     keepScrollPosition = noop,
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
-    renderUniversityResultsOnly = noop,
+    requestAnalysisCalculation = noop,
+    resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
-    setActiveScoreView = noop,
-    setAddingUniversity = noop,
-    setAnalysisBarProjectionTarget = noop,
-    setAnalysisHighlightedSubject = noop,
-    setAnalysisSearchOpen = noop,
-    setAnalysisSearchTerm = noop,
-    setAnalysisTargetList = noop,
-    setHomeDragOffset = noop,
-    setHomeSlideIndex = noop,
-    setHomeSlideMotion = noop,
-    setHomeTargetList = noop,
-    setScoreDragOffset = noop,
-    setScoreSlideMotion = noop,
-    setTargetMajor = noop,
-    setTargetDeleteCandidate = noop,
-    setTargetDeleteError = noop,
-    setTargetDeleteModalOpen = noop,
-    setTargetDeleteSaving = noop,
-    setTargetUnivSlots = noop,
-    setTargetOpen = noop,
-    setUniversityModalOpen = noop,
-    setUniversitySelectedName = noop,
-    setUniversityRecommendationRetryTick = noop,
+    setActiveScoreView,
+    setAddingUniversity,
+    setAnalysisBarProjectionTarget,
+    setAnalysisHighlightedSubject,
+    setAnalysisSearchOpen,
+    setAnalysisSearchTerm,
+    setAnalysisTargetList,
+    setScoreDragOffset,
+    setScoreSlideMotion,
+    setTargetMajor,
+    setTargetDeleteCandidate,
+    setTargetDeleteError,
+    setTargetDeleteModalOpen,
+    setTargetDeleteSaving,
+    setTargetUnivSlots,
+    setTargetOpen,
+    setUniversityModalOpen,
+    setUniversityCatalogError,
+    setUniversityCatalogRetryTick,
+    setUniversityCatalogStatus,
+    setUniversitySelectedName,
+    setUniversityRecommendationRetryTick,
     persistTargetUnivs = noop,
     timeout = setTimeout,
     updatePossibleUnivSlider = noop
@@ -122,22 +110,6 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
-    setHomeSlide({ actionEl }) {
-      const index = Number(getData(actionEl, 'slide-index'));
-      if (Number.isNaN(index)) return false;
-      // 인디케이터 점 클릭도 슬라이더와 동일하게 state 단일 출처로 커밋(DOM 역산 setHomeSlideDom 제거).
-      setHomeDragOffset(0);
-      markStableScrollPosition();
-      setHomeSlideIndex((prev) => {
-        const next = clampHomeSlide(index, ctx.homeTargets || []);
-        if (next === prev) return prev;
-        setHomeSlideMotion(next > prev ? 'motion-next' : 'motion-prev');
-        return next;
-      });
-      restoreIfUnexpectedTopJump();
-      return true;
-    },
-
     slidePrev({ actionEl }) {
       const slider = getPossibleSlider(actionEl);
       if (!slider) return false;
@@ -163,6 +135,7 @@ export function createAnalysisHandlers(ctx) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
       if (!confirm(`${major} 분석을 보시겠어요?`)) return false;
+      resetAnalysisCalculation();
       setTargetMajor(major);
       goto?.('analysis');
       return true;
@@ -181,10 +154,8 @@ export function createAnalysisHandlers(ctx) {
 
     runUniversitySearch({ actionEl }) {
       const input = findUniversitySearchInput(actionEl);
-      const value = input?.value || getRefValue(ctx.analysisSearchLiveTermRef);
-      setRefValue(ctx.analysisSearchLiveTermRef, value);
+      const value = input?.value || '';
       setAnalysisSearchTerm(value);
-      renderUniversityResultsOnly(value, input || actionEl);
       const doc = getDocument(ctx);
       if (input && doc?.activeElement !== input) input.focus?.({ preventScroll: true });
       return true;
@@ -209,10 +180,22 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
+    retryUniversityCatalog() {
+      setUniversityCatalogStatus('idle');
+      setUniversityCatalogError('');
+      setUniversityCatalogRetryTick((value) => Number(value || 0) + 1);
+      return true;
+    },
+
     highlightSimSubject({ actionEl }) {
       const subject = getData(actionEl, 'sim-subject');
       if (!subject) return false;
       setAnalysisHighlightedSubject(subject);
+      return true;
+    },
+
+    calculateAnalysisScore() {
+      requestAnalysisCalculation();
       return true;
     },
 
@@ -222,6 +205,7 @@ export function createAnalysisHandlers(ctx) {
       const y = getScrollY(ctx);
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
+      resetAnalysisCalculation();
       setTargetMajor(major);
       setAnalysisBarProjectionTarget(major);
       restoreScroll(ctx, y);
@@ -252,8 +236,8 @@ export function createAnalysisHandlers(ctx) {
     removeAnalysisTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       if (!major) return false;
-      const homeTargetList = ctx.homeTargetList || [];
-      if (homeTargetList.length <= 1) {
+      const analysisTargetList = ctx.analysisTargetList || [];
+      if (analysisTargetList.length <= 1) {
         alert('최소 1개 대학은 유지해야 합니다.');
         return false;
       }
@@ -276,23 +260,23 @@ export function createAnalysisHandlers(ctx) {
       if (ctx.targetDeleteSaving) return true;
       const major = ctx.targetDeleteCandidate;
       if (!major) return false;
-      const homeTargetList = ctx.homeTargetList || [];
-      if (homeTargetList.length <= 1) {
+      const analysisTargetList = ctx.analysisTargetList || [];
+      if (analysisTargetList.length <= 1) {
         alert('최소 1개 대학은 유지해야 합니다.');
         setTargetDeleteModalOpen(false);
         setTargetDeleteCandidate('');
         return false;
       }
-      const nextSlots = removeTargetSlot(ctx.targetUnivSlots, major, homeTargetList);
-      const nextHome = targetSlotsToList(nextSlots);
+      const nextSlots = removeTargetSlot(ctx.targetUnivSlots, major, analysisTargetList);
+      const nextTargets = targetSlotsToList(nextSlots);
       const nextAnalysis = (ctx.analysisTargetList || []).filter((value) => value !== major);
-      if (!nextHome.length) {
+      if (!nextTargets.length) {
         alert('최소 1개 대학은 유지해야 합니다.');
         return false;
       }
       setTargetDeleteSaving(true);
       setTargetDeleteError('');
-      const result = await persistTargetUnivs(nextHome, nextSlots);
+      const result = await persistTargetUnivs(nextTargets, nextSlots);
       if (result && result.ok === false) {
         setTargetDeleteSaving(false);
         setTargetDeleteError(result.error || '목표 대학 저장에 실패했습니다.');
@@ -300,12 +284,9 @@ export function createAnalysisHandlers(ctx) {
       }
       setTargetUnivSlots(nextSlots);
       setAnalysisTargetList(nextAnalysis);
-      setHomeTargetList(() => {
-        setHomeSlideIndex((idx) => Math.max(0, Math.min(idx, Math.max(0, nextHome.length - 1))));
-        return nextHome;
-      });
       if (ctx.targetMajor === major) {
-        setTargetMajor(nextAnalysis[0] || nextHome[0] || ctx.analysisRecommended?.[0] || '');
+        resetAnalysisCalculation();
+        setTargetMajor(nextAnalysis[0] || nextTargets[0] || ctx.analysisRecommended?.[0] || '');
       }
       setTargetDeleteSaving(false);
       setTargetDeleteModalOpen(false);
@@ -316,6 +297,7 @@ export function createAnalysisHandlers(ctx) {
     selectTarget({ actionEl }) {
       const major = getData(actionEl, 'target-major');
       preserveScrollAfterStateChange(() => {
+        resetAnalysisCalculation();
         setTargetMajor(major);
         afterSafariViewportStable(() => setTargetOpen(false));
       });

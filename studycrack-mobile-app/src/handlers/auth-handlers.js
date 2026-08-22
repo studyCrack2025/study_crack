@@ -5,9 +5,10 @@ import {
   signUpWithEmail,
   verifySignupEmailCode,
   verifySignupSmsCode
-} from '../runtime/auth-service.js';
+} from '../features/session/auth-service.js';
 import { getData } from './action-utils.js';
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/email-input.js';
+import { reloadMobileLocation } from '../shared/browser/mobile-runtime.js';
 
 function noop() {}
 
@@ -17,9 +18,7 @@ function prevent(event) {
 }
 
 function reloadAppDefault() {
-  if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
-    window.location.reload();
-  }
+  reloadMobileLocation();
 }
 
 function getWindow(ctx) {
@@ -211,24 +210,24 @@ export function createAuthHandlers(ctx) {
     signUpWithEmailImpl = signUpWithEmail,
     verifySignupEmailCodeImpl = verifySignupEmailCode,
     verifySignupSmsCodeImpl = verifySignupSmsCode,
-    setAuthError = noop,
-    setAuthSubmitting = noop,
-    setFindEmailModalOpen = noop,
-    setFoundEmailMasked = noop,
-    setResetPasswordEmail = noop,
-    setResetPasswordModalOpen = noop,
-    setResetPasswordSending = noop,
-    setResetPasswordStep = noop,
-    setSignupEmailSending = noop,
-    setSignupError = noop,
-    setSignupForm = noop,
-    setSignupSmsSending = noop,
-    setSignupStep = noop,
-    setSignupSubmitting = noop,
-    setSignupTerms = noop,
-    setSignupVerifiedEmail = noop,
-    setSignupVerifiedPhone = noop,
-    setOpenTermsType = noop
+    setAuthError,
+    setAuthSubmitting,
+    setFindEmailModalOpen,
+    setFoundEmailMasked,
+    setResetPasswordEmail,
+    setResetPasswordModalOpen,
+    setResetPasswordSending,
+    setResetPasswordStep,
+    setSignupEmailSending,
+    setSignupError,
+    setSignupForm,
+    setSignupSmsSending,
+    setSignupStep,
+    setSignupSubmitting,
+    setSignupTerms,
+    setSignupVerifiedEmail,
+    setSignupVerifiedPhone,
+    setOpenTermsType
   } = ctx;
 
   function captureSignupState() {

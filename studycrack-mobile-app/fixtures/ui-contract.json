@@ -6,19 +6,21 @@
   },
   "visualLanguage": {
     "palette": {
-      "--sc-brand-navy": "#1B3A6B",
-      "--sc-brand-navy-deep": "#0F2347",
-      "--sc-action-positive": "#00C9A7",
-      "--sc-action-positive-strong": "#007A68",
-      "--sc-action-urgent": "#FF6B35",
-      "--sc-action-urgent-strong": "#B93813",
-      "--sc-state-threshold": "#FFC857",
-      "--sc-state-success": "#007A68",
-      "--sc-surface-canvas": "#F8F9FC",
+      "--sc-brand-navy": "#0A56B2",
+      "--sc-brand-navy-deep": "#0B1B2E",
+      "--sc-info-blue": "#1764BE",
+      "--sc-action-positive": "#22B6A8",
+      "--sc-action-positive-strong": "#0F7F75",
+      "--sc-action-urgent": "#E86B5B",
+      "--sc-action-urgent-strong": "#B7483C",
+      "--sc-state-threshold": "#F0B64D",
+      "--sc-state-success": "#0F7F75",
+      "--sc-state-rare": "#7B61D1",
+      "--sc-surface-canvas": "#F7F9FC",
       "--sc-surface-card": "#FFFFFF",
-      "--sc-ink-strong": "#0F2347",
-      "--sc-ink-muted": "#5B6B80",
-      "--sc-ink-subtle": "#667085",
+      "--sc-ink-strong": "#121A24",
+      "--sc-ink-muted": "#637083",
+      "--sc-ink-subtle": "#8994A2",
       "--sc-provider-naver-contrast": "#00813A"
     },
     "roles": {
@@ -28,14 +30,14 @@
       "threshold": "--sc-state-threshold"
     },
     "contrastPairs": [
-      { "foreground": "#FFFFFF", "background": "#1B3A6B", "minimum": 4.5 },
-      { "foreground": "#0F2347", "background": "#00C9A7", "minimum": 4.5 },
-      { "foreground": "#0F2347", "background": "#FF6B35", "minimum": 4.5 },
-      { "foreground": "#FFFFFF", "background": "#D9363E", "minimum": 4.5 },
-      { "foreground": "#5B6B80", "background": "#F5F7FA", "minimum": 4.5 },
-      { "foreground": "#667085", "background": "#F8F9FC", "minimum": 4.5 },
-      { "foreground": "#007A68", "background": "#F0FCFA", "minimum": 4.5 },
-      { "foreground": "#B93813", "background": "#FFF8F5", "minimum": 4.5 },
+      { "foreground": "#FFFFFF", "background": "#0A56B2", "minimum": 4.5 },
+      { "foreground": "#FFFFFF", "background": "#0B1B2E", "minimum": 4.5 },
+      { "foreground": "#0B1B2E", "background": "#22B6A8", "minimum": 4.5 },
+      { "foreground": "#FFFFFF", "background": "#B7483C", "minimum": 4.5 },
+      { "foreground": "#637083", "background": "#F5F8FC", "minimum": 4.5 },
+      { "foreground": "#637083", "background": "#F7F9FC", "minimum": 4.5 },
+      { "foreground": "#0F7F75", "background": "#EDF9F7", "minimum": 4.5 },
+      { "foreground": "#B7483C", "background": "#FFF0EE", "minimum": 4.5 },
       { "foreground": "#FFFFFF", "background": "#00813A", "minimum": 4.5 }
     ],
     "auditCeilings": {
@@ -48,24 +50,22 @@
     "requiredCommonConsumers": {
       "src/styles/components/primitives.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card", "--sc-focus-ring"],
       "src/styles/components/navigation.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-shadow-nav"],
-      "src/styles/components/modals.css": ["--sc-surface-card", "--sc-state-danger", "--sc-shadow-overlay"],
+      "src/styles/components/modals.css": ["--sc-surface-card", "--sc-shadow-overlay"],
       "src/styles/components/sheets.css": ["--sc-surface-card", "--sc-shadow-sheet"],
       "src/styles/components/insights.css": ["--sc-rank-bronze-surface", "--sc-rank-diamond-accent", "--sc-brand-hero"]
     },
     "requiredScreenConsumers": {
-      "src/styles/screens/home.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
       "src/styles/screens/analysis-unified.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-surface-positive"],
       "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
       "src/styles/screens/planner.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold", "--sc-subject-math"],
       "src/styles/screens/planner-calendar.css": ["--sc-brand-navy", "--sc-surface-positive", "--sc-action-positive-strong", "--sc-subject-korean"],
       "src/styles/screens/coaching.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
       "src/styles/screens/mypage.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-action-urgent-strong"],
-      "src/styles/screens/auth.css": ["--sc-brand-navy", "--sc-state-danger", "--sc-on-brand", "--sc-provider-naver-contrast"],
+      "src/styles/screens/auth.css": ["--sc-brand-navy", "--sc-on-brand", "--sc-provider-naver-contrast"],
       "src/styles/screens/auth-signup.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-positive"],
       "src/styles/screens/auth-recovery.css": ["--sc-action-positive", "--sc-surface-positive"],
       "src/styles/screens/onboarding.css": ["--sc-brand-hero", "--sc-surface-card", "--sc-on-brand"],
       "src/styles/screens/locked-splash.css": ["--sc-surface-card", "--sc-on-brand-surface-strong", "--sc-shadow-overlay"],
-      "src/styles/screens/home-overlays.css": ["--sc-brand-hero", "--sc-action-positive", "--sc-state-danger"],
       "src/styles/screens/planner-add.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
       "src/styles/screens/reports.css": ["--sc-brand-navy", "--sc-surface-card"],
       "src/styles/screens/service.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
@@ -76,7 +76,7 @@
       "src/styles/components/mbti-survey.css": ["--sc-action-positive", "--sc-state-threshold", "--sc-surface-card"]
     },
     "requiredOwnershipGuards": {
-      "src/styles/layout/mobile-layout-system.css": [":not(.home-result-card-v3)", ":not(.analysis-result-card)"]
+      "src/styles/screens/analysis-base.css": [":not(.analysis-result-card)"]
     }
   },
   "viewports": [
@@ -86,9 +86,10 @@
     { "width": 430, "height": 932 }
   ],
   "states": ["loading", "ready", "empty", "error", "locked", "updating"],
-  "mainTabs": ["home", "analysis", "strategy", "planner", "my"],
+  "mainTabs": ["timer", "planner", "aquarium", "analysis", "strategy"],
   "screens": [
-    "home",
+    "timer",
+    "aquarium",
     "analysis",
     "addUniversity",
     "ranking",

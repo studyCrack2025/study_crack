@@ -17,7 +17,6 @@ function RadioChip({ checked = false, name = '', value = '', children, extraAttr
 
 export function PlannerAddScreen(ctx) {
   const {
-    appbar,
     selectedPlannerDate = '',
     selectedPlannerDateKey = ''
   } = ctx;
@@ -41,7 +40,7 @@ export function PlannerAddScreen(ctx) {
       <div className="app-frame">
         <div className="screen app-screen app-content" data-screen="plannerAdd">
           <div className="planner-screen planner-add-screen" data-planner-add-root>
-            <div dangerouslySetInnerHTML={{ __html: appbar('계획 추가', true) }} />
+            <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">계획 추가</div></div>
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>

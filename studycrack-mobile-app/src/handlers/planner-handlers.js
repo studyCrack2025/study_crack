@@ -95,10 +95,6 @@ function dotForSubject(subject = '') {
   return 'sci';
 }
 
-function setRefValue(ref, value) {
-  if (ref && typeof ref === 'object') ref.current = value;
-}
-
 function getRefValue(ref, fallback = '') {
   return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
 }
@@ -130,66 +126,6 @@ function addPlannerMonths(date, months) {
   return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
 }
 
-function mutateStudyRecord(records, today, elapsed) {
-  const idx = records.findIndex((row) => row.date === today);
-  if (idx >= 0) {
-    const clone = [...records];
-    clone[idx] = { ...clone[idx], studyTime: (clone[idx].studyTime || 0) + elapsed };
-    return clone;
-  }
-  return [...records, { date: today, studyTime: elapsed }];
-}
-
-function mutateSubjectRecord(records, today, subject, elapsed) {
-  const idx = records.findIndex((row) => row.date === today);
-  if (idx >= 0) {
-    const clone = [...records];
-    const oldSubjects = clone[idx].subjects || {};
-    clone[idx] = {
-      ...clone[idx],
-      subjects: {
-        ...oldSubjects,
-        [subject]: (oldSubjects[subject] || 0) + elapsed
-      }
-    };
-    return clone;
-  }
-  return [...records, { date: today, subjects: { [subject]: elapsed } }];
-}
-
-function startStudyTimer(ctx, subject, plannerItemId = '') {
-  const {
-    setActivePlannerItemId = noop,
-    setActiveStudySubject = noop,
-    setStudySubjectSheetOnlyPlanned = noop,
-    setStudySubjectSheetOpen = noop,
-    setStudyTimerRunning = noop,
-    setActiveStudySession = noop,
-    setStudyTimerTick = noop,
-    startLiveStudyTimer = noop,
-    studyTimerSecondsRef,
-    syncLiveStudyTimerUi = noop
-  } = ctx;
-
-  const startedAt = new Date().toISOString();
-  const session = {
-    sessionId: globalThis.crypto?.randomUUID?.() || `study-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    subject,
-    plannerItemId,
-    startedAt,
-    status: 'running'
-  };
-  setActiveStudySubject(subject);
-  setActivePlannerItemId(plannerItemId);
-  setStudySubjectSheetOpen(false);
-  setStudySubjectSheetOnlyPlanned(false);
-  setStudyTimerRunning(true);
-  setActiveStudySession(session);
-  setRefValue(studyTimerSecondsRef, 0);
-  startLiveStudyTimer(startedAt, (seconds) => setStudyTimerTick(seconds));
-  syncLiveStudyTimerUi(0);
-}
-
 export function createPlannerHandlers(ctx) {
   const {
     centerPlannerDate = noop,
@@ -202,33 +138,17 @@ export function createPlannerHandlers(ctx) {
     plannerEditItem = null,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    prompt = globalThis.prompt,
     requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
-    setActivePlannerItemId = noop,
-    setActiveStudySubject = noop,
-    setExpandedBreakdownSubject = noop,
-    setNotifModalOpen = noop,
-    setPlannerCalendarMode = noop,
-    setPlannerDraft = noop,
-    setPlannerEditIndex = noop,
-    setPlannerItems = noop,
-    setSelectedDate = noop,
-    setShowStudyBreakdown = noop,
-    setStudyRecords = noop,
-    setStudySubjectRecords = noop,
-    setStudySubjectSheetOnlyPlanned = noop,
-    setStudySubjectSheetOpen = noop,
-    setStudyTimerRunning = noop,
-    setActiveStudySession = noop,
-    setStudyTimerTick = noop,
-    startLiveStudyTimer = noop,
-    stopLiveStudyTimer = noop,
-    studyTimerSecondsRef,
-    syncLiveStudyTimerUi = noop,
-    persistStudySession = noop,
+    setExpandedBreakdownSubject,
+    setPlannerCalendarMode,
+    setPlannerDraft,
+    setPlannerEditIndex,
+    setPlannerItems,
+    setSelectedDate,
+    setShowStudyBreakdown,
     todayDate = TODAY_DATE
   } = ctx;
 
@@ -380,74 +300,6 @@ export function createPlannerHandlers(ctx) {
           : item
       )));
       setPlannerEditIndex(null);
-      return true;
-    },
-
-    openStudySubjectSheet() {
-      preserveScrollAfterStateChange(() => {
-        setNotifModalOpen(false);
-        setStudySubjectSheetOnlyPlanned(true);
-        setStudySubjectSheetOpen(true);
-      });
-      return true;
-    },
-
-    closeStudySubjectSheet({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('planner-sheet-overlay')) return false;
-      preserveScrollAfterStateChange(() => {
-        setStudySubjectSheetOnlyPlanned(false);
-        setStudySubjectSheetOpen(false);
-      });
-      return true;
-    },
-
-    selectStudySubjectCustom() {
-      const custom = prompt?.('과목명을 입력하세요', '기타');
-      if (!custom) return false;
-      startStudyTimer(ctx, custom, '');
-      return true;
-    },
-
-    selectSelfStudy() {
-      startStudyTimer(ctx, '기타', '');
-      return true;
-    },
-
-    selectStudySubject({ actionEl }) {
-      const subject = getData(actionEl, 'study-subject');
-      const plannerItemId = getData(actionEl, 'study-item-id');
-      if (!subject) return false;
-      startStudyTimer(ctx, subject, plannerItemId);
-      return true;
-    },
-
-    async stopStudyTimer() {
-      if (!ctx.studyTimerRunning || !ctx.activeStudySession) return false;
-      setStudyTimerRunning(false);
-      stopLiveStudyTimer();
-      const elapsed = Math.max(1, Number(getRefValue(studyTimerSecondsRef, 0)) || 0);
-      const activeSubject = typeof ctx.getActiveStudySubject === 'function' ? ctx.getActiveStudySubject() : ctx.activeStudySubject;
-      const activePlannerItemId = typeof ctx.getActivePlannerItemId === 'function' ? ctx.getActivePlannerItemId() : ctx.activePlannerItemId;
-      setStudyRecords((prev) => mutateStudyRecord(prev, todayDate, elapsed));
-      if (activeSubject) {
-        setStudySubjectRecords((prev) => mutateSubjectRecord(prev, todayDate, activeSubject, elapsed));
-        if (activePlannerItemId) {
-          setPlannerItems((prev) => prev.map((item) => (
-            item.id === activePlannerItemId
-              ? { ...item, doneMinutes: (item.doneMinutes || 0) + Math.round(elapsed / 60) }
-              : item
-          )));
-        }
-      }
-      setRefValue(studyTimerSecondsRef, 0);
-      setStudyTimerTick(0);
-      syncLiveStudyTimerUi(0);
-      const completedSession = { ...ctx.activeStudySession, subject: activeSubject || ctx.activeStudySession.subject, plannerItemId: activePlannerItemId || '', endedAt: new Date().toISOString(), durationSeconds: elapsed, status: 'completed' };
-      setActiveStudySession(null);
-      setActiveStudySubject('');
-      setActivePlannerItemId('');
-      const result = await persistStudySession(completedSession);
-      if (result && result.ok === false) ctx.alert?.(result.error || '공부 기록을 서버에 저장하지 못했습니다. 기기에는 기록을 유지합니다.');
       return true;
     },
 

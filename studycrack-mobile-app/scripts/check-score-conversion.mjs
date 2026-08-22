@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { convertExamScores } from '../src/runtime/persistence.js';
+import { convertExamScores } from '../src/features/analysis/api.js';
 
 const requests = [];
 const metrics = {
@@ -24,8 +24,8 @@ const examData = {
 
 const converted = await convertExamScores({ apiFetch, analysisApiUrl: '/analysis', examMode: 'jun', examData });
 assert.equal(converted.ok, true);
-assert.deepEqual(converted.examData.kor, { ...examData.kor, ...metrics.kor });
-assert.deepEqual(converted.examData.inq2, { ...examData.inq2, ...metrics.inq2 });
+assert.deepEqual(converted.data.kor, { ...examData.kor, ...metrics.kor });
+assert.deepEqual(converted.data.inq2, { ...examData.inq2, ...metrics.inq2 });
 assert.equal(requests.length, 4);
 assert.deepEqual(
   requests.find((item) => item.subject === 'kor'),

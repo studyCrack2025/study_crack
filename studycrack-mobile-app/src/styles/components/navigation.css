@@ -3,10 +3,16 @@
 .back-btn{appearance:none;-webkit-appearance:none;display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;padding:0;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:18px;line-height:1;cursor:pointer;box-shadow:var(--sc-shadow-normal);}
 .appbar .title{min-width:0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.35;overflow-wrap:anywhere;}
 .back-btn:focus-visible{outline:2px solid var(--sc-focus-ring);outline-offset:2px;}
-.tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--sc-tabbar-height) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 8px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);background:color-mix(in srgb,var(--sc-surface-card) 96%,transparent);box-shadow:var(--sc-shadow-nav);z-index:50;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:opacity var(--motion-control) ease,box-shadow var(--motion-control) ease;}
-.tabbar.is-muted{opacity:1;pointer-events:none;}
-.tabbar button{position:relative;min-width:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden;padding:4px;border:0;border-radius:var(--sc-radius-control);background:transparent;color:var(--sc-ink-subtle);font-family:inherit;font-size:var(--sc-type-micro);font-weight:600;line-height:1.2;transition:background-color var(--motion-control) ease,color var(--motion-control) ease,opacity var(--motion-control) ease;}
-.tabbar button.active{background:transparent;color:var(--sc-brand-navy);font-weight:800;}
-.tabbar button.active:after{content:"";position:absolute;left:50%;bottom:1px;width:18px;height:3px;border-radius:var(--sc-radius-pill);background:var(--sc-action-positive);transform:translateX(-50%);}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--sc-tabbar-height) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;padding:6px 8px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);background:color-mix(in srgb,var(--sc-surface-card) 97%,transparent);box-shadow:var(--sc-shadow-nav);z-index:50;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:opacity var(--motion-control) ease,box-shadow var(--motion-control) ease;}
+.tabbar.is-muted{opacity:.62;pointer-events:none;}
+.tabbar button{position:relative;min-width:0;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:visible;padding:2px;border:0;border-radius:var(--sc-radius-control);background:transparent;color:var(--sc-ink-subtle);font-family:inherit;font-size:var(--sc-type-micro);font-weight:650;line-height:1;}
+.tabbar button.active{background:var(--sc-surface-subtle);color:var(--sc-brand-navy);font-weight:850;}
+.tabbar-icon{width:28px;height:28px;display:grid;place-items:center;flex:0 0 28px;border-radius:10px;transition:transform var(--motion-control) var(--ease-enter),background-color var(--motion-control) ease,box-shadow var(--motion-control) ease;}
+.tabbar-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .tabbar .icon{width:20px;height:20px;stroke:currentColor;}
+.tabbar button.is-aquarium{justify-content:flex-end;padding:4px 2px;background:transparent;color:var(--sc-brand-navy);}
+.tabbar button.is-aquarium .tabbar-icon{width:48px;height:48px;flex-basis:48px;margin-bottom:-2px;border:3px solid var(--sc-surface-card);border-radius:16px;background:linear-gradient(145deg,var(--sc-brand-navy),var(--sc-action-positive));color:var(--sc-on-brand);box-shadow:var(--sc-shadow-raised);transform:translateY(-9px);}
+.tabbar button.is-aquarium .icon{width:24px;height:24px;stroke:currentColor;}
+.tabbar button.is-aquarium .tabbar-label{margin-top:-8px;}
+.tabbar button.is-aquarium.active .tabbar-icon{box-shadow:0 0 0 2px var(--sc-action-positive),var(--sc-shadow-raised);transform:translateY(-10px) scale(1.02);}
 .tabbar button:focus-visible{outline:2px solid var(--sc-focus-ring);outline-offset:-2px;}

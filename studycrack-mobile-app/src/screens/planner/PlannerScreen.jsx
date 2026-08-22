@@ -1,6 +1,11 @@
 import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
+import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
+import { AppScreenShell } from '../../components/AppScreenShell.jsx';
+import { AppContextHeader } from '../../components/AppContextHeader.jsx';
+import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { FishArtwork } from '../aquarium/FishArtwork.jsx';
 
 function PlannerChecklistArt() {
   return (
@@ -97,13 +102,9 @@ function PlannerProgress({ presentation }) {
   const progressTone = presentation.remainingCount ? 'pending' : presentation.totalCount ? 'complete' : 'waiting';
   return (
     <section className="card planner-progress-card">
-      <div className="planner-progress-head"><div><span>오늘 진도</span><h4>{presentation.progress}% 완료</h4></div><b className={progressTone}>{presentation.remainingCount ? `${presentation.remainingCount}개 남음` : presentation.totalCount ? '모두 완료' : '계획 대기'}</b></div>
+      <div className="planner-progress-head"><div><span>오늘의 공부 진행률</span><h4>{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`}><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
       <div className="planner-progress-track" aria-label={`플래너 완료율 ${presentation.progress}%`}><i style={{ width: `${presentation.progress}%` }} /></div>
-      <div className="planner-progress-stats">
-        <div><span>완료 계획</span><b>{presentation.completedCount}/{presentation.totalCount}</b></div>
-        <div><span>완료 시간</span><b>{presentation.completedDurationLabel}</b></div>
-        <div><span>총 계획</span><b>{presentation.totalDurationLabel}</b></div>
-      </div>
+      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `다음 계획까지 ${presentation.remainingCount}개 남았어요` : presentation.totalCount ? '오늘의 공부를 모두 끝냈어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>{presentation.completedDurationLabel} / {presentation.totalDurationLabel}</span></div>
     </section>
   );
 }
@@ -122,8 +123,10 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
 
 export function PlannerScreen(ctx) {
   const {
+    calendarEventFormOpen = false,
+    calendarSheetOpen = false,
     dimmed = false,
-    tabBarHtml = '',
+    tab = 'planner',
     plannerCalendarMode,
     plannerCalendarMonthCells,
     plannerEditIndex,
@@ -139,37 +142,25 @@ export function PlannerScreen(ctx) {
 
   const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
   const presentation = buildPlannerPresentation(plannerViewItems);
+  const isToday = selectedPlannerDateKey === TODAY_DATE;
+  const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
+  const plannerOverlayOpen = plannerEditIndex !== null || calendarSheetOpen || calendarEventFormOpen;
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed ? 'modal-lock' : ''}`} data-screen="planner">
+    <AppScreenShell
+      screen="planner"
+      tab={tab}
+      dimmed={dimmed}
+      overlayOpen={plannerOverlayOpen}
+      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
+    >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <header className="planner-context-head">
-              <div><span>오늘의 플래너</span><h3>{plannerMonthLabel} {selectedPlannerDate}일 <small>{selectedPlannerWeekday}요일</small></h3><p>계획을 확인하고, 오늘의 학습 흐름을 이어가세요.</p></div>
-              <PlannerChecklistArt />
-            </header>
-
-            <section className="card planner-calendar-card">
-              <div className="planner-inline-calendar-toolbar">
-                <PlannerCalendarSegment activeMode={calendarMode} />
-                <div className="planner-inline-calendar-nav">
-                  <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
-                  <button type="button" data-action="plannerCalendarToday">오늘</button>
-                  <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
-                </div>
-              </div>
-              {calendarMode === 'month' ? (
-                <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
-              ) : (
-                <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
-              )}
-            </section>
+            <AppContextHeader className="planner-context-head" description="해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요." eyebrow="DAILY PLAN" title="오늘의 플래너" tone="positive" visual={<PlannerChecklistArt />} />
 
             <PlannerProgress presentation={presentation} />
 
             <section className="planner-tasks-section">
-              <div className="planner-section-head"><div><span>{selectedPlannerDate}일</span><h4>학습 계획</h4></div><button type="button" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
+              <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" className="planner-add-icon" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
               <div className="planner-plan-list">
                 {plannerViewItems.length ? (
                   plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
@@ -180,12 +171,27 @@ export function PlannerScreen(ctx) {
               </div>
             </section>
 
+            <section className="planner-calendar-section">
+              <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
+              <div className="card planner-calendar-card">
+                <div className="planner-inline-calendar-toolbar">
+                  <PlannerCalendarSegment activeMode={calendarMode} />
+                  <div className="planner-inline-calendar-nav">
+                    <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
+                    <button type="button" data-action="plannerCalendarToday">오늘</button>
+                    <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
+                  </div>
+                </div>
+                {calendarMode === 'month' ? (
+                  <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
+                ) : (
+                  <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
+                )}
+              </div>
+            </section>
+
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} />
           </main>
-        </div>
-        <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} />
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </AppScreenShell>
   );
 }

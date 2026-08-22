@@ -31,7 +31,7 @@ export function Ob3Screen(ctx) {
             <div className="cta-wrapper cta-container"><button type="button" className="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button></div>
           </div>
         </div>
-        {mbtiModalOpen ? <div className="app-screen-overlays" style={{ display: 'contents' }}><MbtiModal {...ctx} /></div> : null}
+        {mbtiModalOpen ? <div className="app-screen-overlays"><MbtiModal {...ctx} /></div> : null}
       </div>
     </div>
   );

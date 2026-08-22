@@ -213,37 +213,37 @@ export function createFormHandlers(ctx) {
     markStableScrollPosition = noop,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    renderUniversityResultsOnly = noop,
+    resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
-    setAnalysisSearchTerm = noop,
-    setCoachingAnswers = noop,
-    setCoachingExamFiles = noop,
-    setCoachingExamScores = noop,
-    setCoachingMonth = noop,
-    setCoachingPlannerFiles = noop,
-    setCoachingSubjectRows = noop,
-    setMyProfileNameDraft = noop,
-    setObGoalText = noop,
-    setObGradeStatus = noop,
-    setObQuestionText = noop,
-    setObSchoolName = noop,
-    setObTrack = noop,
-    setProEliteMonth = noop,
-    setProRequestText = noop,
-    setQnaDraftContent = noop,
-    setQnaDraftTitle = noop,
-    setScoreEditState = noop,
-    setScores = noop,
-    setScoreState = noop,
-    setStudyDifficulty = noop,
-    setStudyHours = noop,
-    setStrongSubject = noop,
-    setTargetMajor = noop,
+    setAnalysisSearchTerm,
+    setCoachingAnswers,
+    setCoachingExamFiles,
+    setCoachingExamScores,
+    setCoachingMonth,
+    setCoachingPlannerFiles,
+    setCoachingSubjectRows,
+    setMyProfileNameDraft,
+    setObGoalText,
+    setObGradeStatus,
+    setObQuestionText,
+    setObSchoolName,
+    setObTrack,
+    setProEliteMonth,
+    setProRequestText,
+    setQnaDraftContent,
+    setQnaDraftTitle,
+    setScoreEditState,
+    setScores,
+    setScoreState,
+    setStudyDifficulty,
+    setStudyHours,
+    setStrongSubject,
+    setTargetMajor,
     setTimeout = globalThis.setTimeout || ((fn) => fn()),
-    setWeakSubject = noop,
-    setMyProfilePhoneCodeDraft = noop,
-    setMyProfilePhoneDraft = noop,
-    setWithdrawPassword = noop
+    setWeakSubject,
+    setMyProfilePhoneCodeDraft,
+    setMyProfilePhoneDraft,
+    setWithdrawPassword
   } = ctx;
 
   function handleInput(event) {
@@ -292,9 +292,7 @@ export function createFormHandlers(ctx) {
       return { handled: true, field };
     }
     if (field === 'analysisSearchTerm') {
-      if (ctx.analysisSearchLiveTermRef) ctx.analysisSearchLiveTermRef.current = target.value;
       setAnalysisSearchTerm(target.value);
-      renderUniversityResultsOnly(target.value, target);
     }
     if (field === 'myProfileNameDraft') setMyProfileNameDraft(target.value);
     if (field === 'myProfilePhoneDraft') {
@@ -415,7 +413,10 @@ export function createFormHandlers(ctx) {
         return { handled: true, field };
       }
       preserveScrollAfterStateChange(() => {
-        if (target.value) setTargetMajor(target.value);
+        if (target.value) {
+          resetAnalysisCalculation();
+          setTargetMajor(target.value);
+        }
       });
       return { handled: true, field };
     }
@@ -469,7 +470,10 @@ export function createFormHandlers(ctx) {
         goto?.('addUniversity');
         return { handled: true, field };
       }
-      if (value) setTargetMajor(value);
+      if (value) {
+        resetAnalysisCalculation();
+        setTargetMajor(value);
+      }
     }
     const isPending = ctx.isIOSSafari?.() && ctx.isObSurveyScreen?.();
     if (field === 'obSchoolName') setPendingOrState({ field, isPending, setter: setObSchoolName, target, value });

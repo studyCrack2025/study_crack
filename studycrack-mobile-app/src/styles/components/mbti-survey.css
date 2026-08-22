@@ -3,7 +3,7 @@
 .mbti-survey-section{font-size:11px;font-weight:900;letter-spacing:.04em;color:var(--sc-brand-navy);background:var(--sc-surface-subtle);border:1px solid var(--sc-line-strong);border-radius:999px;padding:5px 11px;}
 .mbti-survey-eyebrow{display:block;font-size:11px;font-weight:900;letter-spacing:.06em;color:var(--sc-brand-navy);margin-bottom:6px;}
 .mbti-survey-intro{display:flex;flex-direction:column;gap:12px;text-align:center;padding:8px 4px;}
-.mbti-survey-intro .home-modal-title{font-size:22px;}
+.mbti-survey-intro .sc-modal-padded-title{font-size:22px;}
 .mbti-survey-lead{margin:0;font-size:13.5px;line-height:1.6;color:var(--sc-ink-muted);font-weight:700;}
 .mbti-survey-points{margin:4px 0 8px;padding:0;list-style:none;display:grid;gap:8px;text-align:left;}
 .mbti-survey-points li{position:relative;padding-left:22px;font-size:12.5px;line-height:1.5;color:var(--sc-ink-muted);font-weight:700;}

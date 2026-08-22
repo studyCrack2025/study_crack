@@ -5,7 +5,7 @@ import {
   canRetryInitialScore,
   canRetryInitialScorePayload,
   normalizeServerResults
-} from '../src/runtime/score-store.js';
+} from '../src/features/analysis/score-store.js';
 
 const scoresA = { math: { elective: 28, common: 44 }, kor: { elective: 31, common: 42 } };
 const scoresAReordered = { kor: { common: 42, elective: 31 }, math: { common: 44, elective: 28 } };

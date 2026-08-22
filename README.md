@@ -17,7 +17,9 @@ StudyCrack은 수험생과 튜터를 연결해 데이터 기반 입시 분석, �
 
 ### Frontend
 - HTML5 / CSS3
-- JavaScript (ES6+, Vanilla JS)
+- JavaScript (ES6+)
+- 기존 웹: Vanilla JS 기반 멀티 페이지 구조
+- 모바일 앱: React 18 + Vite 기반 모듈 구조
 - Chart.js, PDF.js, html2pdf.js
 
 ### Backend
@@ -48,6 +50,12 @@ StudyCrack은 수험생과 튜터를 연결해 데이터 기반 입시 분석, �
 - 튜터-학생 매칭 관리
 - 결제/리포트 운영 관리
 - 공지/알림 운영
+
+---
+
+## Mobile Development
+
+모바일 앱의 디렉터리 구조, 의존 규칙, 로컬 실행과 필수 검사 방법은 [MOBILE_DEVELOPMENT.md](MOBILE_DEVELOPMENT.md)를 참고합니다. 이 공개 가이드는 운영 인프라와 인증 내부 구현을 포함하지 않습니다.
 
 ---
 
@@ -126,4 +134,4 @@ StudyCrack은 수험생과 튜터를 연결해 데이터 기반 입시 분석, �
 
 ---
 
-> Last Updated: 2026-05-26
+> Last Updated: 2026-08-10

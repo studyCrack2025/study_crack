@@ -20,6 +20,7 @@ const CONFIG = {
         noti:           `${API_BASE}/api/noti`,
         qna:            `${API_BASE}/api/qna`,
         report:         `${API_BASE}/api/report`,
+        game:           `${API_BASE}/api/game`,
         analysis:       `${API_BASE}/api/analysis`,
         payment:        `${API_BASE}/api/payment`,
         auth:           `${API_BASE}/api/auth`,

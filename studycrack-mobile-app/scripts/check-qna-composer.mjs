@@ -37,7 +37,7 @@ const service = createServiceHandlers({
   qnaDraftRef,
   persistMobileQna: async (draft) => {
     submitted = draft;
-    return { ok: true, item: { qnaId: 'qna-test', ...draft } };
+    return { ok: true, data: { qnaId: 'qna-test', ...draft }, error: '', status: 200, code: '' };
   },
   setQnaSubmitting: () => {},
   setQnaHistory: () => {},
@@ -47,6 +47,23 @@ const service = createServiceHandlers({
   setQnaComposerOpen: () => {},
   alert: () => {}
 });
+
+const dataErrorAction = {
+  getAttribute(name) {
+    if (name === 'data-qna-title') return '[데이터 오류 신고] ';
+    if (name === 'data-qna-content') return '오류가 발생한 화면:\n';
+    return null;
+  }
+};
+assert.equal(service.openQnaComposer({ actionEl: dataErrorAction }), true);
+assert.deepEqual(qnaDraftRef.current, {
+  title: '[데이터 오류 신고] ',
+  content: '오류가 발생한 화면:\n'
+});
+qnaDraftRef.current = {
+  title: '환산점수 문의',
+  content: '첫 화면에서 점수가 보이지 않습니다.'
+};
 
 assert.equal(await service.submitMobileQna(), true);
 assert.deepEqual(submitted, {

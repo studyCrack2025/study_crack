@@ -1,4 +1,5 @@
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { Modal } from '../../components/Modal.jsx';
 import { TermsModal } from '../../components/TermsModal.jsx';
 
 function Logo({ src = STUDYCRACK_LOGO_SRC, compact = false }) {
@@ -36,8 +37,7 @@ function SocialButtons({ suffix = '로그인' }) {
 
 function FindEmailModal({ foundEmailMasked = '' }) {
   return (
-    <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeFindEmailModal">
-      <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="find-email-title">
+    <Modal ariaLabel="이메일 찾기" dismissAction="closeFindEmailModal" overlayClass="find-email-modal-backdrop" panelClass="find-email-modal auth-recovery-modal">
         <div className="sc-modal-head auth-recovery-head">
           <div className="auth-recovery-copy">
             <span className="auth-recovery-eyebrow">계정 복구</span>
@@ -54,16 +54,14 @@ function FindEmailModal({ foundEmailMasked = '' }) {
           {foundEmailMasked && <div className="find-email-result"><span>확인된 이메일</span><b>{foundEmailMasked}</b></div>}
         </div>
         <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action={foundEmailMasked ? 'closeFindEmailModal' : 'findEmailByNamePhone'}>{foundEmailMasked ? '로그인으로 돌아가기' : '이메일 찾기'}</button></div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
 function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
   const isRequest = step === 'request';
   return (
-    <div className="sc-overlay sc-overlay--modal find-email-modal-backdrop" data-action="closeResetPasswordModal">
-      <div className="sc-modal find-email-modal auth-recovery-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+    <Modal ariaLabel="비밀번호 재설정" dismissAction="closeResetPasswordModal" overlayClass="find-email-modal-backdrop" panelClass="find-email-modal auth-recovery-modal">
         <div className="sc-modal-head auth-recovery-head">
           <div className="auth-recovery-copy">
             <span className="auth-recovery-eyebrow">{isRequest ? '계정 복구' : '인증 코드 확인'}</span>
@@ -86,8 +84,7 @@ function ResetPasswordModal({ email = '', sending = false, step = 'request' }) {
           </div>
         </div>
         <div className="sc-modal-footer"><button type="button" className="btn btn-primary auth-recovery-submit" data-action={isRequest ? 'requestResetPasswordCode' : 'submitResetPassword'} disabled={sending}>{isRequest ? (sending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료'}</button></div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -96,7 +93,7 @@ function AuthShell({ children, overlays = null, screen }) {
     <div className="app-shell">
       <div className="app-frame">
         <div className="screen app-screen app-content" data-screen={screen}>{children}</div>
-        {overlays ? <div className="app-screen-overlays" style={{ display: 'contents' }}>{overlays}</div> : null}
+        {overlays ? <div className="app-screen-overlays">{overlays}</div> : null}
       </div>
     </div>
   );
@@ -148,8 +145,11 @@ export function AuthLoginScreen(ctx) {
         <div className="auth-entry-layout">
           <header className="auth-brand-block">
             <Logo src={studycrackLogoSrc} />
-            <h1 className="auth-wordmark">StudyCrack</h1>
-            <p className="auth-title">합격 전략을 시작해볼까요?</p>
+            <div className="auth-brand-copy">
+              <span className="auth-brand-eyebrow">ADMISSIONS PLATFORM</span>
+              <h1 className="auth-wordmark">STUDY CRACK</h1>
+              <p className="auth-title">오늘의 실행을 합격 전략으로 연결하세요.</p>
+            </div>
           </header>
           <div className="auth-unified-card">
             <div className="auth-form-stack">
@@ -169,6 +169,7 @@ export function AuthLoginScreen(ctx) {
             </div>
             <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
           </div>
+          <p className="auth-entry-footnote">환산 분석 · 플래너 · 학습 코칭을 한 곳에서</p>
         </div>
       </div>
     </AuthShell>
@@ -328,8 +329,10 @@ export function AuthSignupScreen(ctx) {
     <AuthShell screen="authSignup" overlays={overlays}>
       <div className="signup-page">
         <div className="signup-form-card">
-          <Logo src={studycrackLogoSrc} compact />
-          <SignupProgress step={step} />
+          <header className="signup-topbar">
+            <SignupProgress step={step} />
+            <Logo src={studycrackLogoSrc} compact />
+          </header>
           <SignupStep ctx={ctx} step={step} />
           {signupError && <p className="auth-error signup-error" role="alert">{signupError}</p>}
           <div className="signup-stage-actions">

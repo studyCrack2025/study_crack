@@ -152,14 +152,3 @@ export function formatDdayLabel(targetYmd, todayYmd) {
   if (diff === 0) return 'D-DAY';
   return diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
 }
-
-export function formatCompactCalendarTitle(event = {}) {
-  const title = String(event.title || '').trim();
-  if (!title) return '다가오는 일정';
-  if (title.includes('대학수학능력시험')) return '수능';
-  return title
-    .replace(/\s*\([^)]*\)\s*/g, ' ')
-    .replace(/^\d{4}학년도\s*/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}

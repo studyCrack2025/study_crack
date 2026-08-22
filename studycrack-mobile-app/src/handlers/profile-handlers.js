@@ -1,5 +1,6 @@
-import { clearMobileAuthArtifacts } from '../runtime/auth-service.js';
-import { convertExamScores, scoreExamTypeToKey } from '../runtime/persistence.js';
+import { clearMobileAuthArtifacts } from '../features/session/auth-service.js';
+import { convertExamScores } from '../features/analysis/api.js';
+import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
 
@@ -244,19 +245,23 @@ function patchCurrentScoreStep(ctx) {
     ctx.setScoreEditState?.((prev = {}) => ({ ...prev, english: values.english }));
     return { ...state, english: values.english };
   }
+  if (step === 4) {
+    ctx.setScoreEditState?.((prev = {}) => ({ ...prev, history: values.history }));
+    return { ...state, history: values.history };
+  }
   if (step === 5) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      inquiry1: { ...(prev.inquiry1 || {}), score: values.inquiry1Score }
+      inquiry1: { ...(prev.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score }
     }));
-    return { ...state, inquiry1: { ...(state.inquiry1 || {}), score: values.inquiry1Score } };
+    return { ...state, inquiry1: { ...(state.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score } };
   }
   if (step === 6) {
     ctx.setScoreEditState?.((prev = {}) => ({
       ...prev,
-      inquiry2: { ...(prev.inquiry2 || {}), score: values.inquiry2Score }
+      inquiry2: { ...(prev.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score }
     }));
-    return { ...state, inquiry2: { ...(state.inquiry2 || {}), score: values.inquiry2Score } };
+    return { ...state, inquiry2: { ...(state.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score } };
   }
   return state;
 }
@@ -383,42 +388,42 @@ export function createProfileHandlers(ctx) {
     applyScoreExamSelection = noop,
     localStorage = globalThis.localStorage,
     saveExamScoresMap = noop,
-    setLoggedIn = noop,
-    setHistory = noop,
-    setLogoutModalOpen = noop,
-    setMbtiAnswers = noop,
-    setMbtiModalOpen = noop,
-    setMbtiResult = noop,
-    setMbtiStep = noop,
-    setMyProfileEditOpen = noop,
-    setMyProfileNameDraft = noop,
-    setMyProfilePhoneCodeDraft = noop,
-    setMyProfilePhoneDraft = noop,
-    setNotifications = noop,
-    setOb2SkippedNoScore = noop,
-    setObGed = noop,
-    setObGradeStatus = noop,
-    setOpenFaq = noop,
-    setOpenTermsType = noop,
-    setPhoneChangeModalOpen = noop,
-    setPhoneChangeSending = noop,
-    setPhoneChangeStep = noop,
-    setProfileDetailModalOpen = noop,
-    setProfilePhotoUploading = noop,
-    setScoreEditOpen = noop,
-    setScoreEditState = noop,
-    setScoreEditStep = noop,
-    setScoreSubjectSaving = noop,
-    setScoreExamKey = noop,
-    setRankingPeriod = noop,
-    setScores = noop,
-    setTargetMajor = noop,
-    setUser = noop,
-    setWithdrawModalOpen = noop,
+    setLoggedIn,
+    setHistory,
+    setLogoutModalOpen,
+    setMbtiAnswers,
+    setMbtiModalOpen,
+    setMbtiResult,
+    setMbtiStep,
+    setMyProfileEditOpen,
+    setMyProfileNameDraft,
+    setMyProfilePhoneCodeDraft,
+    setMyProfilePhoneDraft,
+    setNotifications,
+    setOb2SkippedNoScore,
+    setObGed,
+    setObGradeStatus,
+    setOpenFaq,
+    setOpenTermsType,
+    setPhoneChangeModalOpen,
+    setPhoneChangeSending,
+    setPhoneChangeStep,
+    setProfileDetailModalOpen,
+    setProfilePhotoUploading,
+    setScoreEditOpen,
+    setScoreEditState,
+    setScoreEditStep,
+    setScoreSubjectSaving,
+    setScoreExamKey,
+    setRankingPeriod,
+    setScores,
+    setTargetMajor,
+    setUser,
+    setWithdrawModalOpen,
     persistQualitative = noop,
     persistQuantitative = noop,
     persistNotificationPreferences = noop,
-    setWithdrawPassword = noop
+    setWithdrawPassword
   } = ctx;
   const storage = ctx.localStorage || localStorage;
   const userApiUrl = ctx.userApiUrl || ctx.apiBase?.user || getWindow(ctx).CONFIG?.api?.user || '';
@@ -502,7 +507,7 @@ export function createProfileHandlers(ctx) {
         }
         const nextQuantitative = {
           ...(ctx.user?.quantitative || {}),
-          [examKey]: converted.examData
+          [examKey]: converted.data
         };
         const result = await persistQuantitative(nextQuantitative);
         if (result && result.ok === false) {
@@ -510,12 +515,12 @@ export function createProfileHandlers(ctx) {
           return false;
         }
 
-        const nextKo = converted.examData.kor.raw;
-        const nextMa = converted.examData.math.raw;
+        const nextKo = converted.data.kor.raw;
+        const nextMa = converted.data.math.raw;
         const nextEnGrade = Number(values.english || 0);
         const nextEnScore = englishGradeToScore(nextEnGrade);
-        const nextIq1 = converted.examData.inq1.raw;
-        const nextIq2 = converted.examData.inq2.raw;
+        const nextIq1 = converted.data.inq1.raw;
+        const nextIq2 = converted.data.inq2.raw;
         setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
         const map = getExamScoresMap();
         map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
@@ -752,16 +757,16 @@ export function createProfileHandlers(ctx) {
       setProfilePhotoUploading(true);
       try {
         const uploadResult = await ctx.uploadProfileImage(file);
-        if (!uploadResult?.ok || !uploadResult.fileUrl) {
+        if (!uploadResult?.ok || !uploadResult.data) {
           alert(uploadResult?.error || '프로필 사진 업로드에 실패했습니다.');
           return false;
         }
-        const updateResult = await updateMemberInfo({ profileImage: uploadResult.fileUrl });
+        const updateResult = await updateMemberInfo({ profileImage: uploadResult.data });
         if (!updateResult.ok) {
           alert(updateResult.error || '프로필 사진 저장에 실패했습니다.');
           return false;
         }
-        setUser((prev) => ({ ...(prev || {}), profileImage: uploadResult.fileUrl }));
+        setUser((prev) => ({ ...(prev || {}), profileImage: uploadResult.data }));
         alert('프로필 사진이 변경되었습니다.');
         return true;
       } finally {

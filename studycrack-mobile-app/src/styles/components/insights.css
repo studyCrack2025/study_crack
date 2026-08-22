@@ -3,8 +3,6 @@
 .rank-tier-gold{--rank-border:var(--sc-rank-gold-border);--rank-surface:var(--sc-rank-gold-surface);--rank-accent:var(--sc-rank-gold-accent);border-color:var(--rank-border);background:var(--rank-surface);}
 .rank-tier-platinum{--rank-border:var(--sc-rank-platinum-border);--rank-surface:var(--sc-rank-platinum-surface);--rank-accent:var(--sc-rank-platinum-accent);border-color:var(--rank-border);background:var(--rank-surface);}
 .rank-tier-diamond{--rank-border:var(--sc-rank-diamond-border);--rank-surface:var(--sc-rank-diamond-surface);--rank-accent:var(--sc-rank-diamond-accent);border-color:var(--rank-border);background:var(--rank-surface);}
-.rank-shine{position:relative;overflow:hidden;}
-.rank-shine:after{content:'';position:absolute;inset:0;background:var(--sc-rank-shine);transform:translateX(-130%);animation:rankShine 2.8s ease-in-out infinite;}
 @keyframes rankShine{0%{transform:translateX(-120%);}45%,100%{transform:translateX(120%);}}
 .pro-elite-page{display:grid;gap:14px;padding-bottom:8px;}
 .pro-elite-hero{padding:20px;border-radius:var(--radius-lg);border:1px solid var(--sc-on-brand-line);background:var(--sc-brand-hero);box-shadow:var(--sc-shadow-hero);color:var(--sc-on-brand-muted);}

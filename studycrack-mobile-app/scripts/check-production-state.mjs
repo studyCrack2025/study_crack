@@ -1,8 +1,15 @@
 import assert from 'node:assert/strict';
-import { createInitialAppState, hydrateAppState } from '../src/runtime/app-state.js';
+import {
+  APP_STATE_FIELD_OWNERS,
+  APP_STATE_FIELD_KINDS,
+  appStateReducer,
+  createInitialAppState,
+  hydrateAppState,
+  selectFlatAppState
+} from '../src/runtime/app-state.js';
 import { buildAnalysisDerived } from '../src/runtime/derived.js';
-import { buildAnalysisScoreView, buildUniversityCard } from '../src/runtime/score-store.js';
-import { createUserDataResetPatch, mapUserToStatePatch } from '../src/runtime/session.js';
+import { buildAnalysisScoreView, buildUniversityCard } from '../src/features/analysis/score-store.js';
+import { createUserDataResetPatch, mapUserToStatePatch } from '../src/features/session/user-state.js';
 
 function createStorage(values = {}) {
   const data = new Map(Object.entries(values));
@@ -13,7 +20,36 @@ function createStorage(values = {}) {
   };
 }
 
-const initial = createInitialAppState();
+const initialRoot = createInitialAppState();
+assert.deepEqual(Object.keys(initialRoot), [
+  'navigation',
+  'session',
+  'analysis',
+  'study',
+  'planner',
+  'gamification',
+  'coaching',
+  'account',
+  'notifications',
+  'reports',
+  'support',
+  'overlay'
+]);
+assert.equal(APP_STATE_FIELD_OWNERS.scoreCache, 'analysis');
+assert.equal(APP_STATE_FIELD_OWNERS.plannerItems, 'planner');
+assert.equal(APP_STATE_FIELD_OWNERS.activeStudySession, 'study');
+assert.equal(APP_STATE_FIELD_OWNERS.gameProfile, 'gamification');
+assert.equal(APP_STATE_FIELD_KINDS.scoreCache, 'serverResource');
+assert.equal(APP_STATE_FIELD_KINDS.plannerDraft, 'localDraft');
+assert.equal(APP_STATE_FIELD_KINDS.scoreEditOpen, 'ephemeralUi');
+assert.deepEqual(Object.keys(initialRoot.analysis), ['serverResource', 'localDraft', 'ephemeralUi']);
+assert.equal(initialRoot.analysis.analysisResults, undefined, 'slice root에 평면 field를 다시 두면 안 됩니다.');
+assert.throws(
+  () => appStateReducer(initialRoot, { type: 'app/patch', payload: { unknownField: true } }),
+  /알 수 없는 app state field/
+);
+
+const initial = selectFlatAppState(initialRoot);
 assert.deepEqual(initial.user, { name: '', targetUniversity: '', plan: '' });
 assert.equal(initial.targetMajor, '');
 assert.deepEqual(initial.homeTargetList, []);
@@ -21,7 +57,7 @@ assert.deepEqual(initial.analysisTargetList, []);
 assert.deepEqual(initial.scores, {});
 assert.deepEqual(initial.plannerItems, []);
 
-const legacyHydrated = hydrateAppState(initial, createStorage({
+const legacyHydrated = selectFlatAppState(hydrateAppState(initialRoot, createStorage({
   scores: JSON.stringify({ korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 }),
   plannerItems: JSON.stringify([
     { id: 'pl-default-1', date: '15', subject: '수학', content: '개념 학습' },
@@ -29,16 +65,16 @@ const legacyHydrated = hydrateAppState(initial, createStorage({
   ]),
   selectedPlan: 'Pro',
   selectedUniversity: '연세대학교 경영학과'
-}));
+})));
 assert.deepEqual(legacyHydrated.scores, {});
 assert.deepEqual(legacyHydrated.plannerItems.map((item) => item.id), ['pl-user-1']);
 assert.equal(legacyHydrated.selectedPlan, '');
 assert.equal(legacyHydrated.targetMajor, '');
 
-const userHydrated = hydrateAppState(initial, createStorage({
+const userHydrated = selectFlatAppState(hydrateAppState(initialRoot, createStorage({
   scores: JSON.stringify({ korean: 91, math: 88 }),
   plannerItems: JSON.stringify([{ id: 'pl-user-2', date: '2026-08-01', subject: '국어' }])
-}));
+})));
 assert.deepEqual(userHydrated.scores, { korean: 91, math: 88 });
 assert.deepEqual(userHydrated.plannerItems.map((item) => item.id), ['pl-user-2']);
 

@@ -8,7 +8,7 @@ import {
   getOfficialAdmissionEvents,
   mergeCalendarEvents
 } from '../constants/admission-calendar.js';
-import { scoreExamTypeToKey } from './persistence.js';
+import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 
 // 런타임 derived view-model: 원시 state에서 화면 renderer가 기대하는 계산값을 파생.
 // 모놀리식 App() 본문의 계산을 도메인별 순수 함수로 이식한다(로직 1:1 유지).
@@ -81,21 +81,9 @@ function scoreMetric(raw) {
   return { std, pct, grade };
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function renderScoreInfoCard({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
-  const rawText = raw || '-';
-  const stdText = std || '-';
-  const pctText = pct || '-';
-  const gradeText = grade || '-';
-  return `<article class="score-info-subject-card"><div><b>${escapeHtml(subject)}</b><strong>${escapeHtml(rawText)}${rawText !== '-' ? '점' : ''}</strong></div><dl><div><dt>표준</dt><dd>${escapeHtml(stdText)}</dd></div><div><dt>백분위</dt><dd>${escapeHtml(pctText)}</dd></div><div><dt>등급</dt><dd>${escapeHtml(gradeText)}</dd></div></dl></article>`;
+function scoreInfoSubject({ grade = '', pct = '', raw = '', std = '', subject = '' } = {}) {
+  const display = (value) => value === '' || value === null || value === undefined ? '-' : value;
+  return { subject, raw: display(raw), std: display(std), pct: display(pct), grade: display(grade) };
 }
 
 // 현재 입력 성적 기준 평균 점수(원본 liveCurrentScore).
@@ -302,14 +290,16 @@ function findTargetItem(list = [], targetMajor = '') {
 const SIM_SUBJECT_ORDER = ['kor', 'math', 'inq1', 'inq2'];
 const SIM_SUBJECT_FALLBACK = { kor: '국어', math: '수학', inq1: '탐구1', inq2: '탐구2' };
 
-function buildServerSimRows(simulation) {
+export function buildServerSimRows(simulation) {
   const simData = simulation?.sim_data || {};
+  const hasSimulationData = SIM_SUBJECT_ORDER.some((key) => Object.hasOwn(simData, key));
+  if (!hasSimulationData) return [];
   const baseUiScore = Number(simulation?.base_ui_score);
   const hasBaseUiScore = Number.isFinite(baseUiScore);
   return SIM_SUBJECT_ORDER
     .map((key, idx) => {
-      const item = simData[key];
-      if (!item) return null;
+      const item = simData[key] || {};
+      const unavailable = !Object.hasOwn(simData, key);
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
       const afterUiScore = Number(item.afterUiScore ?? item.after_ui_score);
@@ -319,19 +309,19 @@ function buildServerSimRows(simulation) {
         key,
         subject: item.name || SIM_SUBJECT_FALLBACK[key] || key,
         gain: `+${rounded.toFixed(rounded >= 10 ? 0 : 1)}점`,
-        desc: item.msg || (rounded > 0 ? '점수 상승으로 합격 가능성이 높아집니다.' : '현재 조건에서는 상승 효율이 낮습니다.'),
+        desc: item.msg || (unavailable ? '과목 환산 결과를 확인하고 있습니다.' : rounded > 0 ? '원점수 상승분이 환산점수에 반영됩니다.' : '현재 조건에서는 환산점수 변화가 없습니다.'),
         gainNum: rounded,
         baseUiScore: hasBaseUiScore ? baseUiScore : null,
         afterUiScore: Number.isFinite(afterUiScore) ? afterUiScore : (hasBaseUiScore ? baseUiScore + rounded : null),
         rawNeeded,
         firstPositiveUiDiff: Number(item.firstPositiveUiDiff ?? item.first_positive_ui_diff ?? 0) || 0,
         isEvaporation: rounded <= 0,
+        unavailable,
         needsBacktrace: simulation?.needs_backtrace === true,
         backtracePlan: simulation?.backtrace_plan || null,
         idx
       };
-    })
-    .filter(Boolean);
+    });
 }
 
 // 홈 화면 derived.
@@ -388,6 +378,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   const plannedScheduleOptions = todayPlannerItems.map((item) => ({
     id: item.id,
     subject: item.subject || '기타',
+    activity: item.content || '',
     label: `${item.subject || '기타'}${item.content ? ` - ${item.content}` : ''}`
   }));
 
@@ -468,8 +459,10 @@ export function buildAnalysisDerived(state = {}) {
   const analysisRecommended = universityRecommendations;
   const hasUniversityCatalog = Array.isArray(universityCatalog) && universityCatalog.length;
   const normalizedSearchTerm = String(analysisSearchTerm || '').trim().toLowerCase().replace(/\s+/g, '');
+  const normalizeCatalogKey = (value) => String(value || '').trim().replace(/\s+/g, '');
+  const selectedUniversityKey = normalizeCatalogKey(universitySelectedName);
   const selectedCatalog = hasUniversityCatalog
-    ? universityCatalog.find((item) => item.univName === universitySelectedName)
+    ? universityCatalog.find((item) => normalizeCatalogKey(item.univName) === selectedUniversityKey)
     : null;
   const universityNames = hasUniversityCatalog ? universityCatalog.map((item) => item.univName) : [];
   const analysisSearchList = (universitySelectedName
@@ -557,8 +550,7 @@ export function buildAnalysisDerived(state = {}) {
   };
 }
 
-// 성적 정보 화면 derived. 과목별 원점수/표준/백분위/등급 행 HTML을 1:1 생성(원본 scoreInfoDetailList).
-// plannerViewDonutGradient 선례처럼 derived가 표현용 문자열을 반환한다.
+// 성적 정보 화면 derived. React 화면이 표시할 과목별 지표만 구조화한다.
 export function buildScoreInfoDerived(state = {}) {
   const { scores = {}, scoreEditState = {}, scoreExamKey = '', scoreExamType = '', user = {} } = state;
   const examKey = scoreExamKey || scoreExamTypeToKey(scoreExamType);
@@ -572,18 +564,14 @@ export function buildScoreInfoDerived(state = {}) {
       [examData.inq2?.name || '탐구2', examData.inq2],
       ['한국사', examData.hist || examData.history, 'grade-only']
     ];
-    const scoreInfoDetailList = rows
-      .map(([subject, item, type]) => {
-        return renderScoreInfoCard({
-          subject,
-          raw: type === 'grade-only' ? '' : item?.raw,
-          std: item?.std,
-          pct: item?.pct,
-          grade: item?.grd
-        });
-      })
-      .join('');
-    return { scoreInfoDetailList };
+    const scoreInfoSubjects = rows.map(([subject, item, type]) => scoreInfoSubject({
+      subject,
+      raw: type === 'grade-only' ? '' : item?.raw,
+      std: item?.std,
+      pct: item?.pct,
+      grade: item?.grd
+    }));
+    return { scoreInfoSubjects };
   }
   const ses = {
     korean: scoreEditState.korean || {},
@@ -602,25 +590,24 @@ export function buildScoreInfoDerived(state = {}) {
     [ses.inquiry2.subject || '탐구2', scores.inquiry2, 'raw']
   ];
 
-  const scoreInfoDetailList =
-    scoreRows
-      .map(([subject, raw, type]) => {
-        if (type === 'grade-only') {
-          const englishGrade = Number(ses.english || 0)
-            || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
-          return renderScoreInfoCard({ subject, grade: englishGrade || '-' });
-        }
-        const m = scoreMetric(raw);
-        const rawText = Number(raw) > 0 ? raw : '-';
-        const stdText = Number(raw) > 0 ? m.std : '-';
-        const pctText = Number(raw) > 0 ? m.pct : '-';
-        const grdText = Number(raw) > 0 ? m.grade : '-';
-        return renderScoreInfoCard({ subject, raw: rawText, std: stdText, pct: pctText, grade: grdText });
-      })
-      .join('') +
-    renderScoreInfoCard({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '-' });
-
-  return { scoreInfoDetailList };
+  const scoreInfoSubjects = scoreRows.map(([subject, raw, type]) => {
+    if (type === 'grade-only') {
+      const englishGrade = Number(ses.english || 0)
+        || (Number(raw) > 0 ? Math.min(9, Math.max(1, Math.round((100 - Number(raw || 0)) / 12.5) + 1)) : '');
+      return scoreInfoSubject({ subject, grade: englishGrade });
+    }
+    const metric = scoreMetric(raw);
+    const entered = Number(raw) > 0;
+    return scoreInfoSubject({
+      subject,
+      raw: entered ? raw : '',
+      std: entered ? metric.std : '',
+      pct: entered ? metric.pct : '',
+      grade: entered ? metric.grade : ''
+    });
+  });
+  scoreInfoSubjects.push(scoreInfoSubject({ subject: '한국사', grade: ses.history ? Math.max(1, Number(ses.history) || 1) : '' }));
+  return { scoreInfoSubjects };
 }
 
 // 도메인 derived 집계. liveStudySeconds는 라이브 타이머 ref의 현재값(없으면 0).

@@ -3,6 +3,7 @@ import { MyProfileHeader } from './MyProfileHeader.jsx';
 import { MbtiInsightCard } from './MbtiInsightCard.jsx';
 import { MyMenuList } from './MyMenuList.jsx';
 import { MyPageOverlays } from './ProfileOverlays.jsx';
+import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 
 function MyStudyStats({ stats }) {
   return (
@@ -13,7 +14,7 @@ function MyStudyStats({ stats }) {
 }
 
 export function MyPageScreen(ctx) {
-  const { dimmed = false, icon, mbtiResult, plannerItems, selectedPlan, studyRecords, studyTimerRunning, studyTimerSecondsRef, tabBarHtml = '', user } = ctx;
+  const { dimmed = false, mbtiResult, plannerItems, selectedPlan, studyRecords, studyTimerRunning, studyTimerSecondsRef, tab = 'my', user } = ctx;
   const presentation = buildMyPagePresentation({
     liveStudySeconds: studyTimerRunning ? Number(studyTimerSecondsRef?.current) || 0 : 0,
     mbtiResult,
@@ -25,19 +26,18 @@ export function MyPageScreen(ctx) {
   const overlayOpen = Boolean(ctx.profileDetailModalOpen || ctx.mbtiModalOpen);
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className={`screen app-screen app-content ${dimmed || overlayOpen ? 'modal-lock' : ''}`} data-screen="my">
+    <AppScreenShell
+      screen="my"
+      tab={tab}
+      dimmed={dimmed || overlayOpen}
+      overlays={overlayOpen ? <MyPageOverlays {...ctx} /> : null}
+    >
           <main className="my-page">
-            <MyProfileHeader icon={icon} presentation={presentation} />
+            <MyProfileHeader presentation={presentation} />
             <MbtiInsightCard mbti={presentation.mbti} />
             <MyStudyStats stats={presentation.stats} />
-            <MyMenuList icon={icon} />
+            <MyMenuList />
           </main>
-        </div>
-        {overlayOpen ? <div className="app-screen-overlays" style={{ display: 'contents' }}><MyPageOverlays {...ctx} /></div> : null}
-        <div style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: tabBarHtml }} />
-      </div>
-    </div>
+    </AppScreenShell>
   );
 }

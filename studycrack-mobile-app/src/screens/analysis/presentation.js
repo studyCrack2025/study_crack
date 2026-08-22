@@ -10,10 +10,20 @@ export function clampAnalysisScore(value, max = GAUGE_MAX) {
 }
 
 export function sortAnalysisSimulationRows(rows = []) {
-  const maxGain = Math.max(...rows.map((row) => finiteNumber(row.gainNum)), 0);
-  return [...rows]
-    .map((row) => ({ ...row, isBest: maxGain > 0 && finiteNumber(row.gainNum) === maxGain }))
-    .sort((a, b) => finiteNumber(b.gainNum) - finiteNumber(a.gainNum) || finiteNumber(a.idx) - finiteNumber(b.idx));
+  const normalizedRows = rows.map((row) => {
+    const before = clampAnalysisScore(row.baseUiScore);
+    const after = clampAnalysisScore(row.afterUiScore);
+    const displayGainNum = Math.max(0, after - before);
+    return {
+      ...row,
+      displayGainNum,
+      displayGain: `+${displayGainNum.toFixed(displayGainNum >= 10 ? 0 : 1)}점`
+    };
+  });
+  const maxGain = Math.max(...normalizedRows.map((row) => row.displayGainNum), 0);
+  return normalizedRows
+    .map((row) => ({ ...row, isBest: maxGain > 0 && row.displayGainNum === maxGain }))
+    .sort((a, b) => b.displayGainNum - a.displayGainNum || finiteNumber(a.idx) - finiteNumber(b.idx));
 }
 
 export function buildAnalysisPresentation({
@@ -25,7 +35,7 @@ export function buildAnalysisPresentation({
 } = {}) {
   const sortedRows = sortAnalysisSimulationRows(rows);
   const selectedRow = sortedRows.find((row) => row.subject === selectedSubject)
-    || rows[recommendedIndex]
+    || sortedRows.find((row) => row.subject === rows[recommendedIndex]?.subject)
     || sortedRows[0]
     || null;
   const metadataRow = rows.find((row) => Number.isFinite(Number(row.baseUiScore))) || null;
@@ -40,6 +50,7 @@ export function buildAnalysisPresentation({
   const afterScore = clampAnalysisScore(rawAfterScore);
   const currentPct = (currentScore / GAUGE_MAX) * 100;
   const afterPct = (afterScore / GAUGE_MAX) * 100;
+  const previewLabelAlign = afterPct >= 88 ? 'end' : afterPct <= 12 ? 'start' : 'center';
 
   return {
     sortedRows,
@@ -51,6 +62,7 @@ export function buildAnalysisPresentation({
     afterScore,
     currentPct,
     afterPct,
+    previewLabelAlign,
     previewLeftPct: Math.min(currentPct, afterPct),
     previewWidthPct: Math.abs(afterPct - currentPct),
     hasPreview: Boolean(hasScore && selectedRow && afterScore !== currentScore),

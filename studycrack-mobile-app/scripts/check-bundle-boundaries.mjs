@@ -23,8 +23,8 @@ assert.ok(appRegistryChunk, 'deferred app screen registry chunk must be emitted'
 assert.notEqual(appRegistryChunk.fileName, entryChunk.fileName, 'signed-in app screens must not be bundled into the entry');
 assert.match(
   entryChunk.code,
-  /["']\/studycrack-mobile-app\/dist\/chunks\//,
-  'entry imports must resolve from the deployed mobile dist path'
+  /["']\.\/chunks\//,
+  'entry imports must resolve relative to the stable mobile dist entry'
 );
 assert.doesNotMatch(entryChunk.code, /["']\/chunks\//, 'entry must not request chunks from the site root');
 assert.ok(
@@ -49,7 +49,6 @@ const initialModules = new Set(
 const deferredModuleSuffixes = [
   '/src/screens/analysis/AnalysisScreen.jsx',
   '/src/screens/coaching/CoachingScreen.jsx',
-  '/src/screens/home/HomeScreen.jsx',
   '/src/screens/mypage/MyPageScreen.jsx',
   '/src/screens/planner/PlannerScreen.jsx'
 ];
@@ -61,7 +60,26 @@ for (const suffix of deferredModuleSuffixes) {
 }
 
 const cssAsset = assets.find((asset) => asset.fileName === 'studycrack-mobile.css');
+const deferredCssAsset = assets.find((asset) => /^chunks\/screen-registry-app-[\w-]+\.css$/.test(asset.fileName));
 assert.ok(cssAsset, 'stable mobile CSS asset must be emitted');
+assert.ok(deferredCssAsset, 'signed-in screen CSS must be emitted as a deferred hashed chunk');
+const bootstrapCss = String(cssAsset.source);
+const deferredCss = String(deferredCssAsset.source);
+assert.ok(bootstrapCss.length < 90 * 1024, 'bootstrap CSS must remain below 90 KiB');
+assert.ok(deferredCss.length > 100 * 1024, 'signed-in screen styles must remain in the deferred CSS chunk');
+assert.doesNotMatch(bootstrapCss, /\.app-context-header\b/, 'signed-in context header CSS must not return to the bootstrap asset');
+assert.doesNotMatch(bootstrapCss, /\.my-profile-avatar\b/, 'mypage feature CSS must not return to the bootstrap asset');
+assert.match(deferredCss, /\.app-context-header\b/, 'deferred CSS must include the shared signed-in context header');
+assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include mypage feature styles');
+assert.ok(
+  appRegistryChunk.viteMetadata?.importedCss?.has(deferredCssAsset.fileName),
+  'signed-in app chunk metadata must preload its deferred CSS asset'
+);
+assert.match(
+  entryChunk.code,
+  new RegExp(deferredCssAsset.fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+  'entry preload map must request the deferred screen CSS asset'
+);
 for (const chunk of chunks) {
   assert.ok(chunk.code.length < 500 * 1024, `${chunk.fileName} must remain below 500 KiB`);
 }
@@ -88,5 +106,5 @@ const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
 console.log(
-  `bundle boundary ok: initial ${formatKiB(initialBytes)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, ${chunks.length} JS chunks`
+  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks`
 );

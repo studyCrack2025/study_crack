@@ -24,8 +24,9 @@ function rawNeededText(row = {}) {
 }
 
 function simulationStatusText(row = {}, isBest = false) {
-  if (isBest && Number(row.gainNum || 0) > 0) return '가장 크게 반영';
-  if (Number(row.gainNum || 0) > 0) return '반영 있음';
+  if (row.unavailable) return '계산 대기';
+  if (isBest && Number(row.displayGainNum || 0) > 0) return '가장 크게 반영';
+  if (Number(row.displayGainNum || 0) > 0) return '반영 있음';
   return rawNeededText(row) || '변동 대기';
 }
 
@@ -36,7 +37,7 @@ function SimulationTable({ rows = [], selectedSubject = '' }) {
   const activeSubject = selectedSubject || rows[0]?.subject || '';
   return (
     <div className="analysis-sim-table" role="table" aria-label="과목별 원점수 1점 상승의 환산점수 효과">
-      <div className="analysis-sim-table-head" role="row"><span>과목</span><span>환산 효과</span><span>+1점 적용 후</span></div>
+      <div className="analysis-sim-table-head" role="row"><span>과목</span><span>환산점수 변화</span><span>적용 결과</span></div>
       {rows.map((row) => {
         const active = activeSubject === row.subject;
         const before = clampAnalysisScore(row.baseUiScore);
@@ -45,7 +46,7 @@ function SimulationTable({ rows = [], selectedSubject = '' }) {
         return (
           <button type="button" className={className} data-action="highlightSimSubject" data-sim-subject={row.subject} role="row" key={row.subject}>
             <span className="analysis-sim-subject" role="cell"><b>{row.subject}</b>{row.isBest ? <em>최고 반영</em> : null}</span>
-            <span className="analysis-sim-effect" role="cell">{row.gain}</span>
+            <span className="analysis-sim-effect" role="cell">{row.displayGain}</span>
             <span className="analysis-sim-status" role="cell"><b>{simulationStatusText(row, row.isBest)}</b><small>{formatPoint(before)} → {formatPoint(after)}점</small></span>
           </button>
         );
@@ -140,6 +141,8 @@ function ReverseProjectionCard({
 export function AnalysisContent(ctx) {
   const {
     analysisHighlightedSubject = '',
+    analysisCalculationRequested = false,
+    analysisApiStatus = 'idle',
     analysisMajorOptions = [],
     analysisStatus = '',
     analysisSelected = {},
@@ -164,10 +167,12 @@ export function AnalysisContent(ctx) {
     scoreView,
     fallbackScore: analysisSelected.score
   });
-  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
+  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLabelAlign, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
   const targetOptions = Array.from(new Set([normalizedTargetMajor, ...analysisMajorOptions].filter(Boolean)));
   const activeSubject = selectedRow?.subject || '';
   const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
+  const showCalculationPrompt = !scoreView.hasScore
+    && (!analysisCalculationRequested || ['empty', 'error'].includes(analysisApiStatus));
   const selectedEffectText = selectedRow && scoreView.hasScore
     ? `${selectedRow.subject} 원점수 +1 적용 시 ${formatPoint(currentScore)}점 → ${formatPoint(afterScore)}점`
     : '과목을 선택하면 상승 후 환산점수를 함께 보여드려요.';
@@ -175,18 +180,24 @@ export function AnalysisContent(ctx) {
   const safePct = 60;
   return (
     <div className="analysis-unified">
+      <section className={`analysis-live-score ${showCalculationPrompt ? 'is-calculate' : ''}`} aria-label="현재 대학별 환산점수">
+        <div className="analysis-live-score-main"><span>{showCalculationPrompt ? '환산점수 준비' : 'LIVE 환산점수'}</span><strong>{showCalculationPrompt ? '점수를 확인해볼까요?' : currentScoreText}</strong><p>{showCalculationPrompt ? '저장된 성적과 희망 대학 기준으로 계산합니다.' : '0–250점 기준 · 실제 저장 성적 반영'}</p></div>
+        {showCalculationPrompt
+          ? <button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button>
+          : <div className="analysis-live-score-target"><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>}
+      </section>
       <div className="card analysis-result-card">
         <div className="analysis-result-head">
           <label><span>희망 대학</span><select className="analysis-target-select planner-input" data-field="analysisTargetMajor" value={normalizedTargetMajor} onChange={() => {}}>{targetOptions.length ? targetOptions.map((label) => <option value={label} key={label}>{label}</option>) : <option value="">목표 대학을 추가해주세요</option>}<option value="__add_university__">+ 희망 대학 추가</option></select></label>
           <label><span>시험 기준</span><select className="analysis-exam-select planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></label>
         </div>
-        <div className="analysis-result-overview"><div><span>현재 환산점수</span><strong>{currentScoreText}</strong></div><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{analysisStatus || '분석 결과'}</em></div>
-        <div className="analysis-gap-grid"><div><span>합격컷까지</span><b>{gapToPass ? `+${formatPoint(gapToPass)}점` : '도달'}</b></div><div><span>+원점수 1점 최대 효과</span><b>{bestRow && scoreView.hasScore ? bestRow.gain : '—'}</b></div></div>
+        <div className="analysis-result-overview"><div><span>선택 대학 분석</span><strong>환산점수 위치</strong><p>합격선과 안정선을 같은 250점 척도에서 비교합니다.</p></div><span className="analysis-result-scale">0–250</span></div>
+        <div className="analysis-gap-grid"><div><span>합격컷까지</span><b>{gapToPass ? `+${formatPoint(gapToPass)}점` : '도달'}</b></div><div><span>+원점수 1점 최대 효과</span><b>{bestRow && scoreView.hasScore ? bestRow.displayGain : '—'}</b></div></div>
         <div className={`analysis-main-gauge-wrap ${scoreTierClass(currentScore)}`}>
           <div className="analysis-main-gauge-top"><span>{currentScoreText}</span></div>
           <div className="analysis-main-gauge" aria-label="환산점수 게이지">
             <i className="analysis-main-gauge-fill" style={{ width: `${currentPct}%` }} />
-            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }}><em /><em /></i><span className="analysis-main-gauge-preview-label" style={{ left: `${afterPct}%` }}>+1 후 {formatPoint(afterScore)}점</span></> : null}
+            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }}><em /><em /></i><span className={`analysis-main-gauge-preview-label is-${previewLabelAlign}`} style={{ left: `${afterPct}%` }}>적용 후 환산 {formatPoint(afterScore)}점</span></> : null}
             <span className="analysis-main-gauge-pin" style={{ left: `${currentPct}%` }}><i /></span>
             <span className="analysis-main-gauge-marker pass" style={{ left: `${passPct}%` }} />
             <span className="analysis-main-gauge-marker safe" style={{ left: `${safePct}%` }} />
@@ -196,7 +207,7 @@ export function AnalysisContent(ctx) {
         </div>
       </div>
       <div className="card analysis-boost-card">
-        <div className="analysis-section-head"><div><span className="analysis-card-eyebrow">원점수 +1 효율</span><h4>한 점을 어디에 투자할까요?</h4><p>{bestRow ? `${bestRow.subject} 1점이 환산점수에 가장 크게 반영돼요.` : '성적 분석이 끝나면 과목별 효율을 비교해드려요.'}</p></div><b>{bestRow && scoreView.hasScore ? `${bestRow.subject} ${bestRow.gain}` : '효과 대기'}</b></div>
+        <div className="analysis-section-head"><div><span className="analysis-card-eyebrow">원점수 +1 효율</span><h4>한 점을 어디에 투자할까요?</h4><p>{bestRow ? `${bestRow.subject} 1점이 환산점수에 가장 크게 반영돼요.` : '성적 분석이 끝나면 과목별 효율을 비교해드려요.'}</p></div><b>{bestRow && scoreView.hasScore ? `${bestRow.subject} ${bestRow.displayGain}` : '효과 대기'}</b></div>
         <SimulationTable rows={sortedRows} selectedSubject={activeSubject} />
       </div>
       <ReverseProjectionCard analysisSimRows={analysisSimRows} canUseReverseProjection={canUseReverseProjection} currentScore={currentScore} backtraceStatus={analysisBacktraceStatus} backtracePlan={analysisBacktracePlan} backtraceError={analysisBacktraceError} />

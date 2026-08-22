@@ -1,6 +1,6 @@
 import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
 import { AccountInfoOverlays } from './ProfileOverlays.jsx';
-import { buildSocialProviders, displayAccountEmail, displayAccountName, displayAccountPlan, displayProvider, formatMarketingConsentDate } from './account-presentation.js';
+import { buildSocialProviders, buildSubscriptionSummary, displayAccountEmail, displayAccountName, displayProvider, formatMarketingConsentDate } from './account-presentation.js';
 
 function SectionHead({ badge = '', description, title }) {
   return <div className="sc-secondary-section-head account-section-head"><div><h3>{title}</h3><p>{description}</p></div>{badge ? <span>{badge}</span> : null}</div>;
@@ -24,12 +24,19 @@ export function AccountInfoScreen(ctx) {
   const marketingDate = formatMarketingConsentDate(user?.marketingAgreedAt);
   const authProvider = user?.authProvider || 'local';
   const hasPhone = Boolean(String(user?.phone || '').trim());
+  const subscription = buildSubscriptionSummary(user, selectedPlan);
   const overlayOpen = Boolean(ctx.myProfileEditOpen || ctx.phoneChangeModalOpen || ctx.withdrawModalOpen || ctx.mbtiModalOpen);
   const overlays = overlayOpen ? <AccountInfoOverlays {...ctx} /> : null;
   return (
     <SecondaryScreenShell screen="accountInfo" title="계정 정보" overlays={overlays}>
       <div className="sc-secondary-page account-info-page">
-        <SecondaryIntro eyebrow="ACCOUNT" title={displayAccountName(user)} description={`${displayAccountEmail(user)} · ${displayAccountPlan(selectedPlan)}`} aside={<span className="sc-chip">계정 관리</span>} />
+        <SecondaryIntro eyebrow="ACCOUNT" title={displayAccountName(user)} description={displayAccountEmail(user)} aside={<span className="sc-chip">{subscription.planLabel}</span>} />
+        <section className="sc-secondary-section account-subscription-card">
+          <SectionHead title="구독 정보" description="현재 이용권과 다음 변경 일정을 확인합니다." badge={subscription.hasPlan ? '이용 중' : '미구독'} />
+          <div className="account-subscription-summary"><div><span>현재 플랜</span><strong>{subscription.planLabel}</strong></div><div><span>{subscription.lifetime ? '이용 기간' : '다음 결제 안내'}</span><strong>{subscription.renewalLine}</strong></div></div>
+          {subscription.pendingLine ? <p className="account-pending-plan">{subscription.pendingLine}</p> : null}
+          <button type="button" className="btn btn-secondary account-full-btn" data-action="goto" data-target="proIntro">플랜 확인</button>
+        </section>
         <section className="sc-secondary-section mobile-account-card">
           <SectionHead title="프로필" description="서비스와 리포트에 표시되는 정보입니다." badge="기본 정보" />
           <div className="account-info-row"><span>이름</span><strong>{displayAccountName(user)}</strong></div>
@@ -48,11 +55,10 @@ export function AccountInfoScreen(ctx) {
           <SectionHead title="소셜 계정 연동" description="Google과 Naver 계정을 연결하거나 해제합니다." badge="2개 제공" />
           <div className="mobile-social-list"><SocialAccountRows user={user} /></div>
         </section>
-        <section className="sc-secondary-section mobile-account-card danger-zone">
-          <SectionHead title="구독 및 탈퇴" description="현재 플랜을 확인하고 계정 탈퇴를 요청합니다." />
-          <div className="account-info-row"><span>현재 플랜</span><strong>{displayAccountPlan(selectedPlan)}</strong></div>
-          <button type="button" className="btn btn-secondary account-full-btn" data-action="openWithdrawModal">회원탈퇴</button>
-        </section>
+        <footer className="account-danger-utility">
+          <div><b>계정 탈퇴</b><p>탈퇴하면 학습 기록과 계정 정보를 복구할 수 없습니다.</p></div>
+          <button type="button" className="account-withdraw-link" data-action="openWithdrawModal">탈퇴하기</button>
+        </footer>
       </div>
     </SecondaryScreenShell>
   );

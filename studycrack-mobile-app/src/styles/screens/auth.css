@@ -1,13 +1,16 @@
 .app-screen[data-screen="authLogin"],.app-screen[data-screen="authFindId"],.app-screen[data-screen="authFindPw"],.app-screen[data-screen="authSignup"]{padding:0;}
 .auth-screen{min-height:100%;display:grid;align-content:center;box-sizing:border-box;padding:var(--sc-space-20) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
-.auth-entry-layout{width:100%;max-width:358px;display:grid;gap:var(--sc-space-20);margin:auto;}
-.auth-brand-block{display:grid;justify-items:center;gap:var(--sc-space-4);text-align:center;}
+.auth-entry-layout{width:100%;max-width:366px;display:grid;gap:var(--sc-space-16);margin:auto;}
+.auth-brand-block{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:var(--sc-space-12);text-align:left;}
+.auth-brand-block .auth-logo-wrap{width:64px;height:64px;padding:var(--sc-space-8);box-sizing:border-box;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
+.auth-brand-copy{min-width:0;display:grid;gap:2px;}
+.auth-brand-eyebrow{color:var(--sc-action-positive-strong);font-size:9px;font-weight:900;line-height:1.3;letter-spacing:0;}
 .auth-logo-wrap{width:100%;display:grid;place-items:center;margin:0;padding:0;border:0;background:transparent;box-shadow:none;}
-.auth-logo{display:block;width:82px;max-width:100%;height:auto;margin:0;object-fit:contain;background:transparent;box-shadow:none;filter:none;}
+.auth-logo{display:block;width:62px;max-width:100%;height:auto;margin:0;object-fit:contain;background:transparent;box-shadow:none;filter:none;}
 .auth-logo-fallback{display:none;color:var(--sc-navy);font-size:var(--sc-type-title);font-weight:800;letter-spacing:0;}
-.auth-wordmark{margin:var(--sc-space-8) 0 0;color:var(--sc-navy);font-size:26px;font-weight:900;line-height:1.15;letter-spacing:0;}
-.auth-title{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-body);font-weight:600;line-height:1.5;letter-spacing:0;}
-.auth-unified-card{width:100%;max-width:358px;min-width:0;display:grid;gap:var(--sc-space-16);box-sizing:border-box;margin:0 auto;padding:var(--sc-space-20);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-raised);}
+.auth-wordmark{margin:0;color:var(--sc-navy);font-size:21px;font-weight:900;line-height:1.2;letter-spacing:0;}
+.auth-title{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;line-height:1.45;letter-spacing:0;}
+.auth-unified-card{width:100%;max-width:366px;min-width:0;display:grid;gap:14px;box-sizing:border-box;margin:0 auto;padding:18px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .auth-form-stack{display:grid;gap:var(--sc-space-12);}
 .auth-field{min-width:0;display:grid;gap:var(--sc-space-8);color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:800;line-height:1.35;}
 .auth-input{height:48px;margin:0;padding:0 14px;border-color:var(--sc-border-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-ink);font-size:16px;font-weight:600;}
@@ -32,10 +35,11 @@
 .auth-signup-link{display:flex;align-items:center;justify-content:center;gap:var(--sc-space-4);margin:0 auto;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;}
 .auth-signup-link b{color:var(--sc-navy);font-weight:800;}
 .auth-signup-link i{display:inline-grid;place-items:center;color:var(--sc-navy);font-size:20px;font-style:normal;line-height:1;}
+.auth-entry-footnote{margin:0;color:var(--sc-ink-subtle);font-size:10px;font-weight:700;line-height:1.4;text-align:center;}
 .auth-form-card{display:grid;gap:var(--sc-space-12);}
 .auth-direct-recovery{align-self:center;}
 .auth-direct-recovery h1{margin:0;color:var(--sc-ink);font-size:var(--sc-type-title);font-weight:800;line-height:1.35;letter-spacing:0;}
 .auth-direct-recovery .sub{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
 @keyframes authButtonSpin{to{transform:rotate(360deg);}}
-@media (max-width:360px){[data-screen="authLogin"] .auth-screen{align-content:start;padding-top:var(--sc-space-16);}[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-16);}[data-screen="authLogin"] .auth-logo{width:70px;}[data-screen="authLogin"] .auth-wordmark{font-size:24px;}[data-screen="authLogin"] .auth-unified-card{gap:var(--sc-space-12);padding:var(--sc-space-16);}[data-screen="authLogin"] .auth-form-stack{gap:10px;}}
-@media (max-height:720px){.app-screen[data-screen="authLogin"] > .auth-screen{align-content:start;}.app-screen[data-screen="authLogin"] .auth-brand-block{grid-template-columns:58px minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--sc-space-12);text-align:left;}.app-screen[data-screen="authLogin"] .auth-brand-block .auth-logo-wrap{grid-row:1/3;}.app-screen[data-screen="authLogin"] .auth-brand-block .auth-logo{width:58px;}.app-screen[data-screen="authLogin"] .auth-wordmark{align-self:end;justify-self:start;margin:0;font-size:22px;}.app-screen[data-screen="authLogin"] .auth-brand-block .auth-title{align-self:start;justify-self:start;}.app-screen[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-12);}}
+@media (max-width:360px){[data-screen="authLogin"] .auth-screen{align-content:start;padding-top:var(--sc-space-16);}[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-12);}[data-screen="authLogin"] .auth-brand-block{grid-template-columns:56px minmax(0,1fr);}[data-screen="authLogin"] .auth-brand-block .auth-logo-wrap{width:56px;height:56px;}[data-screen="authLogin"] .auth-logo{width:54px;}[data-screen="authLogin"] .auth-wordmark{font-size:19px;}[data-screen="authLogin"] .auth-unified-card{gap:var(--sc-space-12);padding:var(--sc-space-16);}[data-screen="authLogin"] .auth-form-stack{gap:10px;}}
+@media (max-height:720px){.app-screen[data-screen="authLogin"] > .auth-screen{align-content:start;}.app-screen[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-12);}.app-screen[data-screen="authLogin"] .auth-entry-footnote{display:none;}}

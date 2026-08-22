@@ -1,4 +1,5 @@
 import { getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
+import { buildSubscriptionSummary } from './account-presentation.js';
 
 const PLAN_LABELS = {
   basic: 'Basic',
@@ -42,7 +43,7 @@ function formatDate(value = '') {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
 
-function buildPlanPresentation(user = {}, selectedPlan = '') {
+export function buildPlanPresentation(user = {}, selectedPlan = '') {
   const key = planKey(user, selectedPlan);
   const label = PLAN_LABELS[key] || safeText(selectedPlan) || '이용권 없음';
   const subscription = user?.currentSubscription && typeof user.currentSubscription === 'object' ? user.currentSubscription : null;
@@ -125,11 +126,12 @@ export function buildMyPagePresentation({ liveStudySeconds = 0, mbtiResult = '',
     + Math.max(0, Number(liveStudySeconds) || 0);
   const completedCount = (Array.isArray(plannerItems) ? plannerItems : []).filter((item) => item?.done === true).length;
   const plan = buildPlanPresentation(user, selectedPlan);
+  const subscription = buildSubscriptionSummary(user, selectedPlan);
   const mbti = buildMbtiPresentation(user, mbtiResult);
 
   return {
     mbti,
-    plan,
+    plan: { ...plan, renewalLine: subscription.renewalLine, pendingLine: subscription.pendingLine },
     profile: {
       avatarUrl: safeText(user?.profileImage),
       meta: buildProfileMeta(user),
