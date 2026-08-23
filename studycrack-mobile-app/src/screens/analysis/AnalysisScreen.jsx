@@ -1,6 +1,6 @@
 import { AnalysisContent, AnalysisSearchSheet } from './AnalysisContent.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
-import { AppContextHeader } from '../../components/AppContextHeader.jsx';
+import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 
 export function AnalysisScreen(ctx) {
   const {
@@ -44,7 +44,7 @@ export function AnalysisScreen(ctx) {
 
             {showAnalysisBody ? (
               <div className="analysis-content-stage">
-                <AppContextHeader className="analysis-context-head" description="환산점수와 과목별 효율을 한눈에 확인하세요." eyebrow="대학별 성적 분석" icon="chart" title="분석" />
+                <PrimaryScreenHeader className="analysis-context-head" eyebrow="대학별 성적 분석" title="환산점수 분석" />
                 {isStale && (
                   <div className="analysis-stale-note" role="status" aria-live="polite">
                     <i aria-hidden="true" />

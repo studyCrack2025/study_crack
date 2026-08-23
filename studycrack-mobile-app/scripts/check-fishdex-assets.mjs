@@ -9,7 +9,7 @@ const assetRoot = join(appRoot, 'src/assets/fishdex/v2');
 const manifest = JSON.parse(await readFile(join(assetRoot, 'manifest.generated.json'), 'utf8'));
 const pendingIds = new Set(['100', '133', '134', '135']);
 const cleanupIds = new Set(['051', '053', '054']);
-const expectedVariants = Object.freeze({ grid256: 256, detail512: 512, habitat768: 768 });
+const expectedVariants = Object.freeze({ habitatPixel64: 64, grid256: 256, detail512: 512, habitat768: 768 });
 
 function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex');
@@ -56,10 +56,10 @@ for (const entry of manifest.entries) {
 }
 
 for (const [variantKey] of Object.entries(expectedVariants)) {
-  const directory = variantKey === 'grid256' ? 'grid-256' : variantKey === 'detail512' ? 'detail-512' : 'habitat-768';
+  const directory = variantKey === 'habitatPixel64' ? 'habitat-pixel-64' : variantKey === 'grid256' ? 'grid-256' : variantKey === 'detail512' ? 'detail-512' : 'habitat-768';
   const files = (await readdir(join(assetRoot, directory))).filter((name) => name.endsWith('.webp'));
   assert.equal(files.length, 85, `${directory}: expected 85 WebP files, found ${files.length}`);
 }
 
 assert.ok(totalBytes <= 8 * 1024 * 1024, `Fish Dex runtime assets exceed 8 MiB budget: ${totalBytes}`);
-console.log(`Fish Dex assets passed: 85 entries, 255 WebP files, ${(totalBytes / 1024 / 1024).toFixed(2)} MiB`);
+console.log(`Fish Dex assets passed: 85 entries, 340 WebP files, ${(totalBytes / 1024 / 1024).toFixed(2)} MiB`);

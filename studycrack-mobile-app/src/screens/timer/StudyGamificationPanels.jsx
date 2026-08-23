@@ -134,7 +134,8 @@ export function StudyHabitatCard({ gameProfileError = '', gameProfileStatus = 'i
   const stageLabels = Array.isArray(gameRules?.habitatStages) ? gameRules.habitatStages.map((stage) => stage.label) : HABITAT_STAGE_FALLBACK;
   return (
     <section className="timer-habitat-card sc-card">
-      <div className="timer-section-head"><div><span>최근 30일</span><h2>공부 서식지</h2></div><b>{habitatStreak ? `${habitatStreak}일 연속` : '첫 기록 대기'}</b></div>
+      <div className="timer-section-head"><div><span>최근 30일</span><h2>공부 서식지</h2></div><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div>
+      {habitatStreak ? <p className="timer-habitat-streak">{habitatStreak}일 연속으로 서식지를 키우고 있어요.</p> : null}
       <p className="timer-habitat-intro">하루 공부 시간이 길어질수록 날짜의 물결과 수초가 풍성해져요.</p>
       {habitatStatus === 'loading' ? <div className="timer-habitat-loading">서식지 기록을 불러오고 있어요.</div> : habitatDays.length ? <HabitatMonth days={habitatDays} onSelect={setSelectedDate} selectedDate={selectedDay?.date || ''} /> : <div className="timer-habitat-empty">첫 공부를 완료하면 이곳에 하루의 서식지가 생겨요.</div>}
       {selectedDay ? <div className="timer-habitat-detail"><span><b>{habitatDayLabel(selectedDay.date)}</b><small>{stageLabels[Number(selectedDay.stage)] || HABITAT_STAGE_FALLBACK[0]}</small></span><strong>{minutesLabel(selectedDay.studySeconds)}</strong></div> : null}
