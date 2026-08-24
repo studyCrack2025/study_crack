@@ -30,7 +30,7 @@
                 <h2 class="sidebar-logo-title">StudyCrack<br><span>Admin</span></h2>
             </a>
         </div>
-        <ul class="menu">
+        <ul class="menu" aria-label="관리 메뉴, 좌우로 스크롤 가능">
             <li class="menu-item has-submenu">
                 <a href="#" onclick="toggleSubmenu('stats-submenu')">
                     <span>📊 통계 관리</span>
@@ -174,7 +174,7 @@
             <h1 class="page-title">👥 학생 관리</h1>
             
             <div class="advanced-search-wrapper">
-                <div class="student-filter-row">
+                <div class="student-filter-row student-filter-primary-mobile">
                     <select id="filterTutor" class="filter-select" aria-label="담당 튜터 필터">
                         <option value="all">전체 튜터</option>
                     </select>
@@ -185,7 +185,7 @@
                         <option value="BASIC">BASIC</option>
                         <option value="FREE">FREE</option>
                     </select>
-                    <div class="student-date-range" role="group" aria-labelledby="joinDateRangeLabel">
+                    <div class="student-date-range student-date-range-mobile-layout" role="group" aria-labelledby="joinDateRangeLabel">
                         <span id="joinDateRangeLabel" class="student-date-range-title">가입일</span>
                         <label class="student-date-field" for="joinedFrom"><span>시작</span><input type="date" id="joinedFrom" aria-describedby="joinDateError"></label>
                         <span class="student-date-separator" aria-hidden="true">~</span>
@@ -194,7 +194,7 @@
                     </div>
                 </div>
                 <p id="joinDateError" class="student-filter-error" role="alert" hidden></p>
-                <div class="student-filter-row student-search-actions">
+                <div class="student-filter-row student-search-actions student-search-actions-mobile">
                     <select id="searchType" class="filter-select" aria-label="검색 항목">
                         <option value="name">이름</option>
                         <option value="email">이메일</option>
@@ -202,7 +202,7 @@
                         <option value="mbti">MBTI</option>
                     </select>
                     <input type="text" id="searchInput" class="search-input" aria-label="학생 검색어" placeholder="검색어 입력...">
-                    <button type="button" class="search-btn" onclick="searchStudents()"><i class="fas fa-search"></i> 상세 검색</button>
+                    <button type="button" class="search-btn search-btn-primary" onclick="searchStudents()"><i class="fas fa-search"></i> 상세 검색</button>
                     <button type="button" class="search-btn search-btn-export" onclick="exportStudentsToCSV()"><i class="fas fa-file-csv"></i> CSV 내보내기</button>
                     <button type="button" id="btnToggleSelection" class="search-btn search-btn-secondary" onclick="toggleStudentSelection()"><i class="fas fa-check-square"></i> 학생 선택하기</button>
                     <button type="button" id="btnSendNoticeToSelected" class="search-btn search-btn-send" onclick="sendNoticeToSelectedStudents()"><i class="fas fa-paper-plane"></i> 공지 보내기 (<span id="selectedStudentCount">0</span>명)</button>
