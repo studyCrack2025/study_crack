@@ -174,37 +174,42 @@
             <h1 class="page-title">👥 학생 관리</h1>
             
             <div class="advanced-search-wrapper">
-                <select id="filterTutor" class="filter-select">
-                    <option value="all">전체 튜터</option>
+                <div class="student-filter-row">
+                    <select id="filterTutor" class="filter-select" aria-label="담당 튜터 필터">
+                        <option value="all">전체 튜터</option>
                     </select>
-                <select id="filterTier" class="filter-select">
-                    <option value="all">전체 등급</option>
-                    <option value="PRO">PRO</option>
-                    <option value="STANDARD">STANDARD</option>
-                    <option value="BASIC">BASIC</option>
-                    <option value="FREE">FREE</option>
-                </select>
-                <select id="searchType" class="filter-select">
-                    <option value="name">이름</option>
-                    <option value="email">이메일</option>
-                    <option value="phone">전화번호</option>
-                    <option value="mbti">MBTI</option>
-                </select>
-                <input type="text" id="searchInput" class="search-input" placeholder="검색어 입력...">
-                <button class="search-btn" onclick="searchStudents()">
-                    <i class="fas fa-search"></i> 상세 검색
-                </button>
-                
-                <button class="search-btn" onclick="exportStudentsToCSV()" style="background-color: #10b981; margin-left: auto;">
-                    <i class="fas fa-file-csv"></i> CSV 내보내기
-                </button>
-                <button id="btnToggleSelection" class="search-btn" onclick="toggleStudentSelection()" style="background-color: #64748b;">
-                    <i class="fas fa-check-square"></i> 학생 선택하기
-                </button>
-                <button id="btnSendNoticeToSelected" class="search-btn" onclick="sendNoticeToSelectedStudents()" style="display: none; background-color: #10b981;">
-                    <i class="fas fa-paper-plane"></i> 공지 보내기 (<span id="selectedStudentCount">0</span>명)
-                </button>
+                    <select id="filterTier" class="filter-select" aria-label="학생 등급 필터">
+                        <option value="all">전체 등급</option>
+                        <option value="PRO">PRO</option>
+                        <option value="STANDARD">STANDARD</option>
+                        <option value="BASIC">BASIC</option>
+                        <option value="FREE">FREE</option>
+                    </select>
+                    <div class="student-date-range" role="group" aria-labelledby="joinDateRangeLabel">
+                        <span id="joinDateRangeLabel" class="student-date-range-title">가입일</span>
+                        <label class="student-date-field" for="joinedFrom"><span>시작</span><input type="date" id="joinedFrom" aria-describedby="joinDateError"></label>
+                        <span class="student-date-separator" aria-hidden="true">~</span>
+                        <label class="student-date-field" for="joinedTo"><span>종료</span><input type="date" id="joinedTo" aria-describedby="joinDateError"></label>
+                        <button type="button" id="clearJoinDateRange" class="student-date-clear-btn">기간 초기화</button>
+                    </div>
+                </div>
+                <p id="joinDateError" class="student-filter-error" role="alert" hidden></p>
+                <div class="student-filter-row student-search-actions">
+                    <select id="searchType" class="filter-select" aria-label="검색 항목">
+                        <option value="name">이름</option>
+                        <option value="email">이메일</option>
+                        <option value="phone">전화번호</option>
+                        <option value="mbti">MBTI</option>
+                    </select>
+                    <input type="text" id="searchInput" class="search-input" aria-label="학생 검색어" placeholder="검색어 입력...">
+                    <button type="button" class="search-btn" onclick="searchStudents()"><i class="fas fa-search"></i> 상세 검색</button>
+                    <button type="button" class="search-btn search-btn-export" onclick="exportStudentsToCSV()"><i class="fas fa-file-csv"></i> CSV 내보내기</button>
+                    <button type="button" id="btnToggleSelection" class="search-btn search-btn-secondary" onclick="toggleStudentSelection()"><i class="fas fa-check-square"></i> 학생 선택하기</button>
+                    <button type="button" id="btnSendNoticeToSelected" class="search-btn search-btn-send" onclick="sendNoticeToSelectedStudents()"><i class="fas fa-paper-plane"></i> 공지 보내기 (<span id="selectedStudentCount">0</span>명)</button>
+                </div>
             </div>
+
+            <div id="studentResultSummary" class="student-result-summary" role="status" aria-live="polite">검색 결과를 불러오는 중입니다.</div>
 
             <div class="table-responsive">
                 <table class="student-table">
@@ -219,7 +224,7 @@
                         </tr>
                     </thead>
                     <tbody id="studentListBody">
-                        <tr><td colspan="5" class="empty-msg">학생을 검색해주세요.</td></tr>
+                        <tr><td colspan="6" class="empty-msg">학생을 검색해주세요.</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -16,15 +16,80 @@ async function populateTutorFilter() {
     } catch(e) { console.error("Tutor filter load failed", e); }
 }
 
+const KST_DATE_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+});
+
+function toKstDateKey(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const parts = Object.fromEntries(KST_DATE_FORMATTER.formatToParts(date).map(part => [part.type, part.value]));
+    return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function isStudentWithinJoinDateRange(student, joinedFrom, joinedTo) {
+    if (!joinedFrom && !joinedTo) return true;
+    const joinedDateKey = toKstDateKey(student?.createdAt);
+    if (!joinedDateKey) return false;
+    if (joinedFrom && joinedDateKey < joinedFrom) return false;
+    if (joinedTo && joinedDateKey > joinedTo) return false;
+    return true;
+}
+
+function setJoinDateError(message = '') {
+    const errorEl = document.getElementById('joinDateError');
+    const dateInputs = [document.getElementById('joinedFrom'), document.getElementById('joinedTo')].filter(Boolean);
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.hidden = !message;
+    }
+    dateInputs.forEach(input => {
+        if (message) input.setAttribute('aria-invalid', 'true');
+        else input.removeAttribute('aria-invalid');
+    });
+}
+
+function clearStudentJoinDateRange() {
+    const joinedFromEl = document.getElementById('joinedFrom');
+    const joinedToEl = document.getElementById('joinedTo');
+    if (joinedFromEl) joinedFromEl.value = '';
+    if (joinedToEl) joinedToEl.value = '';
+    setJoinDateError();
+    joinedFromEl?.focus();
+}
+
+function updateStudentResultSummary(state, count = 0) {
+    const summaryEl = document.getElementById('studentResultSummary');
+    if (!summaryEl) return;
+    summaryEl.dataset.state = state;
+    if (state === 'loading') summaryEl.textContent = '검색 결과를 집계하고 있습니다.';
+    else if (state === 'error') summaryEl.textContent = '검색 결과를 집계하지 못했습니다.';
+    else summaryEl.textContent = `검색 결과 총 ${Number(count).toLocaleString('ko-KR')}명`;
+}
+
 async function searchStudents() {
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value;
     const keyword = document.getElementById('searchInput').value || "";
     const filterTier = document.getElementById('filterTier').value;
     const filterTutor = document.getElementById('filterTutor').value;
+    const joinedFrom = document.getElementById('joinedFrom')?.value || '';
+    const joinedTo = document.getElementById('joinedTo')?.value || '';
     const tbody = document.getElementById('studentListBody');
 
-    tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>안전하게 데이터를 조회 중입니다...</td></tr>";
+    if (joinedFrom && joinedTo && joinedFrom > joinedTo) {
+        setJoinDateError('가입 시작일은 종료일보다 늦을 수 없습니다.');
+        document.getElementById('joinedFrom')?.focus();
+        return;
+    }
+
+    setJoinDateError();
+    updateStudentResultSummary('loading');
+    tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>안전하게 데이터를 조회 중입니다...</td></tr>";
 
     try {
         // MBTI 검색은 백엔드에 전체 조회 요청 후 클라이언트에서 필터링
@@ -46,20 +111,22 @@ async function searchStudents() {
             return true;
         });
 
-        // 다중 필터링 적용 (안전한 프론트엔드 필터링)
+        // 다중 필터링 적용
         if (students.length > 0) {
-            // 1. 등급 필터
+            // 1. 가입일 필터
+            students = students.filter(s => isStudentWithinJoinDateRange(s, joinedFrom, joinedTo));
+            // 2. 등급 필터
             if (filterTier !== 'all') {
                 students = students.filter(s => {
                     const tierBadgeHTML = getTierBadgeHTML(s);
                     return tierBadgeHTML.includes(filterTier);
                 });
             }
-            // 2. 튜터 필터
+            // 3. 튜터 필터
             if (filterTutor !== 'all') {
                 students = students.filter(s => s.tutorName === filterTutor);
             }
-            // 3. MBTI 필터 (클라이언트 측 역변환 후 비교)
+            // 4. MBTI 필터 (클라이언트 측 역변환 후 비교)
             if (type === 'mbti' && keyword.trim()) {
                 const mbtiQuery = keyword.trim().toUpperCase();
                 students = students.filter(s => {
@@ -70,12 +137,13 @@ async function searchStudents() {
         }
 
         currentStudentList = students;
-        Store.set('lastSearch', { type, keyword, filterTier, filterTutor });
+        Store.set('lastSearch', { type, keyword, filterTier, filterTutor, joinedFrom, joinedTo });
+        updateStudentResultSummary('success', currentStudentList.length);
 
         tbody.innerHTML = "";
 
         if (students.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>조건에 맞는 학생이 없습니다.</td></tr>";
             return;
         }
 
@@ -114,7 +182,9 @@ async function searchStudents() {
         });
 
     } catch (error) {
-        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='5' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
+        currentStudentList = [];
+        updateStudentResultSummary('error');
+        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
     }
 }
 
