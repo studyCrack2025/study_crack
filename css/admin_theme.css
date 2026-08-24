@@ -140,11 +140,11 @@ canvas { width: 100% !important; height: 100% !important; }
 .student-date-range { display: flex; flex: 3 1 460px; align-items: flex-end; gap: 8px; min-width: min(100%, 300px); padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; flex-wrap: wrap; }
 .student-date-range-title { align-self: center; color: #334155; font-size: 0.9rem; font-weight: 800; white-space: nowrap; }
 .student-date-field { display: flex; flex: 1 1 125px; flex-direction: column; gap: 4px; min-width: min(100%, 125px); color: #64748b; font-size: 0.75rem; font-weight: 700; }
-.student-date-field input { width: 100%; min-height: 40px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #334155; font: inherit; font-size: 0.9rem; outline: none; }
+.student-date-field input { width: 100%; min-height: 44px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #334155; font: inherit; font-size: 0.9rem; outline: none; }
 .student-date-field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
 .student-date-field input[aria-invalid="true"] { border-color: #dc2626; }
 .student-date-separator { align-self: center; color: #64748b; font-weight: 700; }
-.student-date-clear-btn { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; font-weight: 700; white-space: nowrap; }
+.student-date-clear-btn { min-height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; font-weight: 700; white-space: nowrap; }
 .student-date-clear-btn:hover { background: #f1f5f9; }
 .student-filter-error { width: 100%; margin: -4px 0 0; color: #b91c1c; font-size: 0.85rem; font-weight: 700; }
 .student-filter-error[hidden] { display: none; }
@@ -190,7 +190,7 @@ canvas { width: 100% !important; height: 100% !important; }
 
 /* 관리 버튼 가로 정렬용 컨테이너 */
 .action-buttons { display: flex; gap: 6px; width: 100%; margin-top: 5px; }
-.action-buttons button { flex: 1; padding: 8px 6px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; white-space: nowrap; transition: 0.2s; }
+.action-buttons button { flex: 1; min-height: 44px; padding: 8px 6px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; white-space: nowrap; transition: 0.2s; }
 .btn-detail { background-color: #3b82f6; }
 .btn-up { background-color: #10b981; }
 .btn-del { background-color: #ef4444; }
@@ -414,11 +414,15 @@ tr.urgent-row-etc td { background-color: #fefce8 !important; border-bottom: 1px 
 @media (max-width: 900px) {
     html, body { height: auto; overflow-y: auto; overflow-x: hidden; }
     .admin-wrapper { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; display: block; }
-    .sidebar-header { padding: 15px 20px; text-align: left; display: flex; align-items: center; justify-content: space-between; }
+    .sidebar { position: relative; width: 100%; height: auto; display: block; }
+    .sidebar::after { content: "↔"; position: absolute; right: 0; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 30px; height: 40px; background: linear-gradient(90deg, rgba(15,23,42,0), #0f172a 45%); color: #cbd5e1; font-size: 0.9rem; pointer-events: none; }
+    .sidebar-header { padding: 10px 15px; text-align: left; display: flex; align-items: center; justify-content: space-between; }
     .sidebar-header h2 { font-size: 1.3rem; display: inline-block; margin: 0; }
-    .menu { display: flex; overflow-x: auto; background: #0f172a; padding: 0; white-space:  nowrap; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none; }
-    .menu::-webkit-scrollbar { display: none; }
+    .sidebar-header .sidebar-logo-link { display: flex; align-items: center; gap: 9px; }
+    .sidebar-header .sidebar-logo-img { width: 34px; margin: 0; }
+    .menu { display: flex; overflow-x: auto; background: #0f172a; padding: 0; white-space:  nowrap; -webkit-overflow-scrolling: touch; -ms-overflow-style: auto; scrollbar-width: thin; scrollbar-color: #64748b #0f172a; }
+    .menu::-webkit-scrollbar { display: block; height: 4px; }
+    .menu::-webkit-scrollbar-thumb { background: #64748b; border-radius: 999px; }
     .menu-item { border: none; flex-shrink: 0; }
     .menu-item > a { padding: 12px 16px; font-size: 0.95rem; }
     .submenu { position: static; background: #1e293b; width: 100%; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
@@ -438,16 +442,31 @@ tr.urgent-row-etc td { background-color: #fefce8 !important; border-bottom: 1px 
     #periodSelector { width: 100%; }
     .search-wrapper { flex-direction: column; padding: 15px; gap: 10px; margin-bottom: 15px; }
     .search-wrapper select, .search-wrapper input, .search-wrapper button { width: 100%; padding: 12px; font-size: 0.95rem; }
+    .student-filter-primary-mobile { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+    .student-filter-primary-mobile > .filter-select { width: 100%; min-width: 0; }
+    .student-filter-primary-mobile .student-date-range-mobile-layout { grid-column: 1 / -1; }
+    .student-date-range-mobile-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; min-width: 0; }
+    .student-date-range-mobile-layout .student-date-range-title { grid-column: 1; grid-row: 1; align-self: center; }
+    .student-date-range-mobile-layout .student-date-field { min-width: 0; }
+    .student-date-range-mobile-layout .student-date-field[for="joinedFrom"] { grid-column: 1; grid-row: 2; }
+    .student-date-range-mobile-layout .student-date-field[for="joinedTo"] { grid-column: 2; grid-row: 2; }
+    .student-date-range-mobile-layout .student-date-separator { display: none; }
+    .student-date-range-mobile-layout .student-date-clear-btn { grid-column: 2; grid-row: 1; justify-self: end; }
+    .student-search-actions-mobile { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); align-items: end; }
+    .student-search-actions-mobile > .filter-select, .student-search-actions-mobile > .search-input { width: 100%; min-width: 0; }
+    .student-search-actions-mobile .search-btn { width: 100%; }
+    .student-search-actions-mobile .search-btn-secondary { grid-column: 1 / -1; }
     .table-responsive { box-shadow: none; margin-bottom: 20px; border: none; overflow-x: hidden; width: 100%; background: transparent; }
     .student-table thead, .tier-student-table thead { display: none; }
     .student-table, .tier-student-table { display: block; width: 100%; box-sizing: border-box; }
     .student-table tbody, .tier-student-table tbody { display: block; width: 100%; }
     .student-table tr, .tier-student-table tr { display: block; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; overflow: hidden; }
     .student-table td, .tier-student-table td { position: relative; padding: 12px 15px 12px 35%; display: block; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; word-break: break-word; white-space: normal; min-height: 24px; box-sizing: border-box; }
+    .student-table:not(.selection-mode) .selection-col { display: none; }
     .student-table td:last-child, .tier-student-table td:last-child { border-bottom: none; }
     .student-table td::before, .tier-student-table td::before { content: attr(data-label); position: absolute; left: 15px; top: 12px; width: 30%; padding-right: 10px; white-space: nowrap; text-align: left; font-weight: 600; color: #64748b; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
-    .student-table td[data-label="관리"], .tier-student-table td[data-label="관리"] { padding-left: 15px; }
-    .student-table td[data-label="관리"]::before, .tier-student-table td[data-label="관리"]::before { display: none; }
+    .student-table td[data-label="관리 액션"], .tier-student-table td[data-label="관리 액션"] { padding-left: 15px; }
+    .student-table td[data-label="관리 액션"]::before, .tier-student-table td[data-label="관리 액션"]::before { display: none; }
     .student-table.selection-mode .selection-col { display: block; text-align: left; padding: 12px 15px 12px 35%; }
     .student-table.selection-mode .selection-col::before { content: "학생 선택"; position: absolute; left: 15px; font-weight: 600; color: #64748b; }
     .modal-content { width: 95%; max-height: 90vh; padding: 20px; border-radius: 12px; }
