@@ -11,7 +11,7 @@ const sourceRoot = join(repoRoot, 'docs/design-docs/StudyCrack_FishDex_Approved_
 const outputRoot = join(appRoot, 'src/assets/fishdex/v2');
 const manifestPath = join(outputRoot, 'manifest.generated.json');
 const variants = Object.freeze([
-  { key: 'habitatPixel64', directory: 'habitat-pixel-64', size: 64 },
+  { key: 'habitatPixel160', directory: 'habitat-pixel-160', size: 160 },
   { key: 'grid256', directory: 'grid-256', size: 256 },
   { key: 'detail512', directory: 'detail-512', size: 512 },
   { key: 'habitat768', directory: 'habitat-768', size: 768 }

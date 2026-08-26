@@ -76,7 +76,7 @@
       "src/styles/components/mbti-survey.css": ["--sc-action-positive", "--sc-state-threshold", "--sc-surface-card"]
     },
     "requiredOwnershipGuards": {
-      "src/styles/screens/analysis-base.css": [":not(.analysis-result-card)"]
+      "src/styles/screens/analysis-base.css": [".analysis-v2 .card"]
     }
   },
   "viewports": [

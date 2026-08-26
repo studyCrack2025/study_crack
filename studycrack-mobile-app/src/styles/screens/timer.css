@@ -60,40 +60,6 @@
 .timer-week-loading i{width:16px;height:16px;border:2px solid var(--sc-line-strong);border-top-color:var(--sc-action-positive);border-radius:50%;animation:scEmptySpin 800ms linear infinite;}
 .timer-week-empty{flex-direction:column;}
 .timer-week-empty button{border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;text-decoration:underline;text-underline-offset:3px;}
-.timer-habitat-card{display:grid;gap:var(--sc-space-12);}
-.timer-habitat-intro{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;}
-.timer-habitat-streak{margin:0;color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;line-height:1.45;}
-.timer-habitat-month-wrap{display:grid;gap:5px;padding-top:var(--sc-space-12);border-top:1px solid var(--sc-line-subtle);}
-.timer-habitat-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center;}
-.timer-habitat-weekdays span{color:var(--sc-ink-subtle);font-size:8px;font-weight:800;}
-.timer-habitat-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
-.timer-habitat-blank{aspect-ratio:1;}
-.timer-habitat-cell{position:relative;aspect-ratio:1;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:8px;background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font:inherit;}
-.timer-habitat-cell.is-selected{border-color:var(--sc-brand-navy);box-shadow:0 0 0 2px color-mix(in srgb,var(--sc-brand-navy) 12%,transparent);}
-.timer-habitat-cell small{font-size:8px;font-weight:800;}
-.timer-habitat-cell i{position:absolute;right:4px;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--sc-line-strong);}
-.timer-habitat-cell[data-stage="1"]{background:var(--sc-surface-threshold);}
-.timer-habitat-cell[data-stage="1"] i{background:var(--sc-state-threshold);}
-.timer-habitat-cell[data-stage="2"]{background:var(--sc-surface-positive);}
-.timer-habitat-cell[data-stage="2"] i{background:var(--sc-action-positive);}
-.timer-habitat-cell[data-stage="3"]{background:var(--sc-surface-info);}
-.timer-habitat-cell[data-stage="3"] i{background:var(--sc-info-blue);}
-.timer-habitat-cell[data-stage="4"]{box-shadow:inset 0 0 0 1px var(--sc-action-positive);background:var(--sc-surface-positive);}
-.timer-habitat-cell[data-stage="4"] i{background:var(--sc-action-positive-strong);}
-.timer-habitat-detail{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);}
-.timer-habitat-detail span{min-width:0;display:grid;gap:2px;}
-.timer-habitat-detail b{color:var(--sc-ink-strong);font-size:var(--sc-type-caption);}
-.timer-habitat-detail small{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);}
-.timer-habitat-detail strong{flex:none;color:var(--sc-action-positive-strong);font-size:var(--sc-type-body);}
-.timer-habitat-legend{display:flex;flex-wrap:wrap;gap:8px 12px;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;}
-.timer-habitat-legend span{display:inline-flex;align-items:center;gap:4px;}
-.timer-habitat-legend i{width:7px;height:7px;border-radius:50%;background:var(--sc-line-strong);}
-.timer-habitat-legend i[data-stage="2"]{background:var(--sc-action-positive);}
-.timer-habitat-legend i[data-stage="4"]{background:var(--sc-action-positive-strong);}
-.timer-habitat-loading,.timer-habitat-empty{padding:var(--sc-space-16);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;text-align:center;}
-.timer-game-error{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);padding-top:var(--sc-space-8);border-top:1px solid var(--sc-line-subtle);}
-.timer-game-error p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
-.timer-game-error button{flex:none;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;}
 @keyframes timerPanelIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 @media (max-width:360px){.timer-week-chart{gap:3px;}.timer-day-subjects > div:last-child{grid-template-columns:1fr;}}
 @media (prefers-reduced-motion:reduce){.timer-reward-panel{animation:none;}}

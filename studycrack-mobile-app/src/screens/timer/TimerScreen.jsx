@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon.jsx';
 import { Modal } from '../../components/Modal.jsx';
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
 import { StudySubjectSheet } from './TimerOverlays.jsx';
-import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from './StudyGamificationPanels.jsx';
+import { RewardPanel, StudyWeekSummary } from './StudyGamificationPanels.jsx';
 import { defaultFormatHms, defaultFormatMinutesLabel } from './presentation.js';
 import { ProfileDrawer } from '../mypage/ProfileDrawer.jsx';
 
@@ -140,12 +140,9 @@ export function TimerScreen(ctx) {
     formatHms = defaultFormatHms,
     formatMinutesLabel = defaultFormatMinutesLabel,
     gameProfile = null,
-    gameProfileError = '',
     gameProfileStatus = 'idle',
     gameRules = null,
     gameRulesOpen = false,
-    habitatDays = [],
-    habitatStatus = 'idle',
     hasClientSession = () => false,
     rewardPendingSessionId = '',
     rewardResult = null,
@@ -191,8 +188,7 @@ export function TimerScreen(ctx) {
         <TodayPlanCard canAccessBasic={canAccessBasic} displayedPlannerProgress={displayedPlannerProgress} formatMinutesLabel={formatMinutesLabel} todayPlannerItems={todayPlannerItems} todayPlannerTotalMinutes={todayPlannerTotalMinutes} />
         <TimerControlCard activeStudySession={activeStudySession} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} liveSeconds={liveSeconds} studySessionDetailsOpen={studySessionDetailsOpen} studySummary={studySummary} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} />
         <RewardPanel activeStudySession={activeStudySession} completionError={completionError} rewardPendingSessionId={rewardPendingSessionId} rewardResult={rewardResult} timerPhase={timerPhase} />
-        <section className="timer-v2-week sc-card"><div className="timer-section-head"><div><span>학습 기록</span><h2>이번 주 흐름</h2></div></div><StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={liveSeconds} summary={studySummary} status={studySummaryStatus} /></section>
-        <StudyHabitatCard gameProfileError={gameProfileError} gameProfileStatus={gameProfileStatus} gameRules={gameRules} habitatDays={habitatDays} habitatStatus={habitatStatus} />
+        <section className="timer-v2-week sc-card"><div className="timer-section-head"><div><span>학습 기록</span><h2>이번 주 흐름</h2></div><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div><StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={liveSeconds} summary={studySummary} status={studySummaryStatus} /></section>
         <TimerQuickLinks />
       </main>
     </AppScreenShell>

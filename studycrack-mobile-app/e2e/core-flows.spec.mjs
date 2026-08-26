@@ -171,6 +171,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('[data-screen="timer"]')).toBeVisible();
   await expect(page.getByText('테스트학생님의 합격 루틴')).toBeVisible();
+  await expect(page.getByText('공부 서식지')).toHaveCount(0);
 
   await page.getByRole('button', { name: '공부 시작' }).click();
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
@@ -307,6 +308,8 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.reload();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
+  await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-path')).toHaveCSS('animation-name', 'aquariumFishPath');
+  await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-bob')).toHaveCSS('animation-name', 'aquariumFishBob');
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
     await expectNoHorizontalOverflow(page);
@@ -447,7 +450,7 @@ test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 
   await testInfo.attach('fishdex-85-catalog-390.png', { path: screenshotPath, contentType: 'image/png' });
 });
 
-test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된다', async ({ page }, testInfo) => {
+test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
@@ -458,8 +461,13 @@ test('분석 시험과 대학 선택은 같은 결과 카드에 즉시 반영된
   await expect(analysisContent).not.toHaveClass(/modal-lock/);
   expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   await expect(examSelect).toBeVisible();
+  await expect(page.locator('.analysis-target-card')).toBeVisible();
+  await expect(page.locator('.analysis-score-card')).toBeVisible();
+  await expect(page.locator('.analysis-score-detail-card')).toHaveCount(0);
+  await expect(page.locator('.analysis-result-card')).toHaveCount(0);
   await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
+  await expect(page.locator('.analysis-score-detail-card')).toBeVisible();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
   await expect(page.getByText('Standard Exclusive')).toBeVisible();

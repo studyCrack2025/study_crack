@@ -9,7 +9,7 @@
     "135"
   ],
   "variants": {
-    "habitatPixel64": 64,
+    "habitatPixel160": 160,
     "grid256": 256,
     "detail512": 512,
     "habitat768": 768
@@ -29,10 +29,10 @@
         "y": 456
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-001-guppy.webp",
-          "bytes": 2354,
-          "sha256": "6fa0368b1683326db770c70d7785777d5bec9e3044415fa54679da75491909a2"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-001-guppy.webp",
+          "bytes": 6504,
+          "sha256": "be8ff3cad791f2926b35ac419cf1c00f4e3be54df3a97d17e88bb48317774870"
         },
         "grid256": {
           "path": "grid-256/fishdex-001-guppy.webp",
@@ -65,10 +65,10 @@
         "y": 649
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-002-endler-guppy.webp",
-          "bytes": 1536,
-          "sha256": "2a77a72c16c4ed0db0e111db40003965311b83ed554486387c4f468bed2c5d63"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-002-endler-guppy.webp",
+          "bytes": 4256,
+          "sha256": "ee22ce0260658b1b08e66c072ebc708736f42690b9ca388d1423eaa9322fcdb4"
         },
         "grid256": {
           "path": "grid-256/fishdex-002-endler-guppy.webp",
@@ -101,10 +101,10 @@
         "y": 749
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-003-neon-tetra.webp",
-          "bytes": 1458,
-          "sha256": "791313f904a977f4c8fe48e757b9d2f43fce42d8b94d98890742b460cb5b8de6"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-003-neon-tetra.webp",
+          "bytes": 3146,
+          "sha256": "44f6ff33f0128a4643a3ea81487a55521df35c1221f73793321120318a0fc45b"
         },
         "grid256": {
           "path": "grid-256/fishdex-003-neon-tetra.webp",
@@ -137,10 +137,10 @@
         "y": 620
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-004-cardinal-tetra.webp",
-          "bytes": 1558,
-          "sha256": "4e6b3c94141382c307ba201312983c83d17542bc9566f27b0b7937a6534c260c"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-004-cardinal-tetra.webp",
+          "bytes": 4704,
+          "sha256": "9b9e65b733922813a7d6512ae883501ff190b6ee35682490a572021e848fe5b8"
         },
         "grid256": {
           "path": "grid-256/fishdex-004-cardinal-tetra.webp",
@@ -173,10 +173,10 @@
         "y": 486
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-005-ember-tetra.webp",
-          "bytes": 2026,
-          "sha256": "bede131538d5f132337ec35d6174d13f63708a4d9392e6c058e0e699a5f0487a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-005-ember-tetra.webp",
+          "bytes": 5370,
+          "sha256": "a19330b385ac2a5413bbe1b87a035b0910db67187952f005fee471f1737204f1"
         },
         "grid256": {
           "path": "grid-256/fishdex-005-ember-tetra.webp",
@@ -209,10 +209,10 @@
         "y": 607
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-006-glowlight-tetra.webp",
-          "bytes": 1634,
-          "sha256": "f191aed8f6e30d429cfb3a99a3217f0ec2e103ea9d6a491e2f4826d28f0455f7"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-006-glowlight-tetra.webp",
+          "bytes": 4392,
+          "sha256": "7ed00381f4eecb81717bee36b696b6247c7a01956ae884baf62bd15877749004"
         },
         "grid256": {
           "path": "grid-256/fishdex-006-glowlight-tetra.webp",
@@ -245,10 +245,10 @@
         "y": 565
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-007-rummy-nose-tetra.webp",
-          "bytes": 1674,
-          "sha256": "0a82b81758ee8aa622eb991d79a7124b143697008f2467804b9addf235d5c27a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-007-rummy-nose-tetra.webp",
+          "bytes": 4168,
+          "sha256": "a3c7afb10609f7c7b6151dbd8056a5ca8c4a6d323ec4e18813b61e83bfcf3d0c"
         },
         "grid256": {
           "path": "grid-256/fishdex-007-rummy-nose-tetra.webp",
@@ -281,10 +281,10 @@
         "y": 499
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-008-harlequin-rasbora.webp",
-          "bytes": 1762,
-          "sha256": "1c597ff262285a82c96f2f7990ac13b49ed553612fb1b46be224bb2525b27862"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-008-harlequin-rasbora.webp",
+          "bytes": 5094,
+          "sha256": "4350cd035b7647c5f48d8c27906292779cf226e664092a3952976a97dc608a6a"
         },
         "grid256": {
           "path": "grid-256/fishdex-008-harlequin-rasbora.webp",
@@ -317,10 +317,10 @@
         "y": 606
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-009-zebra-danio.webp",
-          "bytes": 1390,
-          "sha256": "40835c2759dc839f3b0157678d96db4008290e04705cc0efcf5657590b33383c"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-009-zebra-danio.webp",
+          "bytes": 4086,
+          "sha256": "6cbf62efad809f15794e003acab7ff85771a2aeec1ede8d4355ef67c3d02b10c"
         },
         "grid256": {
           "path": "grid-256/fishdex-009-zebra-danio.webp",
@@ -353,10 +353,10 @@
         "y": 442
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-010-cherry-barb.webp",
-          "bytes": 1948,
-          "sha256": "948f20c6a1700eaadf21a6a5b74fb4c51a45ca03f10f4294aa01f9d359777c0c"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-010-cherry-barb.webp",
+          "bytes": 4804,
+          "sha256": "35a717147ce86835839d76d75442b78559abd5863945372f7554f9be0b200296"
         },
         "grid256": {
           "path": "grid-256/fishdex-010-cherry-barb.webp",
@@ -389,10 +389,10 @@
         "y": 481
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-011-platy.webp",
-          "bytes": 2020,
-          "sha256": "82416adcd44ab58497bb9f91442767dece910dfd671abeefbb43d3ed8836cf07"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-011-platy.webp",
+          "bytes": 5204,
+          "sha256": "7f70b572d12574bb1220474f4037a12ddb75c5e513090f87d91699686921a0d2"
         },
         "grid256": {
           "path": "grid-256/fishdex-011-platy.webp",
@@ -425,10 +425,10 @@
         "y": 418
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-012-black-molly.webp",
-          "bytes": 1872,
-          "sha256": "6d2b9f3d0d9e4e8067a0ce6747dd94c64408e0fe03ed83baf68d60f1bce124d4"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-012-black-molly.webp",
+          "bytes": 4628,
+          "sha256": "b1e528152c779f746f1e7c3d7e8670b6ee86424f313961466de231fdb6fa8f2d"
         },
         "grid256": {
           "path": "grid-256/fishdex-012-black-molly.webp",
@@ -461,10 +461,10 @@
         "y": 603
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-013-swordtail.webp",
-          "bytes": 1358,
-          "sha256": "93aff36780bd237c74d21bd5bb896c43369013370435a4a2082efc3917878e76"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-013-swordtail.webp",
+          "bytes": 3654,
+          "sha256": "9e954da477d3b7822f27c8cdddb6e7015c52a5083e5836a43c5dc19602eeae81"
         },
         "grid256": {
           "path": "grid-256/fishdex-013-swordtail.webp",
@@ -497,10 +497,10 @@
         "y": 444
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-014-corydoras.webp",
-          "bytes": 1834,
-          "sha256": "48f9b6278232b1e60ce2fd9317e2993b833828cf95484b63c0cedcf4b5917407"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-014-corydoras.webp",
+          "bytes": 5450,
+          "sha256": "0f31976bf2925f88801ac4f19f1d130cc8a2bad69e5b46faa337e77c5028cbc9"
         },
         "grid256": {
           "path": "grid-256/fishdex-014-corydoras.webp",
@@ -533,10 +533,10 @@
         "y": 627
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-015-otocinclus.webp",
-          "bytes": 1524,
-          "sha256": "b2905557c2033f3581264e3d8712319caae239641c5eb33bab07581b95d9db52"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-015-otocinclus.webp",
+          "bytes": 4672,
+          "sha256": "849aced686ee6b9d130375c99e8085e429749f1bbb83c80b09be54c8952d932b"
         },
         "grid256": {
           "path": "grid-256/fishdex-015-otocinclus.webp",
@@ -569,10 +569,10 @@
         "y": 750
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-016-white-cloud-minnow.webp",
-          "bytes": 1366,
-          "sha256": "ae3bf750e108af3fc4cb4134b81719c886b1b5cd590921b56c0b1f120999cc1e"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-016-white-cloud-minnow.webp",
+          "bytes": 2724,
+          "sha256": "4693a31c14564d621e524f341eded65801069e9516868696c12b10c8ef6402a8"
         },
         "grid256": {
           "path": "grid-256/fishdex-016-white-cloud-minnow.webp",
@@ -605,10 +605,10 @@
         "y": 525
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-020-penguin-tetra.webp",
-          "bytes": 1758,
-          "sha256": "8ea97fe04a202dfb220f4066698d700c5bacc504187d341414c14b8da3c694cc"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-020-penguin-tetra.webp",
+          "bytes": 4946,
+          "sha256": "a67fba2b3b9d35e8a9f29232c44e6b7c9b058d27fcd4ac7ad20e8c4dab5ac785"
         },
         "grid256": {
           "path": "grid-256/fishdex-020-penguin-tetra.webp",
@@ -641,10 +641,10 @@
         "y": 406
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-023-bronze-corydoras.webp",
-          "bytes": 1868,
-          "sha256": "d8a43ec8fef518ee8d5144aaf2f9432becac9fde754c7b3f0316726a2c39bfed"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-023-bronze-corydoras.webp",
+          "bytes": 6178,
+          "sha256": "60840246e22b38e1ec199a4a3ecd142a777cbbcd43c7b2580872e08cb51b7a41"
         },
         "grid256": {
           "path": "grid-256/fishdex-023-bronze-corydoras.webp",
@@ -677,10 +677,10 @@
         "y": 576
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-024-pygmy-corydoras.webp",
-          "bytes": 2134,
-          "sha256": "c7201770554d7eea9de78d93ab24cd840e90213162fae2740b69f16712a403df"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-024-pygmy-corydoras.webp",
+          "bytes": 5896,
+          "sha256": "f678432197bf400c89730195e71fe836d2ce122e86750d3ed6bb1ba7472c9e5f"
         },
         "grid256": {
           "path": "grid-256/fishdex-024-pygmy-corydoras.webp",
@@ -713,10 +713,10 @@
         "y": 405
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-028-glass-shrimp.webp",
-          "bytes": 2226,
-          "sha256": "2af97b6093f9f2998b4c420702c6911f0f117ce4b8b88a3029ef23a619de4d83"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-028-glass-shrimp.webp",
+          "bytes": 6772,
+          "sha256": "2d4c48216f3a8e70df68393b4db1536ec81bf4665f09eef63235c0c5d325d0d7"
         },
         "grid256": {
           "path": "grid-256/fishdex-028-glass-shrimp.webp",
@@ -749,10 +749,10 @@
         "y": 489
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-030-cherry-shrimp.webp",
-          "bytes": 2042,
-          "sha256": "366edbec6cbe2ca7ddcd96a5cd511182b4c357c2342978ff00651d2b19f252c8"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-030-cherry-shrimp.webp",
+          "bytes": 5662,
+          "sha256": "9c102dd6933443c452e7dc992f38c4bf4506d3f2d254c47b8e73fca389984e0d"
         },
         "grid256": {
           "path": "grid-256/fishdex-030-cherry-shrimp.webp",
@@ -785,10 +785,10 @@
         "y": 301
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-031-betta.webp",
-          "bytes": 2406,
-          "sha256": "a1f2e99339945e1c70c8073e494ef40d6ab621920262b8b03dab2b5aecd8941a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-031-betta.webp",
+          "bytes": 7818,
+          "sha256": "a8085244ea788838077d9ac75d50a1f47b57273f2705286409f529bbf813fa38"
         },
         "grid256": {
           "path": "grid-256/fishdex-031-betta.webp",
@@ -821,10 +821,10 @@
         "y": 182
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-032-crowntail-betta.webp",
-          "bytes": 2774,
-          "sha256": "9098f236fed4c90fe45513f2bbbf749e1dce6ca6ff9f97791ec5c4540da7781f"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-032-crowntail-betta.webp",
+          "bytes": 9472,
+          "sha256": "d4f4f950f1f52b6e884d8a18a3faa3f8eb15bcccb32c4a8b6577bc1cdc13fae7"
         },
         "grid256": {
           "path": "grid-256/fishdex-032-crowntail-betta.webp",
@@ -857,10 +857,10 @@
         "y": 377
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-035-dwarf-gourami.webp",
-          "bytes": 2188,
-          "sha256": "2c08ba1d8aed11485dc67a0bd107c1717637cc2b89514ee5805e57f0efff80d9"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-035-dwarf-gourami.webp",
+          "bytes": 6850,
+          "sha256": "749db7210e73a26137896537617dc568c9440d85cf9105d8e52bc17bc181f014"
         },
         "grid256": {
           "path": "grid-256/fishdex-035-dwarf-gourami.webp",
@@ -893,10 +893,10 @@
         "y": 420
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-040-goldfish.webp",
-          "bytes": 2128,
-          "sha256": "f71f5f73ab054bce2a3d3f31426bf0bf91c5470fb16eadbd98259862085fedc3"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-040-goldfish.webp",
+          "bytes": 5804,
+          "sha256": "a67ab615f61a49c7e8301203f1b52e5e11c1fc2c366c33220f454c9a092ff1ec"
         },
         "grid256": {
           "path": "grid-256/fishdex-040-goldfish.webp",
@@ -929,10 +929,10 @@
         "y": 325
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-041-oranda.webp",
-          "bytes": 2452,
-          "sha256": "4f89b61cf37abe8eeaf310a442932ed62e07d75b8fccd3a31b1e919a9a76f311"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-041-oranda.webp",
+          "bytes": 7938,
+          "sha256": "d1fb15f5cfc142e8f3676682b5f077569aa1c453ad94e63c83f86e362b65a3e5"
         },
         "grid256": {
           "path": "grid-256/fishdex-041-oranda.webp",
@@ -965,10 +965,10 @@
         "y": 404
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-042-ryukin.webp",
-          "bytes": 2194,
-          "sha256": "f05e14ea61dad196a053a0feef4dbdf4eb8cb4ed41ce093e56cdbfed71ece380"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-042-ryukin.webp",
+          "bytes": 5782,
+          "sha256": "27526f0288422380efc7b9c7943d72fba457ffd79dd43d680f8f80abb77ed8f5"
         },
         "grid256": {
           "path": "grid-256/fishdex-042-ryukin.webp",
@@ -1001,10 +1001,10 @@
         "y": 412
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-045-percula-clownfish.webp",
-          "bytes": 2156,
-          "sha256": "cf40f01bb482fd9f0c8831109c09bbfb4a1b3d8e9b1c61ab80bcb86d81ff73b7"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-045-percula-clownfish.webp",
+          "bytes": 5902,
+          "sha256": "f0b887355fc331cff797ec8e104ff074920643a3dd8d253768c4087711254ff1"
         },
         "grid256": {
           "path": "grid-256/fishdex-045-percula-clownfish.webp",
@@ -1037,10 +1037,10 @@
         "y": 383
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-046-tomato-clownfish.webp",
-          "bytes": 1676,
-          "sha256": "fb14d1197c86326237297317682305ec2aca455e5bb59bc625c66b1d737cad75"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-046-tomato-clownfish.webp",
+          "bytes": 4642,
+          "sha256": "36c2d58a3ccd8265ef5cd16095bdc6a733359664a5b2618f53fc982e478e7d9f"
         },
         "grid256": {
           "path": "grid-256/fishdex-046-tomato-clownfish.webp",
@@ -1073,10 +1073,10 @@
         "y": 362
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-047-maroon-clownfish.webp",
-          "bytes": 1966,
-          "sha256": "75b765ec681f6aefb37336d74a877c2e952be265acc7969f1cafa86035b82976"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-047-maroon-clownfish.webp",
+          "bytes": 5166,
+          "sha256": "1b3ae18ea973fe3c1a7cc4682c0b4940e51ccc184fc67362ecee30fb73c50f0b"
         },
         "grid256": {
           "path": "grid-256/fishdex-047-maroon-clownfish.webp",
@@ -1109,10 +1109,10 @@
         "y": 361
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-051-purple-tang.webp",
-          "bytes": 1668,
-          "sha256": "1b5e24e581e4033d3e0c153acd98466b8198c83b53d2f310b8a6d13f95b73e15"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-051-purple-tang.webp",
+          "bytes": 5160,
+          "sha256": "d654818836f75c720aaa3d24fabeccafd255c33b2a08d1037bbfbf929d0a1dd0"
         },
         "grid256": {
           "path": "grid-256/fishdex-051-purple-tang.webp",
@@ -1145,10 +1145,10 @@
         "y": 420
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-052-powder-blue-tang.webp",
-          "bytes": 1950,
-          "sha256": "08cf943e54b5ede6998ac6b49594d97d7374452f607feeac327036b905baa37e"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-052-powder-blue-tang.webp",
+          "bytes": 5294,
+          "sha256": "d399cbd6e4f01f6fd975e693e7fdf3689647116ed60cdd45e9ba660d1bb9c475"
         },
         "grid256": {
           "path": "grid-256/fishdex-052-powder-blue-tang.webp",
@@ -1181,10 +1181,10 @@
         "y": 378
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-053-royal-gramma.webp",
-          "bytes": 1716,
-          "sha256": "0bad63626655712cc787a6d7803bcc7f461defec174daf28b26c6f575c350839"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-053-royal-gramma.webp",
+          "bytes": 5266,
+          "sha256": "48614dbdbfcf800d0e0bfbaf97586f3766a3dc642bc0621b9d9bb55509c53127"
         },
         "grid256": {
           "path": "grid-256/fishdex-053-royal-gramma.webp",
@@ -1217,10 +1217,10 @@
         "y": 352
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-054-firefish.webp",
-          "bytes": 1708,
-          "sha256": "2dc4bbd3a387b1aa700c748363fff002f5b058130fc988f3e391eac88066aa62"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-054-firefish.webp",
+          "bytes": 6260,
+          "sha256": "a0994370ef874455f08eed9566d93898194f9b2d3963eb251e43175dfb175620"
         },
         "grid256": {
           "path": "grid-256/fishdex-054-firefish.webp",
@@ -1253,10 +1253,10 @@
         "y": 155
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-055-banggai-cardinalfish.webp",
-          "bytes": 2344,
-          "sha256": "c158bb75b143d2f81a432975a194772ac3e2c8500e37a48693659fade9c14beb"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-055-banggai-cardinalfish.webp",
+          "bytes": 7084,
+          "sha256": "7be28a38129a6369eee750892cb6c6f09feda0bb4fc9148867dba657206dee0b"
         },
         "grid256": {
           "path": "grid-256/fishdex-055-banggai-cardinalfish.webp",
@@ -1289,10 +1289,10 @@
         "y": 375
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-056-pajama-cardinalfish.webp",
-          "bytes": 2110,
-          "sha256": "442487402fd5b1040d33469ab6179f483b834410cd1e2d619b40996d0159f918"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-056-pajama-cardinalfish.webp",
+          "bytes": 5772,
+          "sha256": "363da2e5bdd5fc82498a2a72f201866c62d24a44a43b7ab474a78baa4de849b5"
         },
         "grid256": {
           "path": "grid-256/fishdex-056-pajama-cardinalfish.webp",
@@ -1325,10 +1325,10 @@
         "y": 408
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-057-mandarin-fish.webp",
-          "bytes": 2258,
-          "sha256": "9cc15a2870ce4223d017610571f1b3af7e36fb9512c4d04f676e23a6bc375103"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-057-mandarin-fish.webp",
+          "bytes": 7630,
+          "sha256": "c62dc62a7ce09a143185408e53d211a85a4e8dba602c37501e476c4984a32ab8"
         },
         "grid256": {
           "path": "grid-256/fishdex-057-mandarin-fish.webp",
@@ -1361,10 +1361,10 @@
         "y": 678
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-058-spotted-goby.webp",
-          "bytes": 1414,
-          "sha256": "0b8c97fb61b0cf3e6b69cefe029f4344f9636316271a56a4cf9a6e9ce0ce045e"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-058-spotted-goby.webp",
+          "bytes": 3944,
+          "sha256": "1c0d166b2366aeb2c37e9dacde6a2cadcdfc9b1976662a4c1a2ff8235972c039"
         },
         "grid256": {
           "path": "grid-256/fishdex-058-spotted-goby.webp",
@@ -1397,10 +1397,10 @@
         "y": 412
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-059-lawnmower-blenny.webp",
-          "bytes": 2246,
-          "sha256": "06fc50cdc47685e8f537844872f654ace843a91f9c006a64a0e8264ecb11bb4e"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-059-lawnmower-blenny.webp",
+          "bytes": 6136,
+          "sha256": "ad8c90a777440a9f55fa9711d37fba08b64fe16d31305d8cdf46732004bd0979"
         },
         "grid256": {
           "path": "grid-256/fishdex-059-lawnmower-blenny.webp",
@@ -1433,10 +1433,10 @@
         "y": 337
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-060-butterflyfish.webp",
-          "bytes": 2360,
-          "sha256": "9b70f9f9027535ec6e47b92b19e2989811cb14e76dcc2186e111a292bd434142"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-060-butterflyfish.webp",
+          "bytes": 6374,
+          "sha256": "814a762003f159515d1fd7de04fb344a5e92b74c5b80e0f8e1290d8ba53df466"
         },
         "grid256": {
           "path": "grid-256/fishdex-060-butterflyfish.webp",
@@ -1469,10 +1469,10 @@
         "y": 323
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-061-pufferfish.webp",
-          "bytes": 2470,
-          "sha256": "919358b5a1f558c9d83002062a816480a501a85385621dd863771c181dda383a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-061-pufferfish.webp",
+          "bytes": 6106,
+          "sha256": "8f1483852873974e3b4b9618a349fd60aa4b3c3863e90f9ebcefa729bf3a5389"
         },
         "grid256": {
           "path": "grid-256/fishdex-061-pufferfish.webp",
@@ -1505,10 +1505,10 @@
         "y": 289
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-065-longhorn-cowfish.webp",
-          "bytes": 1996,
-          "sha256": "546a1ecd5fdb3009f44314b93078f78915e49e4c33118c556517e8f09e66a261"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-065-longhorn-cowfish.webp",
+          "bytes": 6266,
+          "sha256": "3e3474fd0c1abf40cbe5f5a4efcc1d31d20ffd5f4a736d0b262c11d9d9cb2ea9"
         },
         "grid256": {
           "path": "grid-256/fishdex-065-longhorn-cowfish.webp",
@@ -1541,10 +1541,10 @@
         "y": 132
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-066-seahorse.webp",
-          "bytes": 1868,
-          "sha256": "777e906a3d0f7ac502df51c4128f063efd015df1c53f2d62e7959fc5f14f2931"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-066-seahorse.webp",
+          "bytes": 5650,
+          "sha256": "c82169e8a73c9f6809fb1d1c7434df71309ce262cf6c6c65e9f8b5efc8fa7a23"
         },
         "grid256": {
           "path": "grid-256/fishdex-066-seahorse.webp",
@@ -1577,10 +1577,10 @@
         "y": 647
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-067-golden-white-cloud.webp",
-          "bytes": 1570,
-          "sha256": "7790428ce8fa2b8b4d1f7dca9840537636a7d1aee6d4372db36aa56cd2c7d7d4"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-067-golden-white-cloud.webp",
+          "bytes": 4392,
+          "sha256": "64afcc83c9dee920c915e6cb39913b2a892138f11a339150e8e60ff32e918432"
         },
         "grid256": {
           "path": "grid-256/fishdex-067-golden-white-cloud.webp",
@@ -1613,10 +1613,10 @@
         "y": 304
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-069-pearlscale-goldfish.webp",
-          "bytes": 2330,
-          "sha256": "feabf3e3d90262812982f0fd4442cb6675d50ec832ba46164f2b4e1e60e38f98"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-069-pearlscale-goldfish.webp",
+          "bytes": 7978,
+          "sha256": "9c1bcf5344211e7dda8daff4fb6cfcd70cc0b72db21357f67664fcd19dd851c1"
         },
         "grid256": {
           "path": "grid-256/fishdex-069-pearlscale-goldfish.webp",
@@ -1649,10 +1649,10 @@
         "y": 374
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-070-butterflytail-goldfish.webp",
-          "bytes": 2268,
-          "sha256": "26e5ccce1f8810869f662123d30ad865cc38b23517391a39d277a31433cce0bd"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-070-butterflytail-goldfish.webp",
+          "bytes": 7740,
+          "sha256": "166f8c52dc118b03f7103b5dee9da112b0e0cdc9262e7f0e9f0588d347b88ec8"
         },
         "grid256": {
           "path": "grid-256/fishdex-070-butterflytail-goldfish.webp",
@@ -1685,10 +1685,10 @@
         "y": 296
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-071-balloon-molly.webp",
-          "bytes": 2366,
-          "sha256": "00ad5c9b2a9a557bc20180733d78a15acb8a67ba0ad6b38fa35190c7ac03a9fd"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-071-balloon-molly.webp",
+          "bytes": 6598,
+          "sha256": "5217a9c76825c80fe7bdd198e75b0a984880d0be261cbeeb6b4696203ba7a882"
         },
         "grid256": {
           "path": "grid-256/fishdex-071-balloon-molly.webp",
@@ -1721,10 +1721,10 @@
         "y": 326
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-073-freshwater-stingray.webp",
-          "bytes": 2018,
-          "sha256": "583da507f884d46878ee2f6b28cfd84e5949ed52e20029f41e59c14cabec7043"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-073-freshwater-stingray.webp",
+          "bytes": 5924,
+          "sha256": "ea4de7de0319875f76552f9af4710ec15f54ed40c610ee14f661c59f6442e42f"
         },
         "grid256": {
           "path": "grid-256/fishdex-073-freshwater-stingray.webp",
@@ -1757,10 +1757,10 @@
         "y": 524
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-075-epaulette-shark.webp",
-          "bytes": 1476,
-          "sha256": "eea4921bf1778b26a7190715dff7edf9c0f8fefaf3c1975aa5dc6199b5db7194"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-075-epaulette-shark.webp",
+          "bytes": 4248,
+          "sha256": "8298dbc79458cf2b28fcdbc16df32b8beb2b5b958d865fc7598529000f639548"
         },
         "grid256": {
           "path": "grid-256/fishdex-075-epaulette-shark.webp",
@@ -1793,10 +1793,10 @@
         "y": 157
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-076-lionfish.webp",
-          "bytes": 3044,
-          "sha256": "852476d108c845229418a19be7098858802541041e491888b6456e23daf9befd"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-076-lionfish.webp",
+          "bytes": 10878,
+          "sha256": "c591a28cecb16373802c9e752c824583d987f28bf9c4de4cf00e20963eed8b6f"
         },
         "grid256": {
           "path": "grid-256/fishdex-076-lionfish.webp",
@@ -1829,10 +1829,10 @@
         "y": 178
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-079-octopus.webp",
-          "bytes": 2658,
-          "sha256": "616bd6751a068382f63839c3083eecb55f974f53e63d609cd472e2beb9f5f5fc"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-079-octopus.webp",
+          "bytes": 9112,
+          "sha256": "44eab01247b8a19e9d0529d0ea65b76c6dccb17e8679183d318adaff3b5480be"
         },
         "grid256": {
           "path": "grid-256/fishdex-079-octopus.webp",
@@ -1865,10 +1865,10 @@
         "y": 268
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-082-nautilus.webp",
-          "bytes": 2450,
-          "sha256": "d7fe5f0fc8f914d61077d532b655a990b9c10dc4a98fb65ff169a53803ec3bcc"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-082-nautilus.webp",
+          "bytes": 8054,
+          "sha256": "6fae54548a1737724f6a7e517df6af9b8d2db3d8792fd976f8a14ac10a37750b"
         },
         "grid256": {
           "path": "grid-256/fishdex-082-nautilus.webp",
@@ -1901,10 +1901,10 @@
         "y": 328
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-083-moon-jellyfish.webp",
-          "bytes": 2532,
-          "sha256": "cdc0333b9a66353ee4fef5ebfc79de3a9eb15e7e53a1279aaa03fe78bccd9c6a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-083-moon-jellyfish.webp",
+          "bytes": 7086,
+          "sha256": "4657962a0fe9d6733e2014684d365da1d51ccee112645805941f7675f139705c"
         },
         "grid256": {
           "path": "grid-256/fishdex-083-moon-jellyfish.webp",
@@ -1937,10 +1937,10 @@
         "y": 119
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-084-lions-mane-jellyfish.webp",
-          "bytes": 2562,
-          "sha256": "d3fb708c9f540824dc509a05c3fa303dc6b92555a127be70e1f47aea3a0bc267"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-084-lions-mane-jellyfish.webp",
+          "bytes": 10096,
+          "sha256": "7ae2879a033de0bafcde6e48c78169fbb98caf2c213983775399ff3549c33581"
         },
         "grid256": {
           "path": "grid-256/fishdex-084-lions-mane-jellyfish.webp",
@@ -1973,10 +1973,10 @@
         "y": 494
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-089-nudibranch.webp",
-          "bytes": 1918,
-          "sha256": "7019ef1d70d4b884bc0390c1653a6d626ef580cfc224a3bb5464682270d104c1"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-089-nudibranch.webp",
+          "bytes": 6318,
+          "sha256": "b5705abce10293fa1559988ca6931efc5ec4621d31cbd445204a2ead658e1f4a"
         },
         "grid256": {
           "path": "grid-256/fishdex-089-nudibranch.webp",
@@ -2009,10 +2009,10 @@
         "y": 526
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-090-axolotl.webp",
-          "bytes": 1800,
-          "sha256": "31e0221ddd69217de69db525572579aeb4c69871810fbedd7d3042afad2528b3"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-090-axolotl.webp",
+          "bytes": 5226,
+          "sha256": "d38a0d08a29c8b4bfd9069f0f4a8e84fac6c9b87090fca09de119179dc6e115e"
         },
         "grid256": {
           "path": "grid-256/fishdex-090-axolotl.webp",
@@ -2045,10 +2045,10 @@
         "y": 415
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-094-penguin.webp",
-          "bytes": 2116,
-          "sha256": "8fd85cdfdfc034c0ab363b0feaada4d1bdf3a739df55ac074ac02ec22155acf4"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-094-penguin.webp",
+          "bytes": 5064,
+          "sha256": "2f2a8011a932dd61d4bd6089906e1e4a45a4b19ab6a05b009f3139488d95b760"
         },
         "grid256": {
           "path": "grid-256/fishdex-094-penguin.webp",
@@ -2081,10 +2081,10 @@
         "y": 473
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-096-green-sea-turtle.webp",
-          "bytes": 1772,
-          "sha256": "841b6f6cbe7a58870456c1b2e5eec9c8c48088e4d0dd348860cebd9596e0c6b2"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-096-green-sea-turtle.webp",
+          "bytes": 5908,
+          "sha256": "717ecc7b1e6594fb83f1082e0f2ae45d495351d871e0b27f78ffdce1971f27d4"
         },
         "grid256": {
           "path": "grid-256/fishdex-096-green-sea-turtle.webp",
@@ -2117,10 +2117,10 @@
         "y": 364
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-101-sailfish.webp",
-          "bytes": 1510,
-          "sha256": "868419befce374136279412d9f6c812febdcd26ecf2405c093404fbd37e4e01e"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-101-sailfish.webp",
+          "bytes": 4582,
+          "sha256": "9caa050f0a9f21e8219561e368db6304536f636960b5db729920ab65ee92c690"
         },
         "grid256": {
           "path": "grid-256/fishdex-101-sailfish.webp",
@@ -2153,10 +2153,10 @@
         "y": 422
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-103-swordfish.webp",
-          "bytes": 1488,
-          "sha256": "e520951864d2f2537490d17d160c8104e4311f909b04ba7dffd8f5f3a95fdda1"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-103-swordfish.webp",
+          "bytes": 4400,
+          "sha256": "7d97bd8a163add4c5d7b1f232a508a20df407d17946321ecf72e5a7880e235ce"
         },
         "grid256": {
           "path": "grid-256/fishdex-103-swordfish.webp",
@@ -2189,10 +2189,10 @@
         "y": 510
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-106-hammerhead-shark.webp",
-          "bytes": 1408,
-          "sha256": "f04087d7513ad24c09e626ae5e0b6568a939f915444b7d91bc8fa02f7183e333"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-106-hammerhead-shark.webp",
+          "bytes": 3926,
+          "sha256": "e38023aa4cd7503ecc16e3ec11353577cf1116dd3f3040005e6cc9e5bd4d2f9d"
         },
         "grid256": {
           "path": "grid-256/fishdex-106-hammerhead-shark.webp",
@@ -2225,10 +2225,10 @@
         "y": 272
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-109-dolphin.webp",
-          "bytes": 1904,
-          "sha256": "46c4db9763855262e63d57d488850a51ccb53ef5dc0ee784e33f6c7dde08502a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-109-dolphin.webp",
+          "bytes": 4686,
+          "sha256": "48a0242ef6220359960915971ec47d272861eb97eafab2114f776a5587a18366"
         },
         "grid256": {
           "path": "grid-256/fishdex-109-dolphin.webp",
@@ -2261,10 +2261,10 @@
         "y": 421
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-111-blue-marlin.webp",
-          "bytes": 1490,
-          "sha256": "75d3e3710e6bade5c2c6195311189383ef704f32528645b0a430e4cef86ca93a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-111-blue-marlin.webp",
+          "bytes": 4440,
+          "sha256": "cc407f634ca536f87e6a08fc4fdfa811fc8cd1bd655ece773383740d793d5047"
         },
         "grid256": {
           "path": "grid-256/fishdex-111-blue-marlin.webp",
@@ -2297,10 +2297,10 @@
         "y": 372
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-112-black-marlin.webp",
-          "bytes": 1476,
-          "sha256": "2a94a6c39dea94f0c5f6cddcc34e832ba2b83b10b152770ecd540c652dce3806"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-112-black-marlin.webp",
+          "bytes": 4484,
+          "sha256": "3e79febf21fd8745e273ebe60b129380cab1bdb5e9b110237c852166bb85bc50"
         },
         "grid256": {
           "path": "grid-256/fishdex-112-black-marlin.webp",
@@ -2333,10 +2333,10 @@
         "y": 303
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-114-grand-bluefin-tuna.webp",
-          "bytes": 1954,
-          "sha256": "8016920c6b3636703a00c19fdf13a8b0adfcfbc469db08af428ea6b90bcea682"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-114-grand-bluefin-tuna.webp",
+          "bytes": 5654,
+          "sha256": "15fadfa7ee20eaf000288431a9d980f7b839afa7aeb3911160ef385deaaf3586"
         },
         "grid256": {
           "path": "grid-256/fishdex-114-grand-bluefin-tuna.webp",
@@ -2369,10 +2369,10 @@
         "y": 457
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-117-whale-shark.webp",
-          "bytes": 1742,
-          "sha256": "14aa11c05f58988e2af88bcf1d3e8dd4edb72361cb246eee4e4d3f8de99e0be8"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-117-whale-shark.webp",
+          "bytes": 5636,
+          "sha256": "1c988e53780abb0469be336407b3b23edd95f4ec800f8421662c777295ca60f9"
         },
         "grid256": {
           "path": "grid-256/fishdex-117-whale-shark.webp",
@@ -2405,10 +2405,10 @@
         "y": 459
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-119-humpback-whale.webp",
-          "bytes": 1688,
-          "sha256": "de9a758ef46a2a3646dcc68647cb1a04d0668c6f7fc307402aac55f6b11d2f76"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-119-humpback-whale.webp",
+          "bytes": 5806,
+          "sha256": "b30ec4a113f3c970b78848f480bd28ba367d86038ab31ddfa3d6e4932d8aa290"
         },
         "grid256": {
           "path": "grid-256/fishdex-119-humpback-whale.webp",
@@ -2441,10 +2441,10 @@
         "y": 484
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-122-great-hammerhead.webp",
-          "bytes": 1514,
-          "sha256": "3d836d791a81243b7213f86e5059a0a12d880a2e7ac9be5408b910a4962e7b60"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-122-great-hammerhead.webp",
+          "bytes": 3960,
+          "sha256": "f8aeb7c1935e75389e5bb67efda4a9bd892d7e78c090ae0da8753aa2d2c52708"
         },
         "grid256": {
           "path": "grid-256/fishdex-122-great-hammerhead.webp",
@@ -2477,10 +2477,10 @@
         "y": 165
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-125-ocean-sunfish.webp",
-          "bytes": 2136,
-          "sha256": "5117bfc796b1f74d26308d67b2b5990bd90ab3429a7789dbcedeb3d16035480a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-125-ocean-sunfish.webp",
+          "bytes": 5594,
+          "sha256": "d662042d900b6e7d037af9cd671d5a608521a902463c84f2d53af28a279b4921"
         },
         "grid256": {
           "path": "grid-256/fishdex-125-ocean-sunfish.webp",
@@ -2513,10 +2513,10 @@
         "y": 56
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-126-oarfish.webp",
-          "bytes": 1702,
-          "sha256": "84b4e072982eee8f721b758238b1f3d929279d59203a5443cd0a2fab8dfabf99"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-126-oarfish.webp",
+          "bytes": 5698,
+          "sha256": "dd7a6a806d49068b29512369880155c19b239979e1cc791e7c4492e07a713c84"
         },
         "grid256": {
           "path": "grid-256/fishdex-126-oarfish.webp",
@@ -2549,10 +2549,10 @@
         "y": 383
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-127-coelacanth.webp",
-          "bytes": 2190,
-          "sha256": "636e3fe8d09e20d8f5976fc69a8eb5caefe80ad002e2e3d2749c19b8c63e5659"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-127-coelacanth.webp",
+          "bytes": 7070,
+          "sha256": "2ae32181592b807446eb5736815fd2958b7534c6f482bfea6802682742e75b63"
         },
         "grid256": {
           "path": "grid-256/fishdex-127-coelacanth.webp",
@@ -2585,10 +2585,10 @@
         "y": 755
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-130-japanese-medaka.webp",
-          "bytes": 1330,
-          "sha256": "ad0cf5b1b454cebd40574ba42e9523ee059fbebfbaba563c7ec79d470177c4de"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-130-japanese-medaka.webp",
+          "bytes": 2658,
+          "sha256": "b24dff1ccfb9fdf1512b0b6b02c2e7b4104f48089473f4739ee5bf45838d6ea5"
         },
         "grid256": {
           "path": "grid-256/fishdex-130-japanese-medaka.webp",
@@ -2621,10 +2621,10 @@
         "y": 210
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-131-giant-clam.webp",
-          "bytes": 2802,
-          "sha256": "c7c042047d87d1e024f494ebf55f79f39ef2faa15b9d35cfebb69890e59f7647"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-131-giant-clam.webp",
+          "bytes": 9816,
+          "sha256": "3e60eb961f1564f7a27a998de6fde54e969cfd4056aebac56a1376a029109c7a"
         },
         "grid256": {
           "path": "grid-256/fishdex-131-giant-clam.webp",
@@ -2657,10 +2657,10 @@
         "y": 546
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-132-clown-goby.webp",
-          "bytes": 2022,
-          "sha256": "b0069598251fc3443742237d334b5fa1b5be28982b8a06fef9d076501e77dc6a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-132-clown-goby.webp",
+          "bytes": 5582,
+          "sha256": "dd28767a4760fe47f62174ef1b3852aa69eef470f8b5552b6295c514555a8bd7"
         },
         "grid256": {
           "path": "grid-256/fishdex-132-clown-goby.webp",
@@ -2693,10 +2693,10 @@
         "y": 321
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-136-giant-grouper.webp",
-          "bytes": 2142,
-          "sha256": "50c985bd87dacf894926d5786a6f83029d3c5f7ac213d83fde99df0d15e32721"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-136-giant-grouper.webp",
+          "bytes": 7046,
+          "sha256": "b3e3d7b8d4ad08ac82b8d8e085cc2ac997c5d47057f011d7bb7d9971564a5f02"
         },
         "grid256": {
           "path": "grid-256/fishdex-136-giant-grouper.webp",
@@ -2729,10 +2729,10 @@
         "y": 111
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-139-crack-guide.webp",
-          "bytes": 2164,
-          "sha256": "ede25f498544bf705c7a9e177d6099bb465bbb980e61cb12307d8bf416f01e6d"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-139-crack-guide.webp",
+          "bytes": 6618,
+          "sha256": "54cfb34746be3472f68144b0067184b6053c74f90c2d48e5f2f3abe7f4283c45"
         },
         "grid256": {
           "path": "grid-256/fishdex-139-crack-guide.webp",
@@ -2765,10 +2765,10 @@
         "y": 142
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-140-formula-octopus.webp",
-          "bytes": 3122,
-          "sha256": "7834fc866e7f1b5c7706639e7c20cf4f59f560d7f412eb1bc93363b61ec37394"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-140-formula-octopus.webp",
+          "bytes": 10352,
+          "sha256": "320ef373a92643ebe5362b10c20a9955736694d72e4710ee8dc9b561ece8c74f"
         },
         "grid256": {
           "path": "grid-256/fishdex-140-formula-octopus.webp",
@@ -2801,10 +2801,10 @@
         "y": 228
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-141-diver-crack.webp",
-          "bytes": 2294,
-          "sha256": "3c311a0ceb93c0979d1a5ecd7c9180585e86a95cef5d281ec7ced2eb159813f4"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-141-diver-crack.webp",
+          "bytes": 7706,
+          "sha256": "a6766236de3ae5fa0472a5d4e4fc4f1e684e816d9030b70230a1d31605dbe5c2"
         },
         "grid256": {
           "path": "grid-256/fishdex-141-diver-crack.webp",
@@ -2837,10 +2837,10 @@
         "y": 144
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-142-professor-crack.webp",
-          "bytes": 2294,
-          "sha256": "b2f53e0ec30d015eb572d53d52c07cb498110b17cff86f1b0b24fad63293673a"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-142-professor-crack.webp",
+          "bytes": 7538,
+          "sha256": "20b484cd50ceb48fef0d7190fe2e1c5d3ef8b11851091c2e337b8a379c14c17d"
         },
         "grid256": {
           "path": "grid-256/fishdex-142-professor-crack.webp",
@@ -2873,10 +2873,10 @@
         "y": 126
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-143-graduation-crack.webp",
-          "bytes": 2558,
-          "sha256": "c82f6ae3b361d352a545272e30bcb75ede7462ebb72c4b45192a967409d8cab1"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-143-graduation-crack.webp",
+          "bytes": 7878,
+          "sha256": "c84d8aaa600862b38f0af2dbc04a68fe596bca64c7139b6081a16841b8e789d3"
         },
         "grid256": {
           "path": "grid-256/fishdex-143-graduation-crack.webp",
@@ -2909,10 +2909,10 @@
         "y": 138
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-144-mikado-butterflyfish.webp",
-          "bytes": 2560,
-          "sha256": "2c382c8e66d7fed047a348718648ef52ecf3b8ef88f1a93cb11962600c855b0f"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-144-mikado-butterflyfish.webp",
+          "bytes": 7216,
+          "sha256": "7b65eff64995529309061d76811a7ee111e48770c6421cc825accca85c570120"
         },
         "grid256": {
           "path": "grid-256/fishdex-144-mikado-butterflyfish.webp",
@@ -2945,10 +2945,10 @@
         "y": 201
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-145-crown-jellyfish.webp",
-          "bytes": 2604,
-          "sha256": "739ffe7c9550fc3ea8a4b8d7b661e2ced34ef781aaecb173daeb5d55ce65fc2d"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-145-crown-jellyfish.webp",
+          "bytes": 8482,
+          "sha256": "c1d4f16695f93cc3b0a07a5bbd47153a380c559b5ff57270572b34edd0342432"
         },
         "grid256": {
           "path": "grid-256/fishdex-145-crown-jellyfish.webp",
@@ -2981,10 +2981,10 @@
         "y": 138
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-146-ribbon-butterflyfish.webp",
-          "bytes": 2722,
-          "sha256": "1bd857b257f625103a62147e6ddc11dad43f0cc373e92998781813e73b2da4ee"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-146-ribbon-butterflyfish.webp",
+          "bytes": 9204,
+          "sha256": "c8ffa723984e775871a205eefad50222dffe8b5545eef16dfe145a24f7478c75"
         },
         "grid256": {
           "path": "grid-256/fishdex-146-ribbon-butterflyfish.webp",
@@ -3017,10 +3017,10 @@
         "y": 341
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-148-aurora-manta.webp",
-          "bytes": 1730,
-          "sha256": "233eb03aae0ad1e5c1f5c30e3b4e508bcb3276b558f0d2b273008ee1827d3037"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-148-aurora-manta.webp",
+          "bytes": 5618,
+          "sha256": "3b26a7e47302991abac7d12899aa5c813fdb23e7899a453d40b3b8e11971416b"
         },
         "grid256": {
           "path": "grid-256/fishdex-148-aurora-manta.webp",
@@ -3053,10 +3053,10 @@
         "y": 128
       },
       "outputs": {
-        "habitatPixel64": {
-          "path": "habitat-pixel-64/fishdex-150-admission-guardian-crack.webp",
-          "bytes": 2432,
-          "sha256": "2a6e47ef210c96294b89eb3b101e5fe2b39e64117263f16e09cbfa8bc82f8c29"
+        "habitatPixel160": {
+          "path": "habitat-pixel-160/fishdex-150-admission-guardian-crack.webp",
+          "bytes": 7656,
+          "sha256": "2f35de78b29203cda8fa12885d7dc532cb18a7246059443d18151cde79aff42d"
         },
         "grid256": {
           "path": "grid-256/fishdex-150-admission-guardian-crack.webp",

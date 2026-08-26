@@ -20,9 +20,15 @@ const CATALOG_FILTERS = [
 ];
 const CATEGORY_ORDER = ['all', 'freshwater', 'marine_fish', 'marine_invertebrate', 'marine_wildlife', 'mascot'];
 const CATEGORY_LABELS = { all: '모든 생태', freshwater: '민물', marine_fish: '바닷물고기', marine_invertebrate: '무척추', marine_wildlife: '해양생물', mascot: '크랙이' };
+const AQUARIUM_MOTION_PROFILES = new Set(['bottom-drift', 'bottom-pulse', 'dart-loop', 'deep-glide', 'dive-arc', 'fin-drift', 'giant-glide', 'mascot-float', 'ocean-glide', 'pulse-drift', 'reef-loop', 'ribbon-glide', 'round-loop', 'school-loop', 'short-loop', 'vertical-bob', 'vertical-pulse', 'wide-glide']);
 
 function catalogMeta(catalog, speciesId) {
   return catalog.find((item) => item.speciesId === speciesId) || { colors: ['#3F6FD9', '#9DD9F2'], displayName: '물고기', rarity: 'common' };
+}
+
+function aquariumMotionProfile(meta) {
+  const profile = String(meta?.motionProfile || meta?.motion || 'short-loop');
+  return AQUARIUM_MOTION_PROFILES.has(profile) ? profile : 'short-loop';
 }
 
 function playAquariumRevealSound(rarity = 'common') {
@@ -69,10 +75,13 @@ function AquariumScene({ activeFish = [], catalog = [], plannerCompleted = 0, pl
         const fish = activeFish[index];
         if (!fish) return <span className={`aquarium-empty-slot ${slot.className}`} key={slot.id} />;
         const meta = catalogMeta(catalog, fish.speciesId);
+        const motionProfile = aquariumMotionProfile(meta);
         return (
-          <button type="button" className={`aquarium-fish ${slot.className} ${selectedFishId === fish.fishId ? 'is-selected' : ''}`} data-action="selectAquariumFish" data-fish-id={fish.fishId} aria-label={`${fish.name} 선택`} key={fish.fishId}>
-            <FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="pixel" />
-            <span>{fish.name}</span>
+          <button type="button" className={`aquarium-fish ${slot.className} ${selectedFishId === fish.fishId ? 'is-selected' : ''}`} data-action="selectAquariumFish" data-fish-id={fish.fishId} data-motion={motionProfile} aria-label={`${fish.name} 선택`} key={fish.fishId}>
+            <span className="aquarium-fish-path">
+              <span className="aquarium-fish-bob"><span className="aquarium-fish-body"><FishArtwork assetKey={meta.assetKey} colors={meta.colors} fishId={fish.fishId} growthStage={fish.growthStage} priority speciesId={fish.speciesId} variant="pixel" /></span></span>
+              <span className="aquarium-fish-name">{fish.name}</span>
+            </span>
           </button>
         );
       })}
