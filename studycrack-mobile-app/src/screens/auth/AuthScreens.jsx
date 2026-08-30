@@ -145,7 +145,7 @@ export function AuthLoginScreen(ctx) {
           <header className="auth-brand-block">
             <Logo />
             <div className="auth-brand-copy">
-              <h1 className="auth-brand-name">스터디크랙</h1>
+              <h1 className="auth-brand-name">StudyCrack</h1>
               <p className="auth-brand-tagline">합격 전략을 시작해볼까요?</p>
             </div>
           </header>

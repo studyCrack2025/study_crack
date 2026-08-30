@@ -208,10 +208,6 @@ export function createTimerHandlers(ctx) {
       ctx.setGameRulesOpen(false);
       return true;
     },
-    retryGameResources() {
-      ctx.setGameRefreshTick((value) => Number(value || 0) + 1);
-      return true;
-    },
     retryStudySummary() {
       ctx.setStudySummaryRefreshTick((value) => Number(value || 0) + 1);
       return true;

@@ -34,7 +34,7 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
 
-  await expect(page.getByRole('heading', { name: '스터디크랙' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'StudyCrack' })).toBeVisible();
   await expect(page.getByText('합격 전략을 시작해볼까요?')).toBeVisible();
   await expect(page.getByAltText('StudyCrack 심볼')).toBeVisible();
 
@@ -73,8 +73,8 @@ test('로그인과 회원가입 첫 화면은 설치형 모바일 화면 중앙�
 
     await page.goto('/studycrack-mobile.html?screen=authSignup');
     const signupCard = await readViewportCenterDelta(page, '.signup-form-card');
-    expect(signupCard.centerDelta).toBeLessThanOrEqual(36);
-    expect(signupCard.top).toBeGreaterThanOrEqual(0);
+    expect(signupCard.top).toBeGreaterThanOrEqual(16);
+    expect(signupCard.top).toBeLessThanOrEqual(64);
     expect(signupCard.bottom).toBeLessThanOrEqual(signupCard.viewportHeight);
     if (viewport.width === 360) {
       await page.goto('/studycrack-mobile.html?screen=authLogin');
@@ -372,6 +372,18 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveCSS('animation-name', 'none');
+});
+
+test('수조 보조 정보 실패는 본체를 가리지 않고 해당 정보만 재시도한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { failGameTypes: ['get_fish_catalog'] });
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+
+  await expect(page.locator('.aquarium-scene-wrap')).toBeVisible();
+  await expect(page.locator('.aquarium-resource-notice')).toContainText('일부 정보를 불러오지 못했어요');
+  await expect(page.getByText('Internal Server Error')).toHaveCount(0);
+  await page.locator('.aquarium-resource-notice [data-action="retryGameResources"]').click();
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_fish_catalog').length).toBeGreaterThanOrEqual(2);
 });
 
 test('물고기 뽑기는 미확인 결과를 복구하고 세 번 공개한 뒤 도감에 반영한다', async ({ page }, testInfo) => {

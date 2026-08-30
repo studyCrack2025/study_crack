@@ -1,9 +1,9 @@
-.signup-page{min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;padding:var(--sc-space-16) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
-.signup-form-card{width:100%;max-width:398px;display:grid;flex:0 0 auto;align-content:start;gap:var(--sc-space-16);margin:auto;padding:0;border:0;background:transparent;box-shadow:none;}
+.signup-page{min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(var(--sc-space-24) + env(safe-area-inset-top)) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
+.signup-form-card{width:100%;max-width:398px;display:grid;flex:0 0 auto;align-content:start;gap:var(--sc-space-16);margin:0 auto;padding:0;border:0;background:transparent;box-shadow:none;}
 .signup-stage{display:grid;gap:var(--sc-space-16);padding:var(--sc-space-8) 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;animation:signupStageIn var(--sc-motion-screen) var(--ease-enter) both;}
-.signup-stage-head{display:grid;gap:var(--sc-space-4);padding:0;}
+.signup-stage-head{display:grid;gap:6px;padding:0;}
 .signup-stage-head > span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:900;}
-.signup-stage-head h2{margin:0;color:var(--sc-ink-strong);font-size:20px;font-weight:900;line-height:1.35;letter-spacing:0;}
+.signup-stage-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);font-weight:900;line-height:1.35;letter-spacing:0;word-break:keep-all;}
 .signup-stage-head p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
 .signup-section{display:grid;gap:var(--sc-space-8);margin:0;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .signup-section-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);}

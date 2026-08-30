@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { fetchFishCatalog, fetchGameProfile, fetchPendingDraw, fetchStudyHabitat } from './api.js';
 
+function reportDevelopmentFailure(resource, result, response) {
+  if (!import.meta.env.DEV || response?.ok) return;
+  const code = response?.code || (result.status === 'rejected' ? result.reason?.name : '') || 'UNKNOWN';
+  console.warn('[Aquarium] resource request failed', { resource, code });
+}
+
 export function useGameProfileResource({ enabled, getApiBinding, includeCatalog = false, refreshTick = 0, setState } = {}) {
   const requestKeyRef = useRef(0);
   useEffect(() => {
@@ -20,6 +26,12 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
       const habitat = habitatResult.status === 'fulfilled' ? habitatResult.value : null;
       const catalog = catalogResult.status === 'fulfilled' ? catalogResult.value : null;
       const pending = pendingResult.status === 'fulfilled' ? pendingResult.value : null;
+      reportDevelopmentFailure('profile', profileResult, profile);
+      reportDevelopmentFailure('habitat', habitatResult, habitat);
+      if (includeCatalog) {
+        reportDevelopmentFailure('catalog', catalogResult, catalog);
+        reportDevelopmentFailure('pendingDraw', pendingResult, pending);
+      }
       const pendingPayload = pending?.ok && pending.data?.result ? { result: pending.data.result, fish: pending.data.fish } : null;
       const gameUnavailable = profile?.code === 'GAME_DISABLED';
       setState({
@@ -32,7 +44,7 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
           gameProfileError: profile?.error || '수조 기능을 순차적으로 준비하고 있습니다.'
         } : {
           gameProfileStatus: 'error',
-          gameProfileError: profile?.error || '수조 상태를 불러오지 못했습니다.'
+          gameProfileError: '수조 상태를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
         }),
         ...(habitat?.ok ? {
           habitatDays: habitat.data.days || [],
@@ -44,7 +56,7 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
           habitatError: ''
         } : {
           habitatStatus: 'error',
-          habitatError: habitat?.error || '공부 서식지를 불러오지 못했습니다.'
+          habitatError: '공부 기록을 불러오지 못했습니다.'
         }),
         ...(includeCatalog ? (catalog?.ok ? {
           fishCatalog: catalog.data.catalog || [],
@@ -53,7 +65,7 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
           fishCatalogError: ''
         } : {
           fishCatalogStatus: 'error',
-          fishCatalogError: catalog?.error || '물고기 목록을 불러오지 못했습니다.'
+          fishCatalogError: '물고기 목록을 불러오지 못했습니다.'
         }) : {}),
         ...(includeCatalog ? (pending?.ok ? {
           ...(pending.data?.profile ? { gameProfile: pending.data.profile } : {}),
@@ -63,7 +75,7 @@ export function useGameProfileResource({ enabled, getApiBinding, includeCatalog 
           ...(pendingPayload ? { aquariumMode: 'draw', aquariumDrawRevealStep: 0 } : {})
         } : {
           pendingDrawStatus: 'error',
-          pendingDrawError: pending?.error || '미확인 뽑기 결과를 불러오지 못했습니다.'
+          pendingDrawError: '미확인 뽑기 결과를 불러오지 못했습니다.'
         }) : {})
       });
     });
