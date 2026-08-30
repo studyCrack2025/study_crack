@@ -5,7 +5,8 @@ import { FishSprite } from './FishSprite.jsx';
 const VARIANT_SIZES = Object.freeze({
   detail: '(max-width: 430px) 184px, 256px',
   grid: '(max-width: 430px) 112px, 128px',
-  habitat: '(max-width: 430px) 116px, 160px'
+  habitat: '(max-width: 430px) 116px, 160px',
+  pixel: '(max-width: 430px) 86px, 96px'
 });
 
 export function FishArtwork({ assetKey = '', colors, fishId = '', growthStage = 'young', priority = false, speciesId = 'clownfish', variant = 'grid' }) {
@@ -34,10 +35,10 @@ export function FishArtwork({ assetKey = '', colors, fishId = '', growthStage = 
       <img
         className="aquarium-fish-image"
         src={primarySrc}
-        srcSet={`${artwork.grid} 256w, ${artwork.detail} 512w, ${artwork.habitat} 768w`}
+        srcSet={safeVariant === 'pixel' ? undefined : `${artwork.grid} 256w, ${artwork.detail} 512w, ${artwork.habitat} 768w`}
         sizes={VARIANT_SIZES[safeVariant]}
-        width="768"
-        height="768"
+        width={safeVariant === 'pixel' ? '160' : '768'}
+        height={safeVariant === 'pixel' ? '160' : '768'}
         alt=""
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"

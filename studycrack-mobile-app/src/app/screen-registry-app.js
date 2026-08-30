@@ -1,7 +1,7 @@
 import '../styles/components/navigation.css';
 import '../styles/components/sheets.css';
 import '../styles/components/drawers.css';
-import '../styles/components/context-header.css';
+import '../styles/components/primary-screen-header.css';
 import '../styles/screens/timer.css';
 import '../styles/screens/aquarium.css';
 import '../styles/screens/analysis-base.css';

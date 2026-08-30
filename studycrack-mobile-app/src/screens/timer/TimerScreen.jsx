@@ -1,9 +1,9 @@
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
-import { AppContextHeader } from '../../components/AppContextHeader.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { Modal } from '../../components/Modal.jsx';
+import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
 import { StudySubjectSheet } from './TimerOverlays.jsx';
-import { RewardPanel, StudyHabitatCard, StudyWeekSummary } from './StudyGamificationPanels.jsx';
+import { RewardPanel, StudyWeekSummary } from './StudyGamificationPanels.jsx';
 import { defaultFormatHms, defaultFormatMinutesLabel } from './presentation.js';
 import { ProfileDrawer } from '../mypage/ProfileDrawer.jsx';
 
@@ -33,12 +33,37 @@ function TimerLoadFailure({ message = '', tab = 'timer' }) {
   );
 }
 
-function TimerHeader({ gameProfile = null, user = {} }) {
-  const shells = Math.max(0, Number(gameProfile?.shellBalance) || 0);
-  const food = Math.max(0, Number(gameProfile?.foodBalance) || 0);
-  const profileButton = <button type="button" className="timer-v2-profile" data-action="openDrawer" aria-label="프로필 메뉴 열기"><Icon name="user" /></button>;
-  const wallet = <div className="timer-v2-wallet" aria-label="게임 재화"><span>조개 <b>{shells}</b></span><span>먹이 <b>{food}</b></span><button type="button" data-action="openGameRules" aria-label="성장 규칙 보기">?</button></div>;
-  return <AppContextHeader className="timer-v2-header" description={user?.name ? `${user.name}님의 오늘 공부를 기록해요.` : '오늘 할 공부를 확인하고 바로 시작하세요.'} eyebrow="STUDY TIMER" meta={wallet} title="오늘의 공부" visual={profileButton} />;
+function TimerHeader({ user = {} }) {
+  return (
+    <header className="timer-v2-brand-head">
+      <span className="timer-v2-brand"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><span><b>StudyCrack</b><small>{user?.name ? `${user.name}님의 합격 루틴` : '오늘의 합격 루틴'}</small></span></span>
+      <button type="button" className="timer-v2-profile" data-action="openDrawer" aria-label="프로필 메뉴 열기"><Icon name="user" /></button>
+    </header>
+  );
+}
+
+function HomeStatusRail({ fishCount = 0, gameProfile = null, normalizedTargetMajor = '' }) {
+  const targetLabel = normalizedTargetMajor ? String(normalizedTargetMajor).split(' ')[0] : '목표 설정';
+  const streakDays = Math.max(0, Number(gameProfile?.streakDays) || 0);
+  return (
+    <section className="timer-v2-status-rail" aria-label="학습 현황 바로가기">
+      <button type="button" data-action="goto" data-target="analysis"><small>목표 대학</small><b>{targetLabel}</b></button>
+      <span><small>합격 스트릭</small><b>{streakDays}일</b></span>
+      <button type="button" data-action="goto" data-target="aquarium"><small>물고기</small><b>{Math.max(0, Number(fishCount) || 0)}종</b></button>
+      <button type="button" data-action="goto" data-target="strategy"><small>SKY 코칭</small><b>바로가기</b></button>
+    </section>
+  );
+}
+
+function HomeTargetSummary({ analysisScoreView = null, calendarNearestDdayLabel = '', calendarNearestEvent = null, normalizedTargetMajor = '' }) {
+  const scoreReady = Boolean(analysisScoreView?.hasScore) && !analysisScoreView?.pending;
+  const score = Math.max(0, Number(analysisScoreView?.score) || 0);
+  return (
+    <button type="button" className="timer-v2-target-summary" data-action="goto" data-target="analysis">
+      <span><small>1지망 목표</small><b>{normalizedTargetMajor || '희망 대학을 설정해주세요'}</b><em>{scoreReady ? `현재 환산점수 ${Math.round(score)}점` : '저장 성적으로 환산점수를 확인해보세요'}</em></span>
+      <span><b>{calendarNearestDdayLabel || '일정'}</b><small>{calendarNearestEvent?.title || '입시 일정 확인'}</small></span>
+    </button>
+  );
 }
 
 function sessionTimeLabel(value) {
@@ -76,7 +101,7 @@ function GameRulesModal({ gameRules = null, open = false }) {
   const drawOdds = gameRules?.drawPolicy?.oddsBasisPoints || null;
   const drawPity = gameRules?.drawPolicy?.pityLimits || null;
   const rarityLabels = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' };
-  return <Modal open={open} dismissAction="closeGameRules" panelClass="timer-rules-modal"><div className="timer-rules-head"><span>수조 성장 규칙</span><h3>공부한 만큼 수조가 자라요</h3><p>완료한 공부 시간으로 조개와 먹이를 받고, 하루의 서식지도 달라집니다.</p></div>{tiers.length ? <section><b>공부 완료 보상</b><div className="timer-rules-tiers">{tiers.map((tier) => <span key={tier.minimumMinutes}><b>{tier.minimumMinutes}분 이상</b><small>조개 {tier.shells} · 먹이 {tier.food}</small></span>)}</div><p>하루 최대 조개 {gameRules.dailyCaps?.shells || 0}개, 먹이 {gameRules.dailyCaps?.food || 0}개까지 받을 수 있어요.</p></section> : <p className="timer-rules-unavailable">규칙 정보를 불러오는 중이에요. 잠시 후 다시 확인해주세요.</p>}{stages.length ? <section><b>서식지 성장</b><div className="timer-rules-stages">{stages.map((stage, index) => <span data-stage={index} key={stage.minimumMinutes}><i /><b>{stage.minimumMinutes}분</b><small>{stage.label}</small></span>)}</div></section> : null}{gameRules?.fishCare ? <section><b>물고기 돌보기</b><div className="timer-rules-care"><span>먹이 {gameRules.fishCare.foodCost}개로 EXP {gameRules.fishCare.expGain} 획득</span><span>먹이로 오르는 수질은 하루 {gameRules.fishCare.dailyWaterGainLimit}회까지</span><span>조개 {gameRules.drawCostShells}개로 새 물고기 만나기</span></div></section> : null}{drawOdds ? <section><b>물고기 만남 확률</b><div className="timer-rules-odds">{Object.entries(drawOdds).map(([rarity, basisPoints]) => <span data-rarity={rarity} key={rarity}><b>{rarityLabels[rarity] || rarity}</b><small>{Number(basisPoints) / 100}%</small></span>)}</div>{drawPity ? <p>희귀 {drawPity.rare}회, 영웅 {drawPity.epic}회, 전설 {drawPity.legendary}회 안에는 해당 등급 이상을 확정해요.</p> : null}<p>Special 물고기는 일반 뽑기가 아닌 업적과 이벤트 보상으로 만날 수 있어요.</p></section> : null}<button type="button" className="btn btn-primary" data-action="closeGameRules">확인</button></Modal>;
+  return <Modal open={open} dismissAction="closeGameRules" panelClass="timer-rules-modal"><div className="timer-rules-head"><span>수조 성장 규칙</span><h3>공부한 만큼 수조가 자라요</h3><p>완료한 공부 시간으로 조개와 먹이를 받고, 하루의 서식지도 달라집니다.</p></div>{tiers.length ? <section><b>공부 완료 보상</b><div className="timer-rules-tiers">{tiers.map((tier) => <span key={tier.minimumMinutes}><b>{tier.minimumMinutes}분 이상</b><small>조개 {tier.shells} · 먹이 {tier.food}</small></span>)}</div><p>하루 최대 조개 {gameRules.dailyCaps?.shells || 0}개, 먹이 {gameRules.dailyCaps?.food || 0}개까지 받을 수 있어요.</p></section> : <p className="timer-rules-unavailable">규칙 정보를 불러오는 중이에요. 잠시 후 다시 확인해주세요.</p>}{stages.length ? <section><b>서식지 성장</b><div className="timer-rules-stages">{stages.map((stage, index) => <span data-stage={index} key={stage.minimumMinutes}><i /><b>{stage.minimumMinutes}분</b><small>{stage.label}</small></span>)}</div></section> : null}{gameRules?.fishCare ? <section><b>물고기 돌보기</b><div className="timer-rules-care"><span>먹이 {gameRules.fishCare.foodCost}개로 EXP {gameRules.fishCare.expGain} 획득</span><span>조개 {gameRules.drawCostShells}개로 새 물고기 만나기</span></div></section> : null}{drawOdds ? <section><b>물고기 만남 확률</b><div className="timer-rules-odds">{Object.entries(drawOdds).map(([rarity, basisPoints]) => <span data-rarity={rarity} key={rarity}><b>{rarityLabels[rarity] || rarity}</b><small>{Number(basisPoints) / 100}%</small></span>)}</div>{drawPity ? <p>희귀 {drawPity.rare}회, 영웅 {drawPity.epic}회, 전설 {drawPity.legendary}회 안에는 해당 등급 이상을 확정해요.</p> : null}<p>Special 물고기는 일반 뽑기가 아닌 업적과 이벤트 보상으로 만날 수 있어요.</p></section> : null}<button type="button" className="btn btn-primary" data-action="closeGameRules">확인</button></Modal>;
 }
 
 function TodayPlanCard({ canAccessBasic, displayedPlannerProgress, formatMinutesLabel, todayPlannerItems, todayPlannerTotalMinutes }) {
@@ -115,16 +140,18 @@ export function TimerScreen(ctx) {
     formatHms = defaultFormatHms,
     formatMinutesLabel = defaultFormatMinutesLabel,
     gameProfile = null,
-    gameProfileError = '',
     gameProfileStatus = 'idle',
     gameRules = null,
     gameRulesOpen = false,
-    habitatDays = [],
-    habitatStatus = 'idle',
     hasClientSession = () => false,
     rewardPendingSessionId = '',
     rewardResult = null,
     selectedPlan = '',
+    normalizedTargetMajor = '',
+    calendarNearestDdayLabel = '',
+    calendarNearestEvent = null,
+    fishCount = 0,
+    analysisScoreView = null,
     studySummary = null,
     studySummaryStatus = 'idle',
     studySessionDetailsOpen = false,
@@ -155,12 +182,13 @@ export function TimerScreen(ctx) {
   return (
     <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlays={overlays}>
       <main className="timer-screen-v2">
-        <TimerHeader gameProfile={gameProfile} user={user} />
+        <TimerHeader user={user} />
+        <HomeStatusRail fishCount={fishCount} gameProfile={gameProfile} normalizedTargetMajor={normalizedTargetMajor} />
+        <HomeTargetSummary analysisScoreView={analysisScoreView} calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} normalizedTargetMajor={normalizedTargetMajor} />
         <TodayPlanCard canAccessBasic={canAccessBasic} displayedPlannerProgress={displayedPlannerProgress} formatMinutesLabel={formatMinutesLabel} todayPlannerItems={todayPlannerItems} todayPlannerTotalMinutes={todayPlannerTotalMinutes} />
         <TimerControlCard activeStudySession={activeStudySession} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} liveSeconds={liveSeconds} studySessionDetailsOpen={studySessionDetailsOpen} studySummary={studySummary} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} />
         <RewardPanel activeStudySession={activeStudySession} completionError={completionError} rewardPendingSessionId={rewardPendingSessionId} rewardResult={rewardResult} timerPhase={timerPhase} />
-        <section className="timer-v2-week sc-card"><div className="timer-section-head"><div><span>학습 기록</span><h2>이번 주 흐름</h2></div></div><StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={liveSeconds} summary={studySummary} status={studySummaryStatus} /></section>
-        <StudyHabitatCard gameProfileError={gameProfileError} gameProfileStatus={gameProfileStatus} gameRules={gameRules} habitatDays={habitatDays} habitatStatus={habitatStatus} />
+        <section className="timer-v2-week sc-card"><div className="timer-section-head"><div><span>학습 기록</span><h2>이번 주 흐름</h2></div><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div><StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={liveSeconds} summary={studySummary} status={studySummaryStatus} /></section>
         <TimerQuickLinks />
       </main>
     </AppScreenShell>

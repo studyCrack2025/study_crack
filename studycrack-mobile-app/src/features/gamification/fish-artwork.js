@@ -3,6 +3,7 @@ import manifest from '../../assets/fishdex/v2/manifest.generated.json';
 const gridAssets = import.meta.glob('../../assets/fishdex/v2/grid-256/*.webp', { eager: true, query: '?url', import: 'default' });
 const detailAssets = import.meta.glob('../../assets/fishdex/v2/detail-512/*.webp', { eager: true, query: '?url', import: 'default' });
 const habitatAssets = import.meta.glob('../../assets/fishdex/v2/habitat-768/*.webp', { eager: true, query: '?url', import: 'default' });
+const habitatPixelAssets = import.meta.glob('../../assets/fishdex/v2/habitat-pixel-160/*.webp', { eager: true, query: '?url', import: 'default' });
 
 const LEGACY_SPECIES_ASSET_KEYS = Object.freeze({
   butterflyfish: 'fishdex-060-butterflyfish',
@@ -21,7 +22,8 @@ function indexAssetUrls(modules) {
 const urlsByVariant = Object.freeze({
   detail: indexAssetUrls(detailAssets),
   grid: indexAssetUrls(gridAssets),
-  habitat: indexAssetUrls(habitatAssets)
+  habitat: indexAssetUrls(habitatAssets),
+  pixel: indexAssetUrls(habitatPixelAssets)
 });
 const entriesByAssetKey = new Map(manifest.entries.map((entry) => [entry.assetKey, entry]));
 const assetKeyByAlias = new Map();
@@ -44,6 +46,7 @@ export function resolveFishArtwork({ assetKey = '', speciesId = '' } = {}) {
   const grid = urlsByVariant.grid.get(resolvedKey);
   const detail = urlsByVariant.detail.get(resolvedKey);
   const habitat = urlsByVariant.habitat.get(resolvedKey);
-  if (!grid || !detail || !habitat) return null;
-  return Object.freeze({ assetKey: resolvedKey, detail, dexId: entry.dexId, grid, habitat, slug: entry.slug });
+  const pixel = urlsByVariant.pixel.get(resolvedKey);
+  if (!grid || !detail || !habitat || !pixel) return null;
+  return Object.freeze({ assetKey: resolvedKey, detail, dexId: entry.dexId, grid, habitat, pixel, slug: entry.slug });
 }

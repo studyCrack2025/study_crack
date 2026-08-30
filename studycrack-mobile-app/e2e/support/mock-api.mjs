@@ -283,7 +283,7 @@ export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = 
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { shellBalance: 62, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
+    gameProfile: { shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
     pendingDraw: null,
     studySeconds: 0,
     userTier: tier
