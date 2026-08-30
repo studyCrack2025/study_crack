@@ -14,18 +14,17 @@ const [authSource, authHandlers, authCss, signupCss, recoveryCss, introSource, o
   readFile(new URL('../src/styles/screens/locked-splash.css', import.meta.url), 'utf8')
 ]);
 
-assert.match(authSource, /STUDYCRACK_LOGO_SRC/);
+assert.match(authSource, /STUDYCRACK_SYMBOL_SRC/);
 assert.match(authSource, /social-google\.svg/);
 assert.match(authSource, /social-naver\.svg/);
 assert.match(authSource, /data-action="toggleLoginPasswordVisibility"/);
 assert.match(authHandlers, /toggleLoginPasswordVisibility/);
 assert.match(authSource, /auth-recovery-eyebrow/);
 assert.doesNotMatch(authSource, /auth-recovery-icon/);
-assert.match(authSource, /const labels = \['약관', '본인 인증', '이메일', '계정 설정'\]/);
 assert.match(authSource, /마케팅 정보 수신 동의/);
 assert.match(authSource, /<TermsModal openTermsType=\{openTermsType\}/);
 assert.doesNotMatch(authSource, /dangerouslySetInnerHTML/);
-assert.match(authSource, /<SignupProgress step=\{step\}/);
+assert.doesNotMatch(authSource, /SignupProgress/);
 assert.match(authSource, /export function AuthFindIdScreen/);
 assert.match(authSource, /export function AuthFindPwScreen/);
 assert.doesNotMatch(authSource, /소셜 계정으로 시작하기/);
@@ -34,10 +33,13 @@ assert.match(authCss, /max-width:366px/);
 assert.match(authCss, /\.auth-screen\{[^}]*display:flex;flex-direction:column/);
 assert.match(authCss, /\.auth-entry-layout\{[^}]*flex:0 0 auto;[^}]*margin:auto/);
 assert.doesNotMatch(authCss, /auth-screen\{align-content:start/);
-assert.match(authSource, /auth-brand-eyebrow/);
-assert.match(authSource, /signup-topbar/);
+assert.match(authSource, /auth-brand-name">스터디크랙/);
+assert.match(authSource, /auth-brand-tagline">합격 전략을 시작해볼까요\?/);
+assert.doesNotMatch(authSource, /ADMISSIONS PLATFORM/);
+assert.doesNotMatch(authSource, /auth-brand-eyebrow|auth-wordmark|auth-title/);
+assert.doesNotMatch(authSource, /signup-topbar|signup-progress/);
 assert.match(signupCss, /\.signup-stage\{/);
-assert.match(signupCss, /\.signup-topbar\{/);
+assert.doesNotMatch(signupCss, /\.signup-topbar|\.signup-progress/);
 assert.match(signupCss, /\.signup-page\{[^}]*display:flex;flex-direction:column/);
 assert.match(signupCss, /\.signup-form-card\{[^}]*flex:0 0 auto;[^}]*margin:auto/);
 assert.doesNotMatch(signupCss, /signup-form-card\{[^}]*min-height:calc\(100dvh/);
