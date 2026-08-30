@@ -29,6 +29,7 @@ export const mockUser = {
   role: 'student',
   name: '테스트학생',
   email: 'student@example.com',
+  profileImage: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" fill="%23dfe9ff"/%3E%3Ccircle cx="32" cy="24" r="12" fill="%233f63b8"/%3E%3Cpath d="M12 62c2-15 10-22 20-22s18 7 20 22" fill="%233f63b8"/%3E%3C/svg%3E',
   computedTier: 'basic',
   targetUnivs: TARGETS,
   quantitative: {
