@@ -1,21 +1,21 @@
-import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { STUDYCRACK_SYMBOL_SRC } from '../../constants/assets.js';
 import { Modal } from '../../components/Modal.jsx';
 import { TermsModal } from '../../components/TermsModal.jsx';
 
-function Logo({ src = STUDYCRACK_LOGO_SRC, compact = false }) {
+function Logo({ src = STUDYCRACK_SYMBOL_SRC }) {
   return (
-    <div className={`auth-logo-wrap${compact ? ' compact' : ''}`}>
+    <div className="auth-logo-wrap">
       <img
         src={src}
         className="auth-logo"
-        alt="StudyCrack Logo"
+        alt="StudyCrack 심볼"
         onError={(event) => {
           event.currentTarget.style.display = 'none';
           const fallback = event.currentTarget.nextElementSibling;
           if (fallback) fallback.style.display = 'block';
         }}
       />
-      <span className="auth-logo-fallback">StudyCrack</span>
+      <span className="auth-logo-fallback">S</span>
     </div>
   );
 }
@@ -133,8 +133,7 @@ export function AuthLoginScreen(ctx) {
     resetPasswordEmail = '',
     resetPasswordModalOpen = false,
     resetPasswordSending = false,
-    resetPasswordStep = 'request',
-    studycrackLogoSrc = STUDYCRACK_LOGO_SRC
+    resetPasswordStep = 'request'
   } = ctx;
 
   const overlays = <>{findEmailModalOpen && <FindEmailModal foundEmailMasked={foundEmailMasked} />}{resetPasswordModalOpen && <ResetPasswordModal email={resetPasswordEmail} sending={resetPasswordSending} step={resetPasswordStep} />}</>;
@@ -144,11 +143,10 @@ export function AuthLoginScreen(ctx) {
       <div className="auth-screen">
         <div className="auth-entry-layout">
           <header className="auth-brand-block">
-            <Logo src={studycrackLogoSrc} />
+            <Logo />
             <div className="auth-brand-copy">
-              <span className="auth-brand-eyebrow">ADMISSIONS PLATFORM</span>
-              <h1 className="auth-wordmark">STUDY CRACK</h1>
-              <p className="auth-title">오늘의 실행을 합격 전략으로 연결하세요.</p>
+              <h1 className="auth-brand-name">스터디크랙</h1>
+              <p className="auth-brand-tagline">합격 전략을 시작해볼까요?</p>
             </div>
           </header>
           <div className="auth-unified-card">
@@ -186,24 +184,6 @@ function TermsLine({ checked = false, label, onToggle, required = false, type })
       <input type="checkbox" data-signup-term={type} data-signup-term-required={required ? 'true' : undefined} checked={checked} onChange={(event) => onToggle(type, event.currentTarget.checked)} />
       <span>{required ? '(필수)' : '(선택)'} {label}</span>
       <button type="button" className="auth-terms-view" data-action="openSignupTermsModal" data-terms-type={type}>전문보기</button>
-    </div>
-  );
-}
-
-function SignupProgress({ step }) {
-  const labels = ['약관', '본인 인증', '이메일', '계정 설정'];
-  return (
-    <div className="signup-progress" aria-label={`회원가입 ${step}단계`}>
-      {labels.map((label, index) => {
-        const number = index + 1;
-        const state = number < step ? 'done' : number === step ? 'active' : '';
-        return (
-          <div className={`signup-progress-item ${state}`} key={label}>
-            <span>{number < step ? '✓' : number}</span>
-            <b>{label}</b>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -319,7 +299,6 @@ export function AuthSignupScreen(ctx) {
     signupError = '',
     signupStep = 1,
     signupSubmitting = false,
-    studycrackLogoSrc = STUDYCRACK_LOGO_SRC
   } = ctx;
   const step = Math.min(4, Math.max(1, Number(signupStep) || 1));
 
@@ -329,10 +308,6 @@ export function AuthSignupScreen(ctx) {
     <AuthShell screen="authSignup" overlays={overlays}>
       <div className="signup-page">
         <div className="signup-form-card">
-          <header className="signup-topbar">
-            <SignupProgress step={step} />
-            <Logo src={studycrackLogoSrc} compact />
-          </header>
           <SignupStep ctx={ctx} step={step} />
           {signupError && <p className="auth-error signup-error" role="alert">{signupError}</p>}
           <div className="signup-stage-actions">

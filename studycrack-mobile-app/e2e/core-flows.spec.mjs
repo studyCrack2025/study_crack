@@ -34,6 +34,10 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
 
+  await expect(page.getByRole('heading', { name: '스터디크랙' })).toBeVisible();
+  await expect(page.getByText('합격 전략을 시작해볼까요?')).toBeVisible();
+  await expect(page.getByAltText('StudyCrack 심볼')).toBeVisible();
+
   const email = page.locator('[data-field="loginEmail"]');
   await email.fill('student@example.com');
   await expect(email).toHaveValue('student@example.com');
@@ -93,7 +97,8 @@ test('회원가입은 약관부터 시작하고 전문 확인 뒤 다음 인증 
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authSignup');
 
-  await expect(page.locator('.signup-progress-item.active')).toContainText('약관');
+  await expect(page.locator('.signup-topbar, .signup-progress')).toHaveCount(0);
+  await expect(page.locator('.signup-stage-head > span')).toHaveText('1단계');
   await page.getByRole('button', { name: '전문보기' }).first().click();
   const termsDialog = page.getByRole('dialog', { name: '스터디크랙 이용약관' });
   await expect(termsDialog).toBeVisible();
@@ -103,7 +108,7 @@ test('회원가입은 약관부터 시작하고 전문 확인 뒤 다음 인증 
   await page.locator('.auth-terms-check-row.all input').check();
   await page.getByRole('button', { name: '다음', exact: true }).click();
   await expect(page.getByRole('heading', { name: '기본 정보와 휴대폰을 확인할게요' })).toBeVisible();
-  await expect(page.locator('.signup-progress-item.active')).toContainText('본인 인증');
+  await expect(page.locator('.signup-stage-head > span')).toHaveText('2단계');
   await expectNoHorizontalOverflow(page);
 });
 
