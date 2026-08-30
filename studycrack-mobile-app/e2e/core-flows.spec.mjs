@@ -18,6 +18,18 @@ async function readLockedScreenAlignment(page) {
   });
 }
 
+async function readViewportCenterDelta(page, selector) {
+  return page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      centerDelta: Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2),
+      bottom: rect.bottom,
+      top: rect.top,
+      viewportHeight: window.innerHeight
+    };
+  });
+}
+
 test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작한다', async ({ page }) => {
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
@@ -42,6 +54,38 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
 
   await page.getByRole('button', { name: '비밀번호 찾기' }).click();
   await expect(page.getByRole('dialog', { name: '비밀번호 재설정' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('로그인과 회원가입 첫 화면은 설치형 모바일 화면 중앙에 안정적으로 배치된다', async ({ page }, testInfo) => {
+  await installApiMock(page);
+  for (const viewport of [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/studycrack-mobile.html?screen=authLogin');
+    const loginLayout = await readViewportCenterDelta(page, '.auth-entry-layout');
+    expect(loginLayout.centerDelta).toBeLessThanOrEqual(24);
+    expect(loginLayout.top).toBeGreaterThanOrEqual(0);
+    expect(loginLayout.bottom).toBeLessThanOrEqual(loginLayout.viewportHeight);
+
+    await page.goto('/studycrack-mobile.html?screen=authSignup');
+    const signupCard = await readViewportCenterDelta(page, '.signup-form-card');
+    expect(signupCard.centerDelta).toBeLessThanOrEqual(36);
+    expect(signupCard.top).toBeGreaterThanOrEqual(0);
+    expect(signupCard.bottom).toBeLessThanOrEqual(signupCard.viewportHeight);
+    if (viewport.width === 360) {
+      await page.goto('/studycrack-mobile.html?screen=authLogin');
+      await page.screenshot({ path: testInfo.outputPath('auth-login-360x800.png'), fullPage: true });
+      await page.goto('/studycrack-mobile.html?screen=authSignup');
+      await page.screenshot({ path: testInfo.outputPath('auth-signup-360x800.png'), fullPage: true });
+    }
+  }
+
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.goto('/studycrack-mobile.html?screen=authLogin');
+  const compactLayout = await page.locator('.auth-entry-layout').boundingBox();
+  expect(compactLayout).not.toBeNull();
+  expect(compactLayout.y).toBeGreaterThanOrEqual(0);
+  await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -125,6 +169,8 @@ test('React 하단 탭은 화면 전환과 잠금 화면에서도 활성 상태�
 
   const tabbar = page.locator('.tabbar');
   await expect(tabbar.locator('[data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
+  await expect(tabbar.locator('[data-tab="timer"]')).toHaveAttribute('aria-label', '홈');
+  await expect(tabbar.locator('[data-tab="timer"] .tabbar-label')).toHaveText('홈');
   await expect(tabbar.locator('button')).toHaveCount(5);
   const normalTabOffsets = await tabbar.locator('button:not(.is-aquarium)').evaluateAll((buttons) => buttons.map((button) => {
     const icon = button.querySelector('.tabbar-icon').getBoundingClientRect();
@@ -171,6 +217,8 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('[data-screen="timer"]')).toBeVisible();
   await expect(page.getByText('테스트학생님의 합격 루틴')).toBeVisible();
+  await expect(page.locator('.timer-v2-profile > img')).toBeVisible();
+  await expect(page.locator('.timer-v2-profile > img')).toHaveCSS('object-fit', 'cover');
   await expect(page.getByText('공부 서식지')).toHaveCount(0);
 
   await page.getByRole('button', { name: '공부 시작' }).click();

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { Modal } from '../../components/Modal.jsx';
@@ -33,11 +34,22 @@ function TimerLoadFailure({ message = '', tab = 'timer' }) {
   );
 }
 
+function TimerProfileShortcut({ user = {} }) {
+  const profileImage = String(user?.profileImage || '').trim();
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [profileImage]);
+  return (
+    <button type="button" className="timer-v2-profile" data-action="openDrawer" aria-label="프로필 메뉴 열기">
+      {profileImage && !imageFailed ? <img src={profileImage} alt="" onError={() => setImageFailed(true)} /> : <Icon name="user" />}
+    </button>
+  );
+}
+
 function TimerHeader({ user = {} }) {
   return (
     <header className="timer-v2-brand-head">
       <span className="timer-v2-brand"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><span><b>StudyCrack</b><small>{user?.name ? `${user.name}님의 합격 루틴` : '오늘의 합격 루틴'}</small></span></span>
-      <button type="button" className="timer-v2-profile" data-action="openDrawer" aria-label="프로필 메뉴 열기"><Icon name="user" /></button>
+      <TimerProfileShortcut user={user} />
     </header>
   );
 }
