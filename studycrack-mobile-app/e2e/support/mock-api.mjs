@@ -277,7 +277,7 @@ function responseFor(payload, state) {
   }
 }
 
-export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
+export async function installApiMock(page, { failGameTypes = [], fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
   const requests = [];
   const state = {
     activeStudySession: null,
@@ -298,6 +298,10 @@ export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = 
       payload = {};
     }
     requests.push({ path: new URL(request.url()).pathname, payload });
+    if (failGameTypes.includes(payload.type)) {
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Internal Server Error' }) });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

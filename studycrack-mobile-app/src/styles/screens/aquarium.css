@@ -295,6 +295,11 @@
 .aquarium-error{display:grid;gap:var(--sc-space-12);text-align:center;}
 .aquarium-error b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);}
 .aquarium-error p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
+.aquarium-resource-notice{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);padding:var(--sc-space-12) var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}
+.aquarium-resource-notice span{min-width:0;display:grid;gap:2px;}
+.aquarium-resource-notice b{color:var(--sc-ink-strong);font-size:var(--sc-type-caption);}
+.aquarium-resource-notice small{overflow:hidden;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);text-overflow:ellipsis;white-space:nowrap;}
+.aquarium-resource-notice button{flex:0 0 auto;min-height:34px;padding:0 var(--sc-space-12);border:1px solid var(--sc-border-strong);border-radius:var(--sc-radius-pill);background:var(--sc-surface);color:var(--sc-navy);font-size:var(--sc-type-micro);font-weight:800;}
 @keyframes aquariumFishPath{0%,100%{transform:translate3d(calc(-1 * var(--fish-travel-x)),0,0);}25%{transform:translate3d(0,calc(-1 * var(--fish-travel-y)),0);}50%{transform:translate3d(var(--fish-travel-x),1px,0);}75%{transform:translate3d(0,var(--fish-travel-y),0);}}
 @keyframes aquariumFishBob{from{transform:translate3d(0,-1px,0) rotate(-.6deg);}to{transform:translate3d(0,2px,0) rotate(.6deg);}}
 @keyframes aquariumBubble{from{transform:translateY(0);opacity:.2;}50%{opacity:.8;}to{transform:translateY(-180px);opacity:0;}}

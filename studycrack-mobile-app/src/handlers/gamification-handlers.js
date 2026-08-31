@@ -72,6 +72,10 @@ async function copyAquariumShareText(payload, documentRef) {
 
 export function createGamificationHandlers(ctx) {
   return {
+    retryGameResources() {
+      ctx.setGameRefreshTick((value) => Number(value || 0) + 1);
+      return true;
+    },
     selectStarterCandidate({ actionEl }) {
       ctx.setAquariumStarterSpeciesId(getData(actionEl, 'species-id'));
       ctx.setAquariumActionError('');

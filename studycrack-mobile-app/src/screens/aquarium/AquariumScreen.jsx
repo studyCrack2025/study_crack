@@ -255,9 +255,10 @@ export function AquariumScreen(ctx) {
   const selectedFish = fishInventory.find((fish) => fish?.fishId === aquariumSelectedFishId) || activeFish.find((fish) => fish?.fishId === aquariumSelectedFishId) || activeFish.find(Boolean) || fishInventory[0] || null;
   const selectedMeta = catalogMeta(fishCatalog, selectedFish?.speciesId);
   const activeSlot = AQUARIUM_SLOTS.find((slot, index) => activeFish[index]?.fishId === selectedFish?.fishId)?.id || '';
-  const loading = gameProfileStatus === 'loading' || (fishCatalogStatus === 'loading' && !fishCatalog.length);
+  const loading = gameProfileStatus === 'loading';
   const unavailable = gameProfileStatus === 'unavailable';
-  const fatalError = gameProfileStatus === 'error' ? gameProfileError : fishCatalogStatus === 'error' ? fishCatalogError : '';
+  const fatalError = gameProfileStatus === 'error' ? gameProfileError : '';
+  const resourceWarnings = [fishCatalogStatus === 'error' ? fishCatalogError : '', pendingDrawStatus === 'error' ? pendingDrawError : ''].filter(Boolean);
   const plannerCompleted = todayPlannerItems.filter((item) => item?.done).length;
 
   if (!unavailable && aquariumMode === 'catalog') return <AppScreenShell screen="aquarium" tab={tab} dimmed={dimmed}><main className="aquarium-screen"><FishCatalogPanel catalog={fishCatalog} inventory={fishInventory} profile={gameProfile} /></main></AppScreenShell>;
@@ -270,6 +271,7 @@ export function AquariumScreen(ctx) {
         <AquariumHabitatHeader fishCount={fishCount || fishInventory.length} profile={gameProfile} />
         {loading ? <div className="aquarium-loading" role="status"><i /><b>수조를 채우고 있어요</b></div> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
           <div className="aquarium-scene-wrap"><AquariumScene activeFish={activeFish} catalog={fishCatalog} plannerCompleted={plannerCompleted} plannerTotal={todayPlannerItems.length} selectedFishId={selectedFish?.fishId || ''} streakDays={gameProfile?.streakDays} /></div>
+          {resourceWarnings.length ? <div className="aquarium-resource-notice" role="status"><span><b>일부 정보를 불러오지 못했어요</b><small>{resourceWarnings[0]}</small></span><button type="button" data-action="retryGameResources">다시 시도</button></div> : null}
           {gameProfile?.starterState === 'selectable' ? <StarterPanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} selectedSpeciesId={aquariumStarterSpeciesId} /> : null}
           {gameProfile?.starterState === 'locked' ? <LockedStarterPanel /> : null}
           {gameProfile?.starterState === 'claimed' ? <FishCarePanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} activeSlot={activeSlot} fish={selectedFish} foodBalance={Number(gameProfile?.foodBalance) || 0} meta={selectedMeta} result={aquariumResult} /> : null}
