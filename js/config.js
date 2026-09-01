@@ -21,6 +21,8 @@ const CONFIG = {
         qna:            `${API_BASE}/api/qna`,
         report:         `${API_BASE}/api/report`,
         game:           `${API_BASE}/api/game`,
+        consulting:     `${API_BASE}/api/consulting`,
+        consultingPublic: `${API_BASE}/api/consulting-public`,
         analysis:       `${API_BASE}/api/analysis`,
         payment:        `${API_BASE}/api/payment`,
         auth:           `${API_BASE}/api/auth`,

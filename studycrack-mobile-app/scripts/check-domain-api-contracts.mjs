@@ -5,6 +5,7 @@ import { apiFailure, apiInvalidResponse, apiSuccess, postJson, setApiAuthExpired
 import {
   ANALYSIS_REQUEST_TYPES,
   AUTH_REQUEST_TYPES,
+  CONSULTING_REQUEST_TYPES,
   GAME_REQUEST_TYPES,
   NOTIFICATION_REQUEST_TYPES,
   REPORT_REQUEST_TYPES,
@@ -113,6 +114,7 @@ releaseAuthExpiredHandler();
 const apiModules = [
   'src/features/account/api.js',
   'src/features/analysis/api.js',
+  'src/features/consulting/api.js',
   'src/features/gamification/api.js',
   'src/features/notifications/api.js',
   'src/features/planner/api.js',
@@ -135,6 +137,7 @@ const requestTypeGroups = [
   REPORT_REQUEST_TYPES,
   SUPPORT_REQUEST_TYPES,
   AUTH_REQUEST_TYPES,
+  CONSULTING_REQUEST_TYPES,
   GAME_REQUEST_TYPES
 ];
 const requestTypeValues = requestTypeGroups.flatMap((group) => Object.values(group));

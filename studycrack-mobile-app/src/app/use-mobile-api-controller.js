@@ -1,5 +1,6 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
+import { fetchConsultingHome } from '../features/consulting/api.js';
 import { acknowledgeFishDraw, claimStarterFish, claimStudyReward, drawFish, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
 import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
 import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
@@ -16,6 +17,7 @@ const { useCallback, useMemo } = React;
 export function useMobileApiController({ setState, stateRef } = {}) {
   const getUserApiBinding = useCallback(() => getMobileApiBinding('user', 'userApiUrl'), []);
   const getAnalysisApiBinding = useCallback(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
+  const getConsultingApiBinding = useCallback(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
   const getReportApiBinding = useCallback(() => getMobileApiBinding('report', 'reportApiUrl'), []);
   const getQnaApiBinding = useCallback(() => getMobileApiBinding('qna', 'qnaApiUrl'), []);
   const getNotiApiBinding = useCallback(() => getMobileApiBinding('noti', 'notiApiUrl'), []);
@@ -83,6 +85,10 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     (preferences) => saveNotificationPreferences({ ...getUserApiBinding(), preferences }),
     [getUserApiBinding]
   );
+  const loadConsultingHome = useCallback(
+    (signal) => fetchConsultingHome({ ...getConsultingApiBinding(), signal }),
+    [getConsultingApiBinding]
+  );
   const persistMobileQna = useCallback(
     ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
     [getQnaApiBinding]
@@ -107,6 +113,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
   return useMemo(() => ({
     getUserApiBinding,
     getAnalysisApiBinding,
+    getConsultingApiBinding,
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
@@ -127,6 +134,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     acknowledgeAquariumFishDraw,
     refreshStudyRanking,
     persistNotificationPreferences,
+    loadConsultingHome,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
@@ -135,6 +143,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
   }), [
     getUserApiBinding,
     getAnalysisApiBinding,
+    getConsultingApiBinding,
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
@@ -155,6 +164,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     acknowledgeAquariumFishDraw,
     refreshStudyRanking,
     persistNotificationPreferences,
+    loadConsultingHome,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,

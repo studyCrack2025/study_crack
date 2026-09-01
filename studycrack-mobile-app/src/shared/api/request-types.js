@@ -43,6 +43,10 @@ export const NOTIFICATION_REQUEST_TYPES = Object.freeze({
   READ_STUDENT_NOTIFICATION: 'student_read_notification'
 });
 
+export const CONSULTING_REQUEST_TYPES = Object.freeze({
+  GET_STUDENT_HOME: 'student_get_consulting_home'
+});
+
 export const REPORT_REQUEST_TYPES = Object.freeze({
   GET_PRESIGNED_URL: 'get_presigned_url',
   GET_PRO_REPORTS: 'get_pro_reports',

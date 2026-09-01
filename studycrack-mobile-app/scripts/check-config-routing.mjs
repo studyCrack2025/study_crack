@@ -14,5 +14,7 @@ assert.match(configFor('localhost').api.user, /execute-api\.ap-northeast-2\.amaz
 assert.equal(configFor('dev.studycrack.co.kr').api.user, 'https://api.dev.studycrack.co.kr/api/user');
 assert.equal(configFor('studycrack.co.kr').api.user, 'https://api.studycrack.co.kr/api/user');
 assert.equal(configFor('localhost', 'http://127.0.0.1:4567').api.user, 'http://127.0.0.1:4567/api/user');
+assert.equal(configFor('dev.studycrack.co.kr').api.consulting, 'https://api.dev.studycrack.co.kr/api/consulting');
+assert.equal(configFor('studycrack.co.kr').api.consultingPublic, 'https://api.studycrack.co.kr/api/consulting-public');
 
 console.log('config-routing contracts passed');
