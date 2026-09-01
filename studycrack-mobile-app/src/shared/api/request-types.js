@@ -44,7 +44,13 @@ export const NOTIFICATION_REQUEST_TYPES = Object.freeze({
 });
 
 export const CONSULTING_REQUEST_TYPES = Object.freeze({
-  GET_STUDENT_HOME: 'student_get_consulting_home'
+  GET_STUDENT_HOME: 'student_get_consulting_home',
+  PREPARE_PURCHASE: 'student_prepare_consulting_purchase'
+});
+
+export const PAYMENT_REQUEST_TYPES = Object.freeze({
+  CREATE_INTENT: 'create_payment_intent',
+  GET_STATUS: 'get_payment_status'
 });
 
 export const REPORT_REQUEST_TYPES = Object.freeze({

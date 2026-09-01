@@ -549,7 +549,9 @@ const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 's
 const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
 
 // NicePay JS SDK 결제창 호출
-function processPayment() {
+let paymentIntentCreating = false;
+async function processPayment() {
+    if (paymentIntentCreating) return;
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
@@ -568,24 +570,38 @@ function processPayment() {
     }
 
     const formattedPhone = formatPhoneNumber(rawPhone);
-    const userId = localStorage.getItem('userId');
-
-    let startDate = new Date();
-    if (globalCurrentTier !== 'free' && globalDaysLeft > 0 && globalExpireDate) {
-        startDate = globalExpireDate;
+    const checkoutTier = selectedTier;
+    const isTestPayment = selectedTier === 'test';
+    paymentIntentCreating = true;
+    const submitButton = document.getElementById('submitBtn');
+    if (submitButton) submitButton.disabled = true;
+    let intent;
+    try {
+        const response = await apiFetch(CONFIG.api.payment, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'create_payment_intent',
+                data: {
+                    purchaseKind: 'subscription',
+                    tier: checkoutTier,
+                    testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
+                    idempotencyKey: `subscription_${crypto.randomUUID()}`
+                }
+            })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success || !result.data?.paymentIntentId) throw new Error(result.error || '결제 정보를 생성하지 못했습니다.');
+        intent = result.data;
+    } catch (error) {
+        paymentIntentCreating = false;
+        if (submitButton) submitButton.disabled = false;
+        if (error.message !== 'Auth expired') alert(error.message || '결제 정보를 생성하지 못했습니다.');
+        return;
     }
 
-    const checkoutTier = selectedTier;
-    let amount = TIER_PRICES_KRW[selectedTier];
-    if (selectedTier === 'test' && FORCE_TEST_PAYMENT) amount = TEST_PAYMENT_AMOUNT_KRW;
-    if (!amount) { alert("유효하지 않은 상품입니다."); return; }
-
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
-    const isTestPayment = selectedTier === 'test';
     const checkoutData = {
-        tier: checkoutTier,
-        productName: isTestPayment ? `${selectedProductName} (테스트 결제)` : selectedProductName,
+        tier: (intent.tier || checkoutTier).toLowerCase(),
+        productName: intent.productName,
         requestedTier: selectedTier,
         isTestPayment,
         testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
@@ -593,10 +609,10 @@ function processPayment() {
         name: name,
         phone: formattedPhone,
         email: email,
-        userId: userId,
-        orderId: orderId,
-        amount: amount,
-        effectiveStartDate: startDate.toISOString()
+        paymentIntentId: intent.paymentIntentId,
+        orderId: intent.orderId,
+        amount: intent.amount,
+        expiresAt: intent.expiresAt
     };
 
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));

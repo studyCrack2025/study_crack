@@ -1,6 +1,6 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { fetchConsultingHome } from '../features/consulting/api.js';
+import { createConsultingPaymentIntent, fetchConsultingHome, fetchConsultingPaymentStatus, prepareConsultingPurchase } from '../features/consulting/api.js';
 import { acknowledgeFishDraw, claimStarterFish, claimStudyReward, drawFish, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
 import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
 import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
@@ -18,6 +18,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
   const getUserApiBinding = useCallback(() => getMobileApiBinding('user', 'userApiUrl'), []);
   const getAnalysisApiBinding = useCallback(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
   const getConsultingApiBinding = useCallback(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
+  const getPaymentApiBinding = useCallback(() => getMobileApiBinding('payment', 'paymentApiUrl'), []);
   const getReportApiBinding = useCallback(() => getMobileApiBinding('report', 'reportApiUrl'), []);
   const getQnaApiBinding = useCallback(() => getMobileApiBinding('qna', 'qnaApiUrl'), []);
   const getNotiApiBinding = useCallback(() => getMobileApiBinding('noti', 'notiApiUrl'), []);
@@ -89,6 +90,18 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     (signal) => fetchConsultingHome({ ...getConsultingApiBinding(), signal }),
     [getConsultingApiBinding]
   );
+  const reserveConsultingPurchase = useCallback(
+    ({ idempotencyKey, productCode }) => prepareConsultingPurchase({ ...getConsultingApiBinding(), idempotencyKey, productCode }),
+    [getConsultingApiBinding]
+  );
+  const startConsultingPayment = useCallback(
+    ({ idempotencyKey, purchaseReservationId }) => createConsultingPaymentIntent({ ...getPaymentApiBinding(), idempotencyKey, purchaseReservationId }),
+    [getPaymentApiBinding]
+  );
+  const loadConsultingPaymentStatus = useCallback(
+    ({ paymentIntentId, signal }) => fetchConsultingPaymentStatus({ ...getPaymentApiBinding(), paymentIntentId, signal }),
+    [getPaymentApiBinding]
+  );
   const persistMobileQna = useCallback(
     ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
     [getQnaApiBinding]
@@ -114,6 +127,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     getUserApiBinding,
     getAnalysisApiBinding,
     getConsultingApiBinding,
+    getPaymentApiBinding,
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
@@ -135,6 +149,9 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     refreshStudyRanking,
     persistNotificationPreferences,
     loadConsultingHome,
+    reserveConsultingPurchase,
+    startConsultingPayment,
+    loadConsultingPaymentStatus,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
@@ -144,6 +161,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     getUserApiBinding,
     getAnalysisApiBinding,
     getConsultingApiBinding,
+    getPaymentApiBinding,
     getReportApiBinding,
     getQnaApiBinding,
     getNotiApiBinding,
@@ -165,6 +183,9 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     refreshStudyRanking,
     persistNotificationPreferences,
     loadConsultingHome,
+    reserveConsultingPurchase,
+    startConsultingPayment,
+    loadConsultingPaymentStatus,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,

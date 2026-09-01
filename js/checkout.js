@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkoutData = JSON.parse(dataStr);
 
     // orderId 또는 amount 누락 시 (구버전 데이터) 재진입 유도
-    if (!checkoutData.orderId || !checkoutData.amount) {
+    if (!checkoutData.paymentIntentId || !checkoutData.orderId || !checkoutData.amount) {
         alert("결제 정보가 만료되었습니다. 다시 선택해주세요.");
         window.location.href = '/payment';
         return;
@@ -119,7 +119,7 @@ function submitCheckout() {
         return;
     }
 
-    if (!checkoutData || !checkoutData.userId) {
+    if (!checkoutData || !checkoutData.paymentIntentId) {
         alert("결제 정보가 만료되었습니다. 다시 결제를 진행해주세요.");
         allowCheckoutNavigationOnce();
         window.location.href = '/payment';
@@ -138,19 +138,7 @@ function submitCheckout() {
     if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
 
     try {
-        const mallReserved = {
-            userId:             checkoutData.userId,
-            tier:               checkoutData.tier,
-            productName:        checkoutData.productName,
-            orderId:            checkoutData.orderId,
-            amount:             amount,
-            payMethod:          selectedMethod.value,
-            isTestPayment:      !!checkoutData.isTestPayment,
-            testPayMode:        checkoutData.testPayMode || null,
-            testPayForced:      !!checkoutData.testPayForced,
-            effectiveStartDate: checkoutData.effectiveStartDate,
-            siteOrigin:         window.location.origin
-        };
+        const mallReserved = { paymentIntentId: checkoutData.paymentIntentId };
 
         const requestPayload = {
             clientId:   CONFIG.nicepay.clientId,

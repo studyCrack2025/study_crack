@@ -36,6 +36,7 @@ export function getMobileRuntimeContext() {
     gameApiUrl: browser?.CONFIG?.api?.game || '',
     userApiUrl: browser?.CONFIG?.api?.user || '',
     notiApiUrl: browser?.CONFIG?.api?.noti || '',
+    paymentApiUrl: browser?.CONFIG?.api?.payment || '',
     hasClientSession: browser?.hasClientSession || (() => false),
     redirectToLogin: browser?.redirectToLogin || (() => {})
   };
