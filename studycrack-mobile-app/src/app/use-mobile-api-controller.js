@@ -1,6 +1,6 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
-import { createConsultingPaymentIntent, fetchConsultingHome, fetchConsultingPaymentStatus, prepareConsultingPurchase } from '../features/consulting/api.js';
+import { createConsultingPaymentIntent, deleteConsultingScoreFile, fetchConsultingHome, fetchConsultingPaymentStatus, fetchConsultingSurveyDraft, fetchConsultingSurveySchema, prepareConsultingPurchase, saveConsultingSurveyDraft, submitConsultingInitialSurvey, uploadConsultingScoreFile } from '../features/consulting/api.js';
 import { acknowledgeFishDraw, claimStarterFish, claimStudyReward, drawFish, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
 import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
 import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
@@ -102,6 +102,30 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     ({ paymentIntentId, signal }) => fetchConsultingPaymentStatus({ ...getPaymentApiBinding(), paymentIntentId, signal }),
     [getPaymentApiBinding]
   );
+  const loadConsultingSurveySchema = useCallback(
+    ({ caseId, signal } = {}) => fetchConsultingSurveySchema({ ...getConsultingApiBinding(), caseId, signal }),
+    [getConsultingApiBinding]
+  );
+  const loadConsultingSurveyDraft = useCallback(
+    ({ caseId, signal } = {}) => fetchConsultingSurveyDraft({ ...getConsultingApiBinding(), caseId, signal }),
+    [getConsultingApiBinding]
+  );
+  const persistConsultingSurveyDraft = useCallback(
+    ({ caseId, expectedDraftRevision, snapshot } = {}) => saveConsultingSurveyDraft({ ...getConsultingApiBinding(), caseId, expectedDraftRevision, snapshot }),
+    [getConsultingApiBinding]
+  );
+  const finalizeConsultingInitialSurvey = useCallback(
+    ({ caseId, fileIds, idempotencyKey } = {}) => submitConsultingInitialSurvey({ ...getConsultingApiBinding(), caseId, fileIds, idempotencyKey }),
+    [getConsultingApiBinding]
+  );
+  const uploadConsultingScoreDocument = useCallback(
+    ({ caseId, file } = {}) => uploadConsultingScoreFile({ ...getFileApiBinding(), caseId, file }),
+    [getFileApiBinding]
+  );
+  const removeConsultingScoreDocument = useCallback(
+    ({ caseId, fileId } = {}) => deleteConsultingScoreFile({ ...getFileApiBinding(), caseId, fileId }),
+    [getFileApiBinding]
+  );
   const persistMobileQna = useCallback(
     ({ title, content } = {}) => saveMobileQna({ ...getQnaApiBinding(), title, content }),
     [getQnaApiBinding]
@@ -152,6 +176,12 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     reserveConsultingPurchase,
     startConsultingPayment,
     loadConsultingPaymentStatus,
+    loadConsultingSurveySchema,
+    loadConsultingSurveyDraft,
+    persistConsultingSurveyDraft,
+    finalizeConsultingInitialSurvey,
+    uploadConsultingScoreDocument,
+    removeConsultingScoreDocument,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,
@@ -186,6 +216,12 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     reserveConsultingPurchase,
     startConsultingPayment,
     loadConsultingPaymentStatus,
+    loadConsultingSurveySchema,
+    loadConsultingSurveyDraft,
+    persistConsultingSurveyDraft,
+    finalizeConsultingInitialSurvey,
+    uploadConsultingScoreDocument,
+    removeConsultingScoreDocument,
     persistMobileQna,
     persistProReportRequest,
     persistWeeklyCheck,

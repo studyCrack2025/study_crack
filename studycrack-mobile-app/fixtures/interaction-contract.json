@@ -27,6 +27,7 @@
     "ranking": { "profile": "secondary", "actions": ["setRankingPeriod", "back"] },
     "qualInfo": { "profile": "input", "actions": ["saveQualInfo", "back"] },
     "scoreInfo": { "profile": "input", "actions": ["applyScoreExam", "openScoreEdit", "saveScoreSubject", "closeScoreEdit"] },
+    "consulting": { "profile": "input", "actions": [] },
     "authLogin": { "profile": "input", "actions": ["loginSuccess", "ssoSuccess", "toggleLoginPasswordVisibility", "openFindEmailModal", "openResetPasswordModal"] },
     "authFindId": { "profile": "input", "actions": ["goto"] },
     "authFindPw": { "profile": "input", "actions": ["goto"] },

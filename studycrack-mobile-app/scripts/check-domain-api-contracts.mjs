@@ -5,6 +5,7 @@ import { apiFailure, apiInvalidResponse, apiSuccess, postJson, setApiAuthExpired
 import {
   ANALYSIS_REQUEST_TYPES,
   AUTH_REQUEST_TYPES,
+  CONSULTING_FILE_REQUEST_TYPES,
   CONSULTING_REQUEST_TYPES,
   GAME_REQUEST_TYPES,
   NOTIFICATION_REQUEST_TYPES,
@@ -25,6 +26,7 @@ import {
   validateWeeklyReport
 } from '../src/shared/model/contracts.js';
 import { normalizeNotifications } from '../src/features/notifications/api.js';
+import { fetchConsultingSurveyDraft, uploadConsultingScoreFile } from '../src/features/consulting/api.js';
 
 const envelopeKeys = ['code', 'data', 'error', 'ok', 'status'];
 
@@ -112,6 +114,37 @@ assert.equal(failure.status, 403);
 assert.equal(expiredResult, failure);
 releaseAuthExpiredHandler();
 
+let consultingDraftPayload = null;
+const consultingDraftResult = await fetchConsultingSurveyDraft({
+  apiFetch: async (_url, options) => {
+    consultingDraftPayload = JSON.parse(options.body);
+    return { ok: true, status: 200, json: async () => ({ success: true, data: { draft: null } }) };
+  },
+  caseId: 'CASE_123e4567-e89b-12d3-a456-426614174000',
+  consultingApiUrl: '/api/consulting'
+});
+assert.equal(consultingDraftResult.ok, true);
+assert.equal(consultingDraftPayload.type, CONSULTING_REQUEST_TYPES.GET_SURVEY_DRAFT);
+
+const scoreDocument = new Blob(['%PDF-'], { type: 'application/pdf' });
+Object.defineProperty(scoreDocument, 'name', { value: 'score.pdf' });
+const consultingFileCalls = [];
+const scoreUploadResult = await uploadConsultingScoreFile({
+  apiFetch: async (_url, options) => {
+    const payload = JSON.parse(options.body);
+    consultingFileCalls.push(payload);
+    if (payload.type === CONSULTING_FILE_REQUEST_TYPES.CREATE_SCORE_UPLOAD) return { ok: true, status: 200, json: async () => ({ success: true, data: { fileId: 'FILE_123e4567-e89b-12d3-a456-426614174001', uploadUrl: 'https://upload.example.test', fields: { key: 'private-key' } } }) };
+    return { ok: true, status: 200, json: async () => ({ success: true, data: { fileId: payload.data.fileId, status: 'quarantined' } }) };
+  },
+  caseId: 'CASE_123e4567-e89b-12d3-a456-426614174000',
+  fetchImpl: async (_url, options) => ({ ok: options.body instanceof FormData, status: 204 }),
+  file: scoreDocument,
+  fileApiUrl: '/api/file'
+});
+assert.equal(scoreUploadResult.ok, true);
+assert.deepEqual(consultingFileCalls.map((call) => call.type), [CONSULTING_FILE_REQUEST_TYPES.CREATE_SCORE_UPLOAD, CONSULTING_FILE_REQUEST_TYPES.COMPLETE_SCORE_UPLOAD]);
+assert.equal(consultingFileCalls[0].data.fileName, 'score.pdf');
+
 const apiModules = [
   'src/features/account/api.js',
   'src/features/analysis/api.js',
@@ -139,6 +172,7 @@ const requestTypeGroups = [
   SUPPORT_REQUEST_TYPES,
   AUTH_REQUEST_TYPES,
   CONSULTING_REQUEST_TYPES,
+  CONSULTING_FILE_REQUEST_TYPES,
   PAYMENT_REQUEST_TYPES,
   GAME_REQUEST_TYPES
 ];

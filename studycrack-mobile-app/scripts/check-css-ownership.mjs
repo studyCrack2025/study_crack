@@ -33,6 +33,7 @@ const expectedDeferredStyles = new Set([
   'screens/analysis.css',
   'screens/aquarium.css',
   'screens/coaching.css',
+  'screens/consulting.css',
   'screens/mypage-data.css',
   'screens/mypage-support.css',
   'screens/mypage.css',

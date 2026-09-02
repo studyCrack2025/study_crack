@@ -45,7 +45,17 @@ export const NOTIFICATION_REQUEST_TYPES = Object.freeze({
 
 export const CONSULTING_REQUEST_TYPES = Object.freeze({
   GET_STUDENT_HOME: 'student_get_consulting_home',
+  GET_SURVEY_DRAFT: 'student_get_survey_draft',
+  GET_SURVEY_SCHEMA: 'student_get_survey_schema',
+  SAVE_SURVEY_DRAFT: 'student_save_survey_draft',
+  SUBMIT_INITIAL_SURVEY: 'student_submit_initial_survey',
   PREPARE_PURCHASE: 'student_prepare_consulting_purchase'
+});
+
+export const CONSULTING_FILE_REQUEST_TYPES = Object.freeze({
+  COMPLETE_SCORE_UPLOAD: 'consulting_complete_score_upload',
+  CREATE_SCORE_UPLOAD: 'consulting_create_score_upload',
+  DELETE_UNSUBMITTED_SCORE_FILE: 'consulting_delete_unsubmitted_score_file'
 });
 
 export const PAYMENT_REQUEST_TYPES = Object.freeze({

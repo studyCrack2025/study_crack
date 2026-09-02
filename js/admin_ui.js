@@ -133,7 +133,8 @@ function showSection(sectionName) {
 
     const secMap = {
         'students': 'section-students', 'dashboard': 'section-dashboard', 'advanced-stats': 'section-advanced-stats',
-        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching'
+        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching',
+        'consulting': 'section-consulting'
     };
 
     if (secMap[sectionName]) {
@@ -148,6 +149,7 @@ function showSection(sectionName) {
     } else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications') { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
+    else if (sectionName === 'consulting') loadConsultingMaterialQueue();
 }
 
 window.showQnaSection = function(status) {

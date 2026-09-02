@@ -18,6 +18,7 @@ import '../styles/screens/mypage-data.css';
 import '../styles/screens/mypage.css';
 import '../styles/screens/ranking.css';
 import '../styles/screens/score-input.css';
+import '../styles/screens/consulting.css';
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { AquariumScreen } from '../screens/aquarium/AquariumScreen.jsx';
 import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
@@ -31,6 +32,7 @@ import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
 import { QualInfoScreen, RankingScreen, ScoreInfoScreen } from '../screens/profile/ProfileScreens.jsx';
 import { ProEliteScreen, ReportDetailScreen, ReportScreen, TutorScreen, WeeklyScreen } from '../screens/service/ServiceContentScreens.jsx';
 import { LockedFeatureScreen, PaymentCompleteScreen, PaymentScreen, ProIntroScreen } from '../screens/service/ServicePlanScreens.jsx';
+import { ConsultingSurveyScreen } from '../screens/consulting/ConsultingSurveyScreen.jsx';
 
 export const MOBILE_APP_SCREEN_COMPONENTS = {
   timer: TimerScreen,
@@ -39,6 +41,7 @@ export const MOBILE_APP_SCREEN_COMPONENTS = {
   addUniversity: AddUniversityScreen,
   analysis: AnalysisScreen,
   customerSupport: CustomerSupportScreen,
+  consulting: ConsultingSurveyScreen,
   strategy: CoachingScreen,
   lockedFeature: LockedFeatureScreen,
   my: MyPageScreen,

@@ -40,6 +40,11 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   customerSupport: Object.freeze([
     'openFaq', 'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
   ]),
+  consulting: Object.freeze([
+    'finalizeConsultingInitialSurvey', 'loadConsultingHome', 'loadConsultingSurveyDraft',
+    'loadConsultingSurveySchema', 'persistConsultingSurveyDraft', 'removeConsultingScoreDocument',
+    'uploadConsultingScoreDocument'
+  ]),
   lockedFeature: Object.freeze([
     'lockedFeatureLabel', 'lockedFeatureTarget', 'lockedFeatureTier', 'tab', 'upgradePromptTarget', 'upgradePromptTier'
   ]),

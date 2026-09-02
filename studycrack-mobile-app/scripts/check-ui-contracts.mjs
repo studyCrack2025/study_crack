@@ -38,7 +38,7 @@ const screens = extractStringList(registrySource, 'MOBILE_SCREEN_NAMES');
 const mainTabs = extractTabKeys(tabBarSource);
 
 assert.equal(new Set(screens).size, screens.length, 'Screen registry contains duplicate names');
-assert.deepEqual(screens, contract.screens, 'Screen registry does not match the 40-screen UI contract');
+assert.deepEqual(screens, contract.screens, 'Screen registry does not match the UI contract');
 assert.deepEqual(mainTabs, contract.mainTabs, 'Bottom navigation does not match the five-tab UI contract');
 assert.match(tabBarSource, /\{ key: 'timer', label: '홈', icon: 'home' \}/, 'The timer route must be presented as the Home tab');
 assert.match(tabBarSource, /className="tabbar-icon"/, 'Bottom navigation icons need a stable visual wrapper');
