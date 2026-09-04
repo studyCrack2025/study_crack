@@ -11,7 +11,7 @@ const RANKING_PERIODS = [
 
 function RankingBoard({ formatHms, rankingError, rankingMe, rankingRows, rankingStatus }) {
   if (rankingStatus === 'loading') return <SecondaryState kind="loading" title="랭킹을 집계하고 있어요" description="학습 기록을 반영하는 중입니다." />;
-  if (rankingStatus === 'error') return <SecondaryState kind="error" title="랭킹을 불러오지 못했어요" description={rankingError || '잠시 후 다시 확인해주세요.'} />;
+  if (rankingStatus === 'error') return <SecondaryState kind="error" title="랭킹을 불러오지 못했어요" description={rankingError || '잠시 후 다시 확인해주세요.'} action={<button type="button" className="btn btn-secondary mini" data-action="retryRanking">다시 시도</button>} />;
   if (rankingStatus === 'empty' || !rankingRows.length) return <SecondaryState title="아직 이 기간의 공부 기록이 없어요" description="공부 타이머를 시작하면 자동으로 집계됩니다." />;
   return (
     <section className="sc-secondary-section ranking-board">
@@ -115,7 +115,7 @@ export function ScoreInfoScreen(ctx) {
         </section>
         <section className="sc-secondary-section score-info-card">
           <div className="sc-secondary-section-head score-info-card-head"><div><h3>내 성적</h3><p>원점수와 표준점수·백분위·등급을 함께 확인합니다.</p></div><button type="button" className="btn btn-primary score-edit-btn" data-action="openScoreEdit">입력·수정</button></div>
-          <div className="score-info-subject-list">{scoreInfoSubjects.map((subject, index) => <ScoreSubjectCard {...subject} key={`${subject.subject}-${index}`} />)}</div>
+          <div className="score-info-subject-list">{scoreInfoSubjects.length ? scoreInfoSubjects.map((subject, index) => <ScoreSubjectCard {...subject} key={`${subject.subject}-${index}`} />) : <SecondaryState title="아직 저장된 시험 성적이 없어요" description="입력·수정에서 과목별 성적을 저장하면 분석에 사용할 수 있어요." />}</div>
         </section>
       </section>
     </SecondaryScreenShell>

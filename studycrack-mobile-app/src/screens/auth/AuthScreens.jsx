@@ -100,16 +100,21 @@ function AuthShell({ children, overlays = null, overlayOpen = Boolean(overlays),
   );
 }
 
-function AuthDirectRecoveryScreen({ description, screen, title }) {
+function AuthDirectRecoveryScreen({ children, description, screen, title }) {
   return (
     <AuthShell screen={screen}>
       <div className="auth-screen">
         <div className="auth-entry-layout auth-direct-recovery">
+          <header className="auth-brand-block">
+            <Logo />
+            <div className="auth-brand-copy"><h1 className="auth-brand-name">StudyCrack</h1><p className="auth-brand-tagline">계정 정보를 안전하게 확인해요.</p></div>
+          </header>
           <div className="auth-unified-card auth-form-card">
             <span className="auth-recovery-eyebrow">계정 복구</span>
             <h1>{title}</h1>
             <p className="sub">{description}</p>
-            <button className="btn btn-primary auth-submit" data-action="goto" data-target="authLogin">로그인 화면으로 이동</button>
+            {children}
+            <button type="button" className="auth-link-btn auth-direct-back" data-action="goto" data-target="authLogin">로그인 화면으로 돌아가기</button>
           </div>
         </div>
       </div>
@@ -117,12 +122,35 @@ function AuthDirectRecoveryScreen({ description, screen, title }) {
   );
 }
 
-export function AuthFindIdScreen() {
-  return <AuthDirectRecoveryScreen screen="authFindId" title="이메일 찾기" description="로그인 화면의 이메일 찾기 창에서 가입 정보를 확인할 수 있습니다." />;
+export function AuthFindIdScreen(ctx) {
+  const { foundEmailMasked = '' } = ctx;
+  return (
+    <AuthDirectRecoveryScreen screen="authFindId" title="이메일 찾기" description="가입 시 등록한 이름과 휴대폰 번호로 이메일을 확인합니다.">
+      <div className="auth-recovery-fields">
+        <input className={AUTH_INPUT_CLASS} data-find-email-name placeholder="이름" autoComplete="name" />
+        <input className={AUTH_INPUT_CLASS} data-field="findEmailPhone" inputMode="numeric" placeholder="휴대폰 번호" autoComplete="tel" />
+      </div>
+      {foundEmailMasked ? <div className="find-email-result" role="status"><span>확인된 이메일</span><b>{foundEmailMasked}</b></div> : null}
+      <button type="button" className="btn btn-primary auth-submit" data-action={foundEmailMasked ? 'goto' : 'findEmailByNamePhone'} data-target={foundEmailMasked ? 'authLogin' : undefined}>{foundEmailMasked ? '이 이메일로 로그인하기' : '이메일 찾기'}</button>
+    </AuthDirectRecoveryScreen>
+  );
 }
 
-export function AuthFindPwScreen() {
-  return <AuthDirectRecoveryScreen screen="authFindPw" title="비밀번호 재설정" description="로그인 화면의 비밀번호 찾기 창에서 인증 코드를 받아 재설정할 수 있습니다." />;
+export function AuthFindPwScreen(ctx) {
+  const { resetPasswordEmail = '', resetPasswordSending = false, resetPasswordStep = 'request' } = ctx;
+  const isRequest = resetPasswordStep === 'request';
+  return (
+    <AuthDirectRecoveryScreen screen="authFindPw" title="비밀번호 재설정" description={isRequest ? '가입한 이메일로 비밀번호 재설정 코드를 보내드립니다.' : `${resetPasswordEmail}로 받은 코드와 새 비밀번호를 입력해주세요.`}>
+      <div className="auth-recovery-fields">
+        {isRequest ? <input className={AUTH_INPUT_CLASS} data-reset-email data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" placeholder="가입한 이메일 주소" defaultValue={resetPasswordEmail} autoComplete="email" /> : <>
+          <input className={AUTH_INPUT_CLASS} data-reset-code placeholder="인증 코드 6자리" inputMode="numeric" autoComplete="one-time-code" />
+          <input className={AUTH_INPUT_CLASS} data-reset-password type="password" placeholder="새 비밀번호 (8자 이상)" autoComplete="new-password" />
+          <input className={AUTH_INPUT_CLASS} data-reset-password-confirm type="password" placeholder="새 비밀번호 확인" autoComplete="new-password" />
+        </>}
+      </div>
+      <button type="button" className="btn btn-primary auth-submit" data-action={isRequest ? 'requestResetPasswordCode' : 'submitResetPassword'} disabled={resetPasswordSending}>{isRequest ? (resetPasswordSending ? '발송 중...' : '인증 코드 받기') : '비밀번호 변경 완료'}</button>
+    </AuthDirectRecoveryScreen>
+  );
 }
 
 export function AuthLoginScreen(ctx) {

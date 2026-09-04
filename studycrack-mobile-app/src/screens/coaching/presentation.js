@@ -68,6 +68,7 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
   return {
     feedback,
     feedbackReady: feedback.length > 0,
+    isError: status === 'error',
     isLoading: status === 'loading',
     latest,
     sessions,

@@ -26,6 +26,7 @@ export function createAccountInitialState() {
       calendarSaving: false,
       logoutModalOpen: false,
       withdrawModalOpen: false,
+      withdrawSubmitting: false,
       phoneChangeModalOpen: false,
       phoneChangeStep: 'input',
       phoneChangeSending: false,

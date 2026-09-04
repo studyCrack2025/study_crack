@@ -126,19 +126,5 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
     });
   }, [setState, state.screen, state.phoneChangeModalOpen, state.myProfileEditOpen]);
 
-  useEffect(() => {
-    if (state.screen === 'ob5') {
-      if (state.ob3IsAnalyzing) setState({ ob3IsAnalyzing: false });
-      return undefined;
-    }
-    if (state.screen !== 'ob3') return undefined;
-    setState({ ob3IsAnalyzing: true });
-    const timer = globalThis.setTimeout?.(() => setState({ ob3IsAnalyzing: false }), 1500);
-    return () => {
-      if (timer) globalThis.clearTimeout?.(timer);
-      setState({ ob3IsAnalyzing: false });
-    };
-  }, [setState, state.screen]);
-
   useEffect(() => attachGestureEventBridge(() => eventsRef.current?.gesture), []);
 }

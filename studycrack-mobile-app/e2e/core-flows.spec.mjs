@@ -125,13 +125,14 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
 
   await installAuthenticatedSession(page);
   await page.goto('/studycrack-mobile.html?screen=ob1');
+  await page.getByRole('button', { name: '고3 재학' }).click();
   const school = page.locator('[data-field="obSchoolName"]');
   await school.fill('테스트고등학교');
   await page.locator('[data-field="obGoalText"]').fill('목표 대학에 맞는 공부 순서를 알고 싶어요.');
   await expect(school).toHaveValue('테스트고등학교');
-  await page.getByRole('button', { name: '1-2 성적 입력으로' }).click();
+  await page.getByRole('button', { name: '저장하고 성적 입력으로' }).click();
   await expect(page.locator('[data-screen="ob2"]')).toBeVisible();
-  await expect(page.locator('[data-field="obExamType"]')).toHaveValue('3월 모의고사');
+  await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('3월 모의고사');
 
   await page.goto('/studycrack-mobile.html?screen=ob4');
   await expect(page.getByText('지원학과 환산점수 분석')).toBeVisible();
@@ -489,9 +490,10 @@ test('Phase 2 핵심 화면은 네 viewport에서 프레임과 가로 경계를 
     { width: 430, height: 932 }
   ];
   const surfaces = [
-    { name: 'timer', screen: 'timer', ready: '.timer-v2-plan' },
-    { name: 'planner', screen: 'planner', ready: '.planner-progress-card' },
-    { name: 'aquarium', screen: 'aquarium', ready: '.aquarium-wallet' }
+    { name: 'timer', screen: 'timer', ready: '.timer-v2-plan', tabbar: true },
+    { name: 'planner', screen: 'planner', ready: '.planner-progress-card', tabbar: true },
+    { name: 'planner-add', screen: 'plannerAdd', ready: '[data-screen="plannerAdd"]', tabbar: false },
+    { name: 'aquarium', screen: 'aquarium', ready: '.aquarium-wallet', tabbar: true }
   ];
 
   for (const viewport of viewports) {
@@ -500,7 +502,7 @@ test('Phase 2 핵심 화면은 네 viewport에서 프레임과 가로 경계를 
       await page.goto(`/studycrack-mobile.html?screen=${surface.screen}`);
       await expect(page.locator(surface.ready)).toBeVisible();
       await expect(page.locator('.app-screen[data-screen]')).toHaveCSS('opacity', '1');
-      await expect(page.locator('.tabbar button')).toHaveCount(5);
+      await expect(page.locator('.tabbar button')).toHaveCount(surface.tabbar ? 5 : 0);
       await expectNoHorizontalOverflow(page);
       const frame = await page.locator('.app-frame').boundingBox();
       expect(frame).not.toBeNull();

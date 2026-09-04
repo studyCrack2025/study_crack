@@ -68,7 +68,6 @@ export function createSessionInitialState() {
       mbtiModalOpen: false,
       mbtiStep: 'intro',
       ob2SkippedNoScore: false,
-      ob3IsAnalyzing: true,
       onboardingLoading: false,
       onboardingLoadingText: '',
       isAnalyzing: false

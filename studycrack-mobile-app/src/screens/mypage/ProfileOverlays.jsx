@@ -83,12 +83,18 @@ export function PhoneChangeModal({ myProfilePhoneCodeDraft = '', myProfilePhoneD
   );
 }
 
-export function WithdrawModal({ withdrawModalOpen = false, withdrawPassword = '' }) {
+export function WithdrawModal({ user = {}, withdrawModalOpen = false, withdrawPassword = '', withdrawSubmitting = false }) {
+  const authProvider = String(user?.authProvider || 'local').toLowerCase();
+  const socialProvider = ['google', 'naver'].includes(authProvider) ? authProvider : '';
+  let hasDeleteConfirmation = false;
+  try {
+    hasDeleteConfirmation = Boolean(globalThis.sessionStorage?.getItem?.('deleteConfirmToken'));
+  } catch (_) {}
   return (
     <Modal open={withdrawModalOpen} panelClass="account-edit-modal" dismissAction="closeWithdrawModal">
-      <div className="account-edit-head"><div><p className="sc-modal-padded-title">회원탈퇴</p><p>현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p></div><CloseButton action="closeWithdrawModal" /></div>
-      <div className="account-edit-fields"><label htmlFor="mobile-withdraw-password">현재 비밀번호</label><input id="mobile-withdraw-password" className="planner-input" type="password" data-field="withdrawPassword" defaultValue={withdrawPassword} autoComplete="current-password" placeholder="현재 비밀번호" /></div>
-      <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button type="button" className="btn btn-danger" data-action="confirmWithdraw">탈퇴하기</button></div>
+      <div className="account-edit-head"><div><p className="sc-modal-padded-title">회원탈퇴</p><p>탈퇴가 완료되면 학습 기록과 계정을 복구할 수 없습니다.</p></div><CloseButton action="closeWithdrawModal" /></div>
+      {socialProvider && !hasDeleteConfirmation ? <div className="account-edit-fields"><p>가입에 사용한 {socialProvider === 'google' ? 'Google' : 'Naver'} 소셜 계정으로 본인 확인이 필요합니다.</p><button type="button" className="btn btn-secondary account-full-btn" data-action="startWithdrawSocialReauth" data-provider={socialProvider} disabled={withdrawSubmitting}>{socialProvider === 'google' ? 'Google' : 'Naver'} 계정으로 본인 확인</button></div> : socialProvider ? <div className="account-edit-fields"><p>소셜 계정 본인 확인이 완료되었습니다. 탈퇴하기를 누르면 서버에서 계정 삭제를 진행합니다.</p></div> : <div className="account-edit-fields"><label htmlFor="mobile-withdraw-password">현재 비밀번호</label><input id="mobile-withdraw-password" className="planner-input" type="password" data-field="withdrawPassword" defaultValue={withdrawPassword} autoComplete="current-password" placeholder="현재 비밀번호" disabled={withdrawSubmitting} /></div>}
+      <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeWithdrawModal" disabled={withdrawSubmitting}>취소</button>{!socialProvider || hasDeleteConfirmation ? <button type="button" className="btn btn-danger" data-action="confirmWithdraw" disabled={withdrawSubmitting}>{withdrawSubmitting ? '탈퇴 처리 중' : '탈퇴하기'}</button> : null}</div>
     </Modal>
   );
 }

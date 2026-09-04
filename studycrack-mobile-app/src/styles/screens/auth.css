@@ -39,6 +39,7 @@
 .auth-direct-recovery{align-self:center;}
 .auth-direct-recovery h1{margin:0;color:var(--sc-ink);font-size:var(--sc-type-title);font-weight:800;line-height:1.35;letter-spacing:0;}
 .auth-direct-recovery .sub{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
+.auth-direct-back{justify-self:center;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
 @keyframes authButtonSpin{to{transform:rotate(360deg);}}
 @media (max-width:360px){[data-screen="authLogin"] .auth-screen{padding-top:var(--sc-space-16);}[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-12);}[data-screen="authLogin"] .auth-unified-card{gap:var(--sc-space-12);padding:var(--sc-space-16);}[data-screen="authLogin"] .auth-form-stack{gap:10px;}}
 @media (max-height:720px){.app-screen[data-screen="authLogin"] .auth-entry-layout{gap:var(--sc-space-12);}.app-screen[data-screen="authLogin"] .auth-entry-footnote{display:none;}}

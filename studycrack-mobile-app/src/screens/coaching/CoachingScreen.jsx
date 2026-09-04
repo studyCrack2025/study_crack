@@ -45,13 +45,15 @@ function CoachingSegment({ active = 'sessions' }) {
   );
 }
 
-function CoachingEmpty({ view = 'sessions', loading = false }) {
-  const copy = loading
+function CoachingEmpty({ view = 'sessions', error = false, loading = false }) {
+  const copy = error
+    ? ['코칭 내역을 불러오지 못했어요', '잠시 후 화면을 다시 열어주세요.']
+    : loading
     ? ['코칭 내역을 불러오고 있어요', '잠시만 기다려 주세요.']
     : view === 'feedback'
       ? ['아직 도착한 피드백이 없어요', '튜터 검토가 끝나면 이곳에서 바로 확인할 수 있어요.']
       : ['아직 제출한 학습 점검이 없어요', '이번 주 기록과 질문을 남기고 첫 코칭을 시작해 보세요.'];
-  return <EmptyState className="coaching-empty" loading={loading} title={copy[0]} description={copy[1]} />;
+  return <EmptyState className="coaching-empty" kind={error ? 'error' : 'empty'} loading={loading} title={copy[0]} description={copy[1]} />;
 }
 
 function SessionRow({ item }) {
@@ -141,5 +143,5 @@ export function CoachingScreen(ctx) {
   const presentation = buildCoachingPresentation(weeklyReports, weeklyReportsStatus);
   const activeView = coachingView === 'feedback' ? 'feedback' : 'sessions';
   const rows = activeView === 'feedback' ? presentation.feedback : presentation.sessions;
-  return <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}><main className="coach-page coaching-screen"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><CoachingHero statusSummary={presentation.statusSummary} submitted={presentation.submitted} /><CoachingProcess /><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div><CoachingSegment active={activeView} /><div className="coaching-history-list">{rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : <CoachingEmpty view={activeView} loading={presentation.isLoading} />}</div>{activeView === 'sessions' && !presentation.isLoading ? <button type="button" className="coaching-new-request" data-action="openCoachingSheet"><span>+</span><b>새 학습 점검 작성</b><small>이번 주 기록과 질문 남기기</small></button> : null}</section></main></AppScreenShell>;
+  return <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}><main className="coach-page coaching-screen"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><CoachingHero statusSummary={presentation.statusSummary} submitted={presentation.submitted} /><CoachingProcess /><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div><CoachingSegment active={activeView} /><div className="coaching-history-list">{rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : <CoachingEmpty view={activeView} error={presentation.isError} loading={presentation.isLoading} />}</div>{activeView === 'sessions' && !presentation.isLoading && !presentation.isError ? <button type="button" className="coaching-new-request" data-action="openCoachingSheet"><span>+</span><b>새 학습 점검 작성</b><small>이번 주 기록과 질문 남기기</small></button> : null}</section></main></AppScreenShell>;
 }

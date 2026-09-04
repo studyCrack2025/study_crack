@@ -1,8 +1,4 @@
-/* Shared app bars and bottom navigation. */
-.appbar{display:flex;align-items:center;gap:var(--sc-space-12);width:100%;margin:0 0 var(--sc-space-16);box-sizing:border-box;}
-.back-btn{appearance:none;-webkit-appearance:none;display:grid;place-items:center;flex:0 0 var(--sc-touch-target);width:var(--sc-touch-target);height:var(--sc-touch-target);padding:0;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:18px;line-height:1;cursor:pointer;box-shadow:var(--sc-shadow-normal);}
-.appbar .title{min-width:0;margin:0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.35;overflow-wrap:anywhere;}
-.back-btn:focus-visible{outline:2px solid var(--sc-focus-ring);outline-offset:2px;}
+/* Shared bottom navigation. */
 .tabbar{position:absolute;left:0;right:0;bottom:0;height:calc(var(--sc-tabbar-height) + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:end;padding:6px 8px calc(7px + env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);background:color-mix(in srgb,var(--sc-surface-card) 97%,transparent);box-shadow:var(--sc-shadow-nav);z-index:var(--sc-layer-navigation);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);transition:opacity var(--motion-control) ease,box-shadow var(--motion-control) ease;}
 .tabbar.is-muted{opacity:.62;pointer-events:none;}
 .tabbar button{position:relative;min-width:0;min-height:var(--sc-touch-target);height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:visible;padding:2px;border:0;border-radius:var(--sc-radius-control);background:transparent;color:var(--sc-ink-subtle);font-family:inherit;font-size:var(--sc-type-micro);font-weight:650;line-height:1;}

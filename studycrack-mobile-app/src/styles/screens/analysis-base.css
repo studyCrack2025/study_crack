@@ -30,7 +30,7 @@
 .add-univ-head{align-items:center;}
 .add-univ-grid{min-width:0;}
 .add-univ-card{align-items:center;}
-.add-univ-card .btn,.add-univ-row .btn{flex:0 0 auto;min-height:36px;}
+.add-univ-card .btn,.add-univ-row .btn{width:auto;flex:0 0 auto;min-height:36px;}
 .add-univ-item-text{min-width:0;}
 .add-univ-item-text b,.add-univ-item-text p{min-width:0;overflow-wrap:anywhere;word-break:keep-all;}
 .add-univ-search{margin:0;}

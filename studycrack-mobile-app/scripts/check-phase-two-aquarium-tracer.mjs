@@ -240,6 +240,6 @@ assert.match(aquariumCss, /\.aquarium-manage-result button\{[^}]*min-width:var\(
 assert.match(aquariumCss, /\.aquarium-sound-toggle\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-resource-notice button\{[^}]*min-height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /@media \(prefers-reduced-motion:reduce\)\{\.aquarium-screen \*\{animation:none;transition:none;/);
-assert.match(packageSource, /check-phase-two-planner-tracer\.mjs && node scripts\/check-phase-two-aquarium-tracer\.mjs && node scripts\/check-ui-contracts\.mjs/);
+assert.match(packageSource, /check-phase-two-planner-tracer\.mjs && node scripts\/check-phase-two-aquarium-tracer\.mjs && node scripts\/check-phase-three-auth-onboarding-tracer\.mjs/);
 
 console.log('Phase 2 aquarium tracer presentation contract passed.');

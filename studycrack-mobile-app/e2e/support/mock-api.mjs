@@ -135,6 +135,7 @@ function responseFor(payload, state) {
     case 'get_user_analysis':
       return {
         ...mockUser,
+        ...state.userOverrides,
         computedTier: state.userTier,
         currentSubscription: state.userTier === 'free' ? null : {
           status: 'active',
@@ -178,6 +179,39 @@ function responseFor(payload, state) {
       });
     case 'backtrace_required_raw':
       return { result: { reachable: true, minTotalRaw: 6, bySubject: { kor: 3, math: 2, inq1: 1, inq2: 0 }, expected: { uiScore: 151.2 } } };
+    case 'find_email':
+      return { success: true, email: 's***@example.com' };
+    case 'send_pw_reset_code':
+      return { success: true };
+    case 'reset_password':
+      return { success: true };
+    case 'get_user_payment':
+      return {
+        name: mockUser.name,
+        email: mockUser.email,
+        phone: '010-1234-5678',
+        currentSubscription: null,
+        pendingSubscription: null
+      };
+    case 'create_payment_intent': {
+      const tier = String(payload.data?.tier || 'standard').toUpperCase();
+      const prices = { BASIC: 25000, STARTER: 39000, STANDARD: 49000, PRO: 149000, TEST: 100 };
+      const paymentIntentId = 'PI_123e4567e89b12d3a456426614174000';
+      return {
+        success: true,
+        data: {
+          paymentIntentId,
+          orderId: paymentIntentId,
+          purchaseKind: 'subscription',
+          tier,
+          productName: `스터디크랙 ${tier} 멤버십`,
+          amount: prices[tier],
+          status: 'intent_created',
+          fulfillmentStatus: 'pending',
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+        }
+      };
+    }
     case 'convert_score': {
       const raw = Number(payload.score || 0);
       return { std: Math.max(1, raw + 50), pct: Math.max(1, Math.min(100, raw + 35)), grd: Math.max(1, Math.min(9, Math.ceil((100 - raw) / 10))) };
@@ -297,13 +331,15 @@ function responseFor(payload, state) {
 }
 
 export async function installApiMock(page, {
+  analysisDelayByExam = {},
   failGameTypes = [],
   failOnceTypes = [],
   fishCatalog = FISH_CATALOG,
   initialGameProfile = {},
   studyDurationSeconds = 2,
   studyReward = { shells: 0, food: 0 },
-  tier = mockUser.computedTier
+  tier = mockUser.computedTier,
+  userOverrides = {}
 } = {}) {
   const requests = [];
   const failedOnce = new Set();
@@ -318,7 +354,8 @@ export async function installApiMock(page, {
     studyReward,
     studyRewardClaimed: false,
     studySeconds: 0,
-    userTier: tier
+    userTier: tier,
+    userOverrides
   };
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -334,6 +371,10 @@ export async function installApiMock(page, {
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Internal Server Error' }) });
       return;
     }
+    const analysisDelay = ['analyze_my_targets', 'simulate_score_rise', 'backtrace_required_raw'].includes(payload.type)
+      ? Math.max(0, Number(analysisDelayByExam[payload.examMode] || 0))
+      : 0;
+    if (analysisDelay) await new Promise((resolve) => setTimeout(resolve, analysisDelay));
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

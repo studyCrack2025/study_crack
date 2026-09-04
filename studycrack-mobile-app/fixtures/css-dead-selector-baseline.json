@@ -3,7 +3,6 @@
   "src/styles/screens/analysis.css": ["is-end", "is-start"],
   "src/styles/screens/locked-splash.css": ["locked-coach-page", "splash-bolt", "splash-brand-mark", "splash-card"],
   "src/styles/screens/mypage-support.css": ["qna-answer", "score-info-detail-row", "score-info-detail-table"],
-  "src/styles/screens/onboarding.css": ["ob-score-card"],
   "src/styles/screens/planner-add.css": ["is-hidden", "planner-add-form", "planner-add-page", "planner-pill-row"],
   "src/styles/screens/planner-calendar.css": ["planner-calendar-actions", "planner-calendar-agenda", "planner-calendar-agenda-head", "planner-calendar-agenda-item", "planner-calendar-agenda-panel", "planner-calendar-day-panel", "planner-calendar-day-score", "planner-calendar-empty", "planner-calendar-grabber", "planner-calendar-head", "planner-calendar-nav", "planner-calendar-overlay", "planner-calendar-plan-empty", "planner-calendar-plan-icon", "planner-calendar-plan-list", "planner-calendar-plan-row", "planner-calendar-scroll", "planner-calendar-sheet", "planner-calendar-time-cell", "planner-calendar-time-grid", "planner-calendar-time-row", "planner-calendar-toolbar", "planner-calendar-week-card", "planner-calendar-week-days", "planner-calendar-week-panel"],
   "src/styles/screens/ranking.css": ["ranking-theme"],

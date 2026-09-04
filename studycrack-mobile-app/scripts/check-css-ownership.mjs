@@ -36,6 +36,7 @@ const expectedDeferredStyles = new Set([
   'screens/mypage-data.css',
   'screens/mypage-support.css',
   'screens/mypage.css',
+  'screens/onboarding-results.css',
   'screens/planner-add.css',
   'screens/planner-calendar.css',
   'screens/planner.css',

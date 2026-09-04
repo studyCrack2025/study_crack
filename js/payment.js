@@ -18,6 +18,8 @@ let globalCurrentTier = 'free';
 let globalDaysLeft = 0;
 let globalExpireDate = null; // 기존 만료일(새로운 시작일) 저장용
 let userPhoneMissing = false;
+let paymentIntentPending = false;
+let paymentIntentRetry = null;
 
 function getTierDisplayName(tier) { return TIER_DISPLAY[(tier || '').toLowerCase()] || String(tier || '').toUpperCase(); }
 
@@ -392,6 +394,7 @@ function calculateUserTierDisplay(data) {
 
 // v2 디자인 — price-row 클릭 시 plan 선택 및 결제 섹션 노출
 function selectPlan(tier, priceRowEl) {
+    if (paymentIntentPending) return;
     // price-row 선택 상태 표시
     document.querySelectorAll('.price-row').forEach(r => r.classList.remove('selected'));
     if (priceRowEl) priceRowEl.classList.add('selected');
@@ -434,6 +437,7 @@ function selectPlan(tier, priceRowEl) {
 
 // 특수 옵션(TEST) 선택
 function selectSpecialPlan(tier, el) {
+    if (paymentIntentPending) return;
     document.querySelectorAll('.special-option-btn').forEach(b => b.classList.remove('selected'));
     if (el) el.classList.add('selected');
     document.querySelectorAll('.price-row').forEach(r => r.classList.remove('selected'));
@@ -544,12 +548,23 @@ function formatPhoneNumber(rawPhone) {
     return cleaned.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
 }
 
-// 티어별 결제 금액 (UI 표시용). 최종 결제 금액은 서버에서 검증한다.
-const BASE_TIER_PRICES_KRW = { 'test': 100, 'basic': 25000, 'starter': 39000, 'standard': 49000, 'pro': 149000 };
-const TIER_PRICES_KRW = BASE_TIER_PRICES_KRW;
+function createPaymentIdempotencyKey() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return `payment_${window.crypto.randomUUID()}`;
+    }
+    return `payment_${Date.now()}_${Math.random().toString(36).slice(2, 14)}`;
+}
+
+function getPaymentIdempotencyKey(tier) {
+    if (!paymentIntentRetry || paymentIntentRetry.tier !== tier) {
+        paymentIntentRetry = { tier, key: createPaymentIdempotencyKey() };
+    }
+    return paymentIntentRetry.key;
+}
 
 // NicePay JS SDK 결제창 호출
-function processPayment() {
+async function processPayment() {
+    if (paymentIntentPending) return;
     const name = document.getElementById('name').value;
     const rawPhone = document.getElementById('phone').value;
     const email = document.getElementById('email').value;
@@ -568,38 +583,55 @@ function processPayment() {
     }
 
     const formattedPhone = formatPhoneNumber(rawPhone);
-    const userId = localStorage.getItem('userId');
-
-    let startDate = new Date();
-    if (globalCurrentTier !== 'free' && globalDaysLeft > 0 && globalExpireDate) {
-        startDate = globalExpireDate;
+    const requestedTier = selectedTier;
+    const isTestPayment = requestedTier === 'test';
+    const submitBtn = document.getElementById('submitBtn');
+    paymentIntentPending = true;
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = '결제 정보 준비 중';
     }
 
-    const checkoutTier = selectedTier;
-    let amount = TIER_PRICES_KRW[selectedTier];
-    if (selectedTier === 'test' && FORCE_TEST_PAYMENT) amount = TEST_PAYMENT_AMOUNT_KRW;
-    if (!amount) { alert("유효하지 않은 상품입니다."); return; }
-
-    const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
-    const isTestPayment = selectedTier === 'test';
-    const checkoutData = {
-        tier: checkoutTier,
-        productName: isTestPayment ? `${selectedProductName} (테스트 결제)` : selectedProductName,
-        requestedTier: selectedTier,
-        isTestPayment,
-        testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
-        testPayForced: isTestPayment && FORCE_TEST_PAYMENT,
-        name: name,
-        phone: formattedPhone,
-        email: email,
-        userId: userId,
-        orderId: orderId,
-        amount: amount,
-        effectiveStartDate: startDate.toISOString()
-    };
-
-    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    allowPaymentNavigationOnce();
-    window.location.href = '/checkout';
+    try {
+        const response = await apiFetch(CONFIG.api.payment, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'create_payment_intent',
+                data: {
+                    purchaseKind: 'subscription',
+                    tier: requestedTier,
+                    testPayMode: isTestPayment ? (TEST_PAY_MODE || '0') : null,
+                    idempotencyKey: getPaymentIdempotencyKey(requestedTier)
+                }
+            })
+        });
+        const body = await response.json();
+        const intent = body && body.data;
+        const amount = Number(intent && intent.amount);
+        if (!body?.success || !intent?.paymentIntentId || intent.orderId !== intent.paymentIntentId || !Number.isSafeInteger(amount) || amount <= 0) {
+            throw new Error('결제 정보를 확인할 수 없습니다.');
+        }
+        const checkoutData = {
+            paymentIntentId: intent.paymentIntentId,
+            orderId: intent.orderId,
+            tier: String(intent.tier || requestedTier).toLowerCase(),
+            productName: intent.productName,
+            amount,
+            expiresAt: intent.expiresAt,
+            name,
+            phone: formattedPhone,
+            email
+        };
+        localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+        allowPaymentNavigationOnce();
+        window.location.href = '/checkout';
+    } catch (error) {
+        paymentIntentPending = false;
+        if (submitBtn) {
+            submitBtn.innerText = '결제하기';
+            _applyTierMessage(selectedTier, submitBtn);
+            _applyPhoneRequiredMessage(submitBtn);
+        }
+        alert(error?.message || '결제 정보를 준비하지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
 }

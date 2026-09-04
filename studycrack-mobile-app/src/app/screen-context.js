@@ -11,7 +11,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep', 'myProfileEditOpen',
     'myProfileNameDraft', 'myProfilePhoneCodeDraft', 'myProfilePhoneDraft', 'phoneChangeModalOpen',
     'phoneChangeSending', 'phoneChangeStep', 'profilePhotoUploading', 'selectedPlan', 'user',
-    'withdrawModalOpen', 'withdrawPassword'
+    'withdrawModalOpen', 'withdrawPassword', 'withdrawSubmitting'
   ]),
   addUniversity: Object.freeze([
     'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
@@ -25,8 +25,8 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
     'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems'
   ]),
-  authFindId: Object.freeze([]),
-  authFindPw: Object.freeze([]),
+  authFindId: Object.freeze(['foundEmailMasked']),
+  authFindPw: Object.freeze(['resetPasswordEmail', 'resetPasswordSending', 'resetPasswordStep']),
   authLogin: Object.freeze([
     'authError', 'authSubmitting', 'findEmailModalOpen', 'foundEmailMasked', 'openTermsType',
     'resetPasswordEmail', 'resetPasswordModalOpen', 'resetPasswordSending', 'resetPasswordStep',
@@ -51,16 +51,19 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiStatus']),
   notificationSettings: Object.freeze(['notifications']),
   ob1: Object.freeze(['crackySrc', 'obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
-  ob2: Object.freeze(['crackySrc', 'obExamType']),
+  ob2: Object.freeze(['crackySrc', 'scoreEditState', 'scoreExamType', 'scoreSubjectSaving']),
   ob3: Object.freeze(['crackySrc', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep']),
   ob4: Object.freeze([
-    'analysisGaugeColor', 'analysisGaugeFill', 'analysisSelected', 'analysisStatus', 'analysisStatusColor',
-    'crackySrc', 'liveCurrentScore', 'mbtiResult', 'scoreTierClass', 'targetMajor'
+    'analysisApiError', 'analysisApiStatus', 'analysisGaugeFill', 'analysisMajorOptions', 'analysisRecommended',
+    'analysisScoreView', 'analysisSelected', 'analysisSimRows', 'analysisStatus', 'analysisStatusColor',
+    'crackySrc', 'mbtiResult', 'scoreTierClass', 'targetMajor', 'universityRecommendationError',
+    'universityRecommendationStatus'
   ]),
   ob5: Object.freeze([
-    'activeScoreView', 'analysisApiStatus', 'analysisSelected', 'analysisSimRows', 'analysisTargetScore',
+    'activeScoreView', 'analysisApiError', 'analysisApiStatus', 'analysisScoreView', 'analysisSelected',
+    'analysisSimRows', 'analysisSimulationTargets', 'analysisTargetScore',
     'canUseReverseProjection', 'crackySrc', 'gaugeCurrent', 'gaugeCurrentPct', 'gaugePassPct',
-    'gaugeSafePct', 'gaugeTarget', 'gaugeTargetPct', 'ob3IsAnalyzing', 'scoreDragOffset',
+    'gaugeSafePct', 'gaugeTarget', 'gaugeTargetPct', 'scoreDragOffset',
     'scoreSlideMotion', 'scoreState', 'scoreTierClass', 'scores'
   ]),
   on1: Object.freeze([]),
@@ -111,7 +114,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   tutor: Object.freeze([
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
   ]),
-  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports']),
+  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports', 'weeklyReportsStatus']),
   termsScreen: Object.freeze(['termsContent'])
 });
 

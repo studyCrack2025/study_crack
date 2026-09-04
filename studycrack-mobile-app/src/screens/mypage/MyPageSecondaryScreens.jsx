@@ -7,14 +7,14 @@ const NOTIFICATION_ROWS = [
 ];
 const NOTI_PAGE_SIZE = 7;
 const FAQS = [
-  ['faq1', '분석 결과는 얼마나 정확한가요?', '스터디크랙의 분석 엔진은 최근 3개년의 합격자 표본과 대학별 환산식을 기반으로 계산됩니다. 단순 등급이 아닌 대학별 실질 환산 점수를 사용하여 높은 정확도를 제공합니다.'],
+  ['faq1', '분석 결과는 어떻게 계산되나요?', '저장한 시험 성적과 목표 대학의 반영 기준으로 환산 결과를 계산합니다. 분석 결과는 참고 자료이며 합격을 보장하지 않습니다.'],
   ['faq2', '목표 대학을 중간에 변경할 수 있나요?', '네, 가능합니다. 목표 대학을 수정하면 즉시 새로운 분석 결과가 반영됩니다.'],
-  ['faq3', '환불 규정이 궁금합니다.', '결제 후 목표 대학 설정 전까지는 전액 환불이 가능합니다. 목표 대학 설정 이후에는 콘텐츠 이용으로 간주되어 환불이 제한될 수 있습니다.'],
-  ['faq4', '다른 서비스랑 뭐가 다른가요?', '스터디크랙은 실제 합격 데이터를 기반으로 개인 전략을 설계해주는 서비스입니다. 막연한 가능성이 아니라 어디를, 왜, 어떻게 써야 하는지까지 제시합니다.'],
-  ['faq5', '지금 시작해도 늦지 않았나요?', '오히려 지금이 가장 중요합니다. 입시는 얼마나 많이가 아니라 얼마나 정확하게 하느냐가 결과를 좌우합니다.'],
-  ['faq6', '성적이 애매한데 효과가 있을까요?', '성적이 애매할수록 전략이 더 중요합니다. 상위권은 유지가 핵심이지만, 중위권은 전략에 따라 결과가 크게 갈립니다.'],
-  ['faq7', '혼자 해도 되는 거 아닌가요?', '가능합니다. 하지만 잘못된 방향으로 공부하면 시간은 쓰고 결과는 안 나옵니다. 스터디크랙은 시행착오를 줄여줍니다.'],
-  ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '빠르게 방향만 잡고 싶다면 Basic, 루틴 관리까지 원하면 Standard, 확실한 결과를 원하면 Pro를 추천합니다.']
+  ['faq3', '환불 규정이 궁금합니다.', '결제와 이용 상태에 따라 적용 기준이 달라질 수 있습니다. 약관의 환불규정을 확인하거나 1:1 문의로 계정 상태를 알려주세요.'],
+  ['faq4', '어떤 정보를 확인할 수 있나요?', '대학별 환산 결과와 저장한 학습 계획, 공부 기록, 이용 중인 플랜에서 제공하는 리포트를 한곳에서 확인할 수 있습니다.'],
+  ['faq5', '지금부터 기록해도 되나요?', '네. 오늘 계획과 공부 시간을 기록하면 이후 학습 점검에서 실제 기록을 확인할 수 있습니다.'],
+  ['faq6', '성적이 아직 완성되지 않았어요.', '입력할 수 있는 시험부터 저장하고 목표 대학을 선택해 현재 계산 가능한 결과를 확인해보세요.'],
+  ['faq7', '혼자 이용할 수도 있나요?', '네. 플래너와 분석 기능은 직접 이용할 수 있고, 코칭과 리포트는 이용 중인 플랜의 제공 범위에서 확인할 수 있습니다.'],
+  ['faq8', '어떤 플랜을 선택해야 할지 모르겠어요.', '플랜 선택 화면에서 가격과 제공 기능을 비교한 뒤 필요한 기능이 포함된 플랜을 선택해주세요.']
 ];
 
 function formatDate(value) {
@@ -40,7 +40,7 @@ function QnaComposerModal({ open, qnaDraftContent = '', qnaDraftTitle = '', qnaS
 }
 
 function QnaHistory({ qnaHistory = [], qnaStatus = 'idle' }) {
-  if (qnaStatus === 'loading') return <SecondaryState kind="loading" title="문의 내역을 불러오는 중이에요" />;
+  if (qnaStatus === 'idle' || qnaStatus === 'loading') return <SecondaryState kind="loading" title="문의 내역을 불러오는 중이에요" />;
   if (qnaStatus === 'error') return <SecondaryState kind="error" title="문의 내역을 불러오지 못했어요" description="잠시 후 다시 확인해주세요." />;
   if (!qnaHistory.length) return <SecondaryState title="아직 남긴 문의가 없어요" description="궁금한 점이 생기면 1:1 문의를 남겨주세요." />;
   return qnaHistory.map((item, index) => {
@@ -79,7 +79,7 @@ export function NotificationListScreen({ notiDetailId = '', notiList = [], notiP
   const unreadCount = list.filter((item) => item?.isRead !== true).length;
   let content = null;
   if (!list.length) {
-    const kind = notiStatus === 'loading' ? 'loading' : notiStatus === 'error' ? 'error' : 'empty';
+    const kind = notiStatus === 'idle' || notiStatus === 'loading' ? 'loading' : notiStatus === 'error' ? 'error' : 'empty';
     const title = kind === 'loading' ? '알림을 불러오는 중...' : kind === 'error' ? '알림을 불러오지 못했습니다.' : '받은 알림이 없습니다.';
     content = <SecondaryState kind={kind} title={title} description={kind === 'error' ? '잠시 후 다시 확인해주세요.' : ''} />;
   } else {

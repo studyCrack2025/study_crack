@@ -32,7 +32,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'phoneChangeModalOpen', 'phoneChangeSending', 'phoneChangeStep', 'profileDetailModalOpen',
     'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep',
     'scoreExamKey', 'scoreSubjectSaving', 'scores', 'targetMajor', 'user', 'withdrawModalOpen',
-    'withdrawPassword'
+    'withdrawPassword', 'withdrawSubmitting'
   ]),
   service: Object.freeze([
     'analysisSearchOpen', 'checkoutPlan', 'coachingDropReasons', 'coachingExamFiles',

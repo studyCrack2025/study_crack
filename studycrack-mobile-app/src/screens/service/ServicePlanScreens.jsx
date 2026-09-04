@@ -1,7 +1,6 @@
 import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { PLAN_META } from '../../constants/plans.js';
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { CoachingMark, CoachingProcess } from '../coaching/CoachingScreen.jsx';
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
@@ -60,16 +59,15 @@ function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', cta
 }
 
 function PlannerLockedPreview() {
-  const [, month, day] = TODAY_DATE.split('-').map(Number);
-  return <div className="locked-preview planner-preview"><div className="planner-head preview-head"><h3>{month}월 {day}일</h3><span className="preview-icon">일정</span></div><div className="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>총 6시간 30분</p></div><div className="planner-donut-wrap"><div className="planner-donut" style={{ '--donut': 'conic-gradient(#4c79ee 0 46%,#10B981 46% 72%,#F59E0B 72% 100%)' }} /></div></div><div className="planner-plan-list preview-list"><div className="planner-item"><i className="dot blue" /><div className="planner-item-main"><b>수학</b><p>약점 단원 3문항 재풀이</p></div><strong>90분</strong></div><div className="planner-item"><i className="dot green" /><div className="planner-item-main"><b>국어</b><p>비문학 지문 분석 루틴</p></div><strong>70분</strong></div></div></div>;
+  return <div className="locked-preview planner-preview"><div className="planner-head preview-head"><h3>플래너 미리보기</h3><span className="preview-icon">잠금</span></div><div className="planner-section-title"><div><h4>오늘의 합격 플래너</h4><p>저장된 실제 일정이 여기에 표시됩니다.</p></div></div><div className="planner-plan-list preview-list"><div className="planner-item"><i className="dot blue" /><div className="planner-item-main"><b>과목별 계획</b><p>학습 내용과 시간이 표시됩니다.</p></div></div></div></div>;
 }
 
 function ProLockedPreview() {
-  return <div className="locked-preview pro-preview"><div className="pro-elite-hero"><span className="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>2주 단위로 목표 대학 도달 전략을 정리합니다.</p></div><div className="pro-elite-list"><div className="pro-elite-item"><div><b>6월 2주차 PRO 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span className="pro-elite-download">PDF</span></div><div className="qna-card"><div className="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>답변 대기</span></div><em>PRO</em></div><p className="qna-question">주간 학습 흐름과 질문을 남기면 튜터 답변이 연결됩니다.</p></div></div></div>;
+  return <div className="locked-preview pro-preview"><div className="pro-elite-hero"><span className="pro-elite-badge">PRO EXCLUSIVE</span><h3>상위권 전략 리포트</h3><p>실제로 발행된 리포트만 목록에 표시됩니다.</p></div><div className="pro-elite-list"><div className="pro-elite-item"><div><b>발행 리포트</b><p>정밀 역추적 · 지원 전략 · 학부모 공유 요약</p></div><span className="pro-elite-download">PDF</span></div><div className="qna-card"><div className="qna-card-head"><div><b>SKY튜터 1:1 피드백</b><span>실제 상태 표시</span></div><em>PRO</em></div><p className="qna-question">주간 학습 흐름과 질문을 남기면 실제 튜터 답변이 연결됩니다.</p></div></div></div>;
 }
 
 function CoachingLockedPreview() {
-  return <div className="locked-preview coach-preview"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><CoachingProcess /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coaching-history-row coaching-session-row"><span className="coaching-session-status"><i /></span><span className="coaching-session-copy"><small>이번 주 · SKY 튜터</small><b>주간 학습 점검</b><em>검토 대기</em></span><strong>›</strong></div></div></section></div>;
+  return <div className="locked-preview coach-preview"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><CoachingProcess /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coach-empty">구독 후 실제 점검 내역과 피드백이 표시됩니다.</div></div></section></div>;
 }
 
 function LockedFeaturePreview({ target = '' }) {

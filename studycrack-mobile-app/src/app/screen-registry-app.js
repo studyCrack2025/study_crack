@@ -18,6 +18,7 @@ import '../styles/screens/mypage-data.css';
 import '../styles/screens/mypage.css';
 import '../styles/screens/ranking.css';
 import '../styles/screens/score-input.css';
+import '../styles/screens/onboarding-results.css';
 import { AnalysisScreen } from '../screens/analysis/AnalysisScreen.jsx';
 import { AquariumScreen } from '../screens/aquarium/AquariumScreen.jsx';
 import { AddUniversityScreen } from '../screens/analysis/AddUniversityScreen.jsx';
@@ -28,6 +29,7 @@ import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
 import { CustomerSupportScreen, NotificationListScreen, NotificationSettingsScreen } from '../screens/mypage/MyPageSecondaryScreens.jsx';
 import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
+import { Ob4Screen, Ob5Screen } from '../screens/onboarding/ResultScreens.jsx';
 import { QualInfoScreen, RankingScreen, ScoreInfoScreen } from '../screens/profile/ProfileScreens.jsx';
 import { ProEliteScreen, ReportDetailScreen, ReportScreen, TutorScreen, WeeklyScreen } from '../screens/service/ServiceContentScreens.jsx';
 import { LockedFeatureScreen, PaymentCompleteScreen, PaymentScreen, ProIntroScreen } from '../screens/service/ServicePlanScreens.jsx';
@@ -44,6 +46,8 @@ export const MOBILE_APP_SCREEN_COMPONENTS = {
   my: MyPageScreen,
   notificationList: NotificationListScreen,
   notificationSettings: NotificationSettingsScreen,
+  ob4: Ob4Screen,
+  ob5: Ob5Screen,
   planner: PlannerScreen,
   plannerAdd: PlannerAddScreen,
   payment: PaymentScreen,
