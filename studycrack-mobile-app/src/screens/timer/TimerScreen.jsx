@@ -12,9 +12,9 @@ function TimerLoadingScreen({ tab = 'timer' }) {
   return (
     <AppScreenShell screen="timer" tab={tab}>
       <main className="timer-screen-v2 timer-screen-loading" aria-busy="true" aria-label="타이머 화면을 불러오는 중입니다">
-        <div className="timer-v2-skeleton timer-v2-skeleton-head" />
-        <div className="timer-v2-skeleton timer-v2-skeleton-clock" />
-        <div className="timer-v2-skeleton timer-v2-skeleton-summary" />
+        <div className="sc-skeleton timer-v2-skeleton-head" aria-hidden="true" />
+        <div className="sc-skeleton timer-v2-skeleton-clock" aria-hidden="true" />
+        <div className="sc-skeleton timer-v2-skeleton-summary" aria-hidden="true" />
       </main>
     </AppScreenShell>
   );

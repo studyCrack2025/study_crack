@@ -59,7 +59,7 @@ export function RankingScreen(ctx) {
           <div className="ranking-summary-tier"><span>현재 티어</span><b className={myTier.toLowerCase()}>{myTier}</b></div>
           <div className="ranking-summary-stats"><div><span>참여</span><b>{rankingTotal ? `${rankingTotal}명` : '—'}</b></div><div><span>상위</span><b>{percentile ? `${percentile}%` : '—'}</b></div><div><span>기준</span><b>{periodLabel}</b></div></div>
         </section>
-        <div className="sc-secondary-segmented ranking-tabs">{RANKING_PERIODS.map(([key, label]) => <button type="button" className={rankingPeriod === key ? 'active' : ''} data-action="setRankingPeriod" data-ranking-period={key} key={key}>{label}</button>)}</div>
+        <div className="sc-secondary-segmented ranking-tabs" role="tablist" aria-label="랭킹 기간">{RANKING_PERIODS.map(([key, label]) => <button type="button" role="tab" aria-selected={rankingPeriod === key} className={rankingPeriod === key ? 'active' : ''} data-action="setRankingPeriod" data-ranking-period={key} key={key}>{label}</button>)}</div>
         <RankingBoard formatHms={formatHms} rankingError={rankingError} rankingMe={rankingMe} rankingRows={rankingRows} rankingStatus={rankingStatus} />
       </section>
     </SecondaryScreenShell>

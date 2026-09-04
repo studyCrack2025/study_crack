@@ -1,4 +1,5 @@
 import { formatPlannerMinutes, PLANNER_ACTIVITY_OPTIONS, PLANNER_CATEGORY_OPTIONS } from './planner-options.js';
+import { AppContent, AppFrame, SecondaryScreenHeader } from '../../components/AppFrame.js';
 
 function getWeekdayLabel(dateKey = '') {
   const [year, month, day] = String(dateKey || '').split('-').map(Number);
@@ -36,11 +37,10 @@ export function PlannerAddScreen(ctx) {
   ];
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className="screen app-screen app-content" data-screen="plannerAdd">
+    <AppFrame>
+      <AppContent screen="plannerAdd">
           <div className="planner-screen planner-add-screen" data-planner-add-root>
-            <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">계획 추가</div></div>
+            <SecondaryScreenHeader title="계획 추가" />
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>
@@ -160,8 +160,7 @@ export function PlannerAddScreen(ctx) {
             </div>
             <div className="planner-bottom-space" />
           </div>
-        </div>
-      </div>
-    </div>
+      </AppContent>
+    </AppFrame>
   );
 }

@@ -105,6 +105,8 @@ const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
+assert.ok(initialBytes <= Math.floor(527.2 * 1024), `Phase 1 initial JS grew above the 527.2 KiB baseline: ${formatKiB(initialBytes)}`);
+assert.ok(bootstrapCss.length <= Math.floor(75.6 * 1024), `Phase 1 bootstrap CSS grew above the 75.6 KiB baseline: ${formatKiB(bootstrapCss.length)}`);
 console.log(
   `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks`
 );

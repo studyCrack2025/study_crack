@@ -2,4 +2,5 @@
 .primary-screen-header > div:first-child{min-width:0;display:grid;gap:4px;}
 .primary-screen-header span{display:block;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;line-height:1.25;}
 .primary-screen-header h1{margin:0;color:var(--sc-ink);font-size:var(--sc-type-display);font-weight:900;line-height:1.15;letter-spacing:0;word-break:keep-all;}
+.primary-screen-header p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.45;word-break:keep-all;}
 .primary-screen-header__action{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;}

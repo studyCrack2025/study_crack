@@ -19,6 +19,7 @@ import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { getMobileRootElement, markMobileAppBooted } from '../shared/browser/mobile-runtime.js';
 
 markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
+import('../shared/browser/network-status.js').then(({ attachNetworkStatus }) => attachNetworkStatus());
 
 const rootElement = getMobileRootElement();
 if (rootElement) createRoot(rootElement).render(React.createElement(MobileApp));

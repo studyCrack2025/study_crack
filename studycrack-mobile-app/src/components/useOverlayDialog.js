@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import {
   cancelOverlayFocus,
   captureOverlayFocus,
+  isTopOverlay,
+  registerOverlay,
   restoreOverlayFocus,
   scheduleOverlayFocus,
   trapOverlayFocus
@@ -14,15 +16,18 @@ export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
   useEffect(() => {
     if (!open) return undefined;
     const previousFocus = captureOverlayFocus();
+    const unregister = registerOverlay(panelRef.current);
     const frame = scheduleOverlayFocus(panelRef.current);
 
     return () => {
       cancelOverlayFocus(frame);
+      unregister();
       restoreOverlayFocus(previousFocus);
     };
   }, [open]);
 
   const onKeyDown = (event) => {
+    if (!isTopOverlay(panelRef.current)) return;
     if (event.key === 'Escape' && dismissAction) {
       event.preventDefault();
       overlayRef.current?.click();

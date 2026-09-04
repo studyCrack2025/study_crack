@@ -75,6 +75,8 @@ assert.match(legal, /sc-reading-content/);
 assert.doesNotMatch(legal, /dangerouslySetInnerHTML/);
 assert.match(secondaryScreen, /export function SecondaryIntro/);
 assert.match(secondaryScreen, /export function SecondaryScreenShell/);
+assert.match(secondaryScreen, /<StatusState/);
+assert.doesNotMatch(secondaryScreen, /sc-secondary-state/);
 
 assert.match(serviceContent, /data-action="downloadProReport"/);
 assert.match(serviceContent, /data-action="openProRequestModal"/);
@@ -93,8 +95,8 @@ for (const selector of [
   '.sc-secondary-section',
   '.sc-secondary-list',
   '.sc-secondary-row',
-  '.sc-secondary-form',
-  '.sc-secondary-state'
+  '.sc-secondary-form'
 ]) assert.match(styles, new RegExp(selector.replace('.', '\\.') + '\\{'));
+assert.doesNotMatch(styles, /\.sc-secondary-state/);
 
 console.log('secondary-presentation contracts passed');

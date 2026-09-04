@@ -7,6 +7,21 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])'
 ].join(',');
 
+const overlayStack = [];
+
+export function registerOverlay(panel) {
+  if (!panel) return () => {};
+  overlayStack.push(panel);
+  return () => {
+    const index = overlayStack.lastIndexOf(panel);
+    if (index >= 0) overlayStack.splice(index, 1);
+  };
+}
+
+export function isTopOverlay(panel) {
+  return Boolean(panel) && overlayStack.at(-1) === panel;
+}
+
 function focusableElements(panel) {
   if (!panel) return [];
   return Array.from(panel.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => (
@@ -20,6 +35,7 @@ export function captureOverlayFocus() {
 
 export function scheduleOverlayFocus(panel) {
   return window.requestAnimationFrame(() => {
+    if (!isTopOverlay(panel)) return;
     const [first] = focusableElements(panel);
     (first || panel)?.focus({ preventScroll: true });
   });
@@ -30,7 +46,7 @@ export function cancelOverlayFocus(frame) {
 }
 
 export function restoreOverlayFocus(element) {
-  if (element instanceof HTMLElement && element.isConnected) element.focus({ preventScroll: true });
+  if (element instanceof HTMLElement && element.isConnected && !element.closest('[inert]')) element.focus({ preventScroll: true });
 }
 
 export function trapOverlayFocus(event, panel) {

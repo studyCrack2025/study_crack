@@ -17,59 +17,27 @@ import {
   selectFlatAppState
 } from '../runtime/app-state.js';
 import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
+import { AppContent, AppFrame } from '../components/AppFrame.js';
+import { StatusState } from '../components/StatusState.js';
+import { DeferredScreenFallback } from './DeferredScreenFallback.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
-function DeferredScreenFallback({ onRetry, screen, status }) {
-  const failed = status === 'error';
-  return React.createElement(
-    'div',
-    { className: 'app-shell' },
-    React.createElement(
-      'div',
-      { className: 'app-frame' },
-      React.createElement(
-        'div',
-        { className: 'screen app-screen app-content', 'data-screen': screen },
-        React.createElement(
-          'div',
-          { className: 'center init-loading', role: 'status', 'aria-live': 'polite' },
-          React.createElement('h3', null, failed ? '화면을 불러오지 못했습니다' : '앱 화면을 준비하고 있어요'),
-          React.createElement(
-            'p',
-            { className: 'sub' },
-            failed ? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.' : '잠시만 기다려 주세요.'
-          ),
-          failed
-            ? React.createElement('button', {
-                type: 'button',
-                className: 'btn btn-primary mini',
-                onClick: onRetry
-              }, '다시 시도')
-            : null
-        )
-      )
-    )
-  );
-}
-
 function MissingScreenFallback({ screen }) {
   return React.createElement(
-    'div',
-    { className: 'app-shell' },
+    AppFrame,
+    null,
     React.createElement(
-      'div',
-      { className: 'app-frame' },
+      AppContent,
+      { screen },
       React.createElement(
-        'div',
-        { className: 'screen app-screen app-content', 'data-screen': screen },
-        React.createElement(
-          'div',
-          { className: 'center init-loading', role: 'status' },
-          React.createElement('h3', null, '화면을 찾을 수 없습니다'),
-          React.createElement('p', { className: 'sub' }, '타이머로 돌아가 다시 시도해 주세요.'),
-          React.createElement('button', { type: 'button', className: 'btn btn-primary mini', 'data-action': 'goto', 'data-target': 'timer' }, '타이머로 이동')
-        )
+        StatusState,
+        {
+          action: React.createElement('button', { type: 'button', className: 'btn btn-primary', 'data-action': 'goto', 'data-target': 'timer' }, '타이머로 이동'),
+          description: '타이머로 돌아가 다시 시도해 주세요.',
+          kind: 'error',
+          title: '화면을 찾을 수 없습니다'
+        }
       )
     )
   );

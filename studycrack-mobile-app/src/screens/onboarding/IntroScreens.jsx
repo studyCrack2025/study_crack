@@ -1,8 +1,9 @@
 import { CRACKY_HI_SRC, CRACKY_SRC, STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { AppContent, AppFrame } from '../../components/AppFrame.js';
 
 function IntroScreen({ activeDot, children, description, nextLabel = '다음', nextTarget, screen, title }) {
   return (
-    <div className="app-shell"><div className="app-frame"><div className="screen app-screen app-content" data-screen={screen}>
+    <AppFrame><AppContent screen={screen}>
       <div className="onboarding-shot">
         <div className="onboarding-shot-head"><span className="onboarding-kicker">STUDYCRACK STRATEGY</span><h2>{title}</h2><p>{description}</p></div>
         <div className="onboarding-center">{children}</div>
@@ -10,12 +11,12 @@ function IntroScreen({ activeDot, children, description, nextLabel = '다음', n
         <div className="onboarding-shot-dots">{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
         <button type="button" className="onboarding-next" data-action="goto" data-target={nextTarget}>{nextLabel}</button>
       </div>
-    </div></div></div>
+    </AppContent></AppFrame>
   );
 }
 
 export function SplashScreen({ crackyHiSrc = CRACKY_HI_SRC, studycrackLogoSrc = STUDYCRACK_LOGO_SRC }) {
-  return <div className="app-shell"><div className="app-frame"><div className="splash splash-v2"><div className="splash-brand"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><div className="splash-brand-copy"><span>ADMISSIONS PLATFORM</span><h1>STUDY CRACK</h1><p>합격까지 가장 빠른 전략</p></div></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><div className="splash-progress" aria-hidden="true"><i /></div></div></div></div>;
+  return <AppFrame><div className="splash splash-v2"><div className="splash-brand"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><div className="splash-brand-copy"><span>ADMISSIONS PLATFORM</span><h1>STUDY CRACK</h1><p>합격까지 가장 빠른 전략</p></div></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><div className="splash-progress" aria-hidden="true"><i /></div></div></AppFrame>;
 }
 
 export function On1Screen() {

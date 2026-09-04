@@ -9,10 +9,15 @@ export const TAB_ITEMS = [
   { key: 'strategy', label: '학습 코칭', icon: 'target' }
 ];
 
-export function TabBar({ activeTab = 'timer', dimmed = false }) {
+export function TabBar({ activeTab = 'timer', dimmed = false, inactive = false }) {
   const items = filterTabItemsForTier(TAB_ITEMS);
   return (
-    <nav className={`tabbar bottom-tab ${dimmed ? 'is-muted' : ''}`} aria-label="주요 메뉴">
+    <nav
+      className={`tabbar bottom-tab ${dimmed ? 'is-muted' : ''}`}
+      aria-label="주요 메뉴"
+      inert={inactive ? '' : undefined}
+      aria-hidden={inactive ? 'true' : undefined}
+    >
       {items.map((item) => {
         const active = activeTab === item.key;
         return (

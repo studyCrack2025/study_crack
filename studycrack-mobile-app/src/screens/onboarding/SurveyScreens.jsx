@@ -24,9 +24,9 @@ export function Ob1Screen(ctx) {
   return <OnboardingScreenShell screen="ob1" step={1} title="학습성향 진단 1-1" crackySrc={crackySrc} subcopy={<>지금 성적과 공부 습관을 바탕으로<br />나에게 맞는 합격 전략을 찾아볼게요.</>} bubble="성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!" cta={<button type="button" className="cta-button" data-action="goto" data-target="ob2">1-2 성적 입력으로</button>}>
     <div className="ob1-survey-card"><h3>정성조사서</h3><p className="ob1-subtitle">학습 상황과 고민을 알려주시면 더 정확한 전략을 만들 수 있어요.</p><p className="ob1-subtitle ob-required-copy">* 표시는 필수 입력 항목입니다.</p><div className="ob1-field-stack">
       <div className="ob1-field"><label>현재 학년 <Required /></label><div className="ob1-pill-row">{GRADE_STATUS_OPTIONS.map((grade) => <button type="button" className={`ob1-pill ${obGradeStatus === grade ? 'active' : ''}`} data-action="setObGradeStatus" data-ob-grade={grade} key={grade}>{grade}</button>)}</div></div>
-      <div className="ob1-field"><label>출신 학교 <Required /></label><input className="ob1-input" data-field="obSchoolName" defaultValue={obSchoolName} placeholder="출신 학교 입력" /></div>
-      <div className="ob1-field"><label>희망 계열 <Required /></label><select className="ob1-select" data-field="obTrack" defaultValue={obTrack}>{TRACKS.map((track) => <option value={track} key={track}>{track}</option>)}</select></div>
-      <div className="ob1-field"><label>스터디크랙을 통해 얻고 싶은 점 <Required /></label><textarea className="ob1-textarea" data-field="obGoalText" defaultValue={obGoalText} placeholder="자유롭게 입력" /></div>
+      <div className="ob1-field"><label>출신 학교 <Required /></label><input className="ob1-input sc-input" data-field="obSchoolName" defaultValue={obSchoolName} placeholder="출신 학교 입력" /></div>
+      <div className="ob1-field"><label>희망 계열 <Required /></label><select className="ob1-select sc-select" data-field="obTrack" defaultValue={obTrack}>{TRACKS.map((track) => <option value={track} key={track}>{track}</option>)}</select></div>
+      <div className="ob1-field"><label>스터디크랙을 통해 얻고 싶은 점 <Required /></label><textarea className="ob1-textarea sc-textarea" data-field="obGoalText" defaultValue={obGoalText} placeholder="자유롭게 입력" /></div>
       <div className="ob1-field"><label>입시 고민 및 질문</label><textarea className="ob1-textarea" data-field="obQuestionText" defaultValue={obQuestionText} placeholder="자유롭게 입력" /></div>
     </div></div>
   </OnboardingScreenShell>;

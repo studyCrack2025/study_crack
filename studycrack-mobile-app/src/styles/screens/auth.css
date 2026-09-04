@@ -1,5 +1,5 @@
 .app-screen[data-screen="authLogin"],.app-screen[data-screen="authFindId"],.app-screen[data-screen="authFindPw"],.app-screen[data-screen="authSignup"]{padding:0;}
-.auth-screen{min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;padding:var(--sc-space-20) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
+.auth-screen{min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(var(--sc-space-20) + env(safe-area-inset-top)) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
 .auth-entry-layout{width:100%;max-width:366px;display:grid;flex:0 0 auto;gap:var(--sc-space-16);margin:auto;}
 .auth-brand-block{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:var(--sc-space-12);text-align:left;}
 .auth-brand-block .auth-logo-wrap{width:48px;height:48px;}

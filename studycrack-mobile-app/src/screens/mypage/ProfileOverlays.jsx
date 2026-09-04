@@ -88,7 +88,7 @@ export function WithdrawModal({ withdrawModalOpen = false, withdrawPassword = ''
     <Modal open={withdrawModalOpen} panelClass="account-edit-modal" dismissAction="closeWithdrawModal">
       <div className="account-edit-head"><div><p className="sc-modal-padded-title">회원탈퇴</p><p>현재 비밀번호를 입력하면 탈퇴할 수 있습니다.</p></div><CloseButton action="closeWithdrawModal" /></div>
       <div className="account-edit-fields"><label htmlFor="mobile-withdraw-password">현재 비밀번호</label><input id="mobile-withdraw-password" className="planner-input" type="password" data-field="withdrawPassword" defaultValue={withdrawPassword} autoComplete="current-password" placeholder="현재 비밀번호" /></div>
-      <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button type="button" className="btn btn-primary" data-action="confirmWithdraw">탈퇴하기</button></div>
+      <div className="account-edit-actions"><button type="button" className="btn btn-secondary" data-action="closeWithdrawModal">취소</button><button type="button" className="btn btn-danger" data-action="confirmWithdraw">탈퇴하기</button></div>
     </Modal>
   );
 }

@@ -1,13 +1,4 @@
-import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
-
-function ScreenState({ action = null, description = '', kind = 'empty', title }) {
-  return (
-    <div className={`sc-secondary-state is-${kind}`} role="status">
-      <span aria-hidden="true">{kind === 'loading' ? <i /> : kind === 'error' ? '!' : '—'}</span>
-      <div><b>{title}</b>{description ? <p>{description}</p> : null}{action}</div>
-    </div>
-  );
-}
+import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
 
 function AddButton({ added, major }) {
   return <button type="button" className={`btn ${added ? 'btn-secondary' : 'btn-primary'} mini`} data-action="addAnalysisTarget" data-target-major={major} disabled={added}>{added ? '추가됨' : '추가'}</button>;
@@ -49,13 +40,13 @@ function CatalogResults(ctx) {
     universitySelectedName = ''
   } = ctx;
   if (universityCatalogStatus === 'idle' || universityCatalogStatus === 'loading') {
-    return <ScreenState kind="loading" title="대학·학과 목록을 불러오고 있어요" description="잠시만 기다려주세요." />;
+    return <SecondaryState kind="loading" title="대학·학과 목록을 불러오고 있어요" description="잠시만 기다려주세요." />;
   }
   if (universityCatalogStatus === 'error') {
-    return <ScreenState kind="error" title="대학·학과 목록을 불러오지 못했어요" description={universityCatalogError || '네트워크 상태를 확인한 뒤 다시 시도해주세요.'} action={<button type="button" className="btn btn-secondary mini add-univ-retry" data-action="retryUniversityCatalog">다시 시도</button>} />;
+    return <SecondaryState kind="error" title="대학·학과 목록을 불러오지 못했어요" description={universityCatalogError || '네트워크 상태를 확인한 뒤 다시 시도해주세요.'} action={<button type="button" className="btn btn-secondary mini add-univ-retry" data-action="retryUniversityCatalog">다시 시도</button>} />;
   }
   if (!analysisSearchList.length) {
-    return <ScreenState kind={universitySelectedName ? 'error' : 'empty'} title={universitySelectedName ? '학과 목록을 확인하지 못했어요' : '검색 결과가 없어요'} description={universitySelectedName ? '대학 목록을 다시 불러오거나 대학을 다시 선택해주세요.' : '대학명을 다시 확인해주세요.'} />;
+    return <SecondaryState kind={universitySelectedName ? 'error' : 'empty'} title={universitySelectedName ? '학과 목록을 확인하지 못했어요' : '검색 결과가 없어요'} description={universitySelectedName ? '대학 목록을 다시 불러오거나 대학을 다시 선택해주세요.' : '대학명을 다시 확인해주세요.'} />;
   }
   return analysisSearchList.map((name) => <SearchResult analysisTargetList={analysisTargetList} name={name} universitySelectedName={universitySelectedName} key={name} />);
 }
@@ -71,7 +62,7 @@ export function AddUniversityScreen(ctx) {
     universitySelectedName = ''
   } = ctx;
   const recommendationState = analysisRecommended.length ? analysisRecommended.map((name) => <RecommendationRow analysisTargetList={analysisTargetList} name={name} key={name} />) : (
-    <ScreenState kind={universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty'} title={universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError || '추천 결과가 아직 없어요'} description="성적 입력 상태를 확인한 뒤 다시 추천을 요청해주세요." />
+    <SecondaryState kind={universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty'} title={universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError || '추천 결과가 아직 없어요'} description="성적 입력 상태를 확인한 뒤 다시 추천을 요청해주세요." />
   );
   return (
     <SecondaryScreenShell screen="addUniversity" title="대학 추가" tab={tab}>
@@ -83,7 +74,7 @@ export function AddUniversityScreen(ctx) {
             </section>
             <section className="sc-secondary-section add-univ-section">
               <div className="sc-secondary-section-head add-univ-head"><div>{universitySelectedName ? <><button type="button" className="add-univ-back" data-action="backToUniversityList">대학 다시 선택</button><h3>{universitySelectedName} 학과</h3><p>추가할 학과를 선택해주세요.</p></> : <><h3>직접 검색</h3><p>대학을 먼저 선택하면 해당 대학의 학과만 보여드려요.</p></>}</div><span className="sc-badge">{universitySelectedName ? '2 / 2' : '1 / 2'}</span></div>
-              <div className="analysis-search-inline"><input key={universitySelectedName || 'universities'} className="planner-input add-univ-search" data-field="analysisSearchTerm" defaultValue={analysisSearchTerm} placeholder={universitySelectedName ? '학과명 검색' : '대학명 검색'} autoComplete="off" enterKeyHint="search" /><button type="button" className="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
+              <div className="analysis-search-inline"><input key={universitySelectedName || 'universities'} className="planner-input sc-input add-univ-search" data-field="analysisSearchTerm" defaultValue={analysisSearchTerm} placeholder={universitySelectedName ? '학과명 검색' : '대학명 검색'} autoComplete="off" enterKeyHint="search" /><button type="button" className="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
               <div className="sc-secondary-list add-univ-results"><CatalogResults {...ctx} /></div>
             </section>
           </div>

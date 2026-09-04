@@ -93,8 +93,8 @@ function PlannerProgress({ presentation }) {
   const progressTone = presentation.remainingCount ? 'pending' : presentation.totalCount ? 'complete' : 'waiting';
   return (
     <section className="card planner-progress-card">
-      <div className="planner-progress-head"><div><span>오늘의 공부 진행률</span><h4>{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`}><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
-      <div className="planner-progress-track" aria-label={`플래너 완료율 ${presentation.progress}%`}><i style={{ width: `${presentation.progress}%` }} /></div>
+      <div className="planner-progress-head"><div><span>오늘의 공부 진행률</span><h4 className="sc-metric">{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`}><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
+      <div className="progress planner-progress-track" role="progressbar" aria-label="플래너 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow={presentation.progress}><i style={{ width: `${presentation.progress}%` }} /></div>
       <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `다음 계획까지 ${presentation.remainingCount}개 남았어요` : presentation.totalCount ? '오늘의 공부를 모두 끝냈어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>{presentation.completedDurationLabel} / {presentation.totalDurationLabel}</span></div>
     </section>
   );
