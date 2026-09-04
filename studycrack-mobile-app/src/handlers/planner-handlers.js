@@ -27,13 +27,8 @@ function queryAll(ctx, selector) {
   return Array.from(getDocument(ctx)?.querySelectorAll?.(selector) || []);
 }
 
-function getPlannerAddRoot(ctx) {
-  return query(ctx, '[data-planner-add-root]');
-}
-
 function getPlannerAddStepIndex(ctx) {
-  const root = getPlannerAddRoot(ctx);
-  const activeStep = root?.querySelector?.('[data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
+  const activeStep = query(ctx, '[data-planner-add-root] [data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
   return Math.max(0, PLANNER_ADD_STEPS.indexOf(activeStep));
 }
 
@@ -95,10 +90,6 @@ function dotForSubject(subject = '') {
   return 'sci';
 }
 
-function getRefValue(ref, fallback = '') {
-  return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
-}
-
 function toPlannerDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -107,21 +98,17 @@ function toPlannerDateKey(date) {
 }
 
 function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
-  const raw = String(value || '').trim();
-  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(TODAY_DATE).split('-')[2]) || 1;
+  const raw = String(value || fallback || TODAY_DATE).trim();
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
-    : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
+    : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || 1))).padStart(2, '0')}`;
   const [year, month, day] = source.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
 
-function addPlannerDays(date, days) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-}
-
-function addPlannerMonths(date, months) {
-  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
+function shiftPlannerDate(date, delta, mode) {
+  if (mode !== 'month') return new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta * 7);
+  const target = new Date(date.getFullYear(), date.getMonth() + delta, 1);
   const maxDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
   return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
 }
@@ -152,6 +139,12 @@ export function createPlannerHandlers(ctx) {
     todayDate = TODAY_DATE
   } = ctx;
 
+  function shiftPlannerCalendar(delta) {
+    const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
+    const next = shiftPlannerDate(current, delta, plannerCalendarMode);
+    preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+  }
+
   return {
     openPlannerAddPage() {
       goto?.('plannerAdd');
@@ -172,16 +165,12 @@ export function createPlannerHandlers(ctx) {
     },
 
     plannerCalendarPrevWeek() {
-      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
-      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, -1) : addPlannerDays(current, -7);
-      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+      shiftPlannerCalendar(-1);
       return true;
     },
 
     plannerCalendarNextWeek() {
-      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
-      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, 1) : addPlannerDays(current, 7);
-      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+      shiftPlannerCalendar(1);
       return true;
     },
 
@@ -239,8 +228,8 @@ export function createPlannerHandlers(ctx) {
       const detailSubject = getCheckedValue(ctx, 'plannerDetailSubject', '');
       const activityType = getCheckedValue(ctx, 'plannerActivityType', '');
       const memo = getInputValue(ctx, '[data-field="plannerMemo"]').trim();
-      const content = String(getInputValue(ctx, '[data-field="plannerContent"]') || getRefValue(plannerContentRef)).trim();
-      const customMinutes = String(getRefValue(plannerCustomMinutesRef)).trim();
+      const content = String(getInputValue(ctx, '[data-field="plannerContent"]') || plannerContentRef?.current || '').trim();
+      const customMinutes = String(plannerCustomMinutesRef?.current || '').trim();
       const minutesFromRange = minutesBetween(start, end);
       const minutes = minutesFromRange || (draft.durationChoice === 'custom' ? Number(customMinutes) : Number(draft.durationChoice));
       if (!category || !content || !minutes || Number.isNaN(minutes)) return false;
@@ -262,8 +251,7 @@ export function createPlannerHandlers(ctx) {
           dot: dotForPlannerCategory(category) || dotForSubject(category)
         }
       ]);
-      setRefValue(plannerContentRef, '');
-      setRefValue(plannerCustomMinutesRef, '');
+      plannerContentRef.current = plannerCustomMinutesRef.current = '';
       setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' });
       goto?.('planner', false);
       return true;

@@ -34,7 +34,7 @@
 .planner-detail-group.active{display:flex;}
 .planner-choice-chip{display:inline-flex;min-width:0;}
 .planner-choice-chip input{position:absolute;opacity:0;pointer-events:none;}
-.planner-choice-chip span{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 12px;border:1px solid var(--sc-line-strong);border-radius:999px;background:var(--sc-surface-card);color:var(--sc-ink-muted);font-size:12.5px;font-weight:900;white-space:nowrap;transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease;}
+.planner-choice-chip span{display:inline-flex;align-items:center;justify-content:center;min-height:var(--sc-touch-target);padding:0 12px;border:1px solid var(--sc-line-strong);border-radius:999px;background:var(--sc-surface-card);color:var(--sc-ink-muted);font-size:12.5px;font-weight:900;white-space:nowrap;transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease;}
 .planner-choice-chip input:checked + span{background:var(--sc-brand-navy);border-color:var(--sc-brand-navy);color:var(--sc-on-brand);box-shadow:var(--sc-shadow-normal);}
 .planner-memo-input{min-height:82px;padding-top:12px;resize:none;}
 .planner-add-footer{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:minmax(0,.42fr) minmax(0,1fr);gap:8px;margin-top:auto;padding:10px 0 4px;background:linear-gradient(180deg,color-mix(in srgb,var(--sc-surface-canvas) 0%,transparent),var(--sc-surface-canvas) 38%,var(--sc-surface-canvas) 100%);}
@@ -43,7 +43,7 @@
 .planner-add-footer .planner-sheet-submit{grid-column:2;}
 .planner-input.is-hidden{display:none;}
 .planner-pill-row{display:flex;flex-wrap:wrap;gap:8px;}
-.planner-pill{min-height:34px;padding:0 12px;border:1px solid var(--sc-line-strong);border-radius:999px;background:var(--sc-surface-card);color:var(--sc-ink);font:inherit;font-size:12px;font-weight:700;}
+.planner-pill{min-height:var(--sc-touch-target);padding:0 12px;border:1px solid var(--sc-line-strong);border-radius:999px;background:var(--sc-surface-card);color:var(--sc-ink);font:inherit;font-size:12px;font-weight:700;}
 .planner-pill.active{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .planner-time-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
 @keyframes plannerStepIn{from{opacity:.001;transform:translate3d(8px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}

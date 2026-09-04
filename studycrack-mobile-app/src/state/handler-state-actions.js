@@ -56,7 +56,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
   ]),
   calendar: Object.freeze([
     'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthAnchor',
-    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'personalEvents'
+    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'calendarSyncStatus', 'personalEvents'
   ]),
   form: Object.freeze([
     'analysisSearchTerm', 'coachingAnswers', 'coachingExamFiles', 'coachingExamScores',

@@ -17,7 +17,7 @@ const { useEffect } = React;
 export function useAppStatePersistence(rootState) {
   const analysisResource = analysisSlice.selectors.serverResource(rootState);
   const analysisDraft = analysisSlice.selectors.localDraft(rootState);
-  const plannerResource = plannerSlice.selectors.serverResource(rootState);
+  const plannerDraft = plannerSlice.selectors.localDraft(rootState);
   const studyResource = studySlice.selectors.serverResource(rootState);
   const studyDraft = studySlice.selectors.localDraft(rootState);
   const notificationResource = notificationsSlice.selectors.serverResource(rootState);
@@ -30,9 +30,9 @@ export function useAppStatePersistence(rootState) {
 
   useEffect(() => {
     persistPlannerStorage({
-      plannerItems: plannerResource.plannerItems
+      plannerItems: plannerDraft.plannerItems
     });
-  }, [plannerResource.plannerItems]);
+  }, [plannerDraft.plannerItems]);
 
   useEffect(() => {
     persistStudyStorage({

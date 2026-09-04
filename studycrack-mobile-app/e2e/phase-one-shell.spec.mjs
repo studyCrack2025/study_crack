@@ -103,11 +103,11 @@ test('secondary heading은 card가 아니고 overlay는 배경과 focus를 격�
   await expect(content).toHaveAttribute('aria-hidden', 'true');
   await expect(dialog.getByRole('button', { name: '닫기' })).toBeFocused();
 
-  await dialog.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
   await expect(dialog.getByRole('button', { name: '이메일 찾기' })).toBeFocused();
-  await dialog.press('Tab');
+  await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: '닫기' })).toBeFocused();
-  await dialog.press('Escape');
+  await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(content).not.toHaveAttribute('inert', '');
   await expect(trigger).toBeFocused();

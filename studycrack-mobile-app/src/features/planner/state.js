@@ -4,7 +4,6 @@ import { createFeatureSlice } from '../../state/create-feature-slice.js';
 export function createPlannerInitialState() {
   return {
     serverResource: {
-      plannerItems: [],
       rankingRows: [],
       rankingStatus: 'idle',
       rankingError: '',
@@ -12,6 +11,7 @@ export function createPlannerInitialState() {
       rankingRefreshTick: 0
     },
     localDraft: {
+      plannerItems: [],
       plannerDraft: { subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' }
     },
     ephemeralUi: {

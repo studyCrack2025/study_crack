@@ -1,4 +1,4 @@
-import { buildPlannerPresentation } from './presentation.js';
+import { buildPlannerPresentation, nextPlannerCalendarMode } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
@@ -32,10 +32,19 @@ function PlannerItemCard({ item }) {
 }
 
 function PlannerCalendarSegment({ activeMode = 'week' }) {
+  const handleKeyDown = (event) => {
+    const currentMode = event.target.getAttribute('data-planner-calendar-mode') || activeMode;
+    const nextMode = nextPlannerCalendarMode(currentMode, event.key);
+    if (nextMode === currentMode) return;
+    event.preventDefault();
+    const target = event.currentTarget.querySelector(`[data-planner-calendar-mode="${nextMode}"]`);
+    target?.focus();
+    target?.click();
+  };
   return (
-    <div className="planner-calendar-segment planner-inline-segment" aria-label="달력 보기 방식">
-      <button type="button" className={activeMode === 'week' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="week">주</button>
-      <button type="button" className={activeMode === 'month' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="month">월</button>
+    <div className="planner-calendar-segment planner-inline-segment" role="group" aria-label="달력 보기 방식" onKeyDown={handleKeyDown}>
+      <button type="button" aria-pressed={activeMode === 'week'} className={activeMode === 'week' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="week">주</button>
+      <button type="button" aria-pressed={activeMode === 'month'} className={activeMode === 'month' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="month">월</button>
     </div>
   );
 }
@@ -50,6 +59,7 @@ function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '' }
           className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDateKey === date ? 'active' : ''}`}
           data-action="selectPlannerDate"
           data-planner-date={date || ''}
+          aria-pressed={selectedPlannerDateKey === date}
           disabled={empty}
         >
           <small>{weekday}</small>
@@ -78,6 +88,7 @@ function PlannerMonthGrid({ plannerCalendarMonthCells = [] }) {
               className={`planner-calendar-month-day ${cell.isSelected ? 'active' : ''} ${cell.isToday ? 'is-today' : ''}`}
               data-action="selectPlannerDate"
               data-planner-date={cell.date}
+              aria-pressed={cell.isSelected}
             >
               <b>{cell.day}</b>
               {cell.count ? <span>{cell.count}</span> : null}
@@ -120,7 +131,7 @@ export function PlannerScreen(ctx) {
     tab = 'planner',
     plannerCalendarMode,
     plannerCalendarMonthCells,
-    plannerEditIndex,
+    plannerEditIndex = null,
     plannerEditItem,
     plannerFeedback = {},
     plannerMonthLabel = '',
@@ -148,7 +159,7 @@ export function PlannerScreen(ctx) {
       overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="오늘의 플래너" />
+            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="오늘의 플래너" description="계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요." />
 
             <PlannerProgress presentation={presentation} />
 

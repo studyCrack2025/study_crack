@@ -101,10 +101,10 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'tab', 'weeklyReports', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
-    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'fishCount', 'formatHms', 'formatMinutesLabel',
-    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'habitatDays', 'habitatStatus', 'hasClientSession',
+    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'fishCount', 'formatHms',
+    'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',
     'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
-    'selectedPlan', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
+    'selectedPlan', 'studySubjectSheetOpen', 'studySummary', 'studySummaryStatus', 'studyTimerRunning',
     'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'
   ]),

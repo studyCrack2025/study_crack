@@ -340,7 +340,7 @@ export function createFormHandlers(ctx) {
     if (!field) return { handled: Boolean(coachAnswer || coachPlan || coachActual) };
     if (field === 'plannerContent' && ctx.plannerContentRef) {
       ctx.plannerContentRef.current = target.value;
-      syncPlannerAddForm(ctx);
+      if (!event?.nativeEvent?.isComposing) syncPlannerAddForm(ctx);
       return { handled: true, field };
     }
     if (field === 'plannerStartTime' || field === 'plannerEndTime' || field === 'plannerMemo') {

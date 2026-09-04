@@ -291,7 +291,10 @@ async function apiFetch(url, options = {}) {
                 if (retryRes.ok) return retryRes;
                 if (retryRes.status === 403) {
                     const errBody = await retryRes.json().catch(() => ({}));
-                    throw new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
+                    const permissionError = new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
+                    permissionError.status = retryRes.status;
+                    permissionError.code = typeof errBody.code === 'string' ? errBody.code : '';
+                    throw permissionError;
                 }
             }
             const expiredError = createSharedAuthExpiredError(response.status);
@@ -303,11 +306,16 @@ async function apiFetch(url, options = {}) {
         }
 
         let errorMessage = `서버 통신 오류 (상태 코드: ${response.status})`;
+        let errorCode = '';
         try {
             const errorData = await response.json();
             if (errorData.message || errorData.error) errorMessage = errorData.message || errorData.error;
+            if (typeof errorData.code === 'string') errorCode = errorData.code;
         } catch (e) { /* ignore */ }
-        throw new Error(errorMessage);
+        const apiError = new Error(errorMessage);
+        apiError.status = response.status;
+        apiError.code = errorCode;
+        throw apiError;
     } catch (error) {
         // 예상된 인증 만료와 화면 전환에 따른 요청 취소는 호출처에서 조용히 처리한다.
         if ((!error || error.code !== 'AUTH_EXPIRED') && error?.name !== 'AbortError') {

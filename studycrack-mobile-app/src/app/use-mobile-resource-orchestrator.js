@@ -70,7 +70,7 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
     setState
   });
   useAdmissionCalendarResource({
-    enabled: state.userLoadStatus === 'ready' && state.screen === 'planner',
+    enabled: state.userLoadStatus === 'ready' && state.screen === 'planner' && state.calendarSyncStatus !== 'error',
     getApiBinding: api.getUserApiBinding,
     hasSession: api.hasClientSession,
     setState

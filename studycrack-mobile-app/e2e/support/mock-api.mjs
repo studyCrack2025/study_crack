@@ -61,24 +61,28 @@ function encodeToken(payload) {
 export async function installAuthenticatedSession(page) {
   const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(Date.now() / 1000) + 3600 });
   await page.addInitScript(({ accessToken }) => {
-    localStorage.clear();
-    sessionStorage.clear();
-    localStorage.setItem('userId', 'e2e-student');
-    localStorage.setItem('userRole', 'student');
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    localStorage.setItem('plannerItems', JSON.stringify([{
-      id: 'e2e-plan-korean',
-      date: `${now.getFullYear()}-${month}-${day}`,
-      subject: '국어',
-      category: '국어',
-      content: '독서',
-      minutes: 30,
-      doneMinutes: 0,
-      start: '09:00',
-      end: '09:30'
-    }]));
+    const storageInitializedKey = '__studycrackE2eSessionInitialized';
+    if (localStorage.getItem(storageInitializedKey) !== 'true') {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('userId', 'e2e-student');
+      localStorage.setItem('userRole', 'student');
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      localStorage.setItem('plannerItems', JSON.stringify([{
+        id: 'e2e-plan-korean',
+        date: `${now.getFullYear()}-${month}-${day}`,
+        subject: '국어',
+        category: '국어',
+        content: '독서',
+        minutes: 30,
+        doneMinutes: 0,
+        start: '09:00',
+        end: '09:30'
+      }]));
+      localStorage.setItem(storageInitializedKey, 'true');
+    }
     sessionStorage.setItem('accessToken', accessToken);
   }, { accessToken: token });
 }
@@ -188,7 +192,7 @@ function responseFor(payload, state) {
       };
       return state.activeStudySession;
     case 'complete_study_session':
-      state.studySeconds = 2;
+      state.studySeconds = state.studyDurationSeconds;
       return { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
     case 'get_game_profile':
       return {
@@ -257,13 +261,28 @@ function responseFor(payload, state) {
       return { profile: state.gameProfile, alreadyAcknowledged: false };
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
-    case 'claim_study_reward':
+    case 'claim_study_reward': {
+      const shells = Number(state.studyReward.shells) || 0;
+      const food = Number(state.studyReward.food) || 0;
+      if (!state.studyRewardClaimed) {
+        state.gameProfile = {
+          ...state.gameProfile,
+          shellBalance: state.gameProfile.shellBalance + shells,
+          foodBalance: state.gameProfile.foodBalance + food,
+          starterFishUnlocked: state.gameProfile.starterFishUnlocked || shells > 0,
+          starterState: state.gameProfile.starterState === 'locked' && shells > 0 ? 'selectable' : state.gameProfile.starterState
+        };
+      }
+      const alreadyClaimed = state.studyRewardClaimed;
+      state.studyRewardClaimed = true;
       return {
+        alreadyClaimed,
         sessionId: payload.data?.sessionId,
         durationSeconds: state.studySeconds,
-        reward: { shells: 0, food: 0 },
+        reward: { shells, food },
         profile: state.gameProfile
       };
+    }
     case 'get_pro_reports':
       return { reports: [] };
     case 'get_weekly_reports':
@@ -277,15 +296,27 @@ function responseFor(payload, state) {
   }
 }
 
-export async function installApiMock(page, { failGameTypes = [], fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
+export async function installApiMock(page, {
+  failGameTypes = [],
+  failOnceTypes = [],
+  fishCatalog = FISH_CATALOG,
+  initialGameProfile = {},
+  studyDurationSeconds = 2,
+  studyReward = { shells: 0, food: 0 },
+  tier = mockUser.computedTier
+} = {}) {
   const requests = [];
+  const failedOnce = new Set();
   const state = {
     activeStudySession: null,
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
+    gameProfile: { shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {}, ...initialGameProfile },
     pendingDraw: null,
+    studyDurationSeconds,
+    studyReward,
+    studyRewardClaimed: false,
     studySeconds: 0,
     userTier: tier
   };
@@ -298,7 +329,8 @@ export async function installApiMock(page, { failGameTypes = [], fishCatalog = F
       payload = {};
     }
     requests.push({ path: new URL(request.url()).pathname, payload });
-    if (failGameTypes.includes(payload.type)) {
+    if (failGameTypes.includes(payload.type) || (failOnceTypes.includes(payload.type) && !failedOnce.has(payload.type))) {
+      failedOnce.add(payload.type);
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Internal Server Error' }) });
       return;
     }

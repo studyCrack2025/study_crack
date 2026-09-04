@@ -134,7 +134,7 @@ function CalendarSheet(ctx) {
           </div>
           <div className="sc-sheet-body calendar-sheet-scroll">
             {calendarSyncStatus === 'loading' ? <p className="calendar-sync-note">내 일정을 동기화하고 있어요.</p> : null}
-            {calendarSyncStatus === 'error' ? <p className="calendar-sync-note error">내 일정을 불러오지 못했습니다. 잠시 후 다시 열어주세요.</p> : null}
+            {calendarSyncStatus === 'error' ? <div className="calendar-sync-note error" role="alert"><span>내 일정을 불러오지 못했습니다.</span><button type="button" data-action="openCalendarSheet" data-calendar-retry="true">다시 불러오기</button></div> : null}
             {calendarNearestEvent ? (
               <div className="calendar-nearest">
                 <span className="calendar-nearest-dday">{calendarNearestDdayLabel}</span>

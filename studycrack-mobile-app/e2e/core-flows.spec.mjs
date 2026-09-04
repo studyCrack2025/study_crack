@@ -236,7 +236,9 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'start_study_session').length).toBe(1);
   await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'start_study_session')?.payload?.data?.activity).toBe('독서');
   await page.waitForTimeout(1100);
-  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+  await page.reload();
+  await expect(page.getByText('국어 공부를 이어서 기록 중이에요')).toBeVisible();
+  await expect(page.getByText('앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.')).toBeVisible();
   await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
     button.click();
     button.click();
@@ -247,11 +249,82 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_study_reward').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_ranking').length).toBeGreaterThan(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBeGreaterThan(1);
+  const journey = page.locator('.timer-journey-panel');
+  await expect(journey).toBeVisible();
+  await expect(journey).toContainText('국어 공부를 완료했어요');
+  await expect(journey).toContainText('독서');
+  await expect(journey).toContainText('00:00:02');
+  await expect(journey.locator('[data-step="completion"]')).toHaveAttribute('data-state', 'complete');
+  await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
   await expect(page.locator('.timer-week-summary')).toBeVisible();
   await page.locator('.timer-week-day.is-today').click();
   await expect(page.locator('.timer-day-subjects')).toContainText('00:00:02');
   await expect(page.locator('.timer-day-subjects [data-subject-tone="korean"]')).toContainText('국어');
   await expect(page.locator('.timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('종료 보상이 수조 잔액과 첫 물고기 FishDex 여정으로 이어진다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, {
+    initialGameProfile: { shellBalance: 0, foodBalance: 0, starterFishUnlocked: false, starterState: 'locked' },
+    studyDurationSeconds: 1500,
+    studyReward: { shells: 2, food: 2 }
+  });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+
+  await page.getByRole('button', { name: '공부 시작' }).click();
+  await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
+  await page.locator('.study-start-confirm').click();
+  await page.getByRole('button', { name: '공부 완료', exact: true }).click();
+
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_study_reward').length).toBe(1);
+  const rewardPanel = page.locator('.timer-journey-panel');
+  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('조개 +2');
+  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('먹이 +2');
+  await rewardPanel.getByRole('button', { name: '수조에서 확인' }).click();
+
+  const wallet = page.getByRole('group', { name: '수조 재화' });
+  await expect(wallet).toContainText(/조개\s*2/);
+  await expect(wallet).toContainText(/먹이\s*2/);
+  const journey = page.locator('section.aquarium-journey[aria-label="공부 보상 여정"]');
+  await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
+  await expect(journey.locator('[data-step="aquarium"]')).toHaveAttribute('data-state', 'active');
+  await expect(journey.locator('[data-step="fishdex"]')).toHaveAttribute('data-state', 'pending');
+
+  await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
+  await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
+  await expect(journey.locator('[data-step="aquarium"]')).toHaveAttribute('data-state', 'complete');
+  await expect(journey.locator('[data-step="fishdex"]')).toHaveAttribute('data-state', 'complete');
+  await page.getByRole('button', { name: /물고기 도감/ }).click();
+
+  await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 12');
+  const lockedFish = page.locator('.aquarium-catalog-group article[data-state="locked"]');
+  await expect(lockedFish).toHaveCount(11);
+  await expect(lockedFish.first()).toHaveAttribute('aria-label', '미획득 물고기');
+  await expect(lockedFish.first()).not.toContainText('흰동가리');
+  const statusFilters = page.getByRole('group', { name: 'FishDex 획득 상태' });
+  const allFilter = statusFilters.getByRole('button', { name: '전체' });
+  const ownedFilter = statusFilters.getByRole('button', { name: '획득', exact: true });
+  await allFilter.focus();
+  await allFilter.press('ArrowRight');
+  await expect(ownedFilter).toBeFocused();
+  await expect(ownedFilter).toHaveAttribute('aria-pressed', 'true');
+
+  for (const target of [page.getByRole('button', { name: '수조로 돌아가기' }), ownedFilter]) {
+    const box = await target.boundingBox();
+    expect(Math.round(box?.height || 0)).toBeGreaterThanOrEqual(44);
+    expect(Math.round(box?.width || 0)).toBeGreaterThanOrEqual(44);
+  }
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await expect(page.locator('.aquarium-offline-state')).toBeVisible();
+  await expect(page.locator('.aquarium-offline-state').getByRole('button', { name: '연결 후 다시 불러오기' })).toBeVisible();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.aquarium-mode-shell')).toHaveCSS('animation-name', 'none');
+  const reducedTransitionDuration = await page.locator('.aquarium-collection-summary > i span').evaluate((element) => (
+    Number.parseFloat(getComputedStyle(element).transitionDuration)
+  ));
+  expect(reducedTransitionDuration).toBeLessThanOrEqual(0.001);
   await expectNoHorizontalOverflow(page);
 });
 
@@ -331,6 +404,121 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
     const screenshotPath = testInfo.outputPath(`planner-month-${viewport.width}.png`);
     await page.screenshot({ path: screenshotPath, fullPage: true });
     await testInfo.attach(`planner-month-${viewport.width}.png`, { path: screenshotPath, contentType: 'image/png' });
+  }
+});
+
+test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도까지 이어진다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { failOnceTypes: ['get_admission_calendar'] });
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+
+  const preview = page.locator('.timer-v2-plan');
+  await expect(preview).toContainText('독서');
+  await preview.getByRole('button', { name: /전체 보기/ }).click();
+  await expect(page.locator('[data-screen="planner"]')).toBeVisible();
+  await expect(page.getByText('계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.')).toBeVisible();
+  const calendarModes = page.getByRole('group', { name: '달력 보기 방식' });
+  await expect(calendarModes.getByRole('button', { name: '주', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await calendarModes.getByRole('button', { name: '월', exact: true }).press('ArrowLeft');
+  await expect(calendarModes.getByRole('button', { name: '주', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+  await page.getByRole('button', { name: '계획 추가', exact: true }).click();
+  await expect(page.locator('[data-screen="plannerAdd"]')).toBeVisible();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  await page.getByRole('button', { name: '다음', exact: true }).click();
+  const content = page.locator('[data-field="plannerContent"]');
+  await content.focus();
+  await content.dispatchEvent('compositionstart');
+  await content.evaluate((element) => {
+    element.value = '한글 조합 중';
+    element.dispatchEvent(new InputEvent('input', { bubbles: true, data: '중', inputType: 'insertCompositionText', isComposing: true }));
+  });
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-screen="plannerAdd"]')).toBeVisible();
+  await expect(content).toBeFocused();
+  await content.dispatchEvent('compositionend');
+  await content.fill('비문학 지문 3개 분석');
+  await page.getByRole('button', { name: '계획 저장하기' }).click();
+
+  const addedRow = page.locator('.planner-item-v2').filter({ hasText: '비문학 지문 3개 분석' });
+  await expect(addedRow).toBeVisible();
+  await addedRow.locator('.planner-item-main').click();
+  const editDialog = page.getByRole('dialog', { name: '선택 메뉴' });
+  await expect(editDialog).toBeVisible();
+  const editContent = editDialog.locator('[data-field="plannerEditContent"]');
+  await editContent.focus();
+  await editContent.dispatchEvent('compositionstart');
+  await editContent.fill('한글 수정 중');
+  await page.keyboard.press('Enter');
+  await expect(editDialog).toBeVisible();
+  await editContent.dispatchEvent('compositionend');
+  await editContent.fill('비문학 오답 정리');
+  await editDialog.getByRole('button', { name: '수정 저장' }).click();
+  const editedRow = page.locator('.planner-item-v2').filter({ hasText: '비문학 오답 정리' });
+  await expect(editedRow).toBeVisible();
+  await editedRow.getByRole('button', { name: '계획 완료' }).click();
+  await expect(editedRow).toHaveClass(/done/);
+  await editedRow.getByRole('button', { name: '계획 삭제' }).click();
+  await expect(editedRow).toHaveCount(0);
+
+  await page.getByRole('button', { name: '수험 일정' }).click();
+  const calendar = page.locator('.calendar-sheet-overlay');
+  await expect(calendar.getByRole('alert')).toContainText('내 일정을 불러오지 못했습니다.');
+  await calendar.getByRole('button', { name: '다시 불러오기' }).click();
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_admission_calendar').length).toBe(2);
+  await expect(calendar.getByRole('alert')).toHaveCount(0);
+  await expect(calendar.getByText('이 날짜에 등록된 일정이 없어요.')).toBeVisible();
+  await calendar.getByRole('button', { name: '닫기' }).click();
+
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await expect(page.locator('.sc-network-status')).toHaveText('오프라인 상태예요');
+  await expect(page.locator('.planner-item-v2').filter({ hasText: '독서' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('Phase 2 핵심 화면은 네 viewport에서 프레임과 가로 경계를 지킨다', async ({ page }, testInfo) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+
+  const viewports = [
+    { width: 320, height: 700 },
+    { width: 360, height: 800 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 }
+  ];
+  const surfaces = [
+    { name: 'timer', screen: 'timer', ready: '.timer-v2-plan' },
+    { name: 'planner', screen: 'planner', ready: '.planner-progress-card' },
+    { name: 'aquarium', screen: 'aquarium', ready: '.aquarium-wallet' }
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    for (const surface of surfaces) {
+      await page.goto(`/studycrack-mobile.html?screen=${surface.screen}`);
+      await expect(page.locator(surface.ready)).toBeVisible();
+      await expect(page.locator('.app-screen[data-screen]')).toHaveCSS('opacity', '1');
+      await expect(page.locator('.tabbar button')).toHaveCount(5);
+      await expectNoHorizontalOverflow(page);
+      const frame = await page.locator('.app-frame').boundingBox();
+      expect(frame).not.toBeNull();
+      expect(frame.width).toBeLessThanOrEqual(viewport.width);
+      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
+      const screenshotPath = testInfo.outputPath(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`);
+      await page.screenshot({ path: screenshotPath, fullPage: true, animations: 'disabled' });
+      await testInfo.attach(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+
+    await page.getByRole('button', { name: /물고기 도감/ }).click();
+    await expect(page.locator('.aquarium-collection-summary')).toBeVisible();
+    await expect(page.locator('.aquarium-mode-shell')).toHaveCSS('opacity', '1');
+    await page.locator('.app-content').evaluate((element) => element.scrollTo({ top: 0 }));
+    await expectNoHorizontalOverflow(page);
+    const fishDexScreenshotPath = testInfo.outputPath(`phase-two-fishdex-${viewport.width}x${viewport.height}.png`);
+    await page.screenshot({ path: fishDexScreenshotPath, fullPage: true, animations: 'disabled' });
+    await testInfo.attach(`phase-two-fishdex-${viewport.width}x${viewport.height}.png`, { path: fishDexScreenshotPath, contentType: 'image/png' });
   }
 });
 

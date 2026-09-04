@@ -35,6 +35,7 @@ export function createCalendarHandlers(ctx = {}) {
     setCalendarEventEditId,
     setCalendarEventDraft,
     setCalendarSaving,
+    setCalendarSyncStatus,
     setPersonalEvents
   } = ctx;
 
@@ -46,8 +47,9 @@ export function createCalendarHandlers(ctx = {}) {
   }
 
   return {
-    openCalendarSheet() {
+    openCalendarSheet({ actionEl } = {}) {
       setCalendarSheetOpen(true);
+      if (getData(actionEl, 'calendar-retry') === 'true' && ctx.calendarSyncStatus === 'error') setCalendarSyncStatus('idle');
       return true;
     },
 

@@ -2,6 +2,14 @@ function finiteMinutes(value) {
   return Math.max(0, Number(value) || 0);
 }
 
+export function nextPlannerCalendarMode(currentMode = 'week', key = '') {
+  if (key === 'Home') return 'week';
+  if (key === 'End') return 'month';
+  if (key === 'ArrowLeft' || key === 'ArrowUp') return currentMode === 'week' ? 'month' : 'week';
+  if (key === 'ArrowRight' || key === 'ArrowDown') return currentMode === 'month' ? 'week' : 'month';
+  return currentMode;
+}
+
 export function formatPlannerDuration(minutes = 0) {
   const safeMinutes = finiteMinutes(minutes);
   const hour = Math.floor(safeMinutes / 60);
