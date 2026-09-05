@@ -5,6 +5,24 @@ on:
     branches:
       - main
       - dev
+  workflow_dispatch:
+    inputs:
+      rollback_run_id:
+        description: Successful push run ID to restore (same dev/main branch)
+        type: string
+        required: true
+      rollback_commit:
+        description: Full source commit from that run's release summary
+        type: string
+        required: true
+      rollback_digest:
+        description: Manifest SHA-256 from that run's release summary
+        type: string
+        required: true
+      confirmation:
+        description: Type rollback-dev or rollback-main to match the selected branch
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -15,10 +33,12 @@ concurrency:
 
 jobs:
   verify:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.release-info.outputs.artifact-name }}
       manifest-digest: ${{ steps.release-info.outputs.manifest-digest }}
+      source-commit: ${{ github.sha }}
     defaults:
       run:
         working-directory: studycrack-mobile-app
@@ -40,7 +60,7 @@ jobs:
       - name: Check source contracts
         run: npm run check
       - name: Check deployment boundaries
-        run: node --test ../tools/test/site-release.test.mjs
+        run: node --test ../tools/test/*.test.mjs
       - name: Check web SEO contracts
         run: node ../tools/check_seo_contract.mjs
       - name: Build mobile app bundle
@@ -61,6 +81,13 @@ jobs:
           ARTIFACT_DIGEST="$(node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA")"
           echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
           echo "artifact-name=public-site-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Verified release (rollback eligible only after the entire run succeeds)'
+            echo "Source run: ${GITHUB_RUN_ID} (attempt ${GITHUB_RUN_ATTEMPT})"
+            echo "Source commit: ${GITHUB_SHA}"
+            echo "Manifest SHA-256: ${ARTIFACT_DIGEST}"
+            echo 'Retention: 14 days; restore only to the same branch.'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload verified public artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,9 +107,68 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  deploy:
-    needs: verify
+  rollback:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      artifact-name: rollback-site-${{ github.run_id }}-${{ github.run_attempt }}
+      manifest-digest: ${{ steps.source.outputs.manifestDigest }}
+      source-commit: ${{ steps.source.outputs.sourceCommit }}
+    steps:
+      - name: Checkout current trusted deployment tools
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check deployment and rollback boundaries
+        run: node --test tools/test/*.test.mjs
+      - name: Validate explicit rollback source
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+          ROLLBACK_COMMIT: ${{ inputs.rollback_commit }}
+          ROLLBACK_DIGEST: ${{ inputs.rollback_digest }}
+          ROLLBACK_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node tools/rollback-source.mjs
+      - name: Download eligible immutable artifact by ID
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.source.outputs.artifactId }}
+          run-id: ${{ steps.source.outputs.sourceRunId }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: release-artifact/
+      - name: Verify retained artifact with current public policy
+        env:
+          RELEASE_COMMIT: ${{ steps.source.outputs.sourceCommit }}
+          VERIFIED_DIGEST: ${{ steps.source.outputs.manifestDigest }}
+        run: node tools/site-release.mjs verify release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
+      - name: Hand off unchanged rollback bytes
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    needs: [verify, rollback]
+    if: >-
+      ${{ always() && !cancelled() &&
+          ((github.event_name == 'push' && needs.verify.result == 'success') ||
+           (github.event_name == 'workflow_dispatch' && needs.rollback.result == 'success')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_COMMIT: ${{ needs.verify.outputs.source-commit || needs.rollback.outputs.source-commit }}
+      VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest || needs.rollback.outputs.manifest-digest }}
     permissions:
       contents: read
       id-token: write
@@ -98,12 +184,10 @@ jobs:
       - name: Download verified public artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.verify.outputs.artifact-name }}
+          name: ${{ needs.verify.outputs.artifact-name || needs.rollback.outputs.artifact-name }}
           path: release-artifact/
       - name: Verify downloaded bytes before obtaining deployment credentials
-        env:
-          VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest }}
-        run: node tools/site-release.mjs verify release-artifact "$GITHUB_SHA" "$VERIFIED_DIGEST"
+        run: node tools/site-release.mjs verify release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
 
       # 1. DEV 환경 변수 설정 (dev 브랜치 푸시 시 실행)
       - name: Set Environment Variables for DEV
@@ -129,11 +213,22 @@ jobs:
           aws-region: ap-northeast-2
 
       - name: Publish verified public files
-        env:
-          VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest }}
-        run: node tools/site-release.mjs publish release-artifact "$GITHUB_SHA" "$VERIFIED_DIGEST"
+        run: node tools/site-release.mjs publish release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
 
       - name: CloudFront Invalidation
         if: env.CF_DIST_ID != ''
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.CF_DIST_ID }} --paths "/*"
+          INVALIDATION_ID="$(aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths '/*' --query 'Invalidation.Id' --output text)"
+          aws cloudfront wait invalidation-completed --distribution-id "$CF_DIST_ID" --id "$INVALIDATION_ID"
+      - name: Check published release identity, bytes and response contracts
+        run: node tools/smoke-site-release.mjs "https://${S3_BUCKET}" release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
+      - name: Record published release
+        run: |
+          {
+            echo '### Published release smoke passed'
+            echo "Source commit: ${RELEASE_COMMIT}"
+            echo "Manifest SHA-256: ${VERIFIED_DIGEST}"
+            echo "Release identity: https://${S3_BUCKET}/release.json"
+            echo "Mobile smoke URL: https://${S3_BUCKET}/studycrack-mobile"
+            echo 'Real-account authentication and physical-device acceptance remain separate gates.'
+          } >> "$GITHUB_STEP_SUMMARY"

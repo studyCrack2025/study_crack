@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:f
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { assertPublicReferences, assertSafePath, buildSiteRelease, createPublishCommands, IMMUTABLE, isBuildPath, loadPublicPolicy, NO_CACHE, verifySiteRelease } from '../site-release.mjs';
+import { assertPublicReferences, assertSafePath, buildSiteRelease, cacheControlFor, createPublishCommands, IMMUTABLE, isBuildPath, loadPublicPolicy, NO_CACHE, verifySiteRelease } from '../site-release.mjs';
 
 const commit = 'a'.repeat(40);
 const release = 'dev-aaaaaaaa';
@@ -36,7 +36,7 @@ async function fixture(t) {
 test('only approved files are copied, versioned and sealed without changing source', async (t) => {
   const ctx = await fixture(t);
   const { digest, manifest } = await buildSiteRelease({ ...ctx, commit, release });
-  assert.equal(manifest.files.length, policy.files.length + 5);
+  assert.equal(manifest.files.length, policy.files.length + 7);
   assert.equal(await readFile(path.join(ctx.root, 'index.html'), 'utf8'), ctx.html);
   const publicHtml = await readFile(path.join(ctx.output, 'site/index.html'), 'utf8');
   assert.match(publicHtml, /main\.css\?v=dev-aaaaaaaa/);
@@ -53,6 +53,22 @@ test('identical inputs produce identical manifest identities', async (t) => {
   const first = await buildSiteRelease({ ...ctx, commit, release });
   const second = await buildSiteRelease({ ...ctx, output: `${ctx.output}-second`, commit, release });
   assert.equal(first.digest, second.digest);
+});
+
+test('public release identity is generated consistently without exposing the file manifest', async (t) => {
+  const ctx = await fixture(t);
+  await buildSiteRelease({ ...ctx, commit, release });
+  const identity = JSON.parse(await readFile(path.join(ctx.output, 'site/release.json'), 'utf8'));
+  assert.deepEqual(identity, { schema: 1, release, commit });
+  const html = await readFile(path.join(ctx.output, 'site/index.html'), 'utf8');
+  assert.match(html, /<meta name="studycrack-release" content="dev-aaaaaaaa">/);
+  assert.match(html, /src="\/js\/release\.js\?v=dev-aaaaaaaa"/);
+  assert.match(html, /<script async src="\/js\/release\.js/);
+  const runtime = await readFile(path.join(ctx.output, 'site/js/release.js'), 'utf8');
+  assert.match(runtime, /Object\.freeze/);
+  assert.match(runtime, /STUDYCRACK_RELEASE/);
+  assert.doesNotMatch(runtime, /files|sha256|token|email/);
+  assert.equal(await readFile(path.join(ctx.root, 'index.html'), 'utf8'), ctx.html);
 });
 
 for (const mutation of ['bytes', 'extra', 'missing', 'manifest', 'source-commit', 'digest', 'symlink']) {
@@ -112,7 +128,56 @@ test('publication uploads dependencies before entrypoints and never deletes remo
   }
   assert.ok(commands.some((args) => args.includes('promotion/kcc01') && args.includes('text/html; charset=utf-8')));
   assert.ok(commands.some((args) => args.includes('application/manifest+json; charset=utf-8')));
+  assert.ok(commands.at(-1)[2].endsWith('/release.json'), 'release marker must be published last');
+  for (const file of ['release.json', 'js/release.js']) {
+    assert.equal(cacheControlFor(file), NO_CACHE);
+    assert.ok(commands.some((args) => args[1] === 'cp' && args[2].endsWith(`/${file}`) && args.includes(NO_CACHE)));
+  }
   assert.throws(() => createPublishCommands('/safe/site', 'bucket/other', {}), /Invalid static bucket/);
+});
+
+test('a retained artifact is verified without rebuilding or changing its source identity', async (t) => {
+  const ctx = await fixture(t);
+  const old = await buildSiteRelease({ ...ctx, commit, release });
+  const oldManifest = await readFile(path.join(ctx.output, 'manifest.json'));
+  await ctx.put('index.html', '<html><head></head><body>new source</body></html>');
+  const result = await verifySiteRelease({ ...ctx, commit, expectedDigest: old.digest });
+  assert.equal(result.manifest.commit, commit);
+  assert.ok((await readFile(path.join(ctx.output, 'manifest.json'))).equals(oldManifest));
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ ...policy, files: [...policy.files, 'new-required.html'] }));
+  await assert.rejects(verifySiteRelease({ ...ctx, commit, expectedDigest: old.digest }), /Missing public file/);
+});
+
+test('pre-identity artifacts fail closed rather than being silently rewritten for rollback', async (t) => {
+  const ctx = await fixture(t);
+  await buildSiteRelease({ ...ctx, commit, release });
+  const manifestPath = path.join(ctx.output, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  manifest.schema = 1;
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  await assert.rejects(verifySiteRelease({ ...ctx, commit }), /Unsupported release manifest/);
+});
+
+test('manual rollback stays in the deployment workflow and cannot bypass verification or rebuild old code', async () => {
+  const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const rollback = workflow.slice(workflow.indexOf('  rollback:'), workflow.indexOf('  deploy:'));
+  const deploy = workflow.slice(workflow.indexOf('  deploy:'));
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(rollback, /github.event_name == 'workflow_dispatch'/);
+  assert.match(rollback, /actions: read/);
+  assert.doesNotMatch(rollback, /id-token: write|configure-aws-credentials|npm (?:ci|install|run build)|site-release\.mjs publish/);
+  assert.ok(rollback.indexOf('rollback-source.mjs') < rollback.indexOf('actions/download-artifact@v4'));
+  assert.match(rollback, /artifact-ids: .*steps\.source\.outputs\.artifactId/);
+  assert.ok(rollback.indexOf('site-release.mjs verify') < rollback.indexOf('actions/upload-artifact@v4'));
+  assert.match(deploy, /needs: \[verify, rollback\]/);
+  assert.match(deploy, /always\(\) && !cancelled\(\)/);
+  assert.match(deploy, /needs\.verify\.result == 'success'/);
+  assert.match(deploy, /needs\.rollback\.result == 'success'/);
+  assert.match(deploy, /publish release-artifact "\$RELEASE_COMMIT" "\$VERIFIED_DIGEST"/);
+  assert.doesNotMatch(deploy, /publish release-artifact "\$GITHUB_SHA"/);
+  assert.ok(deploy.indexOf('invalidation-completed') < deploy.indexOf('smoke-site-release.mjs'));
+  assert.ok(deploy.indexOf('smoke-site-release.mjs') < deploy.indexOf('Record published release'));
+  assert.doesNotMatch(workflow, /run:.*\$\{\{ inputs\./);
 });
 
 test('workflow passes the tested artifact and independent digest to a non-building deploy job', async () => {

@@ -10,6 +10,7 @@ export const NO_CACHE = 'no-cache, no-store, must-revalidate';
 export const IMMUTABLE = 'public, max-age=31536000, immutable';
 const DIST = 'studycrack-mobile-app/dist';
 const FIXED_ENTRIES = [`${DIST}/studycrack-mobile.bundle.js`, `${DIST}/studycrack-mobile.css`];
+const GENERATED_FILES = ['release.json', 'js/release.js'];
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 export function assertSafePath(relative) {
@@ -79,6 +80,23 @@ function assertIdentity(commit, release) {
   assert.ok(release.endsWith(commit.slice(0, 8)), 'Release version and source commit differ');
 }
 
+function releaseTags(release) {
+  return `<meta name="studycrack-release" content="${release}">\n<script async src="/js/release.js?v=${release}"></script>`;
+}
+
+function releaseFiles(commit, release) {
+  const identity = JSON.stringify({ schema: 1, release, commit });
+  return {
+    'release.json': `${identity}\n`,
+    'js/release.js': `Object.defineProperty(window, 'STUDYCRACK_RELEASE', { value: Object.freeze(${identity}), writable: false, configurable: false });\n`
+  };
+}
+
+export function cacheControlFor(file) {
+  if (['js/config.js', 'js/shared/api.js', ...GENERATED_FILES, ...FIXED_ENTRIES].includes(file)) return NO_CACHE;
+  return /^(?:js\/|css\/|assets\/pwa\/|studycrack-mobile-app\/dist\/(?:chunks|assets)\/)/.test(file) ? IMMUTABLE : NO_CACHE;
+}
+
 export function assertPublicReferences(contents) {
   const names = new Set(contents.keys());
   for (const [owner, bytes] of contents) {
@@ -115,10 +133,18 @@ export async function buildSiteRelease({ root = repositoryRoot, output, commit, 
   assert.ok(built.some((file) => file.startsWith(`${DIST}/chunks/`)), 'Missing split chunks');
   assert.ok(built.some((file) => file.startsWith(`${DIST}/assets/`)), 'Missing bundled artwork');
   for (const file of [...policy.files, ...built]) {
-    const bytes = await readSafeFile(root, file);
+    let bytes = await readSafeFile(root, file);
+    if (file.endsWith('.html')) {
+      const html = bytes.toString('utf8');
+      assert.equal([...html.matchAll(/<head\b[^>]*>/gi)].length, 1, `Expected one HTML head: ${file}`);
+      assert.equal([...html.matchAll(/<\/head\s*>/gi)].length, 1, `Expected one HTML head end: ${file}`);
+      assert.doesNotMatch(html, /studycrack-release|\/js\/release\.js/, `Release identity must be generated: ${file}`);
+      bytes = Buffer.from(html.replace(/<\/head\s*>/i, (end) => `${releaseTags(release)}\n${end}`));
+    }
     await mkdir(path.dirname(path.join(site, file)), { recursive: true });
     await writeFile(path.join(site, file), bytes, { flag: 'wx' });
   }
+  for (const [file, content] of Object.entries(releaseFiles(commit, release))) await writeFile(path.join(site, file), content, { flag: 'wx' });
   execFileSync('bash', [path.join(root, 'tools/bump_asset_version.sh'), release], { cwd: site, stdio: 'pipe' });
   for (const [alias, source] of Object.entries(policy.aliases || {})) {
     await mkdir(path.dirname(path.join(site, alias)), { recursive: true });
@@ -129,7 +155,7 @@ export async function buildSiteRelease({ root = repositoryRoot, output, commit, 
     const bytes = await readSafeFile(site, file);
     files.push({ path: file, bytes: bytes.length, sha256: hash(bytes) });
   }
-  const manifest = { schema: 1, commit, release, files };
+  const manifest = { schema: 2, commit, release, files };
   await writeFile(path.join(output, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' });
   return verifySiteRelease({ root, output, commit });
 }
@@ -143,11 +169,11 @@ export async function verifySiteRelease({ root = repositoryRoot, output, commit,
     assert.equal(digest, expectedDigest, 'Artifact manifest differs from verified job');
   }
   const manifest = JSON.parse(raw);
-  assert.equal(manifest.schema, 1, 'Unsupported release manifest');
+  assert.equal(manifest.schema, 2, 'Unsupported release manifest; use a retained release with public identity support');
   assertIdentity(manifest.commit, manifest.release);
   assert.equal(manifest.commit, commit, 'Artifact is from another source commit');
   assert.ok(Array.isArray(manifest.files) && manifest.files.length, 'Empty release manifest');
-  const allowed = new Set([...policy.files, ...Object.keys(policy.aliases || {})]);
+  const allowed = new Set([...policy.files, ...GENERATED_FILES, ...Object.keys(policy.aliases || {})]);
   const names = manifest.files.map((entry) => entry.path);
   assert.equal(new Set(names).size, names.length, 'Duplicate manifest entries');
   assert.deepEqual(names, [...names].sort(), 'Manifest order is not deterministic');
@@ -166,6 +192,14 @@ export async function verifySiteRelease({ root = repositoryRoot, output, commit,
   for (const [alias, source] of Object.entries(policy.aliases || {})) {
     assert.ok((await readSafeFile(site, alias)).equals(await readSafeFile(site, source)), `Clean URL differs from its source: ${alias}`);
   }
+  for (const [file, expected] of Object.entries(releaseFiles(commit, manifest.release))) {
+    assert.equal(contents.get(file).toString('utf8'), expected, `Public release identity mismatch: ${file}`);
+  }
+  for (const file of policy.files.filter((name) => name.endsWith('.html'))) {
+    const html = contents.get(file).toString('utf8');
+    assert.ok(html.includes(releaseTags(manifest.release)), `HTML release identity mismatch: ${file}`);
+    assert.equal([...html.matchAll(/name="studycrack-release"/g)].length, 1, `Duplicate release identity: ${file}`);
+  }
   assertPublicReferences(contents);
   return { digest, manifest };
 }
@@ -178,12 +212,13 @@ export function createPublishCommands(site, bucket, aliases) {
   return [
     sync(`${DIST}/chunks`, IMMUTABLE), sync(`${DIST}/assets`, IMMUTABLE),
     sync('assets', NO_CACHE), sync('js', IMMUTABLE), sync('css', IMMUTABLE),
-    copy('js/config.js', NO_CACHE), copy('js/shared/api.js', NO_CACHE),
+    copy('js/config.js', NO_CACHE), copy('js/shared/api.js', NO_CACHE), copy('js/release.js', NO_CACHE),
     [...copy('assets/pwa', IMMUTABLE), '--recursive'],
     ...FIXED_ENTRIES.map((entry) => copy(entry, NO_CACHE)),
-    ['s3', 'sync', site, destination, '--exclude', 'assets/*', '--exclude', 'js/*', '--exclude', 'css/*', '--exclude', 'studycrack-mobile-app/*', '--cache-control', NO_CACHE, '--only-show-errors'],
+    ['s3', 'sync', site, destination, '--exclude', 'assets/*', '--exclude', 'js/*', '--exclude', 'css/*', '--exclude', 'studycrack-mobile-app/*', '--exclude', 'release.json', '--cache-control', NO_CACHE, '--only-show-errors'],
     ['s3', 'cp', site, destination, '--recursive', '--exclude', '*', '--include', '*.html', ...Object.keys(aliases).flatMap((alias) => ['--include', alias]), '--content-type', 'text/html; charset=utf-8', '--cache-control', NO_CACHE, '--only-show-errors'],
-    copy('studycrack-mobile.webmanifest', NO_CACHE, ['--content-type', 'application/manifest+json; charset=utf-8'])
+    copy('studycrack-mobile.webmanifest', NO_CACHE, ['--content-type', 'application/manifest+json; charset=utf-8']),
+    copy('release.json', NO_CACHE, ['--content-type', 'application/json; charset=utf-8'])
   ];
 }
 
