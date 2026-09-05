@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { createPublishCommands, IMMUTABLE, NO_CACHE } from '../../tools/site-release.mjs';
 
 const appRootUrl = new URL('../', import.meta.url);
 const appRoot = fileURLToPath(appRootUrl);
@@ -98,8 +99,19 @@ assert.match(
   /href="\.\/studycrack-mobile-app\/dist\/studycrack-mobile\.css"/,
   'mobile HTML must load the built CSS asset'
 );
-assert.match(workflowSource, /studycrack-mobile-app\/dist\/chunks\/\*/, 'deployment must upload hashed chunks');
-assert.match(workflowSource, /max-age=31536000, immutable/, 'hashed chunks must use immutable caching');
+assert.match(workflowSource, /node tools\/site-release\.mjs publish/, 'deployment must use the verified public artifact publisher');
+const publishCommands = createPublishCommands('/artifact/site', 'static.example', {});
+for (const folder of ['chunks', 'assets']) {
+  assert.ok(publishCommands.some((args) => args[1] === 'sync'
+    && args[2] === `/artifact/site/studycrack-mobile-app/dist/${folder}`
+    && args[3] === `s3://static.example/studycrack-mobile-app/dist/${folder}`
+    && args.includes(IMMUTABLE)), `deployment must upload hashed ${folder} with immutable caching`);
+}
+for (const file of [entryChunk.fileName, cssAsset.fileName]) {
+  assert.ok(publishCommands.some((args) => args[1] === 'cp'
+    && args[2] === `/artifact/site/studycrack-mobile-app/dist/${file}`
+    && args.includes(NO_CACHE)), `stable entry ${file} must not use immutable caching`);
+}
 
 const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 const initialBytes = chunks

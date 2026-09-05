@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createPublishCommands, loadPublicPolicy } from './site-release.mjs';
 
 const repoRoot = new URL('../', import.meta.url);
 const expectedSitemapUrls = [
@@ -176,7 +177,10 @@ assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one
 assert.equal(promotionCanonical[0].href, 'https://studycrack.co.kr/promotion/kcc01', 'promotion canonical must use the public clean URL');
 assert.equal(promotionOgUrl.length, 1, 'promotion page must have exactly one og:url');
 assert.equal(promotionOgUrl[0].content, 'https://studycrack.co.kr/promotion/kcc01', 'promotion og:url must use the public clean URL');
-assert.ok(workflow.includes('aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01'), 'deploy workflow must publish the promotion clean URL');
-assert.ok(workflow.includes('--content-type "text/html; charset=utf-8"'), 'promotion clean URL must use an HTML content type');
+const publicPolicy = await loadPublicPolicy();
+assert.equal(publicPolicy.aliases['promotion/kcc01'], 'promotion_kcc01.html', 'artifact must include the promotion clean URL');
+const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
+assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
+assert.ok(publishCommands.some((args) => args.includes('promotion/kcc01') && args.includes('text/html; charset=utf-8')), 'promotion clean URL must use an HTML content type');
 
 console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);

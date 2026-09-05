@@ -28,7 +28,7 @@ export default defineConfig({
   webServer: noServer ? undefined : {
     command: `PORT=${previewPort} node ../tools/static-preview.mjs`,
     url: `http://127.0.0.1:${previewPort}/studycrack-mobile.html?screen=authLogin`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && !process.env.STUDYCRACK_PREVIEW_ROOT,
     timeout: 30_000
   }
 });

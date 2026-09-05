@@ -7,18 +7,26 @@ on:
       - dev
 
 permissions:
-  id-token: write
   contents: read
+
+concurrency:
+  group: static-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.release-info.outputs.artifact-name }}
+      manifest-digest: ${{ steps.release-info.outputs.manifest-digest }}
     defaults:
       run:
         working-directory: studycrack-mobile-app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -31,21 +39,40 @@ jobs:
         run: npm audit --omit=dev
       - name: Check source contracts
         run: npm run check
+      - name: Check deployment boundaries
+        run: node --test ../tools/test/site-release.test.mjs
       - name: Check web SEO contracts
         run: node ../tools/check_seo_contract.mjs
       - name: Build mobile app bundle
         run: npm run build
+      - name: Build versioned public artifact
+        run: node ../tools/site-release.mjs build ../release-artifact "$GITHUB_SHA" "${GITHUB_REF_NAME}-${GITHUB_SHA::8}"
       - name: Record architecture baseline
         run: node scripts/report-architecture-baseline.mjs > architecture-baseline.json
       - name: Install browser runtime
         run: npx playwright install --with-deps chromium
-      - name: Run mobile browser smoke tests
+      - name: Test the public artifact
+        env:
+          STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
         run: npm run test:e2e
+      - name: Seal verified artifact identity
+        id: release-info
+        run: |
+          ARTIFACT_DIGEST="$(node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA")"
+          echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=public-site-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+      - name: Upload verified public artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release-info.outputs.artifact-name }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload verification artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-verification-${{ github.sha }}
+          name: mobile-verification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             studycrack-mobile-app/architecture-baseline.json
             studycrack-mobile-app/playwright-report/
@@ -56,27 +83,27 @@ jobs:
   deploy:
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Checkout code
+      - name: Checkout deployment tools
         uses: actions/checkout@v4
-
-      # 0. 배포 시점에 자산 버전을 자동 갱신 (dev/main 공통)
-      - name: Bump asset query version for this deploy
-        run: |
-          ASSET_VERSION="${GITHUB_REF_NAME}-${GITHUB_SHA::8}"
-          echo "ASSET_VERSION=${ASSET_VERSION}" >> $GITHUB_ENV
-          ./tools/bump_asset_version.sh "${ASSET_VERSION}"
-
-      # 0.5 모바일 앱(Vite) 번들 빌드 — dist/ 산출물을 배포에 포함(소스 커밋만으론 번들이 없음)
+        with:
+          persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Build mobile app bundle
-        run: |
-          cd studycrack-mobile-app
-          npm ci
-          npm run build
+      - name: Download verified public artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.verify.outputs.artifact-name }}
+          path: release-artifact/
+      - name: Verify downloaded bytes before obtaining deployment credentials
+        env:
+          VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest }}
+        run: node tools/site-release.mjs verify release-artifact "$GITHUB_SHA" "$VERIFIED_DIGEST"
 
       # 1. DEV 환경 변수 설정 (dev 브랜치 푸시 시 실행)
       - name: Set Environment Variables for DEV
@@ -101,51 +128,11 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ap-northeast-2
 
-      # 4. S3 버킷으로 파일 동기화
-      - name: Deploy to S3
-        run: |
-          # node_modules는 배포 제외(빌드 산출물 dist/만 포함)
-          aws s3 sync . s3://${{ env.S3_BUCKET }} --delete \
-            --exclude ".git/*" --exclude ".github/*" \
-            --exclude "studycrack-mobile-app/node_modules/*"
+      - name: Publish verified public files
+        env:
+          VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest }}
+        run: node tools/site-release.mjs publish release-artifact "$GITHUB_SHA" "$VERIFIED_DIGEST"
 
-          # HTML은 항상 재검증되도록 짧은 캐시
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "*.html" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          # 설치 메타데이터는 갱신 즉시 반영하고 아이콘은 버전 파일명으로 장기 캐시한다.
-          aws s3 cp studycrack-mobile.webmanifest s3://${{ env.S3_BUCKET }}/studycrack-mobile.webmanifest \
-            --content-type "application/manifest+json; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-          aws s3 cp assets/pwa s3://${{ env.S3_BUCKET }}/assets/pwa --recursive \
-            --cache-control "public, max-age=31536000, immutable"
-
-          # KCC 프로모션은 루트 HTML 파일을 사용자-facing clean URL로도 배포한다.
-          aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01 \
-            --content-type "text/html; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          # 버전 쿼리 붙는 정적 자산은 장기 캐시
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "js/*" --include "css/*" \
-            --cache-control "public, max-age=31536000, immutable"
-
-          # 모바일 entry는 고정 파일명이라 항상 재검증한다.
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" \
-            --include "studycrack-mobile-app/dist/studycrack-mobile.bundle.js" \
-            --include "studycrack-mobile-app/dist/studycrack-mobile.css" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          # 분할 chunk는 content hash 파일명이므로 장기 캐시한다.
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" \
-            --include "studycrack-mobile-app/dist/chunks/*" \
-            --include "studycrack-mobile-app/dist/assets/*" \
-            --cache-control "public, max-age=31536000, immutable"
-
-      # 5. CloudFront 캐시 무효화 (CF_DIST_ID가 비어있지 않을 때만 실행)
       - name: CloudFront Invalidation
         if: env.CF_DIST_ID != ''
         run: |

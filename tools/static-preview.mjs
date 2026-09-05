@@ -1,11 +1,11 @@
 // 로컬 프리뷰 전용 정적 서버 (개발 검증용). 배포와 무관.
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, dirname, resolve } from 'node:path';
+import { readFile, realpath } from 'node:fs/promises';
+import { extname, dirname, resolve, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// 저장소 루트 = 이 스크립트(tools/)의 상위 디렉토리. 실행 cwd에 의존하지 않는다.
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// 검증 산출물을 지정하지 않으면 실행 cwd와 무관하게 저장소 루트를 사용한다.
+const ROOT = await realpath(process.env.STUDYCRACK_PREVIEW_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '..'));
 const PORT = Number(process.env.PORT) || 3000;
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -29,20 +29,31 @@ createServer(async (req, res) => {
     if (path === '/studycrack-mobile' || path === '/studycrack-mobile/') {
       path = '/studycrack-mobile.html';
     }
-    const filePath = normalize(join(ROOT, path));
-    if (!filePath.startsWith(ROOT)) {
+    if (path.split('/').some((part) => part.startsWith('.')) || path.includes('\\')) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+    const requested = resolve(ROOT, `.${path}`);
+    let filePath;
+    try { filePath = await realpath(requested); }
+    catch (error) {
+      if (error.code !== 'ENOENT' || extname(path)) throw error;
+      filePath = await realpath(`${requested}.html`);
+    }
+    const inside = relative(ROOT, filePath);
+    if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) {
       res.writeHead(403).end('Forbidden');
       return;
     }
     const data = await readFile(filePath);
     res.writeHead(200, {
-      'Content-Type': TYPES[extname(filePath)] || 'application/octet-stream',
+      'Content-Type': TYPES[extname(filePath)] || (!extname(filePath) ? 'text/html; charset=utf-8' : 'application/octet-stream'),
       'Cache-Control': 'no-store'
     });
     res.end(data);
   } catch {
     res.writeHead(404).end('Not found');
   }
-}).listen(PORT, () => {
+}).listen(PORT, '127.0.0.1', () => {
   console.log(`StudyCrack mobile: http://localhost:${PORT}/studycrack-mobile`);
 });
