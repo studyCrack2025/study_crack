@@ -6,7 +6,7 @@ function fieldValue(value) {
 
 export function PlannerEditSheet({ plannerEditIndex = null, plannerEditItem = null }) {
   return (
-    <Sheet open={plannerEditIndex !== null} dismissAction="closePlannerEdit">
+    <Sheet open={plannerEditIndex !== null} variant="planner" dismissAction="closePlannerEdit">
       <button type="button" className="planner-sheet-close" data-action="closePlannerEdit" aria-label="닫기">×</button>
       <h3>플래너 항목 수정</h3>
       <div className="planner-time-row">

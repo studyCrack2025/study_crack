@@ -235,7 +235,7 @@ export function AnalysisSearchSheet({
   analysisTargetList = []
 }) {
   return (
-    <Sheet open={analysisSearchOpen} overlayClass="analysis-search-overlay" panelClass="analysis-search-modal" dismissAction="closeAnalysisSearch">
+    <Sheet open={analysisSearchOpen} variant="planner" overlayClass="analysis-search-overlay" panelClass="analysis-search-modal" dismissAction="closeAnalysisSearch">
       <div className="sc-sheet-head analysis-search-head"><h4>희망 대학 선택</h4><button className="sc-overlay-close" data-action="closeAnalysisSearch" aria-label="닫기">✕</button></div>
       <div className="sc-sheet-body analysis-search-body">
         <div className="analysis-search-sticky analysis-search-inline"><input className="planner-input" data-field="analysisSearchTerm" defaultValue={analysisSearchTerm} placeholder="대학명 또는 학과명을 검색하세요" /><button type="button" className="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
