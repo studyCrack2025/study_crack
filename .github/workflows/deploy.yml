@@ -222,6 +222,8 @@ jobs:
           aws cloudfront wait invalidation-completed --distribution-id "$CF_DIST_ID" --id "$INVALIDATION_ID"
       - name: Check published release identity, bytes and response contracts
         run: node tools/smoke-site-release.mjs "https://${S3_BUCKET}" release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
+      - name: Report public security header readiness
+        run: node tools/audit-security-headers.mjs "https://${S3_BUCKET}" --report-only
       - name: Record published release
         run: |
           {
