@@ -22,7 +22,7 @@ export async function smokeSiteRelease({ origin, manifest, aliases, fetchImpl = 
   assert.ok(['https://dev.studycrack.co.kr', 'https://studycrack.co.kr'].includes(origin)
     || (base.protocol === 'http:' && base.hostname === '127.0.0.1'), 'Unapproved smoke origin');
   const entries = new Map(manifest.files.map((entry) => [entry.path, entry]));
-  const fixed = ['release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/config.js', 'js/shared/api.js'];
+  const fixed = ['release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/client-diagnostics.js', 'js/config.js', 'js/shared/api.js'];
   const samples = manifest.files.filter(({ path: file }) => file.endsWith('.html') || fixed.includes(file)
     || /^studycrack-mobile-app\/dist\/.+\.(?:js|css)$/.test(file) || file.startsWith('assets/pwa/'));
   const artwork = manifest.files.find(({ path: file }) => /^studycrack-mobile-app\/dist\/assets\/.+\.webp$/.test(file));

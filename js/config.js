@@ -13,6 +13,7 @@ const API_BASE = API_BASE_OVERRIDE || (IS_LOCAL
         : "https://api.studycrack.co.kr");
 
 const CONFIG = {
+    clientDiagnostics: { enabled: false, sampleRate: 0.1 },
     api: {
         user:           `${API_BASE}/api/user`,
         admin:          `${API_BASE}/api/admin`,

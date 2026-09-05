@@ -81,7 +81,7 @@ function assertIdentity(commit, release) {
 }
 
 function releaseTags(release) {
-  return `<meta name="studycrack-release" content="${release}">\n<script async src="/js/release.js?v=${release}"></script>`;
+  return `<meta name="studycrack-release" content="${release}">\n<script async src="/js/release.js?v=${release}"></script>\n<script async src="/js/client-diagnostics.js?v=${release}"></script>`;
 }
 
 function releaseFiles(commit, release) {

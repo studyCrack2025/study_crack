@@ -9,7 +9,7 @@ const commit = 'a'.repeat(40);
 const release = 'dev-aaaaaaaa';
 const dist = 'studycrack-mobile-app/dist';
 const policy = {
-  files: ['index.html', 'studycrack-mobile.html', 'studycrack-mobile.webmanifest', 'css/main.css', 'js/config.js', 'js/shared/api.js', 'assets/pwa/icon.png'],
+  files: ['index.html', 'studycrack-mobile.html', 'studycrack-mobile.webmanifest', 'css/main.css', 'js/config.js', 'js/shared/api.js', 'js/client-diagnostics.js', 'assets/pwa/icon.png'],
   aliases: { 'promotion/kcc01': 'index.html' }
 };
 async function fixture(t) {

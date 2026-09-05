@@ -110,6 +110,7 @@
     "js/auth.js",
     "js/change-password.js",
     "js/checkout.js",
+    "js/client-diagnostics.js",
     "js/config.js",
     "js/dev-mock.js",
     "js/mypage.js",

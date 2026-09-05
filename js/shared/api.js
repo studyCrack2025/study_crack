@@ -11,6 +11,10 @@ if (typeof window !== 'undefined') {
 }
 
 // Public routes are handled by their own callers.
+function reportSharedDiagnostic(kind, route, status = 0) {
+    try { window.STUDYCRACK_DIAGNOSTICS?.record(kind, route, Number.isInteger(status) ? status : 0); } catch (_) {}
+}
+
 const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
@@ -122,7 +126,7 @@ function syncTokensFromAuthResponse(data, options = {}) {
 
     const expectedUserId = options.expectedUserId || localStorage.getItem('userId') || '';
     if (expectedUserId && userId && expectedUserId !== userId) {
-        console.warn('[Auth] Refusing mismatched token sync', { expectedUserId, responseUserId: userId });
+        console.warn('[Auth] Refusing mismatched token sync');
         return false;
     }
 
@@ -248,7 +252,13 @@ function tryRefreshToken({ preserveTransientErrors = false } = {}) {
         return syncTokensFromAuthResponse(data);
     })();
 
-    _sharedRefreshPromise = p.finally(() => { _sharedRefreshPromise = null; });
+    _sharedRefreshPromise = p.then((refreshed) => {
+        if (!refreshed) reportSharedDiagnostic('auth_refresh_failure', 'auth');
+        return refreshed;
+    }, (error) => {
+        if (error?.name !== 'AbortError') reportSharedDiagnostic('auth_refresh_failure', 'auth', error?.status);
+        throw error;
+    }).finally(() => { _sharedRefreshPromise = null; });
     return result(_sharedRefreshPromise);
 }
 
@@ -311,9 +321,13 @@ async function apiFetch(url, options = {}) {
         apiError.code = errorCode;
         throw apiError;
     } catch (error) {
+        if (error?.name !== 'AbortError') {
+            const route = Object.keys(CONFIG.api).find((key) => CONFIG.api[key] === url);
+            reportSharedDiagnostic('api_failure', route, error?.status);
+        }
         // 예상된 인증 만료와 화면 전환에 따른 요청 취소는 호출처에서 조용히 처리한다.
         if ((!error || error.code !== 'AUTH_EXPIRED') && error?.name !== 'AbortError') {
-            console.error('API 통신 실패:', error);
+            console.error('API 통신 실패');
         }
         throw error;
     }

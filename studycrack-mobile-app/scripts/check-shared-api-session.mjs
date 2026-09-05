@@ -29,10 +29,11 @@ function response(body, status = 200) {
   };
 }
 
-function createRuntime({ localValues, sessionValues, fetch, isLocal = true }) {
+function createRuntime({ localValues, sessionValues, fetch, isLocal = true, diagnostics }) {
   const localStorage = createStorage(localValues);
   const sessionStorage = createStorage(sessionValues);
   const window = {
+    STUDYCRACK_DIAGNOSTICS: diagnostics,
     addEventListener() {},
     atob: (value) => Buffer.from(value, 'base64').toString('binary'),
     location: { pathname: '/studycrack-mobile.html', replace() {} }
@@ -54,6 +55,24 @@ const now = Math.floor(Date.now() / 1000);
 const expiredAccessToken = token({ exp: now - 60, sub: 'student-1' });
 const freshAccessToken = token({ exp: now + 3600, sub: 'student-1' });
 const freshIdToken = token({ exp: now + 3600, sub: 'student-1' });
+const diagnosticEvents = [];
+const observed = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: { accessToken: freshAccessToken },
+  diagnostics: { record: (...args) => diagnosticEvents.push(args) }, fetch: async () => response({ message: 'private-email@example.com', payload: 'secret' }, 503)
+});
+await assert.rejects(observed.api.apiFetch('/report'), (error) => error.status === 503);
+assert.deepEqual(diagnosticEvents, [['api_failure', 'report', 503]]);
+const brokenObserver = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: { accessToken: freshAccessToken },
+  diagnostics: { record() { throw new Error('observer unavailable'); } }, fetch: async () => response({}, 500)
+});
+await assert.rejects(brokenObserver.api.apiFetch('/report'), (error) => error.status === 500);
+let refreshCalls = 0;
+const refreshEvents = [];
+const observedRefresh = createRuntime({ isLocal: false, localValues: {}, sessionValues: {},
+  diagnostics: { record: (...args) => refreshEvents.push(args) }, fetch: async () => { refreshCalls++; return response({}, 503); }
+});
+await Promise.all([observedRefresh.api.tryRefreshToken(), observedRefresh.api.tryRefreshToken()]);
+assert.equal(refreshCalls, 1);
+assert.deepEqual(refreshEvents, [['auth_refresh_failure', 'auth', 503]]);
 const requests = [];
 
 const runtime = createRuntime({
