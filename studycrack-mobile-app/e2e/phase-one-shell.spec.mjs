@@ -130,8 +130,8 @@ test('offline과 reconnecting은 사용자 데이터를 캐시하지 않는 전�
   await context.setOffline(true);
   await expect(page.getByRole('status')).toContainText('오프라인 상태예요');
   await context.setOffline(false);
-  await expect(page.getByRole('status')).toContainText('연결을 다시 확인하고 있어요');
-  await expect(page.locator('.sc-network-status')).toBeHidden({ timeout: 3000 });
+  await expect(page.getByRole('status')).toContainText('다시 연결됐어요');
+  await expect(page.locator('.sc-network-status')).toBeHidden({ timeout: 5000 });
 });
 
 test('reduced motion에서는 화면 전환과 skeleton 반복 motion이 제거된다', async ({ page }) => {

@@ -171,10 +171,10 @@ const detachNetwork = attachNetworkStatus({ doc: networkDocument, win: networkWi
 assert.equal(networkRoot.dataset.networkStatus, 'online');
 networkHandlers.offline();
 assert.equal(networkRoot.dataset.networkStatus, 'offline');
-assert.equal(appendedBanner.textContent, '오프라인 상태예요');
+assert.match(appendedBanner.textContent, /오프라인 상태예요/);
 networkHandlers.online();
 assert.equal(networkRoot.dataset.networkStatus, 'reconnecting');
-assert.equal(appendedBanner.textContent, '연결을 다시 확인하고 있어요');
+assert.match(appendedBanner.textContent, /다시 연결됐어요.*다시 시도/);
 reconnectCallback();
 assert.equal(networkRoot.dataset.networkStatus, 'online');
 detachNetwork();

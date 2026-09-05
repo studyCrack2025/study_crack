@@ -59,7 +59,9 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
   }));
 
   const latest = sessions[0] || null;
-  const statusSummary = status === 'loading'
+  const statusSummary = status === 'error'
+    ? { eyebrow: '이번 주 코칭', title: '점검 기록 확인 필요', description: '최신 제출 내역을 확인하지 못했어요.', tone: 'error' }
+    : status === 'loading' || status === 'idle'
     ? { eyebrow: '이번 주 코칭', title: '점검 기록 확인 중', description: '제출 내역을 불러오고 있어요.', tone: 'loading' }
     : latest
       ? { eyebrow: latest.weekLabel, title: latest.statusLabel, description: `${latest.tutorName} · ${latest.dateLabel}`, tone: latest.feedbackReady ? 'ready' : 'pending' }
@@ -69,7 +71,7 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
     feedback,
     feedbackReady: feedback.length > 0,
     isError: status === 'error',
-    isLoading: status === 'loading',
+    isLoading: status === 'loading' || status === 'idle',
     latest,
     sessions,
     statusSummary,

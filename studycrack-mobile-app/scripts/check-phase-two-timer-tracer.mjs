@@ -265,7 +265,7 @@ for (const failure of rewardFailureCases) {
   if (!failure.terminal) {
     assert.equal(context.rewardPendingSessionId, completedSession.sessionId, `${failure.label} dismissal attempts must retain the recovery key.`);
     assert.equal(context.lastCompletedSession, completedSession, `${failure.label} dismissal attempts must retain the completed-session summary.`);
-    assert.equal(context.completionError, failure.error, `${failure.label} dismissal attempts must retain the recovery explanation.`);
+    assert.equal(context.completionError, context.apiResult.error, `${failure.label} dismissal attempts must retain the recovery explanation.`);
   }
 }
 

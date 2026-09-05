@@ -36,7 +36,7 @@ const errorMarkup = renderToStaticMarkup(React.createElement(DeferredScreenFallb
   status: 'error'
 }));
 assert.match(errorMarkup, /class="sc-empty is-error"[^>]*><span[^>]*class="sc-empty-mark"[^>]*>!<\/span><div role="alert"><h3>화면을 불러오지 못했습니다<\/h3>/, 'Deferred failure must expose its heading and shared error status contract');
-assert.match(errorMarkup, /<\/div><button[^>]*class="btn btn-primary"[^>]*>다시 시도<\/button><\/div>/, 'Deferred failure must keep its retry action outside the alert region');
+assert.match(errorMarkup, /<\/div><button[^>]*class="btn btn-primary"[^>]*>다시 시도<\/button><button[^>]*>페이지 새로고침<\/button><\/div>/, 'Deferred failure must keep retry and reload actions outside the alert region');
 
 const inactiveMarkup = renderToStaticMarkup(React.createElement(AppContent, { inactive: true, screen: 'timer' }, 'covered'));
 assert.match(inactiveMarkup, /inert="" aria-hidden="true"/, 'Covered screen content must be inert and hidden from the accessibility tree');

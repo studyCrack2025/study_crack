@@ -225,9 +225,14 @@ function responseFor(payload, state) {
         startedAt: new Date(Date.now() - 2000).toISOString()
       };
       return state.activeStudySession;
-    case 'complete_study_session':
+    case 'complete_study_session': {
+      const id = payload.data?.sessionId;
+      if (state.completedStudySessions.has(id)) return state.completedStudySessions.get(id);
       state.studySeconds = state.studyDurationSeconds;
-      return { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
+      const completed = { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
+      state.completedStudySessions.set(id, completed);
+      return completed;
+    }
     case 'get_game_profile':
       return {
         profile: state.gameProfile,
@@ -334,6 +339,7 @@ export async function installApiMock(page, {
   analysisDelayByExam = {},
   failGameTypes = [],
   failOnceTypes = [],
+  loseResponseOnceTypes = [],
   fishCatalog = FISH_CATALOG,
   initialGameProfile = {},
   studyDurationSeconds = 2,
@@ -345,6 +351,7 @@ export async function installApiMock(page, {
   const failedOnce = new Set();
   const state = {
     activeStudySession: null,
+    completedStudySessions: new Map(),
     activeFish: [],
     fishCatalog,
     fishInventory: [],
@@ -375,10 +382,16 @@ export async function installApiMock(page, {
       ? Math.max(0, Number(analysisDelayByExam[payload.examMode] || 0))
       : 0;
     if (analysisDelay) await new Promise((resolve) => setTimeout(resolve, analysisDelay));
+    const body = responseFor(payload, state);
+    if (loseResponseOnceTypes.includes(payload.type) && !failedOnce.has(payload.type)) {
+      failedOnce.add(payload.type);
+      await route.abort('failed');
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(responseFor(payload, state))
+      body: JSON.stringify(body)
     });
   });
   return { requests, state };

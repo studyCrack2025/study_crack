@@ -1,3 +1,5 @@
+import { describeFailure } from './failure.js';
+
 let authExpiredHandler = null;
 
 /**
@@ -39,26 +41,44 @@ async function readResponseBody(response) {
   return response?.json?.().catch(() => null) ?? null;
 }
 
-export async function requestJson({ apiFetch, fallbackError = '요청을 처리하지 못했습니다.', options = {}, url } = {}) {
+export async function requestJson({ apiFetch, fallbackError = '요청을 처리하지 못했습니다.', options = {}, timeoutMs = 45000, url } = {}) {
   if (typeof apiFetch !== 'function' || !url) {
     return apiFailure('API 설정을 불러오지 못했습니다.');
   }
+  const failure = (error = {}) => {
+    const description = describeFailure(error, fallbackError);
+    return notifyAuthExpired(apiFailure(description.message, { code: description.code, status: Number(error.status || 0) }));
+  };
+  if (globalThis.navigator?.onLine === false) return failure({ code: 'OFFLINE' });
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener('abort', cancel, { once: true });
+  if (options.signal?.aborted) cancel();
+  let timer;
   try {
-    const response = await apiFetch(url, options);
-    const body = await readResponseBody(response);
-    if (!response?.ok) {
-      return notifyAuthExpired(apiFailure(body?.error || body?.message || fallbackError, {
-        code: body?.code || '',
-        data: body,
-        status: response?.status || 0
-      }));
-    }
-    return apiSuccess(body, { status: response?.status || 200 });
+    const interrupted = new Promise((_, reject) => {
+      const abort = () => reject(Object.assign(new Error(), { code: 'REQUEST_ABORTED' }));
+      controller.signal.addEventListener('abort', abort, { once: true });
+      if (controller.signal.aborted) abort();
+      timer = setTimeout(() => {
+        reject(Object.assign(new Error(), { code: 'TIMEOUT' }));
+        controller.abort();
+      }, timeoutMs);
+    });
+    const request = async () => {
+      if (controller.signal.aborted) return failure({ code: 'REQUEST_ABORTED' });
+      const response = await apiFetch(url, { ...options, signal: controller.signal });
+      const body = await readResponseBody(response);
+      if (controller.signal.aborted) return failure({ code: 'REQUEST_ABORTED' });
+      if (!response?.ok) return failure({ code: body?.code || '', status: response?.status || 0 });
+      return apiSuccess(body, { status: response?.status || 200 });
+    };
+    return await Promise.race([request(), interrupted]);
   } catch (error) {
-    return notifyAuthExpired(apiFailure(error?.message || fallbackError, {
-      code: error?.code || '',
-      status: error?.status || 0
-    }));
+    return failure(error);
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', cancel);
   }
 }
 

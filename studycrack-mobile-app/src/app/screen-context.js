@@ -38,7 +38,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'signupVerifiedEmail', 'signupVerifiedPhone', 'studycrackLogoSrc'
   ]),
   customerSupport: Object.freeze([
-    'openFaq', 'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
+    'openFaq', 'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaError', 'qnaStatus', 'qnaSubmitting'
   ]),
   lockedFeature: Object.freeze([
     'lockedFeatureLabel', 'lockedFeatureTarget', 'lockedFeatureTier', 'tab', 'upgradePromptTarget', 'upgradePromptTier'
@@ -48,7 +48,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'profileDetailModalOpen', 'profilePhotoUploading', 'selectedPlan', 'studyRecords',
     'studyTimerRunning', 'studyTimerSecondsRef', 'tab', 'user'
   ]),
-  notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiStatus']),
+  notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiError', 'notiStatus']),
   notificationSettings: Object.freeze(['notifications']),
   ob1: Object.freeze(['crackySrc', 'obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
   ob2: Object.freeze(['crackySrc', 'scoreEditState', 'scoreExamType', 'scoreSubjectSaving']),
@@ -83,11 +83,11 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   qualInfo: Object.freeze(['obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
   ranking: Object.freeze(['formatHms', 'rankingError', 'rankingMe', 'rankingPeriod', 'rankingRows', 'rankingStatus']),
   proElite: Object.freeze([
-    'proReports', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText'
+    'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText'
   ]),
   proIntro: Object.freeze(['checkoutPlan', 'upgradePromptTarget', 'upgradePromptTier']),
   report: Object.freeze([
-    'proReports', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText', 'tab'
+    'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText', 'tab'
   ]),
   reportDetail: Object.freeze([]),
   scoreInfo: Object.freeze([
@@ -101,7 +101,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'coachingAnswers', 'coachingDropReasons', 'coachingExamFiles', 'coachingExamScores',
     'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen', 'coachingStep',
     'coachingSubjectRows', 'coachingSubmitting', 'coachingTrend', 'coachingView', 'dimmed',
-    'tab', 'weeklyReports', 'weeklyReportsStatus'
+    'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
     'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'fishCount', 'formatHms',
@@ -112,9 +112,9 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'
   ]),
   tutor: Object.freeze([
-    'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
+    'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaError', 'qnaStatus', 'qnaSubmitting'
   ]),
-  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports', 'weeklyReportsStatus']),
+  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus']),
   termsScreen: Object.freeze(['termsContent'])
 });
 

@@ -29,7 +29,7 @@ function response(body, status = 200) {
   };
 }
 
-function createRuntime({ localValues, sessionValues, fetch }) {
+function createRuntime({ localValues, sessionValues, fetch, isLocal = true }) {
   const localStorage = createStorage(localValues);
   const sessionStorage = createStorage(sessionValues);
   const window = {
@@ -39,14 +39,14 @@ function createRuntime({ localValues, sessionValues, fetch }) {
   };
   const context = vm.createContext({
     CONFIG: { api: { auth: '/auth', admin: '/admin', report: '/report', file: '/file', payment: '/payment' } },
-    IS_LOCAL: true,
-    console,
+    IS_LOCAL: isLocal,
+    console: { ...console, error() {} },
     fetch,
     localStorage,
     sessionStorage,
     window
   });
-  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession };`, context);
+  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession, tryRefreshToken };`, context);
   return { api: context.__sharedApi, localStorage, sessionStorage };
 }
 
@@ -80,4 +80,51 @@ const staleRuntime = createRuntime({
 });
 assert.equal(staleRuntime.api.hasClientSession(), false);
 
-console.log('shared API session contracts passed');
+for (const isLocal of [true, false]) {
+  const offlineRefresh = createRuntime({ isLocal,
+    localValues: { userId: 'student-1', refreshToken: 'refresh-token' },
+    sessionValues: { accessToken: isLocal ? expiredAccessToken : freshAccessToken },
+    fetch: async (url) => { if (url === '/auth') throw new TypeError('Failed to fetch'); return response({}, 401); }
+  });
+  await assert.rejects(offlineRefresh.api.apiFetch('/user'), (error) => error.code !== 'AUTH_EXPIRED');
+  assert.equal(offlineRefresh.localStorage.getItem('userId'), 'student-1');
+  assert.equal(await offlineRefresh.api.tryRefreshToken(), false, 'legacy refresh callers keep their boolean contract');
+
+  const unavailableRefresh = createRuntime({ isLocal,
+    localValues: { userId: 'student-1', refreshToken: 'refresh-token' },
+    sessionValues: { accessToken: isLocal ? expiredAccessToken : freshAccessToken },
+    fetch: async (url) => response({}, url === '/auth' ? 500 : 401)
+  });
+  await assert.rejects(unavailableRefresh.api.apiFetch('/user'), (error) => error.status === 500 && error.code !== 'AUTH_EXPIRED');
+  assert.equal(unavailableRefresh.localStorage.getItem('userId'), 'student-1');
+
+  for (const status of [403, 404, 409, 500]) {
+    let protectedRequests = 0;
+    const refreshedRuntime = createRuntime({ isLocal,
+      localValues: { userId: 'student-1', refreshToken: 'refresh-token' }, sessionValues: { accessToken: freshAccessToken },
+      fetch: async (url) => {
+        if (url === '/auth') return response({ accessToken: freshAccessToken, idToken: freshIdToken });
+        protectedRequests += 1;
+        return response({}, protectedRequests === 1 ? 401 : status);
+      }
+    });
+    await assert.rejects(refreshedRuntime.api.apiFetch('/user'), (error) => error.status === status && error.code !== 'AUTH_EXPIRED');
+    assert.equal(protectedRequests, 2, 'authenticated retry must happen at most once');
+    assert.equal(refreshedRuntime.localStorage.getItem('userId'), 'student-1');
+  }
+  const forbidden = createRuntime({ isLocal, localValues: { userId: 'student-1' }, sessionValues: { accessToken: freshAccessToken },
+    fetch: async (url) => response({}, url === '/auth' ? 401 : 403)
+  });
+  await assert.rejects(forbidden.api.apiFetch('/user'), (error) => error.status === 403 && error.code !== 'AUTH_EXPIRED');
+}
+let cookieRequests = 0;
+const cookieOnly = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async (url, options) => {
+  assert.equal(options.credentials, 'include');
+  assert.equal(options.headers.Authorization, undefined);
+  if (url === '/auth') return response({ success: true });
+  cookieRequests += 1;
+  return response({ success: true }, cookieRequests === 1 ? 401 : 200);
+} });
+assert.equal((await cookieOnly.api.apiFetch('/user')).ok, true);
+assert.equal(cookieRequests, 2);
+console.log('shared API session contracts passed: refresh single-flight, local/cookie transport failures and retry status preservation');

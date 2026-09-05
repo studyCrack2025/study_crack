@@ -81,7 +81,7 @@ assert.doesNotMatch(secondaryScreen, /sc-secondary-state/);
 assert.match(serviceContent, /data-action="downloadProReport"/);
 assert.match(serviceContent, /data-action="openProRequestModal"/);
 assert.match(serviceContent, /data-action="openQnaComposer"/);
-assert.match(serviceContent, /proReportsStatus === 'error'/);
+assert.match(serviceContent, /ResourceFeedback status=\{proReportsStatus\}/);
 assert.match(serviceContent, /data-target=\{latest \? 'planner' : 'strategy'\}/);
 assert.match(servicePlan, /data-action="openWebPayment"/);
 assert.match(servicePlan, /data-action="selectPlan"/);

@@ -44,7 +44,7 @@ const contract = JSON.parse(interactionSource);
 const uiContract = JSON.parse(uiSource);
 const sourceTexts = await Promise.all(sourceFiles.map((file) => readFile(file, 'utf8')));
 const discoveredActions = sortedUnique(sourceTexts.flatMap((source) => Array.from(
-  source.matchAll(/data-action\s*=\s*(?:\{\s*)?['"]([A-Za-z0-9_-]+)['"](?:\s*\})?/g),
+  source.matchAll(/(?:data-action|retryAction)\s*=\s*(?:\{\s*)?['"]([A-Za-z0-9_-]+)['"](?:\s*\})?/g),
   (match) => match[1]
 )));
 const registeredScreens = extractStringList(registrySource, 'MOBILE_SCREEN_NAMES');

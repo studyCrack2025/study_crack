@@ -474,7 +474,7 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await calendar.getByRole('button', { name: '닫기' }).click();
 
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
-  await expect(page.locator('.sc-network-status')).toHaveText('오프라인 상태예요');
+  await expect(page.locator('.sc-network-status')).toHaveText('오프라인 상태예요. 표시 중인 정보는 최신 상태가 아닐 수 있어요.');
   await expect(page.locator('.planner-item-v2').filter({ hasText: '독서' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });

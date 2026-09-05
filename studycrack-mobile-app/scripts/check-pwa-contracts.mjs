@@ -28,7 +28,7 @@ assert.match(html, /<meta name="theme-color" content="#0A56B2" \/>/);
 assert.match(html, /<meta name="mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-title" content="StudyCrack" \/>/);
-assert.match(html, /<div id="root">StudyCrack 앱을 불러오는 중입니다\.\.\.<\/div>/);
+assert.match(html, /<div id="root"><div role="status">StudyCrack 앱을 불러오는 중입니다\.\.\.<\/div><\/div>/);
 assert.match(fallbackCss, /--mobile-boot-bg:#F7F9FC/);
 assert.match(fallbackCss, /\.app-shell \{[^}]*background:var\(--mobile-boot-bg\)/);
 

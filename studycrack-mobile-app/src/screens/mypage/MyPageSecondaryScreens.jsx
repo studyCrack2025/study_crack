@@ -1,3 +1,4 @@
+import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
 import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
 
@@ -39,15 +40,15 @@ function QnaComposerModal({ open, qnaDraftContent = '', qnaDraftTitle = '', qnaS
   );
 }
 
-function QnaHistory({ qnaHistory = [], qnaStatus = 'idle' }) {
-  if (qnaStatus === 'idle' || qnaStatus === 'loading') return <SecondaryState kind="loading" title="문의 내역을 불러오는 중이에요" />;
-  if (qnaStatus === 'error') return <SecondaryState kind="error" title="문의 내역을 불러오지 못했어요" description="잠시 후 다시 확인해주세요." />;
+function QnaHistory({ qnaHistory = [], qnaStatus = 'idle', qnaError = '' }) {
+  const feedback = <ResourceFeedback status={qnaStatus} error={qnaError} hasData={qnaHistory.length > 0} loadingTitle="문의 내역을 불러오는 중이에요" errorTitle="문의 내역을 불러오지 못했어요" retryAction="retryQnaHistory" />;
+  if (!qnaHistory.length && !['ready', 'empty'].includes(qnaStatus)) return feedback;
   if (!qnaHistory.length) return <SecondaryState title="아직 남긴 문의가 없어요" description="궁금한 점이 생기면 1:1 문의를 남겨주세요." />;
-  return qnaHistory.map((item, index) => {
+  return <>{feedback}{qnaHistory.map((item, index) => {
     const done = String(item.status || '').toLowerCase() === 'done';
     const created = formatDate(item.createdAt);
     return <article className="sc-secondary-row qna-list-row" key={item.qnaId || item.id || `${created}-${index}`}><div className="sc-secondary-row-main qna-row-main"><b>{item.title || '제목 없는 문의'}</b><p>{item.content || '문의 내용 없음'}</p>{done && item.answer ? <small>답변: {item.answer}</small> : null}</div><div className="sc-secondary-row-meta qna-row-side"><em className={done ? 'done' : ''}>{qnaStatusLabel(item.status)}</em>{created ? <span>{created}</span> : null}</div></article>;
-  });
+  })}</>;
 }
 
 export function NotificationSettingsScreen({ notifications = {} }) {
@@ -69,7 +70,7 @@ function NotificationDetail({ item }) {
   );
 }
 
-export function NotificationListScreen({ notiDetailId = '', notiList = [], notiPage = 0, notiStatus = 'idle' }) {
+export function NotificationListScreen({ notiDetailId = '', notiList = [], notiPage = 0, notiStatus = 'idle', notiError = '' }) {
   const list = Array.isArray(notiList) ? notiList : [];
   const totalPages = Math.max(1, Math.ceil(list.length / NOTI_PAGE_SIZE));
   const page = Math.min(Math.max(0, notiPage), totalPages - 1);
@@ -79,29 +80,27 @@ export function NotificationListScreen({ notiDetailId = '', notiList = [], notiP
   const unreadCount = list.filter((item) => item?.isRead !== true).length;
   let content = null;
   if (!list.length) {
-    const kind = notiStatus === 'idle' || notiStatus === 'loading' ? 'loading' : notiStatus === 'error' ? 'error' : 'empty';
-    const title = kind === 'loading' ? '알림을 불러오는 중...' : kind === 'error' ? '알림을 불러오지 못했습니다.' : '받은 알림이 없습니다.';
-    content = <SecondaryState kind={kind} title={title} description={kind === 'error' ? '잠시 후 다시 확인해주세요.' : ''} />;
+    if (['ready', 'empty'].includes(notiStatus)) content = <SecondaryState title="받은 알림이 없습니다." />;
   } else {
     content = <><div className="sc-secondary-list noti-list-card">{pageItems.map((item, index) => { const id = String(item.notiId || item.id || item.notificationId || `${start + index}`); const date = formatDate(item.createdAt); return <button type="button" className={`sc-secondary-row noti-list-row ${item.isRead ? '' : 'is-unread'}`} data-action="openNotiDetail" data-noti-id={id} key={id}><span className="noti-list-dot" aria-hidden="true" /><span className="sc-secondary-row-main noti-list-main"><b>{item.title || '알림'}</b><p className="noti-list-body">{item.body || item.message || '내용이 없습니다.'}</p>{date ? <span className="noti-list-date">{date}</span> : null}</span><span className="sc-secondary-row-meta noti-list-chev" aria-hidden="true">보기</span></button>; })}</div>{totalPages > 1 ? <div className="noti-pager"><button type="button" className="noti-pager-btn" data-action="notiPrevPage" disabled={page === 0}>이전</button><span className="noti-pager-count">{page + 1} / {totalPages}</span><button type="button" className="noti-pager-btn" data-action="notiNextPage" disabled={page >= totalPages - 1}>다음</button></div> : null}</>;
   }
   const overlays = <NotificationDetail item={selected} />;
   return (
     <SecondaryScreenShell screen="notificationList" title="알림" overlays={selected ? overlays : null}>
-      <div className="sc-secondary-page notification-list-page"><SecondaryIntro eyebrow="INBOX" title="알림" description={list.length ? '읽지 않은 항목은 파란 점으로 표시됩니다.' : '학습과 서비스 이용에 필요한 소식을 모아봤어요.'} aside={<div className="notification-intro-tools">{unreadCount ? <span>안 읽음 {unreadCount}</span> : null}<button type="button" className="notification-settings-link" data-action="goto" data-target="notificationSettings">설정</button></div>} />{content}</div>
+      <div className="sc-secondary-page notification-list-page"><SecondaryIntro eyebrow="INBOX" title="알림" description={list.length ? '읽지 않은 항목은 파란 점으로 표시됩니다.' : '학습과 서비스 이용에 필요한 소식을 모아봤어요.'} aside={<div className="notification-intro-tools">{unreadCount ? <span>안 읽음 {unreadCount}</span> : null}<button type="button" className="notification-settings-link" data-action="goto" data-target="notificationSettings">설정</button></div>} /><ResourceFeedback status={notiStatus} error={notiError} hasData={list.length > 0} loadingTitle="알림을 불러오는 중..." errorTitle="알림을 불러오지 못했습니다." retryAction="retryNotifications" />{content}</div>
     </SecondaryScreenShell>
   );
 }
 
 export function CustomerSupportScreen(ctx) {
-  const { openFaq = '', qnaComposerOpen = false, qnaDraftContent = '', qnaDraftTitle = '', qnaHistory = [], qnaStatus = 'idle', qnaSubmitting = false } = ctx;
+  const { openFaq = '', qnaComposerOpen = false, qnaDraftContent = '', qnaDraftTitle = '', qnaHistory = [], qnaStatus = 'idle', qnaError = '', qnaSubmitting = false } = ctx;
   const overlays = <QnaComposerModal open={qnaComposerOpen} qnaDraftContent={qnaDraftContent} qnaDraftTitle={qnaDraftTitle} qnaSubmitting={qnaSubmitting} />;
   return (
     <SecondaryScreenShell screen="customerSupport" title="고객센터" overlays={qnaComposerOpen ? overlays : null}>
       <div className="sc-secondary-page support-page">
         <SecondaryIntro eyebrow="HELP CENTER" title="무엇을 도와드릴까요?" description="문의 내역을 확인하거나 새로운 질문을 바로 남겨보세요." aside={<span className="sc-badge">평일 10:00–18:00</span>} />
         <section className="sc-secondary-section support-direct-card"><div className="sc-secondary-section-head"><div><h3>1:1 문의</h3><p>현재 상황을 구체적으로 적으면 더 빠르게 확인할 수 있어요.</p></div></div><div className="support-action-grid"><button type="button" className="support-action-card primary" data-action="openQnaComposer"><b>일반 문의</b><span>결제·계정·서비스 이용 질문</span></button><button type="button" className="support-action-card" data-action="openQnaComposer" data-qna-title="[데이터 오류 신고] " data-qna-content="오류가 발생한 화면:\n기준 시험:\n선택한 대학·학과:\n확인한 문제:\n"><b>데이터 오류 신고</b><span>성적·대학·환산 결과 문제</span></button></div><button type="button" className="support-kakao-link" data-action="openKakaoSupport">카카오톡으로 문의하기</button></section>
-        <section className="sc-secondary-section support-qna-card"><div className="sc-secondary-section-head support-section-head"><div><h3>내 문의 내역</h3><p>최근 문의와 답변 상태입니다.</p></div>{qnaHistory.length ? <span className="sc-badge">{qnaHistory.length}건</span> : null}</div><div className="sc-secondary-list qna-list compact"><QnaHistory qnaHistory={qnaHistory} qnaStatus={qnaStatus} /></div></section>
+        <section className="sc-secondary-section support-qna-card"><div className="sc-secondary-section-head support-section-head"><div><h3>내 문의 내역</h3><p>최근 문의와 답변 상태입니다.</p></div>{qnaHistory.length ? <span className="sc-badge">{qnaHistory.length}건</span> : null}</div><div className="sc-secondary-list qna-list compact"><QnaHistory qnaHistory={qnaHistory} qnaStatus={qnaStatus} qnaError={qnaError} /></div></section>
         <section className="sc-secondary-section faq-card"><div className="sc-secondary-section-head"><div><h3>자주 묻는 질문</h3><p>많이 찾는 내용을 먼저 확인해보세요.</p></div></div><div className="sc-secondary-list">{FAQS.map(([id, question, answer]) => <button type="button" className={`sc-secondary-row faq-row ${openFaq === id ? 'active open' : ''}`} data-action="toggleFaq" data-faq-id={id} aria-expanded={openFaq === id ? 'true' : 'false'} key={id}><div className="sc-secondary-row-main"><b>{question}</b>{openFaq === id ? <p>{answer}</p> : null}</div><span aria-hidden="true">›</span></button>)}</div></section>
       </div>
     </SecondaryScreenShell>

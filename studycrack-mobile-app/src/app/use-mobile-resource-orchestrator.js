@@ -75,11 +75,12 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
     hasSession: api.hasClientSession,
     setState
   });
-  useReportResources({ enabled: resourceSessionReady, getApiBinding: api.getReportApiBinding, screen: state.screen, setState });
-  useSupportResource({ enabled: resourceSessionReady && ['customerSupport', 'tutor'].includes(state.screen), getApiBinding: api.getQnaApiBinding, setState });
+  useReportResources({ enabled: resourceSessionReady, getApiBinding: api.getReportApiBinding, screen: state.screen, refreshTick: state.reportsRefreshTick, setState });
+  useSupportResource({ enabled: resourceSessionReady && ['customerSupport', 'tutor'].includes(state.screen), getApiBinding: api.getQnaApiBinding, refreshTick: state.qnaRefreshTick, setState });
   useNotificationResource({
     enabled: resourceSessionReady && (state.screen === 'notificationList' || state.notifModalOpen),
     getApiBinding: api.getNotiApiBinding,
+    refreshTick: state.notiRefreshTick,
     setState
   });
   useAnalysisResources({

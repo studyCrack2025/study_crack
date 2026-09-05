@@ -56,14 +56,14 @@ function TimerHeader({ user = {} }) {
   );
 }
 
-function HomeStatusRail({ fishCount = 0, gameProfile = null, normalizedTargetMajor = '' }) {
+function HomeStatusRail({ fishCount = 0, gameProfile = null, gameProfileStatus = 'idle', normalizedTargetMajor = '' }) {
   const targetLabel = normalizedTargetMajor ? String(normalizedTargetMajor).split(' ')[0] : '목표 설정';
   const streakDays = Math.max(0, Number(gameProfile?.streakDays) || 0);
   return (
     <section className="timer-v2-status-rail" aria-label="학습 현황 바로가기">
       <button type="button" data-action="goto" data-target="analysis"><small>목표 대학</small><b>{targetLabel}</b></button>
-      <span><small>합격 스트릭</small><b>{streakDays}일</b></span>
-      <button type="button" data-action="goto" data-target="aquarium"><small>물고기</small><b>{Math.max(0, Number(fishCount) || 0)}종</b></button>
+      <span><small>합격 스트릭</small><b>{gameProfileStatus === 'ready' && gameProfile ? `${streakDays}일` : '확인 중'}</b></span>
+      <button type="button" data-action="goto" data-target="aquarium"><small>물고기</small><b>{gameProfileStatus === 'ready' && gameProfile ? `${Math.max(0, Number(fishCount) || 0)}종` : '확인 중'}</b></button>
       <button type="button" data-action="goto" data-target="strategy"><small>SKY 코칭</small><b>바로가기</b></button>
     </section>
   );
@@ -91,14 +91,14 @@ function StudySessionRows({ activeStudySession, formatHms, liveSeconds = 0, sess
   return <div className="timer-session-list">{rows.map((session, index) => <div className={`timer-session-row ${session.isActive ? 'is-active' : ''}`} key={session.sessionId || `${session.startedAt}-${index}`}><span><b>{session.subject || '기타'}</b><small>{session.activity || `${session.subject || '기타'} 학습`}</small></span><span><b>{formatHms(Number(session.durationSeconds) || 0)}</b><small>{sessionTimeLabel(session.startedAt)}{session.endedAt ? ` - ${sessionTimeLabel(session.endedAt)}` : ' - 진행 중'}</small></span></div>)}</div>;
 }
 
-function TimerControlCard({ activeStudySession, displayedTodaySeconds, formatHms, liveSeconds, studySessionDetailsOpen, studyStartBlocked, studySummary, studyTimerRunning, timerPhase }) {
+function TimerControlCard({ activeStudySession, summaryReady, displayedTodaySeconds, formatHms, liveSeconds, studySessionDetailsOpen, studyStartBlocked, studySummary, studyTimerRunning, timerPhase }) {
   const timerBusy = STUDY_START_BUSY_PHASES.includes(timerPhase);
   const canComplete = Boolean(activeStudySession) && ['running', 'recoverable-error'].includes(timerPhase);
   const subject = activeStudySession?.subject || '';
   return (
     <section className={`timer-v2-control sc-card ${studyTimerRunning ? 'is-running' : ''}`}>
       <div className="timer-v2-control-top"><span>{studyTimerRunning ? '현재 집중 시간' : '오늘 누적 공부'}</span>{subject ? <b>{subject}</b> : <b>대기</b>}</div>
-      <button type="button" className="timer-v2-clock-trigger" data-action="toggleStudySessionDetails" aria-expanded={studySessionDetailsOpen}><strong className="timer-v2-clock" data-study-base-seconds={displayedTodaySeconds}>{formatHms(displayedTodaySeconds)}</strong><span>{studySessionDetailsOpen ? '개별 기록 접기' : '개별 기록 보기'} <b aria-hidden="true">⌄</b></span></button>
+      <button type="button" className="timer-v2-clock-trigger" data-action="toggleStudySessionDetails" aria-expanded={studySessionDetailsOpen}><strong className="timer-v2-clock" data-study-base-seconds={studyTimerRunning ? 0 : summaryReady ? displayedTodaySeconds : undefined}>{studyTimerRunning ? formatHms(liveSeconds) : summaryReady ? formatHms(displayedTodaySeconds) : '확인 필요'}</strong><span>{studySessionDetailsOpen ? '개별 기록 접기' : '개별 기록 보기'} <b aria-hidden="true">⌄</b></span></button>
       <p>{studyTimerRunning ? `${subject || '선택 과목'} 공부가 기록되고 있어요.` : '플래너 일정이나 직접 입력한 공부로 시작할 수 있어요.'}</p>
       {studyTimerRunning ? <div className="timer-resume-note" role="status"><Icon name="timer" /><span>앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.</span></div> : null}
       {studySessionDetailsOpen ? <StudySessionRows activeStudySession={activeStudySession} formatHms={formatHms} liveSeconds={liveSeconds} sessions={studySummary?.today?.sessions || []} /> : null}
@@ -206,10 +206,10 @@ export function TimerScreen(ctx) {
     <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlays={overlays}>
       <main className="timer-screen-v2">
         <TimerHeader user={user} />
-        <HomeStatusRail fishCount={fishCount} gameProfile={gameProfile} normalizedTargetMajor={normalizedTargetMajor} />
+        <HomeStatusRail fishCount={fishCount} gameProfile={gameProfile} gameProfileStatus={gameProfileStatus} normalizedTargetMajor={normalizedTargetMajor} />
         <HomeTargetSummary analysisScoreView={analysisScoreView} calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} normalizedTargetMajor={normalizedTargetMajor} />
         <TodayPlanCard canAccessBasic={canAccessBasic} displayedPlannerProgress={displayedPlannerProgress} formatMinutesLabel={defaultFormatMinutesLabel} studyStartBlocked={studyStartBlocked} studyStartBlockReason={studyStartBlockReason} todayPlannerItems={todayPlannerItems} todayPlannerTotalMinutes={todayPlannerTotalMinutes} />
-        <TimerControlCard activeStudySession={activeStudySession} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} liveSeconds={liveSeconds} studySessionDetailsOpen={studySessionDetailsOpen} studyStartBlocked={studyStartBlocked} studySummary={studySummary} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} />
+        <TimerControlCard summaryReady={hasServerSummary} activeStudySession={activeStudySession} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} liveSeconds={liveSeconds} studySessionDetailsOpen={studySessionDetailsOpen} studyStartBlocked={studyStartBlocked} studySummary={studySummary} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} />
         <StudyJourneyPanel activeStudySession={activeStudySession} completionError={completionError} lastCompletedSession={lastCompletedSession} rewardPendingSessionId={rewardPendingSessionId} rewardResult={rewardResult} timerPhase={timerPhase} />
         <section className="timer-v2-week sc-card"><div className="timer-section-head"><div><span>학습 기록</span><h2>이번 주 흐름</h2></div><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div><StudyWeekSummary activeSubject={activeStudySession?.subject || ''} liveSeconds={liveSeconds} summary={studySummary} status={studySummaryStatus} /></section>
         <TimerQuickLinks />

@@ -189,65 +189,67 @@ async function performClientLogout(redirectPath) {
 // Refresh request single-flight guard.
 let _sharedRefreshPromise = null;
 
-function tryRefreshToken() {
-    if (_sharedRefreshPromise) return _sharedRefreshPromise;
+function tryRefreshToken({ preserveTransientErrors = false } = {}) {
+    const result = (promise) => preserveTransientErrors ? promise : promise.catch(() => false);
+    if (_sharedRefreshPromise) return result(_sharedRefreshPromise);
+    const refreshFetch = async (...args) => {
+        const response = await fetch(...args);
+        if (!response.ok && ![400, 401, 403].includes(response.status)) {
+            const error = new Error('인증 연결을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+            error.status = response.status;
+            throw error;
+        }
+        return response;
+    };
 
     const p = (async () => {
         if (IS_LOCAL) {
             const rt = localStorage.getItem('refreshToken');
             if (!rt) return false;
-            try {
-                const res = await fetch(CONFIG.api.auth, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'refresh_token', refreshToken: rt })
-                });
-                if (!res.ok) return false;
-                const data = await res.json().catch(() => ({}));
-                return syncTokensFromAuthResponse(data);
-            } catch (_) {
-                return false;
-            }
+            const res = await refreshFetch(CONFIG.api.auth, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'refresh_token', refreshToken: rt })
+            });
+            if (!res.ok) return false;
+            const data = await res.json().catch(() => ({}));
+            return syncTokensFromAuthResponse(data);
         }
 
-        const callSilentRefresh = () => fetch(CONFIG.api.auth, {
+        const callSilentRefresh = () => refreshFetch(CONFIG.api.auth, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({ type: 'silent_refresh' })
         });
 
-        try {
-            const res = await callSilentRefresh();
-            if (res.ok) {
-                const data = await res.json().catch(() => ({}));
-                return syncTokensFromAuthResponse(data);
-            }
-
-            const fallbackRt = localStorage.getItem('refreshToken');
-            if (!fallbackRt) return false;
-
-            const registerRes = await fetch(CONFIG.api.auth, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
-            });
-            if (!registerRes.ok) return false;
-
-            localStorage.removeItem('refreshToken');
-            const retryRes = await callSilentRefresh();
-            if (!retryRes.ok) return false;
-
-            const data = await retryRes.json().catch(() => ({}));
+        const res = await callSilentRefresh();
+        if (res.ok) {
+            const data = await res.json().catch(() => ({}));
             return syncTokensFromAuthResponse(data);
-        } catch (e) {
-            return false;
         }
+
+        const fallbackRt = localStorage.getItem('refreshToken');
+        if (!fallbackRt) return false;
+
+        const registerRes = await refreshFetch(CONFIG.api.auth, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
+        });
+        if (!registerRes.ok) return false;
+
+        localStorage.removeItem('refreshToken');
+        const retryRes = await callSilentRefresh();
+        if (!retryRes.ok) return false;
+
+        const data = await retryRes.json().catch(() => ({}));
+        return syncTokensFromAuthResponse(data);
     })();
 
     _sharedRefreshPromise = p.finally(() => { _sharedRefreshPromise = null; });
-    return _sharedRefreshPromise;
+    return result(_sharedRefreshPromise);
 }
 
 // Shared API wrapper.
@@ -260,7 +262,7 @@ async function apiFetch(url, options = {}) {
     if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL && hasClientSession()) {
         const currentBearerToken = getSharedBearerToken();
         if (!isSharedBearerTokenFresh(currentBearerToken)) {
-            const refreshed = await tryRefreshToken();
+            const refreshed = await tryRefreshToken({ preserveTransientErrors: true });
             if (!refreshed || !isSharedBearerTokenFresh(getSharedBearerToken(), 0)) {
                 throw createSharedAuthExpiredError(401);
             }
@@ -274,12 +276,12 @@ async function apiFetch(url, options = {}) {
     options.credentials = 'include';
 
     try {
-        const response = await fetch(url, options);
+        let response = await fetch(url, options);
 
         if (response.ok) return response;
 
         if (response.status === 401 || response.status === 403) {
-            const refreshed = await tryRefreshToken();
+            const refreshed = await tryRefreshToken({ preserveTransientErrors: true });
             if (refreshed) {
                 const refreshedBearerToken = getSharedBearerToken();
                 if (refreshedBearerToken) {
@@ -287,22 +289,14 @@ async function apiFetch(url, options = {}) {
                 } else {
                     delete options.headers.Authorization;
                 }
-                const retryRes = await fetch(url, options);
-                if (retryRes.ok) return retryRes;
-                if (retryRes.status === 403) {
-                    const errBody = await retryRes.json().catch(() => ({}));
-                    const permissionError = new Error(errBody.error || errBody.message || '접근 권한이 없습니다.');
-                    permissionError.status = retryRes.status;
-                    permissionError.code = typeof errBody.code === 'string' ? errBody.code : '';
-                    throw permissionError;
-                }
+                response = await fetch(url, options);
+                if (response.ok) return response;
             }
-            const expiredError = createSharedAuthExpiredError(response.status);
-            if (isPublicRoute(window.location.pathname)) {
-                return Promise.reject(expiredError);
+            if (response.status === 401) {
+                const expiredError = createSharedAuthExpiredError(response.status);
+                if (!isPublicRoute(window.location.pathname)) redirectToLogin('expired');
+                throw expiredError;
             }
-            redirectToLogin('expired');
-            return Promise.reject(expiredError);
         }
 
         let errorMessage = `서버 통신 오류 (상태 코드: ${response.status})`;

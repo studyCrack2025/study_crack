@@ -93,7 +93,9 @@ await postJson({
   payload: { type: 'test' },
   signal: controller.signal
 });
-assert.equal(forwardedSignal, controller.signal);
+assert.equal(forwardedSignal.aborted, false);
+controller.abort();
+assert.equal(forwardedSignal.aborted, false, 'completed requests must detach their cancellation listener');
 
 let expiredResult = null;
 const releaseAuthExpiredHandler = setApiAuthExpiredHandler((result) => {
@@ -186,8 +188,9 @@ const cancellableResourceHooks = [
 ];
 for (const path of cancellableResourceHooks) {
   const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-  assert.match(source, /AbortController/, `${path} must cancel obsolete requests.`);
-  assert.match(source, /RequestRef|requestKeyRef|requestKey/, `${path} must reject stale responses.`);
+  const owner = source.includes('useListResource') ? await readFile(new URL('../src/shared/api/use-list-resource.js', import.meta.url), 'utf8') : source;
+  assert.match(owner, /AbortController/, `${path} must cancel obsolete requests.`);
+  assert.match(owner, /RequestRef|requestKeyRef|requestKey|if \(!active\) return/, `${path} must reject stale responses.`);
 }
 
 console.log('domain API envelope and ownership contracts passed');

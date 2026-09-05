@@ -17,14 +17,33 @@
   <link rel="stylesheet" href="./studycrack-mobile-app/dist/studycrack-mobile.css" />
 </head>
 <body>
-  <div id="root">StudyCrack 앱을 불러오는 중입니다...</div>
+  <div id="root"><div role="status">StudyCrack 앱을 불러오는 중입니다...</div></div>
   <script>
     window.__studycrackAppBooted = false;
     setTimeout(function () {
       if (window.__studycrackAppBooted) return;
       var root = document.getElementById('root');
       if (!root) return;
-      root.innerHTML = '<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다</h3><p class="sub">잠시 후 페이지를 새로고침해 주세요.</p></div></div></div></div>';
+      var panel = document.createElement('div');
+      panel.className = 'init-loading';
+      var message = document.createElement('div');
+      message.setAttribute('role', 'alert');
+      var title = document.createElement('h3');
+      title.textContent = '앱을 불러오지 못했습니다';
+      var detail = document.createElement('p');
+      var describe = function () {
+        detail.textContent = navigator.onLine === false ? '오프라인 상태예요. 연결 후 다시 시도해주세요.' : '연결 상태를 확인한 뒤 페이지를 다시 불러와주세요.';
+      };
+      describe();
+      window.addEventListener('online', describe);
+      window.addEventListener('offline', describe);
+      var retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = '다시 불러오기';
+      retry.onclick = function () { window.location.reload(); };
+      message.append(title, detail);
+      panel.append(message, retry);
+      root.replaceChildren(panel);
     }, 12000);
   </script>
   <script src="./js/config.js"></script>

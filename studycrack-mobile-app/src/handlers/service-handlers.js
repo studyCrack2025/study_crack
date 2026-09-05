@@ -1,3 +1,4 @@
+import { withOperationLock } from '../shared/async/operation-lock.js';
 import { getData } from './action-utils.js';
 import { markMobileNotificationsRead } from '../features/notifications/api.js';
 import { buildMobileWeeklyCheckPayload } from '../features/reports/api.js';
@@ -150,7 +151,10 @@ export function createServiceHandlers(ctx) {
   } = ctx;
   const win = window || getWindow(ctx);
 
-  return {
+  const handlers = {
+    retryNotifications() { ctx.setNotiRefreshTick((value) => value + 1); return true; },
+    retryQnaHistory() { ctx.setQnaRefreshTick((value) => value + 1); return true; },
+    retryReportResources() { ctx.setReportsRefreshTick((value) => value + 1); return true; },
     selectPlan({ actionEl }) {
       const plan = getData(actionEl, 'plan');
       if (!plan) return false;
@@ -564,4 +568,9 @@ export function createServiceHandlers(ctx) {
       return true;
     }
   };
+  for (const action of ['submitMobileQna', 'submitProRequest', 'coachingNext']) {
+    const run = handlers[action];
+    handlers[action] = (...args) => withOperationLock(ctx.operationLocksRef, action, () => run(...args));
+  }
+  return handlers;
 }
