@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { dismissTopOverlay } from '../shared/browser/overlay-focus.js';
 
 export function createNavigationHandlers(ctx) {
   const {
@@ -27,6 +28,7 @@ export function createNavigationHandlers(ctx) {
     },
 
     back() {
+      if (dismissTopOverlay()) return true;
       back?.();
       return true;
     },

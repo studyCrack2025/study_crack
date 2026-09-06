@@ -48,6 +48,8 @@ const initialModules = new Set(
     .flatMap((chunk) => Object.keys(chunk.modules))
 );
 const deferredModuleSuffixes = [
+  '/src/app/AppOverlayHost.jsx',
+  '/src/screens/mypage/ProfileDrawer.jsx',
   '/src/screens/analysis/AnalysisScreen.jsx',
   '/src/screens/coaching/CoachingScreen.jsx',
   '/src/screens/mypage/MyPageScreen.jsx',

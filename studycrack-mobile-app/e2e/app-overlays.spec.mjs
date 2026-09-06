@@ -1,0 +1,120 @@
+import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
+
+test.use({ deviceScaleFactor: 1 });
+
+test('공통 MY 팝업의 닫기와 전체 MY 왕복은 초점과 스크롤을 보존한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const trigger = page.getByRole('button', { name: '프로필 메뉴 열기' });
+  const content = page.locator('.app-content');
+  const nav = page.getByRole('navigation', { name: '주요 메뉴', includeHidden: true });
+  await trigger.click();
+  await expect(page.locator('.app-frame')).toHaveCount(1);
+  await expect(page.locator('.app-screen-overlays')).toHaveCount(1);
+  const dialog = page.getByRole('dialog', { name: '프로필 메뉴' });
+  await expect(dialog).toBeVisible();
+  await expect(content).toHaveAttribute('inert', '');
+  await expect(nav).toHaveAttribute('inert', '');
+  const close = dialog.getByRole('button', { name: '프로필 메뉴 닫기' });
+  await expect(close).toBeFocused();
+  await close.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: '문의 · FAQ' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(trigger).toBeFocused();
+  await expect(content).not.toHaveAttribute('inert', '');
+  await trigger.click();
+  await page.locator('[data-action="openGameRules"]').evaluate(element => element.click());
+  await expect(dialog).toHaveCount(0);
+  const rules = page.getByRole('dialog');
+  await expect(rules).toHaveCount(1);
+  await expect(nav).toHaveAttribute('inert', '');
+  await rules.press('Escape');
+  await expect(page.locator('.app-screen-overlays')).toHaveCount(0);
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await content.evaluate(element => { element.scrollTop = 180; });
+  const scroll = await content.evaluate(element => element.scrollTop);
+  // A programmatic action exercises scroll restoration without scrolling the header into view.
+  await trigger.evaluate(element => { element.focus({ preventScroll: true }); element.click(); });
+  await expect(dialog).toBeVisible();
+  await close.click();
+  await expect.poll(() => content.evaluate(element => element.scrollTop)).toBe(scroll);
+  await trigger.click();
+  await dialog.getByRole('button', { name: '마이페이지 전체 보기' }).click();
+  await expect(page.locator('[data-screen="my"]')).toBeVisible();
+  await expect(page.locator('.app-screen-overlays')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="timer"]').click();
+  await expect(page.locator('[data-screen="timer"]')).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  await expect(nav).not.toHaveAttribute('inert', '');
+});
+
+test('중첩 팝업은 맨 위 하나만 조작할 수 있고 닫힌 뒤 기존 초점으로 복귀한다', async ({ page }) => {
+  const source = await readFile(new URL('../src/shared/browser/overlay-focus.js', import.meta.url), 'utf8');
+  await page.route('**/overlay-focus-fixture.mjs', route => route.fulfill({ contentType: 'text/javascript', body: source }));
+  await page.route('**/overlay-focus-fixture.html', route => route.fulfill({ contentType: 'text/html', body: '<button id="trigger">열기</button><div id="base"><section id="first" tabindex="-1"><button id="nested">더 보기</button></section></div><div id="cover"><section id="second" tabindex="-1"><button id="close">닫기</button><span inert><button>숨김</button></span><button tabindex="-1">탭 제외</button></section></div>' }));
+  await page.goto('/overlay-focus-fixture.html');
+  const result = await page.evaluate(async () => {
+    const focus = await import('/overlay-focus-fixture.mjs');
+    const $ = id => document.getElementById(id);
+    $('trigger').focus();
+    const origin = focus.captureOverlayFocus();
+    const removeBase = focus.registerOverlay($('first'), { root: $('base') });
+    focus.scheduleOverlayFocus($('first'));
+    await new Promise(requestAnimationFrame);
+    const nestedOrigin = focus.captureOverlayFocus();
+    const removeCover = focus.registerOverlay($('second'), { root: $('cover') });
+    focus.scheduleOverlayFocus($('second'));
+    await new Promise(requestAnimationFrame);
+    const blocked = $('base').inert && $('base').getAttribute('aria-hidden') === 'true';
+    const nestedFocused = document.activeElement.id;
+    let prevented = false;
+    focus.trapOverlayFocus({ shiftKey: false, preventDefault: () => { prevented = true; } }, $('second'));
+    const wrapped = document.activeElement.id;
+    removeCover();
+    $('cover').remove();
+    focus.restoreOverlayFocus(nestedOrigin);
+    const restoredNested = document.activeElement.id;
+    const baseActive = !$('base').inert && focus.isTopOverlay($('first'));
+    removeBase();
+    $('base').remove();
+    focus.restoreOverlayFocus(origin);
+    return { blocked, nestedFocused, prevented, wrapped, restoredNested, baseActive, restored: document.activeElement.id };
+  });
+  expect(result).toEqual({ blocked: true, nestedFocused: 'close', prevented: true, wrapped: 'close', restoredNested: 'nested', baseActive: true, restored: 'trigger' });
+});
+
+for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 800 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+  test(`공통 거터와 한글 제목 위계가 유지된다 (${viewport.width}px)`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    const target = page.locator('.timer-v2-target-summary > span:first-child b');
+    await expect(target).toHaveCSS('font-size', '17px');
+    await expect(target).toHaveCSS('font-weight', '900');
+    const content = page.locator('.app-content');
+    const gutter = viewport.width <= 360 ? 14 : 16;
+    await expect(content).toHaveCSS('padding-left', `${gutter}px`);
+    await expect(content).toHaveCSS('padding-right', `${gutter}px`);
+    await expect(page.locator('.timer-section-head h2').first()).toHaveCSS('font-size', '17px');
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: testInfo.outputPath('home-foundation.png'), animations: 'disabled' });
+    await page.locator('.tabbar [data-tab="planner"]').click();
+    const title = page.locator('.primary-screen-header h1');
+    await expect(title).toHaveCSS('font-size', '22px');
+    await expect(title).toHaveCSS('font-weight', '900');
+    const titleBounds = await title.boundingBox();
+    const contentBounds = await content.boundingBox();
+    expect(titleBounds.x - contentBounds.x).toBe(gutter + 4);
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: testInfo.outputPath('planner-foundation.png'), animations: 'disabled' });
+  });
+}

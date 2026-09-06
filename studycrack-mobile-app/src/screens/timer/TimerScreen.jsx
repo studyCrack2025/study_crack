@@ -6,7 +6,6 @@ import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
 import { StudySubjectSheet } from './TimerOverlays.jsx';
 import { StudyJourneyPanel, StudyWeekSummary } from './StudyGamificationPanels.jsx';
 import { defaultFormatHms, defaultFormatMinutesLabel } from './presentation.js';
-import { ProfileDrawer } from '../mypage/ProfileDrawer.jsx';
 
 const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session', 'claiming-reward'];
 
@@ -152,7 +151,6 @@ export function TimerScreen(ctx) {
     canAccessBasic = false,
     completionError = '',
     dimmed = false,
-    drawerOpen = false,
     formatHms = defaultFormatHms,
     gameProfile = null,
     gameProfileStatus = 'idle',
@@ -162,7 +160,6 @@ export function TimerScreen(ctx) {
     lastCompletedSession = null,
     rewardPendingSessionId = '',
     rewardResult = null,
-    selectedPlan = '',
     normalizedTargetMajor = '',
     calendarNearestDdayLabel = '',
     calendarNearestEvent = null,
@@ -200,7 +197,7 @@ export function TimerScreen(ctx) {
     : activeStudySession
       ? '진행 중인 공부를 완료한 뒤 새 공부를 시작할 수 있어요.'
       : '공부 기록 처리가 끝난 뒤 새 공부를 시작할 수 있어요.';
-  const overlays = studySubjectSheetOpen || drawerOpen || gameRulesOpen ? <><StudySubjectSheet {...ctx} /><ProfileDrawer drawerOpen={drawerOpen} gameProfile={gameProfile} gameProfileStatus={gameProfileStatus} selectedPlan={selectedPlan} studySummary={studySummary} studySummaryStatus={studySummaryStatus} user={user} /><GameRulesModal gameRules={gameRules} open={gameRulesOpen} /></> : null;
+  const overlays = studySubjectSheetOpen || gameRulesOpen ? <><StudySubjectSheet {...ctx} /><GameRulesModal gameRules={gameRules} open={gameRulesOpen} /></> : null;
 
   return (
     <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlays={overlays}>

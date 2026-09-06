@@ -20,6 +20,8 @@ import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
 import { AppContent, AppFrame } from '../components/AppFrame.js';
 import { StatusState } from '../components/StatusState.js';
 import { DeferredScreenFallback } from './DeferredScreenFallback.js';
+import { AppOverlayContext } from '../components/AppOverlayContext.js';
+import { useAppOverlayBridge } from './use-app-overlay-bridge.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
@@ -58,6 +60,7 @@ export function MobileApp() {
   useAppStatePersistence(rootState);
 
   const deferredScreens = useDeferredScreenRegistry(state.screen);
+  const appOverlay = useAppOverlayBridge({ registry: deferredScreens.registry, setState, state });
   const handlerStateActions = useMemo(
     () => createHandlerStateActions({ setState, getRootState: () => rootStateRef.current }),
     [setState]
@@ -121,11 +124,10 @@ export function MobileApp() {
     onChange,
     onBlur
   };
+  const renderWithOverlays = (content) => React.createElement(AppOverlayContext.Provider, { value: appOverlay }, React.createElement('div', wrapperProps, content));
 
   if (isDeferredAppScreen(state.screen) && !deferredScreens.registry) {
-    return React.createElement(
-      'div',
-      wrapperProps,
+    return renderWithOverlays(
       React.createElement(DeferredScreenFallback, {
         onRetry: deferredScreens.retry,
         screen: state.screen,
@@ -137,9 +139,9 @@ export function MobileApp() {
   const ScreenComponent = getScreenComponent(state.screen, deferredScreens.registry);
   if (ScreenComponent) {
     const screenContext = createScreenContext(state.screen, viewContext, handlerStateActions, state);
-    return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, screenContext));
+    return renderWithOverlays(React.createElement(ScreenComponent, screenContext));
   }
-  return React.createElement('div', wrapperProps, React.createElement(MissingScreenFallback, { screen: state.screen }));
+  return renderWithOverlays(React.createElement(MissingScreenFallback, { screen: state.screen }));
 }
 
 export default MobileApp;
