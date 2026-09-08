@@ -2,6 +2,8 @@ import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
+import { WeeklyPlanPreview } from '../coaching/WeeklyPlanPreview.jsx';
+import { formatCoachingWeekLabel } from '../coaching/presentation.js';
 
 function safeExternalUrl(value) {
   const text = String(value || '').trim();
@@ -139,31 +141,32 @@ export function TutorScreen(ctx) {
   );
 }
 
-export function WeeklyScreen({ crackySrc = CRACKY_SRC, tab = 'my', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' }) {
-  const latest = weeklyReports[0] || null;
+function WeeklyFeedbackCard({ report, open, crackySrc }) {
+  const feedback = report.tutorFeedback || {};
+  const done = feedback.submitted === true;
+  const fields = [['이번 주 플래너', 'weeklyPlanner'], ['계획 이유', 'planReason'], ['우선순위 점검', 'priorityCheck'], ['질문 답변', 'questionAnswer'], ['튜터 총평', 'tutorComment'], ['다음 주 TOP3', 'nextWeekTop3'], ['플랜 평가', 'planEvaluation']];
+  const items = done ? fields.filter(([, key]) => typeof feedback[key] === 'string' && feedback[key].trim()) : [];
+  return <details className="sc-secondary-section weekly-feedback" open={open}>
+    <summary><span>{formatCoachingWeekLabel(report.weekId)}</span><b>{done ? '피드백 도착' : '검토 대기'}</b></summary>
+    <div className="weekly-summary"><div><span>점검 주차</span><b>{formatWeekIdLabel(report.weekId)}</b></div><div><span>담당 튜터</span><b>{report.tutorName || '튜터 확인 중'}</b></div></div>
+    <div className="sc-secondary-section-head"><div><h3>주간 요약 피드백</h3><p>{done ? '튜터가 제출한 피드백 · 기기 플래너와 별도 기록' : '튜터가 피드백을 최종 제출하면 표시됩니다.'}</p></div></div>
+    <div className="weekly-feedback-body"><div className="weekly-feedback-list">{items.map(([label, key]) => <div className="feedback-item" key={key}><CheckIcon /><div><b>{label}</b><p>{feedback[key]}</p></div></div>)}{done && !items.length ? <p>제출된 피드백 내용이 비어 있어요.</p> : null}</div><img loading="lazy" decoding="async" src={crackySrc} className="weekly-char crackie" alt="크랙이" /></div>
+  </details>;
+}
+
+export function WeeklyScreen({ crackySrc = CRACKY_SRC, plannerItems = [], tab = 'my', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' }) {
+  const reports = weeklyReports.filter(report => report?.weekId).sort((a, b) => String(b.weekId).localeCompare(String(a.weekId)));
   const isLoading = weeklyReportsStatus === 'idle' || weeklyReportsStatus === 'loading';
   const isError = weeklyReportsStatus === 'error';
-  const feedback = latest?.tutorFeedback || {};
-  const done = latest?.tutorFeedback?.submitted === true;
-  const feedbackItems = !latest
-    ? ['학습 코칭 화면에서 이번 주 점검을 제출하면 이곳에 피드백이 표시됩니다.']
-    : done
-      ? [
-        feedback.weeklyPlanner ? `이번 주 플래너: ${feedback.weeklyPlanner}` : '',
-        feedback.planReason ? `계획 이유: ${feedback.planReason}` : '',
-        feedback.questionAnswer ? `질문 답변: ${feedback.questionAnswer}` : '',
-        feedback.tutorComment ? `튜터 총평: ${feedback.tutorComment}` : '',
-        feedback.nextWeekTop3 ? `다음 주 TOP3: ${feedback.nextWeekTop3}` : '',
-        feedback.planEvaluation ? `플랜 평가: ${feedback.planEvaluation}` : ''
-      ].filter(Boolean)
-      : ['튜터가 피드백을 최종 제출하면 이곳에 표시됩니다.'];
-  return (
-    <SecondaryScreenShell screen="weekly" tab={tab}>
-      <div className="sc-secondary-page weekly-page mobile-card-stack"><SecondaryIntro eyebrow="WEEKLY COACHING" title="주간 점검" description="제출한 기록과 튜터 피드백을 한눈에 확인하세요." aside={<span className="sc-chip">{isLoading ? '불러오는 중' : isError ? '확인 필요' : done ? '피드백 도착' : latest ? '검토 중' : '시작 전'}</span>} />
-        <ResourceFeedback status={weeklyReportsStatus} error={weeklyReportsError} hasData={weeklyReports.length > 0} loadingTitle="주간 점검을 불러오는 중이에요" errorTitle="주간 점검을 불러오지 못했어요" retryAction="retryReportResources" />{latest || (!isLoading && !isError) ? <>{latest ? <section className="sc-secondary-section weekly-summary"><div><span>점검 주차</span><b>{formatWeekIdLabel(latest.weekId)}</b></div><div><span>담당 튜터</span><b>{latest.tutorName || '튜터 확인 중'}</b></div></section> : null}
-        <section className="sc-secondary-section weekly-feedback"><div className="sc-secondary-section-head"><div><h3>{latest ? '주간 요약 피드백' : '주간 점검 기록이 없습니다.'}</h3><p>{done ? '튜터가 정리한 이번 주 피드백입니다.' : '점검을 제출하면 이곳에서 진행 상태를 확인할 수 있어요.'}</p></div></div><div className="weekly-feedback-body"><div className="weekly-feedback-list">{feedbackItems.map((item) => <div className="feedback-item" key={item}><CheckIcon />{item}</div>)}</div><img loading="lazy" decoding="async" src={crackySrc} className="weekly-char crackie" alt="크랙이" /></div></section>
-        <button type="button" className="btn btn-primary weekly-next" data-action="goto" data-target={latest ? 'planner' : 'strategy'}>{latest ? '다음 주 계획 세우기' : '학습 코칭으로 이동'}</button></> : null}
-      </div>
-    </SecondaryScreenShell>
-  );
+  return <SecondaryScreenShell screen="weekly" title="주간 점검" tab={tab}>
+    <div className="sc-secondary-page weekly-page mobile-card-stack">
+      <SecondaryIntro eyebrow="WEEKLY COACHING" title="기록에서 다음 계획으로" description="제출 주차별 피드백과 이번 주 기기 플래너를 구분해 확인하세요." aside={<span className="sc-chip">{isLoading ? '불러오는 중' : isError ? '확인 필요' : reports.length ? `${reports.length}개 점검` : '시작 전'}</span>} />
+      <ResourceFeedback status={weeklyReportsStatus} error={weeklyReportsError} hasData={reports.length > 0} loadingTitle="주간 점검을 불러오는 중이에요" errorTitle="주간 점검을 불러오지 못했어요" retryAction="retryReportResources" />
+      {reports.map((report, index) => <WeeklyFeedbackCard report={report} open={index === 0} crackySrc={crackySrc} key={report.weekId} />)}
+      {!reports.length && !isLoading && !isError ? <SecondaryState title="주간 점검 기록이 없습니다." description="학습 코칭 화면에서 기록을 제출하면 피드백이 연결됩니다." /> : null}
+      <WeeklyPlanPreview plannerItems={plannerItems} detailed />
+      <p className="weekly-plan-note">피드백은 플래너에 자동으로 추가되지 않아요. 내용을 참고해 직접 계획을 정리해주세요.</p>
+      <button type="button" className="btn btn-primary weekly-next" data-action="goto" data-target={reports.length ? 'planner' : 'strategy'}>{reports.length ? '플래너 열기' : '학습 코칭으로 이동'}</button>
+    </div>
+  </SecondaryScreenShell>;
 }

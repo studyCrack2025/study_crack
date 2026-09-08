@@ -132,6 +132,8 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
   await expect(school).toHaveValue('테스트고등학교');
   await page.getByRole('button', { name: '저장하고 성적 입력으로' }).click();
   await expect(page.locator('[data-screen="ob2"]')).toBeVisible();
+  await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('6월 평가원');
+  await page.locator('[data-field="scoreExamType"]').selectOption('3월 모의고사');
   await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('3월 모의고사');
 
   await page.goto('/studycrack-mobile.html?screen=ob4');

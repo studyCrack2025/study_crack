@@ -1,10 +1,14 @@
 /* Weekly coaching and report list layouts. */
-.weekly-summary{grid-template-columns:repeat(2,minmax(0,1fr));background:var(--sc-surface-card);}
+.weekly-summary{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 0;background:var(--sc-surface-card);}
 .weekly-summary > div{min-width:0;display:grid;gap:4px;}
 .weekly-summary > div + div{padding-left:var(--sc-space-12);border-left:1px solid var(--sc-line-subtle);}
 .weekly-summary span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;}
-.weekly-summary b{min-width:0;overflow:hidden;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
-.weekly-feedback{overflow:hidden;}
+.weekly-summary b{min-width:0;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;overflow-wrap:anywhere;}
+.weekly-feedback{display:block;overflow:hidden;}
+.weekly-feedback > summary{cursor:pointer;color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.7;}
+.weekly-feedback > summary b{display:inline-block;margin-left:8px;color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);}
+.weekly-feedback-list .feedback-item p{margin:4px 0 0;white-space:pre-wrap;}
+.weekly-plan-note{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.6;}
 .weekly-feedback-body{display:grid;grid-template-columns:minmax(0,1fr) clamp(56px,17vw,68px);gap:clamp(8px,2.5vw,10px);align-items:end;min-width:0;}
 .weekly-feedback-list{display:grid;gap:6px;min-width:0;}
 .weekly-feedback-list .feedback-item{min-width:0;margin:0;align-items:flex-start;overflow-wrap:anywhere;word-break:keep-all;}

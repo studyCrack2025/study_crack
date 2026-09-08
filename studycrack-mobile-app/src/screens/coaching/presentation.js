@@ -2,6 +2,19 @@ function safeText(value = '') {
   return String(value || '').trim();
 }
 
+export function buildCoachingWeek(items = [], date = '') {
+  const day = new Date(`${date}T12:00:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(day.getTime()) || day.getDate() !== Number(date.slice(8))) return { days: [], total: 0, minutes: 0, start: '', end: '' };
+  day.setDate(day.getDate() - (day.getDay() + 6) % 7);
+  const days = ['월', '화', '수', '목', '금', '토', '일'].map(label => {
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+    const rows = (Array.isArray(items) ? items : []).filter(item => item?.date === key).map(item => ({ ...item, minutes: Number.isFinite(Number(item.minutes)) ? Math.max(0, Number(item.minutes)) : 0 }));
+    day.setDate(day.getDate() + 1);
+    return { date: key, label, items: rows };
+  });
+  return { days, start: days[0].date, end: days[6].date, total: days.reduce((sum, day) => sum + day.items.length, 0), minutes: days.reduce((sum, day) => sum + day.items.reduce((total, item) => total + item.minutes, 0), 0) };
+}
+
 export const COACHING_PROCESS_STEPS = [
   { number: '01', title: '학습 성향 분석', description: 'MBTI + 기초조사서' },
   { number: '02', title: '목표 대학 분석', description: '대학별 환산점수' },
@@ -32,12 +45,11 @@ function feedbackSummary(report = {}) {
     || feedback.weeklyPlanner
     || feedback.priorityCheck
     || feedback.planEvaluation
-    || report.weeklyGoal
   ) || '튜터 피드백 내용을 확인해 보세요.';
 }
 
 export function buildCoachingPresentation(reports = [], status = 'idle') {
-  const source = Array.isArray(reports) ? reports.filter((report) => report?.weekId) : [];
+  const source = Array.isArray(reports) ? reports.filter((report) => report?.weekId).sort((a, b) => String(b.weekId).localeCompare(String(a.weekId))) : [];
   const sessions = source.map((report) => {
     const feedbackReady = hasSubmittedCoachingFeedback(report);
     return {
@@ -45,7 +57,7 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
       title: safeText(report.title) || formatCoachingWeekLabel(report.weekId),
       weekLabel: formatCoachingWeekLabel(report.weekId),
       dateLabel: formatCoachingDate(report.updatedAt || report.date),
-      tutorName: safeText(report.tutorName) || 'SKY 튜터',
+      tutorName: safeText(report.tutorName) || '담당 튜터 확인 중',
       feedbackReady,
       statusLabel: feedbackReady ? '피드백 도착' : '검토 대기'
     };
@@ -54,7 +66,7 @@ export function buildCoachingPresentation(reports = [], status = 'idle') {
     weekId: safeText(report.weekId),
     title: formatCoachingWeekLabel(report.weekId),
     dateLabel: formatCoachingDate(report.updatedAt || report.date),
-    tutorName: safeText(report.tutorName) || 'SKY 튜터',
+    tutorName: safeText(report.tutorName) || '담당 튜터 확인 중',
     summary: feedbackSummary(report)
   }));
 

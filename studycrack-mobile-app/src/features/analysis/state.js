@@ -35,6 +35,7 @@ export function createAnalysisInitialState() {
       universityRecommendationRetryTick: 0,
       analysisResults: [],
       analysisSimulations: [],
+      analysisSimulationStatus: 'idle',
       analysisResultExamMode: '',
       analysisResultSignature: '',
       analysisApiStatus: 'idle',

@@ -16,13 +16,13 @@ export function sortAnalysisSimulationRows(rows = []) {
     const displayGainNum = Math.max(0, after - before);
     return {
       ...row,
-      displayGainNum,
+      displayGainNum: row.unavailable ? 0 : displayGainNum,
       displayGain: `+${displayGainNum.toFixed(displayGainNum >= 10 ? 0 : 1)}점`
     };
   });
   const maxGain = Math.max(...normalizedRows.map((row) => row.displayGainNum), 0);
   return normalizedRows
-    .map((row) => ({ ...row, isBest: maxGain > 0 && row.displayGainNum === maxGain }))
+    .map((row) => ({ ...row, isBest: !row.unavailable && maxGain > 0 && row.displayGainNum === maxGain }))
     .sort((a, b) => b.displayGainNum - a.displayGainNum || finiteNumber(a.idx) - finiteNumber(b.idx));
 }
 
@@ -34,9 +34,9 @@ export function buildAnalysisPresentation({
   fallbackScore = 0
 } = {}) {
   const sortedRows = sortAnalysisSimulationRows(rows);
-  const selectedRow = sortedRows.find((row) => row.subject === selectedSubject)
-    || sortedRows.find((row) => row.subject === rows[recommendedIndex]?.subject)
-    || sortedRows[0]
+  const selectedRow = sortedRows.find((row) => !row.unavailable && row.subject === selectedSubject)
+    || sortedRows.find((row) => !row.unavailable && row.subject === rows[recommendedIndex]?.subject)
+    || sortedRows.find((row) => !row.unavailable)
     || null;
   const metadataRow = rows.find((row) => Number.isFinite(Number(row.baseUiScore))) || null;
   const rawBaseScore = metadataRow
@@ -55,7 +55,7 @@ export function buildAnalysisPresentation({
   return {
     sortedRows,
     selectedRow,
-    bestRow: sortedRows[0] || null,
+    bestRow: sortedRows.find(row => row.isBest) || null,
     rawBaseScore,
     rawAfterScore,
     currentScore,

@@ -226,6 +226,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
         analysisApiError: '',
         analysisResults: [],
         analysisSimulations: [],
+        analysisSimulationStatus: 'idle',
         analysisResultSignature: '',
         scoreFetchStatus: 'idle',
         scoreFetchSignature: '',
@@ -237,6 +238,8 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
       });
     },
     resetAnalysisCalculation: () => setState({
+      analysisSimulationStatus: 'idle',
+      analysisHighlightedSubject: '',
       analysisCalculationRequested: false,
       analysisApiStatus: 'idle',
       analysisApiError: '',

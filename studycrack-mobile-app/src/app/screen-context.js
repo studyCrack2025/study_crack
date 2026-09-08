@@ -1,4 +1,5 @@
 const ANALYSIS_CONTEXT_KEYS = [
+  'analysisPresentation',
   'analysisApiError', 'analysisApiStatus', 'analysisBacktraceError', 'analysisBacktracePlan',
   'analysisBacktraceStatus', 'analysisHighlightedSubject', 'analysisMajorOptions', 'analysisScoreView',
   'analysisSelected', 'analysisSimRecommendedIndex', 'analysisSimRows', 'analysisStatus', 'analysisCalculationRequested',
@@ -100,7 +101,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   settingsTermsPicker: Object.freeze(['openTermsType', 'termsContent']),
   splash: Object.freeze(['crackyHiSrc', 'studycrackLogoSrc']),
   strategy: Object.freeze([
-    'studyOverview',
+    'plannerItems', 'studyOverview',
     'coachingAnswers', 'coachingDropReasons', 'coachingExamFiles', 'coachingExamScores',
     'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen', 'coachingStep',
     'coachingSubjectRows', 'coachingSubmitting', 'coachingTrend', 'coachingView', 'dimmed',
@@ -118,7 +119,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   tutor: Object.freeze([
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaError', 'qnaStatus', 'qnaSubmitting'
   ]),
-  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus']),
+  weekly: Object.freeze(['crackySrc', 'plannerItems', 'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus']),
   termsScreen: Object.freeze(['termsContent'])
 });
 

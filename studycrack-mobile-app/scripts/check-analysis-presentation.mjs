@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { buildAnalysisPresentation } from '../src/screens/analysis/presentation.js';
 import { buildServerSimRows } from '../src/runtime/derived.js';
+import { buildAnalysisSnapshot } from '../src/screens/analysis/snapshot.js';
+import { buildScoreSignature } from '../src/features/analysis/score-store.js';
+import { scoreExamKeyToLabel, scoreExamTypeToKey } from '../src/features/analysis/score-model.js';
+import { EXAM_OPTIONS } from '../src/constants/options.js';
 
 const negativeRange = buildAnalysisPresentation({
   rows: [{ subject: '국어', gainNum: 10, baseUiScore: -50, afterUiScore: -40, idx: 0 }],
@@ -64,4 +68,40 @@ assert.equal(partialServerRows[1].unavailable, true);
 assert.equal(partialServerRows[1].afterUiScore, 42);
 assert.deepEqual(buildServerSimRows({}), []);
 
-console.log('analysis-presentation contracts passed');
+const snapshotState = {
+  userLoadStatus: 'ready', user: { quantitative: { mar: { kor: { raw: 80 } } }, currentSubscription: { status: 'active', tier: 'basic' } },
+  scoreExamKey: 'mar', targetMajor: '대학 A', analysisTargetList: ['대학 A', '대학 B', '대학 C'],
+  analysisCalculationRequested: true, analysisApiStatus: 'ready', analysisResultExamMode: 'mar',
+  analysisResults: [{ univ: '대학', major: 'A', converted_score: 0, score_available: true }, { univ: '대학', major: 'B', converted_score: 0, score_available: false, status: '지원 불가' }],
+  analysisSimulations: [{ univ: '대학', major: 'A', base_ui_score: 0, sim_data: { kor: { name: '국어', afterUiScore: 2 } } }]
+};
+for (const key of ['mar', 'may', 'jun', 'jul', 'sep', 'oct', 'csat']) {
+  assert.ok(EXAM_OPTIONS.includes(scoreExamKeyToLabel(key)));
+  assert.equal(scoreExamTypeToKey(scoreExamKeyToLabel(key)), key);
+}
+snapshotState.analysisResultSignature = buildScoreSignature('mar', snapshotState.analysisTargetList, snapshotState.user.quantitative.mar);
+const scoped = buildAnalysisSnapshot(snapshotState);
+assert.equal(scoped.ready, true);
+assert.equal(scoped.score, 0);
+assert.deepEqual(scoped.comparison.map(row => row.score), [0, null, null]);
+assert.deepEqual(scoped.rows.map(row => row.unavailable), [false, true, true, true]);
+for (const patch of [{ scoreExamKey: 'jun' }, { analysisApiStatus: 'stale' }, { analysisCalculationRequested: false }, { analysisResultSignature: 'old' }, { userLoadStatus: 'loading' }]) {
+  const pending = buildAnalysisSnapshot({ ...snapshotState, ...patch });
+  assert.equal(pending.ready, false);
+  assert.equal(pending.rows.length, 0);
+  assert.ok(pending.comparison.every(row => row.score === null));
+}
+const switched = buildAnalysisSnapshot({ ...snapshotState, targetMajor: '대학 B' });
+assert.deepEqual(switched.comparison.map(row => row.major), snapshotState.analysisTargetList);
+assert.equal(switched.rows.length, 0);
+assert.equal(switched.score, null);
+const malformed = buildAnalysisSnapshot({ ...snapshotState, analysisSimulationStatus: 'ready', analysisSimulations: [{ univ: '대학', major: 'A', base_ui_score: null, sim_data: { kor: { afterUiScore: 3 } } }] });
+assert.equal(malformed.rows.length, 0);
+assert.equal(malformed.simulationStatus, 'empty');
+assert.equal(buildAnalysisSnapshot({ ...snapshotState, analysisResults: [{ univ: '대학', major: 'A', converted_score: 142.4 }] }).score, 142.4);
+const expired = buildAnalysisSnapshot({ ...snapshotState, user: { ...snapshotState.user, currentSubscription: { status: 'expired', tier: 'standard' } } });
+assert.equal(expired.canSimulate, false);
+assert.equal(expired.rows.length, 0);
+assert.equal(expired.backtraceReady, false);
+assert.equal(buildAnalysisPresentation({ rows: [{ subject: '국어', unavailable: true, baseUiScore: 0, afterUiScore: 50 }] }).bestRow, null);
+console.log('analysis-presentation contracts passed: scoped snapshots, actual zero vs unavailable, stable target order, access, four subjects and capped +1 effects');

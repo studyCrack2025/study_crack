@@ -2,6 +2,8 @@ import { SecondaryIntro, SecondaryScreenShell } from '../../components/Secondary
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { PLAN_META } from '../../constants/plans.js';
 import { CoachingMark, CoachingProcess } from '../coaching/CoachingScreen.jsx';
+import { WeeklyPlanPreview } from '../coaching/WeeklyPlanPreview.jsx';
+import { PlanComparison } from './PlanComparison.jsx';
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
 const BENEFIT_ICONS = ['chat', 'target', 'chart', 'calendar', 'check'];
@@ -51,7 +53,7 @@ function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', cta
     <section className={`card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}`}>
       <div className="plan-console-head"><div className="plan-console-title"><span className="plan-console-badge">{planBadgeText(checkoutPlan)}</span><h3>{planDisplayName(checkoutPlan)}</h3><p>{activePlan.complete || activePlan.desc || ''}</p></div><span className="plan-console-visual"><ServiceIcon name="calendar" /></span></div>
       <div className="plan-console-price">{activePlan.originalPrice ? <span className="plan-console-original">{activePlan.originalPrice}</span> : null}<div><b>{activePlan.payPrice || activePlan.introPrice || ''}</b><em>{activePlan.weeklyPrice || activePlan.billingNote || ''}</em></div>{duration ? <p className="plan-console-term"><span>선택 이용 기간</span><b>{duration}</b><small>웹 결제는 4주 단위로 최종 확인됩니다.</small></p> : null}</div>
-      <div className="plan-console-benefits">{features.slice(0, 5).map((item, index) => <div className="plan-benefit-row" key={item}><span><ServiceIcon name={BENEFIT_ICONS[index] || 'check'} /></span><div><b>{item}</b><p>{index === 0 ? activePlan.desc || '' : '선택한 플랜에서 바로 이용할 수 있어요.'}</p></div></div>)}</div>
+      <div className="plan-console-benefits">{features.map((item, index) => <div className="plan-benefit-row" key={item}><span><ServiceIcon name={BENEFIT_ICONS[index] || 'check'} /></span><div><b>{item}</b></div></div>)}</div>
       {showCta ? <><button type="button" className="btn btn-primary plan-console-cta" {...ctaProps}>{buttonLabel}<span><ServiceIcon name="chevron" /></span></button><p className="plan-secure-note"><ServiceIcon name="shield" /> 안전한 결제 · 언제든 해지 가능</p></> : null}
       {audience.length ? <div className="plan-audience"><b>이런 학생에게 추천해요</b>{audience.map((item) => <p key={item}><ServiceIcon name="check" /><span>{item}</span></p>)}</div> : null}
     </section>
@@ -67,7 +69,7 @@ function ProLockedPreview() {
 }
 
 function CoachingLockedPreview() {
-  return <div className="locked-preview coach-preview"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><CoachingProcess /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /><button type="button">이번 주 코칭 신청하기 <b>›</b></button></section><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coach-empty">구독 후 실제 점검 내역과 피드백이 표시됩니다.</div></div></section></div>;
+  return <div className="locked-preview coach-preview"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="학습 코칭" /><section className="coaching-hero"><div className="coaching-hero-copy"><span>SKY 선배 1:1 멘토링</span><h3>이번 주 공부, 혼자 고민하지 마세요</h3><p>학습 기록과 고민을 보내면 다음 주 방향을 구체적인 피드백으로 정리해 드려요.</p></div><CoachingMark /></section><CoachingProcess /><WeeklyPlanPreview locked /><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>이번 주 점검</h3></div></div><div className="coaching-segment"><button type="button" className="active">이번 주 점검</button><button type="button">받은 피드백</button></div><div className="coaching-history-list"><div className="coach-empty">구독 후 실제 점검 내역과 피드백이 표시됩니다.</div></div></section></div>;
 }
 
 function LockedFeaturePreview({ target = '' }) {
@@ -87,7 +89,7 @@ export function LockedFeatureScreen(ctx) {
 
 export function ProIntroScreen({ checkoutPlan = 'Standard', upgradePromptTarget = '', upgradePromptTier = '' }) {
   const requiredPlan = upgradePromptTier ? requiredTierLabel(upgradePromptTier) : '';
-  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} />{requiredPlan ? <div className="card locked-upgrade-card"><span className="badge">잠긴 기능</span><h3>{upgradePromptTarget || '선택한 기능'}은 {requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div> : null}<PlanSelector checkoutPlan={checkoutPlan} /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
+  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} />{requiredPlan ? <div className="card locked-upgrade-card"><span className="badge">잠긴 기능</span><h3>{upgradePromptTarget || '선택한 기능'}은 {requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div> : null}<PlanComparison selected={checkoutPlan} selectable /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
 }
 
 export function PaymentScreen({ checkoutPlan = 'Standard', duration = '4주' }) {

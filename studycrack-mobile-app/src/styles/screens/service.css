@@ -2,6 +2,14 @@
 .locked-upgrade-card h3{margin:0;color:var(--sc-ink);font-size:18px;line-height:1.35;font-weight:900;letter-spacing:0;}
 .locked-upgrade-card p{margin:0;color:var(--sc-ink-muted);font-size:12px;line-height:1.45;font-weight:700;}
 .plan-console-page,.payment-console-page{padding-bottom:28px;}
+.service-plan-comparison{display:grid;gap:10px;min-width:0;}
+.service-plan-comparison h3{margin:0;font-size:var(--sc-type-section);color:var(--sc-ink);}
+.service-plan-comparison > p{margin:0;font-size:var(--sc-type-micro);color:var(--sc-ink-muted);line-height:1.5;}
+.service-plan-comparison > div{display:grid;gap:8px;}
+.service-plan-card{display:grid;gap:6px;width:100%;box-sizing:border-box;min-width:0;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);color:var(--sc-ink);box-shadow:var(--sc-shadow-normal);font:inherit;text-align:left;}
+.service-plan-card[data-selected="true"]{border-color:var(--sc-brand-navy);background:var(--sc-surface-accent);}
+.service-plan-card header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;color:var(--sc-brand-navy);font-size:var(--sc-type-body);}
+.service-plan-card p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;overflow-wrap:anywhere;}
 .plan-console-selector{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:2px 1px 5px;}
 .plan-console-selector::-webkit-scrollbar{display:none;}
 .plan-console-selector button{min-width:0;min-height:48px;border:1px solid var(--sc-line-strong);background:var(--sc-surface-card);border-radius:12px;padding:7px 5px;display:grid;gap:4px;place-items:center;font-family:inherit;color:var(--sc-ink-muted);box-shadow:none;}
@@ -42,7 +50,6 @@
 .plan-benefit-row svg{width:20px;height:20px;stroke:currentColor;}
 .plan-benefit-row div{min-width:0;}
 .plan-benefit-row b{display:block;font-size:14px;line-height:1.35;color:var(--sc-ink);}
-.plan-benefit-row p{margin:3px 0 0;font-size:11.5px;line-height:1.4;color:var(--sc-ink-muted);}
 .plan-secure-note{margin:-8px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:var(--sc-ink-subtle);font-weight:800;}
 .plan-secure-note svg{width:14px;height:14px;stroke:currentColor;}
 .plan-audience{display:grid;gap:10px;padding:15px;border:1px solid var(--sc-line-subtle);border-radius:14px;background:var(--sc-surface-subtle);}

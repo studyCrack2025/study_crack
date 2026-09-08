@@ -29,6 +29,7 @@ export function createUserDataResetPatch() {
     scoreEditState: createBlankScoreState(),
     analysisResults: [],
     analysisSimulations: [],
+    analysisSimulationStatus: 'idle',
     analysisResultExamMode: '',
     analysisResultSignature: '',
     analysisCalculationRequested: false,
@@ -100,6 +101,7 @@ function mapTargetUnivs(targetUnivs = []) {
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {
+    analysisSimulationStatus: 'idle',
     userTier: '',
     selectedPlan: '',
     scores: {},
