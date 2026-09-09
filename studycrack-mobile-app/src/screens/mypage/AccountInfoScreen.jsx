@@ -49,7 +49,7 @@ export function AccountInfoScreen(ctx) {
           <div className={`account-info-row action phone-row ${hasPhone ? '' : 'missing'}`}><span>전화번호</span><strong>{user?.phone || '등록된 번호 없음'}</strong><button type="button" className="text-link-btn account-inline-action" data-action="openPhoneChangeModal">{hasPhone ? '변경' : '등록'}</button></div>
           {!hasPhone ? <p className="account-inline-warning">결제와 중요 알림을 위해 전화번호 인증 등록이 필요합니다.</p> : null}
           {authProvider === 'local' ? <div className="account-info-row action"><span>비밀번호</span><strong>********</strong><button type="button" className="text-link-btn account-inline-action" data-action="openChangePassword">변경</button></div> : null}
-          <div className="account-marketing-row"><div><b>마케팅 수신 동의</b><p>{marketingAgreed ? `${marketingDate || '동의일 확인 중'} 동의` : '미동의 상태입니다.'}</p></div><button type="button" className={`notify-switch ${marketingAgreed ? 'on' : ''}`} data-action="saveMarketingConsent" data-marketing-agreed={marketingAgreed ? 'false' : 'true'} role="switch" aria-checked={marketingAgreed}><i /></button></div>
+          <button type="button" className="account-marketing-row" data-action="saveMarketingConsent" data-marketing-agreed={marketingAgreed ? 'false' : 'true'} role="switch" aria-label="마케팅 수신 동의" aria-checked={marketingAgreed}><span><b>마케팅 수신 동의</b><span className="account-marketing-description">{marketingAgreed ? `${marketingDate || '동의일 확인 중'} 동의` : '미동의 상태입니다.'}</span></span><span className={`notify-switch ${marketingAgreed ? 'on' : ''}`} aria-hidden="true"><i /></span></button>
         </section>
         <section className="sc-secondary-section mobile-account-card">
           <SectionHead title="소셜 계정 연동" description="Google과 Naver 계정을 연결하거나 해제합니다." badge="2개 제공" />

@@ -17,13 +17,15 @@
   <link rel="stylesheet" href="./studycrack-mobile-app/dist/studycrack-mobile.css" />
 </head>
 <body>
-  <div id="root"><div role="status">StudyCrack 앱을 불러오는 중입니다...</div></div>
+  <div id="root"><div class="mobile-boot-shell"><div class="init-loading" role="status"><h3>앱 화면을 준비하고 있어요</h3><p>잠시만 기다려 주세요.</p></div></div></div>
   <script>
     window.__studycrackAppBooted = false;
     setTimeout(function () {
       if (window.__studycrackAppBooted) return;
       var root = document.getElementById('root');
       if (!root) return;
+      var shell = document.createElement('div');
+      shell.className = 'mobile-boot-shell';
       var panel = document.createElement('div');
       panel.className = 'init-loading';
       var message = document.createElement('div');
@@ -43,7 +45,8 @@
       retry.onclick = function () { window.location.reload(); };
       message.append(title, detail);
       panel.append(message, retry);
-      root.replaceChildren(panel);
+      shell.append(panel);
+      root.replaceChildren(shell);
     }, 12000);
   </script>
   <script src="./js/config.js"></script>

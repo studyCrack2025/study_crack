@@ -7,7 +7,7 @@ const profile = read('../src/screens/profile/ProfileScreens.jsx');
 const profileModal = read('../src/screens/profile/ScoreEditModal.jsx');
 const mypage = read('../src/screens/mypage/MyPageSecondaryScreens.jsx');
 const account = read('../src/screens/mypage/AccountInfoScreen.jsx');
-const legal = read('../src/screens/mypage/LegalScreens.jsx');
+const legal = read('../src/screens/mypage/LegalScreens.jsx') + read('../src/screens/mypage/SettingsScreens.jsx');
 const secondaryScreen = read('../src/components/SecondaryScreen.jsx');
 const serviceContent = read('../src/screens/service/ServiceContentScreens.jsx');
 const servicePlan = read('../src/screens/service/ServicePlanScreens.jsx');
@@ -47,7 +47,7 @@ assert.match(scoreStyles, /\.score-grade-input\{/);
 assert.match(scoreStyles, /\.score-inquiry-grid\{/);
 assert.doesNotMatch(scoreStyles, /\.score-grade-grid\{|\.score-grade-card\{/);
 
-assert.match(mypage, /role="switch" aria-checked=/);
+assert.match(mypage, /<button[^>]*role="switch"[^>]*aria-checked=/);
 assert.match(mypage, /const NOTI_PAGE_SIZE = 7/);
 assert.match(mypage, /\['planner', '플래너 알림'/);
 assert.match(mypage, /\['report', '리포트 알림'/);

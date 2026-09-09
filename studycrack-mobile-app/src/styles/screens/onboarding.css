@@ -17,8 +17,7 @@
 .onboarding-stat{color:var(--sc-ink);font-size:21px;font-weight:800;line-height:1.55;letter-spacing:0;white-space:pre-line;}
 .onboarding-stat span{color:var(--sc-ink-muted);font-size:15px;}
 .onboarding-label{color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;}
-.onboarding-score{margin-top:var(--sc-space-8);color:var(--sc-ink);font-size:48px;font-weight:900;line-height:1;}
-.onboarding-score em{font-size:20px;font-style:normal;font-weight:800;}
+.onboarding-score{margin-top:var(--sc-space-8);color:var(--sc-ink);font-weight:900;}
 .onboarding-score-copy{max-width:220px;font-size:25px;line-height:1.25;word-break:keep-all;}
 .onboarding-graph{width:100%;display:block;}
 .onboarding-graph.strategy{height:88px;margin-top:var(--sc-space-8);}
@@ -50,8 +49,8 @@
 .ob1-field{display:grid;gap:var(--sc-space-8);}
 .ob1-field label,.ob1-score-wrap label{display:block;margin:0;color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:800;}
 .ob1-pill-row{display:flex;flex-wrap:wrap;gap:var(--sc-space-8);}
-.ob1-pill{min-height:38px;padding:0 var(--sc-space-12);border:1px solid var(--sc-border-strong);border-radius:var(--sc-radius-pill);background:var(--sc-surface);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
-.ob1-pill.active{border-color:var(--sc-blue);background:var(--sc-surface-accent);color:var(--sc-navy);}
+.ob1-pill{min-height:44px;padding:0 var(--sc-space-12);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
+.ob1-pill.active{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .ob1-input,.ob1-select,.ob1-textarea,.ob1-score-input,.ob1-score-select{width:100%;height:48px;box-sizing:border-box;padding:0 var(--sc-space-12);border:1px solid var(--sc-border-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);color:var(--sc-ink);font-size:16px;outline:0;}
 .onboarding-container .ob1-textarea{height:92px;padding:var(--sc-space-12);resize:vertical;}
 .ob1-input:focus,.ob1-select:focus,.ob1-textarea:focus,.ob1-score-input:focus,.ob1-score-select:focus{border-color:var(--sc-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--sc-blue) 14%,transparent);}

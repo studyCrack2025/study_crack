@@ -1,5 +1,5 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { MBTI_LETTER_LABELS, getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
+import { LearningTypeSummary } from './Ob3Screen.jsx';
 import { scoreTierClass as defaultScoreTierClass } from '../../components/score-journey.js';
 import { OnboardingScreenShell } from './OnboardingShell.jsx';
 import { ScoreJourneyCard } from './ScoreJourneyCard.jsx';
@@ -15,14 +15,6 @@ function uniqueLabels(values = []) {
 function formatPoint(value) {
   const number = Number(value) || 0;
   return number.toFixed(number >= 10 || Number.isInteger(number) ? 0 : 1);
-}
-
-function MbtiResultCard({ mbtiResult = '' }) {
-  const code = normalizeMbtiCode(mbtiResult);
-  if (!code) return null;
-  const profile = getMbtiProfile(code);
-  const keywords = profile.code.split('').map((letter) => MBTI_LETTER_LABELS[letter] || letter).join(', ');
-  return <div className="card ob-card ob-mbti-result"><p className="analysis-title">학습 성향 진단 결과</p><p className="ob-mbti-code">{profile.code}</p><p className="ob-mbti-name">{profile.name}</p><p className="sub ob-mbti-desc">({keywords})</p></div>;
 }
 
 function OnboardingState({ action = null, description, kind = 'empty', title }) {
@@ -72,7 +64,7 @@ export function Ob4Screen(ctx) {
     <TargetSelection analysisMajorOptions={analysisMajorOptions} analysisRecommended={analysisRecommended} recommendationError={universityRecommendationError} recommendationStatus={universityRecommendationStatus} targetMajor={targetMajor} />
     <ScoreResult analysisApiError={analysisApiError} analysisApiStatus={analysisApiStatus} analysisGaugeFill={analysisGaugeFill} analysisScoreView={analysisScoreView} analysisSelected={analysisSelected} analysisStatus={analysisStatus} analysisStatusColor={analysisStatusColor} scoreTierClass={scoreTierClass} targetMajor={targetMajor} />
     <ScoreEfficiency analysisApiStatus={analysisApiStatus} rows={analysisSimRows} />
-    <MbtiResultCard mbtiResult={mbtiResult} />
+    <LearningTypeSummary mbtiResult={mbtiResult} />
   </OnboardingScreenShell>;
 }
 

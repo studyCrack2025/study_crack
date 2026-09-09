@@ -16,13 +16,18 @@ const MENU_GROUPS = [
     ]
   },
   {
-    label: '계정 및 지원',
+    label: '계정 및 설정',
     rows: [
-      { icon: 'report', action: 'openProductGuide', title: '사용법 다시 보기', subtitle: '목표부터 공부·수조·발견까지 5단계 안내' },
       { icon: 'user', target: 'accountInfo', title: '계정정보 관리', subtitle: '프로필, 전화번호와 소셜 계정' },
       { icon: 'bell', target: 'notificationList', title: '알림', subtitle: '받은 알림과 상세 내용 확인' },
-      { icon: 'chat', target: 'customerSupport', title: '문의 · FAQ', subtitle: '1:1 문의와 자주 묻는 질문' },
       { icon: 'shield', target: 'settingsMain', title: '약관 · 설정', subtitle: '서비스 약관과 로그아웃' }
+    ]
+  },
+  {
+    label: '이용 안내 및 지원',
+    rows: [
+      { icon: 'report', action: 'openProductGuide', title: '사용법 다시 보기', subtitle: '목표부터 공부·수조·발견까지 5단계 안내' },
+      { icon: 'chat', target: 'customerSupport', title: '문의 · FAQ', subtitle: '1:1 문의와 자주 묻는 질문' }
     ]
   }
 ];

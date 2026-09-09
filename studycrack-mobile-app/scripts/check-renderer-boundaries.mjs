@@ -37,7 +37,7 @@ const [
   read('../src/screens/analysis/AnalysisScreen.jsx'),
   read('../src/screens/analysis/AnalysisContent.jsx'),
   read('../src/screens/auth/AuthScreens.jsx'),
-  read('../src/screens/mypage/LegalScreens.jsx'),
+  Promise.all([read('../src/screens/mypage/LegalScreens.jsx'), read('../src/screens/mypage/SettingsScreens.jsx')]).then(parts => parts.join('\n')),
   read('../src/screens/mypage/MyPageScreen.jsx'),
   read('../src/screens/onboarding/IntroScreens.jsx'),
   read('../src/screens/onboarding/Ob3Screen.jsx'),

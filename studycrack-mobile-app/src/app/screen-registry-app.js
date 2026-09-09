@@ -33,6 +33,7 @@ import { CoachingScreen } from '../screens/coaching/CoachingScreen.jsx';
 import { TimerScreen } from '../screens/timer/TimerScreen.jsx';
 import { AccountInfoScreen } from '../screens/mypage/AccountInfoScreen.jsx';
 import { MyPageScreen } from '../screens/mypage/MyPageScreen.jsx';
+import { SettingsMainScreen } from '../screens/mypage/SettingsScreens.jsx';
 import { CustomerSupportScreen, NotificationListScreen, NotificationSettingsScreen } from '../screens/mypage/MyPageSecondaryScreens.jsx';
 import { PlannerAddScreen } from '../screens/planner/PlannerAddScreen.jsx';
 import { PlannerScreen } from '../screens/planner/PlannerScreen.jsx';
@@ -51,6 +52,7 @@ export const MOBILE_APP_SCREEN_COMPONENTS = {
   strategy: CoachingScreen,
   lockedFeature: LockedFeatureScreen,
   my: MyPageScreen,
+  settingsMain: SettingsMainScreen,
   notificationList: NotificationListScreen,
   notificationSettings: NotificationSettingsScreen,
   ob4: Ob4Screen,

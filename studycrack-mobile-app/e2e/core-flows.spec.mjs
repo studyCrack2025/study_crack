@@ -97,7 +97,8 @@ test('회원가입은 약관부터 시작하고 전문 확인 뒤 다음 인증 
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authSignup');
 
-  await expect(page.locator('.signup-topbar, .signup-progress')).toHaveCount(0);
+  await expect(page.locator('.signup-progress li')).toHaveCount(4);
+  await expect(page.locator('.signup-progress [aria-current="step"]')).toContainText('약관');
   await expect(page.locator('.signup-stage-head > span')).toHaveText('1단계');
   await page.getByRole('button', { name: '전문보기' }).first().click();
   const termsDialog = page.getByRole('dialog', { name: '스터디크랙 이용약관' });
@@ -109,6 +110,7 @@ test('회원가입은 약관부터 시작하고 전문 확인 뒤 다음 인증 
   await page.getByRole('button', { name: '다음', exact: true }).click();
   await expect(page.getByRole('heading', { name: '기본 정보와 휴대폰을 확인할게요' })).toBeVisible();
   await expect(page.locator('.signup-stage-head > span')).toHaveText('2단계');
+  await expect(page.locator('.signup-progress [aria-current="step"]')).toContainText('본인 인증');
   await expectNoHorizontalOverflow(page);
 });
 

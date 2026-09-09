@@ -22,7 +22,7 @@ test('공통 MY 팝업의 닫기와 전체 MY 왕복은 초점과 스크롤을 �
   const close = dialog.getByRole('button', { name: '프로필 메뉴 닫기' });
   await expect(close).toBeFocused();
   await close.press('Shift+Tab');
-  await expect(dialog.getByRole('button', { name: /약관 · 설정/ })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: /문의 · FAQ/ })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(close).toBeFocused();
   await page.keyboard.press('Escape');

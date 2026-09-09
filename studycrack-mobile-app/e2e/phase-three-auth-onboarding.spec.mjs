@@ -48,6 +48,7 @@ test('직접 계정 복구 화면은 이메일 확인과 비밀번호 코드 요
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: '인증 코드 받기' }).click();
   await expect(page.locator('[data-reset-code]')).toBeVisible();
+  await expect(page.getByLabel('인증 코드', { exact: true })).toHaveValue('');
   await expect(page.getByText('student@example.com로 받은 코드')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });

@@ -1,0 +1,80 @@
+import { expect, test } from '@playwright/test';
+import { MBTI_QUESTIONS } from '../src/constants/mbti.js';
+import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
+
+for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 640 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+  test(`VP7 소개와 36문항 진단은 ${viewport.width}px에서 선택·왕복·저장된다`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    page.on('dialog', (dialog) => dialog.accept());
+    const api = await installApiMock(page);
+    const capture = async (name) => page.screenshot({ path: testInfo.outputPath(`${name}-${viewport.width}.png`), fullPage: true, animations: 'disabled' });
+    await page.goto('/studycrack-mobile.html?screen=on2');
+    await expect(page.getByText('과목별 원점수 변화가 환산점수에')).toBeVisible();
+    await expect(page.getByText('정확하게 예측해 드려요.')).toHaveCount(0);
+    await expect(page.getByRole('img', { name: '서비스 소개 2/3' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await capture('intro');
+    await page.getByRole('button', { name: '다음', exact: true }).click();
+    await expect(page.locator('[data-screen="on3"]')).toBeVisible();
+    await page.getByRole('button', { name: '시작하기' }).click();
+    await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+
+    await installAuthenticatedSession(page);
+    await page.goto('/studycrack-mobile.html?screen=ob1');
+    await page.getByRole('button', { name: '고3 재학' }).click();
+    await expect(page.getByRole('button', { name: '고3 재학' })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByLabel('출신 학교').fill('가나다라마바사아자차카타파하 고등학교');
+    await page.getByLabel('스터디크랙을 통해 얻고 싶은 점').fill('목표 대학에 맞는 공부 순서를 알고 싶어요.');
+    await expectNoHorizontalOverflow(page);
+    await capture('survey');
+    await page.getByRole('button', { name: '저장하고 성적 입력으로' }).click();
+    await expect(page.locator('[data-screen="ob2"]')).toBeVisible();
+    await page.getByRole('button', { name: '시험 성적이 없어요' }).click();
+    await expect(page.locator('[data-screen="ob3"]')).toBeVisible();
+    await expect(page.locator('.ob-progress')).toContainText('3/3 · 학습 성향');
+    await capture('diagnosis-intro');
+    await page.getByRole('button', { name: '36문항 진단 시작하기' }).click();
+    const dialog = page.getByRole('dialog', { name: '학습 성향 진단' });
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('.app-content')).toHaveAttribute('inert', '');
+    await dialog.getByRole('button', { name: '36문항 검사 시작' }).click();
+    const closeButton = dialog.getByRole('button', { name: '닫기', exact: true });
+    await expect.poll(async () => (await closeButton.boundingBox()).width).toBeGreaterThanOrEqual(44);
+    await expect.poll(async () => (await closeButton.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    await expect(dialog.getByRole('button', { name: '다음', exact: true })).toBeDisabled();
+    await dialog.locator('[data-mbti-choice="2"]').click();
+    await expect(dialog.locator('[data-mbti-choice="2"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(dialog.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
+    await capture('question');
+    await dialog.getByRole('button', { name: '다음', exact: true }).click();
+    await dialog.getByRole('button', { name: '이전', exact: true }).click();
+    await expect(dialog.locator('[data-mbti-choice="2"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(MBTI_QUESTIONS).toHaveLength(36);
+    for (let index = 0; index < MBTI_QUESTIONS.length; index++) {
+      await expect(dialog.locator('.mbti-survey-qtext')).toHaveText(MBTI_QUESTIONS[index].q);
+      await dialog.locator('[data-mbti-choice="1"]').click();
+      if (index === 35) await expect(dialog.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '36');
+      await dialog.locator('[data-action="mbtiNext"]').click();
+    }
+    await expect(dialog.locator('.mbti-result-hero')).toBeVisible();
+    await expect(dialog.locator('.mbti-result-tag')).toHaveCount(4);
+    await expectNoHorizontalOverflow(page);
+    await capture('result');
+    await dialog.getByRole('button', { name: '확인', exact: true }).scrollIntoViewIfNeeded();
+    await capture('result-bottom');
+    await dialog.getByRole('button', { name: '확인', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('.ob-mbti-code')).toBeVisible();
+    await capture('diagnosis-summary');
+    expect(api.requests.filter(({ payload }) => payload.type === 'update_qual')).toHaveLength(2);
+    await page.getByRole('button', { name: '분석 결과 보기' }).click();
+    await expect(page.locator('[data-screen="ob4"] .ob-progress')).toHaveText('분석 결과');
+    await expect(page.getByText('아직 계산된 환산점수가 없어요')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    if (viewport.width === 320) await capture('analysis-empty');
+    await page.getByRole('button', { name: '내 맞춤 솔루션 보기' }).click();
+    await expect(page.getByText('표시할 환산 결과가 없어요')).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    if (viewport.width === 320) await capture('solution-empty');
+  });
+}

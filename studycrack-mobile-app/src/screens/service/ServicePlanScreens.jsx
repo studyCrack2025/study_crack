@@ -6,7 +6,6 @@ import { WeeklyPlanPreview } from '../coaching/WeeklyPlanPreview.jsx';
 import { PlanComparison } from './PlanComparison.jsx';
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
-const BENEFIT_ICONS = ['chat', 'target', 'chart', 'calendar', 'check'];
 
 function planDisplayName(plan = '') {
   return plan === 'Pro' ? 'PRO' : String(plan || '').toUpperCase();
@@ -43,6 +42,10 @@ function PlanSelector({ checkoutPlan = 'Standard' }) {
   return <div className="plan-console-selector" role="group" aria-label="플랜 선택">{PLAN_ORDER.map((plan) => { const meta = PLAN_META[plan] || {}; const active = checkoutPlan === plan; return <button type="button" className={active ? 'active' : ''} aria-pressed={active} data-action="selectPlan" data-plan={plan} key={plan}><span>{planDisplayName(plan)}</span><b>{meta.payPrice || meta.introPrice || ''}</b></button>; })}</div>;
 }
 
+function CheckoutProgress() {
+  return <ol className="payment-progress" aria-label="결제 진행 안내"><li aria-current="step"><b>01</b><span>플랜 확인</span></li><li><b>02</b><span>웹 결제</span></li><li><b>03</b><span>구독 반영 확인</span></li></ol>;
+}
+
 function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', ctaLabel = '', ctaTarget = 'payment', duration = '', showCta = true }) {
   const activePlan = PLAN_META[checkoutPlan] || PLAN_META.Standard;
   const features = activePlan.features || [];
@@ -50,11 +53,11 @@ function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', cta
   const buttonLabel = ctaLabel || `${activePlan.payPrice || activePlan.introPrice || ''}로 시작하기`;
   const ctaProps = ctaAction === 'goto' ? { 'data-action': 'goto', 'data-target': ctaTarget } : { 'data-action': ctaAction };
   return (
-    <section className={`card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}`}>
+    <section className={`card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}`} aria-label="선택한 플랜 상세">
       <div className="plan-console-head"><div className="plan-console-title"><span className="plan-console-badge">{planBadgeText(checkoutPlan)}</span><h3>{planDisplayName(checkoutPlan)}</h3><p>{activePlan.complete || activePlan.desc || ''}</p></div><span className="plan-console-visual"><ServiceIcon name="calendar" /></span></div>
-      <div className="plan-console-price">{activePlan.originalPrice ? <span className="plan-console-original">{activePlan.originalPrice}</span> : null}<div><b>{activePlan.payPrice || activePlan.introPrice || ''}</b><em>{activePlan.weeklyPrice || activePlan.billingNote || ''}</em></div>{duration ? <p className="plan-console-term"><span>선택 이용 기간</span><b>{duration}</b><small>웹 결제는 4주 단위로 최종 확인됩니다.</small></p> : null}</div>
-      <div className="plan-console-benefits">{features.map((item, index) => <div className="plan-benefit-row" key={item}><span><ServiceIcon name={BENEFIT_ICONS[index] || 'check'} /></span><div><b>{item}</b></div></div>)}</div>
-      {showCta ? <><button type="button" className="btn btn-primary plan-console-cta" {...ctaProps}>{buttonLabel}<span><ServiceIcon name="chevron" /></span></button><p className="plan-secure-note"><ServiceIcon name="shield" /> 안전한 결제 · 언제든 해지 가능</p></> : null}
+      <div className="plan-console-price"><div><b>{activePlan.payPrice || activePlan.introPrice || ''}</b><em>{activePlan.billingNote || ''}</em></div>{duration ? <p className="plan-console-term"><span>선택 이용 기간</span><b>{duration}</b><small>웹 결제는 4주 단위로 최종 확인됩니다.</small></p> : null}</div>
+      <div className="plan-console-benefits" role="list" aria-label="포함 기능">{features.map(item => <div className="plan-benefit-row" role="listitem" key={item}><span><ServiceIcon name="check" /></span><div><b>{item}</b></div></div>)}</div>
+      {showCta ? <><button type="button" className="btn btn-primary plan-console-cta" {...ctaProps}>{buttonLabel}<span><ServiceIcon name="chevron" /></span></button><p className="plan-secure-note"><ServiceIcon name="shield" /> 결제 전 최종 금액과 이용 조건을 확인해 주세요.</p></> : null}
       {audience.length ? <div className="plan-audience"><b>이런 학생에게 추천해요</b>{audience.map((item) => <p key={item}><ServiceIcon name="check" /><span>{item}</span></p>)}</div> : null}
     </section>
   );
@@ -94,9 +97,9 @@ export function ProIntroScreen({ checkoutPlan = 'Standard', upgradePromptTarget 
 
 export function PaymentScreen({ checkoutPlan = 'Standard', duration = '4주' }) {
   const hasDurationChoice = ['Standard', 'Pro'].includes(checkoutPlan);
-  return <SecondaryScreenShell screen="payment" title="결제 플랜 확인"><section className="sc-secondary-page payment-console-page"><SecondaryIntro eyebrow="CHECKOUT" title="결제 전 확인" description="선택한 플랜과 기간을 확인한 뒤 안전한 웹 결제로 이동합니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} /><PlanSelector checkoutPlan={checkoutPlan} />{hasDurationChoice ? <div className="payment-option-block"><b>이용 기간</b><div className="duration-row payment-duration-row" role="group" aria-label="이용 기간 선택">{['4주', '8주', '12주'].map((option) => { const active = duration === option; return <button type="button" className={active ? 'active' : ''} aria-pressed={active} data-action="selectDuration" data-duration={option} key={option}>{option}</button>; })}</div><p>실제 결제 금액과 적용 기간은 웹 결제 화면에서 최종 확인합니다.</p></div> : <div className="payment-fixed-term"><span>결제 단위</span><b>{checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>}<SelectedPlanDetail checkoutPlan={checkoutPlan} duration={hasDurationChoice ? duration : ''} ctaLabel="웹 결제로 계속하기" ctaAction="openWebPayment" /></section></SecondaryScreenShell>;
+  return <SecondaryScreenShell screen="payment" title="결제 플랜 확인"><section className="sc-secondary-page payment-console-page"><SecondaryIntro eyebrow="CHECKOUT" title="결제 전 확인" description="선택한 플랜과 기간을 확인한 뒤 안전한 웹 결제로 이동합니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} /><CheckoutProgress /><PlanSelector checkoutPlan={checkoutPlan} />{hasDurationChoice ? <div className="payment-option-block"><b>이용 기간</b><div className="duration-row payment-duration-row" role="group" aria-label="이용 기간 선택">{['4주', '8주', '12주'].map((option) => { const active = duration === option; return <button type="button" className={active ? 'active' : ''} aria-pressed={active} data-action="selectDuration" data-duration={option} key={option}>{option}</button>; })}</div><p>실제 결제 금액과 적용 기간은 웹 결제 화면에서 최종 확인합니다.</p></div> : <div className="payment-fixed-term"><span>결제 단위</span><b>{checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>}<SelectedPlanDetail checkoutPlan={checkoutPlan} duration={hasDurationChoice ? duration : ''} ctaLabel="웹 결제로 계속하기" ctaAction="openWebPayment" /></section></SecondaryScreenShell>;
 }
 
 export function PaymentCompleteScreen() {
-  return <SecondaryScreenShell screen="paymentComplete"><div className="sc-secondary-page payment-done-screen"><SecondaryIntro eyebrow="SECURE PAYMENT" title="웹 결제에서 계속할게요" description="전화번호 확인과 결제 인증은 기존 웹 결제 페이지에서 안전하게 진행됩니다." /><section className="sc-secondary-section payment-complete-wrap"><div className="payment-check"><ServiceIcon name="check" primary /></div><div><p className="payment-complete-title">결제 상태는 서버 확인 후 반영됩니다</p><p className="payment-complete-sub">모바일 앱이 결제 완료 상태를 임의로 만들지 않습니다.</p></div><div className="payment-complete-note"><b>안전한 결제 안내</b><p>NICEPAY 인증이 끝나면 구독 정보가 계정에 반영됩니다.</p></div><button type="button" className="btn btn-primary payment-cta" data-action="openWebPayment">웹 결제 페이지로 이동</button></section></div></SecondaryScreenShell>;
+  return <SecondaryScreenShell screen="paymentComplete" title="결제 안내"><div className="sc-secondary-page payment-done-screen"><SecondaryIntro eyebrow="SECURE PAYMENT" title="웹 결제에서 계속할게요" description="전화번호 확인과 결제 인증은 기존 웹 결제 페이지에서 안전하게 진행됩니다." /><section className="sc-secondary-section payment-complete-wrap"><div className="payment-check"><ServiceIcon name="shield" primary /></div><div><p className="payment-complete-title">결제 상태는 서버 확인 후 반영됩니다</p><p className="payment-complete-sub">이 안내 화면은 결제 완료를 의미하지 않습니다.</p></div><div className="payment-complete-note"><b>이미 결제를 진행하셨나요?</b><p>계정에서 현재 구독과 다음 이용 예정 플랜을 먼저 확인해 주세요. 결제 인증을 취소했거나 실패한 경우에는 구독이 활성화되지 않습니다.</p></div><button type="button" className="btn btn-secondary payment-cta" data-action="goto" data-target="accountInfo">계정에서 구독 확인</button><button type="button" className="btn btn-primary payment-cta" data-action="openWebPayment">웹 결제 페이지로 이동</button></section></div></SecondaryScreenShell>;
 }

@@ -11,6 +11,7 @@ export async function fetchStudyRanking({ apiFetch, period = 'daily', signal, us
     fallbackError: '랭킹을 불러오지 못했습니다.'
   });
   if (!result.ok) return result;
+  if (result.data?.available === false) return apiInvalidResponse(result, '공부 랭킹을 현재 확인할 수 없습니다. 잠시 후 다시 시도해주세요.');
   if (!Array.isArray(result.data?.rows) || (result.data?.me !== null && result.data?.me !== undefined && !isRecord(result.data.me))) {
     return apiInvalidResponse(result, '공부 랭킹 응답이 올바르지 않습니다.');
   }

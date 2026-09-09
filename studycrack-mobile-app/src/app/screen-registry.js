@@ -1,5 +1,5 @@
 import { AuthFindIdScreen, AuthFindPwScreen, AuthLoginScreen, AuthSignupScreen } from '../screens/auth/AuthScreens.jsx';
-import { PrivacyPolicyScreen, SettingsMainScreen, SettingsTermsPickerScreen, TermsScreen } from '../screens/mypage/LegalScreens.jsx';
+import { PrivacyPolicyScreen, SettingsTermsPickerScreen, TermsScreen } from '../screens/mypage/LegalScreens.jsx';
 import { On1Screen, On2Screen, On3Screen, SplashScreen } from '../screens/onboarding/IntroScreens.jsx';
 import { Ob3Screen } from '../screens/onboarding/Ob3Screen.jsx';
 import { Ob1Screen, Ob2Screen } from '../screens/onboarding/SurveyScreens.jsx';
@@ -74,7 +74,8 @@ export const DEFERRED_APP_SCREEN_NAMES = [
   'notificationSettings',
   'notificationList',
   'customerSupport',
-  'accountInfo'
+  'accountInfo',
+  'settingsMain'
 ];
 
 const DEFERRED_APP_SCREEN_SET = new Set(DEFERRED_APP_SCREEN_NAMES);
@@ -91,7 +92,6 @@ export const BOOTSTRAP_SCREEN_COMPONENTS = {
   on2: On2Screen,
   on3: On3Screen,
   privacyPolicy: PrivacyPolicyScreen,
-  settingsMain: SettingsMainScreen,
   settingsTermsPicker: SettingsTermsPickerScreen,
   splash: SplashScreen,
   termsScreen: TermsScreen

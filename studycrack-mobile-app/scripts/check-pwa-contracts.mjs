@@ -28,9 +28,21 @@ assert.match(html, /<meta name="theme-color" content="#0A56B2" \/>/);
 assert.match(html, /<meta name="mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-title" content="StudyCrack" \/>/);
-assert.match(html, /<div id="root"><div role="status">StudyCrack 앱을 불러오는 중입니다\.\.\.<\/div><\/div>/);
-assert.match(fallbackCss, /--mobile-boot-bg:#F7F9FC/);
-assert.match(fallbackCss, /\.app-shell \{[^}]*background:var\(--mobile-boot-bg\)/);
+assert.match(html, /<div id="root"><div class="mobile-boot-shell"><div class="init-loading" role="status"><h3>앱 화면을 준비하고 있어요<\/h3><p>잠시만 기다려 주세요\.<\/p>/);
+assert.match(html, /shell\.className = 'mobile-boot-shell'/);
+assert.match(html, /root\.replaceChildren\(shell\)/);
+assert.match(fallbackCss, /\.mobile-boot-shell \{[^}]*min-height:100dvh;[^}]*place-items:center;[^}]*safe-area-inset-top/);
+assert.doesNotMatch(fallbackCss, /\.(?:app-shell|app-frame|app-screen|tabbar|screen)\b/, 'Fallback must not own runtime screen selectors');
+const tokens = fs.readFileSync(path.join(appRoot, 'src/styles/foundation/tokens.css'), 'utf8');
+const baseCss = fs.readFileSync(path.join(appRoot, 'src/styles/foundation/base.css'), 'utf8');
+for (const [boot, runtime] of Object.entries({ bg: 'surface-canvas', card: 'surface-card', text: 'ink', muted: 'ink-muted', line: 'line-subtle', primary: 'brand-navy', shadow: 'shadow-raised' })) {
+  const fallbackValue = fallbackCss.match(new RegExp(`--mobile-boot-${boot}:([^;]+);`))?.[1];
+  const runtimeValue = tokens.match(new RegExp(`--sc-${runtime}:([^;]+);`))?.[1];
+  assert.ok(fallbackValue && runtimeValue, `${boot}: missing fallback/runtime token`);
+  assert.equal(fallbackValue, runtimeValue, `${boot}: fallback drifted from runtime palette`);
+}
+assert.equal(fallbackCss.match(/font-family:([^;]+);/)[1], baseCss.match(/font-family:([^;]+);/)[1], 'Fallback font stack must match the runtime');
+assert.equal(fallbackCss.match(/body \{[^}]*font-size:([^;]+);/)[1], tokens.match(/--sc-type-body:([^;]+);/)[1], 'Fallback body size must match the runtime token');
 
 const requiredIcons = [
   ['assets/pwa/studycrack-symbol-v2-192.png', 192, 'any', 'a7e8643ad762939b77a2da92ea81b1786630d764c4db53ed0ccf623c8088f1ca'],

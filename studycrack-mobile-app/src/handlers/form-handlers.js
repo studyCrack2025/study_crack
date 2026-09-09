@@ -259,6 +259,10 @@ export function createFormHandlers(ctx) {
     }
 
     const field = target.getAttribute('data-field');
+    if (field === 'proRequestText') {
+      preserveScrollAfterStateChange(() => setProRequestText(target.value));
+      return { handled: true, field };
+    }
     if (['v2e-english', 'v2e-history'].includes(field) && target.classList?.contains('score-grade-input')) {
       const grade = String(target.value || '').replace(/[^1-9]+/g, '').slice(0, 1);
       if (target.value !== grade) target.value = grade;

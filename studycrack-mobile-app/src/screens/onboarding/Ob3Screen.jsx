@@ -1,13 +1,9 @@
 import { MbtiModal } from '../../components/MbtiModal.jsx';
-import { AppContent, AppFrame, SecondaryScreenHeader } from '../../components/AppFrame.js';
+import { OnboardingScreenShell } from './OnboardingShell.jsx';
 import { CRACKY_SRC } from '../../constants/assets.js';
 import { MBTI_LETTER_LABELS, getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
 
-function Progress() {
-  return <div className="ob-progress"><span>3/3</span><div className="ob-dots"><i className="active" /><i className="active" /><i className="active" /></div></div>;
-}
-
-function ResultCard({ mbtiResult }) {
+export function LearningTypeSummary({ mbtiResult }) {
   const code = normalizeMbtiCode(mbtiResult);
   if (!code) return null;
   const profile = getMbtiProfile(code);
@@ -21,20 +17,9 @@ export function Ob3Screen(ctx) {
     ? <button type="button" className="cta-button" data-action="goto" data-target="ob4">분석 결과 보기</button>
     : <><button type="button" className="cta-button" data-action="openMbtiModal">36문항 진단 시작하기</button><button type="button" className="auth-link-btn" data-action="goto" data-target="ob4">다음에 진단하기</button></>;
   return (
-    <AppFrame>
-      <AppContent inactive={mbtiModalOpen} lockScroll={mbtiModalOpen} screen="ob3">
-          <div className="onboarding-container">
-            <div className="content">
-              <Progress />
-              <SecondaryScreenHeader title="학습성향 진단 1-3" />
-              <p className="sub ob-subcopy">마지막 단계예요.<br />학습 MBTI로 내 공부 성향을 진단해보세요.</p>
-              <div className="card ob-bubble-card"><img loading="lazy" decoding="async" src={crackySrc} className="ob-cracky" alt="크랙이" /><p>36문항에 직관적으로 답하면 네 가지 학습 성향을 확인할 수 있어요.</p></div>
-              <div className="card ob-card"><p className="analysis-title">학습 성향 진단</p><p className="sub">약 2분 동안 나의 학습 접근법과 계획 스타일을 진단해요.</p><ResultCard mbtiResult={mbtiResult} /></div>
-            </div>
-            <div className="cta-wrapper cta-container">{cta}</div>
-          </div>
-      </AppContent>
-      {mbtiModalOpen ? <div className="app-screen-overlays"><MbtiModal {...ctx} /></div> : null}
-    </AppFrame>
+    <OnboardingScreenShell screen="ob3" step={3} title="나의 학습 유형 찾기" crackySrc={crackySrc} subcopy={<>마지막 단계예요.<br />평소 공부하는 모습에 가까운 답을 골라주세요.</>} bubble="36문항으로 학습 접근법·변화 적응력·사고 방식·계획 스타일을 확인해요." cta={cta} overlays={mbtiModalOpen ? <MbtiModal {...ctx} /> : null}>
+      <div className="card ob-card"><p className="analysis-title">진단 후 확인할 수 있어요</p><p className="sub">나의 학습 유형과 특징, 추천 탐구 과목을 살펴보세요. 정답은 없고, 응답 시간은 사람마다 달라요.</p></div>
+      <LearningTypeSummary mbtiResult={mbtiResult} />
+    </OnboardingScreenShell>
   );
 }

@@ -9,7 +9,7 @@ function IntroScreen({ activeDot, children, description, nextLabel = '다음', n
         <div className="onboarding-shot-head"><span className="onboarding-kicker">STUDYCRACK STRATEGY</span><h2>{title}</h2><p>{description}</p></div>
         <div className="onboarding-center">{children}</div>
         <img src={CRACKY_SRC} className={`onboarding-character ${screen}`} alt="크랙이" />
-        <div className="onboarding-shot-dots">{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
+        <div className="onboarding-shot-dots" role="img" aria-label={`서비스 소개 ${activeDot + 1}/3`}>{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
         <button type="button" className="onboarding-next" data-action={nextTarget === 'authLogin' ? 'finishIntro' : 'goto'} data-target={nextTarget}>{nextLabel}</button>
       </div>
     </AppContent></AppFrame>
@@ -27,7 +27,7 @@ export function On1Screen() {
 }
 
 export function On2Screen() {
-  return <IntroScreen screen="on2" activeDot={1} nextTarget="on3" title={'나에게 최적화된\n점수 상승 전략을 제공해요'} description={'과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.'}>
+  return <IntroScreen screen="on2" activeDot={1} nextTarget="on3" title={'내 성적에 맞는\n점수 상승 전략을 비교해요'} description={'과목별 원점수 변화가 환산점수에\n미치는 영향을 비교할 수 있어요.'}>
     <div className="onboarding-card strategy"><div className="onboarding-stat"><span>과목별 원점수 효율</span>{'\n'}내 성적으로 직접 비교</div><svg className="onboarding-graph strategy" viewBox="0 0 320 96" aria-hidden="true">{[[72, 58, 38], [142, 40, 56], [212, 22, 74], [282, -2, 98]].map(([x, y, height]) => <rect x={x} y={y} width="16" height={height} rx="3" fill="var(--sc-blue)" fillOpacity="0.85" key={x} />)}<path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="var(--sc-info-blue)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="88" r="3" fill="var(--sc-info-blue)" /><circle cx="302" cy="12" r="3" fill="var(--sc-info-blue)" /></svg></div>
   </IntroScreen>;
 }

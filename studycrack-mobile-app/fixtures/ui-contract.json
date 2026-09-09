@@ -55,7 +55,7 @@
       "src/styles/components/navigation.css": ["--sc-brand-navy", "--sc-action-positive-strong", "--sc-nav-aquarium-idle", "--sc-ink-muted", "--sc-shadow-nav"],
       "src/styles/components/modals.css": ["--sc-surface-card", "--sc-shadow-overlay"],
       "src/styles/components/sheets.css": ["--sc-surface-card", "--sc-shadow-sheet"],
-      "src/styles/components/insights.css": ["--sc-rank-bronze-surface", "--sc-rank-diamond-accent", "--sc-brand-hero"]
+      "src/styles/components/insights.css": ["--sc-rank-bronze-surface", "--sc-rank-diamond-accent"]
     },
     "requiredScreenConsumers": {
       "src/styles/screens/analysis-unified.css": ["--sc-surface", "--sc-action-positive", "--sc-surface-positive"],
@@ -70,8 +70,8 @@
       "src/styles/screens/onboarding.css": ["--sc-brand-hero", "--sc-surface-card", "--sc-on-brand"],
       "src/styles/screens/locked-splash.css": ["--sc-surface-card", "--sc-on-brand-surface-strong", "--sc-shadow-overlay"],
       "src/styles/screens/planner-add.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
-      "src/styles/screens/reports.css": ["--sc-brand-navy", "--sc-surface-card"],
-      "src/styles/screens/service.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-surface-card"],
+      "src/styles/screens/reports.css": ["--sc-brand-navy", "--sc-surface-card", "--sc-brand-hero"],
+      "src/styles/screens/service.css": ["--sc-brand-navy", "--sc-surface-accent", "--sc-surface-card"],
       "src/styles/screens/mypage-support.css": ["--sc-action-positive-strong", "--sc-surface-card"],
       "src/styles/screens/mypage-data.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-surface-card", "--sc-provider-google"],
       "src/styles/screens/ranking.css": ["--sc-brand-navy", "--sc-surface-muted"],

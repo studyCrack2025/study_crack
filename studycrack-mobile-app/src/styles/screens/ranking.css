@@ -21,4 +21,5 @@
 .ranking-position.is-top{background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .ranking-row .sc-secondary-row-meta b{color:var(--sc-navy);}
 .ranking-row .sc-secondary-row-meta em{color:var(--sc-blue);font-style:normal;}
+.ranking-row .sc-secondary-row-main b{white-space:normal;overflow-wrap:anywhere;}
 @media (max-width:360px){.ranking-summary{gap:var(--sc-space-12);}.ranking-summary-stats{width:100%;}.ranking-summary-stats > div{padding:8px 5px;}}
