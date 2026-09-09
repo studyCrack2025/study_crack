@@ -54,6 +54,7 @@
 .onboarding-container .ob1-textarea{height:92px;padding:var(--sc-space-12);resize:vertical;}
 .ob1-input:focus,.ob1-select:focus,.ob1-textarea:focus,.ob1-score-input:focus,.ob1-score-select:focus{border-color:var(--sc-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--sc-blue) 14%,transparent);}
 .ob1-score-exam{display:grid;gap:var(--sc-space-8);margin:0;}
+.ob-score-estimate-notice{margin:0;padding:11px 12px;border:1px solid color-mix(in srgb,var(--sc-action-urgent) 30%,var(--sc-border-subtle));border-radius:var(--sc-radius-control);background:var(--sc-surface-urgent);color:var(--sc-action-urgent-strong);font-size:var(--sc-type-caption);font-weight:750;line-height:1.5;}
 .ob1-score-grid{display:grid;gap:var(--sc-space-12);margin:0;}
 .ob1-subject-card{display:grid;gap:var(--sc-space-8);box-sizing:border-box;padding:var(--sc-space-12);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}
 .ob1-subject-card h4{margin:0;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;line-height:1.35;}

@@ -33,9 +33,15 @@ function clearInquiryFields(prefix) {
     });
 }
 
-function updateJulyEstimateNotice(month) {
-    const notice = document.getElementById('julEstimateNotice');
-    if (notice) notice.style.display = month === 'jul' ? 'block' : 'none';
+function updateExamEstimateNotice(month) {
+    const notice = document.getElementById('examEstimateNotice');
+    if (!notice) return;
+    const messages = {
+        jul: '7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.',
+        sep: '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치입니다. 실제 성적표의 표준점수·백분위·등급과 다를 수 있습니다.'
+    };
+    notice.textContent = messages[month] || '';
+    notice.hidden = !messages[month];
 }
 
 function updateInquiryAvailabilityForExam(month) {
@@ -323,10 +329,10 @@ async function requestScoreConversion(type) {
         if (e.message === "Auth expired") return;
         // 월별 모의고사 데이터 미준비 등 서버측 명시 사유는 그대로 노출하고 3월로 복귀.
         const msg = e.message || "";
-        if (msg.includes('6월 모평') || msg.includes('7월 학평') || msg.includes('JUN_NOT_READY') || msg.includes('JUL_NOT_READY')) {
+        if (msg.includes('6월 모평') || msg.includes('7월 학평') || msg.includes('9월 모평') || msg.includes('JUN_NOT_READY') || msg.includes('JUL_NOT_READY') || msg.includes('SEP_NOT_READY')) {
             alert(msg);
             const examSel = document.getElementById('examSelect');
-            if (examSel && (examSel.value === 'jun' || examSel.value === 'jul')) {
+            if (examSel && (examSel.value === 'jun' || examSel.value === 'jul' || examSel.value === 'sep')) {
                 examSel.value = 'mar';
                 if (typeof loadExamData === 'function') loadExamData();
             }
@@ -549,7 +555,7 @@ async function saveQualitative() {
 function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
-    updateJulyEstimateNotice(month);
+    updateExamEstimateNotice(month);
     
     const setVal = (id, val) => { 
         const el = document.getElementById(id); 

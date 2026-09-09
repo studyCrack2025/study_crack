@@ -25,6 +25,7 @@
 .score-onepage-head{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 12px;background:color-mix(in srgb,var(--sc-surface-canvas) 96%,transparent);border-bottom:1px solid var(--sc-line-subtle);backdrop-filter:blur(12px);}
 .score-onepage-head .sc-modal-padded-title{margin:0;font-size:18px;color:var(--sc-ink);}
 .score-onepage-head .sub{margin:4px 0 0;font-size:12px;line-height:1.45;color:var(--sc-ink-muted);}
+.score-edit-estimate-notice{margin:10px 16px 0;padding:10px 12px;border:1px solid color-mix(in srgb,var(--sc-action-urgent) 30%,var(--sc-border-subtle));border-radius:12px;background:var(--sc-surface-urgent);color:var(--sc-action-urgent-strong);font-size:11.5px;font-weight:800;line-height:1.45;}
 .score-onepage-close{border:1px solid var(--sc-line-strong);background:var(--sc-surface-card);color:var(--sc-ink-muted);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900;font-family:inherit;}
 .score-onepage-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 14px 0;padding:10px 12px;border:1px solid var(--sc-line-subtle);border-radius:14px;background:var(--sc-surface-card);}
 .score-onepage-status span{flex:0 0 auto;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900;}

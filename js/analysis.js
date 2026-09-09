@@ -40,7 +40,7 @@ const ANALYSIS_EXAM_MODE_STORAGE_KEY = 'analysis_exam_mode';
 
 const EXAM_DISPLAY_NAMES = {
     "csat": "대학수학능력시험 (수능)",
-    "sep": "9월 모의평가",
+    "sep": "9월 모의평가(임시 추정)",
     "jun": "6월 모의평가",
     "jul": "7월 학력평가(추정)",
     "oct": "10월 학력평가",
@@ -62,7 +62,7 @@ function getAvailableExamModes() {
 
 function pickPreferredExamMode(availableExams) {
     if (!availableExams || availableExams.length === 0) return null;
-    const priority = ['csat', 'jul', 'jun', 'may', 'mar', 'sep', 'oct'];
+    const priority = ['csat', 'sep', 'jul', 'jun', 'may', 'mar', 'oct'];
     const found = priority.find((key) => availableExams.includes(key));
     return found || availableExams[0];
 }
