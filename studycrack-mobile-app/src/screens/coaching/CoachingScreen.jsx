@@ -1,3 +1,4 @@
+import { useOverlayDialog } from '../../components/useOverlayDialog.js';
 import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
 import { buildCoachingPresentation, COACHING_PROCESS_STEPS } from './presentation.js';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
@@ -138,8 +139,9 @@ function CoachingStepBody(ctx) {
 
 function CoachingSheet(ctx) {
   const { coachingSheetOpen = false, coachingStep = 1, coachingSubmitting = false } = ctx;
+  const { overlayRef, panelRef, onKeyDown } = useOverlayDialog({ open: coachingSheetOpen, dismissAction: 'closeCoachingSheet' });
   if (!coachingSheetOpen) return null;
-  return <div className="sc-overlay sc-overlay--sheet sc-sheet-overlay coach-sheet-overlay" data-action="closeCoachingSheet"><section className="sc-sheet coach-sheet" data-action="noopModal" role="dialog" aria-modal="true"><div className="sc-sheet-handle" aria-hidden="true" /><header className="sc-sheet-head coach-sheet-head"><div><span>주간 학습 점검</span><h3>튜터에게 보낼 이번 주 기록</h3></div><button type="button" className="sc-overlay-close coach-close" data-action="closeCoachingSheet" aria-label="닫기">×</button></header><div className="coach-step-progress"><i style={{ width: `${(coachingStep / 8) * 100}%` }} /><span>{coachingStep} / 8</span></div><div className="sc-sheet-body coach-sheet-body"><CoachingStepBody {...ctx} /></div><footer className="sc-sheet-footer coach-sheet-footer"><button type="button" className="btn btn-secondary" data-action="coachingPrev" disabled={coachingStep === 1 || coachingSubmitting}>이전</button><button type="button" className="btn btn-primary" data-action="coachingNext" disabled={coachingSubmitting}>{coachingStep === 8 ? (coachingSubmitting ? '제출 중' : '작성 완료 및 제출') : '다음 단계'}</button></footer></section></div>;
+  return <div ref={overlayRef} onKeyDown={onKeyDown} className="sc-overlay sc-overlay--sheet sc-sheet-overlay coach-sheet-overlay" data-action="closeCoachingSheet"><section ref={panelRef} className="sc-sheet coach-sheet" data-action="noopModal" role="dialog" aria-modal="true" aria-label="주간 학습 점검" tabIndex={-1}><div className="sc-sheet-handle" aria-hidden="true" /><header className="sc-sheet-head coach-sheet-head"><div><span>주간 학습 점검</span><h3>튜터에게 보낼 이번 주 기록</h3></div><button type="button" className="sc-overlay-close coach-close" data-action="closeCoachingSheet" aria-label="닫기">×</button></header><div className="coach-step-progress"><i style={{ width: `${(coachingStep / 8) * 100}%` }} /><span>{coachingStep} / 8</span></div><div className="sc-sheet-body coach-sheet-body"><CoachingStepBody {...ctx} /></div><footer className="sc-sheet-footer coach-sheet-footer"><button type="button" className="btn btn-secondary" data-action="coachingPrev" disabled={coachingStep === 1 || coachingSubmitting}>이전</button><button type="button" className="btn btn-primary" data-action="coachingNext" disabled={coachingSubmitting}>{coachingStep === 8 ? (coachingSubmitting ? '제출 중' : '작성 완료 및 제출') : '다음 단계'}</button></footer></section></div>;
 }
 
 export function CoachingScreen(ctx) {

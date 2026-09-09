@@ -26,8 +26,16 @@ export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
     };
   }, [dismissAction, open]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !isTopOverlay(panel) || document.activeElement !== document.body) return undefined;
+    // A disabled or removed control can drop focus onto the page during an update.
+    const frame = scheduleOverlayFocus(panel);
+    return () => cancelOverlayFocus(frame);
+  });
+
   const onKeyDown = (event) => {
-    if (!isTopOverlay(panelRef.current) || event.isComposing) return;
+    if (!isTopOverlay(panelRef.current) || event.isComposing || event.nativeEvent?.isComposing) return;
     if (event.key === 'Escape' && dismissAction) {
       event.preventDefault();
       overlayRef.current?.click();

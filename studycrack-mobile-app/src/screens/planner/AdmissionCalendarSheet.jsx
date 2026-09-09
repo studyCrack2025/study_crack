@@ -1,3 +1,4 @@
+import { useOverlayDialog } from '../../components/useOverlayDialog.js';
 import {
   CALENDAR_CATEGORIES,
   PERSONAL_CALENDAR_CATEGORIES,
@@ -20,20 +21,22 @@ function periodLabel(event) {
 function CalendarEventRow({ event }) {
   const meta = getCalendarCategoryMeta(event.category);
   const editable = event.source === 'personal';
+  const Row = editable ? 'button' : 'div';
   return (
-    <div
+    <Row
+      type={editable ? 'button' : undefined}
       className={`calendar-event-row ${editable ? 'is-editable' : ''}`}
       data-action={editable ? 'openCalendarEventForm' : undefined}
       data-event-id={editable ? event.id : undefined}
     >
       <span className="calendar-event-dot" style={{ background: meta.color }} />
-      <div className="calendar-event-main">
+      <span className="calendar-event-main">
         <b>{event.title}</b>
-        {event.note ? <p>{event.note}</p> : null}
+        {event.note ? <span className="calendar-event-note">{event.note}</span> : null}
         <small>{meta.label}{periodLabel(event)}</small>
-      </div>
+      </span>
       {editable ? <span className="calendar-event-chev" aria-hidden="true">›</span> : <span className="calendar-event-tag">공식</span>}
-    </div>
+    </Row>
   );
 }
 
@@ -60,11 +63,12 @@ function CalendarEventForm(ctx) {
     calendarEventDraft = null,
     calendarSaving = false
   } = ctx;
+  const { overlayRef, panelRef, onKeyDown } = useOverlayDialog({ open: calendarEventFormOpen, dismissAction: 'closeCalendarEventForm' });
   if (!calendarEventFormOpen) return null;
   const draft = calendarEventDraft || {};
   return (
-    <div className="sc-overlay sc-overlay--modal home-modal-overlay calendar-event-overlay" data-action="closeCalendarEventForm">
-      <div className="sc-modal home-modal calendar-event-modal" data-action="noopModal" role="dialog" aria-modal="true">
+    <div ref={overlayRef} onKeyDown={onKeyDown} className="sc-overlay sc-overlay--modal home-modal-overlay calendar-event-overlay" data-action="closeCalendarEventForm">
+      <div ref={panelRef} className="sc-modal home-modal calendar-event-modal" data-action="noopModal" role="dialog" aria-modal="true" aria-label={calendarEventEditId ? '내 일정 수정' : '내 일정 추가'} tabIndex={-1}>
         <div className="sc-modal-head calendar-form-head">
           <div>
             <span>내 일정</span>
@@ -73,26 +77,26 @@ function CalendarEventForm(ctx) {
           <button type="button" className="sc-overlay-close qna-modal-close" data-action="closeCalendarEventForm" aria-label="닫기">✕</button>
         </div>
         <div className="sc-modal-body calendar-form-fields">
-          <label>일정 제목</label>
-          <input className="planner-input calendar-form-title" data-calendar-field="title" maxLength="60" defaultValue={draft.title || ''} placeholder="예: 수시 원서 접수 마감" />
+          <label htmlFor="calendar-event-title">일정 제목</label>
+          <input id="calendar-event-title" className="planner-input calendar-form-title" data-calendar-field="title" maxLength="60" defaultValue={draft.title || ''} placeholder="예: 수시 원서 접수 마감" />
           <div className="calendar-form-date-grid">
             <div>
-              <label>시작일</label>
-              <input className="planner-input" type="date" data-calendar-field="date" defaultValue={draft.date || ''} />
+              <label htmlFor="calendar-event-date">시작일</label>
+              <input id="calendar-event-date" className="planner-input" type="date" data-calendar-field="date" defaultValue={draft.date || ''} />
             </div>
             <div>
-              <label>종료일</label>
-              <input className="planner-input" type="date" data-calendar-field="endDate" defaultValue={draft.endDate || ''} />
+              <label htmlFor="calendar-event-end-date">종료일</label>
+              <input id="calendar-event-end-date" className="planner-input" type="date" data-calendar-field="endDate" defaultValue={draft.endDate || ''} />
             </div>
           </div>
-          <label>분류</label>
-          <select className="planner-input calendar-form-select" data-calendar-field="category" defaultValue={draft.category || 'personal'}>
+          <label htmlFor="calendar-event-category">분류</label>
+          <select id="calendar-event-category" className="planner-input calendar-form-select" data-calendar-field="category" defaultValue={draft.category || 'personal'}>
             {PERSONAL_CALENDAR_CATEGORIES.map((key) => (
               <option value={key} key={key}>{(CALENDAR_CATEGORIES[key] || {}).label || key}</option>
             ))}
           </select>
-          <label>메모</label>
-          <textarea className="planner-input calendar-form-note" data-calendar-field="note" maxLength="300" defaultValue={draft.note || ''} placeholder="준비물, 장소, 확인할 내용을 적어두세요." />
+          <label htmlFor="calendar-event-note">메모</label>
+          <textarea id="calendar-event-note" className="planner-input calendar-form-note" data-calendar-field="note" maxLength="300" defaultValue={draft.note || ''} placeholder="준비물, 장소, 확인할 내용을 적어두세요." />
         </div>
         <div className="sc-modal-footer support-btns calendar-form-actions">
           {calendarEventEditId ? (
@@ -118,12 +122,12 @@ function CalendarSheet(ctx) {
     calendarSelectedEvents = [],
     calendarSyncStatus = 'idle'
   } = ctx;
-  if (!calendarSheetOpen) return <>{CalendarEventForm(ctx)}</>;
+  const { overlayRef, panelRef, onKeyDown } = useOverlayDialog({ open: calendarSheetOpen, dismissAction: 'closeCalendarSheet' });
+  if (!calendarSheetOpen) return null;
   const addDisabled = calendarSyncStatus === 'loading';
   return (
-    <>
-      <div className="sc-overlay sc-overlay--sheet planner-sheet-overlay calendar-sheet-overlay" data-action="closeCalendarSheet">
-        <div className="sc-sheet planner-sheet calendar-sheet" data-action="noopModal" role="dialog" aria-modal="true">
+      <div ref={overlayRef} onKeyDown={onKeyDown} className="sc-overlay sc-overlay--sheet planner-sheet-overlay calendar-sheet-overlay" data-action="closeCalendarSheet">
+        <div ref={panelRef} className="sc-sheet planner-sheet calendar-sheet" data-action="noopModal" role="dialog" aria-modal="true" aria-label="수험 일정" tabIndex={-1}>
           <div className="sc-sheet-handle notif-sheet-handle" aria-hidden="true" />
           <div className="sc-sheet-head notif-sheet-head calendar-sheet-head">
             <div>
@@ -167,9 +171,9 @@ function CalendarSheet(ctx) {
           </div>
         </div>
       </div>
-      {CalendarEventForm(ctx)}
-    </>
   );
 
 }
-export { CalendarSheet as AdmissionCalendarSheet };
+export function AdmissionCalendarSheet(ctx) {
+  return <><CalendarSheet {...ctx} /><CalendarEventForm {...ctx} /></>;
+}

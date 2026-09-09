@@ -133,17 +133,38 @@ try {
   });
   check('study selection preserves planner geometry and confirmation action', () => {
     const markup = render(StudySubjectSheet, { studySubjectSheetOpen: true, studyStartDraft: { subject: '국어', activity: '독서 지문 분석' } });
-    assertSheetMarkup(markup, { ...plannerClasses, panelClasses: ['planner-sheet', 'study-subject-sheet'], dismissAction: 'closeStudySubjectSheet' });
+    assertSheetMarkup(markup, { ...plannerClasses, panelClasses: ['planner-sheet', 'study-subject-sheet'], dismissAction: 'closeStudySubjectSheet', ariaLabel: '공부 시작' });
     assert.match(markup, /data-field="studyStartActivity"/);
     assert.match(markup, /data-action="confirmStudyStart"/);
     assert.equal(render(StudySubjectSheet), '');
   });
   check('analysis search preserves its explicit compatibility composition', () => {
     const markup = render(AnalysisSearchSheet, { analysisSearchOpen: true, analysisSearchTerm: '대학' });
-    assertSheetMarkup(markup, { overlayClasses: ['planner-sheet-overlay', 'analysis-search-overlay'], panelClasses: ['planner-sheet', 'analysis-search-modal'], dismissAction: 'closeAnalysisSearch' });
+    assertSheetMarkup(markup, { overlayClasses: ['planner-sheet-overlay', 'analysis-search-overlay'], panelClasses: ['planner-sheet', 'analysis-search-modal'], dismissAction: 'closeAnalysisSearch', ariaLabel: '대학 검색' });
     assert.equal(attribute(markup.match(/<input\b[^>]*data-field="analysisSearchTerm"[^>]*>/)?.[0] || '', 'value'), '대학');
     assert.match(markup, /data-action="runUniversitySearch"/);
     assert.equal(render(AnalysisSearchSheet), '');
+  });
+  const { AdmissionCalendarSheet } = await vite.ssrLoadModule('/src/screens/planner/AdmissionCalendarSheet.jsx');
+  const { CoachingScreen } = await vite.ssrLoadModule('/src/screens/coaching/CoachingScreen.jsx');
+  const { ScoreEditModal } = await vite.ssrLoadModule('/src/screens/profile/ScoreEditModal.jsx');
+  const { TimerScreen } = await vite.ssrLoadModule('/src/screens/timer/TimerScreen.jsx');
+  check('calendar supports closed, standalone and nested forms', () => {
+    assert.equal(render(AdmissionCalendarSheet), '');
+    for (const calendarSheetOpen of [false, true]) {
+      for (const calendarEventEditId of [null, 'event-1']) {
+        const markup = render(AdmissionCalendarSheet, { calendarSheetOpen, calendarEventFormOpen: true, calendarEventEditId });
+        assert.match(markup, new RegExp(`aria-label="내 일정 ${calendarEventEditId ? '수정' : '추가'}"`));
+        assert.equal([...markup.matchAll(/role="dialog"/g)].length, calendarSheetOpen ? 2 : 1);
+        assert.equal([...markup.matchAll(/tabindex="-1"/g)].length, calendarSheetOpen ? 2 : 1);
+        if (calendarSheetOpen) assert.ok(markup.indexOf('aria-label="수험 일정"') < markup.indexOf('aria-label="내 일정'));
+      }
+    }
+  });
+  check('coaching, score and game rules have specific dialog names', () => {
+    assert.match(render(CoachingScreen, { coachingSheetOpen: true }), /role="dialog" aria-modal="true" aria-label="주간 학습 점검" tabindex="-1"/);
+    assert.match(render(ScoreEditModal, { scoreEditOpen: true }), /aria-label="성적 수정"/);
+    assert.match(render(TimerScreen, { gameRulesOpen: true }), /aria-label="수조 성장 규칙"/);
   });
 } finally {
   await vite.close();

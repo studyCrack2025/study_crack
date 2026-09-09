@@ -114,7 +114,7 @@
 .calendar-event-dot{flex:0 0 auto;width:8px;height:8px;border-radius:999px;}
 .calendar-event-main{flex:1 1 auto;min-width:0;}
 .calendar-event-main b{display:block;font-size:14px;color:var(--sc-ink-strong);}
-.calendar-event-main p{margin:3px 0 0;font-size:12px;color:var(--sc-ink-muted);line-height:1.4;}
+.calendar-event-note{display:block;margin:3px 0 0;font-size:12px;color:var(--sc-ink-muted);line-height:1.4;}
 .calendar-event-main small{display:block;margin-top:3px;font-size:11px;color:var(--sc-ink-subtle);}
 .calendar-event-chev{flex:0 0 auto;font-size:18px;color:var(--sc-line-strong);}
 .calendar-event-tag{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--sc-ink-subtle);background:var(--sc-line-subtle);border-radius:999px;padding:2px 8px;}
@@ -137,5 +137,6 @@
 .calendar-sheet-head .qna-modal-close,.calendar-form-head .qna-modal-close{flex:0 0 auto;align-self:flex-start;width:var(--sc-touch-target);height:var(--sc-touch-target);display:flex;align-items:center;justify-content:center;margin:-2px -4px 0 0;}
 .calendar-form-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--sc-line-subtle);}
 .calendar-selected-head .btn{width:auto;flex:0 0 auto;min-width:0;min-height:var(--sc-touch-target);padding:0 15px;font-size:12.5px;border-radius:999px;white-space:nowrap;}
-.calendar-event-modal{max-height:min(84dvh,680px);overflow-y:auto;}
+.calendar-event-overlay{z-index:var(--sc-layer-popover);}
+.calendar-event-modal{max-height:min(84dvh,680px,calc(var(--sc-visual-height) - 32px));overflow-y:auto;}
 @media (max-width:360px){.calendar-form-date-grid{grid-template-columns:1fr;}}
