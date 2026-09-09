@@ -5,6 +5,7 @@
    ========================================= */
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
+const SEPTEMBER_UPDATE_HIDE_UNTIL_KEY = 'septemberMockUpdateHideUntil';
 
 // 점수 상승 시뮬레이션 토글
 function toggleScoreUp(btnEl) {
@@ -52,6 +53,88 @@ function closeModal(type) {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
+}
+
+function initSeptemberUpdateBanner() {
+    const modal = document.getElementById('septemberUpdateBanner-modal');
+    const closeButton = document.getElementById('septemberUpdateClose');
+    const dismissButton = document.getElementById('septemberUpdateDismiss');
+    const hideButton = document.getElementById('septemberUpdateHide3Days');
+    const cta = document.getElementById('septemberUpdateCta');
+    if (!modal || !closeButton || !dismissButton || !hideButton || !cta) return;
+
+    let hideUntil = 0;
+    try {
+        hideUntil = Number(localStorage.getItem(SEPTEMBER_UPDATE_HIDE_UNTIL_KEY) || 0);
+    } catch (_) {
+        hideUntil = 0;
+    }
+    if (hideUntil && Date.now() < hideUntil) return;
+
+    let previousFocus = null;
+    const handleKeydown = (event) => {
+        if (event.key === 'Escape') {
+            close();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+        const focusable = [closeButton, cta, hideButton, dismissButton];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
+    const close = () => {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleKeydown);
+        if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+    const open = () => {
+        previousFocus = document.activeElement;
+        modal.classList.remove('hidden');
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', handleKeydown);
+        closeButton.focus();
+    };
+
+    closeButton.addEventListener('click', close);
+    dismissButton.addEventListener('click', close);
+    hideButton.addEventListener('click', () => {
+        try {
+            localStorage.setItem(SEPTEMBER_UPDATE_HIDE_UNTIL_KEY, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+        } catch (_) {
+            /* localStorage 차단 환경에서는 현재 안내만 닫는다. */
+        }
+        close();
+    });
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) close();
+    });
+    cta.addEventListener('click', (event) => {
+        document.body.style.overflow = '';
+        let hasSession = false;
+        try {
+            hasSession = Boolean(localStorage.getItem('userId'));
+        } catch (_) {
+            hasSession = false;
+        }
+        if (!hasSession) {
+            event.preventDefault();
+            window.location.href = `/login?returnUrl=${encodeURIComponent('/survey?exam=sep')}`;
+        }
+    });
+
+    window.setTimeout(open, 450);
 }
 
 window.onclick = function(event) {
@@ -339,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectCourse('basic', true);
     initPptCardSlider();
     initEffectsSlider();
+    initSeptemberUpdateBanner();
 
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {

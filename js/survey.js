@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.DEV_MOCK?.enabled) {
         setupUI();
+        applyRequestedExamSelection();
         setTimeout(checkQualitativeForm, 500);
         return;
     }
@@ -81,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     fetchUserData(userId);
     setupUI();
+    applyRequestedExamSelection();
     
     setTimeout(checkQualitativeForm, 500);
     
@@ -208,6 +210,16 @@ function openTab(tabName) {
     
     const targetBtn = document.querySelector(`.tab-btn[onclick="openTab('${tabName}')"]`);
     if (targetBtn) targetBtn.classList.add('active');
+}
+
+function applyRequestedExamSelection() {
+    const requestedExam = new URLSearchParams(window.location.search).get('exam');
+    if (requestedExam !== 'sep') return;
+    const examSelect = document.getElementById('examSelect');
+    if (!examSelect) return;
+    examSelect.value = 'sep';
+    openTab('quantitative');
+    loadExamData();
 }
 
 // ============================================================
