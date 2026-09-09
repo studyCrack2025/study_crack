@@ -7,8 +7,7 @@ const expectedSitemapUrls = [
   'https://studycrack.co.kr/service',
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
-  'https://studycrack.co.kr/qna',
-  'https://studycrack.co.kr/promotion/kcc01'
+  'https://studycrack.co.kr/qna'
 ];
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
@@ -127,18 +126,20 @@ function sitemapLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => match[1]);
 }
 
-const [sitemap, robots, login, signup, home, promotion, workflow] = await Promise.all([
+const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage] = await Promise.all([
   read('sitemap.xml'),
   read('robots.txt'),
   read('login.html'),
   read('signup.html'),
   read('index.html'),
-  read('promotion_kcc01.html'),
-  read('.github/workflows/deploy.yml')
+  read('404.html'),
+  read('.github/workflows/deploy.yml'),
+  read('js/shared/api.js'),
+  read('success.html')
 ]);
 
 const sitemapUrls = sitemapLocations(sitemap);
-assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the six public URLs in the approved order');
+assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the five public URLs in the approved order');
 assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'sitemap.xml contains duplicate URLs');
 assert.match(robots, /^Sitemap:\s*https:\/\/studycrack\.co\.kr\/sitemap\.xml\s*$/m, 'robots.txt must declare the production sitemap');
 assert.doesNotMatch(robots, /^Disallow:\s*\/(?:login|signup)\/?\s*$/mi, 'login and signup must remain crawlable for noindex');
@@ -168,15 +169,26 @@ assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages mus
 const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/figma/figma-asset-08.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
 assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
+assert.doesNotMatch(home, /href=["']\/promotion\/kcc01["']/, 'the homepage must not link to the retired KCC promotion');
+assert.doesNotMatch(home, /kccEventBanner-modal/, 'the homepage must not render the retired KCC promotion modal');
 
-const promotionHead = headSource(promotion);
-const promotionCanonical = findCanonical(promotionHead);
-const promotionOgUrl = findPropertyMeta(promotionHead, 'og:url');
-assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one canonical link');
-assert.equal(promotionCanonical[0].href, 'https://studycrack.co.kr/promotion/kcc01', 'promotion canonical must use the public clean URL');
-assert.equal(promotionOgUrl.length, 1, 'promotion page must have exactly one og:url');
-assert.equal(promotionOgUrl[0].content, 'https://studycrack.co.kr/promotion/kcc01', 'promotion og:url must use the public clean URL');
-assert.ok(workflow.includes('aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01'), 'deploy workflow must publish the promotion clean URL');
-assert.ok(workflow.includes('--content-type "text/html; charset=utf-8"'), 'promotion clean URL must use an HTML content type');
+const notFoundHead = headSource(notFound);
+const notFoundRobots = findMeta(notFoundHead, 'robots');
+assert.ok(elementText(notFoundHead, 'title'), '404.html must have a non-empty title');
+assert.equal(notFoundRobots.length, 1, '404.html must have exactly one robots meta tag');
+assert.equal(String(notFoundRobots[0].content || '').toLowerCase().replace(/\s+/g, ''), 'noindex,follow', '404.html must use noindex,follow');
+assert.equal(findCanonical(notFoundHead).length, 0, '404.html must not declare a canonical URL');
+assert.equal(findPropertyMeta(notFoundHead, 'og:url').length, 0, '404.html must not declare an og:url');
+assert.ok(elementText(notFound, 'h1'), '404.html must have a visible primary heading');
+assert.ok(startTags(notFound, 'a').some((tag) => tag.href === '/'), '404.html must offer a route back home');
 
-console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);
+assert.ok(workflow.includes('--exclude "promotion_kcc01.html"'), 'deploy workflow must exclude the retained promotion source');
+assert.doesNotMatch(workflow, /aws s3 cp promotion_kcc01\.html/, 'deploy workflow must not publish the retained promotion source');
+assert.ok(workflow.includes('--key "promotion/kcc01"'), 'deploy workflow must delete the retired clean URL object');
+assert.ok(workflow.includes('--key "promotion_kcc01.html"'), 'deploy workflow must delete the retired legacy object');
+assert.doesNotMatch(sharedApi, /['"]\/promotion(?:\/kcc01|_kcc01(?:\.html)?)['"]/, 'retired promotion routes must not be public session routes');
+assert.match(successPage, /종료된<br>프로모션입니다/, 'legacy KCC success URLs must show the retired state');
+assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
+assert.match(successPage, /if \(orderId && !isRetiredKccPromo\)/, 'legacy KCC success URLs must not retain a payment-looking query on refresh');
+
+console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 3 noindex pages.`);
