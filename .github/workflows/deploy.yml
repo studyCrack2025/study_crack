@@ -107,12 +107,17 @@ jobs:
           # node_modules는 배포 제외(빌드 산출물 dist/만 포함)
           aws s3 sync . s3://${{ env.S3_BUCKET }} --delete \
             --exclude ".git/*" --exclude ".github/*" \
-            --exclude "studycrack-mobile-app/node_modules/*"
+            --exclude "studycrack-mobile-app/node_modules/*" \
+            --exclude "promotion_kcc01.html"
 
           # HTML은 항상 재검증되도록 짧은 캐시
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "*.html" \
+            --exclude "*" --include "*.html" --exclude "promotion_kcc01.html" \
             --cache-control "no-cache, no-store, must-revalidate"
+
+          # 종료된 공개 경로의 기존 객체를 제거한다.
+          aws s3api delete-object --bucket "${{ env.S3_BUCKET }}" --key "promotion/kcc01"
+          aws s3api delete-object --bucket "${{ env.S3_BUCKET }}" --key "promotion_kcc01.html"
 
           # 설치 메타데이터는 갱신 즉시 반영하고 아이콘은 버전 파일명으로 장기 캐시한다.
           aws s3 cp studycrack-mobile.webmanifest s3://${{ env.S3_BUCKET }}/studycrack-mobile.webmanifest \
@@ -120,11 +125,6 @@ jobs:
             --cache-control "no-cache, no-store, must-revalidate"
           aws s3 cp assets/pwa s3://${{ env.S3_BUCKET }}/assets/pwa --recursive \
             --cache-control "public, max-age=31536000, immutable"
-
-          # KCC 프로모션은 루트 HTML 파일을 사용자-facing clean URL로도 배포한다.
-          aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01 \
-            --content-type "text/html; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
 
           # 버전 쿼리 붙는 정적 자산은 장기 캐시
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
