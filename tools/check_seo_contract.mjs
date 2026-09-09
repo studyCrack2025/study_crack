@@ -126,7 +126,7 @@ function sitemapLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => match[1]);
 }
 
-const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage] = await Promise.all([
+const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage, homeScript, surveyScript] = await Promise.all([
   read('sitemap.xml'),
   read('robots.txt'),
   read('login.html'),
@@ -135,7 +135,9 @@ const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, succ
   read('404.html'),
   read('.github/workflows/deploy.yml'),
   read('js/shared/api.js'),
-  read('success.html')
+  read('success.html'),
+  read('js/script.js'),
+  read('js/survey.js')
 ]);
 
 const sitemapUrls = sitemapLocations(sitemap);
@@ -171,6 +173,15 @@ assert.equal(targetImage.length, 1, 'the target homepage image must appear exact
 assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
 assert.doesNotMatch(home, /href=["']\/promotion\/kcc01["']/, 'the homepage must not link to the retired KCC promotion');
 assert.doesNotMatch(home, /kccEventBanner-modal/, 'the homepage must not render the retired KCC promotion modal');
+const septemberUpdateModal = startTags(home, 'div').filter((tag) => tag.id === 'septemberUpdateBanner-modal');
+const septemberUpdateCta = startTags(home, 'a').filter((tag) => tag.id === 'septemberUpdateCta');
+assert.equal(septemberUpdateModal.length, 1, 'the homepage must render exactly one September mock-exam update modal');
+assert.equal(septemberUpdateCta.length, 1, 'the September update modal must have exactly one score-entry CTA');
+assert.equal(septemberUpdateCta[0].href, '/survey?exam=sep', 'the September update CTA must select the September score form');
+assert.match(home, /성적표 발표 전 임시 추정 데이터입니다/, 'the September update modal must disclose that score conversions are provisional');
+assert.match(homeScript, /initSeptemberUpdateBanner\(\)/, 'the homepage must initialize the September update modal');
+assert.match(homeScript, /septemberMockUpdateHideUntil/, 'the September update modal must use its own dismissal key');
+assert.match(surveyScript, /requestedExam !== 'sep'/, 'the survey must accept only the approved September deep-link exam value');
 
 const notFoundHead = headSource(notFound);
 const notFoundRobots = findMeta(notFoundHead, 'robots');
