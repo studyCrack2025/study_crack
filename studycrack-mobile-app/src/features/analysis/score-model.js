@@ -18,7 +18,7 @@ export function scoreExamKeyToLabel(key = '') {
     may: '5월 모의고사',
     jun: '6월 모의고사',
     jul: '7월 모의고사',
-    sep: '9월 모의고사',
+    sep: '9월 평가원',
     oct: '10월 모의고사',
     csat: '수능'
   };

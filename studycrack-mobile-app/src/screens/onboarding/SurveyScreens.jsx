@@ -1,5 +1,5 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS } from '../../constants/options.js';
+import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
 import { OnboardingScreenShell } from './OnboardingShell.jsx';
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -35,7 +35,7 @@ export function Ob1Screen(ctx) {
 export function Ob2Screen(ctx) {
   const { crackySrc = CRACKY_SRC, obExamType = EXAM_OPTIONS[0] } = ctx;
   return <OnboardingScreenShell screen="ob2" step={2} title="학습성향 진단 1-2" crackySrc={crackySrc} subcopy={<>과목별 성적을 입력하면 현재 위치를<br />더 정확하게 계산할 수 있어요.</>} bubble="점수는 세밀할수록 좋아요! 입력한 정보로 맞춤 분석을 진행할게요." cta={<><button type="button" className="cta-button" data-action="goto" data-target="ob3">1-3 학습 MBTI로</button><button type="button" className="auth-link-btn" data-action="skipOb2WithoutScore">시험 성적이 없어요</button></>}>
-    <div className="ob1-score-wrap"><h3>성적 입력 <Required /></h3><p className="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p><div className="ob1-score-exam"><label>시험 선택</label><select className="ob1-score-select" data-field="obExamType" defaultValue={obExamType}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></div><div className="ob1-score-grid">
+    <div className="ob1-score-wrap"><h3>성적 입력 <Required /></h3><p className="score-subtitle">과목별 입력을 완료하면 현재 위치를 더 정확하게 계산해요.</p><div className="ob1-score-exam"><label>시험 선택</label><select className="ob1-score-select" data-field="obExamType" defaultValue={obExamType}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></div>{String(obExamType).includes('9월') ? <p className="ob-score-estimate-notice" role="status">{SEPTEMBER_SCORE_ESTIMATE_NOTICE}</p> : null}<div className="ob1-score-grid">
       <div className="ob1-subject-card"><h4>국어</h4><select className="ob1-score-select" data-field="obKoreanType" defaultValue=""><option value="">선택</option><option value="화법과작문">화법과작문</option><option value="언어와매체">언어와매체</option></select><div className="ob1-score-two-col"><input className="ob1-score-input" data-score-key="korean_common" placeholder="공통 원점수" type="number" /><input className="ob1-score-input" data-score-key="korean_elective" placeholder="선택 원점수" type="number" /></div></div>
       <div className="ob1-subject-card"><h4>수학</h4><select className="ob1-score-select" data-field="obMathType" defaultValue=""><option value="">선택</option><option value="확률과통계">확률과통계</option><option value="미적분">미적분</option><option value="기하">기하</option></select><div className="ob1-score-two-col"><input className="ob1-score-input" data-score-key="math_common" placeholder="공통 원점수" type="number" /><input className="ob1-score-input" data-score-key="math_elective" placeholder="선택 원점수" type="number" /></div></div>
       <div className="ob1-subject-card"><h4>영어</h4><GradeSelect scoreKey="english_grade" /></div>

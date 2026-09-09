@@ -74,8 +74,15 @@ function clearTutorialInquiry(prefix) {
 
 function updateTutorialExamNotice() {
     const month = document.getElementById('tutExamMonth')?.value || 'mar';
-    const notice = document.getElementById('tutJulEstimateNotice');
-    if (notice) notice.style.display = month === 'jul' ? 'block' : 'none';
+    const notice = document.getElementById('tutExamEstimateNotice');
+    if (notice) {
+        const messages = {
+            jul: '7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.',
+            sep: '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치입니다. 실제 성적표의 표준점수·백분위·등급과 다를 수 있습니다.'
+        };
+        notice.textContent = messages[month] || '';
+        notice.hidden = !messages[month];
+    }
     ['tutInq1Name', 'tutInq2Name'].forEach((selectId) => {
         const select = document.getElementById(selectId);
         if (!select) return;
@@ -152,10 +159,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 전화번호 상태 — 보유 시 prefill(이미 인증된 번호로 간주), 없으면(소셜 다수) intro에서 SMS 인증 필요
             tutorialData.phone = data.phone || '';
             tutorialData.phoneVerified = !!(data.phone && String(data.phone).trim());
-            // 점수 데이터 복원 (최신 시험 월 우선: jul > jun > may > mar)
+            // 점수 데이터 복원 (최신 시험 월 우선)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const activeMonth = data.quantitative.jul ? 'jul' : (data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar'));
+                const activeMonth = data.quantitative.sep ? 'sep' : (data.quantitative.jul ? 'jul' : (data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar')));
                 tutorialData.examMonth = activeMonth;
                 const activeQuan = data.quantitative[activeMonth];
                 if (activeQuan) {
@@ -475,7 +482,7 @@ async function _nextStepCore() {
             return;
         }
 
-        // 선택된 시험 월 (3월·5월·7월 학평 / 6월 모평)
+        // 선택된 시험 월
         let examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
         tutorialData.examMonth = examMonth;
 
@@ -495,7 +502,7 @@ async function _nextStepCore() {
                 convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
             ]);
         } catch (e) {
-            if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE')) {
+            if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE' || e.code === 'SEP_NOT_READY')) {
                 alert(e.message || '선택한 시험 데이터를 불러오지 못했습니다. 3월 학평 기준으로 진행할게요.');
                 examMonth = 'mar';
                 tutorialData.examMonth = 'mar';
@@ -886,7 +893,7 @@ async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMont
     ];
 
     // 월별 학평/모평 모드는 데이터 미준비·매핑 누락 시를 대비해 mar 폴백 시도.
-    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun' || requestedExamMode === 'jul');
+    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun' || requestedExamMode === 'jul' || requestedExamMode === 'sep');
     if (isLearningMonthMode) {
         attempts.push({
             stage: 'fallback_exam_month_strict',
@@ -1530,7 +1537,7 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.jul ? 'jul' : (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar')));
+    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.sep ? 'sep' : (tutorialData.quan?.jul ? 'jul' : (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar'))));
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
@@ -1852,11 +1859,11 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
                 throw err;
             }
             if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
-        } else if (res.status === 503 && (month === 'jun' || month === 'jul')) {
+        } else if (res.status === 503 && (month === 'jun' || month === 'jul' || month === 'sep')) {
             // 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
             const body = await res.json().catch(() => ({}));
             const err = new Error(body.error || '선택한 시험 데이터를 불러오지 못했습니다.');
-            err.code = body.code || (month === 'jul' ? 'JUL_NOT_READY' : 'JUN_NOT_READY');
+            err.code = body.code || (month === 'jul' ? 'JUL_NOT_READY' : (month === 'sep' ? 'SEP_NOT_READY' : 'JUN_NOT_READY'));
             throw err;
         }
         // 5월 변환 실패 시 3월 기준 폴백 (legacy 동작 유지 — may 데이터 매핑 누락 edge case 대비).
@@ -1869,7 +1876,7 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         }
         return { std: '', pct: '', grd: '' };
     } catch (e) {
-        if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE')) throw e;
+        if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE' || e.code === 'SEP_NOT_READY')) throw e;
         return { std: '', pct: '', grd: '' };
     }
 }
