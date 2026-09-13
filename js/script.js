@@ -148,11 +148,22 @@ window.onclick = function(event) {
    2. 커리큘럼 탭 로직 (기존 코드 유지)
    ========================================= */
 const COURSE_DATA = {
-    basic: { title: "BASIC PLAN", price: `<strong class="highlight-price">25,000원</strong> / 1회`, desc: "내 점수와 목표 대학 사이에서 가장 가치 있는 다음 1점을 확인합니다.", list: [ { text: "목표 대학 기준 현재 위치 확인" }, { text: "과목별 원점수 1점의 영향 비교" }, { text: "우선순위 과목과 추천 이유" }, { text: "목표에 가까워지는 점수 조합" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669", ctaHref: "/basic-preview", ctaLabel: "내 개인화 결과 미리보기" },
+    basic: { title: "전체 점수 전략 확인", price: "25,000원", list: [ { text: "추천 대학과 합격 가능성 분석" }, { text: "과목별 1점 상승 효과와 상승 용이성" }, { text: "대학별 점수 상승 시뮬레이션" }, { text: "나의 성향을 반영한 목표 성적" } ], bg: "/assets/basic-v2/plan-books.png", themeColor: "#4c79ee", ctaHref: "/basic-preview", ctaLabel: "먼저 내 개인화 결과 보기" },
     starter: { title: "STARTER PLAN", price: "39,000원", desc: "SKY 튜터의 1회 플래너 피드백으로 학습 방향을 점검합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6", ctaHref: "/payment?plan=starter", ctaLabel: "STARTER 선택하기" },
     standard: { title: "STANDARD PLAN", price: `<span class="original-price">정가 37,250원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">12,250원</strong> / 주</span>`, desc: "매주 SKY 튜터의 플래너 피드백으로 학습을 체계적으로 관리합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 주 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "매주 플래너 제시" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB", ctaHref: "/payment?plan=standard", ctaLabel: "STANDARD 선택하기" },
     pro: { title: "PRO PLAN", price: `<span class="original-price">정가 74,750원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">37,250원</strong> / 주</span>`, desc: "STANDARD의 모든 기능에 정밀 분석과 심화 전략을 더합니다.", list: [ { text: "STANDARD 모든 기능 포함" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 정밀 제시" }, { text: "내 점수에 가장 유리한 대학 정밀 역추적" }, { text: "상향 지원 중장기 로드맵" }, { text: "심화 합격 전략 리포트" }, { text: "학부모 공유용 전략 리포트" }, { text: "조건부 환급 혜택 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48", ctaHref: "/payment?plan=pro", ctaLabel: "PRO 선택하기" }
 };
+
+function basicCourseMarkup(entry) {
+    const data = COURSE_DATA.basic;
+    return `<div class="landing-basic-detail">
+        <div class="landing-basic-top"><span class="landing-basic-badge">BASIC</span><strong class="landing-basic-price">${data.price}</strong></div>
+        <h3 class="landing-basic-title">${data.title}</h3>
+        <ul class="landing-basic-list">${data.list.map(item => `<li>${item.text}</li>`).join('')}</ul>
+        <a class="landing-basic-cta basic-preview-entry" data-entry="${entry}" href="${data.ctaHref}">${data.ctaLabel}</a>
+        <p class="landing-basic-note">전체 분석 선택 시 Basic 25,000원</p>
+    </div>`;
+}
 
 function initMobileCourses() {
     document.querySelectorAll('.course-tab-btn').forEach(btn => {
@@ -176,11 +187,14 @@ function selectCourse(tier, noScroll = false) {
     const activeBtn = document.querySelector(`.course-tab-btn[data-tier="${tier}"]`);
 
     const overlay = document.querySelector('.curriculum-bg-overlay');
-    if (overlay) overlay.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
+    if (overlay) overlay.style.backgroundImage = tier === 'basic'
+        ? `linear-gradient(rgba(26,33,45,.75), rgba(26,33,45,.75)), url('${data.bg}')`
+        : `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('${data.bg}')`;
     closeFeaturePreview();
 
     if (isMobile) {
         const mobileDetail = document.getElementById('mobileCourseDetail');
+        if (mobileDetail) mobileDetail.classList.toggle('mobile-course-detail--basic', tier === 'basic');
         if (activeBtn.classList.contains('active-expand')) {
             activeBtn.classList.remove('active-expand', 'active');
             if (mobileDetail) { mobileDetail.innerHTML = ''; mobileDetail.style.display = 'none'; }
@@ -202,7 +216,7 @@ function selectCourse(tier, noScroll = false) {
                 const ctaClass = tier === 'basic' ? 'solution-cta-link basic-preview-entry' : 'solution-cta-link';
                 const ctaData = tier === 'basic' ? ' data-entry="plan-mobile"' : '';
                 const extraBtnHtml = `<a class="${ctaClass}"${ctaData} href="${data.ctaHref}">${data.ctaLabel}</a>`;
-                mobileDetail.innerHTML = `
+                mobileDetail.innerHTML = tier === 'basic' ? basicCourseMarkup('plan-mobile') : `
                     <span class="detail-badge">${tier.toUpperCase()}</span>
                     <h3 class="detail-title">${data.title}</h3>
                     <div class="detail-price">${data.price}</div>
@@ -247,7 +261,7 @@ function selectCourse(tier, noScroll = false) {
             const ctaData = tier === 'basic' ? ' data-entry="plan-desktop"' : '';
             const extraBtnHtml = `<a class="${ctaClass}"${ctaData} href="${data.ctaHref}">${data.ctaLabel}</a>`;
 
-            detailView.innerHTML = `
+            detailView.innerHTML = tier === 'basic' ? basicCourseMarkup('plan-desktop') : `
                 <span class="detail-badge">${tier.toUpperCase()}</span>
                 <h3 class="detail-title">${data.title}</h3>
                 <div class="detail-price">${data.price}</div>
@@ -312,7 +326,7 @@ function downloadProReport(filePath) {
 }
 
 function initBasicPreviewEntryTracking() {
-    const allowedEntries = new Set(['hero', 'personalized', 'plan-mobile', 'plan-desktop', 'final']);
+    const allowedEntries = new Set(['hero', 'questions', 'personalized', 'plan-mobile', 'plan-desktop', 'final']);
     document.addEventListener('click', (event) => {
         const entryLink = event.target.closest('.basic-preview-entry');
         if (!entryLink) return;
@@ -430,6 +444,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderReviews();
     initMobileCourses();
     selectCourse('basic', true);
+    window.matchMedia('(max-width: 900px)').addEventListener('change', () => {
+        const selected = document.querySelector('.course-tab-btn.active');
+        const tier = selected?.dataset.tier || 'basic';
+        selected?.classList.remove('active-expand');
+        selectCourse(tier, true);
+    });
     initPptCardSlider();
     initEffectsSlider();
     initSeptemberUpdateBanner();
@@ -594,25 +614,17 @@ function scrollSliderTo(container, item, smooth) {
 function initPptCardSlider() {
     const grid = document.querySelector('.card-grid--three');
     const indicatorsEl = document.getElementById('pptIndicators');
-    if (!grid || !indicatorsEl || window.innerWidth > 640) return;
+    if (!grid || !indicatorsEl) return;
 
     const cards = grid.querySelectorAll('.ppt-card');
-    const bgImg = document.querySelector('.dark-feature .bg-img');
     if (cards.length === 0) return;
-
-    const cardImages = Array.from(cards).map(card => {
-        const img = card.querySelector('.ppt-card-img img');
-        return img ? img.getAttribute('src') : null;
-    });
-
-    const pptInitIdx = Math.min(1, cards.length - 1);
+    const pptInitIdx = 0;
 
     indicatorsEl.innerHTML = Array.from({length: cards.length}, (_, i) =>
         `<button class="review-dot${i === pptInitIdx ? ' active' : ''}" data-idx="${i}" aria-label="카드 ${i+1}번"></button>`
     ).join('');
 
-    if (bgImg && cardImages[pptInitIdx]) bgImg.src = cardImages[pptInitIdx];
-    setTimeout(() => { scrollSliderTo(grid, cards[pptInitIdx], false); }, 0);
+    if (window.innerWidth <= 640) setTimeout(() => { scrollSliderTo(grid, cards[pptInitIdx], false); }, 0);
 
     indicatorsEl.querySelectorAll('.review-dot').forEach(dot => {
         dot.addEventListener('click', () => {
@@ -627,7 +639,6 @@ function initPptCardSlider() {
             const cardWidth = (cards[0]?.offsetWidth || 0) + 14;
             const idx = Math.max(0, Math.min(Math.round(grid.scrollLeft / cardWidth), cards.length - 1));
             indicatorsEl.querySelectorAll('.review-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-            if (bgImg && cardImages[idx]) bgImg.src = cardImages[idx];
         }, 60);
     }, { passive: true });
 }
