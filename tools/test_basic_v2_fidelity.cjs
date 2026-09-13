@@ -81,6 +81,8 @@ async function main() {
                     panels: [...document.querySelectorAll('.personalized-panel')].map(node => node.getBoundingClientRect().y),
                     images: [...document.querySelectorAll('.landing-proof img')].map(node => ({ src: new URL(node.src).pathname, loaded: node.complete && node.naturalWidth > 0 })),
                     ctaBackground: getComputedStyle(document.querySelector('.cta-section')).backgroundImage,
+                    ctaAfterReviews: document.querySelector('#review-section').nextElementSibling === document.querySelector('.cta-section'),
+                    ctaBeforeFooter: document.querySelector('.cta-section').nextElementSibling === document.querySelector('footer'),
                     priceBackground: getComputedStyle(document.querySelector(innerWidth <= 900 ? '#mobileCourseDetail' : '.solution-card')).backgroundColor,
                     priceTextColor: getComputedStyle(document.querySelector(innerWidth <= 900 ? '#mobileCourseDetail .landing-basic-title' : '#courseDetailView .landing-basic-title')).color,
                     kcc: document.body.innerText.includes('KCC'),
@@ -94,7 +96,15 @@ async function main() {
             assert.ok(metrics.heroBackground.includes('/assets/basic-v2/hero-phone.png'));
             assert.equal(metrics.heroPreload, '/assets/basic-v2/hero-phone.png');
             assert.equal(metrics.firstHeroDot, true);
-            assert.equal(metrics.ctaBackground, 'none');
+            assert.ok(metrics.ctaBackground.includes('/assets/figma/figma-asset-10.png'), 'original final CTA background');
+            assert.equal(metrics.ctaAfterReviews, true, 'final CTA immediately follows reviews');
+            assert.equal(metrics.ctaBeforeFooter, true, 'final CTA is above footer');
+            assert.ok(await page.evaluate(() => new Promise(resolve => {
+                const image = new Image();
+                image.onload = () => resolve(image.naturalWidth > 0);
+                image.onerror = () => resolve(false);
+                image.src = '/assets/figma/figma-asset-10.png';
+            })), 'final CTA image loads');
             assert.equal(metrics.priceBackground, 'rgb(255, 255, 255)', 'BASIC price card is white');
             assert.notEqual(metrics.priceTextColor, 'rgb(255, 255, 255)', 'BASIC card text contrasts with white');
             assert.ok(metrics.images.every(image => image.loaded), 'all original images load');

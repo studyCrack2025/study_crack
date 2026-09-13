@@ -393,7 +393,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 /* =========================================
    11. CTA 섹션
    ========================================= */
-.cta-section { min-height: 190px; display: grid; place-items: center; text-align: center; color: #fff; background: #303c56; }
+.cta-section { min-height: 190px; display: grid; place-items: center; text-align: center; color: #fff; background-color: #0f172a; background-image: linear-gradient(rgba(15,23,42,.85), rgba(15,23,42,.9)), url('/assets/figma/figma-asset-10.png'); background-size: cover; background-position: center; }
 .cta-content { width: min(100% - 40px,var(--container)); padding: 24px 0 50px; }
 .cta-content .cta-eyebrow { margin: 0 auto 14px; color: #9bb6ff; font-size: 14px; font-weight: 900; }
 .cta-content h3 { margin: 0 0 28px; font-size: clamp(24px,2.6vw,30px); font-weight: 800; line-height: 1.5; color: #fff; }
