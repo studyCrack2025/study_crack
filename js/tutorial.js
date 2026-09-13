@@ -44,7 +44,7 @@ const STEPS = [
     { id: 'survey-quan', msg: '3월·5월·7월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
     { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
     { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
-    { id: 'subject-rec', msg: '선택한 대학 합격선까지, 가장 효율적인 과목 전략을 알려드릴게요.',   mascot: 'showresult' }
+    { id: 'subject-rec', msg: '분석 준비가 끝났어요. 지금 가장 가치 있는 다음 1점을 확인해보세요.', mascot: 'showresult' }
 ];
 
 
@@ -327,7 +327,6 @@ async function renderStep() {
         nextBtn.style.display = 'none';
     } else if (step.id === 'subject-rec') {
         nextBtn.style.display = 'none';
-        initSubjectRec();
     } else {
         nextBtn.style.display = 'block';
         nextBtn.textContent = '다음';
@@ -1808,15 +1807,9 @@ function _setUpsellBtnsDisabled(disabled) {
 }
 
 async function _completeTutorial(redirectUrl) {
-    // 1. Trial 지급 (tier 상승 후 quota 부여)
-    const trialResult = await apiCall('grant_tutorial_trial', {});
-    if (!trialResult.success && !trialResult.message) {
-        throw new Error(trialResult.error || '완료 처리 중 문제가 발생했습니다.');
-    }
-    // 2. Trial 지급 후 목표 대학 저장 (quota가 생긴 뒤에 호출)
-    if (tutorialData.selectedUniv) {
-        const payload = [{ univ: tutorialData.selectedUniv.school, major: tutorialData.selectedUniv.major }];
-        await apiCall('update_target_univs', payload);
+    const completionResult = await apiCall('complete_tutorial_preview', {});
+    if (!completionResult.success) {
+        throw new Error(completionResult.error || '완료 처리 중 문제가 발생했습니다.');
     }
     // _saveOnExit 레이스 방지: beforeunload보다 먼저 플래그 설정
     tutorialCompleted = true;
@@ -1825,10 +1818,10 @@ async function _completeTutorial(redirectUrl) {
     window.location.href = redirectUrl;
 }
 
-async function upsellPayment() {
+async function showBasicPreview() {
     _setUpsellBtnsDisabled(true);
     try {
-        await _completeTutorial('/payment');
+        await _completeTutorial('/basic-preview');
     } catch (e) {
         alert(e.message || '통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         _setUpsellBtnsDisabled(false);

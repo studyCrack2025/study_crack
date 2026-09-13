@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         } else {
                             // 일반 모드일 때는 '건너뛰기' 역할 수행
-                            if (!confirm("정말로 그만두시겠습니까?\n튜토리얼 완료 시 제공되는 무료 대학 분석 기회를 받지 못할 수 있습니다.")) return;
+                            if (!confirm("정말로 그만두시겠습니까?\n개인화 결과 미리보기는 입력을 완료한 뒤 확인할 수 있습니다.")) return;
                             finishTutorialAction(false);
                         }
                     });
@@ -569,17 +569,23 @@ window.finishTutorialComplete = async function() {
     }
 
     try {
-        // 튜토리얼 보상으로 trial 티어 부여 및 횟수 4회 충전 요청
-        await apiFetch(MYPAGE_API_URL, {
+        const response = await apiFetch(MYPAGE_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'grant_tutorial_trial' })
+            body: JSON.stringify({ type: 'complete_tutorial_preview' })
         });
-    } catch (e) {
-        console.error("Trial 승급 요청 실패:", e);
-    }
+        const result = await response.json();
+        if (!response.ok || result?.success !== true) throw new Error('TUTORIAL_COMPLETION_FAILED');
 
-    document.getElementById('tutorialCompleteModal').style.display = 'none';
-    location.reload(); 
+        document.getElementById('tutorialCompleteModal').style.display = 'none';
+        window.location.href = '/basic-preview';
+    } catch (e) {
+        console.error("튜토리얼 완료 요청 실패:", e);
+        if (submitBtn) {
+            submitBtn.innerText = "개인화 결과 미리보기";
+            submitBtn.disabled = false;
+        }
+        alert('완료 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    }
 };
 
 // [보안] XSS 방지용 이스케이프 함수

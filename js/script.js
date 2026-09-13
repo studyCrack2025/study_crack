@@ -148,10 +148,10 @@ window.onclick = function(event) {
    2. 커리큘럼 탭 로직 (기존 코드 유지)
    ========================================= */
 const COURSE_DATA = {
-    basic: { title: "BASIC PLAN", price: `<span class="original-price">49,000원</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">25,000원</strong></span>`, desc: "내 점수와 목표 대학 합격선 사이의 거리를 정밀하게 진단합니다.", list: [ { text: "개인 성적 및 목표 대학 환산점수 계산 (최대 18개)" }, { text: "합격 컷 대비 거리 분석 (위험도 경고)", action: "preview", imgBase: "feat_basic_1" }, { text: "목표 대학별 '효자 과목' 발굴" }, { text: "과목별 1점당 환산 기울기(효율) 계산" }, { text: "현재 점수 기준 목표 대학 위치 진단" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 제시" }, { text: "내 점수에 가장 유리한 대학 역추적" }, { text: "점수 상승 시뮬레이션 제공" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669" },
-    starter: { title: "STARTER PLAN", price: "39,000원", desc: "SKY 튜터의 1회 플래너 피드백으로 학습 방향을 점검합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6" },
-    standard: { title: "STANDARD PLAN", price: `<span class="original-price">정가 37,250원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">12,250원</strong> / 주</span>`, desc: "매주 SKY 튜터의 플래너 피드백으로 학습을 체계적으로 관리합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 주 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "매주 플래너 제시" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB" },
-    pro: { title: "PRO PLAN", price: `<span class="original-price">정가 74,750원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">37,250원</strong> / 주</span>`, desc: "STANDARD의 모든 기능에 정밀 분석과 심화 전략을 더합니다.", list: [ { text: "STANDARD 모든 기능 포함" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 정밀 제시" }, { text: "내 점수에 가장 유리한 대학 정밀 역추적" }, { text: "상향 지원 중장기 로드맵" }, { text: "심화 합격 전략 리포트" }, { text: "학부모 공유용 전략 리포트" }, { text: "조건부 환급 혜택 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48" }
+    basic: { title: "BASIC PLAN", price: `<strong class="highlight-price">25,000원</strong> / 1회`, desc: "내 점수와 목표 대학 사이에서 가장 가치 있는 다음 1점을 확인합니다.", list: [ { text: "목표 대학 기준 현재 위치 확인" }, { text: "과목별 원점수 1점의 영향 비교" }, { text: "우선순위 과목과 추천 이유" }, { text: "목표에 가까워지는 점수 조합" } ], bg: "assets/backgrounds/bg_basic.png", themeColor: "#059669", ctaHref: "/basic-preview", ctaLabel: "내 개인화 결과 미리보기" },
+    starter: { title: "STARTER PLAN", price: "39,000원", desc: "SKY 튜터의 1회 플래너 피드백으로 학습 방향을 점검합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "다음 1주 플래너 제시" } ], bg: "assets/backgrounds/bg_mbti.png", themeColor: "#8B5CF6", ctaHref: "/payment?plan=starter", ctaLabel: "STARTER 선택하기" },
+    standard: { title: "STANDARD PLAN", price: `<span class="original-price">정가 37,250원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">12,250원</strong> / 주</span>`, desc: "매주 SKY 튜터의 플래너 피드백으로 학습을 체계적으로 관리합니다.", list: [ { text: "Basic 기능 모두 포함" }, { text: "SKY 튜터 주 1회 플래너 피드백" }, { text: "과목별 시간 배분 점검" }, { text: "목표 대학 기준 우선순위 제안" }, { text: "매주 플래너 제시" } ], bg: "assets/backgrounds/bg_standard.png", themeColor: "#2563EB", ctaHref: "/payment?plan=standard", ctaLabel: "STANDARD 선택하기" },
+    pro: { title: "PRO PLAN", price: `<span class="original-price">정가 74,750원 / 주</span> <span class="discount-price">특별 할인가 <strong class="highlight-price">37,250원</strong> / 주</span>`, desc: "STANDARD의 모든 기능에 정밀 분석과 심화 전략을 더합니다.", list: [ { text: "STANDARD 모든 기능 포함" }, { text: "현재 성적 및 학습 성향 바탕 목표 대학 합격컷 도달 위한 목표 성적 정밀 제시" }, { text: "내 점수에 가장 유리한 대학 정밀 역추적" }, { text: "상향 지원 중장기 로드맵" }, { text: "심화 합격 전략 리포트" }, { text: "학부모 공유용 전략 리포트" }, { text: "조건부 환급 혜택 제공" }, { text: "PRO 전용 보고서 미리보기 📄", action: "download", file: "assets/features/feat_pro_report.pdf" } ], bg: "assets/backgrounds/bg_pro.png", themeColor: "#E11D48", ctaHref: "/payment?plan=pro", ctaLabel: "PRO 선택하기" }
 };
 
 function initMobileCourses() {
@@ -199,10 +199,9 @@ function selectCourse(tier, noScroll = false) {
                         return `<li><i class="fas fa-check-circle" style="color:${checkColor}"></i><span>${item.text}</span></li>`;
                     }
                 }).join('');
-                let extraBtnHtml = "";
-                if (tier === 'mbti') {
-                    extraBtnHtml = `<span class="solution-cta-link solution-cta-link--disabled" aria-disabled="true">맞춤 공부법 PDF 준비 중</span>`;
-                }
+                const ctaClass = tier === 'basic' ? 'solution-cta-link basic-preview-entry' : 'solution-cta-link';
+                const ctaData = tier === 'basic' ? ' data-entry="plan-mobile"' : '';
+                const extraBtnHtml = `<a class="${ctaClass}"${ctaData} href="${data.ctaHref}">${data.ctaLabel}</a>`;
                 mobileDetail.innerHTML = `
                     <span class="detail-badge">${tier.toUpperCase()}</span>
                     <h3 class="detail-title">${data.title}</h3>
@@ -244,10 +243,9 @@ function selectCourse(tier, noScroll = false) {
                 }
             }).join('');
 
-            let extraBtnHtml = "";
-            if (tier === 'mbti') {
-                extraBtnHtml = `<span class="solution-cta-link solution-cta-link--disabled" aria-disabled="true">맞춤 공부법 PDF 준비 중</span>`;
-            }
+            const ctaClass = tier === 'basic' ? 'solution-cta-link basic-preview-entry' : 'solution-cta-link';
+            const ctaData = tier === 'basic' ? ' data-entry="plan-desktop"' : '';
+            const extraBtnHtml = `<a class="${ctaClass}"${ctaData} href="${data.ctaHref}">${data.ctaLabel}</a>`;
 
             detailView.innerHTML = `
                 <span class="detail-badge">${tier.toUpperCase()}</span>
@@ -311,6 +309,18 @@ function downloadProReport(filePath) {
         link.click();
         document.body.removeChild(link);
     }
+}
+
+function initBasicPreviewEntryTracking() {
+    const allowedEntries = new Set(['hero', 'personalized', 'plan-mobile', 'plan-desktop', 'final']);
+    document.addEventListener('click', (event) => {
+        const entryLink = event.target.closest('.basic-preview-entry');
+        if (!entryLink) return;
+        const entry = entryLink.dataset.entry;
+        if (!allowedEntries.has(entry)) return;
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: 'basic_landing_cta_click', entry });
+    });
 }
 
 /* =========================================
@@ -423,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initPptCardSlider();
     initEffectsSlider();
     initSeptemberUpdateBanner();
+    initBasicPreviewEntryTracking();
 
     const myPageBtn = document.getElementById('myPageBtn');
     if (myPageBtn) {
