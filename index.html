@@ -24,7 +24,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="image" href="/assets/figma/figma-asset-17.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/assets/basic-v2/hero-phone.png" fetchpriority="high">
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="canonical" href="https://studycrack.co.kr/" />
 </head>
-<body>
+<body class="basic-landing">
     <h1 class="sr-only">스터디크랙 - 나에게 가장 가치 있는 다음 1점 분석</h1>
 
     <header id="site-header">
@@ -82,170 +82,148 @@
         <div id="heroCrossFade" class="hero-crossfade" aria-hidden="true"></div>
         <div class="hero-main-content">
             <p class="hero-eyebrow">나에게 가장 가치 있는 다음 1점</p>
-            <h2 class="hero-title">
-                <span class="hero-title-light">합격에 유리하고,</span>
-                <span class="hero-title-bold">내가 올리기 쉬운 과목부터.</span>
-            </h2>
-            <p class="hero-subtitle">내 성적과 학습 성향을 방대한 데이터와 함께 분석해<br>어떤 과목을 얼마나 올릴지, 목표 대학에 맞춰 알려드립니다.</p>
-            <a class="hero-cta basic-preview-entry" data-entry="hero" href="/basic-preview">내 성적으로 다음 1점 확인하기 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
-            <p class="hero-note">성적·목표 대학·학습 성향 입력 후 개인화 결과 일부를 무료로 확인할 수 있어요.</p>
+            <h2 class="hero-title"><span class="hero-title-light">합격에 유리하고,</span><span class="hero-title-bold">내가 올리기 쉬운 과목부터.</span></h2>
+            <p class="hero-subtitle">내 성적과 학습 성향을 방대한 데이터와 함께 분석해<br> 어떤 과목을 얼마나 올릴지, 목표 대학에 맞춰 알려드립니다.</p>
+            <a class="hero-cta basic-preview-entry" data-entry="hero" href="/basic-preview">내 성적으로 다음 1점 확인하기</a>
+            <p class="hero-note">개인화 결과를 먼저 확인하고, 전체 분석은 필요할 때 선택하세요.</p>
             <div class="hero-dots" aria-label="배경 이미지 선택"><button type="button" class="active" aria-label="첫 번째 배경"></button><button type="button" aria-label="두 번째 배경"></button><button type="button" aria-label="세 번째 배경"></button></div>
         </div>
     </section>
+    <section class="landing-value">
+        <h2>입시에 미치는 영향 × 나의 성적 상승 가능성</h2>
+        <p>대학 예측을 넘어, 내가 실제로 만들 다음 점수의 우선순위를 찾습니다.</p>
+    </section>
 
     <section id="about" class="section problem scroll-reveal">
-        <div class="container">
-            <div class="section-heading problem-heading">
-                <p class="eyebrow">공부를 시작하기 전에 먼저 답해야 할 질문</p>
-                <h2>열심히보다 먼저,<br><em>어디에 힘을 쓸지</em> 정해야 합니다</h2>
-                <p>같은 1점이라도 과목과 대학의 반영 방식에 따라 결과는 달라집니다.</p>
+        <div class="container problem__grid">
+            <div class="problem__copy">
+                <h2>대학은 가고 싶은데,<br> 뭘 어떻게 올려야 할지<br> 막막하다면.</h2>
+                <p>무조건 어려운 과목에 매달릴 필요도,<br> 쉬운 과목만 고집할 필요도 없습니다.</p>
+                <p>목표 대학에 미치는 영향과<br> 내가 올릴 수 있는 가능성을 함께 계산해<br> 지금 집중할 과목과 목표 점수를 찾으세요.</p>
+                <a class="btn btn--primary basic-preview-entry" data-entry="questions" href="/basic-preview">내 성적으로 다음 1점 확인하기</a>
             </div>
             <div class="step-grid">
-                <article class="step-card">
-                    <span class="question-number">01</span>
+                <article class="step-card step-card--one">
+                    <span class="badge badge--green">01</span>
                     <h3>내 점수로 어디까지?</h3>
-                    <p>현재 성적을 대학별 환산 방식에 적용해 목표와의 거리를 확인합니다.</p>
-                    <div class="question-icon question-icon--green" aria-hidden="true"><i class="fas fa-location-dot"></i></div>
+                    <p>내 점수에 유리한 대학과<br> 현재 합격 가능성을 확인합니다.</p>
+                    <span class="step-card-icon step-icon--green" aria-hidden="true">01</span>
                 </article>
-                <article class="step-card">
-                    <span class="question-number">02</span>
-                    <h3>나에게 유리한 과목은?</h3>
-                    <p>과목별 1점이 목표 대학 환산점수에 미치는 영향을 비교합니다.</p>
-                    <div class="question-icon question-icon--purple" aria-hidden="true"><i class="fas fa-chart-column"></i></div>
+                <article class="step-card step-card--two">
+                    <span class="badge badge--purple">02</span>
+                    <h3>나에게 유리한<br> 과목은?</h3>
+                    <p>1점의 입시 효과와 나의 상승<br> 가능성을 함께 비교합니다.</p>
+                    <span class="step-card-icon step-icon--purple" aria-hidden="true">02</span>
                 </article>
-                <article class="step-card">
-                    <span class="question-number">03</span>
+                <article class="step-card step-card--three">
+                    <span class="badge badge--blue">03</span>
                     <h3>얼마나 올리면 될까?</h3>
-                    <p>한 번에 가능한 변화부터 목표 대학에 가까워지는 조합까지 보여줍니다.</p>
-                    <div class="question-icon question-icon--blue" aria-hidden="true"><i class="fas fa-arrow-trend-up"></i></div>
+                    <p>목표 대학에 필요한 변화를<br> 과목별 목표 성적으로 받습니다.</p>
+                    <span class="step-card-icon step-icon--blue" aria-hidden="true">03</span>
                 </article>
             </div>
         </div>
     </section>
 
     <section class="section-bg dark-feature landing-proof scroll-reveal">
-        <img class="bg-img" src="/assets/figma/figma-asset-08.png" alt="대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시">
+        <img class="bg-img" src="/assets/basic-v2/proof-classroom.png" alt="" loading="lazy">
         <div class="bg-overlay bg-overlay--dark"></div>
         <div class="container section-content">
             <div class="section-heading section-heading--light">
-                <p class="eyebrow">실제 분석은 이렇게 이어집니다</p>
-                <h2>성적표를 입력하면<br><em>다음 행동이 보입니다</em></h2>
-                <p>아래 화면은 서비스에서 확인할 수 있는 분석 구조의 예시입니다.</p>
+                <p class="eyebrow">실제 서비스 화면</p>
+                <h2>같은 1점도 다르게 작용합니다.<br> 내가 만들기 쉬운 1점까지 찾습니다.</h2>
+                <p>입시 효과와 개인별 상승 가능성을 함께 판단하는 Basic 분석</p>
             </div>
             <div class="card-grid card-grid--three">
-                <div class="ppt-card">
-                    <div class="ppt-card-img proof-preview proof-preview--chart" aria-label="현재 위치 분석 예시">
-                        <span class="proof-example-badge">서비스 화면 예시</span>
-                        <div class="proof-chart-line proof-chart-line--safe"></div>
-                        <div class="proof-chart-line proof-chart-line--pass"></div>
-                        <div class="proof-chart-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-                    </div>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-position.png" width="1447" height="586" loading="lazy" alt="세종대학교 자유전공학부 진단점수 209.7점 분석 화면"></div>
                     <div class="ppt-card-body">
-                        <span class="proof-step">01 · 현재 위치</span>
-                        <h3>내 점수로 어디까지 가능한지</h3>
-                        <p class="card-body-text">목표 대학의 환산 방식에 맞춰 현재 위치와 합격선까지의 거리를 봅니다.</p>
+                        <h3>지금 위치를 확인하고</h3>
+                        <p class="card-body-text">내 점수에 유리한 대학과 합격선까지의<br> 거리를 확인합니다.</p>
+                        <p class="summary-box">추천 대학 · 합격 가능성</p>
                     </div>
-                </div>
-
-                <div class="ppt-card">
-                    <div class="ppt-card-img proof-preview proof-preview--rank" aria-label="과목 우선순위 분석 예시">
-                        <span class="proof-example-badge">서비스 화면 예시</span>
-                        <div class="proof-rank-row"><b>1</b><span>우선 과목</span><i style="width:82%"></i></div>
-                        <div class="proof-rank-row"><b>2</b><span>비교 과목</span><i style="width:58%"></i></div>
-                        <div class="proof-rank-row"><b>3</b><span>비교 과목</span><i style="width:39%"></i></div>
-                    </div>
+                </article>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-effects.png" width="1387" height="516" loading="lazy" alt="국어·수학·탐구별 1점 상승 효과 분석 화면"></div>
                     <div class="ppt-card-body">
-                        <span class="proof-step">02 · 과목 우선순위</span>
-                        <h3>어떤 과목의 1점이 더 큰지</h3>
-                        <p class="card-body-text">같은 원점수 상승을 과목별로 비교해 목표 대학에 유리한 순서를 찾습니다.</p>
+                        <h3>점수의 가치를 비교하고</h3>
+                        <p class="card-body-text">과목별 1점이 목표 대학의 진단점수에<br> 미치는 영향을 비교합니다.</p>
+                        <p class="summary-box">국어·수학·탐구별 상승 효과</p>
                     </div>
-                </div>
-
-                <div class="ppt-card">
-                    <div class="ppt-card-img proof-preview proof-preview--route" aria-label="목표 조합 분석 예시">
-                        <span class="proof-example-badge">서비스 화면 예시</span>
-                        <div class="proof-route-item"><span>현재</span><strong>내 성적표</strong></div>
-                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                        <div class="proof-route-item proof-route-item--active"><span>추천</span><strong>점수 조합</strong></div>
-                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                        <div class="proof-route-item"><span>목표</span><strong>합격선</strong></div>
-                    </div>
+                </article>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-priority.png" width="1407" height="1151" loading="lazy" alt="과목별 진단점수 그래프와 목표 대학 선택 화면"></div>
                     <div class="ppt-card-body">
-                        <span class="proof-step">03 · 목표 조합</span>
-                        <h3>무엇을 얼마나 올려야 하는지</h3>
-                        <p class="card-body-text">현재 성적에서 시작할 수 있는 과목 조합과 변화 방향을 확인합니다.</p>
+                        <h3>나의 우선순위를 정합니다</h3>
+                        <p class="card-body-text">개인별 상승 가능성까지 함께 반영해<br> 집중할 과목을 찾습니다.</p>
+                        <p class="summary-box">학습 성향 · 상승 가능성 함께 반영</p>
                     </div>
-                </div>
+                </article>
             </div>
             <div class="review-indicators" id="pptIndicators"></div>
+            <p class="landing-proof-note">실제 화면 발췌 · 화면마다 입력 사례가 다릅니다.</p>
         </div>
     </section>
-
-    <div class="gradient-divider"></div>
 
     <section id="planner-promo" class="section planner scroll-reveal">
         <div class="container">
             <div class="section-heading">
-                <p class="eyebrow">나에게 맞는 목표는 따로 있습니다</p>
-                <h2>내 성적과 성향을 함께 보면<br><em>올려야 할 점수가 선명해집니다</em></h2>
-                <p>점수만 나열하지 않고, 목표 대학과 학습 성향을 함께 반영해 다음 행동을 제안합니다.</p>
+                <p class="eyebrow">01 · 나에게 맞는 점수 전략</p>
+                <h2>“어떤 과목을 얼마나?”<br> 내가 만들 목표가 구체화됩니다.</h2>
+                <p>학습 성향을 유형 이름으로 끝내지 않고, 과목별 목표 성적 설계에 반영합니다.</p>
             </div>
             <div class="personalized-grid">
                 <article class="personalized-card">
-                    <span class="personalized-icon personalized-icon--green" aria-hidden="true"><i class="fas fa-file-lines"></i></span>
-                    <p class="personalized-label">현재 성적</p>
-                    <h3>지금의 출발점을 정확히</h3>
-                    <p>과목별 원점수와 표준점수를 대학별 환산 기준에 맞춰 정리합니다.</p>
-                </article>
-                <article class="personalized-card personalized-card--featured">
-                    <span class="personalized-icon personalized-icon--purple" aria-hidden="true"><i class="fas fa-fingerprint"></i></span>
-                    <p class="personalized-label">학습 성향</p>
-                    <h3>나에게 실행 가능한 방식으로</h3>
-                    <p>같은 목표라도 학생의 성향과 계열에 맞는 우선순위를 제안합니다.</p>
+                    <span class="personalized-number">01</span>
+                    <h3>내가 올리기 쉬운 과목</h3>
+                    <p class="personalized-description">현재 성적과 학습 성향을 분석해 나의<br> 과목별 성적 상승 가능성을 계산합니다.</p>
+                    <div class="personalized-panel personalized-panel--priority">
+                        <h4>이번 분석의 우선 과목</h4>
+                        <strong>수학</strong>
+                        <p>입시 효과가 크고<br> 나의 상승 가능성도 높은 과목</p>
+                    </div>
                 </article>
                 <article class="personalized-card">
-                    <span class="personalized-icon personalized-icon--blue" aria-hidden="true"><i class="fas fa-bullseye"></i></span>
-                    <p class="personalized-label">목표 대학</p>
-                    <h3>합격선까지 필요한 변화를</h3>
-                    <p>선택한 대학과 모집단위를 기준으로 점수 변화의 영향을 비교합니다.</p>
+                    <span class="personalized-number">02</span>
+                    <h3>목표 대학에 유리한 변화</h3>
+                    <p class="personalized-description">목표 대학의 반영 방식에 맞춰 어떤 점수<br> 조합이 유리한지 비교합니다.</p>
+                    <div class="personalized-panel personalized-panel--combination">
+                        <h4>수학 +3점 · 탐구 +2점</h4>
+                        <strong>진단점수 82 → 106</strong>
+                        <p>현재 위치에서<br> 합격 예측선에 도달하는 조합</p>
+                    </div>
+                    <p class="personalized-example">설명용 예시 · 실제 개인 분석 결과 아님</p>
+                </article>
+                <article class="personalized-card">
+                    <span class="personalized-number">03</span>
+                    <h3>나에게 맞는 목표 성적</h3>
+                    <p class="personalized-description">입시 효과와 나의 상승 가능성을 함께<br> 반영해 과목별 목표 성적을 제시합니다.</p>
+                    <div class="personalized-panel">
+                        <table class="personalized-score-table" aria-label="설명용 과목별 목표 성적">
+                            <thead><tr><th scope="col">과목</th><th scope="col">현재</th><th scope="col">목표</th></tr></thead>
+                            <tbody><tr><th scope="row">수학</th><td>110</td><td>113</td></tr><tr><th scope="row">탐구 1</th><td>53</td><td>55</td></tr><tr><th scope="row">국어</th><td>108</td><td>108</td></tr></tbody>
+                        </table>
+                    </div>
                 </article>
             </div>
-            <div class="personalized-cta">
-                <a class="btn btn--primary basic-preview-entry" data-entry="personalized" href="/basic-preview">내 개인화 결과 미리보기</a>
-                <span>입력한 정보는 로그인한 본인의 분석에만 사용됩니다.</span>
-            </div>
+            <div class="personalized-cta"><a class="btn btn--primary basic-preview-entry" data-entry="personalized" href="/basic-preview">내가 올릴 과목과 점수 확인하기</a></div>
         </div>
     </section>
 
     <section class="section trust-section scroll-reveal">
         <div class="container">
             <div class="section-heading">
-                <p class="eyebrow">분석의 기준</p>
-                <h2>막연한 추천이 아니라<br><em>확인 가능한 근거</em>로 보여드립니다</h2>
+                <p class="eyebrow">02 · 분석을 뒷받침하는 기준</p>
+                <h2>한 번의 결과 뒤에는,<br> 방대한 데이터 기반의 분석이 있습니다.</h2>
+                <p>보여드리는 것은 일부 결과입니다. 판단에는 데이터와 나의 조건이 함께 반영됩니다.</p>
             </div>
             <div class="trust-grid">
-                <article class="trust-card">
-                    <span class="trust-icon" aria-hidden="true"><i class="fas fa-graduation-cap"></i></span>
-                    <h3>대학별 환산 기준</h3>
-                    <p>대학과 모집단위마다 다른 반영 방식을 구분해 계산합니다.</p>
-                </article>
-                <article class="trust-card">
-                    <span class="trust-icon" aria-hidden="true"><i class="fas fa-scale-balanced"></i></span>
-                    <h3>과목별 영향 비교</h3>
-                    <p>원점수 1점의 효과를 과목별로 같은 조건에서 비교합니다.</p>
-                </article>
-                <article class="trust-card">
-                    <span class="trust-icon" aria-hidden="true"><i class="fas fa-user-check"></i></span>
-                    <h3>개인 성적·성향 반영</h3>
-                    <p>현재 성적과 학습 성향, 계열 정보를 함께 고려합니다.</p>
-                </article>
-                <article class="trust-card">
-                    <span class="trust-icon" aria-hidden="true"><i class="fas fa-arrows-rotate"></i></span>
-                    <h3>점수 변화 시뮬레이션</h3>
-                    <p>점수가 달라졌을 때 목표 대학 결과가 어떻게 변하는지 확인합니다.</p>
-                </article>
+                <article class="trust-item"><span class="trust-number">01</span><div class="trust-card"><h3>방대한 데이터 기반</h3><p>데이터 기반 분석으로<br> 점수 전략의 방향을 찾습니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">02</span><div class="trust-card"><h3>대학별 입시 효과</h3><p>대학별 반영 방식에 따른<br> 과목별 점수의 영향을 계산합니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">03</span><div class="trust-card"><h3>나의 상승 가능성</h3><p>현재 성적과 학습 성향으로<br> 내가 올리기 쉬운 과목을 찾습니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">04</span><div class="trust-card"><h3>개인별 목표 성적</h3><p>입시 효과와 상승 가능성을<br> 함께 반영해 목표를 제시합니다.</p></div></article>
             </div>
-            <p class="trust-note">분석 결과는 입력 정보와 제공 데이터에 따른 참고 자료이며 실제 합격을 보장하지 않습니다.</p>
+            <div class="trust-note"><h3>왜 이 과목이 추천됐는지, 결과와 함께 확인하세요.</h3><p>과목별 입시 효과 · 개인별 상승 가능성 · 목표 성적을 연결해 보여드립니다.</p></div>
         </div>
     </section>
 
@@ -253,47 +231,32 @@
         <div class="curriculum-bg-overlay"></div>
         <div class="container section-content">
             <div class="section-heading section-heading--light">
-                <p class="eyebrow">결과를 먼저 확인해보세요</p>
-                <h2>개인화 미리보기 후<br>필요한 만큼 선택하세요</h2>
-                <p>BASIC은 월 구독이 아닌 1회 결제 상품입니다.</p>
+                <p class="eyebrow">03 · 전체 분석으로 확장하기</p>
+                <h2>내 결과를 먼저 보고, Basic을 선택하세요.</h2>
             </div>
             <div class="curriculum-grid">
                 <div class="curriculum-left">
-                    <p>현재 성적과 목표에 맞춰<br>필요한 분석 범위를 선택하세요</p>
+                    <p class="curriculum-intro">한 대학에서 확인한 내 점수 전략,<br> 다른 목표 대학까지 비교해보세요.</p>
                     <div class="tabs" id="courseTabs">
-                        <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')">
-                            <div class="tab-icon">🌱</div>
-                            <div class="tab-info">
-                                <span class="tab-name">BASIC 진단 / 분석</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="starter" onclick="selectCourse('starter')">
-                            <div class="tab-icon">⭐</div>
-                            <div class="tab-info">
-                                <span class="tab-name">STARTER 1회 플래너 피드백</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')">
-                            <div class="tab-icon">⚡️</div>
-                            <div class="tab-info">
-                                <span class="tab-name">STANDARD 전략 / 플래너</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')">
-                            <div class="tab-icon">🔥</div>
-                            <div class="tab-info">
-                                <span class="tab-name">PRO 최적화 / 개인별맞춤</span>
-                            </div>
-                        </button>
+                        <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')"><span class="tab-info"><span class="tab-name">BASIC 전체 분석</span></span></button>
+                        <button class="course-tab-btn" data-tier="starter" onclick="selectCourse('starter')"><span class="tab-info"><span class="tab-name">STARTER 1회 피드백</span></span></button>
+                        <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')"><span class="tab-info"><span class="tab-name">STANDARD 전략 / 플래너</span></span></button>
+                        <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')"><span class="tab-info"><span class="tab-name">PRO 개인별 맞춤</span></span></button>
                     </div>
+                    <p class="curriculum-scope">최대 18개 대학·학과를 비교하고<br> 나에게 맞는 과목별 목표를 확인하세요.</p>
                     <div id="mobileCourseDetail" class="mobile-course-detail"></div>
                 </div>
-                <article class="solution-card">
-                    <div class="course-detail-view" id="courseDetailView"></div>
-                </article>
+                <article class="solution-card"><div class="course-detail-view" id="courseDetailView"></div></article>
             </div>
         </div>
     </section>
+
+    <div class="cta-section scroll-reveal">
+        <div class="cta-content">
+            <h3>열심히 올릴 1점, 나에게 가치 있는 1점으로.</h3>
+            <div class="cta-container"><a href="/basic-preview" class="cta-button basic-preview-entry" data-entry="final">내 성적으로 다음 1점 확인하기</a></div>
+        </div>
+    </div>
 
     <section id="review-section" class="section review-section scroll-reveal">
         <div class="section-header">
@@ -306,17 +269,6 @@
         </div>
         <div class="review-indicators" id="reviewIndicators"></div>
     </section>
-
-    <div class="cta-section scroll-reveal">
-        <div class="cta-content">
-            <p class="cta-eyebrow">나에게 가장 가치 있는 다음 1점</p>
-            <h3>공부를 더 하기 전에<br>어디부터 올릴지 확인하세요</h3>
-            <p>성적과 목표 대학을 입력하면 개인화 분석 일부를 무료로 보여드립니다.</p>
-            <div class="cta-container">
-                <a href="/basic-preview" class="cta-button basic-preview-entry" data-entry="final">내 성적으로 다음 1점 확인하기 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-        </div>
-    </div>
 
     <footer id="contact">
         <div class="footer-content">
@@ -583,7 +535,7 @@
     /* Hero image carousel — cross-fade */
     (function () {
         var IMGS = [
-            '/assets/figma/figma-asset-17.png',
+            '/assets/basic-v2/hero-phone.png',
             '/assets/figma/figma-asset-08.png',
             '/assets/figma/figma-asset-18.png'
         ];

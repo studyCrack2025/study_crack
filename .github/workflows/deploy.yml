@@ -130,7 +130,7 @@ jobs:
 
           # 버전 쿼리 붙는 정적 자산은 장기 캐시
           aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "js/*" --include "css/*" \
+            --exclude "*" --include "js/*" --include "css/*" --include "assets/basic-v2/*" \
             --cache-control "public, max-age=31536000, immutable"
 
           # 모바일 entry는 고정 파일명이라 항상 재검증한다.

@@ -168,9 +168,9 @@ for (const [fileName, canonicalUrl] of indexedPages) {
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
 
-const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/figma/figma-asset-08.png');
+const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
-assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
+assert.equal(targetImage[0].alt, '', 'the decorative classroom background must have empty alt text');
 assert.doesNotMatch(home, /href=["']\/promotion\/kcc01["']/, 'the homepage must not link to the retired KCC promotion');
 assert.doesNotMatch(home, /kccEventBanner-modal/, 'the homepage must not render the retired KCC promotion modal');
 const septemberUpdateModal = startTags(home, 'div').filter((tag) => tag.id === 'septemberUpdateBanner-modal');
