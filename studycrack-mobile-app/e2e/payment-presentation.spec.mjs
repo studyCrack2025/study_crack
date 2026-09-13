@@ -13,7 +13,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await capture('plans');
     await page.locator('[data-plan="Pro"]').click();
     const detail = page.getByRole('region', { name: '선택한 플랜 상세' });
-    await expect(detail).toContainText('149,000원 / 4주');
+    await expect(detail).toContainText('37,250원 / 주');
+    await expect(detail).toContainText('4주 결제 총 149,000원');
+    await expect(detail).toContainText('VAT 포함 · 단건 결제');
     await expect(detail.getByRole('listitem')).toHaveCount(7);
     await detail.scrollIntoViewIfNeeded();
     await capture('plan-detail');
@@ -28,15 +30,14 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     expect(cells.every(cell => cell.height >= 44)).toBe(true);
     await choices.scrollIntoViewIfNeeded();
     await capture('checkout');
-    for (const [plan, term] of [['Starter', '1회 진단'], ['Basic', '4주 이용']]) {
+    for (const [plan, term] of [['Starter', '1회 플래너 진단'], ['Basic', '단건 결제']]) {
       await choices.locator(`[data-plan="${plan}"]`).click();
       await expect(page.locator('.payment-fixed-term')).toContainText(term);
       await expect(page.getByRole('group', { name: '이용 기간 선택' })).toHaveCount(0);
     }
     await choices.locator('[data-plan="Standard"]').click();
-    const duration = page.getByRole('button', { name: '4주', exact: true });
-    await expect(duration).toHaveAttribute('aria-pressed', 'true');
-    expect((await duration.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    await expect(page.locator('.payment-fixed-term')).toContainText('4주(28일) 단건 결제');
+    await expect(page.locator('[data-action="selectDuration"]')).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
     await page.goto('/studycrack-mobile.html?screen=paymentComplete');
     await expect(page.locator('.payment-complete-sub')).toHaveText('이 안내 화면은 결제 완료를 의미하지 않습니다.');

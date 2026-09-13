@@ -483,14 +483,7 @@ export function buildAnalysisDerived(state = {}) {
   const analysisSimMax = Math.max(...analysisSimRows.map(({ gainNum }) => gainNum), 0);
   const analysisSimRecommendedIndex = analysisSimRows.findIndex(({ gainNum }) => gainNum === analysisSimMax);
   const analysisScore = Math.round(Number(analysisSelected.score) || 0);
-  const reachTargetScore = analysisScore < 100
-    ? 100
-    : analysisScore < 150
-      ? 150
-      : Math.min(250, analysisScore + analysisSimMax);
-  const analysisTargetScore = analysisSimMax
-    ? Math.min(250, Math.max(analysisScore, reachTargetScore))
-    : analysisScore;
+  const analysisTargetScore = analysisScore;
 
   const gaugeTotal = 250;
   const gaugeCurrent = Math.max(0, Math.min(gaugeTotal, analysisScore));

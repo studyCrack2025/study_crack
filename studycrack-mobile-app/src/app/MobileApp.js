@@ -10,6 +10,8 @@ import { useMobileApiController } from './use-mobile-api-controller.js';
 import { useDeferredScreenRegistry, useMobileAppEffects } from './use-mobile-app-effects.js';
 import { useMobileResourceOrchestrator } from './use-mobile-resource-orchestrator.js';
 import { useAppStatePersistence } from './use-app-state-persistence.js';
+import { usePlannerStorage } from './use-planner-storage.js';
+import { PlannerStorageContext } from '../features/planner/PlannerStorageContext.js';
 import {
   MAIN_TAB_SCREENS,
   appStateReducer,
@@ -61,9 +63,17 @@ export function MobileApp() {
   useAppStatePersistence(rootState);
 
   const deferredScreens = useDeferredScreenRegistry(state.screen);
+  const plannerStorage = usePlannerStorage(rootState, setState, deferredScreens.registry?.createPlannerStorageController);
   const handlerStateActions = useMemo(
-    () => createHandlerStateActions({ setState, getRootState: () => rootStateRef.current }),
-    [setState]
+    () => {
+      const actions = createHandlerStateActions({ setState, getRootState: () => rootStateRef.current });
+      return {
+        ...actions,
+        planner: { ...actions.planner, plannerAccount: plannerStorage?.account, setPlannerItems: next => plannerStorage?.update(next) ?? false },
+        timer: { ...actions.timer, setPlannerItems: next => plannerStorage?.update(next, { retainOnFailure: true }) ?? false }
+      };
+    },
+    [setState, plannerStorage]
   );
   const nav = useMemo(() => createNavigationOps({
     getState: () => stateRef.current,
@@ -127,7 +137,7 @@ export function MobileApp() {
     onBlur
   };
   const OverlayProvider = deferredScreens.registry?.AppOverlayProvider || AppOverlayContext.Provider;
-  const renderWithOverlays = (content) => React.createElement(OverlayProvider, { value: appOverlay, ...(deferredScreens.registry?.AppOverlayProvider ? { guide: { api, state, setState, nav, actionsRef: productGuideActionsRef, presentation: { profile: viewContext.myPresentation?.profile, aquarium: viewContext.aquariumPresentation, tasks: viewContext.todayPlannerItems, catalog: state.fishCatalog, streak: viewContext.streakPresentation } } } : {}) }, React.createElement('div', wrapperProps, content));
+  const renderWithOverlays = (content) => React.createElement(PlannerStorageContext.Provider, { value: plannerStorage ? { ...plannerStorage.getStatus(), retry: plannerStorage.retry, controller: plannerStorage } : null }, React.createElement(OverlayProvider, { value: appOverlay, ...(deferredScreens.registry?.AppOverlayProvider ? { guide: { api, state, setState, nav, actionsRef: productGuideActionsRef, presentation: { profile: viewContext.myPresentation?.profile, aquarium: viewContext.aquariumPresentation, tasks: viewContext.todayPlannerItems, catalog: state.fishCatalog, streak: viewContext.streakPresentation } } } : {}) }, React.createElement('div', wrapperProps, content)));
 
   if (isDeferredAppScreen(state.screen) && !deferredScreens.registry) {
     return renderWithOverlays(

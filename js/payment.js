@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const errorMsg = urlParams.get('error');
     if (errorMsg) {
-        alert("결제 실패: " + errorMsg);
+        alert("결제 안내: " + errorMsg);
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -123,7 +123,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchUserInfo(userId);
     initMobileSwipeUX();
     const requestedTier = normalizePaymentTier(urlParams.get('plan'));
-    if (requestedTier) {
+    const requestedDurations = urlParams.getAll('duration');
+    const supportedDuration = requestedDurations.length === 0 || (requestedDurations.length === 1 && (
+        ['standard', 'pro'].includes(requestedTier) ? ['4', '4주'].includes(requestedDurations[0])
+            : requestedTier === 'starter' && requestedDurations[0] === '1회'
+    ));
+    if (!supportedDuration) {
+        alert('이 링크의 이용 기간은 현재 구매 조건과 다릅니다. STANDARD·PRO는 4주(28일) 단건 결제만 가능합니다. 상품과 조건을 확인한 뒤 다시 선택해 주세요.');
+        urlParams.delete('plan');
+        urlParams.delete('duration');
+        const remaining = urlParams.toString();
+        window.history.replaceState({}, document.title, `${window.location.pathname}${remaining ? `?${remaining}` : ''}#plans`);
+        document.getElementById('plans')?.scrollIntoView();
+    } else if (requestedTier) {
         const requestedRow = document.querySelector(`.price-row[data-tier="${requestedTier}"]`);
         if (requestedRow) selectPlan(requestedTier, requestedRow);
     }

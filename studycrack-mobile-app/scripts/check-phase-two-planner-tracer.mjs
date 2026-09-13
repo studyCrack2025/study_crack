@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './check-planner-storage.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -25,7 +26,7 @@ assert.equal(
 );
 assert.equal(APP_STATE_FIELD_KINDS.calendarRefreshTick, undefined, 'calendar retry must not add persisted or server state');
 
-const persistenceSource = await readFile(new URL('../src/app/use-app-state-persistence.js', import.meta.url), 'utf8');
+const persistenceSource = await readFile(new URL('../src/app/use-planner-storage.js', import.meta.url), 'utf8');
 const plannerScreenSource = await readFile(new URL('../src/screens/planner/PlannerScreen.jsx', import.meta.url), 'utf8');
 const [plannerCss, plannerAddCss, plannerCalendarCss, sheetsCss] = await Promise.all([
   readFile(new URL('../src/styles/screens/planner.css', import.meta.url), 'utf8'),

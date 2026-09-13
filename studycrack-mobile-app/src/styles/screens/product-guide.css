@@ -24,7 +24,7 @@
 .product-guide-discovery > small, .product-guide-discovery > span { color: var(--sc-on-brand-muted); }
 .product-guide-task { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 12px; background: var(--sc-surface-subtle); color: var(--sc-ink); font-size: 12px; }
 .product-guide-scene { position: relative; }
-.product-guide-scene > span { position: absolute; right: 12px; bottom: 12px; left: 12px; padding: 10px; border-radius: 12px; background: var(--sc-brand-navy-deep); color: var(--sc-on-brand); font-size: 11px; line-height: 1.6; pointer-events: none; }
+.product-guide-scene > span { display: block; margin-top: 4px; padding: 10px; border-radius: 12px; background: var(--sc-brand-navy-deep); color: var(--sc-on-brand); font-size: 11px; line-height: 1.6; pointer-events: none; }
 .product-guide-footer { flex-shrink: 0; padding: 0 20px 20px; }
 .product-guide-footer > div { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--sc-ink-muted); font-size: 11px; }
 .product-guide-footer button { min-width: 44px; min-height: 44px; padding: 8px; border: 0; background: transparent; color: var(--sc-ink-muted); font-size: 11px; font-weight: 800; }

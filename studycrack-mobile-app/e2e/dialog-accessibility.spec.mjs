@@ -45,6 +45,24 @@ test('일정 수정은 키보드로 열고 앱 뒤로가기 계약은 중첩 창
   await expect(trigger).toBeFocused();
 });
 
+test('일정 수정창 초기 키보드 포커스는 다음 프레임을 기다리지 않는다', async ({ page }) => {
+  await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  await page.getByRole('button', { name: '수험 일정', exact: true }).click();
+  const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
+  const add = calendar.getByRole('button', { name: '+ 내 일정 추가' });
+  await add.focus();
+  // Hold animation callbacks to exercise input before the next animation frame.
+  await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  await page.keyboard.press('Enter');
+  const form = page.getByRole('dialog', { name: '내 일정 추가', exact: true });
+  await expect(form).toBeVisible();
+  await expect(form.getByRole('button', { name: '닫기', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(form).toHaveCount(0);
+  await expect(add).toBeFocused();
+});
+
 test('코칭 제출 실패 후 입력과 포커스를 유지하고 재시도한다', async ({ page }) => {
   await setup(page);
   let submissions = 0;

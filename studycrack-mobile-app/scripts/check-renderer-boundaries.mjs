@@ -213,7 +213,7 @@ assert.match(servicePlanComponent, /export function ProIntroScreen/);
 assert.match(servicePlanComponent, /export function PaymentScreen/);
 assert.match(servicePlanComponent, /export function PaymentCompleteScreen/);
 assert.match(servicePlanComponent, /data-action="selectPlan"/);
-assert.match(servicePlanComponent, /data-action="selectDuration"/);
+assert.doesNotMatch(servicePlanComponent, /data-action="selectDuration"/);
 assert.match(servicePlanComponent, /data-action="openWebPayment"/);
 assert.doesNotMatch(servicePlanComponent, /dangerouslySetInnerHTML|renderSecondaryIntro|renderSelectedPlanDetail/);
 assert.match(termsModalComponent, /<Modal dismissAction="closeTermsModal"/);

@@ -36,6 +36,7 @@ export function AccountInfoScreen(ctx) {
           <div className="account-subscription-summary"><div><span>현재 플랜</span><strong>{subscription.planLabel}</strong></div><div><span>{subscription.lifetime ? '이용 기간' : '다음 결제 안내'}</span><strong>{subscription.renewalLine}</strong></div></div>
           {subscription.pendingLine ? <p className="account-pending-plan">{subscription.pendingLine}</p> : null}
           <button type="button" className="btn btn-secondary account-full-btn" data-action="goto" data-target="proIntro">플랜 확인</button>
+          <a className="btn btn-secondary account-full-btn" href="/payment-history.html">결제 내역 · 상태 확인</a>
         </section>
         <section className="sc-secondary-section mobile-account-card">
           <SectionHead title="프로필" description="서비스와 리포트에 표시되는 정보입니다." badge="기본 정보" />

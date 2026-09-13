@@ -936,23 +936,22 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await page.getByRole('button', { name: 'PRO 플랜 보기' }).click();
 
   await expect(page.locator('[data-screen="proIntro"]')).toBeVisible();
-  await expect(page.locator('.plan-console-detail')).toContainText('합격권 최소 원점수 역산');
+  await expect(page.locator('.plan-console-detail')).toContainText('SKY 튜터 주 1회 플래너 피드백');
   await page.locator('[data-action="selectPlan"][data-plan="Basic"]').click();
-  await expect(page.locator('.plan-console-detail')).toContainText('전 과목 원점수 +1 환산 효율');
-  await expect(page.locator('.plan-console-detail')).toContainText('25,000원 / 4주');
+  await expect(page.locator('.plan-console-detail')).toContainText('과목별 1점당 환산 효율 계산');
+  await expect(page.locator('.plan-console-detail')).toContainText('25,000원');
+  await expect(page.locator('.plan-console-detail')).not.toContainText('4주');
   await page.locator('[data-action="selectPlan"][data-plan="Pro"]').click();
-  await expect(page.locator('.plan-console-detail')).toContainText('149,000원 / 4주');
+  await expect(page.locator('.plan-console-detail')).toContainText('4주 결제 총 149,000원');
   await page.locator('.plan-console-cta[data-target="payment"]').click();
 
   await expect(page.locator('[data-screen="payment"]')).toBeVisible();
-  await page.locator('[data-action="selectDuration"][data-duration="8주"]').click();
-  await expect(page.locator('.plan-console-term')).toContainText('8주');
-  await expect(page.locator('.plan-console-term')).toContainText('웹 결제는 4주 단위');
-  await expect(page.locator('[data-action="selectDuration"][data-duration="8주"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-action="selectDuration"]')).toHaveCount(0);
+  await expect(page.locator('.payment-fixed-term')).toContainText('4주(28일) 단건 결제');
   await page.getByRole('button', { name: '웹 결제로 계속하기' }).click();
   await page.waitForURL(/\/payment\?/, { waitUntil: 'domcontentloaded' });
   const paymentUrl = new URL(page.url());
   expect(paymentUrl.searchParams.get('source')).toBe('mobile_app');
   expect(paymentUrl.searchParams.get('plan')).toBe('pro');
-  expect(paymentUrl.searchParams.get('duration')).toBe('8주');
+  expect(paymentUrl.searchParams.get('duration')).toBe('4주');
 });

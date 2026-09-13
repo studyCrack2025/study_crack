@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <meta name="referrer" content="no-referrer">
+  <script>try{const p=new URLSearchParams(location.search);const id=p.get('paymentIntentId')||p.get('orderId')||'';history.replaceState({},'',location.pathname+(/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(id)?'?paymentIntentId='+encodeURIComponent(id):''));}catch(_){}</script>
   <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -13,7 +15,7 @@
     <meta name="color-scheme" content="light">
     <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
     <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
-    <title>결제 완료 - 스터디크랙</title>
+    <title>결제 상태 확인 - 스터디크랙</title>
     
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -30,18 +32,7 @@
             margin: 0;
         }
 
-        .success-card {
-            background: white;
-            padding: 50px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            max-width: 420px;
-            width: 90%;
-            border: 1px solid #e2e8f0;
-            position: relative;
-            overflow: hidden;
-        }
+        .success-card { background: white; padding: 40px 24px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; position: relative; box-sizing: border-box; overflow-wrap: anywhere; }
 
         /* 카드 상단에 얇은 포인트 컬러 라인 */
         .card-top-line {
@@ -102,19 +93,7 @@
             word-break: keep-all;
         }
 
-        .btn-action {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background-color: #2563EB;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1.05rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0, 0.1);
-        }
+        .btn-action { display: block; width: 100%; box-sizing: border-box; padding: 16px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0, 0.1); }
 
         .btn-action:hover {
             transform: translateY(-2px);
@@ -147,12 +126,12 @@
         <i id="receiptIcon" class="fas fa-file-invoice-dollar receipt-icon"></i>
         <br>
 
-        <div id="tierBadge" class="tier-badge" style="background:#2563eb;">STARTER PLAN</div>
+        <div id="tierBadge" class="tier-badge" style="background:#2563eb;">결제 확인</div>
 
-        <h1 id="successTitle" class="success-title">결제가<br>완료되었습니다!</h1>
+        <h1 id="successTitle" class="success-title" aria-live="polite">결제 상태를 확인하고 있어요</h1>
 
         <p id="successDesc" class="success-desc">
-            기본적인 입시 분석 솔루션을<br>바로 확인해 보세요.
+            확인되기 전에는 다시 결제하지 마세요.
         </p>
 
         <div id="vbankBox" style="display:none; margin: 0 0 25px; padding: 18px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; text-align:left;">
@@ -177,168 +156,19 @@
                 <strong id="vbankExpire" style="color:#ef4444; font-size:0.95rem;">-</strong>
             </div>
             <p style="margin:14px 0 0; padding-top:10px; border-top:1px solid #e2e8f0; color:#64748b; font-size:0.82rem; line-height:1.5;">
-                입금이 확인되면 1~3분 내에<br>자동으로 결제가 처리됩니다.
+                입금 후 아래 버튼으로 상태를 다시 확인해주세요.
             </p>
         </div>
 
-        <a id="actionBtn" href="/analysis" class="btn-action" style="background:#2563eb;">나만의 솔루션 보러가기</a>
+        <button id="statusRetry" type="button" class="btn-action" style="display:none; border:0; cursor:pointer; font:inherit; margin-bottom:12px;">상태 다시 확인</button>
+        <a id="actionBtn" href="/qna" class="btn-action" style="background:#2563eb;">문의하기</a>
+        <noscript><p>결제 상태를 확인하려면 JavaScript를 켜주세요. 이미 결제했다면 다시 결제하지 말고 문의해주세요.</p></noscript>
 
         <a href="/" class="btn-home">메인 화면으로 돌아가기</a>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // 0. 결제 완료 후 checkoutData 정리 (중복 결제 방지)
-            localStorage.removeItem('checkoutData');
-
-            // 1. URL 파라미터 추출
-            const urlParams = new URLSearchParams(window.location.search);
-            const tier   = (urlParams.get('tier') || 'basic').toLowerCase();
-            const status = urlParams.get('status') || 'paid';
-            const method = urlParams.get('method') || 'card';
-            const amount = parseInt(urlParams.get('amount') || '0', 10);
-            const orderId = urlParams.get('orderId') || '';
-            const source = (urlParams.get('source') || '').toLowerCase();
-            const promoTeam = (urlParams.get('team') || '').toLowerCase();
-
-            const isVbankReady = status === 'vbank_ready';
-            const isKccPromo = status === 'promo' && source === 'kcc01';
-
-            // 2. DOM 요소
-            const badge   = document.getElementById('tierBadge');
-            const title   = document.getElementById('successTitle');
-            const desc    = document.getElementById('successDesc');
-            const btn     = document.getElementById('actionBtn');
-            const topLine = document.getElementById('topLine');
-            const icon    = document.getElementById('receiptIcon');
-
-            const fmtAmount = (n) => Number.isFinite(n) && n > 0 ? n.toLocaleString() + '원' : '';
-
-            // NicePay vbankExpDate는 ISO 8601("2026-06-06T20:30:00") 또는
-            // 압축형("YYYYMMDDhhmm")로 올 수 있어 양쪽 모두 처리.
-            const fmtExpire = (raw) => {
-                if (!raw) return '';
-                if (raw.includes('-') || raw.includes('T')) {
-                    const d = new Date(raw);
-                    if (isNaN(d)) return raw;
-                    const mo = d.getMonth() + 1;
-                    const day = d.getDate();
-                    const hh = String(d.getHours()).padStart(2, '0');
-                    const mm = String(d.getMinutes()).padStart(2, '0');
-                    return `${mo}월 ${day}일 ${hh}:${mm}까지`;
-                }
-                if (raw.length < 12) return raw;
-                const mo = parseInt(raw.slice(4, 6), 10);
-                const day = parseInt(raw.slice(6, 8), 10);
-                const hh = raw.slice(8, 10);
-                const mm = raw.slice(10, 12);
-                return `${mo}월 ${day}일 ${hh}:${mm}까지`;
-            };
-
-            const tierConfig = {
-                'basic': {
-                    name: 'STARTER PLAN', color: '#3B82F6',
-                    paidTitle: '결제가<br>완료되었습니다!',
-                    paidDesc:  'STARTER 1주 플래너 진단 결제가 완료되었습니다.<br>지금 바로 <strong>나만의 입시 솔루션</strong>을 확인해보세요.',
-                    btnText: '나만의 솔루션 보러가기', btnLink: '/analysis'
-                },
-                'standard': {
-                    name: 'STANDARD PLAN', color: '#64748B',
-                    paidTitle: '결제가<br>완료되었습니다!',
-                    paidDesc:  'STANDARD 4주 이용권 결제가 완료되었습니다.<br>기초조사서를 작성하고 <strong>합격 예측</strong>을 이용해보세요.',
-                    btnText: '기초조사서 작성하기', btnLink: '/survey'
-                },
-                'pro': {
-                    name: 'PRO PLAN', color: '#F59E0B',
-                    paidTitle: '결제가<br>완료되었습니다!',
-                    paidDesc:  'PRO 4주 이용권 결제가 완료되었습니다.<br><strong>프리미엄 전략 관리</strong>를 시작해보세요.',
-                    btnText: '마이페이지로 이동하기', btnLink: '/mypage'
-                },
-                'black': {
-                    name: 'BLACK PLAN', color: '#171717',
-                    paidTitle: '결제가<br>완료되었습니다!',
-                    paidDesc:  '블랙 플랜 결제가 완료되었습니다.<br>최상위권 도약을 위한 <strong>프리미엄 밀착 관리</strong>가 시작됩니다.',
-                    btnText: '마이페이지로 이동하기', btnLink: '/mypage'
-                },
-                'test': {
-                    name: 'TEST', color: '#6b7280',
-                    paidTitle: '테스트 결제<br>완료되었습니다!',
-                    paidDesc:  (amt) => `${fmtAmount(amt) || '테스트 금액'} 테스트 결제가 정상적으로 처리되었습니다.<br>결제 연동이 정상 작동 중입니다.`,
-                    btnText: '메인으로 돌아가기', btnLink: '/'
-                }
-            };
-
-            const config = tierConfig[tier] || tierConfig['basic'];
-
-            badge.innerText = config.name;
-            badge.style.background = config.color;
-            topLine.style.background = config.color;
-
-            if (isKccPromo) {
-                const teamConfig = promoTeam === 'korea'
-                    ? {
-                        badge: 'StudyCrack × KCC · 고려대 팀',
-                        color: '#b91c1c',
-                        line: 'linear-gradient(90deg,#b91c1c,#ef4444)',
-                        title: '고려대 팀<br>신청이 완료되었습니다!',
-                        desc: 'STANDARD 1개월 이용권이 지급되었습니다.<br>고려대 현역 선배와 함께할 팀 미션 안내가 순차적으로 전달됩니다.'
-                    }
-                    : {
-                        badge: 'StudyCrack × KCC · 연세대 팀',
-                        color: '#1d4ed8',
-                        line: 'linear-gradient(90deg,#2453d6,#60a5fa)',
-                        title: '연세대 팀<br>신청이 완료되었습니다!',
-                        desc: 'STANDARD 1개월 이용권이 지급되었습니다.<br>연세대 현역 선배와 함께할 팀 미션 안내가 순차적으로 전달됩니다.'
-                    };
-                icon.className = 'fas fa-trophy receipt-icon';
-                icon.style.color = '#f59e0b';
-                badge.innerText = teamConfig.badge;
-                badge.style.background = teamConfig.color;
-                topLine.style.background = teamConfig.line;
-                title.innerHTML = teamConfig.title;
-                desc.innerHTML = teamConfig.desc;
-                btn.innerText = '기초조사서 작성하기';
-                btn.href = '/survey';
-                btn.style.background = teamConfig.color;
-            } else if (isVbankReady) {
-                // 가상계좌 발급 — 입금 전 상태
-                icon.className = 'fas fa-piggy-bank receipt-icon';
-                icon.style.color = '#3b82f6';
-                title.innerHTML = '가상계좌가<br>발급되었습니다';
-                const goodsLabel = tier === 'test'
-                    ? '테스트 결제'
-                    : `${config.name.replace(' PLAN','')} 이용권`;
-                desc.innerHTML = `아래 계좌로 <strong>${fmtAmount(amount) || '금액'}</strong>을 입금하시면<br>${goodsLabel} 결제가 자동으로 완료됩니다.`;
-
-                document.getElementById('vbankBank').innerText    = urlParams.get('bank')    || '-';
-                document.getElementById('vbankAccount').innerText = urlParams.get('account') || '-';
-                document.getElementById('vbankHolder').innerText  = urlParams.get('holder')  || '-';
-                document.getElementById('vbankAmount').innerText  = fmtAmount(amount) || '-';
-                document.getElementById('vbankExpire').innerText  = fmtExpire(urlParams.get('expire'));
-                document.getElementById('vbankBox').style.display = 'block';
-
-                // 입금 전이므로 후속 액션 버튼은 "메인으로"
-                btn.innerText = '메인 화면으로 돌아가기';
-                btn.href      = '/';
-                btn.style.background = config.color;
-            } else {
-                // 즉시 결제(카드 등) — 기존 분기 + test desc 동적화
-                title.innerHTML = config.paidTitle;
-                const descContent = (typeof config.paidDesc === 'function') ? config.paidDesc(amount) : config.paidDesc;
-                desc.innerHTML = descContent;
-
-                btn.innerText = config.btnText;
-                btn.href      = config.btnLink;
-                btn.style.background = config.color;
-            }
-
-            // 민감하지 않지만 길고 노이즈가 큰 쿼리는 도달 즉시 정리
-            if (orderId) {
-                history.replaceState({}, document.title, `${window.location.pathname}?orderId=${encodeURIComponent(orderId)}`);
-            } else {
-                history.replaceState({}, document.title, window.location.pathname);
-            }
-        });
-    </script>
+    <script src="/js/config.js?v=20260524a" defer></script>
+    <script src="/js/shared/api.js?v=20260602f" defer></script>
+    <script src="/js/payment-status.js?v=20260912a" defer></script>
 </body>
 </html>

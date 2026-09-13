@@ -86,9 +86,9 @@ assert.match(serviceContent, /data-target=\{reports.length \? 'planner' : 'strat
 assert.match(serviceContent, /reports.map\(\(report, index\) => <WeeklyFeedbackCard/);
 assert.match(servicePlan, /data-action="openWebPayment"/);
 assert.match(servicePlan, /data-action="selectPlan"/);
-assert.match(servicePlan, /data-action="selectDuration"/);
+assert.doesNotMatch(servicePlan, /data-action="selectDuration"/);
 assert.match(servicePlan, /aria-pressed=\{active\}/);
-assert.match(servicePlan, /웹 결제는 4주 단위로 최종 확인됩니다/);
+assert.match(servicePlan, /4주\(28일\) 단건 결제/);
 
 for (const selector of [
   '.sc-secondary-page',

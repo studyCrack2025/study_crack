@@ -3,6 +3,7 @@ export { AppOverlayHost } from './AppOverlayHost.jsx';
 export { AppOverlayProvider } from './AppOverlayProvider.jsx';
 import '../styles/screens/product-guide.css';
 export { buildAppPresentations } from './presentation-context.js';
+export { createPlannerStorageController } from '../features/planner/storage-controller.js';
 import '../styles/components/sheets.css';
 import '../styles/components/my-summary.css';
 import '../styles/components/streak-summary.css';

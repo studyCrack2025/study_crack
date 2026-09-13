@@ -58,15 +58,15 @@ test('BASIC 잠금 미리보기는 수치나 신청 권한을 만들지 않는�
   await expect(page.locator('[data-action="openCoachingSheet"]')).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('coaching-basic-390.png'), animations: 'disabled' });
   await page.getByRole('button', { name: 'STANDARD 플랜 보기' }).click();
-  for (const [plan, price] of [['Basic', '25,000원 / 4주'], ['Starter', '39,000원'], ['Standard', '49,000원 / 4주'], ['Pro', '149,000원 / 4주']]) {
+  for (const [plan, price] of [['Basic', '25,000원'], ['Starter', '39,000원'], ['Standard', '4주 결제 총 49,000원'], ['Pro', '4주 결제 총 149,000원']]) {
     await page.locator(`.service-plan-card[data-plan="${plan}"]`).click();
     await expect(page.locator(`.service-plan-card[data-plan="${plan}"]`)).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('.plan-console-detail')).toContainText(price);
+    await expect(page.locator('.plan-console-price')).toContainText(price);
   }
   await expect(page.locator('.plan-benefit-row')).toHaveCount(7);
   await page.locator('.plan-console-cta').click();
   await expect(page.locator('[data-screen="payment"]')).toBeVisible();
-  await expect(page.locator('.plan-console-detail')).toContainText('149,000원 / 4주');
+  await expect(page.locator('.plan-console-detail')).toContainText('4주 결제 총 149,000원');
 });
 
 test('주간 조회 실패는 기기 계획과 분리되고 명시적 재조회로 복구된다', async ({ page }) => {

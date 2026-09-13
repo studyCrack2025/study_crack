@@ -69,7 +69,7 @@ async function check() {
     expected.push(file);
   }
   assert.deepEqual((await readdir(assetRoot)).sort(), expected.sort(), 'Unexpected or missing background files');
-  console.log(`Aquarium background assets passed: 6 original PNGs, exact SHA256/dimensions/bytes, day15 included, no day200; ${manifest.entries.reduce((sum, entry) => sum + entry.bytes, 0)} bytes. Runtime growth is not enabled.`);
+  console.log(`Aquarium background assets passed: 6 original PNGs, exact SHA256/dimensions/bytes, day15 included, no day200; ${manifest.entries.reduce((sum, entry) => sum + entry.bytes, 0)} bytes. Asset integrity only; rollout is checked separately.`);
 }
 
 const [command = 'check', sourceDirectory] = process.argv.slice(2);

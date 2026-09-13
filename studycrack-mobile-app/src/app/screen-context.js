@@ -63,6 +63,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'universityRecommendationStatus'
   ]),
   ob5: Object.freeze([
+    'analysisPresentation',
     'activeScoreView', 'analysisApiError', 'analysisApiStatus', 'analysisScoreView', 'analysisSelected',
     'analysisSimRows', 'analysisSimulationTargets', 'analysisTargetScore',
     'canUseReverseProjection', 'crackySrc', 'gaugeCurrent', 'gaugeCurrentPct', 'gaugePassPct',
@@ -80,7 +81,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'normalizedTargetMajor', 'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
   ]),
   plannerAdd: Object.freeze(['selectedPlannerDate', 'selectedPlannerDateKey']),
-  payment: Object.freeze(['checkoutPlan', 'duration']),
+  payment: Object.freeze(['checkoutPlan']),
   paymentComplete: Object.freeze([]),
   privacyPolicy: Object.freeze(['termsContent']),
   qualInfo: Object.freeze(['obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),

@@ -6,25 +6,30 @@ import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
+import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.jsx';
+import { useContext } from 'react';
+import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
+import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
 
 function PlannerItemCard({ item }) {
   const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
     ? `${item.start} - ${item.end}`
-    : `${item.minutes}분`;
+    : item.minutes ? `${item.minutes}분` : '시간 미설정';
   const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
   const titleId = `planner-title-${encodeURIComponent(item.id)}`;
   return (
     <article className={`planner-item planner-item-v2 ${item.done ? 'done' : ''}`} data-planner-id={item.id}>
-      <button type="button" className="planner-item-done" data-action="togglePlannerDone" data-planner-id={item.id} aria-pressed={Boolean(item.done)} aria-describedby={titleId} aria-label={item.done ? '완료 취소' : '계획 완료'}><i aria-hidden="true">{item.done ? '✓' : ''}</i></button>
+      <button type="button" disabled={item.accountPending} className="planner-item-done" data-action="togglePlannerDone" data-planner-id={item.id} aria-pressed={Boolean(item.done)} aria-describedby={titleId} aria-label={item.done ? '완료 취소' : '계획 완료'}><i aria-hidden="true">{item.done ? '✓' : ''}</i></button>
       <button type="button" className="planner-item-main" data-action="openPlannerEdit" data-planner-id={item.id} aria-label="계획 편집" aria-describedby={titleId}>
         <span className="planner-item-meta"><span className={`planner-item-subject ${item.dot || 'etc'}`}><i aria-hidden="true" />{item.subject || '기타'}</span><small className="planner-item-time">{timeLabel}</small></span>
         <b id={titleId}>{item.content}</b>
+        {item.accountStored ? <span className="planner-item-detail">{item.accountPending ? '서버 반영 대기' : item.done ? '서버 완료 확인' : '계정 저장 확인'}</span> : null}
         {detailLabel ? <span className="planner-item-detail">{detailLabel}</span> : null}
       </button>
       <div className="planner-item-actions">
         <span>{item.minutes}분</span>
         <div>
-          <button type="button" className="planner-item-remove" data-action="removePlannerItem" data-planner-id={item.id} aria-describedby={titleId} aria-label="계획 삭제">×</button>
+          <button type="button" disabled={item.accountPending} className="planner-item-remove" data-action="removePlannerItem" data-planner-id={item.id} aria-describedby={titleId} aria-label="계획 삭제">×</button>
         </div>
       </div>
     </article>
@@ -123,7 +128,14 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
   );
 }
 
-export function PlannerScreen(ctx) {
+function PlannerWorkspaceScreen(ctx) {
+  const account = useContext(PlannerStorageContext)?.controller?.account;
+  const accountMode = account?.getView().mode === 'account';
+  if (accountMode) {
+    const items = account.getItems();
+    ctx = { ...ctx, plannerViewItems: items.filter(item => item.date === ctx.selectedPlannerDateKey), plannerEditItem: items.find(item => item.id === ctx.plannerEditIndex),
+      plannerCalendarMonthCells: ctx.plannerCalendarMonthCells?.map(cell => ({ ...cell, count: items.filter(item => item.date === cell.date).length })) };
+  }
   const {
     calendarEventFormOpen = false,
     calendarSheetOpen = false,
@@ -156,10 +168,11 @@ export function PlannerScreen(ctx) {
       tab={tab}
       dimmed={dimmed}
       overlayOpen={plannerOverlayOpen}
-      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
+      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title={isToday ? '오늘의 플래너' : '선택한 날의 플래너'} description="계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요." />
+            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title={isToday ? '오늘의 플래너' : '선택한 날의 플래너'} description={accountMode ? '계정 계획을 보고 있어요. 완료와 성장은 서버 확인 뒤 반영돼요.' : '계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.'} />
+            {accountMode ? <><PlannerAccountNotice /><button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button></> : null}
 
             <PlannerProgress presentation={presentation} isToday={isToday} />
 
@@ -176,6 +189,7 @@ export function PlannerScreen(ctx) {
             </section>
 
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} />
+            <PlannerAccountPanel />
 
             <section className="planner-calendar-section">
               <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
@@ -200,3 +214,5 @@ export function PlannerScreen(ctx) {
     </AppScreenShell>
   );
 }
+
+export function PlannerScreen(ctx) { return <PlannerWorkspaceScreen {...ctx} />; }

@@ -1,5 +1,9 @@
 import { formatPlannerMinutes, PLANNER_ACTIVITY_OPTIONS, PLANNER_CATEGORY_OPTIONS } from './planner-options.js';
 import { AppContent, AppFrame, SecondaryScreenHeader } from '../../components/AppFrame.js';
+import { PlannerStorageNotice } from '../../features/planner/PlannerStorageNotice.jsx';
+import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
+import { useContext } from 'react';
+import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
 
 function getWeekdayLabel(dateKey = '') {
   const [year, month, day] = String(dateKey || '').split('-').map(Number);
@@ -16,7 +20,8 @@ function RadioChip({ checked = false, name = '', value = '', children, extraAttr
   );
 }
 
-export function PlannerAddScreen(ctx) {
+function PlannerDraftScreen(ctx) {
+  const account = useContext(PlannerStorageContext)?.controller?.account;
   const {
     selectedPlannerDate = '',
     selectedPlannerDateKey = ''
@@ -37,10 +42,11 @@ export function PlannerAddScreen(ctx) {
   ];
 
   return (
-    <AppFrame>
+    <AppFrame key={account?.getView().scope || 0}>
       <AppContent screen="plannerAdd">
           <div className="planner-screen planner-add-screen" data-planner-add-root>
             <SecondaryScreenHeader title="계획 추가" />
+            <PlannerAccountNotice />
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>
@@ -149,6 +155,7 @@ export function PlannerAddScreen(ctx) {
               <textarea id="planner-add-memo" className="planner-input planner-memo-input" data-field="plannerMemo" placeholder="메모 선택 입력" rows="3" />
             </section>
 
+            <PlannerStorageNotice />
             <div className="planner-add-footer">
               <button className="btn btn-secondary planner-step-prev" data-action="plannerAddPrevStep" data-planner-step-prev disabled>
                 이전
@@ -166,3 +173,5 @@ export function PlannerAddScreen(ctx) {
     </AppFrame>
   );
 }
+
+export function PlannerAddScreen(ctx) { return <PlannerDraftScreen {...ctx} />; }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './check-score-journey.mjs';
 import { buildAnalysisPresentation } from '../src/screens/analysis/presentation.js';
 import { buildServerSimRows } from '../src/runtime/derived.js';
 import { buildAnalysisSnapshot } from '../src/screens/analysis/snapshot.js';

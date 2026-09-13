@@ -11,7 +11,6 @@ export function createAccountInitialState() {
     },
     localDraft: {
       checkoutPlan: 'Standard',
-      duration: '4주',
       calendarEventDraft: null,
       myProfileNameDraft: '',
       myProfilePhoneDraft: '',

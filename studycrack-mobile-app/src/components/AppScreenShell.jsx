@@ -2,6 +2,7 @@ import { useContext } from 'react';
 import { AppOverlayContext } from './AppOverlayContext.js';
 import { TabBar } from './TabBar.jsx';
 import { AppContent, AppFrame, SecondaryScreenHeader } from './AppFrame.js';
+import { PlannerStorageNotice } from '../features/planner/PlannerStorageNotice.jsx';
 
 export function AppScreenShell({
   afterScreen = null,
@@ -23,6 +24,7 @@ export function AppScreenShell({
     <AppFrame>
       <AppContent inactive={hasOpenOverlay} lockScroll={shouldLockScroll} screen={screen}>
         <SecondaryScreenHeader title={title} />
+        {!hasOpenOverlay ? <PlannerStorageNotice /> : null}
         {children}
       </AppContent>
       {GlobalHost ? <GlobalHost {...bridge.props} localOpen={localOpen} localOverlays={overlays} onDismiss={bridge.dismiss} /> : hasOpenOverlay && overlays ? <div className="app-screen-overlays">{overlays}</div> : null}

@@ -41,7 +41,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'analysisSearchOpen', 'checkoutPlan', 'coachingDropReasons', 'coachingExamFiles',
     'coachingExamScores', 'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen',
     'coachingStep', 'coachingSubjectRows', 'coachingSubmitted', 'coachingSubmitting', 'coachingTrend',
-    'coachingView', 'drawerOpen', 'duration', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
+    'coachingView', 'drawerOpen', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
     'notiPage', 'notifModalOpen', 'proReports',
     'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText',
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus',

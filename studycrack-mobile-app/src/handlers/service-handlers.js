@@ -89,20 +89,11 @@ function togglePlanDom(ctx, plan) {
   });
 }
 
-function toggleDurationDom(ctx, duration) {
-  const doc = getDocument(ctx);
-  if (doc?.body?.dataset) doc.body.dataset.selectedDuration = duration;
-  queryAll(ctx, '.duration-row button').forEach((btn) => {
-    btn.classList?.toggle?.('active', btn.getAttribute?.('data-duration') === duration);
-  });
-}
-
 export function createServiceHandlers(ctx) {
   const {
     afterSafariViewportStable = (fn) => fn?.(),
     alert = globalThis.alert || noop,
     checkoutPlan = 'Standard',
-    duration = '4주',
     ensureCoachingSubjectRows = noop,
     goto,
     preserveScrollAfterStateChange = (fn) => fn?.(),
@@ -123,7 +114,6 @@ export function createServiceHandlers(ctx) {
     setCoachingTrend,
     setCoachingView,
     setDrawerOpen,
-    setDuration,
     setHistory,
     setNotiDetailId,
     setNotiExpandedId,
@@ -163,22 +153,12 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    selectDuration({ actionEl }) {
-      const duration = getData(actionEl, 'duration');
-      if (!duration) return false;
-      toggleDurationDom(ctx, duration);
-      setDuration(duration);
-      return true;
-    },
-
     openWebPayment() {
       const params = new URLSearchParams({ source: 'mobile_app' });
       const selectedPlan = getDocument(ctx)?.body?.dataset?.checkoutPlan || checkoutPlan;
-      const selectedDuration = getDocument(ctx)?.body?.dataset?.selectedDuration || duration;
       const tier = String(selectedPlan || '').trim().toLowerCase();
       if (['basic', 'starter', 'standard', 'pro'].includes(tier)) params.set('plan', tier);
-      const effectiveDuration = tier === 'starter' ? '1회' : tier === 'basic' ? '4주' : selectedDuration;
-      if (effectiveDuration) params.set('duration', String(effectiveDuration));
+      if (['standard', 'pro'].includes(tier)) params.set('duration', '4주');
       const target = `/payment?${params.toString()}`;
       if (win?.location?.assign) win.location.assign(target);
       else if (win?.location) win.location.href = target;

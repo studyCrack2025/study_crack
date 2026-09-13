@@ -65,12 +65,14 @@ export function captureOverlayFocus() {
   return previous?.isConnected ? previous : document.activeElement;
 }
 
+export function focusOverlay(panel) {
+  if (!isTopOverlay(panel)) return;
+  const [first] = focusableElements(panel);
+  (first || panel)?.focus({ preventScroll: true });
+}
+
 export function scheduleOverlayFocus(panel) {
-  return window.requestAnimationFrame(() => {
-    if (!isTopOverlay(panel)) return;
-    const [first] = focusableElements(panel);
-    (first || panel)?.focus({ preventScroll: true });
-  });
+  return window.requestAnimationFrame(() => focusOverlay(panel));
 }
 
 export function cancelOverlayFocus(frame) {

@@ -9,6 +9,14 @@
 .aquarium-scene-hud > span{display:grid;gap:1px;padding:7px 10px;border:2px solid color-mix(in srgb,var(--sc-info-blue) 52%,var(--sc-surface-card));border-radius:3px;background:var(--sc-brand-navy-deep);box-shadow:3px 3px 0 color-mix(in srgb,var(--sc-brand-navy-deep) 82%,transparent);}
 .aquarium-scene-hud small{color:color-mix(in srgb,var(--sc-surface-card) 55%,transparent);font-size:8px;font-weight:700;}
 .aquarium-scene-hud b{color:var(--sc-surface-card);font-size:var(--sc-type-caption);font-variant-numeric:tabular-nums;}
+.aquarium-growth-caption{display:grid;justify-items:start;gap:4px;padding:8px;border-radius:8px;background:var(--sc-brand-navy-deep);color:var(--sc-on-brand);font-size:12px;line-height:1.4;overflow-wrap:anywhere;}
+.aquarium-growth-caption small{font-size:10px;color:var(--sc-on-brand);}
+.aquarium-growth-caption button{min-height:44px;padding:0 10px;border:1px solid var(--sc-on-brand-line);border-radius:8px;background:var(--sc-on-brand-surface);color:var(--sc-on-brand);font-size:12px;}
+.aquarium-unlock-slot{width:100%;min-height:1px;}
+.aquarium-unlock-notice{display:grid;gap:8px;padding:12px;border:1px solid var(--sc-on-brand-line);border-radius:12px;background:var(--sc-on-brand-surface);animation:aquariumUnlockReveal .45s ease-out both;animation-play-state:var(--unlock-play-state,running);}
+.aquarium-unlock-notice p{margin:4px 0;font-size:12px;}
+.aquarium-unlock-slot[data-unlock-active="false"]{--unlock-play-state:paused;}
+@keyframes aquariumUnlockReveal{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 .aquarium-fish{--fish-duration:11s;--fish-bob-duration:3.2s;--fish-travel-x:12px;--fish-travel-y:4px;--fish-profile-scale:1;position:absolute;z-index:4;width:clamp(68px,20vw,86px);display:block;padding:0;border:0;background:transparent;color:var(--sc-brand-navy);}
 .aquarium-fish.slot-left{--fish-depth-scale:.96;z-index:4;left:5%;top:45%;}
 .aquarium-fish.slot-center{--fish-depth-scale:.86;z-index:3;left:50%;top:27%;transform:translateX(-50%);}
@@ -59,4 +67,4 @@
 .aquarium-scene[data-scene-variant="home"] .aquarium-fish{width:38px;}
 .aquarium-scene[data-scene-variant="guide"]{height:210px;min-height:210px;aspect-ratio:auto;}
 /* Scene previews also honor reduced motion outside the full aquarium screen. */
-@media (prefers-reduced-motion:reduce){.aquarium-scene *{animation:none !important;transition:none !important;}}
+@media (prefers-reduced-motion:reduce){.aquarium-scene *,.aquarium-unlock-notice{animation:none !important;transition:none !important;}}

@@ -46,7 +46,7 @@ function CheckoutProgress() {
   return <ol className="payment-progress" aria-label="결제 진행 안내"><li aria-current="step"><b>01</b><span>플랜 확인</span></li><li><b>02</b><span>웹 결제</span></li><li><b>03</b><span>구독 반영 확인</span></li></ol>;
 }
 
-function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', ctaLabel = '', ctaTarget = 'payment', duration = '', showCta = true }) {
+function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', ctaLabel = '', ctaTarget = 'payment', showCta = true }) {
   const activePlan = PLAN_META[checkoutPlan] || PLAN_META.Standard;
   const features = activePlan.features || [];
   const audience = activePlan.audience || [];
@@ -54,8 +54,8 @@ function SelectedPlanDetail({ checkoutPlan = 'Standard', ctaAction = 'goto', cta
   const ctaProps = ctaAction === 'goto' ? { 'data-action': 'goto', 'data-target': ctaTarget } : { 'data-action': ctaAction };
   return (
     <section className={`card plan-console-detail ${String(activePlan.theme || '').toLowerCase()}`} aria-label="선택한 플랜 상세">
-      <div className="plan-console-head"><div className="plan-console-title"><span className="plan-console-badge">{planBadgeText(checkoutPlan)}</span><h3>{planDisplayName(checkoutPlan)}</h3><p>{activePlan.complete || activePlan.desc || ''}</p></div><span className="plan-console-visual"><ServiceIcon name="calendar" /></span></div>
-      <div className="plan-console-price"><div><b>{activePlan.payPrice || activePlan.introPrice || ''}</b><em>{activePlan.billingNote || ''}</em></div>{duration ? <p className="plan-console-term"><span>선택 이용 기간</span><b>{duration}</b><small>웹 결제는 4주 단위로 최종 확인됩니다.</small></p> : null}</div>
+      <div className="plan-console-head"><div className="plan-console-title"><span className="plan-console-badge">{planBadgeText(checkoutPlan)}</span><h3>{planDisplayName(checkoutPlan)}</h3><p>{activePlan.desc}</p></div><span className="plan-console-visual"><ServiceIcon name="calendar" /></span></div>
+      <div className="plan-console-price">{activePlan.originalPrice ? <s>{activePlan.originalPrice}</s> : null}<div><b>{activePlan.weeklyPrice || activePlan.payPrice}</b></div><p>{activePlan.discountNote || activePlan.billingNote}</p><small>VAT 포함 · 단건 결제 · 자동 갱신 없음</small></div>
       <div className="plan-console-benefits" role="list" aria-label="포함 기능">{features.map(item => <div className="plan-benefit-row" role="listitem" key={item}><span><ServiceIcon name="check" /></span><div><b>{item}</b></div></div>)}</div>
       {showCta ? <><button type="button" className="btn btn-primary plan-console-cta" {...ctaProps}>{buttonLabel}<span><ServiceIcon name="chevron" /></span></button><p className="plan-secure-note"><ServiceIcon name="shield" /> 결제 전 최종 금액과 이용 조건을 확인해 주세요.</p></> : null}
       {audience.length ? <div className="plan-audience"><b>이런 학생에게 추천해요</b>{audience.map((item) => <p key={item}><ServiceIcon name="check" /><span>{item}</span></p>)}</div> : null}
@@ -95,9 +95,9 @@ export function ProIntroScreen({ checkoutPlan = 'Standard', upgradePromptTarget 
   return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} />{requiredPlan ? <div className="card locked-upgrade-card"><span className="badge">잠긴 기능</span><h3>{upgradePromptTarget || '선택한 기능'}은 {requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div> : null}<PlanComparison selected={checkoutPlan} selectable /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
 }
 
-export function PaymentScreen({ checkoutPlan = 'Standard', duration = '4주' }) {
-  const hasDurationChoice = ['Standard', 'Pro'].includes(checkoutPlan);
-  return <SecondaryScreenShell screen="payment" title="결제 플랜 확인"><section className="sc-secondary-page payment-console-page"><SecondaryIntro eyebrow="CHECKOUT" title="결제 전 확인" description="선택한 플랜과 기간을 확인한 뒤 안전한 웹 결제로 이동합니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} /><CheckoutProgress /><PlanSelector checkoutPlan={checkoutPlan} />{hasDurationChoice ? <div className="payment-option-block"><b>이용 기간</b><div className="duration-row payment-duration-row" role="group" aria-label="이용 기간 선택">{['4주', '8주', '12주'].map((option) => { const active = duration === option; return <button type="button" className={active ? 'active' : ''} aria-pressed={active} data-action="selectDuration" data-duration={option} key={option}>{option}</button>; })}</div><p>실제 결제 금액과 적용 기간은 웹 결제 화면에서 최종 확인합니다.</p></div> : <div className="payment-fixed-term"><span>결제 단위</span><b>{checkoutPlan === 'Starter' ? '1회 진단' : '4주 이용'}</b></div>}<SelectedPlanDetail checkoutPlan={checkoutPlan} duration={hasDurationChoice ? duration : ''} ctaLabel="웹 결제로 계속하기" ctaAction="openWebPayment" /></section></SecondaryScreenShell>;
+export function PaymentScreen({ checkoutPlan = 'Standard' }) {
+  const term = ['Standard', 'Pro'].includes(checkoutPlan) ? '4주(28일) 단건 결제' : (PLAN_META[checkoutPlan] || PLAN_META.Standard).billingNote;
+  return <SecondaryScreenShell screen="payment" title="결제 플랜 확인"><section className="sc-secondary-page payment-console-page"><SecondaryIntro eyebrow="CHECKOUT" title="결제 전 확인" description="선택한 플랜과 구매 조건을 확인한 뒤 안전한 웹 결제로 이동합니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} /><CheckoutProgress /><PlanSelector checkoutPlan={checkoutPlan} /><div className="payment-fixed-term"><span>결제 단위</span><b>{term}</b></div><SelectedPlanDetail checkoutPlan={checkoutPlan} ctaLabel="웹 결제로 계속하기" ctaAction="openWebPayment" /></section></SecondaryScreenShell>;
 }
 
 export function PaymentCompleteScreen() {

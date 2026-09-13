@@ -45,12 +45,12 @@ test('플랜과 결제 화면은 단일 가격 원천을 함께 사용한다', a
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'pro' });
   await page.goto('/studycrack-mobile.html?screen=proIntro');
-  await expect(page.locator('.plan-console-detail')).toContainText('49,000원 / 4주');
+  await expect(page.locator('.plan-console-price')).toContainText('4주 결제 총 49,000원');
   await page.locator('[data-plan="Pro"]').click();
-  await expect(page.locator('.plan-console-detail')).toContainText('149,000원 / 4주');
+  await expect(page.locator('.plan-console-price')).toContainText('4주 결제 총 149,000원');
   await page.getByRole('button', { name: /149,000원 \/ 4주로 시작하기/ }).click();
   await expect(page.locator('[data-screen="payment"]')).toBeVisible();
-  await expect(page.locator('.plan-console-detail')).toContainText('149,000원 / 4주');
+  await expect(page.locator('.plan-console-price')).toContainText('4주 결제 총 149,000원');
 });
 
 test('웹 결제 이관은 서버 결제 의도를 만들고 콜백에 불투명 ID만 전달한다', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
+import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow, mockUser } from './support/mock-api.mjs';
 
 test.use({ deviceScaleFactor: 1 });
 async function setup(page, options = {}) {
@@ -9,6 +9,54 @@ async function setup(page, options = {}) {
 async function calculate(page) {
   await page.goto('/studycrack-mobile.html?screen=analysis');
   await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
+}
+
+for (const width of [320, 360, 390, 430]) {
+  test(`맞춤 솔루션은 확인된 0점·영어 등급과 미확인 목표를 분리한다 (${width}px)`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 932 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const saved = mockUser.quantitative.jun;
+    await setup(page, { userOverrides: { quantitative: { ...mockUser.quantitative, jun: { ...saved, kor: { ...saved.kor, raw: 0 }, math: { ...saved.math, raw: 80 }, eng: { ...saved.eng, raw: 90, grade: 1, grd: 1 }, inq1: { ...saved.inq1, raw: 49 }, inq2: { ...saved.inq2, raw: 50 } } } } });
+    await page.route('**/api/**', route => {
+      const data = route.request().postDataJSON();
+      if (data?.type === 'simulate_score_rise') return route.fulfill({ json: [] });
+      if (data?.type !== 'analyze_my_targets') return route.fallback();
+      return route.fulfill({ json: data.targetUnivs.map(target => ({ ...target, converted_score: 0, score_available: true, status: '위험' })) });
+    });
+    await calculate(page);
+    await expect(page.locator('.analysis-score-card strong')).toHaveText('0점');
+    // Exercise the normal delegated navigation without reloading the confirmed result.
+    await page.locator('[data-screen="analysis"]').evaluate(element => {
+      const button = document.createElement('button'); button.dataset.action = 'goto'; button.dataset.target = 'ob5';
+      element.append(button); button.click(); button.remove();
+    });
+    const card = page.locator('.score-journey-card');
+    const assertVisiblePanel = async view => {
+      await expect(card.getByRole('button', { name: view === 'current' ? '현재 성적' : '도달 성적', exact: true })).toHaveClass('active');
+      await expect.poll(() => card.evaluate((element, selected) => {
+        const scroll = element.querySelector('.score-journey-scroll').getBoundingClientRect();
+        const panel = element.querySelector('.score-journey-col.' + selected).getBoundingClientRect();
+        return Math.abs(panel.left - scroll.left) < 2 && panel.width > scroll.width * 0.9;
+      }, view)).toBe(true);
+    };
+    await expect(card).toBeVisible();
+    await expect(card.getByText('목표 성적 미확인', { exact: true })).toBeVisible();
+    await assertVisiblePanel('target');
+    await card.screenshot({ path: info.outputPath(`score-target-${width}.png`), animations: 'disabled' });
+    await card.getByRole('button', { name: '현재 성적', exact: true }).click();
+    await assertVisiblePanel('current');
+    const current = card.locator('.score-journey-col.current');
+    await expect(current.locator('.score-journey-total')).toContainText('0점');
+    await expect(current.locator('.score-row').filter({ hasText: '국어' })).toContainText('0점');
+    await expect(current.locator('.score-row').filter({ hasText: '영어' })).toContainText('1등급');
+    await expect(card).not.toContainText('100점');
+    await card.screenshot({ path: info.outputPath(`score-current-${width}.png`), animations: 'disabled' });
+    await expectNoHorizontalOverflow(page);
+    await card.getByRole('button', { name: '도달 성적', exact: true }).click();
+    await assertVisiblePanel('target');
+    await card.getByRole('button', { name: '역산 결과 확인하기' }).click();
+    await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
+  });
 }
 
 for (const width of [320, 360, 390, 430]) {

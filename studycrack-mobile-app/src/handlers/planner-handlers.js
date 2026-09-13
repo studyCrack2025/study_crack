@@ -145,7 +145,7 @@ export function createPlannerHandlers(ctx) {
     preserveY(() => setSelectedDate(toPlannerDateKey(next)));
   }
 
-  return {
+  const handlers = {
     openPlannerAddPage() {
       goto?.('plannerAdd');
       return true;
@@ -234,7 +234,7 @@ export function createPlannerHandlers(ctx) {
       const minutes = minutesFromRange || (draft.durationChoice === 'custom' ? Number(customMinutes) : Number(draft.durationChoice));
       if (!category || !content || !minutes || Number.isNaN(minutes)) return false;
       if (start && end && !minutesFromRange) return false;
-      setPlannerItems((prev) => [
+      const saved = setPlannerItems((prev) => [
         ...prev,
         {
           id: buildPlannerId(),
@@ -251,6 +251,7 @@ export function createPlannerHandlers(ctx) {
           dot: dotForPlannerCategory(category) || dotForSubject(category)
         }
       ]);
+      if (saved === false) return true;
       plannerContentRef.current = plannerCustomMinutesRef.current = '';
       setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' });
       goto?.('planner', false);
@@ -258,7 +259,7 @@ export function createPlannerHandlers(ctx) {
     },
 
     savePlannerEdit() {
-      if (plannerEditIndex === null) return false;
+      if (plannerEditIndex === null || !plannerEditItem) return false;
       const subject = getInputValue(ctx, '[data-field="plannerEditSubject"]').trim();
       const detailSubject = getInputValue(ctx, '[data-field="plannerEditDetailSubject"]').trim();
       const activityType = getInputValue(ctx, '[data-field="plannerEditActivityType"]').trim();
@@ -270,7 +271,7 @@ export function createPlannerHandlers(ctx) {
       const minutes = rangeMinutes || Number(plannerEditItem.minutes || 0);
       if (!subject || !content || !minutes || !plannerEditItem) return false;
       if (start && end && !rangeMinutes) return false;
-      setPlannerItems((prev) => prev.map((item) => (
+      const saved = setPlannerItems((prev) => prev.map((item) => (
         item.id === plannerEditIndex
           ? {
               ...item,
@@ -287,6 +288,7 @@ export function createPlannerHandlers(ctx) {
             }
           : item
       )));
+      if (saved === false) return true;
       setPlannerEditIndex(null);
       return true;
     },
@@ -308,4 +310,5 @@ export function createPlannerHandlers(ctx) {
       return true;
     }
   };
+  return ctx.plannerAccount ? ctx.plannerAccount.bindHandlers(handlers, ctx) : handlers;
 }

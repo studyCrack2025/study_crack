@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './check-aquarium-growth.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
@@ -65,6 +66,15 @@ assert.equal(buildAquariumPresentation({ ...input, todayPlannerItems: [{ date: '
 const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
 try {
   const { AquariumScene } = await vite.ssrLoadModule('/src/components/aquarium/AquariumScene.jsx');
+  const { AquariumGrowthContext } = await vite.ssrLoadModule('/src/features/gamification/AquariumGrowthContext.js');
+  for (const backgroundKey of ['day1', 'day7', 'day15', 'day30', 'day50', 'day100']) {
+    for (const variant of ['full', 'home', 'guide', 'share']) {
+      const markup = renderToStaticMarkup(createElement(AquariumGrowthContext.Provider, { value: { status: 'ready', backgroundKey, growth: { validDayCount: Number(backgroundKey.slice(3)), highestUnlockedStage: backgroundKey, countingSince: '2026-01-01', nextStageDays: null } } }, createElement(AquariumScene, { variant, backgroundKey: 'day1' })));
+      assert.match(markup, new RegExp(`data-background-key="${backgroundKey}"`));
+      assert.match(markup, /성장 인정/);
+      if (variant !== 'full') assert.doesNotMatch(markup, /<button/);
+    }
+  }
   const { AquariumScreen } = await vite.ssrLoadModule('/src/screens/aquarium/AquariumScreen.jsx');
   for (const gameProfileStatus of ['idle', 'loading']) {
     const screen = renderToStaticMarkup(createElement(AquariumScreen, { gameProfileStatus }));
@@ -125,4 +135,15 @@ for (const selector of ['.aquarium-scene{', '.aquarium-fish-path{', '@keyframes 
 assert.match(tokenCss, /--sc-radius-card:16px;--sc-radius-scene:24px;/);
 assert.match(sceneCss, /prefers-reduced-motion:reduce/);
 assert.match(sceneCss, /animation:none !important;transition:none !important/);
+const rgb = token => tokenCss.match(new RegExp(`${token}:#([0-9a-f]{6})`, 'i'))[1].match(/../g).map(value => parseInt(value, 16));
+const mix = (foreground, background, alpha) => foreground.map((value, index) => value * alpha + background[index] * (1 - alpha));
+const luminance = color => color.map(value => value / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+const background = rgb('--sc-brand-navy-deep'), foreground = rgb('--sc-on-brand');
+const surfaceAlpha = Number(tokenCss.match(/--sc-on-brand-surface:rgba\(255,255,255,([\d.]+)\)/)[1]);
+const secondaryAlpha = Number(sceneCss.match(/\.aquarium-scene-hud small\{color:color-mix\(in srgb,var\(--sc-surface-card\) (\d+)%/)[1]) / 100;
+const buttonBackground = mix(foreground, background, surfaceAlpha);
+for (const [label, text, surface] of [['caption', foreground, background], ['HUD secondary', mix(rgb('--sc-surface-card'), background, secondaryAlpha), background], ['retry button', foreground, buttonBackground], ['unlock nested button', foreground, mix(foreground, buttonBackground, surfaceAlpha)]]) {
+  const ratio = (Math.max(luminance(text), luminance(surface)) + .05) / (Math.min(luminance(text), luminance(surface)) + .05);
+  assert.ok(ratio >= 4.5, `${label} contrast must meet AA: ${ratio.toFixed(2)}`);
+}
 console.log('Aquarium scene contracts passed: three slots, read-only previews, shared known/unknown statistics, collection sets, local dates, artwork guards and deferred CSS ownership.');

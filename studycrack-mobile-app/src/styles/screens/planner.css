@@ -1,4 +1,13 @@
 .planner-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
+.planner-account-panel{padding:var(--sc-space-16);color:var(--sc-ink);}
+.planner-account-panel summary{min-height:44px;align-content:center;cursor:pointer;font-weight:800;}
+.planner-account-body{display:grid;gap:12px;min-width:0;}
+.planner-account-body p{margin:0;font-size:var(--sc-type-caption);color:var(--sc-ink-muted);line-height:1.6;overflow-wrap:anywhere;}
+.planner-account-body h4{margin:0;}
+.planner-account-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.planner-account-list{display:grid;gap:12px;list-style:none;padding:0;margin:0;max-height:360px;overflow:auto;}
+.planner-account-list li{display:grid;gap:8px;min-width:0;padding:12px;border:1px solid var(--sc-border-subtle);border-radius:12px;overflow-wrap:anywhere;}
+.planner-account-list small{color:var(--sc-ink-muted);}
 .planner-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
 .planner-progress-card{display:grid;gap:12px;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:0 8px 20px color-mix(in srgb,var(--sc-brand-navy) 6%,transparent);}
 .planner-progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
