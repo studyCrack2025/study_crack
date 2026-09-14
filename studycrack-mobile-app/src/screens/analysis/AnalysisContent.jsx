@@ -143,6 +143,7 @@ export function AnalysisContent(ctx) {
     analysisHighlightedSubject = '',
     analysisCalculationRequested = false,
     analysisApiStatus = 'idle',
+    isAnalyzing = false,
     analysisMajorOptions = [],
     analysisStatus = '',
     analysisSelected = {},
@@ -170,9 +171,12 @@ export function AnalysisContent(ctx) {
   const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLabelAlign, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
   const targetOptions = Array.from(new Set([normalizedTargetMajor, ...analysisMajorOptions].filter(Boolean)));
   const activeSubject = selectedRow?.subject || '';
-  const currentScoreText = scoreView.pending ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
-  const showCalculationPrompt = !scoreView.hasScore
+  const isScoreLoading = analysisCalculationRequested
+    && (isAnalyzing || scoreView.pending || analysisApiStatus === 'loading');
+  const currentScoreText = isScoreLoading ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
+  const showCalculationPrompt = !isScoreLoading && !scoreView.hasScore
     && (!analysisCalculationRequested || ['empty', 'error'].includes(analysisApiStatus));
+  const showScoreDetails = !isScoreLoading && scoreView.hasScore;
   const selectedEffectText = selectedRow && scoreView.hasScore
     ? `${selectedRow.subject} 원점수 +1 적용 시 ${formatPoint(currentScore)}점 → ${formatPoint(afterScore)}점`
     : '과목을 선택하면 상승 후 환산점수를 함께 보여드려요.';
@@ -180,19 +184,25 @@ export function AnalysisContent(ctx) {
   const safePct = 60;
   return (
     <div className="analysis-unified">
-      <section className={`analysis-live-score ${showCalculationPrompt ? 'is-calculate' : ''}`} aria-label="현재 대학별 환산점수">
-        <div className="analysis-live-score-main"><span>{showCalculationPrompt ? '환산점수 준비' : 'LIVE 환산점수'}</span><strong>{showCalculationPrompt ? '점수를 확인해볼까요?' : currentScoreText}</strong><p>{showCalculationPrompt ? '저장된 성적과 희망 대학 기준으로 계산합니다.' : '0–250점 기준 · 실제 저장 성적 반영'}</p></div>
-        {showCalculationPrompt
-          ? <button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button>
-          : <div className="analysis-live-score-target"><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>}
-      </section>
-      <div className="card analysis-result-card">
+      <div className="card analysis-target-card">
         <div className="analysis-result-head">
           <label><span>희망 대학</span><select className="analysis-target-select planner-input" data-field="analysisTargetMajor" value={normalizedTargetMajor} onChange={() => {}}>{targetOptions.length ? targetOptions.map((label) => <option value={label} key={label}>{label}</option>) : <option value="">목표 대학을 추가해주세요</option>}<option value="__add_university__">+ 희망 대학 추가</option></select></label>
           <label><span>시험 기준</span><select className="analysis-exam-select planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></label>
         </div>
-        <div className="analysis-result-overview"><div><span>선택 대학 분석</span><strong>환산점수 위치</strong><p>합격선과 안정선을 같은 250점 척도에서 비교합니다.</p></div><span className="analysis-result-scale">0–250</span></div>
-        <div className="analysis-gap-grid"><div><span>합격컷까지</span><b>{gapToPass ? `+${formatPoint(gapToPass)}점` : '도달'}</b></div><div><span>+원점수 1점 최대 효과</span><b>{bestRow && scoreView.hasScore ? bestRow.displayGain : '—'}</b></div></div>
+      </div>
+      <div className={`card analysis-score-card ${isScoreLoading ? 'is-loading' : ''}`} aria-busy={isScoreLoading}>
+        {isScoreLoading ? <div className="analysis-score-local-loading" role="status" aria-live="polite">
+          <div className="analysis-loading-orbit" aria-hidden="true"><i /><i /><i /></div>
+          <div><span>환산 분석 진행 중</span><b>목표 대학 기준 점수를 계산하고 있어요</b><p>계산이 끝나면 이 카드만 결과로 전환됩니다.</p></div>
+        </div> : <>
+        <div className="analysis-score-card-head">
+          <div><span>내 환산점수</span><strong>{showCalculationPrompt ? '—' : currentScoreText}</strong><small>250점 만점</small></div>
+          <div><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{showCalculationPrompt ? '계산 전' : analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>
+        </div>
+        {showCalculationPrompt ? <div className="analysis-score-prompt"><p>저장된 성적과 희망 대학 기준으로 환산점수를 계산합니다.</p><button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button></div> : null}
+        </>}
+      </div>
+      {showScoreDetails ? <div className="card analysis-score-detail-card">
         <div className={`analysis-main-gauge-wrap ${scoreTierClass(currentScore)}`}>
           <div className="analysis-main-gauge-top"><span>{currentScoreText}</span></div>
           <div className="analysis-main-gauge" aria-label="환산점수 게이지">
@@ -205,7 +215,8 @@ export function AnalysisContent(ctx) {
           <div className="analysis-main-gauge-scale"><span className="zero">0</span><span className="pass" style={{ left: `${passPct}%` }}>합격 100</span><span className="safe" style={{ left: `${safePct}%` }}>안정 150</span><span className="max">250</span></div>
           <p className="analysis-main-gauge-caption">{selectedEffectText}</p>
         </div>
-      </div>
+        <div className="analysis-score-facts"><span><small>합격컷까지</small><b>{scoreView.hasScore ? (gapToPass ? `+${formatPoint(gapToPass)}점` : '도달') : '—'}</b></span><span><small>원점수 1점 최대 효과</small><b>{bestRow && scoreView.hasScore ? bestRow.displayGain : '—'}</b></span></div>
+      </div> : null}
       <div className="card analysis-boost-card">
         <div className="analysis-section-head"><div><span className="analysis-card-eyebrow">원점수 +1 효율</span><h4>한 점을 어디에 투자할까요?</h4><p>{bestRow ? `${bestRow.subject} 1점이 환산점수에 가장 크게 반영돼요.` : '성적 분석이 끝나면 과목별 효율을 비교해드려요.'}</p></div><b>{bestRow && scoreView.hasScore ? `${bestRow.subject} ${bestRow.displayGain}` : '효과 대기'}</b></div>
         <SimulationTable rows={sortedRows} selectedSubject={activeSubject} />

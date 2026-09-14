@@ -2,7 +2,7 @@ import { filterTabItemsForTier } from '../app/access-policy.js';
 import { Icon } from './Icon.jsx';
 
 export const TAB_ITEMS = [
-  { key: 'timer', label: '타이머', icon: 'timer' },
+  { key: 'timer', label: '홈', icon: 'home' },
   { key: 'planner', label: '플래너', icon: 'calendar' },
   { key: 'aquarium', label: '수조', icon: 'fish' },
   { key: 'analysis', label: '분석', icon: 'chart' },

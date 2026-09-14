@@ -3,18 +3,9 @@ import { PlannerEditSheet } from './PlannerEditSheet.jsx';
 import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
-import { AppContextHeader } from '../../components/AppContextHeader.jsx';
+import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
-
-function PlannerChecklistArt() {
-  return (
-    <span className="planner-checklist-art" aria-hidden="true">
-      <i className="planner-checklist-pen" />
-      <i className="planner-checklist-paper"><b /><b /></i>
-    </span>
-  );
-}
 
 function PlannerItemCard({ item }) {
   const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
@@ -135,6 +126,8 @@ export function PlannerScreen(ctx) {
     plannerMonthLabel = '',
     plannerViewItems = [],
     plannerWeekDates = [],
+    normalizedTargetMajor = '',
+    calendarNearestDdayLabel = '',
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
@@ -155,7 +148,7 @@ export function PlannerScreen(ctx) {
       overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <AppContextHeader className="planner-context-head" description="해야 할 일을 하나씩 완료하며 학습 흐름을 이어가세요." eyebrow="DAILY PLAN" title="오늘의 플래너" tone="positive" visual={<PlannerChecklistArt />} />
+            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="오늘의 플래너" />
 
             <PlannerProgress presentation={presentation} />
 

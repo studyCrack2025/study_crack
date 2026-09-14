@@ -67,9 +67,9 @@ const bootstrapCss = String(cssAsset.source);
 const deferredCss = String(deferredCssAsset.source);
 assert.ok(bootstrapCss.length < 90 * 1024, 'bootstrap CSS must remain below 90 KiB');
 assert.ok(deferredCss.length > 100 * 1024, 'signed-in screen styles must remain in the deferred CSS chunk');
-assert.doesNotMatch(bootstrapCss, /\.app-context-header\b/, 'signed-in context header CSS must not return to the bootstrap asset');
+assert.doesNotMatch(bootstrapCss, /\.primary-screen-header\b/, 'signed-in primary header CSS must not return to the bootstrap asset');
 assert.doesNotMatch(bootstrapCss, /\.my-profile-avatar\b/, 'mypage feature CSS must not return to the bootstrap asset');
-assert.match(deferredCss, /\.app-context-header\b/, 'deferred CSS must include the shared signed-in context header');
+assert.match(deferredCss, /\.primary-screen-header\b/, 'deferred CSS must include the shared signed-in primary header');
 assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include mypage feature styles');
 assert.ok(
   appRegistryChunk.viteMetadata?.importedCss?.has(deferredCssAsset.fileName),

@@ -1,11 +1,11 @@
 /* Bundle loading fallback only. Runtime UI styles are imported explicitly by src/runtime/main.js. */
-:root { --mobile-boot-bg:#F6F8FE; --mobile-boot-card:#FFFFFF; --mobile-boot-text:#26304A; --mobile-boot-muted:#64748B; --mobile-boot-line:#D8E3F4; --mobile-boot-primary:#344E8F; }
+:root { --mobile-boot-bg:#F7F9FC; --mobile-boot-card:#FFFFFF; --mobile-boot-text:#26304A; --mobile-boot-muted:#64748B; --mobile-boot-line:#D8E3F4; --mobile-boot-primary:#344E8F; }
 * { box-sizing:border-box; }
 html,
 body { min-height:100%; margin:0; background:var(--mobile-boot-bg); }
 body { font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif; color:var(--mobile-boot-text); letter-spacing:0; word-break:keep-all; -webkit-font-smoothing:antialiased; }
 #root { min-height:100dvh; display:grid; place-items:center; padding:24px; }
-.app-shell { width:100%; min-height:100dvh; background:linear-gradient(180deg,#F6F8FE 0%,#FFFFFF 52%,#F7F9FE 100%); }
+.app-shell { width:100%; min-height:100dvh; background:var(--mobile-boot-bg); }
 .app-frame { width:min(100%,430px); min-height:100dvh; }
 .app-screen { width:100%; min-height:100%; }
 .init-loading { width:min(100%,320px); padding:22px; border:1px solid var(--mobile-boot-line); border-radius:20px; background:var(--mobile-boot-card); box-shadow:0 10px 28px rgba(52,78,143,.10); text-align:center; }

@@ -57,10 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 관리자 페이지는 초기 진입 시 별도 refresh 호출 없이 진행
 });
 
-function initAdminPage(userId) {
+async function initAdminPage(userId) {
     // 초기 데이터 로드
     loadAdminStats(userId);
-    populateTutorFilter();
+    await populateTutorFilter();
 
     // 상세 페이지에서 돌아온 경우 이전 검색 상태 복원
     const savedSearch = Store.get('lastSearch');
@@ -68,16 +68,15 @@ function initAdminPage(userId) {
         const typeEl = document.getElementById('searchType');
         const inputEl = document.getElementById('searchInput');
         const tierEl  = document.getElementById('filterTier');
+        const tutorEl = document.getElementById('filterTutor');
+        const joinedFromEl = document.getElementById('joinedFrom');
+        const joinedToEl = document.getElementById('joinedTo');
         if (typeEl)  typeEl.value  = savedSearch.type  || 'name';
         if (inputEl) inputEl.value = savedSearch.keyword || '';
         if (tierEl)  tierEl.value  = savedSearch.filterTier || 'all';
-        // filterTutor는 populateTutorFilter() 비동기 완료 후 적용
-        if (savedSearch.filterTutor && savedSearch.filterTutor !== 'all') {
-            setTimeout(() => {
-                const tutorEl = document.getElementById('filterTutor');
-                if (tutorEl) tutorEl.value = savedSearch.filterTutor;
-            }, 1000);
-        }
+        if (tutorEl) tutorEl.value = savedSearch.filterTutor || 'all';
+        if (joinedFromEl) joinedFromEl.value = savedSearch.joinedFrom || '';
+        if (joinedToEl) joinedToEl.value = savedSearch.joinedTo || '';
     }
     searchStudents();
     fetchUnreadNotiCount();
@@ -91,6 +90,15 @@ function initAdminPage(userId) {
             if (e.key === 'Enter') searchStudents();
         });
     }
+
+    const clearJoinDateRangeBtn = document.getElementById('clearJoinDateRange');
+    if (clearJoinDateRangeBtn) clearJoinDateRangeBtn.addEventListener('click', clearStudentJoinDateRange);
+
+    [document.getElementById('joinedFrom'), document.getElementById('joinedTo')].filter(Boolean).forEach(input => {
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchStudents();
+        });
+    });
 
     setTimeout(() => loadMatchingData(true), 1500);
 

@@ -1,12 +1,5 @@
 .planner-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .planner-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.planner-checklist-art{position:relative;display:block;width:38px;height:38px;flex:0 0 38px;color:var(--sc-brand-navy);}
-.planner-checklist-pen{position:absolute;left:3px;top:7px;width:5px;height:25px;border:2px solid currentColor;border-radius:999px;}
-.planner-checklist-pen::after{content:"";position:absolute;left:50%;bottom:-6px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:6px solid currentColor;transform:translateX(-50%);}
-.planner-checklist-paper{position:absolute;right:0;top:3px;width:26px;height:31px;border:2px solid currentColor;border-radius:7px;background:var(--sc-surface-positive);}
-.planner-checklist-paper b{position:absolute;left:8px;width:11px;height:6px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);}
-.planner-checklist-paper b:first-child{top:7px;}
-.planner-checklist-paper b:last-child{top:18px;}
 .planner-progress-card{display:grid;gap:12px;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:0 8px 20px color-mix(in srgb,var(--sc-brand-navy) 6%,transparent);}
 .planner-progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .planner-progress-head span{display:block;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}

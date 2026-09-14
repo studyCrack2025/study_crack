@@ -29,6 +29,7 @@ export const mockUser = {
   role: 'student',
   name: '테스트학생',
   email: 'student@example.com',
+  profileImage: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" fill="%23dfe9ff"/%3E%3Ccircle cx="32" cy="24" r="12" fill="%233f63b8"/%3E%3Cpath d="M12 62c2-15 10-22 20-22s18 7 20 22" fill="%233f63b8"/%3E%3C/svg%3E',
   computedTier: 'basic',
   targetUnivs: TARGETS,
   quantitative: {
@@ -276,14 +277,14 @@ function responseFor(payload, state) {
   }
 }
 
-export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
+export async function installApiMock(page, { failGameTypes = [], fishCatalog = FISH_CATALOG, tier = mockUser.computedTier } = {}) {
   const requests = [];
   const state = {
     activeStudySession: null,
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { shellBalance: 62, foodBalance: 3, waterQuality: 82, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
+    gameProfile: { shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {} },
     pendingDraw: null,
     studySeconds: 0,
     userTier: tier
@@ -297,6 +298,10 @@ export async function installApiMock(page, { fishCatalog = FISH_CATALOG, tier = 
       payload = {};
     }
     requests.push({ path: new URL(request.url()).pathname, payload });
+    if (failGameTypes.includes(payload.type)) {
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Internal Server Error' }) });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

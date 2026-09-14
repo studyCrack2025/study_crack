@@ -72,6 +72,10 @@ async function copyAquariumShareText(payload, documentRef) {
 
 export function createGamificationHandlers(ctx) {
   return {
+    retryGameResources() {
+      ctx.setGameRefreshTick((value) => Number(value || 0) + 1);
+      return true;
+    },
     selectStarterCandidate({ actionEl }) {
       ctx.setAquariumStarterSpeciesId(getData(actionEl, 'species-id'));
       ctx.setAquariumActionError('');
@@ -129,7 +133,7 @@ export function createGamificationHandlers(ctx) {
         ctx.setGameProfile(result.data.profile);
         ctx.setActiveFish((items) => (items || []).map((item) => item?.fishId === updated.fishId ? updated : item));
         ctx.setFishInventory((items) => replaceFish(items, updated));
-        ctx.setAquariumResult({ type: 'feed', fish: updated, expGranted: result.data.expGranted, levelUp: result.data.levelUp, waterGain: result.data.waterGain });
+        ctx.setAquariumResult({ type: 'feed', fish: updated, expGranted: result.data.expGranted, levelUp: result.data.levelUp });
         ctx.setAquariumActionStatus('success');
         return true;
       });

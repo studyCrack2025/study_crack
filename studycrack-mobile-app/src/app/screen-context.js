@@ -23,7 +23,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
-    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab'
+    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems'
   ]),
   authFindId: Object.freeze([]),
   authFindPw: Object.freeze([]),
@@ -71,7 +71,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'plannerFeedback', 'plannerMonthLabel', 'plannerViewItems', 'plannerWeekDates',
     'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
     'calendarSelectedDate', 'calendarSelectedEvents', 'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays', 'personalEvents',
-    'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
+    'normalizedTargetMajor', 'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
   ]),
   plannerAdd: Object.freeze(['selectedPlannerDate', 'selectedPlannerDateKey']),
   payment: Object.freeze(['checkoutPlan', 'duration']),
@@ -101,9 +101,9 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'tab', 'weeklyReports', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
-    'activeStudySession', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'formatHms', 'formatMinutesLabel',
+    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'fishCount', 'formatHms', 'formatMinutesLabel',
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'habitatDays', 'habitatStatus', 'hasClientSession',
-    'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
+    'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
     'selectedPlan', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
     'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'

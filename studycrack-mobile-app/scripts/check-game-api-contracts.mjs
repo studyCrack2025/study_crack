@@ -9,7 +9,6 @@ function response(body, ok = true, status = 200) {
 const profile = {
   shellBalance: 4,
   foodBalance: 2,
-  waterQuality: 96,
   activeFishIds: [],
   dailyReward: {}
 };

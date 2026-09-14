@@ -1,5 +1,5 @@
 import { Modal } from '../../components/Modal.jsx';
-import { INQUIRY_SUBJECTS } from '../../constants/options.js';
+import { INQUIRY_SUBJECTS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
 
 const SCORE_STEPS = [
   { step: 1, key: 'korean', name: '국어' },
@@ -103,9 +103,11 @@ export function ScoreEditModal({ scoreEditOpen = false, scoreEditState = {}, sco
   const progressPct = Math.round((doneCount / SCORE_STEPS.length) * 100);
   const isLast = step === SCORE_STEPS.length;
   const primaryLabel = scoreSubjectSaving ? '저장 중…' : isLast ? '전체 성적 저장' : '다음';
+  const isSeptemberEstimate = scoreExamKey === 'sep';
   return (
     <Modal dismissAction="closeScoreEdit" panelClass="score-edit-modal score-stepper-modal">
       <div className="score-onepage-head"><div><p className="sc-modal-padded-title">성적 입력</p><p className="sub">시험 성적을 과목별로 확인하고 마지막 단계에서 한 번에 저장해요.</p></div><button type="button" className="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
+      {isSeptemberEstimate ? <p className="score-edit-estimate-notice" role="status">{SEPTEMBER_SCORE_ESTIMATE_NOTICE}</p> : null}
       <div className="score-stepper-progress"><div className="score-stepper-bar"><i style={{ width: `${progressPct}%` }} /></div><span>{doneCount} / {SCORE_STEPS.length} 입력됨</span></div>
       <div className="score-step-rail">{SCORE_STEPS.map((item) => { const active = item.step === step; const done = isSubjectSaved(quantitative, item.key); return <span className={`score-step-dot ${active ? 'active' : ''} ${done ? 'done' : ''}`} aria-current={active ? 'step' : 'false'} key={item.key}>{done && !active ? '✓' : item.name}</span>; })}</div>
       <div className="score-stepper-body"><ScoreStepPanel state={scoreEditState} step={step} /></div>
