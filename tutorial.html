@@ -129,7 +129,7 @@
     <template id="tpl-survey-quan">
         <div class="step-card">
             <h3>성적 입력</h3>
-            <p class="step-desc">3월·5월·7월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
+            <p class="step-desc">학력평가·모의평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
                 <label style="font-size:0.9rem; font-weight:600; color:#475569;">시험 선택:</label>
                 <select id="tutExamMonth" style="padding:6px 12px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9rem; color:#334155; background:#fff; cursor:pointer;">
@@ -137,9 +137,10 @@
                     <option value="may">5월 학평</option>
                     <option value="jun">6월 모평</option>
                     <option value="jul">7월 학평</option>
+                    <option value="sep">9월 모평</option>
                 </select>
             </div>
-            <p id="tutJulEstimateNotice" class="step-desc" style="display:none; color:#b45309; margin-top:-4px;">7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.</p>
+            <p id="tutExamEstimateNotice" class="tutorial-exam-estimate-notice" hidden></p>
             <div class="score-grid">
                 <div class="score-input-card">
                     <div class="score-subject-label">국어</div>
@@ -348,15 +349,20 @@
         </div>
     </template>
 
-    <!-- Step 6: 과목별 최적 상승 계획 -->
+    <!-- Step 6: 개인화 결과 준비 완료 -->
     <template id="tpl-subject-rec">
         <div class="step-card">
-            <h3>최소 노력으로 합격컷 도달하는 과목별 전략</h3>
-            <p class="step-desc">MBTI 학습 성향과 현재 성적을 기반으로 최적 상승 계획을 계산했어요.</p>
-            <div id="subjectRecContent"></div>
+            <div class="tutorial-preview-ready-icon" aria-hidden="true">✓</div>
+            <h3>개인화 결과를 확인할 준비가 끝났어요</h3>
+            <p class="step-desc">입력한 성적과 학습 성향을 목표 대학의 반영 방식과 함께 분석해, 지금 먼저 올릴 과목을 보여드릴게요.</p>
+            <ul class="tutorial-preview-ready-list">
+                <li>목표 대학 기준 과목별 1점 효과</li>
+                <li>내 성적에서 상대적으로 올리기 좋은 과목</li>
+                <li>지금부터 만들기 좋은 추천 점수 조합</li>
+            </ul>
             <div class="upsell-btn-group">
-                <button class="tut-upsell-btn btn-upsell-primary" onclick="upsellPayment()">🔓 Standard 결제하고 원하는 대학 진학 플랜 전체 보기</button>
-                <button class="tut-upsell-btn btn-upsell-secondary" onclick="endTutorial()">튜토리얼 종료하기</button>
+                <button class="tut-upsell-btn btn-upsell-primary" onclick="showBasicPreview()">내 개인화 결과 확인하기</button>
+                <button class="tut-upsell-btn btn-upsell-secondary" onclick="endTutorial()">나중에 확인하기</button>
             </div>
         </div>
     </template>

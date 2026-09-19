@@ -8,8 +8,7 @@ const expectedSitemapUrls = [
   'https://studycrack.co.kr/service',
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
-  'https://studycrack.co.kr/qna',
-  'https://studycrack.co.kr/promotion/kcc01'
+  'https://studycrack.co.kr/qna'
 ];
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
@@ -128,18 +127,22 @@ function sitemapLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => match[1]);
 }
 
-const [sitemap, robots, login, signup, home, promotion, workflow] = await Promise.all([
+const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage, homeScript, surveyScript] = await Promise.all([
   read('sitemap.xml'),
   read('robots.txt'),
   read('login.html'),
   read('signup.html'),
   read('index.html'),
-  read('promotion_kcc01.html'),
-  read('.github/workflows/deploy.yml')
+  read('404.html'),
+  read('.github/workflows/deploy.yml'),
+  read('js/shared/api.js'),
+  read('success.html'),
+  read('js/script.js'),
+  read('js/survey.js')
 ]);
 
 const sitemapUrls = sitemapLocations(sitemap);
-assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the six public URLs in the approved order');
+assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the five public URLs in the approved order');
 assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'sitemap.xml contains duplicate URLs');
 assert.match(robots, /^Sitemap:\s*https:\/\/studycrack\.co\.kr\/sitemap\.xml\s*$/m, 'robots.txt must declare the production sitemap');
 assert.doesNotMatch(robots, /^Disallow:\s*\/(?:login|signup)\/?\s*$/mi, 'login and signup must remain crawlable for noindex');
@@ -166,7 +169,7 @@ for (const [fileName, canonicalUrl] of indexedPages) {
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
 
-const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/figma/figma-asset-08.png');
+const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
 assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
 

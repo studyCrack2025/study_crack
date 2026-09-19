@@ -1,5 +1,5 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS } from '../../constants/options.js';
+import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
 import { OnboardingScreenShell } from './OnboardingShell.jsx';
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
