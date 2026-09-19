@@ -63,6 +63,8 @@ jobs:
         run: node --test ../tools/test/*.test.mjs
       - name: Check web SEO contracts
         run: node ../tools/check_seo_contract.mjs
+      - name: Check Basic v2 frontend contracts
+        run: node ../tools/check_basic_v2_contract.mjs
       - name: Build mobile app bundle
         run: npm run build
       - name: Build versioned public artifact
