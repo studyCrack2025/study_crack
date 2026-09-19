@@ -20,6 +20,8 @@ export const INQUIRY_SUBJECTS = [
 
 export const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
 
+export const SEPTEMBER_SCORE_ESTIMATE_NOTICE = '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치예요. 실제 성적표의 표준점수·백분위·등급과 다를 수 있어요.';
+
 export const EXAM_OPTIONS = [
   '3월 모의고사',
   '5월 모의고사',
