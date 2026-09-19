@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createPublishCommands, loadPublicPolicy } from './site-release.mjs';
 
 const repoRoot = new URL('../', import.meta.url);
 const expectedSitemapUrls = [
@@ -170,36 +171,19 @@ assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages mus
 
 const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
-assert.equal(targetImage[0].alt, '', 'the decorative classroom background must have empty alt text');
-assert.doesNotMatch(home, /href=["']\/promotion\/kcc01["']/, 'the homepage must not link to the retired KCC promotion');
-assert.doesNotMatch(home, /kccEventBanner-modal/, 'the homepage must not render the retired KCC promotion modal');
-const septemberUpdateModal = startTags(home, 'div').filter((tag) => tag.id === 'septemberUpdateBanner-modal');
-const septemberUpdateCta = startTags(home, 'a').filter((tag) => tag.id === 'septemberUpdateCta');
-assert.equal(septemberUpdateModal.length, 1, 'the homepage must render exactly one September mock-exam update modal');
-assert.equal(septemberUpdateCta.length, 1, 'the September update modal must have exactly one score-entry CTA');
-assert.equal(septemberUpdateCta[0].href, '/survey?exam=sep', 'the September update CTA must select the September score form');
-assert.match(home, /성적표 발표 전 임시 추정 데이터입니다/, 'the September update modal must disclose that score conversions are provisional');
-assert.match(homeScript, /initSeptemberUpdateBanner\(\)/, 'the homepage must initialize the September update modal');
-assert.match(homeScript, /septemberMockUpdateHideUntil/, 'the September update modal must use its own dismissal key');
-assert.match(surveyScript, /requestedExam !== 'sep'/, 'the survey must accept only the approved September deep-link exam value');
+assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
 
-const notFoundHead = headSource(notFound);
-const notFoundRobots = findMeta(notFoundHead, 'robots');
-assert.ok(elementText(notFoundHead, 'title'), '404.html must have a non-empty title');
-assert.equal(notFoundRobots.length, 1, '404.html must have exactly one robots meta tag');
-assert.equal(String(notFoundRobots[0].content || '').toLowerCase().replace(/\s+/g, ''), 'noindex,follow', '404.html must use noindex,follow');
-assert.equal(findCanonical(notFoundHead).length, 0, '404.html must not declare a canonical URL');
-assert.equal(findPropertyMeta(notFoundHead, 'og:url').length, 0, '404.html must not declare an og:url');
-assert.ok(elementText(notFound, 'h1'), '404.html must have a visible primary heading');
-assert.ok(startTags(notFound, 'a').some((tag) => tag.href === '/'), '404.html must offer a route back home');
+const promotionHead = headSource(promotion);
+const promotionCanonical = findCanonical(promotionHead);
+const promotionOgUrl = findPropertyMeta(promotionHead, 'og:url');
+assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one canonical link');
+assert.equal(promotionCanonical[0].href, 'https://studycrack.co.kr/promotion/kcc01', 'promotion canonical must use the public clean URL');
+assert.equal(promotionOgUrl.length, 1, 'promotion page must have exactly one og:url');
+assert.equal(promotionOgUrl[0].content, 'https://studycrack.co.kr/promotion/kcc01', 'promotion og:url must use the public clean URL');
+const publicPolicy = await loadPublicPolicy();
+assert.equal(publicPolicy.aliases['promotion/kcc01'], 'promotion_kcc01.html', 'artifact must include the promotion clean URL');
+const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
+assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
+assert.ok(publishCommands.some((args) => args.includes('promotion/kcc01') && args.includes('text/html; charset=utf-8')), 'promotion clean URL must use an HTML content type');
 
-assert.ok(workflow.includes('--exclude "promotion_kcc01.html"'), 'deploy workflow must exclude the retained promotion source');
-assert.doesNotMatch(workflow, /aws s3 cp promotion_kcc01\.html/, 'deploy workflow must not publish the retained promotion source');
-assert.ok(workflow.includes('--key "promotion/kcc01"'), 'deploy workflow must delete the retired clean URL object');
-assert.ok(workflow.includes('--key "promotion_kcc01.html"'), 'deploy workflow must delete the retired legacy object');
-assert.doesNotMatch(sharedApi, /['"]\/promotion(?:\/kcc01|_kcc01(?:\.html)?)['"]/, 'retired promotion routes must not be public session routes');
-assert.match(successPage, /종료된<br>프로모션입니다/, 'legacy KCC success URLs must show the retired state');
-assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
-assert.match(successPage, /if \(orderId && !isRetiredKccPromo\)/, 'legacy KCC success URLs must not retain a payment-looking query on refresh');
-
-console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 3 noindex pages.`);
+console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);

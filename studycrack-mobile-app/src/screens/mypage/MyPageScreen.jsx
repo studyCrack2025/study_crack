@@ -1,28 +1,13 @@
-import { buildMyPagePresentation } from './presentation.js';
+import { MySummaryContent } from './MySummaryContent.jsx';
 import { MyProfileHeader } from './MyProfileHeader.jsx';
 import { MbtiInsightCard } from './MbtiInsightCard.jsx';
 import { MyMenuList } from './MyMenuList.jsx';
 import { MyPageOverlays } from './ProfileOverlays.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 
-function MyStudyStats({ stats }) {
-  return (
-    <section className="my-study-stats" aria-label="내 학습 기록">
-      {stats.map((stat) => <div key={stat.label}><span>{stat.label}</span><b>{stat.value}</b></div>)}
-    </section>
-  );
-}
-
 export function MyPageScreen(ctx) {
-  const { dimmed = false, mbtiResult, plannerItems, selectedPlan, studyRecords, studyTimerRunning, studyTimerSecondsRef, tab = 'my', user } = ctx;
-  const presentation = buildMyPagePresentation({
-    liveStudySeconds: studyTimerRunning ? Number(studyTimerSecondsRef?.current) || 0 : 0,
-    mbtiResult,
-    plannerItems,
-    selectedPlan,
-    studyRecords,
-    user
-  });
+  const { dimmed = false, tab = 'my', myPresentation: presentation } = ctx;
+  if (!presentation) return null;
   const overlayOpen = Boolean(ctx.profileDetailModalOpen || ctx.mbtiModalOpen);
 
   return (
@@ -35,8 +20,9 @@ export function MyPageScreen(ctx) {
           <main className="my-page">
             <MyProfileHeader presentation={presentation} />
             <MbtiInsightCard mbti={presentation.mbti} />
-            <MyStudyStats stats={presentation.stats} />
+            <MySummaryContent presentation={presentation} />
             <MyMenuList />
+            <section className="my-menu-section"><h2>로그인 상태</h2><button type="button" className="btn btn-secondary" data-action="openLogoutModal">로그아웃</button></section>
           </main>
     </AppScreenShell>
   );

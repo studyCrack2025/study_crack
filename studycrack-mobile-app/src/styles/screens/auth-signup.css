@@ -1,5 +1,13 @@
 .signup-page{min-height:100%;display:flex;flex-direction:column;box-sizing:border-box;padding:calc(var(--sc-space-24) + env(safe-area-inset-top)) var(--sc-page-gutter) calc(var(--sc-space-24) + env(safe-area-inset-bottom));background:var(--sc-canvas);overflow:auto;}
 .signup-form-card{width:100%;max-width:398px;display:grid;flex:0 0 auto;align-content:start;gap:var(--sc-space-16);margin:0 auto;padding:0;border:0;background:transparent;box-shadow:none;}
+.signup-topbar{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:8px;}
+.signup-topbar > button{width:36px;min-height:44px;border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);color:var(--sc-brand-navy);font-size:28px;}
+.signup-topbar .auth-logo{width:32px;}
+.signup-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;list-style:none;margin:0;padding:0;}
+.signup-progress li{display:grid;justify-items:center;gap:4px;min-width:0;color:var(--sc-ink-muted);text-align:center;font-size:9px;font-weight:750;line-height:1.4;}
+.signup-progress b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:11px;}
+.signup-progress [aria-current="step"]{color:var(--sc-brand-navy);font-weight:900;}
+.signup-progress [aria-current="step"] b,.signup-progress [data-complete="true"] b{background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .signup-stage{display:grid;gap:var(--sc-space-16);padding:var(--sc-space-8) 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;animation:signupStageIn var(--sc-motion-screen) var(--ease-enter) both;}
 .signup-stage-head{display:grid;gap:6px;padding:0;}
 .signup-stage-head > span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:900;}
@@ -12,7 +20,7 @@
 .signup-verify-status.done{border-color:color-mix(in srgb,var(--sc-action-positive) 34%,transparent);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);}
 .signup-code-row{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:var(--sc-space-8);}
 .signup-code-btn,.signup-inline-btn{height:48px;border-radius:var(--sc-radius-control);font-size:var(--sc-type-caption);}
-.signup-two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--sc-space-8);}
+.signup-two-col{display:grid;grid-template-columns:minmax(80px,.7fr) minmax(0,1.3fr);gap:var(--sc-space-8);}
 .auth-terms-preview.native{gap:0;padding:0;overflow:hidden;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .auth-terms-check-row{min-height:48px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:var(--sc-space-8);padding:0 var(--sc-space-8) 0 var(--sc-space-12);border-top:1px solid var(--sc-border-subtle);color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:600;line-height:1.4;word-break:keep-all;}
 .auth-terms-check-row:first-child{border-top:0;}

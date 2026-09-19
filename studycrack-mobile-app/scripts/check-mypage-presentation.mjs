@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildMyPagePresentation, buildPlanPresentation, getLongestStudyStreak } from '../src/screens/mypage/presentation.js';
+import { buildMyPagePresentation, buildPlanPresentation } from '../src/screens/mypage/presentation.js';
 import { buildSocialProviders, buildSubscriptionSummary, displayAccountEmail, displayAccountName } from '../src/screens/mypage/account-presentation.js';
 
 const records = [
@@ -10,6 +10,9 @@ const records = [
 ];
 
 const presentation = buildMyPagePresentation({
+  userLoadStatus: 'ready',
+  studyOverview: { week: { seconds: 5400, fresh: true, status: 'ready' } },
+  aquariumPresentation: { ownedCount: 2, streakDays: 3, status: 'ready' },
   liveStudySeconds: 600,
   mbtiResult: 'CSDR',
   plannerItems: [{ done: true }, { done: false }, { done: true }],
@@ -17,7 +20,7 @@ const presentation = buildMyPagePresentation({
   studyRecords: records,
   user: {
     name: '긴 이름 테스트 학생',
-    qualitative: { status: '고3 재학', stream: '자연' },
+    qualitative: { status: '고3 재학', stream: '자연', mbti: 'CSDR' },
     currentSubscription: { tier: 'standard', endDate: '2026-08-31T00:00:00.000Z' }
   }
 });
@@ -27,9 +30,9 @@ assert.equal(presentation.profile.meta, '고3 재학 · 자연');
 assert.equal(presentation.plan.label, 'Standard');
 assert.equal(presentation.mbti.code, 'CSDR');
 assert.equal(presentation.mbti.rows.length, 4);
-assert.deepEqual(presentation.stats.map((stat) => stat.value), ['1시간 40분', '2개', '3일']);
-assert.equal(getLongestStudyStreak(records), 3);
-assert.equal(buildMyPagePresentation({ user: {} }).profile.name, '회원');
+assert.deepEqual(presentation.stats.map((stat) => stat.value), ['1시간 30분', '2마리', '3일']);
+assert.equal(buildMyPagePresentation({ user: {}, userLoadStatus: 'ready' }).profile.name, '회원');
+assert.ok(buildMyPagePresentation({ user: {} }).stats.every(stat => stat.value === '확인 필요'));
 assert.equal(buildMyPagePresentation({ user: {} }).profile.meta, '학년·계열 정보를 등록해주세요');
 assert.equal(buildMyPagePresentation({ user: {} }).mbti.empty, true);
 assert.equal(displayAccountName({}), '회원');

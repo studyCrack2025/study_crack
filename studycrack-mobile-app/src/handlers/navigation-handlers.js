@@ -1,4 +1,6 @@
 import { getData } from './action-utils.js';
+import { dismissTopOverlay } from '../shared/browser/overlay-focus.js';
+import { markIntroSeen } from '../features/session/intro-storage.js';
 
 export function createNavigationHandlers(ctx) {
   const {
@@ -22,11 +24,18 @@ export function createNavigationHandlers(ctx) {
   };
 
   return {
+    finishIntro() {
+      if (!['on1', 'on2', 'on3'].includes(ctx.screen)) return false;
+      markIntroSeen();
+      goto?.(ctx.hasClientSession?.() ? 'timer' : 'authLogin', false);
+      return true;
+    },
     async goto(payload) {
       return runGoto(payload, getData(payload.actionEl, 'target'));
     },
 
     back() {
+      if (dismissTopOverlay()) return true;
       back?.();
       return true;
     },

@@ -1,0 +1,11 @@
+.pay-history-page { max-width: 680px; margin: 0 auto; padding: 24px 20px 48px; overflow-wrap: anywhere; }
+.pay-history-page h1 { margin: 24px 0 16px; font-size: 28px; }
+.pay-history-page p { line-height: 1.7; }
+.pay-history-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 16px; }
+.pay-history-list li { background: var(--card); border-radius: var(--radius-lg); padding: 20px; }
+.pay-history-list h2 { font-size: 18px; margin: 0 0 12px; }
+.pay-history-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.pay-history-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 1px solid var(--primary-dark); border-radius: var(--radius-sm); background: transparent; color: var(--primary-dark); font: inherit; cursor: pointer; text-decoration: none; text-align: center; }
+.pay-history-link[hidden] { display: none; }
+.pay-history-link:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 3px; }
+.pay-history-link:disabled { opacity: .6; cursor: wait; }

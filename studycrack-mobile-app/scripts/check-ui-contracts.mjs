@@ -29,7 +29,7 @@ const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicyS
   read('src/styles/components/navigation.css'),
   read('src/styles/foundation/motion.css'),
   read('src/styles/foundation/shell.css'),
-  read('src/screens/timer/TimerScreen.jsx'),
+  read('src/screens/timer/HomeDashboard.jsx'),
   read('src/styles/screens/timer.css')
 ]);
 

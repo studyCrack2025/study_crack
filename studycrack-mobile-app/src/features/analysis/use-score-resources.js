@@ -114,7 +114,7 @@ export function useScoreResources({ canBacktrace, canSimulate, enabled, getApiBi
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
     scoreSignatureRef.current = scoreSignature;
     simulationSignatureRef.current = '';
-    setState({ analysisApiStatus: 'loading', analysisApiError: '', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
+    setState({ analysisApiStatus: 'loading', analysisApiError: '', analysisSimulationStatus: 'idle', scoreFetchStatus: 'loading', scoreFetchSignature: scoreSignature });
     fetchMobileTargetAnalysis({ ...apiBinding, targetList, userScores, examMode, signal: controller?.signal }).then((result) => {
       if (requestKeyRef.current !== requestKey || scoreSignatureRef.current !== scoreSignature) return;
       const payload = result.data || { analysisResults: [], simulationResults: [] };
@@ -188,13 +188,15 @@ export function useScoreResources({ canBacktrace, canSimulate, enabled, getApiBi
     if (typeof apiBinding.apiFetch !== 'function' || !apiBinding.analysisApiUrl) return undefined;
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
     simulationSignatureRef.current = simulationSignature;
+    setState({ analysisSimulationStatus: 'loading' });
     fetchMobileScoreSimulation({ ...apiBinding, targetList, userScores, examMode, signal: controller?.signal }).then((result) => {
-      if (simulationSignatureRef.current !== simulationSignature) return;
-      const simulationResults = result.data || [];
+      if (controller?.signal.aborted || simulationSignatureRef.current !== simulationSignature) return;
+      const simulationResults = Array.isArray(result.data) ? result.data : [];
       const currentAnalysisResults = stateRef.current.analysisResults || [];
       const merged = normalizeServerResults(currentAnalysisResults, simulationResults, scoreSignature);
       setState({
         analysisSimulations: simulationResults,
+        analysisSimulationStatus: result.ok ? (simulationResults.length ? 'ready' : 'empty') : 'error',
         lastAnalysisSnapshot: currentAnalysisResults.length
           ? { examMode, targetList, analysisResults: currentAnalysisResults, analysisSimulations: simulationResults, updatedAt: Date.now() }
           : stateRef.current.lastAnalysisSnapshot,
@@ -225,7 +227,7 @@ export function useScoreResources({ canBacktrace, canSimulate, enabled, getApiBi
     backtraceSignatureRef.current = signature;
     setState({ analysisBacktraceStatus: 'loading', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: signature });
     fetchMobileBacktrace({ ...apiBinding, targetMajor, userScores, examMode, signal: controller?.signal }).then((result) => {
-      if (backtraceSignatureRef.current !== signature) return;
+      if (controller?.signal.aborted || backtraceSignatureRef.current !== signature) return;
       setState({
         analysisBacktraceStatus: result.ok ? (result.data ? 'ready' : 'empty') : 'error',
         analysisBacktracePlan: result.data || null,

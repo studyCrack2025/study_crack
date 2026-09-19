@@ -1,5 +1,15 @@
+import { buildPlannerOverview } from '../../features/study/overview-presentation.js';
+
 function finiteMinutes(value) {
   return Math.max(0, Number(value) || 0);
+}
+
+export function nextPlannerCalendarMode(currentMode = 'week', key = '') {
+  if (key === 'Home') return 'week';
+  if (key === 'End') return 'month';
+  if (key === 'ArrowLeft' || key === 'ArrowUp') return currentMode === 'week' ? 'month' : 'week';
+  if (key === 'ArrowRight' || key === 'ArrowDown') return currentMode === 'month' ? 'week' : 'month';
+  return currentMode;
 }
 
 export function formatPlannerDuration(minutes = 0) {
@@ -12,16 +22,13 @@ export function formatPlannerDuration(minutes = 0) {
 }
 
 export function buildPlannerPresentation(items = []) {
-  const totalCount = items.length;
-  const completedItems = items.filter((item) => item.done);
-  const completedCount = completedItems.length;
+  const overview = buildPlannerOverview(items);
+  const totalCount = overview.total || 0;
+  const completedItems = items.filter((item) => item.done === true);
+  const completedCount = overview.completed || 0;
   const totalMinutes = items.reduce((sum, item) => sum + finiteMinutes(item.minutes), 0);
   const completedMinutes = completedItems.reduce((sum, item) => sum + finiteMinutes(item.minutes), 0);
-  const progress = totalMinutes
-    ? Math.round((completedMinutes / totalMinutes) * 100)
-    : totalCount
-      ? Math.round((completedCount / totalCount) * 100)
-      : 0;
+  const progress = overview.percent || 0;
 
   return {
     totalCount,

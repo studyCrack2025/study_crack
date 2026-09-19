@@ -2,6 +2,7 @@ import { APP_STATE_FIELD_KINDS, APP_STATE_FIELD_OWNERS, selectAppStateField } fr
 
 export const HANDLER_STATE_FIELDS = Object.freeze({
   navigation: Object.freeze([]),
+  productGuide: Object.freeze([]),
   auth: Object.freeze([
     'authError', 'authSubmitting', 'findEmailModalOpen', 'foundEmailMasked', 'openTermsType',
     'resetPasswordEmail', 'resetPasswordModalOpen', 'resetPasswordSending', 'resetPasswordStep',
@@ -18,7 +19,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
   gamification: Object.freeze([
     'activeDrawRequestId', 'activeFish', 'aquariumActionError', 'aquariumActionStatus',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumResult', 'aquariumSelectedFishId',
-    'aquariumStarterSpeciesId', 'fishCatalog', 'fishCount', 'fishInventory', 'gameProfile',
+    'aquariumStarterSpeciesId', 'fishCatalog', 'fishCatalogStatus', 'fishCatalogError', 'fishCount', 'fishInventory', 'gameProfile', 'gameProfileStatus', 'gameProfileError',
     'gameRefreshTick', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus'
   ]),
   planner: Object.freeze([
@@ -32,13 +33,15 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'phoneChangeModalOpen', 'phoneChangeSending', 'phoneChangeStep', 'profileDetailModalOpen',
     'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep',
     'scoreExamKey', 'scoreSubjectSaving', 'scores', 'targetMajor', 'user', 'withdrawModalOpen',
-    'withdrawPassword'
+    'withdrawPassword', 'withdrawSubmitting'
   ]),
   service: Object.freeze([
+    'streakSummary',
+    'notiRefreshTick', 'qnaRefreshTick', 'reportsRefreshTick',
     'analysisSearchOpen', 'checkoutPlan', 'coachingDropReasons', 'coachingExamFiles',
     'coachingExamScores', 'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen',
     'coachingStep', 'coachingSubjectRows', 'coachingSubmitted', 'coachingSubmitting', 'coachingTrend',
-    'coachingView', 'drawerOpen', 'duration', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
+    'coachingView', 'drawerOpen', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
     'notiPage', 'notifModalOpen', 'proReports',
     'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText',
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus',
@@ -56,7 +59,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
   ]),
   calendar: Object.freeze([
     'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthAnchor',
-    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'personalEvents'
+    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'calendarSyncStatus', 'personalEvents'
   ]),
   form: Object.freeze([
     'analysisSearchTerm', 'coachingAnswers', 'coachingExamFiles', 'coachingExamScores',

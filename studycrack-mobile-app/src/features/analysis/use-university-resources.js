@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { fetchUniversityCatalog, fetchUniversityRecommendations } from './api.js';
 
-export function useUniversityResources({ examData, examMode, excludeTargets, getApiBinding, retryTick = 0, savedStream = '', screen, setState, userReady } = {}) {
+export function useUniversityResources({ examData, examMode, excludeTargets, getApiBinding, recommendationRetryTick = 0, retryTick = 0, savedStream = '', screen, setState, userReady } = {}) {
   const catalogRequestRef = useRef(0);
   const recommendationRequestRef = useRef(0);
 
@@ -24,7 +24,7 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
   }, [getApiBinding, retryTick, screen, setState]);
 
   useEffect(() => {
-    if (screen !== 'addUniversity' || !userReady) return undefined;
+    if (!['addUniversity', 'ob4'].includes(screen) || !userReady) return undefined;
     const requestKey = recommendationRequestRef.current + 1;
     recommendationRequestRef.current = requestKey;
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
@@ -49,5 +49,5 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       controller?.abort();
       if (recommendationRequestRef.current === requestKey) recommendationRequestRef.current += 1;
     };
-  }, [examData, examMode, excludeTargets, getApiBinding, savedStream, screen, setState, userReady]);
+  }, [examData, examMode, excludeTargets, getApiBinding, recommendationRetryTick, savedStream, screen, setState, userReady]);
 }

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { assertProductImportBoundary } from './product-import-boundary.mjs';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = path.join(appRoot, 'src');
@@ -18,6 +19,7 @@ async function listModules(directory) {
 }
 
 const parsedModules = new Set();
+const productionModules = new Set();
 const result = await build({
   root: appRoot,
   logLevel: 'silent',
@@ -25,6 +27,7 @@ const result = await build({
     name: 'studycrack-dead-code-audit',
     moduleParsed(info) {
       const cleanId = info.id.split('?')[0];
+      productionModules.add(path.relative(path.dirname(appRoot), cleanId));
       if (cleanId.startsWith(sourceRoot) && /\.(?:js|jsx)$/.test(cleanId)) {
         parsedModules.add(path.normalize(cleanId));
       }
@@ -34,6 +37,12 @@ const result = await build({
 });
 const outputs = (Array.isArray(result) ? result : [result]).flatMap((item) => item.output || []);
 const chunks = outputs.filter((item) => item.type === 'chunk');
+const manifest = JSON.parse(await readFile(path.join(appRoot, 'package.json'), 'utf8'));
+assertProductImportBoundary({
+  modulePaths: [...productionModules],
+  dependencyNames: ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].flatMap((key) => Object.keys(manifest[key] || {})),
+  outputTexts: outputs.filter((item) => item.type === 'chunk' || item.fileName.endsWith('.css')).map((item) => item.code || String(item.source))
+});
 const removedExports = [];
 
 for (const chunk of chunks) {
@@ -54,4 +63,4 @@ const unreachable = sourceModules
 assert.deepEqual(unreachable, [], `Unreachable production modules:\n${unreachable.join('\n')}`);
 assert.deepEqual(removedExports.sort(), [], `Unused production exports:\n${removedExports.sort().join('\n')}`);
 
-console.log(`Dead-code check passed: ${sourceModules.length} source modules are reachable with no unused exports.`);
+console.log(`Dead-code check passed: ${sourceModules.length} source modules are reachable with no unused exports or archived design imports.`);

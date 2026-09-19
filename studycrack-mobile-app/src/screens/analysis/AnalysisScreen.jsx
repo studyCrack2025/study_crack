@@ -26,6 +26,7 @@ export function AnalysisScreen(ctx) {
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}`}>
             <div className="analysis-content-stage">
               <PrimaryScreenHeader className="analysis-context-head" eyebrow="대학별 성적 분석" title="환산점수 분석" />
+              <section className="analysis-input-entry" aria-label="분석 전 성적 확인"><div><b>내 성적부터 확인해요</b><p>저장한 시험 성적이 분석 기준이에요. 입력하거나 수정한 뒤 대학별 점수를 확인해주세요.</p></div><button type="button" className="btn btn-secondary" data-action="goto" data-target="scoreInfo">성적 입력·수정</button></section>
               {isStale && (
                 <div className="analysis-stale-note" role="status" aria-live="polite">
                   <i aria-hidden="true" />

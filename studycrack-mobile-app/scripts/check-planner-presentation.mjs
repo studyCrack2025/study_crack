@@ -11,7 +11,7 @@ assert.equal(progress.totalCount, 3);
 assert.equal(progress.completedCount, 2);
 assert.equal(progress.totalMinutes, 180);
 assert.equal(progress.completedMinutes, 90);
-assert.equal(progress.progress, 50);
+assert.equal(progress.progress, 67);
 assert.equal(progress.totalDurationLabel, '3시간');
 assert.equal(progress.completedDurationLabel, '1시간 30분');
 

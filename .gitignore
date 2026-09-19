@@ -45,3 +45,6 @@ js/dev-mock.local.js
 studycrack-mobile-app/test-results/
 studycrack-mobile-app/playwright-report/
 studycrack-mobile-app/architecture-baseline.json
+
+# Verified public deployment artifact (generated locally or in CI).
+/release-artifact/

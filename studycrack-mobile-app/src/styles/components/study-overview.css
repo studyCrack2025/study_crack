@@ -1,0 +1,20 @@
+.sc-study-overview{display:grid;gap:12px;min-width:0;padding:16px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);}
+.sc-study-overview[data-variant="inline"]{padding:0;border:0;}
+.sc-study-details{min-width:0;}
+.sc-study-details > summary{min-height:44px;box-sizing:border-box;padding:12px 0;cursor:pointer;color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;line-height:20px;overflow-wrap:anywhere;}
+.sc-study-details > .sc-study-source{margin-top:12px;}
+.sc-study-details > summary:focus-visible{outline:2px solid var(--sc-brand-navy);outline-offset:2px;border-radius:4px;}
+.sc-study-overview header span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}
+.sc-study-overview h2{margin:3px 0 0;color:var(--sc-brand-navy);font-size:17px;font-weight:900;line-height:1.35;}
+.sc-study-plan-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px var(--sc-space-8);}
+.sc-study-plan-progress > span{height:8px;border-radius:var(--sc-radius-pill);background:var(--sc-surface-muted);overflow:hidden;}
+.sc-study-plan-progress > span i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--sc-brand-navy),var(--sc-action-positive));transition:width var(--sc-motion-progress) var(--ease-enter);}
+.sc-study-plan-progress > b{color:var(--sc-brand-navy);font-size:var(--sc-type-caption);}
+.sc-study-plan-progress > small{grid-column:1/-1;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;}
+.sc-study-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;}
+.sc-study-metrics div{min-width:0;display:grid;gap:4px;}
+.sc-study-metrics dt{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.4;overflow-wrap:anywhere;}
+.sc-study-metrics dd{margin:0;color:var(--sc-brand-navy);font-size:18px;font-weight:900;font-variant-numeric:tabular-nums;}
+.sc-study-source{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);line-height:1.6;}
+.sc-study-notice{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;}
+.sc-study-notice button{flex:none;min-height:44px;padding:8px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}

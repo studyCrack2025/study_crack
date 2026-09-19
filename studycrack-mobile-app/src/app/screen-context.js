@@ -1,4 +1,5 @@
 const ANALYSIS_CONTEXT_KEYS = [
+  'analysisPresentation',
   'analysisApiError', 'analysisApiStatus', 'analysisBacktraceError', 'analysisBacktracePlan',
   'analysisBacktraceStatus', 'analysisHighlightedSubject', 'analysisMajorOptions', 'analysisScoreView',
   'analysisSelected', 'analysisSimRecommendedIndex', 'analysisSimRows', 'analysisStatus', 'analysisCalculationRequested',
@@ -11,7 +12,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep', 'myProfileEditOpen',
     'myProfileNameDraft', 'myProfilePhoneCodeDraft', 'myProfilePhoneDraft', 'phoneChangeModalOpen',
     'phoneChangeSending', 'phoneChangeStep', 'profilePhotoUploading', 'selectedPlan', 'user',
-    'withdrawModalOpen', 'withdrawPassword'
+    'withdrawModalOpen', 'withdrawPassword', 'withdrawSubmitting'
   ]),
   addUniversity: Object.freeze([
     'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
@@ -20,13 +21,14 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   ]),
   analysis: Object.freeze(ANALYSIS_CONTEXT_KEYS),
   aquarium: Object.freeze([
+    'aquariumPresentation', 'studyOverview',
     'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
-    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems'
+    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems', 'canAccessBasic'
   ]),
-  authFindId: Object.freeze([]),
-  authFindPw: Object.freeze([]),
+  authFindId: Object.freeze(['foundEmailMasked']),
+  authFindPw: Object.freeze(['resetPasswordEmail', 'resetPasswordSending', 'resetPasswordStep']),
   authLogin: Object.freeze([
     'authError', 'authSubmitting', 'findEmailModalOpen', 'foundEmailMasked', 'openTermsType',
     'resetPasswordEmail', 'resetPasswordModalOpen', 'resetPasswordSending', 'resetPasswordStep',
@@ -38,29 +40,34 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'signupVerifiedEmail', 'signupVerifiedPhone', 'studycrackLogoSrc'
   ]),
   customerSupport: Object.freeze([
-    'openFaq', 'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
+    'openFaq', 'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaError', 'qnaStatus', 'qnaSubmitting'
   ]),
   lockedFeature: Object.freeze([
     'lockedFeatureLabel', 'lockedFeatureTarget', 'lockedFeatureTier', 'tab', 'upgradePromptTarget', 'upgradePromptTier'
   ]),
   my: Object.freeze([
+    'myPresentation',
     'dimmed', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep', 'plannerItems',
     'profileDetailModalOpen', 'profilePhotoUploading', 'selectedPlan', 'studyRecords',
     'studyTimerRunning', 'studyTimerSecondsRef', 'tab', 'user'
   ]),
-  notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiStatus']),
+  notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiError', 'notiStatus']),
   notificationSettings: Object.freeze(['notifications']),
   ob1: Object.freeze(['crackySrc', 'obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
-  ob2: Object.freeze(['crackySrc', 'obExamType']),
+  ob2: Object.freeze(['crackySrc', 'scoreEditState', 'scoreExamType', 'scoreSubjectSaving']),
   ob3: Object.freeze(['crackySrc', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep']),
   ob4: Object.freeze([
-    'analysisGaugeColor', 'analysisGaugeFill', 'analysisSelected', 'analysisStatus', 'analysisStatusColor',
-    'crackySrc', 'liveCurrentScore', 'mbtiResult', 'scoreTierClass', 'targetMajor'
+    'analysisApiError', 'analysisApiStatus', 'analysisGaugeFill', 'analysisMajorOptions', 'analysisRecommended',
+    'analysisScoreView', 'analysisSelected', 'analysisSimRows', 'analysisStatus', 'analysisStatusColor',
+    'crackySrc', 'mbtiResult', 'scoreTierClass', 'targetMajor', 'universityRecommendationError',
+    'universityRecommendationStatus'
   ]),
   ob5: Object.freeze([
-    'activeScoreView', 'analysisApiStatus', 'analysisSelected', 'analysisSimRows', 'analysisTargetScore',
+    'analysisPresentation',
+    'activeScoreView', 'analysisApiError', 'analysisApiStatus', 'analysisScoreView', 'analysisSelected',
+    'analysisSimRows', 'analysisSimulationTargets', 'analysisTargetScore',
     'canUseReverseProjection', 'crackySrc', 'gaugeCurrent', 'gaugeCurrentPct', 'gaugePassPct',
-    'gaugeSafePct', 'gaugeTarget', 'gaugeTargetPct', 'ob3IsAnalyzing', 'scoreDragOffset',
+    'gaugeSafePct', 'gaugeTarget', 'gaugeTargetPct', 'scoreDragOffset',
     'scoreSlideMotion', 'scoreState', 'scoreTierClass', 'scores'
   ]),
   on1: Object.freeze([]),
@@ -74,17 +81,17 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'normalizedTargetMajor', 'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
   ]),
   plannerAdd: Object.freeze(['selectedPlannerDate', 'selectedPlannerDateKey']),
-  payment: Object.freeze(['checkoutPlan', 'duration']),
+  payment: Object.freeze(['checkoutPlan']),
   paymentComplete: Object.freeze([]),
   privacyPolicy: Object.freeze(['termsContent']),
   qualInfo: Object.freeze(['obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
   ranking: Object.freeze(['formatHms', 'rankingError', 'rankingMe', 'rankingPeriod', 'rankingRows', 'rankingStatus']),
   proElite: Object.freeze([
-    'proReports', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText'
+    'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText'
   ]),
   proIntro: Object.freeze(['checkoutPlan', 'upgradePromptTarget', 'upgradePromptTier']),
   report: Object.freeze([
-    'proReports', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText', 'tab'
+    'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText', 'tab'
   ]),
   reportDetail: Object.freeze([]),
   scoreInfo: Object.freeze([
@@ -95,23 +102,25 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   settingsTermsPicker: Object.freeze(['openTermsType', 'termsContent']),
   splash: Object.freeze(['crackyHiSrc', 'studycrackLogoSrc']),
   strategy: Object.freeze([
+    'plannerItems', 'studyOverview',
     'coachingAnswers', 'coachingDropReasons', 'coachingExamFiles', 'coachingExamScores',
     'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen', 'coachingStep',
     'coachingSubjectRows', 'coachingSubmitting', 'coachingTrend', 'coachingView', 'dimmed',
-    'tab', 'weeklyReports', 'weeklyReportsStatus'
+    'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
-    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'drawerOpen', 'fishCount', 'formatHms', 'formatMinutesLabel',
-    'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'habitatDays', 'habitatStatus', 'hasClientSession',
+    'studyOverview', 'aquariumPresentation',
+    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
+    'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',
     'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
-    'selectedPlan', 'studySubjectSheetOpen', 'studySummary', 'studySummaryError', 'studySummaryStatus', 'studyTimerRunning',
+    'studySubjectSheetOpen', 'studySummary', 'studySummaryStatus', 'studyTimerRunning',
     'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'
   ]),
   tutor: Object.freeze([
-    'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus', 'qnaSubmitting'
+    'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaError', 'qnaStatus', 'qnaSubmitting'
   ]),
-  weekly: Object.freeze(['crackySrc', 'tab', 'weeklyReports']),
+  weekly: Object.freeze(['crackySrc', 'plannerItems', 'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus']),
   termsScreen: Object.freeze(['termsContent'])
 });
 

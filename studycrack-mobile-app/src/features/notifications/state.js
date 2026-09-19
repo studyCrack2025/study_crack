@@ -6,10 +6,12 @@ export function createNotificationsInitialState() {
     serverResource: {
       notifications: { ...DEFAULT_NOTIFICATIONS },
       notiList: [],
-      notiStatus: 'idle'
+      notiStatus: 'idle',
+      notiError: ''
     },
     localDraft: {},
     ephemeralUi: {
+      notiRefreshTick: 0,
       notiPage: 0,
       notiExpandedId: '',
       notiDetailId: '',

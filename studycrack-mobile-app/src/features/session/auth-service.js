@@ -236,3 +236,20 @@ export function loginWithPassword({ email, password } = {}) {
     });
   });
 }
+
+export function verifyPassword({ email, password } = {}) {
+  return new Promise((resolve) => {
+    const pool = getUserPool();
+    if (!pool) {
+      resolve({ ok: false, error: '로그인 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.' });
+      return;
+    }
+    const authDetails = new AuthenticationDetails({ Username: email, Password: password });
+    const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
+    cognitoUser.authenticateUser(authDetails, {
+      onSuccess: () => resolve({ ok: true }),
+      onFailure: (err) => resolve({ ok: false, error: mapCognitoError(err) }),
+      newPasswordRequired: () => resolve({ ok: false, error: '비밀번호 재설정이 필요합니다. 비밀번호 찾기를 이용해주세요.' })
+    });
+  });
+}

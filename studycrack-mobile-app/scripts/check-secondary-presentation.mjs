@@ -7,7 +7,7 @@ const profile = read('../src/screens/profile/ProfileScreens.jsx');
 const profileModal = read('../src/screens/profile/ScoreEditModal.jsx');
 const mypage = read('../src/screens/mypage/MyPageSecondaryScreens.jsx');
 const account = read('../src/screens/mypage/AccountInfoScreen.jsx');
-const legal = read('../src/screens/mypage/LegalScreens.jsx');
+const legal = read('../src/screens/mypage/LegalScreens.jsx') + read('../src/screens/mypage/SettingsScreens.jsx');
 const secondaryScreen = read('../src/components/SecondaryScreen.jsx');
 const serviceContent = read('../src/screens/service/ServiceContentScreens.jsx');
 const servicePlan = read('../src/screens/service/ServicePlanScreens.jsx');
@@ -47,7 +47,7 @@ assert.match(scoreStyles, /\.score-grade-input\{/);
 assert.match(scoreStyles, /\.score-inquiry-grid\{/);
 assert.doesNotMatch(scoreStyles, /\.score-grade-grid\{|\.score-grade-card\{/);
 
-assert.match(mypage, /role="switch" aria-checked=/);
+assert.match(mypage, /<button[^>]*role="switch"[^>]*aria-checked=/);
 assert.match(mypage, /const NOTI_PAGE_SIZE = 7/);
 assert.match(mypage, /\['planner', '플래너 알림'/);
 assert.match(mypage, /\['report', '리포트 알림'/);
@@ -75,17 +75,20 @@ assert.match(legal, /sc-reading-content/);
 assert.doesNotMatch(legal, /dangerouslySetInnerHTML/);
 assert.match(secondaryScreen, /export function SecondaryIntro/);
 assert.match(secondaryScreen, /export function SecondaryScreenShell/);
+assert.match(secondaryScreen, /<StatusState/);
+assert.doesNotMatch(secondaryScreen, /sc-secondary-state/);
 
 assert.match(serviceContent, /data-action="downloadProReport"/);
 assert.match(serviceContent, /data-action="openProRequestModal"/);
 assert.match(serviceContent, /data-action="openQnaComposer"/);
-assert.match(serviceContent, /proReportsStatus === 'error'/);
-assert.match(serviceContent, /data-target=\{latest \? 'planner' : 'strategy'\}/);
+assert.match(serviceContent, /ResourceFeedback status=\{proReportsStatus\}/);
+assert.match(serviceContent, /data-target=\{reports.length \? 'planner' : 'strategy'\}/);
+assert.match(serviceContent, /reports.map\(\(report, index\) => <WeeklyFeedbackCard/);
 assert.match(servicePlan, /data-action="openWebPayment"/);
 assert.match(servicePlan, /data-action="selectPlan"/);
-assert.match(servicePlan, /data-action="selectDuration"/);
+assert.doesNotMatch(servicePlan, /data-action="selectDuration"/);
 assert.match(servicePlan, /aria-pressed=\{active\}/);
-assert.match(servicePlan, /웹 결제는 4주 단위로 최종 확인됩니다/);
+assert.match(servicePlan, /4주\(28일\) 단건 결제/);
 
 for (const selector of [
   '.sc-secondary-page',
@@ -93,8 +96,8 @@ for (const selector of [
   '.sc-secondary-section',
   '.sc-secondary-list',
   '.sc-secondary-row',
-  '.sc-secondary-form',
-  '.sc-secondary-state'
+  '.sc-secondary-form'
 ]) assert.match(styles, new RegExp(selector.replace('.', '\\.') + '\\{'));
+assert.doesNotMatch(styles, /\.sc-secondary-state/);
 
 console.log('secondary-presentation contracts passed');

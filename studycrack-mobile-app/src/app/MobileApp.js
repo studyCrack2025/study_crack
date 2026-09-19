@@ -10,6 +10,8 @@ import { useMobileApiController } from './use-mobile-api-controller.js';
 import { useDeferredScreenRegistry, useMobileAppEffects } from './use-mobile-app-effects.js';
 import { useMobileResourceOrchestrator } from './use-mobile-resource-orchestrator.js';
 import { useAppStatePersistence } from './use-app-state-persistence.js';
+import { usePlannerStorage } from './use-planner-storage.js';
+import { PlannerStorageContext } from '../features/planner/PlannerStorageContext.js';
 import {
   MAIN_TAB_SCREENS,
   appStateReducer,
@@ -17,59 +19,29 @@ import {
   selectFlatAppState
 } from '../runtime/app-state.js';
 import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
+import { AppContent, AppFrame } from '../components/AppFrame.js';
+import { StatusState } from '../components/StatusState.js';
+import { DeferredScreenFallback } from './DeferredScreenFallback.js';
+import { AppOverlayContext } from '../components/AppOverlayContext.js';
+import { useAppOverlayBridge } from './use-app-overlay-bridge.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
-function DeferredScreenFallback({ onRetry, screen, status }) {
-  const failed = status === 'error';
-  return React.createElement(
-    'div',
-    { className: 'app-shell' },
-    React.createElement(
-      'div',
-      { className: 'app-frame' },
-      React.createElement(
-        'div',
-        { className: 'screen app-screen app-content', 'data-screen': screen },
-        React.createElement(
-          'div',
-          { className: 'center init-loading', role: 'status', 'aria-live': 'polite' },
-          React.createElement('h3', null, failed ? '화면을 불러오지 못했습니다' : '앱 화면을 준비하고 있어요'),
-          React.createElement(
-            'p',
-            { className: 'sub' },
-            failed ? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.' : '잠시만 기다려 주세요.'
-          ),
-          failed
-            ? React.createElement('button', {
-                type: 'button',
-                className: 'btn btn-primary mini',
-                onClick: onRetry
-              }, '다시 시도')
-            : null
-        )
-      )
-    )
-  );
-}
-
 function MissingScreenFallback({ screen }) {
   return React.createElement(
-    'div',
-    { className: 'app-shell' },
+    AppFrame,
+    null,
     React.createElement(
-      'div',
-      { className: 'app-frame' },
+      AppContent,
+      { screen },
       React.createElement(
-        'div',
-        { className: 'screen app-screen app-content', 'data-screen': screen },
-        React.createElement(
-          'div',
-          { className: 'center init-loading', role: 'status' },
-          React.createElement('h3', null, '화면을 찾을 수 없습니다'),
-          React.createElement('p', { className: 'sub' }, '타이머로 돌아가 다시 시도해 주세요.'),
-          React.createElement('button', { type: 'button', className: 'btn btn-primary mini', 'data-action': 'goto', 'data-target': 'timer' }, '타이머로 이동')
-        )
+        StatusState,
+        {
+          action: React.createElement('button', { type: 'button', className: 'btn btn-primary', 'data-action': 'goto', 'data-target': 'timer' }, '타이머로 이동'),
+          description: '타이머로 돌아가 다시 시도해 주세요.',
+          kind: 'error',
+          title: '화면을 찾을 수 없습니다'
+        }
       )
     )
   );
@@ -85,14 +57,23 @@ export function MobileApp() {
   const plannerCustomMinutesRef = useRef('');
   const qnaDraftRef = useRef({ title: '', content: '' });
   const operationLocksRef = useRef(new Set());
+  const productGuideActionsRef = useRef(null);
   stateRef.current = state;
   rootStateRef.current = rootState;
   useAppStatePersistence(rootState);
 
   const deferredScreens = useDeferredScreenRegistry(state.screen);
+  const plannerStorage = usePlannerStorage(rootState, setState, deferredScreens.registry?.createPlannerStorageController);
   const handlerStateActions = useMemo(
-    () => createHandlerStateActions({ setState, getRootState: () => rootStateRef.current }),
-    [setState]
+    () => {
+      const actions = createHandlerStateActions({ setState, getRootState: () => rootStateRef.current });
+      return {
+        ...actions,
+        planner: { ...actions.planner, plannerAccount: plannerStorage?.account, setPlannerItems: next => plannerStorage?.update(next) ?? false },
+        timer: { ...actions.timer, setPlannerItems: next => plannerStorage?.update(next, { retainOnFailure: true }) ?? false }
+      };
+    },
+    [setState, plannerStorage]
   );
   const nav = useMemo(() => createNavigationOps({
     getState: () => stateRef.current,
@@ -118,14 +99,16 @@ export function MobileApp() {
 
   const viewContext = createMobileViewContext({
     api,
+    buildPresentations: deferredScreens.registry?.buildAppPresentations,
     beforeGoto,
     nav,
-    refs: { operationLocksRef, plannerContentRef, plannerCustomMinutesRef, qnaDraftRef },
+    refs: { operationLocksRef, plannerContentRef, plannerCustomMinutesRef, qnaDraftRef, productGuideActionsRef },
     retryUserLoad,
     setState,
     state,
     stateRef
   });
+  const appOverlay = useAppOverlayBridge({ registry: deferredScreens.registry, setState, state, myPresentation: viewContext.myPresentation });
   const contextRef = useRef({ ...state, ...viewContext });
   contextRef.current = { ...state, ...viewContext };
   const events = useMemo(
@@ -153,11 +136,11 @@ export function MobileApp() {
     onChange,
     onBlur
   };
+  const OverlayProvider = deferredScreens.registry?.AppOverlayProvider || AppOverlayContext.Provider;
+  const renderWithOverlays = (content) => React.createElement(PlannerStorageContext.Provider, { value: plannerStorage ? { ...plannerStorage.getStatus(), retry: plannerStorage.retry, controller: plannerStorage } : null }, React.createElement(OverlayProvider, { value: appOverlay, ...(deferredScreens.registry?.AppOverlayProvider ? { guide: { api, state, setState, nav, actionsRef: productGuideActionsRef, presentation: { profile: viewContext.myPresentation?.profile, aquarium: viewContext.aquariumPresentation, tasks: viewContext.todayPlannerItems, catalog: state.fishCatalog, streak: viewContext.streakPresentation } } } : {}) }, React.createElement('div', wrapperProps, content)));
 
   if (isDeferredAppScreen(state.screen) && !deferredScreens.registry) {
-    return React.createElement(
-      'div',
-      wrapperProps,
+    return renderWithOverlays(
       React.createElement(DeferredScreenFallback, {
         onRetry: deferredScreens.retry,
         screen: state.screen,
@@ -169,9 +152,9 @@ export function MobileApp() {
   const ScreenComponent = getScreenComponent(state.screen, deferredScreens.registry);
   if (ScreenComponent) {
     const screenContext = createScreenContext(state.screen, viewContext, handlerStateActions, state);
-    return React.createElement('div', wrapperProps, React.createElement(ScreenComponent, screenContext));
+    return renderWithOverlays(React.createElement(ScreenComponent, screenContext));
   }
-  return React.createElement('div', wrapperProps, React.createElement(MissingScreenFallback, { screen: state.screen }));
+  return renderWithOverlays(React.createElement(MissingScreenFallback, { screen: state.screen }));
 }
 
 export default MobileApp;

@@ -259,6 +259,10 @@ export function createFormHandlers(ctx) {
     }
 
     const field = target.getAttribute('data-field');
+    if (field === 'proRequestText') {
+      preserveScrollAfterStateChange(() => setProRequestText(target.value));
+      return { handled: true, field };
+    }
     if (['v2e-english', 'v2e-history'].includes(field) && target.classList?.contains('score-grade-input')) {
       const grade = String(target.value || '').replace(/[^1-9]+/g, '').slice(0, 1);
       if (target.value !== grade) target.value = grade;
@@ -340,7 +344,7 @@ export function createFormHandlers(ctx) {
     if (!field) return { handled: Boolean(coachAnswer || coachPlan || coachActual) };
     if (field === 'plannerContent' && ctx.plannerContentRef) {
       ctx.plannerContentRef.current = target.value;
-      syncPlannerAddForm(ctx);
+      if (!event?.nativeEvent?.isComposing) syncPlannerAddForm(ctx);
       return { handled: true, field };
     }
     if (field === 'plannerStartTime' || field === 'plannerEndTime' || field === 'plannerMemo') {

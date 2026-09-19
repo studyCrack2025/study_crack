@@ -5,8 +5,6 @@ import { persistAnalysisStorage } from '../features/analysis/storage.js';
 import { analysisSlice } from '../features/analysis/state.js';
 import { persistNotificationsStorage } from '../features/notifications/storage.js';
 import { notificationsSlice } from '../features/notifications/state.js';
-import { persistPlannerStorage } from '../features/planner/storage.js';
-import { plannerSlice } from '../features/planner/state.js';
 import { persistStudyStorage } from '../features/study/storage.js';
 import { studySlice } from '../features/study/state.js';
 import { persistNavigationStorage } from '../runtime/navigation-storage.js';
@@ -17,7 +15,6 @@ const { useEffect } = React;
 export function useAppStatePersistence(rootState) {
   const analysisResource = analysisSlice.selectors.serverResource(rootState);
   const analysisDraft = analysisSlice.selectors.localDraft(rootState);
-  const plannerResource = plannerSlice.selectors.serverResource(rootState);
   const studyResource = studySlice.selectors.serverResource(rootState);
   const studyDraft = studySlice.selectors.localDraft(rootState);
   const notificationResource = notificationsSlice.selectors.serverResource(rootState);
@@ -27,12 +24,6 @@ export function useAppStatePersistence(rootState) {
   useEffect(() => {
     persistAnalysisStorage({ scores: analysisResource.scores, targetMajor: analysisDraft.targetMajor });
   }, [analysisResource.scores, analysisDraft.targetMajor]);
-
-  useEffect(() => {
-    persistPlannerStorage({
-      plannerItems: plannerResource.plannerItems
-    });
-  }, [plannerResource.plannerItems]);
 
   useEffect(() => {
     persistStudyStorage({

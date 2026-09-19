@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "format": "png",
+  "preservation": "original-bytes",
+  "entries": [
+    {
+      "key": "day1",
+      "file": "day-01.png",
+      "width": 377,
+      "height": 502,
+      "bytes": 83552,
+      "sha256": "f532d7fb19a1001ff0f3c6480b003ec5c833079463ed2c8d06cbe4d07744f663"
+    },
+    {
+      "key": "day7",
+      "file": "day-07.png",
+      "width": 377,
+      "height": 502,
+      "bytes": 134046,
+      "sha256": "7de0eabe25d7fa322fb0280407bbf2895425477cb6d1f873feb3301fa991dede"
+    },
+    {
+      "key": "day15",
+      "file": "day-15.png",
+      "width": 377,
+      "height": 502,
+      "bytes": 226140,
+      "sha256": "dc0fb7938b6a22a9a53ba332373eb943008e0e46c0607057b328dadf1fa8bbb7"
+    },
+    {
+      "key": "day30",
+      "file": "day-30.png",
+      "width": 377,
+      "height": 502,
+      "bytes": 288623,
+      "sha256": "087c7d70cd7e6e90db7eb0bae3545ad76b8888b14c8c1e2c816d38cb25b2a1f7"
+    },
+    {
+      "key": "day50",
+      "file": "day-50.png",
+      "width": 377,
+      "height": 502,
+      "bytes": 134782,
+      "sha256": "865cf7a9fa0631c80a5fb8f0b9d21afae277ea2aa6d94198a872cf3f39a1a3ef"
+    },
+    {
+      "key": "day100",
+      "file": "day-100.png",
+      "width": 376,
+      "height": 502,
+      "bytes": 319674,
+      "sha256": "095215f7f8e9eabb320460514e048af087a500a9679f80830967aed729493b5a"
+    }
+  ]
+}

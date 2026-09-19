@@ -1,9 +1,5 @@
-export function EmptyState({ action = null, className = '', description = '', loading = false, title = '' }) {
-  return (
-    <div className={`sc-empty ${loading ? 'is-loading' : ''} ${className}`.trim()} role={loading ? 'status' : undefined} aria-live={loading ? 'polite' : undefined}>
-      <span className="sc-empty-mark" aria-hidden="true">{loading ? <i /> : '✓'}</span>
-      <div><b>{title}</b>{description ? <p>{description}</p> : null}</div>
-      {action}
-    </div>
-  );
+import { StatusState } from './StatusState.js';
+
+export function EmptyState({ action = null, className = '', description = '', kind = 'empty', loading = false, title = '' }) {
+  return <StatusState action={action} className={className} description={description} kind={loading ? 'loading' : kind} title={title} />;
 }

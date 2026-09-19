@@ -8,6 +8,12 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    streakSummary: { open: false, returnTarget: '' },
+    gameProfile: null,
+    gameProfileStatus: 'idle',
+    habitatDays: [],
+    habitatStatus: 'idle',
+    habitatError: '',
     user: { ...EMPTY_USER },
     userTier: '',
     selectedPlan: '',
@@ -23,6 +29,7 @@ export function createUserDataResetPatch() {
     scoreEditState: createBlankScoreState(),
     analysisResults: [],
     analysisSimulations: [],
+    analysisSimulationStatus: 'idle',
     analysisResultExamMode: '',
     analysisResultSignature: '',
     analysisCalculationRequested: false,
@@ -94,6 +101,7 @@ function mapTargetUnivs(targetUnivs = []) {
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {
+    analysisSimulationStatus: 'idle',
     userTier: '',
     selectedPlan: '',
     scores: {},

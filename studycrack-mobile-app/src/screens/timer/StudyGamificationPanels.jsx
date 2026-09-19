@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { buildTimerJourneyPresentation } from './presentation.js';
 
 const STUDY_WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+const journeyStateLabel = (state) => state === 'active' ? '진행 중' : state === 'complete' ? '완료' : state === 'error' ? '오류' : '대기';
 
 function exactDurationLabel(seconds = 0) {
   const total = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -19,10 +21,10 @@ function subjectTone(subject = '') {
   return 'other';
 }
 
-export function StudyWeekSummary({ activeSubject = '', liveSeconds = 0, summary = null, status = 'idle' }) {
+export function StudyWeekSummary({ overview, summary = null, status = 'idle' }) {
   const [selectedDate, setSelectedDate] = useState('');
   if (status === 'loading' && !summary) return <div className="timer-week-loading" role="status"><i /><span>이번 주 공부 흐름을 정리하고 있어요.</span></div>;
-  if (!summary?.week?.days?.length || status === 'error' || status === 'unavailable') {
+  if (!summary?.week?.days?.length || overview?.week.seconds == null) {
     return (
       <div className="timer-week-empty">
         <span>{status === 'error' ? '공부 요약을 잠시 불러오지 못했어요.' : '공부를 완료하면 주간 흐름이 이곳에 쌓여요.'}</span>
@@ -30,23 +32,18 @@ export function StudyWeekSummary({ activeSubject = '', liveSeconds = 0, summary 
       </div>
     );
   }
-  const currentLive = Math.max(0, Number(liveSeconds) || 0);
   const todayDate = summary.today?.date || '';
   const days = summary.week.days.map((day) => {
     const subjects = (day.subjects || []).map((row) => ({ ...row, seconds: Number(row.seconds) || 0 }));
-    if (day.date === todayDate && activeSubject && currentLive) {
-      const activeIndex = subjects.findIndex((row) => row.subject === activeSubject);
-      if (activeIndex >= 0) subjects[activeIndex] = { ...subjects[activeIndex], seconds: subjects[activeIndex].seconds + currentLive };
-      else subjects.push({ subject: activeSubject, seconds: currentLive });
-    }
-    return { ...day, subjects, totalSeconds: (Number(day.totalSeconds) || 0) + (day.date === todayDate ? currentLive : 0) };
+    return { ...day, subjects, totalSeconds: Number(day.totalSeconds) || 0 };
   });
   const maxSeconds = Math.max(1, ...days.map((day) => day.totalSeconds));
   const selectedDay = days.find((day) => day.date === selectedDate) || days.find((day) => day.date === todayDate) || days[days.length - 1];
   const selectedSubjects = [...(selectedDay?.subjects || [])].filter((row) => row.seconds > 0).sort((left, right) => right.seconds - left.seconds);
   return (
     <div className="timer-week-summary">
-      <div className="timer-week-summary-head"><span>이번 주 누적</span><b>{exactDurationLabel((Number(summary.week.totalSeconds) || 0) + currentLive)}</b></div>
+      <div className="timer-week-summary-head"><span>이번 주 확정 누적</span><b>{exactDurationLabel(overview.week.seconds)}</b></div>
+      {!overview.week.fresh ? <p className="timer-session-empty">마지막 확인 기록이에요. 최신 상태는 위 학습 요약에서 다시 확인해주세요.</p> : null}
       <div className="timer-week-chart" aria-label="이번 주 일별 공부 시간">
         {days.map((day, index) => (
           <button type="button" className={`timer-week-day ${day.date === todayDate ? 'is-today' : ''} ${day.date === selectedDay?.date ? 'is-selected' : ''}`} onClick={() => setSelectedDate(day.date)} aria-label={`${STUDY_WEEK_LABELS[index]}요일 ${exactDurationLabel(day.totalSeconds)}`} key={day.date}>
@@ -64,26 +61,30 @@ export function StudyWeekSummary({ activeSubject = '', liveSeconds = 0, summary 
   );
 }
 
-export function RewardPanel({ activeStudySession, completionError, rewardPendingSessionId, rewardResult, timerPhase }) {
-  if (timerPhase === 'settling-session' || timerPhase === 'claiming-reward') {
-    return <div className="timer-status-panel is-loading" role="status"><i /><b>{timerPhase === 'settling-session' ? '공부 기록을 저장하고 있어요' : '오늘의 성장 보상을 확인하고 있어요'}</b></div>;
-  }
-  if (timerPhase === 'recoverable-error' && completionError) {
-    return (
-      <div className="timer-status-panel is-error" role="alert">
-        <div><b>{rewardPendingSessionId ? '공부 기록은 안전하게 저장됐어요' : '연결을 다시 확인해주세요'}</b><p>{completionError}</p></div>
-        {rewardPendingSessionId ? <button type="button" className="btn btn-secondary" data-action="retryStudyReward">보상 다시 확인</button> : null}
-        {!rewardPendingSessionId && activeStudySession?.status === 'starting' ? <button type="button" className="btn btn-secondary" data-action="retryStudyStart">공부 시작 다시 연결</button> : null}
-      </div>
-    );
-  }
-  if (!rewardResult) return null;
-  const hasReward = rewardResult.shells > 0 || rewardResult.food > 0;
+export function StudyJourneyPanel({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult, timerPhase }) {
+  const journey = buildTimerJourneyPresentation({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult, timerPhase });
+  if (!journey.visible) return null;
+  const hasError = journey.completionState === 'error' || journey.rewardState === 'error' || journey.sessionState === 'error';
+  const eyebrow = journey.sessionState === 'running'
+    ? '진행 중인 공부'
+    : journey.completionState === 'complete'
+      ? '공부 완료'
+      : '공부 기록 확인';
   return (
-    <div className="timer-reward-panel" role="status">
-      <div className="timer-reward-copy"><span>공부 완료</span><b>{hasReward ? '수조가 한 걸음 성장했어요' : '공부 기록이 차곡차곡 쌓였어요'}</b></div>
-      <div className="timer-reward-values"><span>조개 <b>+{rewardResult.shells}</b></span><span>먹이 <b>+{rewardResult.food}</b></span></div>
-      <button type="button" className="timer-reward-close" data-action="dismissRewardResult">확인</button>
-    </div>
+    <section className={`timer-journey-panel ${hasError ? 'is-error' : ''}`} role={hasError ? 'alert' : 'status'} aria-live={hasError ? 'assertive' : 'polite'}>
+      <ol className="timer-journey-steps" aria-label="공부 완료 단계">
+        <li data-step="completion" data-state={journey.completionState}><i aria-hidden="true" /><span>공부 기록 · {journeyStateLabel(journey.completionState)}</span></li>
+        <li data-step="reward" data-state={journey.rewardState}><i aria-hidden="true" /><span>성장 보상 · {journeyStateLabel(journey.rewardState)}</span></li>
+      </ol>
+      <div className="timer-journey-copy"><span>{eyebrow}</span><b>{journey.title}</b>{journey.detail ? <p>{journey.detail}</p> : null}</div>
+      {journey.hasCompletedSummary ? <dl className="timer-journey-summary"><div><dt>과목</dt><dd>{journey.session.subject || '기타'}</dd></div><div><dt>집중 시간</dt><dd>{journey.durationLabel}</dd></div></dl> : null}
+      {journey.rewardState === 'active' ? <div className="timer-journey-pending"><i aria-hidden="true" /><span>오늘의 성장 보상을 확인하고 있어요.</span></div> : null}
+      {rewardResult ? <><div className="timer-reward-copy"><span>보상 확인</span><b>{journey.rewardTitle}</b></div><div className="timer-reward-values"><span>조개 <b>+{Number(rewardResult.shells) || 0}</b></span><span>먹이 <b>+{Number(rewardResult.food) || 0}</b></span></div></> : null}
+      {journey.retryAction === 'retryStudyReward' ? <button type="button" className="btn btn-secondary" data-action="retryStudyReward">보상 다시 확인</button> : null}
+      {journey.retryAction === 'retryStudyStart' ? <button type="button" className="btn btn-secondary" data-action="retryStudyStart">공부 시작 다시 연결</button> : null}
+      {journey.retryAction === 'stopStudyTimer' ? <button type="button" className="btn btn-secondary" data-action="stopStudyTimer">완료 다시 확인</button> : null}
+      {journey.recoveryDismissible ? <><p className="timer-recovery-dismiss-warning" id="timer-reward-dismiss-warning">서버에서 복구할 수 없는 보상입니다. 종료하면 이 보상 복구는 다시 시도할 수 없어요.</p><button type="button" className="btn btn-secondary" data-action="dismissRewardResult" aria-describedby="timer-reward-dismiss-warning">보상 복구 종료</button></> : null}
+      {rewardResult ? <div className="timer-reward-actions"><button type="button" className="btn btn-primary" data-action="goto" data-target="aquarium">수조에서 확인</button><button type="button" className="timer-reward-close" data-action="dismissRewardResult">닫기</button></div> : null}
+    </section>
   );
 }

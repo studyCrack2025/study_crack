@@ -348,6 +348,7 @@ export function createAuthHandlers(ctx) {
         setResetPasswordStep('request');
         setResetPasswordEmail('');
         setResetPasswordSending(false);
+        if (ctx.screen === 'authFindPw') ctx.goto?.('authLogin');
         return true;
       } catch (error) {
         alert(error.message || '비밀번호 변경 중 오류가 발생했습니다.');

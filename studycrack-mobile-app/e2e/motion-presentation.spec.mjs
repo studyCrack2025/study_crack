@@ -1,0 +1,90 @@
+import { expect, test } from '@playwright/test';
+import { installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
+
+test.beforeEach(async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page);
+  const species = api.state.fishCatalog[0];
+  const fish = { fishId: 'fish_motion', speciesId: species.speciesId, speciesName: species.displayName, rarity: 'common', name: '첫 친구', level: 1, exp: 0, progressPct: 0, growthStage: 'young', source: 'starter' };
+  api.state.fishInventory = [fish];
+  api.state.activeFish = [null, fish, null];
+  api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeFishIds: [null, fish.fishId, null] };
+});
+
+test('화면 진입은 한 번만 움직이고 수조의 국소 모션은 독립적이다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const screen = page.locator('[data-screen="timer"]');
+  await expect(screen).toHaveCSS('animation-name', 'mobileScreenEnter');
+  await expect(screen).toHaveCSS('animation-duration', '0.2s');
+  await expect(page.locator('.timer-v2-brand-head')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.timer-v2-target-summary')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.sc-study-plan-progress > span i')).toHaveCSS('transition-duration', '0.5s');
+  await page.locator('.tabbar [data-tab="planner"]').click();
+  await expect(page.locator('.primary-screen-header')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.planner-screen > *').first()).toHaveCSS('animation-delay', '0s');
+  await expect(page.locator('.planner-progress-track i')).toHaveCSS('transition-duration', '0.5s');
+  await page.locator('.tabbar [data-tab="analysis"]').click();
+  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
+  await expect(page.locator('.analysis-main-gauge-fill')).toHaveCSS('transition-duration', '0.5s');
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
+  await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-name', 'aquariumFishPath');
+  await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-iteration-count', 'infinite');
+  await expect(page.locator('.aquarium-bubbles')).toHaveCount(0);
+  await expect(page.locator('.aquarium-scene-background')).toHaveCSS('animation-name', 'none');
+});
+
+test('팝업 형태별 진입 모션과 메뉴 눌림은 기본 모션과 분리된다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const aquarium = page.locator('.tabbar [data-tab="aquarium"]');
+  await expect(aquarium).toHaveCSS('transition-duration', '0.2s, 0.2s, 0.2s');
+  const bounds = await aquarium.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await expect(aquarium).toHaveCSS('transform', 'none');
+  await expect(aquarium.locator('.tabbar-icon')).toHaveCSS('transform', 'matrix(0.9, 0, 0, 0.9, 0, -9)');
+  await page.mouse.move(1, 1);
+  await page.mouse.up();
+  await expect(aquarium.locator('.tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
+  const trigger = page.getByRole('button', { name: '프로필 메뉴 열기' });
+  await trigger.click();
+  const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
+  await expect(drawer).toHaveCSS('animation-name', 'bottomSheetIn');
+  await expect(drawer).toHaveCSS('animation-duration', '0.28s');
+  await drawer.press('Escape');
+  await expect(trigger).toBeFocused();
+  await page.getByRole('button', { name: '공부 시작', exact: true }).click();
+  const sheet = page.locator('.study-subject-sheet');
+  await expect(sheet).toHaveCSS('animation-name', 'bottomSheetIn');
+  await expect(sheet).toHaveCSS('animation-duration', '0.28s');
+  await sheet.press('Escape');
+  await expect(sheet).toBeHidden();
+});
+
+test('모션 줄이기에서도 화면·팝업·수조·메뉴의 상태 전환은 즉시 완료된다', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
+  expect(parseFloat(await drawer.evaluate(node => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(.001);
+  await drawer.press('Escape');
+  await page.getByRole('button', { name: '공부 시작', exact: true }).click();
+  const sheet = page.locator('.study-subject-sheet');
+  expect(parseFloat(await sheet.evaluate(node => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(.001);
+  await sheet.press('Escape');
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
+  await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.aquarium-scene-background')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.tabbar [data-tab="aquarium"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('.tabbar [data-tab="aquarium"] .tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
+  await page.locator('[data-action="openAquariumDraw"]').click();
+  await page.getByRole('button', { name: '조개 30개로 만나기' }).click();
+  await expect(page.getByRole('dialog', { name: '물고기 발견 결과' })).toHaveCSS('animation-name', 'none');
+  await expect(page.getByRole('heading', { name: '나비고기' })).toBeVisible();
+  await expect(page.locator('.aquarium-result-ring').first()).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.aquarium-result-burst i').first()).toHaveCSS('animation-name', 'none');
+  await page.getByRole('button', { name: '도감에서 확인하기' }).click();
+  await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeVisible();
+});

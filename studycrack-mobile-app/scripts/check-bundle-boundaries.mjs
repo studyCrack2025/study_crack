@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
+import { createPublishCommands, IMMUTABLE, NO_CACHE } from '../../tools/site-release.mjs';
 
 const appRootUrl = new URL('../', import.meta.url);
 const appRoot = fileURLToPath(appRootUrl);
@@ -47,6 +48,20 @@ const initialModules = new Set(
     .flatMap((chunk) => Object.keys(chunk.modules))
 );
 const deferredModuleSuffixes = [
+  '/src/components/StudyOverviewCard.jsx',
+  '/src/features/study/overview-presentation.js',
+  '/src/app/presentation-context.js',
+  '/src/components/aquarium/AquariumScene.jsx',
+  '/src/components/aquarium/AquariumBackground.jsx',
+  '/src/components/aquarium/aquarium-backgrounds.js',
+  '/src/handlers/aquarium-care-handlers.js',
+  '/src/screens/aquarium/use-care-effect.js',
+  '/src/screens/aquarium/FishArtwork.jsx',
+  '/src/features/gamification/fish-artwork.js',
+  '/src/app/AppOverlayHost.jsx',
+  '/src/screens/mypage/MySummarySheet.jsx',
+  '/src/screens/mypage/MySummaryContent.jsx',
+  '/src/features/account/profile-presentation.js',
   '/src/screens/analysis/AnalysisScreen.jsx',
   '/src/screens/coaching/CoachingScreen.jsx',
   '/src/screens/mypage/MyPageScreen.jsx',
@@ -60,6 +75,10 @@ for (const suffix of deferredModuleSuffixes) {
 }
 
 const cssAsset = assets.find((asset) => asset.fileName === 'studycrack-mobile.css');
+const aquariumAssets = assets.filter(asset => /^assets\/day-\d+-[\w-]{8}\.png$/.test(asset.fileName));
+assert.equal(aquariumAssets.length, 6, 'exactly six hashed background images must be emitted');
+assert.deepEqual(aquariumAssets.map(asset => Number(asset.fileName.match(/day-(\d+)-/)[1])).sort((a, b) => a - b), [1, 7, 15, 30, 50, 100]);
+for (const asset of aquariumAssets) assert.doesNotMatch(entryChunk.code, new RegExp(asset.fileName), 'background URLs must stay outside the login entry');
 const deferredCssAsset = assets.find((asset) => /^chunks\/screen-registry-app-[\w-]+\.css$/.test(asset.fileName));
 assert.ok(cssAsset, 'stable mobile CSS asset must be emitted');
 assert.ok(deferredCssAsset, 'signed-in screen CSS must be emitted as a deferred hashed chunk');
@@ -71,6 +90,12 @@ assert.doesNotMatch(bootstrapCss, /\.primary-screen-header\b/, 'signed-in primar
 assert.doesNotMatch(bootstrapCss, /\.my-profile-avatar\b/, 'mypage feature CSS must not return to the bootstrap asset');
 assert.match(deferredCss, /\.primary-screen-header\b/, 'deferred CSS must include the shared signed-in primary header');
 assert.match(deferredCss, /\.my-profile-avatar\b/, 'deferred CSS must include mypage feature styles');
+assert.doesNotMatch(bootstrapCss, /\.aquarium-scene\{/, 'shared aquarium scene CSS must stay deferred');
+assert.match(deferredCss, /\.aquarium-scene\{/, 'deferred CSS must include the shared aquarium scene');
+for (const motion of ['bottomSheetIn']) {
+  assert.doesNotMatch(bootstrapCss, new RegExp(`@keyframes ${motion}\\{`), `${motion} must stay with its deferred surface owner`);
+  assert.match(deferredCss, new RegExp(`@keyframes ${motion}\\{`), `${motion} must load with its deferred surface`);
+}
 assert.ok(
   appRegistryChunk.viteMetadata?.importedCss?.has(deferredCssAsset.fileName),
   'signed-in app chunk metadata must preload its deferred CSS asset'
@@ -98,13 +123,27 @@ assert.match(
   /href="\.\/studycrack-mobile-app\/dist\/studycrack-mobile\.css"/,
   'mobile HTML must load the built CSS asset'
 );
-assert.match(workflowSource, /studycrack-mobile-app\/dist\/chunks\/\*/, 'deployment must upload hashed chunks');
-assert.match(workflowSource, /max-age=31536000, immutable/, 'hashed chunks must use immutable caching');
+assert.match(workflowSource, /node tools\/site-release\.mjs publish/, 'deployment must use the verified public artifact publisher');
+const publishCommands = createPublishCommands('/artifact/site', 'static.example', {});
+for (const folder of ['chunks', 'assets']) {
+  assert.ok(publishCommands.some((args) => args[1] === 'sync'
+    && args[2] === `/artifact/site/studycrack-mobile-app/dist/${folder}`
+    && args[3] === `s3://static.example/studycrack-mobile-app/dist/${folder}`
+    && args.includes(IMMUTABLE)), `deployment must upload hashed ${folder} with immutable caching`);
+}
+for (const file of [entryChunk.fileName, cssAsset.fileName]) {
+  assert.ok(publishCommands.some((args) => args[1] === 'cp'
+    && args[2] === `/artifact/site/studycrack-mobile-app/dist/${file}`
+    && args.includes(NO_CACHE)), `stable entry ${file} must not use immutable caching`);
+}
 
 const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
+assert.ok(initialBytes <= Math.floor(527.2 * 1024), `Phase 1 initial JS grew above the 527.2 KiB baseline: ${formatKiB(initialBytes)}`);
+// VP7 adds the public auth brand, service note, and real signup progress styles.
+assert.ok(bootstrapCss.length <= Math.floor(76.8 * 1024), `VP7 bootstrap CSS grew above the 76.8 KiB baseline: ${formatKiB(bootstrapCss.length)}`);
 console.log(
   `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks`
 );

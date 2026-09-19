@@ -505,7 +505,7 @@
         // 3-a. 탈퇴 재인증 응답 처리 (full login 없이 deleteConfirmToken만 발급)
         if (result.deleteReauthVerified && result.deleteConfirmToken) {
             sessionStorage.setItem('deleteConfirmToken', result.deleteConfirmToken);
-            window.location.href = '/mypage?reauth=success&purpose=delete_account';
+            window.location.href = getSafeSocialReturnUrl() || '/mypage?reauth=success&purpose=delete_account';
             return;
         }
 
