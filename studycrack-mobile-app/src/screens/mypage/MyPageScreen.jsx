@@ -22,6 +22,7 @@ export function MyPageScreen(ctx) {
             <MbtiInsightCard mbti={presentation.mbti} />
             <MySummaryContent presentation={presentation} />
             <MyMenuList />
+            <section className="my-menu-section"><h2>로그인 상태</h2><button type="button" className="btn btn-secondary" data-action="openLogoutModal">로그아웃</button></section>
           </main>
     </AppScreenShell>
   );

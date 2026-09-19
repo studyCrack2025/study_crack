@@ -1,4 +1,3 @@
-import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
 import { Icon } from '../../components/Icon.jsx';
 
@@ -11,21 +10,9 @@ const SETTINGS_GROUPS = [
   ] }
 ];
 
-function LogoutModal({ open = false }) {
+export function SettingsMainScreen() {
   return (
-    <Modal open={open} dismissAction="closeLogoutModal" ariaLabel="로그아웃 확인" panelClass="sc-modal-padded">
-      <p className="sc-modal-padded-title">로그아웃하시겠어요?</p>
-      <div className="support-btns">
-        <button type="button" className="btn btn-secondary" data-action="closeLogoutModal">취소</button>
-        <button type="button" className="btn btn-primary" data-action="confirmLogout">로그아웃</button>
-      </div>
-    </Modal>
-  );
-}
-
-export function SettingsMainScreen({ logoutModalOpen = false }) {
-  return (
-    <SecondaryScreenShell screen="settingsMain" title="설정" overlays={logoutModalOpen ? <LogoutModal open /> : null}>
+    <SecondaryScreenShell screen="settingsMain" title="설정">
       <div className="sc-secondary-page settings-page">
         <SecondaryIntro eyebrow="SETTINGS" title="설정" description="계정과 약관, 로그인 상태를 관리합니다." />
         <div className="my-menu-sections">{SETTINGS_GROUPS.map(group => <section className="my-menu-section" key={group.title}><h2>{group.title}</h2><div className="my-menu-group">{group.rows.map(row => <button type="button" className="my-menu-row" data-action={row.action || 'goto'} data-target={row.target} key={row.title}><span className="my-menu-icon" aria-hidden="true"><Icon name={row.icon} /></span><span className="my-menu-copy"><b>{row.title}</b><small>{row.description}</small></span><span className="my-menu-chevron" aria-hidden="true"><Icon name="chevron" /></span></button>)}</div></section>)}</div>

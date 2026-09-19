@@ -12,7 +12,10 @@ async function setup(page, replies) {
     expect(Object.keys(payload.data)).toEqual(['cursor']);
     const reply = replies[Math.min(calls.length - 1, replies.length - 1)];
     if (reply.delay) await new Promise(resolve => setTimeout(resolve, reply.delay));
-    await route.fulfill({ status: reply.error || 200, json: reply.error ? {} : { success: true, data: reply } });
+    if (reply.waitFor) await reply.waitFor;
+    const { waitFor, onReply, ...data } = reply;
+    await route.fulfill({ status: reply.error || 200, json: reply.error ? {} : { success: true, data } });
+    onReply?.();
   });
   return calls;
 }
@@ -80,12 +83,18 @@ test('forbidden account clears records and offers login plus manual retry', asyn
   await expect(page.locator('#historyList li')).toHaveCount(0);
 });
 test('changed account invalidates a delayed response and blocks duplicate clicks', async ({ page }) => {
-  await setup(page, [{ items: [item], cursor: null, delay: 700 }]);
+  let release;
+  let onReply;
+  const waitFor = new Promise(resolve => { release = resolve; });
+  const replied = new Promise(resolve => { onReply = resolve; });
+  await setup(page, [{ items: [item], cursor: null, waitFor, onReply }]);
   await page.goto('/payment-history.html');
   await expect(page.locator('#historyRefresh')).toBeDisabled();
   await page.evaluate(() => { localStorage.setItem('userId', 'different'); window.dispatchEvent(new StorageEvent('storage', { key: 'userId' })); });
   await expect(page.locator('#historyMessage')).toContainText('계정이 변경');
-  await page.waitForTimeout(850);
+  release();
+  await replied;
+  await page.evaluate(() => new Promise(requestAnimationFrame));
   await expect(page.locator('#historyList li')).toHaveCount(0);
 });
 test('malformed response does not partially render records', async ({ page }) => {

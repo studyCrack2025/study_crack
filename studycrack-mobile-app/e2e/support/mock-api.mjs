@@ -58,9 +58,9 @@ function encodeToken(payload) {
   return `e2e.${encoded}.signature`;
 }
 
-export async function installAuthenticatedSession(page) {
+export async function installAuthenticatedSession(page, { restoreOnNavigation = true } = {}) {
   const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(Date.now() / 1000) + 3600 });
-  await page.addInitScript(({ accessToken }) => {
+  await page.addInitScript(({ accessToken, restoreOnNavigation }) => {
     const storageInitializedKey = '__studycrackE2eSessionInitialized';
     if (localStorage.getItem(storageInitializedKey) !== 'true') {
       localStorage.clear();
@@ -82,9 +82,10 @@ export async function installAuthenticatedSession(page) {
         end: '09:30'
       }]));
       localStorage.setItem(storageInitializedKey, 'true');
+      sessionStorage.setItem('accessToken', accessToken);
     }
-    sessionStorage.setItem('accessToken', accessToken);
-  }, { accessToken: token });
+    if (restoreOnNavigation) sessionStorage.setItem('accessToken', accessToken);
+  }, { accessToken: token, restoreOnNavigation });
 }
 
 function targetResult(target, index, examMode) {
