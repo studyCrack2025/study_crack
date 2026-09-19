@@ -46,9 +46,14 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
           overlaps: fish.some(a => hud.some(b => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)) };
       });
       expect(metrics.naturalWidth).toBe(day === 100 ? 376 : 377); expect(metrics.naturalHeight).toBe(502);
-      expect(metrics.fit).toBe('cover'); expect(metrics.position).toBe(variant === 'full' ? '50% 50%' : '50% 100%'); expect(metrics.overlaps).toBe(false);
-      if (variant === 'share') expect(Math.abs(metrics.height / metrics.width - 502 / metrics.naturalWidth)).toBeLessThan(.01);
-      else expect(metrics.height).toBe(variant === 'full' ? 278 : variant === 'home' ? 96 : 210);
+      expect(metrics.fit).toBe(variant === 'full' ? 'contain' : 'cover'); expect(metrics.position).toBe(variant === 'full' ? '50% 50%' : '50% 100%'); expect(metrics.overlaps).toBe(false);
+      if (variant === 'share' || variant === 'full') expect(Math.abs(metrics.height - metrics.width * 502 / metrics.naturalWidth)).toBeLessThan(.1);
+      else expect(metrics.height).toBe(variant === 'home' ? 96 : 210);
+      if (variant === 'full') {
+        await expect(scene).toHaveCSS('border-top-width', '0px');
+        await expect(scene).toHaveCSS('border-radius', '0px');
+        await expect(scene).toHaveCSS('box-shadow', 'none');
+      }
       if (variant !== 'full') await expect(scene.locator('button')).toHaveCount(0);
       const caption = owner.locator('.aquarium-growth-caption');
       expect((await caption.boundingBox()).y).toBeGreaterThanOrEqual((await scene.boundingBox()).y + metrics.height - 1);

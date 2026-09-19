@@ -22,7 +22,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const scene = page.locator('.aquarium-scene');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-fish-artwork')).toHaveClass(/is-loaded/);
-    await expect(scene).toHaveCSS('border-radius', '24px');
+    await expect(scene).toHaveCSS('border-radius', '0px');
+    await expect(scene).toHaveCSS('border-top-width', '0px');
     await page.evaluate(() => document.fonts.ready);
     const capture = async (mode) => {
       const file = `${mode}-${width}.png`;

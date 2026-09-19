@@ -28,7 +28,7 @@ test.beforeAll(async () => {
       const file = assets.find(file => file.startsWith(`day-${String(day).padStart(2, '0')}-`) && file.endsWith('.png'));
       expect(file).toBeTruthy();
       const scene = variant => renderToStaticMarkup(createElement(AquariumScene, { variant, backgroundKey: key })).replaceAll(asset.src, `${base}assets/${file}`);
-      fixturePages.set(day, `<!doctype html><html lang="ko"><meta charset="UTF-8"><link rel="stylesheet" href="${base}studycrack-mobile.css"><link rel="stylesheet" href="${base}chunks/${css}"><style>html,body{height:auto;overflow:auto;}body{margin:0;padding:20px;background:var(--sc-surface-canvas);}main{display:grid;grid-template-columns:repeat(4,358px);gap:16px;}h1{font-size:18px;}h2{font-size:14px;margin:12px 0;}</style><h1>${key} · 구도 검수 전용 (제품 해금 아님)</h1><main><div><h2>전체 · 278px center/cover</h2>${scene('full')}</div><div><h2>원본 비율 비교 · 공유 화면 기준</h2>${scene('share')}</div><div><h2>홈 · 96px 하단 미리보기</h2>${scene('home')}<h2>안내 · 210px 하단 미리보기</h2>${scene('guide')}</div><div><h2>공유 · 원본 비율</h2>${scene('share')}</div></main></html>`);
+      fixturePages.set(day, `<!doctype html><html lang="ko"><meta charset="UTF-8"><link rel="stylesheet" href="${base}studycrack-mobile.css"><link rel="stylesheet" href="${base}chunks/${css}"><style>html,body{height:auto;overflow:auto;}body{margin:0;padding:20px;background:var(--sc-surface-canvas);}main{display:grid;grid-template-columns:repeat(4,358px);gap:16px;}h1{font-size:18px;}h2{font-size:14px;margin:12px 0;}</style><h1>${key} · 구도 검수 전용 (제품 해금 아님)</h1><main><div><h2>전체 · 원본 전체 표시</h2>${scene('full')}</div><div><h2>원본 비율 비교 · 공유 화면 기준</h2>${scene('share')}</div><div><h2>홈 · 96px 하단 미리보기</h2>${scene('home')}<h2>안내 · 210px 하단 미리보기</h2>${scene('guide')}</div><div><h2>공유 · 원본 비율</h2>${scene('share')}</div></main></html>`);
     }
   } finally { await vite.close(); }
 });
@@ -53,7 +53,7 @@ async function captureScene(scene, path) {
   await scene.screenshot({ path, animations: 'disabled' });
 }
 
-for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
+for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [568, 320]]) {
   test(`기본 배경을 홈·전체·공유에서 사용하고 성장일을 추정하지 않는다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -71,21 +71,25 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
     const box = await scene.boundingBox();
-    expect(box.height).toBe(278);
+    expect(Math.abs(box.height - box.width * 502 / 377)).toBeLessThan(.1);
+    await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-fit', 'contain');
     await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-position', '50% 50%');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-plants,.aquarium-ground,.aquarium-rays,.aquarium-bubbles,.aquarium-water-line')).toHaveCount(0);
     await scene.getByRole('button', { name: '친구 1 선택' }).click();
     await expect(scene.getByRole('button', { name: '친구 1 선택' })).toHaveClass(/is-selected/);
-    await captureScene(scene, testInfo.outputPath(`background-full-${width}.png`));
-    await page.locator('[data-action="openAquariumShare"]').click();
+    if (height >= box.height + 100) await captureScene(scene, testInfo.outputPath(`background-full-${width}.png`));
+    const shareButton = page.locator('[data-action="openAquariumShare"]');
+    await shareButton.scrollIntoViewIfNeeded();
+    await expect(shareButton).toBeInViewport();
+    await shareButton.click();
     await expect(scene).toHaveAttribute('data-scene-variant', 'share');
     const shareBox = await scene.boundingBox();
     expect(Math.abs(shareBox.height / shareBox.width - 502 / 377)).toBeLessThan(.01);
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene.locator('button')).toHaveCount(0);
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
-    await captureScene(scene, testInfo.outputPath(`background-share-${width}.png`));
+    if (height >= shareBox.height + 100) await captureScene(scene, testInfo.outputPath(`background-share-${width}.png`));
     expect([...urls]).toHaveLength(1);
     expect([...urls][0]).toMatch(/day-01-/);
     expect(api.requests.filter(({ payload }) => /^(feed_fish|draw_fish|set_active_fish|claim_study_reward)$/.test(payload.type))).toHaveLength(0);
@@ -94,7 +98,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
 }
 
 for (const day of [1, 7, 15, 30, 50, 100]) {
-  test(`배경 ${day}의 원본 비율·278px 비교와 preview 구도를 검수한다`, async ({ page }, testInfo) => {
+  test(`배경 ${day}의 전체 원본 비율과 preview 구도를 검수한다`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1540, height: 660 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/aquarium-background-fixture', route => route.fulfill({ contentType: 'text/html', body: fixturePages.get(day) }));
@@ -103,9 +107,9 @@ for (const day of [1, 7, 15, 30, 50, 100]) {
     await expect.poll(() => page.locator('.aquarium-scene-background').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
     const images = await page.locator('.aquarium-scene-background').evaluateAll(images => images.map(image => ({ src: image.currentSrc, fit: getComputedStyle(image).objectFit })));
     expect(new Set(images.map(image => image.src)).size).toBe(1);
-    expect(images.every(image => image.fit === 'cover')).toBe(true);
+    expect(images.map(image => image.fit)).toEqual(['contain', 'cover', 'cover', 'cover', 'cover']);
     const full = await page.locator('.aquarium-scene').first().boundingBox();
-    expect(full.height).toBe(278);
+    expect(Math.abs(full.height - full.width * 502 / (day === 100 ? 376 : 377))).toBeLessThan(.1);
     await page.screenshot({ path: testInfo.outputPath(`background-stage-${day}.png`), animations: 'disabled' });
   });
 }
