@@ -25,7 +25,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
-    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems'
+    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems', 'canAccessBasic'
   ]),
   authFindId: Object.freeze(['foundEmailMasked']),
   authFindPw: Object.freeze(['resetPasswordEmail', 'resetPasswordSending', 'resetPasswordStep']),

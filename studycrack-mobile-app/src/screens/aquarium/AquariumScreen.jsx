@@ -14,6 +14,7 @@ import { StatusState } from '../../components/StatusState.js';
 import { FishArtwork } from './FishArtwork.jsx';
 import { buildAquariumJourneyPresentation } from './presentation.js';
 import { useCareEffect } from './use-care-effect.js';
+import { AquariumNextStudy } from './AquariumNextStudy.jsx';
 
 function AquariumHabitatHeader({ fishCount = 0, profile }) {
   return <header className="aquarium-habitat-header"><div><span>STUDYCRACK AQUARIUM</span><h1>나의 공부 수조</h1><p>집중한 시간이 물고기의 성장으로 남아요.</p></div><div className="aquarium-wallet" role="group" aria-label="수조 재화"><span>조개 <b>{Number(profile?.shellBalance) || 0}</b></span><span>먹이 <b>{Number(profile?.foodBalance) || 0}</b></span><small>{fishCount}마리와 함께하는 중</small></div></header>;
@@ -129,7 +130,8 @@ function AquariumWorkspace(ctx) {
         <AquariumOfflineState />
         <AquariumHabitatHeader fishCount={fishCount || fishInventory.length} profile={gameProfile} />
         {loading ? <StatusState className="aquarium-main-status" kind="loading" title="수조를 채우고 있어요" description="보상과 물고기 상태를 확인하고 있습니다." /> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
-          <StudyOverviewCard overview={ctx.studyOverview} />
+          <StudyOverviewCard overview={ctx.studyOverview} compact />
+          <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canAccessBasic={ctx.canAccessBasic} />
           <div className="aquarium-scene-wrap"><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={selectedFish?.fishId || ''} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           {gameProfileStatus === 'ready' && gameProfile ? <AquariumJourney fishCount={fishCount || fishInventory.length} profile={gameProfile} /> : null}
           {careUncertain ? <section className="aquarium-care-recovery" role="status"><b>처리 결과 확인이 필요해요</b><p>{aquariumActionError}</p><button type="button" className="btn btn-secondary" data-action="retryGameResources" disabled={aquariumActionStatus === 'checking-care'}>{aquariumActionStatus === 'checking-care' ? '상태 확인 중...' : '현재 상태 확인'}</button><small>이 버튼은 먹이를 주거나 배치를 변경하지 않아요.</small></section> : aquariumResult?.type === 'care-checked' ? <section className="aquarium-care-recovery" role="status"><b>현재 먹이와 물고기 상태를 불러왔어요</b><p>이전 요청의 성공 여부를 확정한 것은 아니에요. 표시된 상태를 확인한 뒤 다음 동작을 선택해주세요.</p><button type="button" className="btn btn-secondary" data-action="dismissAquariumResult">확인</button></section> : null}

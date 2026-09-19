@@ -11,6 +11,17 @@ async function calculate(page) {
   await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
 }
 
+test('분석 상단 성적 입력 안내는 기존 성적 정보로 이동하고 돌아온다', async ({ page }) => {
+  const api = await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=analysis');
+  await page.getByRole('button', { name: '성적 입력·수정', exact: true }).click();
+  await expect(page.locator('[data-screen="scoreInfo"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: '입력·수정', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '뒤로가기', exact: true }).click();
+  await expect(page.getByRole('region', { name: '분석 전 성적 확인' })).toBeVisible();
+  expect(api.requests.some(({ payload }) => payload.type === 'update_quan')).toBe(false);
+});
+
 for (const width of [320, 360, 390, 430]) {
   test(`맞춤 솔루션은 확인된 0점·영어 등급과 미확인 목표를 분리한다 (${width}px)`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 932 });

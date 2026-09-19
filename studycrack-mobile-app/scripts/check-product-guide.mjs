@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
+import { buildMyPagePresentation } from '../src/screens/mypage/presentation.js';
 import { parseProductGuide, guideAccountKey, guideCanOpen, guideMutation } from '../src/features/product-guide/model.js';
 import { fetchProductGuide, saveProductGuide } from '../src/features/product-guide/api.js';
 
@@ -32,4 +37,27 @@ assert.equal((await fetchProductGuide(binding, controller.signal)).code, 'REQUES
 assert.equal(requests.length, before);
 const persistence = await readFile(new URL('../src/app/use-app-state-persistence.js', import.meta.url), 'utf8');
 assert.doesNotMatch(persistence, /productGuide/);
+const guideCss = await readFile(new URL('../src/styles/screens/product-guide.css', import.meta.url), 'utf8');
+assert.match(guideCss, /max-height: min\(calc\(var\(--sc-visual-height\) - 32px\), calc\(100dvh - 32px\)\)/);
+assert.match(guideCss, /@media \(max-height: 480px\)/);
+const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
+try {
+  const { ProductGuideOverlay } = await vite.ssrLoadModule('/src/screens/product-guide/ProductGuideOverlay.jsx');
+  for (const [index, theme] of ['goal', 'plan', 'care', 'record', 'find'].entries()) {
+    const markup = renderToStaticMarkup(createElement(ProductGuideOverlay, { ui: { step: index + 1, busy: false }, presentation: {} }));
+    assert.match(markup, new RegExp(`product-guide-panel product-guide-${theme}`));
+    assert.match(markup, /data-action="nextProductGuide"/);
+    assert.match(markup, /data-action="closeProductGuide"/);
+    assert.match(markup, new RegExp(`${index + 1} / 5`));
+  }
+  const { MySummaryContent } = await vite.ssrLoadModule('/src/screens/mypage/MySummaryContent.jsx');
+  for (const showIdentity of [true, false]) {
+    const markup = renderToStaticMarkup(createElement(MySummaryContent, { showIdentity, presentation: buildMyPagePresentation({ user: {} }) }));
+    assert.equal((markup.match(/aria-label="공부와 수조 요약"/g) || []).length, 1);
+    assert.match(markup, new RegExp(`class="${showIdentity ? 'my-summary-hero-stats' : 'my-study-stats'}"`));
+    assert.match(markup, /확인 필요/);
+  }
+} finally {
+  await vite.close();
+}
 console.log('Product guide contracts passed: strict support, monotonic progress, session gating, request ownership and cancellation.');

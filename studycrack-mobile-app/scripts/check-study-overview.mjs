@@ -68,6 +68,16 @@ try {
   assert.match(render(error), /retryStudySummary/);
   assert.doesNotMatch(render(error), /00:00:00/);
   const empty = buildStudyOverview({ ...input, plannerItems: [] });
+  const compactMarkup = overview => renderToStaticMarkup(createElement(StudyOverviewCard, { overview, compact: true }));
+  const idle = buildStudyOverview({ ...input, activeStudySession: null, studyTimerRunning: false });
+  assert.match(compactMarkup(idle), /<details class="sc-study-details"><summary>확정 공부 01:00:00 · 상세 기록<\/summary>/);
+  assert.doesNotMatch(compactMarkup(idle), /<details[^>]*open/);
+  assert.ok(compactMarkup(idle).indexOf('role="progressbar"') < compactMarkup(idle).indexOf('<details'));
+  for (const attention of [view, error, { ...idle, confirmed: { ...idle.confirmed, fresh: false } }, { ...idle, timeGoal: { ...idle.timeGoal, datesMatch: false } }, { ...idle, planner: { ...idle.planner, status: 'date-mismatch' } }]) {
+    assert.doesNotMatch(compactMarkup(attention), /<details|<summary/);
+    assert.match(compactMarkup(attention), /sc-study-metrics/);
+  }
+  assert.doesNotMatch(render(idle), /<details/);
   assert.match(render(empty), /등록한 계획 없음/);
   assert.doesNotMatch(render(empty), /aria-valuenow/);
   assert.equal(render(undefined), '');

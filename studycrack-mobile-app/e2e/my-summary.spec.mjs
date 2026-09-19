@@ -18,9 +18,12 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(dialog).toBeVisible();
     await expect(dialog).toHaveCSS('border-top-left-radius', '30px');
     await expect(dialog).toContainText('연세대학교 정치외교학과');
-    await expect(dialog.locator('.my-study-stats')).toContainText('1시간');
-    await expect(dialog.locator('.my-study-stats')).toContainText('0마리');
-    await expect(dialog.locator('.my-study-stats')).toContainText('7일');
+    const summaryStats = dialog.getByRole('region', { name: '공부와 수조 요약' });
+    await expect(summaryStats).toHaveCount(1);
+    await expect(summaryStats).toHaveClass('my-summary-hero-stats');
+    await expect(summaryStats).toContainText('1시간');
+    await expect(summaryStats).toContainText('0마리');
+    await expect(summaryStats).toContainText('7일');
     await expect(dialog.locator('.my-summary-checklist summary')).toContainText('2/4');
     const box = await dialog.boundingBox();
     const frame = await page.locator('.app-frame').boundingBox();
@@ -29,7 +32,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await page.evaluate(() => document.fonts.ready);
     const capture = async name => page.screenshot({ path: process.env.STUDYCRACK_MY_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_MY_CAPTURE_DIR, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`), animations: 'disabled' });
     await capture('sheet');
-    const before = await dialog.locator('.my-study-stats').innerText();
+    const before = await summaryStats.innerText();
     await dialog.locator('.my-summary-checklist summary').click();
     await expect(dialog.getByRole('button', { name: /학습유형 MBTI 설정하기/ })).toBeVisible();
     await capture('checklist');

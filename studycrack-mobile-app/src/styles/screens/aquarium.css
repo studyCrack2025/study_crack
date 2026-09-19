@@ -9,6 +9,16 @@
 .aquarium-wallet span{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:68px;padding:6px 9px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-card);color:var(--sc-ink-muted);font-size:11px;font-weight:800;}
 .aquarium-wallet b{color:var(--sc-ink-strong);font-size:12px;font-variant-numeric:tabular-nums;}
 .aquarium-wallet small{color:var(--sc-ink-muted);font-size:10px;text-align:left;}
+.aquarium-next-study{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}
+.aquarium-next-study-time{display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;min-height:44px;border-radius:50%;background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);overflow-wrap:anywhere;}
+.aquarium-next-study-time b{max-width:100%;font-size:13px;font-variant-numeric:tabular-nums;}
+.aquarium-next-study-time small{font-size:10px;}
+.aquarium-next-study-time .icon{width:20px;height:20px;stroke:currentColor;}
+.aquarium-next-study > div{min-width:0;display:grid;gap:4px;}
+.aquarium-next-study > div > small{color:var(--sc-ink-muted);font-size:9px;font-weight:800;letter-spacing:.06em;overflow-wrap:anywhere;}
+.aquarium-next-study h2{margin:0;color:var(--sc-ink-strong);font-size:13px;font-weight:900;line-height:1.5;overflow-wrap:anywhere;}
+.aquarium-next-study p{margin:0;color:var(--sc-ink-muted);font-size:10px;line-height:1.5;overflow-wrap:anywhere;}
+.aquarium-next-study > button{min-width:44px;min-height:44px;padding:8px;border:0;border-radius:var(--sc-radius-pill);background:var(--sc-brand-navy);color:var(--sc-on-brand);font:inherit;font-size:11px;font-weight:800;}
 .aquarium-journey{padding:var(--sc-space-8);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}
 .aquarium-journey ol{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;padding:0;list-style:none;}
 .aquarium-journey li{min-width:0;display:grid;grid-template-columns:10px minmax(0,1fr);align-items:center;gap:2px 6px;padding:8px;border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);}

@@ -35,6 +35,13 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
       await expect(card).toContainText('1/2');
       await expect(card).toContainText('과제 50% 완료');
+      if (screen !== 'strategy') {
+        const detail = card.locator('details.sc-study-details');
+        await expect(detail).not.toHaveAttribute('open', '');
+        await expect(card.locator('dd').first()).not.toBeVisible();
+        await detail.locator('summary').click();
+        await expect(card.locator('dd').first()).toBeVisible();
+      }
       await expect(card.locator('dd').nth(0)).toHaveText('00:30:00');
       await expect(card.locator('dd').nth(1)).toHaveText('25%');
       await expect(card.locator('[data-study-base-seconds]')).toHaveCount(0);
@@ -60,6 +67,7 @@ test('기록 날짜 불일치·조회 실패·재시도를 구분한다', async 
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card).toContainText('2026-09-08 확정 공부');
   await expect(card).toContainText('기록 날짜가 달라');
+  await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('dd').nth(1)).toHaveText('산정 전');
   failures.push('get_study_summary');
   await page.locator('.tabbar [data-tab="planner"]').click();
@@ -89,6 +97,7 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
   await page.locator('.study-start-confirm').click();
   await expect(card).toContainText('진행 중 · 아직 미확정');
+  await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');
   await expect(card.locator('[data-study-base-seconds]')).not.toHaveText('00:00:00');
   await expect(card.locator('dd').first()).toHaveText('00:30:00');

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import './check-score-journey.mjs';
 import { buildAnalysisPresentation } from '../src/screens/analysis/presentation.js';
 import { buildServerSimRows } from '../src/runtime/derived.js';
@@ -105,4 +106,7 @@ assert.equal(expired.canSimulate, false);
 assert.equal(expired.rows.length, 0);
 assert.equal(expired.backtraceReady, false);
 assert.equal(buildAnalysisPresentation({ rows: [{ subject: '국어', unavailable: true, baseUiScore: 0, afterUiScore: 50 }] }).bestRow, null);
+const analysisScreenSource = await readFile(new URL('../src/screens/analysis/AnalysisScreen.jsx', import.meta.url), 'utf8');
+assert.match(analysisScreenSource, /data-action="goto" data-target="scoreInfo">성적 입력·수정/);
+assert.ok(analysisScreenSource.indexOf('analysis-input-entry') < analysisScreenSource.indexOf('<AnalysisContent'));
 console.log('analysis-presentation contracts passed: scoped snapshots, actual zero vs unavailable, stable target order, access, four subjects and capped +1 effects');

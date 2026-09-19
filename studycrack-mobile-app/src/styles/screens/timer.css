@@ -192,10 +192,10 @@
 .timer-v2-plan-empty p{min-width:0;margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.45;}
 .timer-v2-plan-empty button{flex:none;min-width:44px;min-height:44px;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;text-decoration:underline;text-underline-offset:3px;}
 .home-study-highlight{display:grid;gap:12px;background:var(--sc-surface-card);}
-.home-score-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;padding:12px;border:1px solid var(--sc-line-subtle);border-radius:16px;background:var(--sc-surface-accent);color:var(--sc-brand-navy);font:inherit;text-align:left;}
-.home-score-summary > span{display:grid;gap:6px;}
-.home-score-summary small{color:var(--sc-ink-muted);font-size:10px;font-weight:700;}
-.home-score-summary b{font-size:18px;font-weight:900;}
+.home-score-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:82px;padding:16px;border:0;border-radius:16px;background:var(--sc-brand-hero);color:var(--sc-on-brand);font:inherit;text-align:left;box-shadow:var(--sc-shadow-normal);}
+.home-score-summary > span{min-width:0;display:grid;gap:6px;overflow-wrap:anywhere;}
+.home-score-summary small{color:var(--sc-on-brand);font-size:10px;font-weight:700;}
+.home-score-summary b{font-size:22px;font-weight:900;line-height:1.3;}
 .home-score-summary .icon{width:20px;height:20px;flex:none;stroke:currentColor;}
 .home-aquarium-preview{display:grid;gap:12px;}
 .home-aquarium-link{position:relative;display:block;width:100%;padding:0;border:0;border-radius:12px;overflow:hidden;background:var(--sc-brand-navy-deep);}
