@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:f
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { createPrivateCleanupCommands, PRIVATE_SITE_FILES, PRIVATE_SITE_PREFIXES, PRIVATE_SITE_SMOKE_PATHS } from '../private-site-paths.mjs';
 import { assertPublicReferences, assertSafePath, buildSiteRelease, cacheControlFor, createPublishCommands, IMMUTABLE, isBuildPath, loadPublicPolicy, NO_CACHE, verifySiteRelease } from '../site-release.mjs';
 
 const commit = 'a'.repeat(40);
@@ -10,7 +11,7 @@ const release = 'dev-aaaaaaaa';
 const dist = 'studycrack-mobile-app/dist';
 const policy = {
   files: ['index.html', 'studycrack-mobile.html', 'studycrack-mobile.webmanifest', 'css/main.css', 'js/config.js', 'js/shared/api.js', 'js/client-diagnostics.js', 'assets/pwa/icon.png'],
-  aliases: { 'promotion/kcc01': 'index.html' }
+  aliases: { 'basic-preview': 'index.html' }
 };
 async function fixture(t) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'studycrack-release-test-'));
@@ -41,7 +42,7 @@ test('only approved files are copied, versioned and sealed without changing sour
   const publicHtml = await readFile(path.join(ctx.output, 'site/index.html'), 'utf8');
   assert.match(publicHtml, /main\.css\?v=dev-aaaaaaaa/);
   assert.match(publicHtml, /config\.js\?v=dev-aaaaaaaa/);
-  assert.equal(await readFile(path.join(ctx.output, 'site/promotion/kcc01'), 'utf8'), publicHtml);
+  assert.equal(await readFile(path.join(ctx.output, 'site/basic-preview'), 'utf8'), publicHtml);
   assert.equal((await verifySiteRelease({ ...ctx, commit, expectedDigest: digest })).digest, digest);
   assert.ok(manifest.files.every(({ path: file }) => !/private|secret|\.env|\.bak|dev-mock/.test(file)));
   await assert.rejects(buildSiteRelease({ ...ctx, commit, release }), /EEXIST/);
@@ -117,7 +118,7 @@ test('missing HTML, stylesheet and split-bundle dependencies fail before upload'
   assert.doesNotThrow(() => assertPublicReferences(new Map([['index.html', Buffer.from('<img src="data:image/png;base64,AA"><link href="https://fonts.example/font.css">')]])));
 });
 
-test('publication uploads dependencies before entrypoints and never deletes remote data', () => {
+test('publication uploads dependencies before entrypoints and never performs a broad delete', () => {
   const commands = createPublishCommands('/safe/artifact/site', 'test.example', policy.aliases);
   assert.ok(commands.every((args) => !args.includes('--delete') && args[1] !== 'rm'));
   assert.ok(commands.every((args) => args[2].startsWith('/safe/artifact/site')));
@@ -126,7 +127,7 @@ test('publication uploads dependencies before entrypoints and never deletes remo
   for (const file of ['js/config.js', 'js/shared/api.js', `${dist}/studycrack-mobile.bundle.js`, `${dist}/studycrack-mobile.css`]) {
     assert.ok(commands.some((args) => args[2].endsWith(`/${file}`) && args.includes(NO_CACHE)));
   }
-  assert.ok(commands.some((args) => args.includes('promotion/kcc01') && args.includes('text/html; charset=utf-8')));
+  assert.ok(commands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')));
   assert.ok(commands.some((args) => args.includes('application/manifest+json; charset=utf-8')));
   assert.ok(commands.at(-1)[2].endsWith('/release.json'), 'release marker must be published last');
   for (const file of ['release.json', 'js/release.js']) {
@@ -134,6 +135,24 @@ test('publication uploads dependencies before entrypoints and never deletes remo
     assert.ok(commands.some((args) => args[1] === 'cp' && args[2].endsWith(`/${file}`) && args.includes(NO_CACHE)));
   }
   assert.throws(() => createPublishCommands('/safe/site', 'bucket/other', {}), /Invalid static bucket/);
+});
+
+test('publication retires only enumerated private files and prefixes', () => {
+  const commands = createPrivateCleanupCommands('test.example');
+  assert.equal(commands.length, PRIVATE_SITE_PREFIXES.length + PRIVATE_SITE_FILES.length);
+  assert.ok(commands.every((args) => args[0] === 's3' && args[1] === 'rm' && args.at(-1) === '--only-show-errors'));
+  assert.ok(commands.every((args) => args[2].startsWith('s3://test.example/') && args[2] !== 's3://test.example/'));
+  assert.ok(commands.every((args) => !args.includes('--delete') && !args[2].includes('*') && !args[2].includes('..')));
+  for (const prefix of PRIVATE_SITE_PREFIXES) {
+    assert.ok(commands.some((args) => args[2] === `s3://test.example/${prefix}` && args.includes('--recursive')));
+  }
+  for (const file of PRIVATE_SITE_FILES) {
+    assert.ok(commands.some((args) => args[2] === `s3://test.example/${file}` && !args.includes('--recursive')));
+    assert.ok(PRIVATE_SITE_SMOKE_PATHS.includes(file));
+  }
+  for (const prefix of PRIVATE_SITE_PREFIXES) assert.ok(PRIVATE_SITE_SMOKE_PATHS.some((path) => path.startsWith(prefix)));
+  assert.ok(commands.every((args) => !args[2].includes('/studycrack-mobile-app/dist/')));
+  assert.throws(() => createPrivateCleanupCommands('bucket/other'), /Invalid static bucket/);
 });
 
 test('a retained artifact is verified without rebuilding or changing its source identity', async (t) => {

@@ -5,9 +5,9 @@ import { cacheControlFor } from '../site-release.mjs';
 import { smokeSiteRelease } from '../smoke-site-release.mjs';
 
 const origin = 'https://dev.studycrack.co.kr';
-const publicFiles = ['index.html', 'studycrack-mobile.html', 'release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/config.js', 'js/shared/api.js', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'studycrack-mobile-app/dist/studycrack-mobile.css', 'studycrack-mobile-app/dist/chunks/app-12345678.js', 'studycrack-mobile-app/dist/chunks/app-12345678.css', 'studycrack-mobile-app/dist/assets/fish-12345678.webp', 'promotion/kcc01'];
+const publicFiles = ['index.html', 'studycrack-mobile.html', 'release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/config.js', 'js/shared/api.js', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'studycrack-mobile-app/dist/studycrack-mobile.css', 'studycrack-mobile-app/dist/chunks/app-12345678.js', 'studycrack-mobile-app/dist/chunks/app-12345678.css', 'studycrack-mobile-app/dist/assets/fish-12345678.webp', 'basic-preview'];
 const manifest = { commit: 'a'.repeat(40), release: 'dev-aaaaaaaa', files: publicFiles.map((file) => ({ path: file, bytes: 7, sha256: createHash('sha256').update('fixture').digest('hex') })) };
-const aliases = { 'promotion/kcc01': 'index.html' };
+const aliases = { 'basic-preview': 'index.html' };
 function mockFetch(mutate = () => {}) {
   return async (url, options) => {
     assert.equal(options.credentials, 'omit');

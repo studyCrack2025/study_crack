@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { lstat, mkdir, readFile, readdir, realpath, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createPrivateCleanupCommands } from './private-site-paths.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const NO_CACHE = 'no-cache, no-store, must-revalidate';
@@ -239,6 +240,7 @@ async function main() {
     const { manifest } = await verifySiteRelease({ output, commit, expectedDigest: value });
     assert.equal(manifest.release, `${process.env.GITHUB_REF_NAME}-${commit.slice(0, 8)}`, 'Artifact branch does not match destination');
     const policy = await loadPublicPolicy();
+    for (const args of createPrivateCleanupCommands(process.env.S3_BUCKET || '')) execFileSync('aws', args, { stdio: 'inherit' });
     for (const args of createPublishCommands(path.join(output, 'site'), process.env.S3_BUCKET || '', policy.aliases)) execFileSync('aws', args, { stdio: 'inherit' });
   } else throw new Error('Usage: node tools/site-release.mjs build|verify|publish <artifact-dir> <commit> <release|verified-digest>');
 }
