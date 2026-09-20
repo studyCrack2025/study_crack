@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PRIVATE_SITE_SMOKE_PATHS } from './private-site-paths.mjs';
 import { cacheControlFor, IMMUTABLE, loadPublicPolicy, verifySiteRelease } from './site-release.mjs';
-
-const PRIVATE_PATHS = ['manifest.json', 'AGENTS.md', '.env', '.git/config', 'docs/exec-plans/current.md', 'backend-backup/StudyCrack_Auth/index.mjs', 'studycrack-mobile-app/src/runtime/main.js', 'studycrack-mobile-app/package.json', 'studycrack-mobile-app/e2e/core-flows.spec.mjs', 'tools/site-release.mjs', 'css/style.css.bak', 'js/dev-mock.local.js', 'js/dev-mock.local.example.js'];
 
 function contentTypeFor(file) {
   if (file.endsWith('.js')) return /^(?:text|application)\/javascript(?:;|$)/i;
@@ -64,13 +63,13 @@ export async function smokeSiteRelease({ origin, manifest, aliases, fetchImpl = 
     assert.equal(size, entry.bytes, `Wrong public size: /${target}`);
     assert.equal(digest.digest('hex'), entry.sha256, `Stale or changed public bytes: /${target}`);
   }
-  for (const target of PRIVATE_PATHS) {
+  for (const target of PRIVATE_SITE_SMOKE_PATHS) {
     const response = await request(target);
     // Do not read or log potentially private response bodies.
     await response.body?.cancel();
     assert.ok([403, 404].includes(response.status), `Private path is not denied: /${target}`);
   }
-  return { checked: requests.length, denied: PRIVATE_PATHS.length, release: manifest.release };
+  return { checked: requests.length, denied: PRIVATE_SITE_SMOKE_PATHS.length, release: manifest.release };
 }
 
 async function main() {
