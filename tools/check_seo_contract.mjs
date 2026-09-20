@@ -171,9 +171,15 @@ assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages mus
 
 const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
-assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
+assert.equal(targetImage[0].alt, '', 'the decorative classroom background must use an empty alt attribute');
+assert.ok(String(targetImage[0].class || '').split(/\s+/).includes('bg-img'), 'the classroom image must remain a decorative background');
+for (const src of ['/assets/basic-v2/result-position.png', '/assets/basic-v2/result-effects.png', '/assets/basic-v2/result-priority.png']) {
+  const images = startTags(home, 'img').filter(tag => tag.src === src);
+  assert.equal(images.length, 1, `homepage result image must appear exactly once: ${src}`);
+  assert.ok(String(images[0].alt || '').trim(), `informative result image must have descriptive alt text: ${src}`);
+}
 
-const promotionHead = headSource(promotion);
+const promotionHead = headSource(await read('promotion_kcc01.html'));
 const promotionCanonical = findCanonical(promotionHead);
 const promotionOgUrl = findPropertyMeta(promotionHead, 'og:url');
 assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one canonical link');
