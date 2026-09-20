@@ -76,7 +76,7 @@ jobs:
       - name: Check public artifact smoke contracts
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
-        run: npm run test:e2e -- fish-artwork-lifecycle public-artifact --workers=1 --retries=0
+        run: npm run test:e2e -- fish-artwork-lifecycle payment-account-switch public-artifact --workers=1 --retries=0
       - name: Test the public artifact
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
