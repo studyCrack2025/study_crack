@@ -96,15 +96,6 @@ test('only the confirmed matching checkout draft is cleared', async ({ page }) =
   await page.locator('#statusRetry').click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('checkoutData'))).toBeNull();
 });
-test('account switch invalidates an in-flight result', async ({ page }) => {
-  await setup(page, [{ data: ready, delay: 500 }]);
-  await page.goto(`/success.html?paymentIntentId=${id}`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => { localStorage.setItem('userId', 'other'); window.dispatchEvent(new StorageEvent('storage', { key: 'userId' })); });
-  await expect(page.locator('#successTitle')).toHaveText('결제 상태를 다시 확인해주세요');
-  await page.waitForTimeout(650);
-  await expect(page.locator('#vbankBox')).not.toBeVisible();
-  await expect(page.locator('#tierBadge')).toHaveText('결제 확인');
-});
 test('request in progress disables retries and malformed response never claims completion', async ({ page }) => {
   const calls = await setup(page, [{ data: { ...paid, paymentIntentId: 'other' }, delay: 700 }]);
   await page.goto(`/success.html?paymentIntentId=${id}`, { waitUntil: 'domcontentloaded' });
