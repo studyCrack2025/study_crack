@@ -10,7 +10,8 @@ test.skip(!process.env.STUDYCRACK_PREVIEW_ROOT, 'Only run against the sealed pub
 test('공개 산출물은 등록한 웹 페이지와 모바일 파일을 검증한 바이트 그대로 제공한다', async ({ request }) => {
   const site = path.resolve(process.env.STUDYCRACK_PREVIEW_ROOT);
   const manifest = JSON.parse(await readFile(path.join(site, '../manifest.json'), 'utf8'));
-  const samples = manifest.files.filter((entry) => entry.path.endsWith('.html') || ['js/config.js', 'js/shared/api.js', 'studycrack-mobile.webmanifest', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'promotion/kcc01'].includes(entry.path));
+  const { aliases } = await loadPublicPolicy();
+  const samples = manifest.files.filter((entry) => entry.path.endsWith('.html') || Object.hasOwn(aliases, entry.path) || ['js/config.js', 'js/shared/api.js', 'studycrack-mobile.webmanifest', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js'].includes(entry.path));
   for (const entry of samples) {
     const response = await request.get(`/${entry.path}`);
     expect(response.status(), entry.path).toBe(200);
@@ -19,8 +20,12 @@ test('공개 산출물은 등록한 웹 페이지와 모바일 파일을 검증�
   }
   const manifestResponse = await request.get('/studycrack-mobile.webmanifest');
   expect(manifestResponse.headers()['content-type']).toContain('application/manifest+json');
-  const promotion = await request.get('/promotion/kcc01');
-  expect(promotion.headers()['content-type']).toContain('text/html');
+  const preview = await request.get('/basic-preview');
+  expect(preview.status()).toBe(200);
+  expect(preview.headers()['content-type']).toContain('text/html');
+  for (const retired of ['/promotion/kcc01', '/promotion_kcc01.html', '/css/promotion-kcc01.css', '/js/promotion-kcc01.js']) {
+    expect([403, 404], retired).toContain((await request.get(retired)).status());
+  }
   expect((await request.get('/studycrack-mobile')).status()).toBe(200);
 });
 

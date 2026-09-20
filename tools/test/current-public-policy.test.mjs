@@ -29,3 +29,15 @@ test('dependency diagnostics report every missing reference in one failure', () 
     return true;
   });
 });
+
+test('artifact smoke checks run before the full matrix without replacing it', async () => {
+  const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const smoke = workflow.indexOf('- name: Check public artifact smoke contracts');
+  const full = workflow.indexOf('- name: Test the public artifact');
+  assert.ok(smoke > workflow.indexOf('- name: Install browser runtime') && full > smoke);
+  const step = workflow.slice(smoke, full);
+  assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
+  assert.ok(step.includes('fish-artwork-lifecycle public-artifact --workers=1 --retries=0'));
+  assert.doesNotMatch(step, /continue-on-error/);
+  assert.ok(workflow.slice(full).includes('run: npm run test:e2e'));
+});

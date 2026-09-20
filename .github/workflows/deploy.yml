@@ -73,6 +73,10 @@ jobs:
         run: node scripts/report-architecture-baseline.mjs > architecture-baseline.json
       - name: Install browser runtime
         run: npx playwright install --with-deps chromium
+      - name: Check public artifact smoke contracts
+        env:
+          STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
+        run: npm run test:e2e -- fish-artwork-lifecycle public-artifact --workers=1 --retries=0
       - name: Test the public artifact
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site

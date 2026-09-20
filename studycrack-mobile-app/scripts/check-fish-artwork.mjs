@@ -33,6 +33,9 @@ for (const directory of ['grid-256', 'detail-512', 'habitat-768', 'habitat-pixel
 assert.doesNotMatch(resolverSource, /habitat-pixel-64/, 'the coarse 64px habitat variant must not remain in the runtime resolver');
 assert.match(artworkSource, /onError=\{\(\) => setFailedIdentity\(identity\)\}/, 'image failure must use the legacy fallback');
 assert.match(artworkSource, /<FishSprite/, 'legacy SVG fallback must remain available');
+assert.doesNotMatch(artworkSource, /useEffect/, 'image completion must not be cleared by a passive effect');
+assert.match(artworkSource, /node\?\.complete && node\.naturalWidth > 0/, 'already loaded images must recover at attachment');
+assert.ok(artworkSource.includes('key={`${artwork.assetKey}:${safeVariant}`}'), 'each asset and variant must own an isolated image lifecycle');
 assert.match(artworkSource, /srcSet=/, 'responsive Fish Dex sources must remain enabled');
 assert.match(artworkSource, /loading=\{priority \? 'eager' : 'lazy'\}/, 'priority loading contract must remain explicit');
 assert.doesNotMatch(aquariumSource, /FishSprite/, 'aquarium call sites must use FishArtwork');
