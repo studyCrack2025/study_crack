@@ -1,5 +1,16 @@
 {
   "files": [
+    "404.html",
+    "basic-preview.html",
+    "css/basic-preview.css",
+    "css/not-found.css",
+    "js/basic-preview.js",
+    "assets/basic-v2/hero-phone.png",
+    "assets/basic-v2/plan-books.png",
+    "assets/basic-v2/proof-classroom.png",
+    "assets/basic-v2/result-position.png",
+    "assets/basic-v2/result-effects.png",
+    "assets/basic-v2/result-priority.png",
     "admin_detail.html",
     "admin_index.html",
     "admin_login.html",
@@ -82,7 +93,6 @@
     "css/mypage_tutor.css",
     "css/payment-exit-guard.css",
     "css/payment.css",
-    "css/promotion-kcc01.css",
     "css/qna.css",
     "css/service.css",
     "css/social-callback.css",
@@ -118,7 +128,6 @@
     "js/payment-exit-guard.js",
     "js/payment.js",
     "js/payment-status.js",
-    "js/promotion-kcc01.js",
     "js/qna.js",
     "js/script.js",
     "js/service.js",
@@ -139,7 +148,6 @@
     "css/payment-history.css",
     "js/payment-history.js",
     "promo.html",
-    "promotion_kcc01.html",
     "qna.html",
     "robots.txt",
     "service.html",
@@ -156,6 +164,6 @@
     "welcome.html"
   ],
   "aliases": {
-    "promotion/kcc01": "promotion_kcc01.html"
+    "basic-preview": "basic-preview.html"
   }
 }

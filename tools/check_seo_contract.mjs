@@ -179,17 +179,17 @@ for (const src of ['/assets/basic-v2/result-position.png', '/assets/basic-v2/res
   assert.ok(String(images[0].alt || '').trim(), `informative result image must have descriptive alt text: ${src}`);
 }
 
-const promotionHead = headSource(await read('promotion_kcc01.html'));
-const promotionCanonical = findCanonical(promotionHead);
-const promotionOgUrl = findPropertyMeta(promotionHead, 'og:url');
-assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one canonical link');
-assert.equal(promotionCanonical[0].href, 'https://studycrack.co.kr/promotion/kcc01', 'promotion canonical must use the public clean URL');
-assert.equal(promotionOgUrl.length, 1, 'promotion page must have exactly one og:url');
-assert.equal(promotionOgUrl[0].content, 'https://studycrack.co.kr/promotion/kcc01', 'promotion og:url must use the public clean URL');
 const publicPolicy = await loadPublicPolicy();
-assert.equal(publicPolicy.aliases['promotion/kcc01'], 'promotion_kcc01.html', 'artifact must include the promotion clean URL');
+assert.equal(publicPolicy.aliases['promotion/kcc01'], undefined, 'retired promotion must not be published');
+for (const file of ['promotion_kcc01.html', 'css/promotion-kcc01.css', 'js/promotion-kcc01.js']) {
+  assert.ok(!publicPolicy.files.includes(file), `retired promotion must stay outside the artifact: ${file}`);
+}
+assert.doesNotMatch(home + homeScript, /\/promotion\/kcc01|StudyCrack\s*X\s*KCC/, 'home must not restore the retired promotion');
+assert.ok(publicPolicy.files.includes('404.html') && publicPolicy.files.includes('css/not-found.css'), 'not-found page must be published');
+assert.equal(findMeta(headSource(notFound), 'robots')[0]?.content, 'noindex,follow', 'not-found page must remain noindex');
+assert.equal(publicPolicy.aliases['basic-preview'], 'basic-preview.html', 'preview clean URL must be published');
 const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
 assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
-assert.ok(publishCommands.some((args) => args.includes('promotion/kcc01') && args.includes('text/html; charset=utf-8')), 'promotion clean URL must use an HTML content type');
+assert.ok(publishCommands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')), 'preview clean URL must use an HTML content type');
 
 console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);
