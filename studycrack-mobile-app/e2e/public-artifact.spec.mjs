@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
+import { PRIVATE_SITE_SMOKE_PATHS } from '../../tools/private-site-paths.mjs';
 import { loadPublicPolicy } from '../../tools/site-release.mjs';
 import { smokeSiteRelease } from '../../tools/smoke-site-release.mjs';
 
@@ -30,7 +31,7 @@ test('공개 산출물은 등록한 웹 페이지와 모바일 파일을 검증�
 });
 
 test('내부 문서·소스·도구·개발 데이터는 공개 산출물에서 읽을 수 없다', async ({ request }) => {
-  for (const file of ['docs/exec-plans/current.md', 'AGENTS.md', 'backend-backup/StudyCrack_Auth/index.mjs', 'studycrack-mobile-app/src/runtime/main.js', 'studycrack-mobile-app/package.json', 'studycrack-mobile-app/e2e/core-flows.spec.mjs', 'tools/site-release.mjs', 'manifest.json', '.env', '.git/config', 'css/style.css.bak', 'js/dev-mock.local.example.js', 'js/dev-mock.local.js']) {
+  for (const file of PRIVATE_SITE_SMOKE_PATHS) {
     const response = await request.get(`/${file}`);
     expect([403, 404], file).toContain(response.status());
   }
@@ -51,7 +52,7 @@ test('배포 후 확인 도구는 실제 공개 서버의 바이트·캐시·MIM
   const { aliases } = await loadPublicPolicy();
   const result = await smokeSiteRelease({ origin: baseURL, manifest, aliases });
   expect(result.checked).toBeGreaterThan(40);
-  expect(result.denied).toBe(13);
+  expect(result.denied).toBe(PRIVATE_SITE_SMOKE_PATHS.length);
 });
 
 test('배포 버전 파일이 느려도 로그인 화면의 실행을 막지 않는다', async ({ page }) => {
