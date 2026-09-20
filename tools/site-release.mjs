@@ -99,6 +99,7 @@ export function cacheControlFor(file) {
 
 export function assertPublicReferences(contents) {
   const names = new Set(contents.keys());
+  const missing = new Set();
   for (const [owner, bytes] of contents) {
     const text = bytes.toString('utf8');
     let urls = [];
@@ -114,9 +115,10 @@ export function assertPublicReferences(contents) {
       if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(reference)) continue;
       const url = new URL(reference, `https://release.invalid/${owner}`);
       const file = decodeURIComponent(url.pathname).slice(1);
-      assert.ok(names.has(file), `Missing public dependency: ${owner} -> ${file}`);
+      if (!names.has(file)) missing.add(`${owner} -> ${file}`);
     }
   }
+  assert.equal(missing.size, 0, `Missing public dependency:\n${[...missing].join('\n')}`);
 }
 
 export async function buildSiteRelease({ root = repositoryRoot, output, commit, release }) {
