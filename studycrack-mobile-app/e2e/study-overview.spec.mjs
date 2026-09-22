@@ -91,16 +91,24 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.locator('dd').first()).toHaveText('00:30:00');
   const week = page.locator('.timer-v2-week');
+  const openRecords = async () => {
+    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+    await page.locator('[data-action="openStudyRecords"]').click();
+  };
+  await openRecords();
   await expect(week).toContainText('이번 주 확정 누적');
   const before = await week.innerText();
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
   await page.locator('.study-start-confirm').click();
+  await page.getByRole('button', { name: '타이머 닫기' }).click();
   await expect(card).toContainText('진행 중 · 아직 미확정');
   await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');
   await expect(card.locator('[data-study-base-seconds]')).not.toHaveText('00:00:00');
   await expect(card.locator('dd').first()).toHaveText('00:30:00');
+  await openRecords();
   await expect(week).toHaveText(before, { useInnerText: true });
 });
 

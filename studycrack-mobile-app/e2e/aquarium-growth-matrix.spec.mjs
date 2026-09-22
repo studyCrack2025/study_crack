@@ -31,32 +31,37 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
       const scene = owner.locator('.aquarium-scene');
       await expect(scene).toHaveAttribute('data-scene-variant', variant);
       await expect(scene).toHaveAttribute('data-background-key', `day${day}`);
-      await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
+      if (variant !== 'home') await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
+      else await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
       await owner.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
       await expect(scene.locator('.aquarium-fish-image')).toHaveCount(3);
       await expect(scene.locator('.aquarium-fish-artwork.is-loaded')).toHaveCount(3);
-      await expect(owner.locator('.aquarium-growth-caption')).toContainText(`성장 인정 ${day}일`);
+      if (variant !== 'home') await expect(owner.locator('.aquarium-growth-caption')).toContainText(`성장 인정 ${day}일`);
+      else await expect(owner.locator('.aquarium-growth-caption')).toHaveCount(0);
       await expectNoHorizontalOverflow(page);
       const metrics = await scene.evaluate(el => {
         const box = el.getBoundingClientRect(), img = el.querySelector('.aquarium-scene-background');
         const hud = [...el.querySelectorAll('.aquarium-scene-hud > span')].map(node => node.getBoundingClientRect());
         const fish = [...el.querySelectorAll('.aquarium-fish')].map(node => node.getBoundingClientRect());
-        return { width: box.width, height: box.height, naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight,
-          fit: getComputedStyle(img).objectFit, position: getComputedStyle(img).objectPosition,
+        return { width: box.width, height: box.height, naturalWidth: img?.naturalWidth, naturalHeight: img?.naturalHeight,
+          fit: img ? getComputedStyle(img).objectFit : null, position: img ? getComputedStyle(img).objectPosition : null,
           overlaps: fish.some(a => hud.some(b => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)) };
       });
-      expect(metrics.naturalWidth).toBe(day === 100 ? 376 : 377); expect(metrics.naturalHeight).toBe(502);
-      expect(metrics.fit).toBe(variant === 'full' ? 'contain' : 'cover'); expect(metrics.position).toBe(variant === 'full' ? '50% 50%' : '50% 100%'); expect(metrics.overlaps).toBe(false);
-      if (variant === 'share' || variant === 'full') expect(Math.abs(metrics.height - metrics.width * 502 / metrics.naturalWidth)).toBeLessThan(.1);
-      else expect(metrics.height).toBe(variant === 'home' ? 96 : 210);
+      if (variant !== 'home') {
+        expect(metrics.naturalWidth).toBe(day === 100 ? 376 : 377); expect(metrics.naturalHeight).toBe(502);
+        expect(metrics.fit).toBe('cover'); expect(metrics.position).toBe(variant === 'full' ? '50% 50%' : '50% 100%');
+      }
+      expect(metrics.overlaps).toBe(false);
+      if (variant === 'share') expect(Math.abs(metrics.height - metrics.width * 502 / metrics.naturalWidth)).toBeLessThan(.1);
+      else expect(metrics.height).toBe(variant === 'full' ? 278 : variant === 'home' ? 96 : 210);
       if (variant === 'full') {
-        await expect(scene).toHaveCSS('border-top-width', '0px');
-        await expect(scene).toHaveCSS('border-radius', '0px');
-        await expect(scene).toHaveCSS('box-shadow', 'none');
+        await expect(scene).toHaveCSS('border-top-width', '1px');
+        await expect(scene).toHaveCSS('border-radius', '24px');
+        await expect(scene.locator('.aquarium-scene-depth')).not.toHaveCSS('box-shadow', 'none');
       }
       if (variant !== 'full') await expect(scene.locator('button')).toHaveCount(0);
       const caption = owner.locator('.aquarium-growth-caption');
-      expect((await caption.boundingBox()).y).toBeGreaterThanOrEqual((await scene.boundingBox()).y + metrics.height - 1);
+      if (variant !== 'home') expect((await caption.boundingBox()).y).toBeGreaterThanOrEqual((await scene.boundingBox()).y + metrics.height - 1);
       const screenshot = `day-${day}-${width}-${variant}.png`;
       await owner.screenshot({ path: info.outputPath(screenshot), animations: 'disabled' });
       captures.push({ day, width, variant, screenshot, ...metrics });

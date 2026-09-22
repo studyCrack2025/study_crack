@@ -9,6 +9,8 @@ const MENU_GROUPS = [
   {
     label: '학습 서비스',
     rows: [
+      { icon: 'timer', action: 'openStudyRecords', title: '공부 기록', subtitle: '주간·과목별 기록과 수조 성장 규칙' },
+      { icon: 'chart', target: 'ranking', title: '공부 랭킹', subtitle: '오늘의 집중 순위 확인' },
       { icon: 'calendar', action: 'openStreakSummary', title: '연속 학습 기록', subtitle: '최근 30일 공부와 연속 학습일 확인' },
       { icon: 'chart', target: 'weekly', title: '학습 리포트', subtitle: '주간 점검과 튜터 피드백 확인' },
       { icon: 'report', target: 'report', title: 'PRO 리포트', subtitle: '맞춤 전략 리포트 확인과 새 분석 요청' },

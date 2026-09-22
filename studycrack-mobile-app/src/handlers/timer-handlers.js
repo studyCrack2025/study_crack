@@ -88,6 +88,8 @@ async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCand
   return withOperationLock(ctx.operationLocksRef, 'study-start', async () => {
     const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, activity, plannerItemId });
     ctx.setTimerPhase('starting-session');
+    ctx.setStudyPanelMode('timer');
+    ctx.setStudySubjectSheetOpen(false);
     ctx.setCompletionError('');
     ctx.setRewardResult(null);
     ctx.setLastCompletedSession(null);
@@ -117,6 +119,21 @@ async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCand
 export function createTimerHandlers(ctx) {
   const { preserveScrollAfterStateChange = (fn) => fn?.() } = ctx;
   return {
+    openStudyPanel() {
+      ctx.setStudyPanelMode('timer');
+      return true;
+    },
+    openStudyRecords() {
+      ctx.closeDrawer?.();
+      ctx.goto?.('timer');
+      ctx.setStudyPanelMode('records');
+      return true;
+    },
+    closeStudyPanel({ actionEl, isOverlaySelfClick }) {
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-overlay')) return false;
+      ctx.setStudyPanelMode('');
+      return true;
+    },
     openStudySubjectSheet() {
       preserveScrollAfterStateChange(() => {
         ctx.setNotifModalOpen(false);

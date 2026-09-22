@@ -109,6 +109,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
+    'studyPanelMode',
     'studyOverview', 'aquariumPresentation',
     'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
     'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',

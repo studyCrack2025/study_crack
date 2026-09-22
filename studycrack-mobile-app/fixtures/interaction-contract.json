@@ -20,7 +20,7 @@
     "pro": { "rank": 3, "mainTabsVisible": true, "planner": true, "coaching": true, "scoreSimulation": true, "reverseProjection": true }
   },
   "screens": {
-    "timer": { "profile": "main", "actions": ["openDrawer", "closeDrawer", "drawerGoto", "openStudySubjectSheet", "confirmStudyStart", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "openGameRules", "closeGameRules", "toggleStudySessionDetails", "goRanking", "retryInit"] },
+    "timer": { "profile": "main", "actions": ["openDrawer", "closeDrawer", "drawerGoto", "openStudyPanel", "closeStudyPanel", "openStudySubjectSheet", "confirmStudyStart", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "openGameRules", "closeGameRules", "toggleStudySessionDetails", "retryInit"] },
     "aquarium": { "profile": "main", "actions": ["selectStarterCandidate", "claimStarterFish", "selectAquariumFish", "feedAquariumFish", "setAquariumFishSlot", "saveAquariumFishName", "dismissAquariumResult", "openAquariumCatalog", "openAquariumDraw", "openAquariumShare", "closeAquariumMode", "startAquariumDraw", "acknowledgeAquariumDraw", "shareAquarium", "retryGameResources", "goto"] },
     "analysis": { "profile": "main", "actions": ["selectTarget", "setScoreView", "highlightSimSubject", "calculateAnalysisScore"] },
     "addUniversity": { "profile": "secondary", "actions": ["refreshUniversityRecommendations", "retryUniversityCatalog", "selectUniversityForMajor", "runUniversitySearch", "addAnalysisTarget", "backToUniversityList"] },
@@ -100,6 +100,7 @@
     "closeResetPasswordModal",
     "closeScoreEdit",
     "closeStreakSummary",
+    "closeStudyPanel",
     "closeTermsModal",
     "closeWithdrawModal",
     "coachingNext",
@@ -116,7 +117,6 @@
     "drawerGoto",
     "feedAquariumFish",
     "finishIntro",
-    "goRanking",
     "goto",
     "highlightSimSubject",
     "linkSocial",
@@ -156,6 +156,7 @@
     "openScoreEdit",
     "openSignupTermsModal",
     "openStreakSummary",
+    "openStudyPanel",
     "openStudySubjectSheet",
     "openTermsModal",
     "openWebPayment",

@@ -33,10 +33,10 @@ function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, di
 }
 
 
-export function TimerSessionPanel({ expanded, forcedOpen, onToggle, panelRef, ...props }) {
-  return <section className="timer-session-panel sc-card" aria-label="공부 타이머" ref={panelRef} tabIndex={-1}>
-    <button type="button" className="timer-session-disclosure" aria-expanded={expanded} aria-controls="home-timer-detail" aria-disabled={forcedOpen} onClick={() => { if (!forcedOpen) onToggle(); }}><span><b>공부 기록</b><small>{forcedOpen ? '진행 중인 기록을 확인해주세요' : '타이머와 과목별 기록'}</small></span><span>{expanded ? forcedOpen ? '진행 중' : '접기' : '펼치기'} <Icon name="chevron" /></span></button>
-    <div id="home-timer-detail" hidden={!expanded}>
+export function TimerSessionPanel(props) {
+  return <section className="timer-session-panel" aria-label="공부 타이머">
+    <header className="timer-session-head"><h2>공부 타이머</h2><button type="button" data-action="closeStudyPanel" aria-label="타이머 닫기">닫기</button></header>
+    <div id="home-timer-detail">
       <TimerControlCard {...props} />
       <StudyJourneyPanel {...props} />
     </div>

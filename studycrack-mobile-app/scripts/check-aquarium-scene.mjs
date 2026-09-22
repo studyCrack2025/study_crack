@@ -91,7 +91,10 @@ try {
     for (const variant of ['full', 'home', 'guide', 'share']) {
       const markup = renderToStaticMarkup(createElement(AquariumGrowthContext.Provider, { value: { status: 'ready', backgroundKey, growth: { validDayCount: Number(backgroundKey.slice(3)), highestUnlockedStage: backgroundKey, countingSince: '2026-01-01', nextStageDays: null } } }, createElement(AquariumScene, { variant, backgroundKey: 'day1' })));
       assert.match(markup, new RegExp(`data-background-key="${backgroundKey}"`));
-      assert.match(markup, /성장 인정/);
+      if (variant === 'home') {
+        assert.doesNotMatch(markup, /aquarium-growth-caption|aquarium-scene-background/);
+        assert.match(markup, /aquarium-mini-plants/);
+      } else assert.match(markup, /성장 인정/);
       if (variant !== 'full') assert.doesNotMatch(markup, /<button/);
     }
   }
@@ -116,7 +119,8 @@ try {
   const full = render(props);
   assert.equal((full.match(/<button /g) || []).length, 3);
   assert.equal((full.match(/data-action="selectAquariumFish"/g) || []).length, 3);
-  assert.match(full, /12일/);
+  assert.match(full, /성장 기록 확인 필요/);
+  assert.doesNotMatch(full, /12일/, '연속 학습일을 성장일로 대신 표시하지 않는다.');
   assert.match(full, /1\/2/);
   assert.match(full, /is-selected/);
   assert.match(full, /data-background-key="day1"/);

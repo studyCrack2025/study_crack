@@ -105,7 +105,8 @@ const showCaption = async page => {
 
 test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재로드에는 반복하지 않는다', async ({ page }) => {
   const state = await setup(page, 7); await page.goto('/studycrack-mobile.html?screen=timer');
-  await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 7일');
+  await expect(page.locator('.home-aquarium-preview .aquarium-scene')).toHaveAttribute('data-background-key', 'day7');
+  await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
   expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBeNull();
   await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click(); await showCaption(page);
   const notice = page.locator('.aquarium-unlock-notice');
