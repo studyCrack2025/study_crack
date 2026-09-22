@@ -30,10 +30,10 @@ function HomeStatusRail({ aquariumPresentation, normalizedTargetMajor = '' }) {
   const streakDays = aquariumPresentation?.streakDays;
   return (
     <section className="timer-v2-status-rail" aria-label="학습 현황 바로가기">
-      <button type="button" data-action="goto" data-target="analysis"><Icon name="target" /><small>목표 대학</small><b>{targetLabel}</b></button>
-      <button type="button" data-action="openStreakSummary"><Icon name="bolt" /><small>연속 학습</small><b>{streakDays != null ? `${streakDays}일` : '확인 필요'}</b></button>
-      <button type="button" data-action="goto" data-target="aquarium"><Icon name="fish" /><small>보유 물고기</small><b>{aquariumPresentation?.ownedCount != null ? `${aquariumPresentation.ownedCount}마리` : '확인 필요'}</b></button>
-      <button type="button" data-action="goto" data-target="strategy"><Icon name="chat" /><small>SKY 코칭</small><b>바로가기</b></button>
+      <button type="button" data-action="goto" data-target="analysis" aria-label={`목표 대학 ${targetLabel}`}><span className="home-status-icon"><Icon name="target" /></span><small>목표 대학</small></button>
+      <button type="button" data-action="openStreakSummary" aria-label={`연속 학습 ${streakDays != null ? `${streakDays}일` : '확인 필요'}`}><span className="home-status-streak"><Icon name="bolt" /><b>{streakDays ?? '—'}</b></span><small>연속 학습</small></button>
+      <button type="button" data-action="goto" data-target="aquarium"><span className="home-status-icon"><Icon name="fish" /></span><small>{aquariumPresentation?.ownedCount != null ? `물고기 ${aquariumPresentation.ownedCount}마리` : '물고기 확인 필요'}</small></button>
+      <button type="button" data-action="goto" data-target="strategy"><span className="home-status-icon"><Icon name="chat" /></span><small>SKY 코칭</small></button>
     </section>
   );
 }

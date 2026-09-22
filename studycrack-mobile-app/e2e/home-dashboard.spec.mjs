@@ -37,6 +37,14 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('[data-scene-variant="home"]')).toHaveCSS('height', '96px');
     await expect(page.locator('[data-scene-variant="home"] button')).toHaveCount(0);
     await expect(page.locator('.home-aquarium-count')).toHaveText('물고기 1마리');
+    const rail = page.getByRole('region', { name: '학습 현황 바로가기' });
+    await expect(rail.getByRole('button')).toHaveCount(4);
+    await expect(rail.locator('[data-target="aquarium"]')).toHaveText('물고기 1마리');
+    await expect(rail.locator('[data-target="analysis"]')).toHaveAccessibleName(/목표 대학/);
+    for (const button of await rail.getByRole('button').all()) {
+      expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      await expect(button).toHaveCSS('grid-template-rows', /24px /);
+    }
     const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan', '.home-aquarium-preview'];
     const tops = await Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.offsetTop)));
     expect(tops).toEqual([...tops].sort((a, b) => a - b));

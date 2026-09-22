@@ -396,6 +396,8 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
+  await expect(page.locator('.planner-progress-track')).toHaveCSS('height', '10px');
+  await expect(page.locator('.planner-item-main b').first()).toHaveCSS('font-size', '14px');
   const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
   const calendarBox = await page.locator('.planner-calendar-section').boundingBox();
   expect(progressBox).not.toBeNull();

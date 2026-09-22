@@ -12,6 +12,10 @@
 .aquarium-growth-caption{display:grid;justify-items:start;gap:4px;padding:8px;border-radius:8px;background:var(--sc-brand-navy-deep);color:var(--sc-on-brand);font-size:12px;line-height:1.4;overflow-wrap:anywhere;}
 .aquarium-growth-caption small{font-size:10px;color:inherit;}
 .aquarium-growth-caption button{min-height:44px;padding:0 10px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font-size:12px;}
+.aquarium-growth-caption > strong{color:var(--sc-action-positive-strong);font-size:12px;line-height:1.6;}
+.aquarium-growth-details{width:100%;}
+.aquarium-growth-details summary{display:flex;align-items:center;min-height:44px;color:var(--sc-ink-muted);font-size:11px;cursor:pointer;}
+.aquarium-growth-details > small{display:block;margin-bottom:8px;}
 .aquarium-unlock-slot{width:100%;min-height:1px;}
 .aquarium-unlock-notice{display:grid;gap:8px;padding:12px;border:1px solid var(--sc-on-brand-line);border-radius:12px;background:var(--sc-on-brand-surface);animation:aquariumUnlockReveal .45s ease-out both;animation-play-state:var(--unlock-play-state,running);}
 .aquarium-unlock-notice p{margin:4px 0;font-size:12px;}
