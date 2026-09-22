@@ -16,15 +16,14 @@ async function setup(page, { count = 4, tier = 'basic', ...options } = {}) {
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`홈은 실제 지표·플래너4행·수조·접힌 타이머 순서다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`홈은 내 물고기에서 끝나고 공부 기록은 프로필에서 연다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page, { count: 5 });
     api.state.fishInventory = [{ fishId: 'home-fish-1', speciesId: 'blue_damsel', name: '마루', growthStage: 'baby', rarity: 'common' }];
     api.state.activeFish = [null, api.state.fishInventory[0], null];
     await page.goto('/studycrack-mobile.html?screen=timer');
-    const disclosure = page.locator('.timer-session-disclosure');
-    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('.timer-session-panel')).toHaveCount(0);
     await expect(page.locator('.timer-v2-clock')).not.toBeVisible();
     await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeEnabled();
     await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(4);
@@ -38,7 +37,15 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('[data-scene-variant="home"]')).toHaveCSS('height', '96px');
     await expect(page.locator('[data-scene-variant="home"] button')).toHaveCount(0);
     await expect(page.locator('.home-aquarium-count')).toHaveText('물고기 1마리');
-    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan', '.home-aquarium-preview', '.timer-session-panel', '.timer-v2-week'];
+    const rail = page.getByRole('region', { name: '학습 현황 바로가기' });
+    await expect(rail.getByRole('button')).toHaveCount(4);
+    await expect(rail.locator('[data-target="aquarium"]')).toHaveText('물고기 1마리');
+    await expect(rail.locator('[data-target="analysis"]')).toHaveAccessibleName(/목표 대학/);
+    for (const button of await rail.getByRole('button').all()) {
+      expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      await expect(button).toHaveCSS('grid-template-rows', /24px /);
+    }
+    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan', '.home-aquarium-preview'];
     const tops = await Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.offsetTop)));
     expect(tops).toEqual([...tops].sort((a, b) => a - b));
     await expectNoHorizontalOverflow(page);
@@ -46,11 +53,16 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await page.screenshot({ path: testInfo.outputPath(`home-${width}-top.png`), animations: 'disabled' });
     await page.locator('.home-aquarium-preview').scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`home-${width}-preview.png`), animations: 'disabled' });
-    await disclosure.click();
-    await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/home-aquarium-preview/);
+    await expect(page.locator('main .timer-v2-week, main .timer-v2-quick')).toHaveCount(0);
+    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+    await page.getByRole('button', { name: '공부 기록 주간·과목별 기록과 수조 성장 규칙' }).click();
+    await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
+    await expect(page.locator('.timer-v2-week')).toBeVisible();
+    await page.getByRole('button', { name: '타이머 열기', exact: true }).click();
     await expect(page.locator('.timer-v2-clock')).toBeVisible();
-    await disclosure.click();
-    await expect(page.locator('#home-timer-detail')).toHaveAttribute('hidden', '');
+    await page.getByRole('button', { name: '타이머 닫기' }).click();
+    await expect(page.locator('#home-timer-detail')).toHaveCount(0);
     expect(api.requests.filter(({ payload }) => payload.type === 'get_game_profile')).toHaveLength(1);
     expect(api.requests.filter(({ payload }) => payload.type === 'get_fish_catalog')).toHaveLength(0);
     expect(api.requests.filter(({ payload }) => /simulate|backtrace/.test(payload.type))).toHaveLength(0);
@@ -86,29 +98,72 @@ test('수조와 공부 기록이 각각 실패해도 계획과 직접 공부를 
   await expect(page.locator('.home-aquarium-count')).toHaveText('물고기 0마리');
 });
 
-test('공부 중·새로고침 복원·보상 오류에서는 타이머가 강제로 펼쳐진다', async ({ page }, testInfo) => {
+test('타이머 창을 닫아도 공부가 유지되고 새로고침·보상 오류에서 다시 열 수 있다', async ({ page }, testInfo) => {
   const api = await setup(page, { failOnceTypes: ['claim_study_reward'], studyDurationSeconds: 1500 });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.timer-v2-plan-list > button').nth(1).click();
   await page.locator('.study-start-confirm').click();
-  const disclosure = page.locator('.timer-session-disclosure');
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-  await expect(disclosure).toHaveAttribute('aria-disabled', 'true');
+  const dialog = page.getByRole('dialog', { name: '공부 타이머', exact: true });
+  await expect(dialog).toBeVisible();
+  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.home-active-study')).toContainText('공부 기록 중');
   await page.locator('.home-active-study').click();
-  await expect(page.locator('.timer-session-panel')).toBeFocused();
   await expect(page.locator('.timer-v2-clock')).toBeInViewport();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.home-active-study')).toBeFocused();
+  await page.locator('.tabbar [data-tab="planner"]').click();
+  await page.locator('.tabbar [data-tab="timer"]').click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.home-active-study')).toContainText('공부 기록 중');
   await page.reload();
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+  await page.locator('.home-active-study').filter({ hasText: '타이머 열기' }).click();
+  await expect(dialog).toBeVisible();
   expect(api.requests.filter(({ payload }) => payload.type === 'start_study_session')).toHaveLength(1);
   await page.getByRole('button', { name: '공부 완료', exact: true }).click();
   await expect(page.locator('[data-action="retryStudyReward"]')).toBeVisible();
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+  await expect(dialog).toBeVisible();
   await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeDisabled();
   await page.locator('.timer-session-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('home-reward-error.png'), animations: 'disabled' });
   await page.locator('[data-action="retryStudyReward"]').click();
   await expect(page.locator('.timer-reward-values')).toBeVisible();
   await page.locator('[data-action="dismissRewardResult"]').click();
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+  await page.getByRole('button', { name: '타이머 닫기' }).click();
   await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeEnabled();
+});
+
+test('공부 시작 실패는 별도 타이머 창에서 재시도하고 홈 아래에 패널을 남기지 않는다', async ({ page }) => {
+  const api = await setup(page, { failOnceTypes: ['start_study_session'] });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  await page.locator('.timer-v2-plan-list > button').nth(1).click();
+  await page.locator('.study-start-confirm').click();
+  const dialog = page.getByRole('dialog', { name: '공부 타이머', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
+  await expect(dialog.locator('[data-action="retryStudyStart"]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/home-aquarium-preview/);
+  await page.locator('.home-active-study').click();
+  await dialog.locator('[data-action="retryStudyStart"]').click();
+  await expect(dialog.getByRole('button', { name: '공부 완료', exact: true })).toBeEnabled();
+  const requests = api.requests.filter(({ payload }) => payload.type === 'start_study_session');
+  expect(requests).toHaveLength(2);
+  expect(requests[0].payload.data.sessionId).toBe(requests[1].payload.data.sessionId);
+});
+
+test('전체 MY에서도 공부 기록과 랭킹으로 이동한다', async ({ page }) => {
+  await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await page.locator('[data-action="openStudyRecords"]').click();
+  await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
+  await page.locator('[data-action="openGameRules"]').click();
+  await expect(page.getByRole('dialog', { name: '수조 성장 규칙', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  await page.locator('[data-target="ranking"]').click();
+  await expect(page.locator('[data-screen="ranking"]')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });

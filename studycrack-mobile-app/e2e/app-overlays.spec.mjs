@@ -29,15 +29,18 @@ test('공통 MY 팝업의 닫기와 전체 MY 왕복은 초점과 스크롤을 �
   await expect(trigger).toBeFocused();
   await expect(content).not.toHaveAttribute('inert', '');
   await trigger.click();
-  await page.locator('[data-action="openGameRules"]').evaluate(element => element.click());
+  await page.locator('[data-action="openStudyRecords"]').click();
+  await page.locator('[data-action="openGameRules"]').click();
   await expect(dialog).toHaveCount(0);
   const rules = page.getByRole('dialog');
   await expect(rules).toHaveCount(1);
   await expect(nav).toHaveAttribute('inert', '');
   await rules.press('Escape');
+  await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(page.locator('.app-screen-overlays')).toHaveCount(0);
   await expect(dialog).toHaveCount(0);
-  await expect(trigger).toBeFocused();
+  await expect(content).not.toHaveAttribute('inert', '');
   await content.evaluate(element => { element.scrollTop = 180; });
   const scroll = await content.evaluate(element => element.scrollTop);
   // A programmatic action exercises scroll restoration without scrolling the header into view.

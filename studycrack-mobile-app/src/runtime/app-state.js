@@ -50,6 +50,7 @@ export function createNavigationOps({ getState, setState, onScreenChange } = {})
     if (!target || target === state.screen) return false;
     onScreenChange?.(state.screen, target);
     const patch = { screen: target };
+    if (state.studyPanelMode) patch.studyPanelMode = '';
     if (addHistory && state.screen !== target) patch.history = [...state.history, state.screen];
     if (MAIN_TAB_SCREENS.includes(target)) patch.tab = target;
     setState(patch);
@@ -63,7 +64,7 @@ export function createNavigationOps({ getState, setState, onScreenChange } = {})
     const clone = [...state.history];
     const prev = clone.pop();
     const target = prev === 'home' ? 'analysis' : prev;
-    setState({ history: clone, screen: target, ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
+    setState({ history: clone, screen: target, ...(state.studyPanelMode ? { studyPanelMode: '' } : {}), ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
     return true;
   }
 

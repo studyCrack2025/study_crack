@@ -7,17 +7,22 @@ function duration(seconds) {
   return `${hours}:${minutes}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-export function StudyOverviewCard({ overview, variant = 'card', compact = false }) {
+export function StudyOverviewCard({ overview, variant = 'card', compact = false, scoreView = null }) {
   if (!overview) return null;
   const { planner, confirmed, live, timeGoal } = overview;
   const hasPlans = planner.status === 'ready' && planner.total > 0;
   const stale = confirmed.seconds !== null && !confirmed.fresh;
   const canCollapse = compact && confirmed.fresh && planner.status === 'ready' && timeGoal.datesMatch && live.status === 'idle';
   const Details = canCollapse ? 'details' : 'div';
+  const banner = variant === 'banner';
+  const score = scoreView?.hasScore && Number.isFinite(scoreView.score) ? `${Math.round(scoreView.score)}점` : '환산점수 확인';
   return (
-    <section className="sc-study-overview" data-variant={variant === 'inline' ? 'inline' : 'card'} aria-label="학습 현황 요약">
-      {variant !== 'inline' ? <header><span>STUDY RECORD</span><h2>오늘의 학습 기록</h2></header> : null}
+    <section className="sc-study-overview" data-variant={banner ? 'banner' : variant === 'inline' ? 'inline' : 'card'} aria-label="학습 현황 요약">
+      {!banner && variant !== 'inline' ? <header><span>STUDY RECORD</span><h2>오늘의 학습 기록</h2></header> : null}
+      <div className={banner ? 'sc-study-banner' : undefined}>
+      {banner ? <button type="button" className="sc-study-score" data-action="goto" data-target="analysis" aria-label={`${score} · 성적과 목표 확인하기`}><small>저장 성적 기반 환산점수</small><b>{score}</b></button> : null}
       <div className="sc-study-plan-progress"><span role="progressbar" aria-label="과제 완료율" aria-valuemin={0} aria-valuemax={100} aria-valuenow={hasPlans ? planner.percent : undefined} aria-valuetext={hasPlans ? undefined : planner.status === 'ready' ? '등록한 계획 없음' : '계획 확인 필요'}><i style={{ width: `${planner.percent || 0}%` }} /></span><b>{planner.total === null ? '확인 필요' : `${planner.completed}/${planner.total}`}</b><small>{hasPlans ? `과제 ${planner.percent}% 완료` : planner.status === 'ready' ? '계획을 추가하면 완료율을 확인할 수 있어요' : '계획 날짜를 확인해주세요'}{planner.minutes !== null ? ` · 계획 ${defaultFormatMinutesLabel(planner.minutes)}` : ''}</small></div>
+      </div>
       <Details className="sc-study-details">
       {canCollapse ? <summary>확정 공부 {duration(confirmed.seconds)} · 상세 기록</summary> : null}
       <dl className="sc-study-metrics"><div><dt>{confirmed.date && confirmed.date !== planner.date ? `${confirmed.date} 확정 공부` : '오늘 확정 공부'}</dt><dd>{duration(confirmed.seconds)}</dd></div><div><dt>확정 시간 / 계획 시간</dt><dd>{timeGoal.percent === null ? '산정 전' : `${timeGoal.percent}%`}</dd></div>{live.status !== 'idle' ? <div><dt>{live.status === 'running' ? '진행 중 · 아직 미확정' : '공부 기록 확인 중'}</dt><dd data-study-base-seconds={live.status === 'running' ? 0 : undefined}>{duration(live.seconds)}</dd></div> : null}</dl>

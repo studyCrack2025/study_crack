@@ -242,6 +242,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'start_study_session')?.payload?.data?.activity).toBe('독서');
   await page.waitForTimeout(1100);
   await page.reload();
+  await page.locator('[data-action="openStudyPanel"]').click();
   await expect(page.getByText('국어 공부를 이어서 기록 중이에요')).toBeVisible();
   await expect(page.getByText('앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.')).toBeVisible();
   await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
@@ -261,6 +262,9 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(journey).toContainText('00:00:02');
   await expect(journey.locator('[data-step="completion"]')).toHaveAttribute('data-state', 'complete');
   await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
+  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await page.locator('.timer-v2-profile').click();
+  await page.locator('[data-action="openStudyRecords"]').click();
   await expect(page.locator('.timer-week-summary')).toBeVisible();
   await page.locator('.timer-week-day.is-today').click();
   await expect(page.locator('.timer-day-subjects')).toContainText('00:00:02');
@@ -341,7 +345,7 @@ test('인증된 사용자는 스플래시 뒤 전용 타이머를 기본 화면�
   await expect(page.locator('[data-screen="timer"]')).toBeVisible({ timeout: 2500 });
   await expect(page.locator('.tabbar [data-tab="timer"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('button', { name: '공부 시작' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /환산 분석/ })).toBeVisible();
+  await expect(page.locator('.tabbar [data-tab="analysis"]')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -392,6 +396,8 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
+  await expect(page.locator('.planner-progress-track')).toHaveCSS('height', '10px');
+  await expect(page.locator('.planner-item-main b').first()).toHaveCSS('font-size', '14px');
   const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
   const calendarBox = await page.locator('.planner-calendar-section').boundingBox();
   expect(progressBox).not.toBeNull();

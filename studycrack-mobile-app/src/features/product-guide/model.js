@@ -14,7 +14,7 @@ export function guideAccountKey(state, hasSession) {
 
 export function guideCanOpen(state) {
   return ['timer', 'my'].includes(state.screen) && !state.streakSummary?.open && !state.activeStudySession && !state.rewardPendingSessionId && !state.studyTimerRunning
-    && ['idle', 'rewarded'].includes(state.timerPhase) && !state.notifModalOpen && !state.studySubjectSheetOpen && !state.gameRulesOpen
+    && ['idle', 'rewarded'].includes(state.timerPhase) && !state.notifModalOpen && !state.studySubjectSheetOpen && !state.gameRulesOpen && !state.studyPanelMode
     && !state.profileDetailModalOpen && !state.mbtiModalOpen && !state.myProfileEditOpen;
 }
 

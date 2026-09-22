@@ -62,7 +62,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [
     const api = await setup(page);
     await page.goto('/studycrack-mobile.html?screen=timer');
     const scene = page.locator('.aquarium-scene');
-    await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
+    await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
+    await expect(scene.locator('.aquarium-mini-plants')).toHaveCount(1);
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
     await expect(scene).toHaveCSS('height', '96px');
     await captureScene(scene, testInfo.outputPath(`background-home-${width}.png`));
@@ -71,8 +72,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
     const box = await scene.boundingBox();
-    expect(Math.abs(box.height - box.width * 502 / 377)).toBeLessThan(.1);
-    await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-fit', 'contain');
+    expect(box.height).toBe(278);
+    await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-fit', 'cover');
     await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-position', '50% 50%');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-plants,.aquarium-ground,.aquarium-rays,.aquarium-bubbles,.aquarium-water-line')).toHaveCount(0);
@@ -103,13 +104,13 @@ for (const day of [1, 7, 15, 30, 50, 100]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('**/aquarium-background-fixture', route => route.fulfill({ contentType: 'text/html', body: fixturePages.get(day) }));
     await page.goto('/aquarium-background-fixture');
-    await expect(page.locator('.aquarium-scene-background')).toHaveCount(5);
+    await expect(page.locator('.aquarium-scene-background')).toHaveCount(4);
     await expect.poll(() => page.locator('.aquarium-scene-background').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
     const images = await page.locator('.aquarium-scene-background').evaluateAll(images => images.map(image => ({ src: image.currentSrc, fit: getComputedStyle(image).objectFit })));
     expect(new Set(images.map(image => image.src)).size).toBe(1);
-    expect(images.map(image => image.fit)).toEqual(['contain', 'cover', 'cover', 'cover', 'cover']);
+    expect(images.map(image => image.fit)).toEqual(['cover', 'cover', 'cover', 'cover']);
     const full = await page.locator('.aquarium-scene').first().boundingBox();
-    expect(Math.abs(full.height - full.width * 502 / (day === 100 ? 376 : 377))).toBeLessThan(.1);
+    expect(full.height).toBe(278);
     await page.screenshot({ path: testInfo.outputPath(`background-stage-${day}.png`), animations: 'disabled' });
   });
 }
@@ -151,12 +152,13 @@ test('이미지가 늦어도 수조 크기를 예약하고 슬롯을 이동시�
   expect(after.height).toBeCloseTo(before.height, 2);
 });
 
-test('홈 배경 실패는 수조 진입을 막거나 미리보기에 관리 버튼을 만들지 않는다', async ({ page }) => {
+test('홈은 전체 배경을 요청하지 않고 전체 배경 실패에도 수조로 진입한다', async ({ page }) => {
   await setup(page);
   await page.route(backgrounds, route => route.abort());
   await page.goto('/studycrack-mobile.html?screen=timer');
   const scene = page.locator('.aquarium-scene');
-  await expect(scene.getByRole('status')).toHaveText('배경 이미지를 불러오지 못했어요.');
+  await expect(scene.locator('.aquarium-mini-plants')).toBeVisible();
+  await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
   await expect(scene.locator('button')).toHaveCount(0);
   await page.getByRole('button', { name: /수조 전체 보기/ }).click();
   await expect(scene).toHaveAttribute('data-scene-variant', 'full');

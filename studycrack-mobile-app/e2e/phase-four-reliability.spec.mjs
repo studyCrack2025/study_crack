@@ -76,7 +76,7 @@ test('오프라인 첫 사용자 조회는 실패를 알리고 복구 전까지 
   expect(count(api, 'get_user_analysis')).toBe(0);
   await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); });
   await page.getByRole('button', { name: '다시 시도', exact: true }).click();
-  await expect(page.locator('.timer-v2-clock')).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
   expect(count(api, 'get_user_analysis')).toBe(1);
 });
 
@@ -84,7 +84,7 @@ test('공부·수조 보조 조회 실패는 0시간·0마리로 표시하지 �
   await installAuthenticatedSession(page);
   await installApiMock(page, { failGameTypes: ['get_study_summary', 'get_game_profile'] });
   await page.goto(at('timer'));
-  await expect(page.locator('.timer-v2-clock')).toHaveText('확인 필요');
+  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('확인 필요');
   await expect(page.locator('.timer-v2-status-rail')).not.toContainText('0일');
   await expect(page.locator('.timer-v2-status-rail')).not.toContainText('0종');
 });
@@ -180,7 +180,7 @@ test('화면 파일 실패는 재시도와 명시적 새로고침을 제공한�
   await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toBeVisible();
   fail = false;
   await page.getByRole('button', { name: '페이지 새로고침' }).click();
-  await expect(page.locator('.timer-v2-clock')).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
 });
 
 test('초기 실행 파일 실패는 공개 오류 화면과 44px 재시도 버튼으로 복구한다', async ({ page }) => {

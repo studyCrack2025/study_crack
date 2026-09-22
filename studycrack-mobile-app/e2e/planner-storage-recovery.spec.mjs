@@ -128,8 +128,9 @@ test('기기 저장 재시도는 공부 완료·보상을 재요청하지 않고
   const before = await stored(page);
   await blockWrites(page, true);
   await page.getByRole('button', { name: '공부 완료', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('저장하지 못했어요');
   await expect(page.locator('.timer-journey-panel [data-step="reward"]')).toHaveAttribute('data-state', 'complete');
+  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await expect(page.getByRole('alert')).toContainText('저장하지 못했어요');
   expect(await stored(page)).toBe(before);
   await page.getByRole('button', { name: '기기 기록 다시 저장' }).click();
   await expect(page.getByRole('alert')).toBeVisible();

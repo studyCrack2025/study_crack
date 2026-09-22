@@ -247,6 +247,7 @@ for (const failure of rewardFailureCases) {
     setStudySubjectSheetOnlyPlanned() {},
     setStudySubjectSheetOpen() {},
     setStudyTimerRunning() {},
+    setStudyPanelMode(value) { this.studyPanelMode = value; },
     setTimerPhase(value) { this.timerPhase = value; },
     startStudySession: async () => {
       replacementStartCalls += 1;
@@ -336,6 +337,7 @@ try {
   ];
   for (const [label, blockedState] of startBlockingCases) {
     const timerMarkup = renderToStaticMarkup(TimerScreen({
+      studyPanelMode: 'timer',
       canAccessBasic: true,
       todayPlannerItems: [{ id: 'plan-math-1', subject: '수학', content: '미적분', minutes: 30, done: false }],
       todayPlannerTotalMinutes: 30,
@@ -362,7 +364,8 @@ const [timerScreen, panels, screenContext, timerHandlers, timerStyles] = await P
 assert.match(timerScreen, /<HomeDashboard/, 'Timer must delegate the home presentation.');
 const dashboard = await readFile(new URL('../src/screens/timer/HomeDashboard.jsx', import.meta.url), 'utf8');
 const sessionPanel = await readFile(new URL('../src/screens/timer/TimerSessionPanel.jsx', import.meta.url), 'utf8');
-assert.match(dashboard, /<TimerSessionPanel/, 'Home must render the timer panel.');
+assert.doesNotMatch(dashboard, /<TimerSessionPanel/, 'Home must end at the aquarium preview, without an embedded timer.');
+assert.match(timerScreen, /<TimerSessionPanel/, 'The screen overlay must preserve the timer panel.');
 assert.match(sessionPanel, /<StudyJourneyPanel/, 'The timer panel must preserve the study journey owner.');
 assert.match(timerScreen, /lastCompletedSession=\{lastCompletedSession\}/, 'Timer must pass the confirmed session summary to the journey.');
 assert.match(timerScreen, /rewardPendingSessionId=\{rewardPendingSessionId\}/, 'Timer controls must observe an unresolved reward before another study can start.');

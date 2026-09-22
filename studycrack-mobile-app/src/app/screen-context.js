@@ -21,7 +21,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   ]),
   analysis: Object.freeze(ANALYSIS_CONTEXT_KEYS),
   aquarium: Object.freeze([
-    'aquariumPresentation', 'studyOverview',
+    'aquariumPresentation', 'studyOverview', 'analysisScoreView',
     'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
@@ -74,6 +74,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   on2: Object.freeze([]),
   on3: Object.freeze([]),
   planner: Object.freeze([
+    'studyOverview', 'analysisScoreView',
     'dimmed', 'plannerCalendarMode', 'plannerCalendarMonthCells', 'plannerEditIndex', 'plannerEditItem',
     'plannerFeedback', 'plannerMonthLabel', 'plannerViewItems', 'plannerWeekDates',
     'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
@@ -102,13 +103,14 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   settingsTermsPicker: Object.freeze(['openTermsType', 'termsContent']),
   splash: Object.freeze(['crackyHiSrc', 'studycrackLogoSrc']),
   strategy: Object.freeze([
-    'plannerItems', 'studyOverview',
+    'plannerItems', 'studyOverview', 'analysisScoreView',
     'coachingAnswers', 'coachingDropReasons', 'coachingExamFiles', 'coachingExamScores',
     'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen', 'coachingStep',
     'coachingSubjectRows', 'coachingSubmitting', 'coachingTrend', 'coachingView', 'dimmed',
     'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
+    'studyPanelMode',
     'studyOverview', 'aquariumPresentation',
     'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
     'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',

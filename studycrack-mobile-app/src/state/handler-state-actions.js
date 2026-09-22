@@ -10,6 +10,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'signupSubmitting', 'signupTerms', 'signupVerifiedEmail', 'signupVerifiedPhone'
   ]),
   timer: Object.freeze([
+    'studyPanelMode',
     'activePlannerItemId', 'activeStudySession', 'activeStudySubject', 'completionError',
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRefreshTick', 'lastCompletedSession',
     'gameRulesOpen', 'notifModalOpen', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecords',

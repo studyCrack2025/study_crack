@@ -1,4 +1,5 @@
 export const DEFAULT_KEEP_SCROLL_ACTIONS = new Set([
+  'openStudyPanel', 'closeStudyPanel',
   'openStreakSummary', 'closeStreakSummary',
   'openProductGuide', 'closeProductGuide', 'nextProductGuide', 'previousProductGuide', 'retryProductGuide', 'dismissProductGuideError',
   'toggleFaq',

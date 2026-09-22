@@ -23,6 +23,8 @@ for (const width of [320, 360, 390, 430]) {
     await page.goto('/studycrack-mobile.html?screen=aquarium');
     await expect(page.getByRole('button', { name: '먹이 주기', exact: true })).toBeVisible();
     await expect(page.locator('.aquarium-management')).not.toHaveAttribute('open');
+    await expect(page.locator('.aquarium-next-actions button').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(page.locator('.aquarium-next-actions small').first()).toHaveCSS('color', 'rgb(99, 112, 131)');
     await page.screenshot({ path: info.outputPath(`care-top-${width}.png`), animations: 'disabled' });
     await page.locator('.aquarium-scene').evaluate(el => el.scrollIntoView({ block: 'center' }));
     await page.locator('.aquarium-scene').screenshot({ path: info.outputPath(`care-scene-${width}.png`), animations: 'disabled' });

@@ -22,8 +22,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const scene = page.locator('.aquarium-scene');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-fish-artwork')).toHaveClass(/is-loaded/);
-    await expect(scene).toHaveCSS('border-radius', '0px');
-    await expect(scene).toHaveCSS('border-top-width', '0px');
+    await expect(scene).toHaveCSS('border-radius', '24px');
+    await expect(scene).toHaveCSS('border-top-width', '1px');
+    await expect(scene).toHaveCSS('height', '278px');
     await page.evaluate(() => document.fonts.ready);
     const capture = async (mode) => {
       const file = `${mode}-${width}.png`;
@@ -91,5 +92,6 @@ test('도감 조회 실패를 가짜 수집 수로 표시하지 않고 확인된
   await expect(page.locator('.aquarium-resource-notice')).toBeVisible();
   await expect(page.locator('[data-action="openAquariumCatalog"]')).toContainText('수집 정보 확인 필요');
   await expect(page.locator('[data-action="openAquariumCatalog"]')).not.toContainText('/ 12');
-  await expect(page.locator('.aquarium-scene-hud')).toContainText('0일');
+  await expect(page.locator('.aquarium-scene-hud')).toContainText('성장 기록 확인 필요');
+  await expect(page.locator('.aquarium-scene-hud')).not.toContainText('0일');
 });

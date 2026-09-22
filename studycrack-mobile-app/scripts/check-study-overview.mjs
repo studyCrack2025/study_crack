@@ -55,7 +55,7 @@ const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.
 try {
   const { StudyOverviewCard } = await vite.ssrLoadModule('/src/components/StudyOverviewCard.jsx');
   const render = (overview, variant) => renderToStaticMarkup(createElement(StudyOverviewCard, { overview, variant }));
-  for (const variant of ['card', 'inline']) {
+  for (const variant of ['card', 'inline', 'banner']) {
     const markup = render(view, variant);
     assert.match(markup, /과제 50% 완료/);
     assert.match(markup, /01:00:00/);
@@ -81,6 +81,16 @@ try {
   assert.match(render(empty), /등록한 계획 없음/);
   assert.doesNotMatch(render(empty), /aria-valuenow/);
   assert.equal(render(undefined), '');
+  for (const value of [0, 512.4]) {
+    const banner = renderToStaticMarkup(createElement(StudyOverviewCard, { overview: idle, variant: 'banner', compact: true, scoreView: { hasScore: true, score: value } }));
+    assert.match(banner, new RegExp(`<b>${Math.round(value)}점</b>`));
+    assert.doesNotMatch(banner, /합격 가능성|55\.5%/);
+  }
+  for (const scoreView of [null, { hasScore: false, score: 512 }, { hasScore: true, score: NaN }]) {
+    const banner = renderToStaticMarkup(createElement(StudyOverviewCard, { overview: idle, variant: 'banner', scoreView }));
+    assert.match(banner, /환산점수 확인/);
+    assert.doesNotMatch(banner, /NaN|512점/);
+  }
 } finally {
   await vite.close();
 }
