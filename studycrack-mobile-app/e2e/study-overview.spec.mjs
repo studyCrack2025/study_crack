@@ -22,20 +22,24 @@ async function setup(page, options = {}) {
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`홈·수조·코칭은 같은 학습 요약을 재사용한다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`홈·수조·플래너·코칭은 같은 학습 배너를 재사용한다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page);
     await page.goto('/studycrack-mobile.html?screen=timer');
     const card = page.getByRole('region', { name: '학습 현황 요약' });
     const summaryRequests = () => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length;
-    for (const screen of ['timer', 'aquarium', 'strategy']) {
+    for (const screen of ['timer', 'aquarium', 'planner', 'strategy']) {
       if (screen !== 'timer') await page.locator(`.tabbar [data-tab="${screen}"]`).click();
       await expect(card).toBeVisible();
+      await expect(card).toHaveAttribute('data-variant', 'banner');
+      await expect(card.locator('.sc-study-score')).toContainText('저장 성적 기반 환산점수');
+      await expect(card.locator('.sc-study-score')).not.toContainText('%');
+      await expect(card.locator('.sc-study-banner')).toHaveCSS('border-radius', '16px');
       await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
       await expect(card).toContainText('1/2');
       await expect(card).toContainText('과제 50% 완료');
-      if (screen !== 'strategy') {
+      {
         const detail = card.locator('details.sc-study-details');
         await expect(detail).not.toHaveAttribute('open', '');
         await expect(card.locator('dd').first()).not.toBeVisible();
@@ -70,7 +74,7 @@ test('기록 날짜 불일치·조회 실패·재시도를 구분한다', async 
   await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('dd').nth(1)).toHaveText('산정 전');
   failures.push('get_study_summary');
-  await page.locator('.tabbar [data-tab="planner"]').click();
+  await page.locator('.tabbar [data-tab="analysis"]').click();
   await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
   await expect(card).toContainText('마지막 확인 기록');
@@ -120,4 +124,14 @@ test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page
   await expect(card.locator('dd').first()).toHaveText('확인 필요');
   await expect(card).not.toContainText('00:00:00');
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+});
+
+test('플래너 직접 진입도 학습 기록을 조회하고 배너에서 성적 화면을 연다', async ({ page }) => {
+  const api = await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  const card = page.getByRole('region', { name: '학습 현황 요약' });
+  await expect(card.locator('summary')).toContainText('00:30:00');
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBe(1);
+  await card.locator('.sc-study-score').click();
+  await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
 });

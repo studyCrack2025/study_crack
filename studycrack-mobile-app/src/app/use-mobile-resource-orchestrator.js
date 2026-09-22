@@ -64,7 +64,7 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
     setState
   });
   useStudySummaryResource({
-    enabled: resourceSessionReady && ['timer', 'aquarium', 'strategy', 'my'].includes(state.screen),
+    enabled: resourceSessionReady && ['timer', 'aquarium', 'strategy', 'planner', 'my'].includes(state.screen),
     getApiBinding: api.getUserApiBinding,
     refreshTick: state.studySummaryRefreshTick,
     setState

@@ -130,7 +130,7 @@ function AquariumWorkspace(ctx) {
         <AquariumOfflineState />
         <AquariumHabitatHeader fishCount={fishCount || fishInventory.length} profile={gameProfile} />
         {loading ? <StatusState className="aquarium-main-status" kind="loading" title="수조를 채우고 있어요" description="보상과 물고기 상태를 확인하고 있습니다." /> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
-          <StudyOverviewCard overview={ctx.studyOverview} compact />
+          <StudyOverviewCard overview={ctx.studyOverview} scoreView={ctx.analysisScoreView} variant="banner" compact />
           <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canAccessBasic={ctx.canAccessBasic} />
           <div className="aquarium-scene-wrap"><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={aquariumSelectedFishId} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           {gameProfileStatus === 'ready' && gameProfile ? <AquariumJourney fishCount={fishCount || fishInventory.length} profile={gameProfile} /> : null}

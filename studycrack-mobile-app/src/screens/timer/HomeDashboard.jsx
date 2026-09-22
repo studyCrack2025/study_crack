@@ -19,7 +19,7 @@ function TimerProfileShortcut({ user = {} }) {
 function TimerHeader({ user = {} }) {
   return (
     <header className="timer-v2-brand-head">
-      <span className="timer-v2-brand"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><span><b>StudyCrack</b><small>{user?.name ? `${user.name}님의 합격 루틴` : '오늘의 합격 루틴'}</small></span></span>
+      <span className="timer-v2-brand"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><span><b>STUDY CRACK</b><small>{user?.name ? `${user.name}님의 합격 루틴` : 'ADMISSIONS PLATFORM'}</small></span></span>
       <TimerProfileShortcut user={user} />
     </header>
   );
@@ -54,7 +54,7 @@ export function HomeDashboard(props) {
     <TimerHeader user={user} />
     <HomeStatusRail aquariumPresentation={aquariumPresentation} normalizedTargetMajor={normalizedTargetMajor} />
     <HomeTargetSummary analysisScoreView={analysisScoreView} calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} normalizedTargetMajor={normalizedTargetMajor} />
-    <section className="home-study-highlight sc-card" aria-label="오늘의 학습 지표"><button type="button" className="home-score-summary" data-action="goto" data-target="analysis"><span><small>저장 성적 기반 환산점수</small><b>{analysisScoreView?.hasScore && Number.isFinite(analysisScoreView.score) ? `${Math.round(analysisScoreView.score)}점` : normalizedTargetMajor ? '환산점수 확인하기' : '목표 대학 설정하기'}</b></span><Icon name="chevron" /></button><StudyOverviewCard overview={studyOverview} variant="inline" compact /></section>
+    <section className="home-study-highlight" aria-label="오늘의 학습 지표"><StudyOverviewCard overview={studyOverview} scoreView={analysisScoreView} variant="banner" compact /></section>
     <HomePlannerPreview {...props} showStudyPanel={forcedOpen} />
     <HomeAquariumPreview presentation={aquariumPresentation} />
   </main>;

@@ -28,7 +28,10 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.coaching-week-days li')).toHaveCount(7);
     await expect(page.locator('.coaching-week-preview')).toContainText('등록 1개 · 계획 30분');
     const order = await page.locator('.coach-page').evaluate(el => [...el.children].map(child => child.className));
-    for (const [before, after] of [['coaching-hero', 'coaching-process'], ['coaching-process', 'coaching-week-preview'], ['coaching-week-preview', 'btn btn-primary coaching-request-cta'], ['coaching-history', 'service-plan-comparison']]) expect(order.indexOf(before)).toBeLessThan(order.indexOf(after));
+    for (const [before, after] of [['sc-study-overview', 'coaching-process'], ['coaching-process', 'coaching-week-preview'], ['coaching-week-preview', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-hero'], ['coaching-hero', 'coaching-history'], ['coaching-history', 'service-plan-comparison']]) {
+      expect(order).toContain(before); expect(order).toContain(after);
+      expect(order.indexOf(before)).toBeLessThan(order.indexOf(after));
+    }
     await page.screenshot({ path: info.outputPath(`coaching-top-${width}.png`), animations: 'disabled' });
     await expect(page.locator('.service-plan-card')).toHaveCount(4);
     await page.locator('.service-plan-comparison').evaluate(el => el.scrollIntoView({ block: 'center' }));
