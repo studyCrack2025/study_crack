@@ -131,7 +131,9 @@ test('작은 화면에서 여러 줄 계획 추가와 IME 입력·단계 복귀�
 test('계정 변경 후 서버 지표·권한을 새 계정으로 읽고 기기 계획은 보존한다', async ({ page }) => {
   const api = await setup(page);
   await page.goto('/studycrack-mobile.html?screen=timer');
-  await expect(page.locator('.timer-v2-status-rail')).toContainText('9일');
+  const streak = page.locator('.timer-v2-status-rail').getByRole('button', { name: /^연속 학습 / });
+  await expect(streak).toHaveAccessibleName('연속 학습 9일');
+  await expect(streak.locator('b')).toHaveText('9');
   api.state.userTier = 'free';
   api.state.userOverrides = { name: '다른계정', targetUnivs: [], quantitative: {} };
   api.state.gameProfile.streakDays = 0;
@@ -142,7 +144,8 @@ test('계정 변경 후 서버 지표·권한을 새 계정으로 읽고 기기 
   });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('.timer-v2-brand-head')).toContainText('다른계정');
-  await expect(page.locator('.timer-v2-status-rail')).toContainText('0일');
+  await expect(streak).toHaveAccessibleName('연속 학습 0일');
+  await expect(streak.locator('b')).toHaveText('0');
   await expect(page.locator('.timer-v2-plan')).toContainText('Basic 이상');
   await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(0);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('plannerItems')).length)).toBe(3);

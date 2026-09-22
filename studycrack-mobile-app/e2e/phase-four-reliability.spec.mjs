@@ -85,8 +85,11 @@ test('공부·수조 보조 조회 실패는 0시간·0마리로 표시하지 �
   await installApiMock(page, { failGameTypes: ['get_study_summary', 'get_game_profile'] });
   await page.goto(at('timer'));
   await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('확인 필요');
-  await expect(page.locator('.timer-v2-status-rail')).not.toContainText('0일');
-  await expect(page.locator('.timer-v2-status-rail')).not.toContainText('0종');
+  const rail = page.locator('.timer-v2-status-rail');
+  const streak = rail.getByRole('button', { name: '연속 학습 확인 필요', exact: true });
+  await expect(streak).toBeVisible();
+  await expect(streak.locator('b')).toHaveText('—');
+  await expect(rail.getByRole('button', { name: '물고기 확인 필요', exact: true })).toBeVisible();
 });
 
 test('문의 전송 실패 뒤 재연결은 입력을 보존하고 저장을 자동 재전송하지 않는다', async ({ page, context }) => {
