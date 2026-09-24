@@ -5,12 +5,19 @@
 
 async function populateTutorFilter() {
     try {
-        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_stats' }) });
+        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_list' }) });
         const data = await response.json();
         const filterEl = document.getElementById('filterTutor');
-        if(filterEl && data.tutors) {
+        if (!Array.isArray(data?.tutors)) throw new Error('Invalid tutor list');
+        if(filterEl) {
+            const known = new Set(Array.from(filterEl.options, option => option.value));
             data.tutors.forEach(t => {
-                filterEl.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님</option>`;
+                if (typeof t?.nickname !== 'string' || !t.nickname || known.has(t.nickname)) return;
+                const option = document.createElement('option');
+                option.value = t.nickname;
+                option.textContent = `${t.nickname} 선생님`;
+                filterEl.appendChild(option);
+                known.add(t.nickname);
             });
         }
     } catch(e) { console.error("Tutor filter load failed", e); }
@@ -71,7 +78,10 @@ function updateStudentResultSummary(state, count = 0) {
     else summaryEl.textContent = `검색 결과 총 ${Number(count).toLocaleString('ko-KR')}명`;
 }
 
+let studentSearchSequence = 0;
+
 async function searchStudents() {
+    const sequence = ++studentSearchSequence;
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value;
     const keyword = document.getElementById('searchInput').value || "";
@@ -101,7 +111,11 @@ async function searchStudents() {
         });
 
         const rawData = await response.json();
-        let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
+        if (sequence !== studentSearchSequence || localStorage.getItem('userId') !== adminId) return;
+        let students = Array.isArray(rawData) ? rawData : rawData?.students;
+        if (!Array.isArray(students) || students.some(s => !s || typeof s.userid !== 'string')) {
+            throw new Error('Invalid student list');
+        }
 
         // 유령 계정 및 관리자 제외
         students = students.filter(s => {
@@ -182,14 +196,16 @@ async function searchStudents() {
         });
 
     } catch (error) {
+        if (sequence !== studentSearchSequence || localStorage.getItem('userId') !== adminId) return;
         currentStudentList = [];
         updateStudentResultSummary('error');
-        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>학생 정보를 불러오지 못했습니다. <button type='button' onclick='searchStudents()'>다시 시도</button></td></tr>";
     }
 }
 
 function goToStudentDetail(targetUserId) {
-    window.location.href = `/admin/detail?uid=${targetUserId}`;
+    if (typeof targetUserId !== 'string' || !targetUserId) return;
+    window.location.href = `/admin/detail?uid=${encodeURIComponent(targetUserId)}`;
 }
 
 // 학생 등급을 텍스트로 반환 (CSV용)
