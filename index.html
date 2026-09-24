@@ -13,18 +13,18 @@
     <meta name="color-scheme" content="light">
     <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
     <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
-    <meta name="description" content="정시 컨설팅 스터디크랙은 합격 가능성 분석과 데이터 기반 입시 전략으로, 학생별 맞춤 지원 전략과 플래너를 제공합니다." />
-    <meta property="og:title" content="정시 컨설팅 | 스터디크랙" />
-    <meta property="og:description" content="합격 가능성 분석과 데이터 기반 정시 전략으로 맞춤 지원 전략을 설계합니다." />
+    <meta name="description" content="내 성적과 학습 성향을 분석해 목표 대학에 가장 가치 있는 다음 1점과 과목별 우선순위를 확인하세요." />
+    <meta property="og:title" content="다음 1점 분석 | 스터디크랙" />
+    <meta property="og:description" content="합격에 유리하고 올리기 쉬운 과목부터, 내 성적에 맞는 다음 1점을 확인하세요." />
     <meta property="og:image" content="https://studycrack.co.kr/og-image.jpg" />
     <meta property="og:url" content="https://studycrack.co.kr" />
     <meta property="og:type" content="website" />
 
-    <title>스터디크랙 - 정시 전략의 모든 것</title>
+    <title>스터디크랙 - 나에게 가장 가치 있는 다음 1점</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="image" href="/assets/figma/figma-asset-17.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/assets/basic-v2/hero-phone.png" fetchpriority="high">
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
@@ -32,8 +32,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="canonical" href="https://studycrack.co.kr/" />
 </head>
-<body>
-    <h1 class="sr-only">스터디크랙 - 정시 컨설팅 및 점수 상승 시뮬레이션</h1>
+<body class="basic-landing">
+    <h1 class="sr-only">스터디크랙 - 나에게 가장 가치 있는 다음 1점 분석</h1>
 
     <header id="site-header">
         <div class="logo-container">
@@ -44,7 +44,6 @@
         </div>
         <nav class="nav-links">
             <a href="/service">서비스 소개</a>
-            <a href="/promotion/kcc01" class="nav-promo-link">StudyCrack X KCC</a>
             <a href="/analysis" id="navAnalysis" class="hidden">나만의 솔루션</a>
             <a href="/qna" id="navQna" class="hidden">1:1 문의</a>
             <a href="/login" id="loginBtn" class="nav-btn">로그인 / 회원가입</a>
@@ -70,7 +69,6 @@
         </div>
         <nav class="mobile-nav-links">
             <a href="/service">서비스 소개</a>
-            <a href="/promotion/kcc01" class="nav-promo-link">StudyCrack X KCC</a>
             <a href="/analysis" id="mobileNavAnalysis" class="hidden">나만의 솔루션</a>
             <a href="/qna" id="mobileNavQna" class="hidden">1:1 문의</a>
             <a href="/login" id="mobileLoginBtn" class="mnl-btn">로그인 / 회원가입</a>
@@ -83,347 +81,172 @@
         <div id="heroBg" class="hero-bg" aria-hidden="true"></div>
         <div id="heroCrossFade" class="hero-crossfade" aria-hidden="true"></div>
         <div class="hero-main-content">
-            <h2 class="hero-title">
-                <span class="hero-title-light">지금 공부방향,</span>
-                <span class="hero-title-bold">확신이 있으신가요?</span>
-            </h2>
-            <p class="hero-subtitle">당신에게 맞는 공부 방법을 분석하고<br><strong>합격까지 이어지는 실행 전략을 제시합니다</strong></p>
-            <div class="hero-dots" aria-hidden="true"><span class="active"></span><span></span><span></span></div>
+            <p class="hero-eyebrow">나에게 가장 가치 있는 다음 1점</p>
+            <h2 class="hero-title"><span class="hero-title-light">합격에 유리하고,</span><span class="hero-title-bold">내가 올리기 쉬운 과목부터.</span></h2>
+            <p class="hero-subtitle">내 성적과 학습 성향을 방대한 데이터와 함께 분석해<br> 어떤 과목을 얼마나 올릴지, 목표 대학에 맞춰 알려드립니다.</p>
+            <a class="hero-cta basic-preview-entry" data-entry="hero" href="/basic-preview">내 성적으로 다음 1점 확인하기</a>
+            <p class="hero-note">개인화 결과를 먼저 확인하고, 전체 분석은 필요할 때 선택하세요.</p>
+            <div class="hero-dots" aria-label="배경 이미지 선택"><button type="button" class="active" aria-label="첫 번째 배경"></button><button type="button" aria-label="두 번째 배경"></button><button type="button" aria-label="세 번째 배경"></button></div>
         </div>
+    </section>
+    <section class="landing-value">
+        <h2>입시에 미치는 영향 × 나의 성적 상승 가능성</h2>
+        <p>대학 예측을 넘어, 내가 실제로 만들 다음 점수의 우선순위를 찾습니다.</p>
     </section>
 
     <section id="about" class="section problem scroll-reveal">
         <div class="container problem__grid">
             <div class="problem__copy">
-                <h2>지금 공부 방향, 확신이 없다면<br>결과는 바뀌지 않습니다</h2>
-                <p><strong>원하는 대학에 가기 위해서는</strong><br>어떤 과목을 어떻게 올려야 하는지부터 달라야 합니다.</p>
-                <p>막연한 공부가 아닌,<br>실제 점수 상승으로 이어지는 전략과 실행 플래너</p>
-                <p class="accent">지금 내 성적으로 가능한<br>합격 전략까지 한 번에 확인해보세요</p>
-                <a class="btn btn--primary" href="/payment">지금 내 합격 가능 전략 확인하기</a>
+                <h2>대학은 가고 싶은데,<br> 뭘 어떻게 올려야 할지<br> 막막하다면.</h2>
+                <p>무조건 어려운 과목에 매달릴 필요도,<br> 쉬운 과목만 고집할 필요도 없습니다.</p>
+                <p>목표 대학에 미치는 영향과<br> 내가 올릴 수 있는 가능성을 함께 계산해<br> 지금 집중할 과목과 목표 점수를 찾으세요.</p>
+                <a class="btn btn--primary basic-preview-entry" data-entry="questions" href="/basic-preview">내 성적으로 다음 1점 확인하기</a>
             </div>
             <div class="step-grid">
                 <article class="step-card step-card--one">
-                    <span class="badge badge--green">1단계</span>
-                    <h3>지금 공부 방향, 확신이 있으신가요?</h3>
-                    <p>막연한 노력만으로는 결과를 바꾸기 어렵습니다.</p>
-                    <div class="step-card-icon step-icon--green"><i class="fas fa-magnifying-glass"></i></div>
+                    <span class="badge badge--green">01</span>
+                    <h3>내 점수로 어디까지?</h3>
+                    <p>내 점수에 유리한 대학과<br> 현재 합격 가능성을 확인합니다.</p>
+                    <span class="step-card-icon step-icon--green" aria-hidden="true">01</span>
                 </article>
-                <article class="step-card">
-                    <span class="badge badge--purple">2단계</span>
-                    <h3>어떤 과목을 어떻게 올려야 하는지</h3>
-                    <p>실제 점수 상승까지 이어지는 실행 플랜을 제공합니다.</p>
-                    <div class="step-card-icon step-icon--purple"><i class="fas fa-lightbulb"></i></div>
+                <article class="step-card step-card--two">
+                    <span class="badge badge--purple">02</span>
+                    <h3>나에게 유리한<br> 과목은?</h3>
+                    <p>1점의 입시 효과와 나의 상승<br> 가능성을 함께 비교합니다.</p>
+                    <span class="step-card-icon step-icon--purple" aria-hidden="true">02</span>
                 </article>
-                <article class="step-card">
-                    <span class="badge badge--blue">3단계</span>
-                    <h3>목표대학 합격, 전략이 먼저입니다.</h3>
-                    <p>지금 내 성적으로 어디까지 가능한지 확인해보세요.</p>
-                    <div class="step-card-icon step-icon--blue"><i class="fas fa-rocket"></i></div>
+                <article class="step-card step-card--three">
+                    <span class="badge badge--blue">03</span>
+                    <h3>얼마나 올리면 될까?</h3>
+                    <p>목표 대학에 필요한 변화를<br> 과목별 목표 성적으로 받습니다.</p>
+                    <span class="step-card-icon step-icon--blue" aria-hidden="true">03</span>
                 </article>
             </div>
         </div>
     </section>
 
-    <section class="section-bg dark-feature scroll-reveal">
-        <img class="bg-img" src="/assets/figma/figma-asset-08.png" alt="대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시">
+    <section class="section-bg dark-feature landing-proof scroll-reveal">
+        <img class="bg-img" src="/assets/basic-v2/proof-classroom.png" alt="" loading="lazy">
         <div class="bg-overlay bg-overlay--dark"></div>
         <div class="container section-content">
             <div class="section-heading section-heading--light">
-                <h2>한 문제 차이로<br>전형에 따라 결과는 달라집니다</h2>
-                <p>한 문제를 더 맞췄을 뿐인데도 대학 전형별 반영 방식에 따라 결과는 전혀 달라집니다.</p>
+                <p class="eyebrow">실제 서비스 화면</p>
+                <h2>같은 1점도 다르게 작용합니다.<br> 내가 만들기 쉬운 1점까지 찾습니다.</h2>
+                <p>입시 효과와 개인별 상승 가능성을 함께 판단하는 Basic 분석</p>
             </div>
             <div class="card-grid card-grid--three">
-                <div class="ppt-card">
-                    <div class="ppt-card-img">
-                        <img src="/assets/figma/figma-asset-06.png" alt="같은 점수, 다른 결과">
-                    </div>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-position.png" width="1447" height="586" loading="lazy" alt="세종대학교 자유전공학부 진단점수 209.7점 분석 화면"></div>
                     <div class="ppt-card-body">
-                        <h3>같은 점수, 다른 결과가 나는 이유</h3>
-                        <p class="card-body-text">대학·전형별 반영 방식에 따라 결과는 전혀 다르게 나타납니다.</p>
-                        <div class="summary-box">결과를 바꾸는 건 운이 아니라<br><strong>반영 기준과 구조의 차이</strong>입니다.</div>
+                        <h3>지금 위치를 확인하고</h3>
+                        <p class="card-body-text">내 점수에 유리한 대학과 합격선까지의<br> 거리를 확인합니다.</p>
+                        <p class="summary-box">추천 대학 · 합격 가능성</p>
                     </div>
-                </div>
-
-                <div class="ppt-card">
-                    <div class="ppt-card-img">
-                        <img src="/assets/figma/figma-asset-19.png" alt="한 문제의 차이">
-                    </div>
+                </article>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-effects.png" width="1387" height="516" loading="lazy" alt="국어·수학·탐구별 1점 상승 효과 분석 화면"></div>
                     <div class="ppt-card-body">
-                        <h3>한 문제의 차이가 만든 합격·불합격의 경계</h3>
-                        <p class="card-body-text">합격 가능성이 가장 크게 오르는 과목을 보여줍니다.</p>
-                        <div class="summary-box">‘한 문제’로 얻을 수 있는<br><strong>최대 효율</strong>을 먼저 확인하세요.</div>
+                        <h3>점수의 가치를 비교하고</h3>
+                        <p class="card-body-text">과목별 1점이 목표 대학의 진단점수에<br> 미치는 영향을 비교합니다.</p>
+                        <p class="summary-box">국어·수학·탐구별 상승 효과</p>
                     </div>
-                </div>
-
-                <div class="ppt-card">
-                    <div class="ppt-card-img">
-                        <img src="/assets/figma/figma-asset-15.png" alt="기준이 생기면 불안은 사라진다">
-                    </div>
+                </article>
+                <article class="ppt-card">
+                    <div class="ppt-card-img"><img src="/assets/basic-v2/result-priority.png" width="1407" height="1151" loading="lazy" alt="과목별 진단점수 그래프와 목표 대학 선택 화면"></div>
                     <div class="ppt-card-body">
-                        <h3>기준이 생기면 불안은 사라진다</h3>
-                        <p class="card-body-text">합격선과 안전선을 통해 어디까지 올려야 하는지 명확히 보여줍니다.</p>
-                        <div class="summary-box">한 문제의 영향까지 계산하면<br><strong>계획이 단단해집니다.</strong></div>
+                        <h3>나의 우선순위를 정합니다</h3>
+                        <p class="card-body-text">개인별 상승 가능성까지 함께 반영해<br> 집중할 과목을 찾습니다.</p>
+                        <p class="summary-box">학습 성향 · 상승 가능성 함께 반영</p>
                     </div>
-                </div>
+                </article>
             </div>
             <div class="review-indicators" id="pptIndicators"></div>
+            <p class="landing-proof-note">실제 화면 발췌 · 화면마다 입력 사례가 다릅니다.</p>
         </div>
     </section>
-
-    <div class="gradient-divider"></div>
 
     <section id="planner-promo" class="section planner scroll-reveal">
         <div class="container">
             <div class="section-heading">
-                <p class="eyebrow">01. 나만의 입시 전략</p>
-                <h2>분석부터 합격 설계까지<br><em>3단계 맞춤 전략</em></h2>
-                <p>MBTI·성적·학습 성향을 분석하고,<br>목표 대학 합격 가능성과 전용 플래너까지 한 번에 파악합니다.</p>
+                <p class="eyebrow">01 · 나에게 맞는 점수 전략</p>
+                <h2>“어떤 과목을 얼마나?”<br> 내가 만들 목표가 구체화됩니다.</h2>
+                <p>학습 성향을 유형 이름으로 끝내지 않고, 과목별 목표 성적 설계에 반영합니다.</p>
             </div>
-            <div class="process-list">
-                <article class="process-card">
-                    <div class="process-copy">
-                        <span class="step-no">01</span>
-                        <h3>학습 성향 분석</h3>
-                        <p>MBTI, 기초조사서, 성적을 기반으로 당신의 학습 성향과 강약점을 분석합니다.</p>
-                        <div class="chips"><span>MBTI 분석</span><span>기초조사서</span></div>
-                    </div>
-                    <div class="process-preview radar-preview">
-                        <div>
-                            <h4>CMDF 분석형 전략가</h4>
-                            <p>논리적인 계획에 특화된 학생 유형.</p>
-                        </div>
-                        <svg viewBox="0 0 200 195" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
-                            <polygon points="100,28 168.5,77.7 142.3,158.2 57.7,158.2 31.5,77.7" fill="#eef4ff" stroke="#c8d9ff" stroke-width="1"/>
-                            <polygon points="100,52.5 145.2,85.3 127.9,138.4 72.1,138.4 54.8,85.3" fill="none" stroke="#d8e7ff" stroke-width="0.7" stroke-dasharray="3,2"/>
-                            <polygon points="100,76.2 122.6,92.6 114,119.3 86,119.3 77.4,92.6" fill="none" stroke="#d8e7ff" stroke-width="0.7" stroke-dasharray="3,2"/>
-                            <line x1="100" y1="100" x2="100" y2="28" stroke="#c8d9f8" stroke-width="0.8"/>
-                            <line x1="100" y1="100" x2="168.5" y2="77.7" stroke="#c8d9f8" stroke-width="0.8"/>
-                            <line x1="100" y1="100" x2="142.3" y2="158.2" stroke="#c8d9f8" stroke-width="0.8"/>
-                            <line x1="100" y1="100" x2="57.7" y2="158.2" stroke="#c8d9f8" stroke-width="0.8"/>
-                            <line x1="100" y1="100" x2="31.5" y2="77.7" stroke="#c8d9f8" stroke-width="0.8"/>
-                            <circle cx="100" cy="100" r="2" fill="#c8d9f8"/>
-                            <polygon points="100,42 145,86 137,151 70,142 62,88" fill="rgba(76,121,238,0.18)" stroke="#4c79ee" stroke-width="1.5" stroke-linejoin="round"/>
-                            <circle cx="100" cy="42" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <circle cx="145" cy="86" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <circle cx="137" cy="151" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <circle cx="70" cy="142" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <circle cx="62" cy="88" r="3.5" fill="#4c79ee" stroke="#fff" stroke-width="1"/>
-                            <text x="100" y="18" text-anchor="middle" font-size="10" font-weight="700" fill="#3d526e">국어</text>
-                            <text x="177" y="76" text-anchor="start" font-size="10" font-weight="700" fill="#3d526e">수학</text>
-                            <text x="148" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#3d526e">영어</text>
-                            <text x="52" y="178" text-anchor="middle" font-size="10" font-weight="700" fill="#3d526e">탐1</text>
-                            <text x="23" y="76" text-anchor="end" font-size="10" font-weight="700" fill="#3d526e">탐2</text>
-                        </svg>
+            <div class="personalized-grid">
+                <article class="personalized-card">
+                    <span class="personalized-number">01</span>
+                    <h3>내가 올리기 쉬운 과목</h3>
+                    <p class="personalized-description">현재 성적과 학습 성향을 분석해 나의<br> 과목별 성적 상승 가능성을 계산합니다.</p>
+                    <div class="personalized-panel personalized-panel--priority">
+                        <h4>이번 분석의 우선 과목</h4>
+                        <strong>수학</strong>
+                        <p>입시 효과가 크고<br> 나의 상승 가능성도 높은 과목</p>
                     </div>
                 </article>
-                <article class="process-card">
-                    <div class="process-copy">
-                        <span class="step-no">02</span>
-                        <h3>목표 대학 분석</h3>
-                        <p>유사한 대학을 추천하고,<br>가장 현실적이고 효율적인 성적표를 제시합니다.</p>
-                        <div class="chips"><span>합격 가능성 분석</span></div>
+                <article class="personalized-card">
+                    <span class="personalized-number">02</span>
+                    <h3>목표 대학에 유리한 변화</h3>
+                    <p class="personalized-description">목표 대학의 반영 방식에 맞춰 어떤 점수<br> 조합이 유리한지 비교합니다.</p>
+                    <div class="personalized-panel personalized-panel--combination">
+                        <h4>수학 +3점 · 탐구 +2점</h4>
+                        <strong>진단점수 82 → 106</strong>
+                        <p>현재 위치에서<br> 합격 예측선에 도달하는 조합</p>
                     </div>
-                    <div class="process-preview sim-chart-preview">
-                        <div class="sim-preview-top">
-                            <span class="sim-preview-title">📊 합격 가능성 위치 (0~250점)</span>
-                            <button class="sim-score-up-btn" onclick="toggleScoreUp(this)"><i class="fas fa-arrow-trend-up"></i> 점수 상승</button>
-                        </div>
-                        <div class="sim-preview-graph-wrap">
-                            <div class="sim-preview-graph">
-                                <div class="sim-preview-guide" style="bottom:60%"><span class="sim-preview-guide-label" style="color:#10b981">안정</span></div>
-                                <div class="sim-preview-guide sim-preview-guide--blue" style="bottom:40%"><span class="sim-preview-guide-label" style="color:#3b82f6">합격</span></div>
-                                <div class="sim-preview-bar-item"><div class="sim-preview-bar" style="height:42.8%; background:#3b82f6"><span class="sim-preview-score">107</span></div></div>
-                                <div class="sim-preview-bar-item"><div class="sim-preview-bar" style="height:74%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">185</span></div></div>
-                                <div class="sim-preview-bar-item" id="simScoreUpBar"><div class="sim-preview-bar" style="height:55.2%; background:#3b82f6"><span class="sim-preview-score">138</span></div><div class="sim-ext-bar" style="bottom:55.2%;"><span class="sim-score-delta">+26.3</span></div></div>
-                                <div class="sim-preview-bar-item sim-mobile-hide"><div class="sim-preview-bar" style="height:81.2%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">203</span></div></div>
-                                <div class="sim-preview-bar-item sim-mobile-hide"><div class="sim-preview-bar sim-preview-bar--active" style="height:100%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">250</span></div></div>
-                                <div class="sim-preview-bar-item sim-mobile-hide"><div class="sim-preview-bar" style="height:85.6%; background:#10b981"><span class="sim-preview-score" style="color:#10b981">214</span></div></div>
-                            </div>
-                            <div class="sim-preview-labels">
-                                <div class="sim-preview-label"><strong>1지망</strong><br>연세대<br><small>경영학과</small></div>
-                                <div class="sim-preview-label"><strong>2지망</strong><br>고려대<br><small>경영대학</small></div>
-                                <div class="sim-preview-label"><strong>3지망</strong><br>서울대<br><small>간호대학</small></div>
-                                <div class="sim-preview-label sim-mobile-hide"><strong>4지망</strong><br>고려대<br><small>경제학과</small></div>
-                                <div class="sim-preview-label sim-preview-label--active sim-mobile-hide"><strong>5지망</strong><br>고려대<br><small>가정교육과</small></div>
-                                <div class="sim-preview-label sim-mobile-hide"><strong>6지망</strong><br>한양대<br><small>정보시스템학과</small></div>
-                            </div>
-                        </div>
-                        <div class="sim-preview-legend">
-                            <span><i style="background:#10b981"></i>안정(150+)</span>
-                            <span><i style="background:#3b82f6"></i>합격(100+)</span>
-                        </div>
-                    </div>
+                    <p class="personalized-example">설명용 예시 · 실제 개인 분석 결과 아님</p>
                 </article>
-                <article class="process-card">
-                    <div class="process-copy">
-                        <div class="step-title-row">
-                            <span class="step-no">03</span>
-                            <h3>합격 설계</h3>
-                            <span class="star-badge"><i class="fas fa-star"></i></span>
-                        </div>
-                        <p>주간 플래너와 공부 루틴을 직접 설계하고, 예상 성적도 예측 모델로 정밀하게 조정합니다.</p>
-                    </div>
-                    <div class="process-preview">
-                        <div class="planner-header">
-                            <h4>주간 플래너 (예시)</h4>
-                            <span class="planner-ai-badge"><i class="fas fa-user-graduate"></i>튜터 맞춤 설계</span>
-                        </div>
-                        <div class="planner-cal">
-                            <div class="planner-cal-head">
-                                <div class="planner-time-label"></div>
-                                <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
-                            </div>
-                            <div class="planner-cal-slot">
-                                <div class="planner-time-label">오전</div>
-                                <div class="planner-cell pc--math">수학<small>개념</small></div>
-                                <div class="planner-cell pc--eng">영어<small>빈칸</small></div>
-                                <div class="planner-cell pc--kor">국어<small>독서</small></div>
-                                <div class="planner-cell pc--math">수학<small>미적</small></div>
-                                <div class="planner-cell pc--review">오답<small>재풀이</small></div>
-                                <div class="planner-cell pc--mock">모의<small>실전</small></div>
-                                <div class="planner-cell pc--review">약점<small>정리</small></div>
-                            </div>
-                            <div class="planner-cal-slot">
-                                <div class="planner-time-label">오후</div>
-                                <div class="planner-cell pc--kor">국어<small>문학</small></div>
-                                <div class="planner-cell pc--math">수학<small>기출</small></div>
-                                <div class="planner-cell pc--eng">영어<small>구문</small></div>
-                                <div class="planner-cell pc--review">오답<small>분석</small></div>
-                                <div class="planner-cell pc--plan">탐구<small>개념</small></div>
-                                <div class="planner-cell pc--math">수학<small>N제</small></div>
-                                <div class="planner-cell pc--eng">영어<small>듣기</small></div>
-                            </div>
-                            <div class="planner-cal-slot">
-                                <div class="planner-time-label">저녁</div>
-                                <div class="planner-cell pc--review">오답<small>정리</small></div>
-                                <div class="planner-cell pc--rest">복습<small>점검</small></div>
-                                <div class="planner-cell pc--plan">탐구<small>문풀</small></div>
-                                <div class="planner-cell pc--kor">국어<small>복습</small></div>
-                                <div class="planner-cell pc--math">수학<small>복습</small></div>
-                                <div class="planner-cell pc--mock">주간<small>테스트</small></div>
-                                <div class="planner-cell pc--plan">주간<small>회고</small></div>
-                            </div>
-                            <div class="planner-cal-totals">
-                                <div class="planner-time-label">목표</div>
-                                <div>4h</div><div>4h</div><div>4h</div><div>4h</div><div>5h</div><div>6h</div><div>3h</div>
-                            </div>
-                        </div>
-                        <p class="planner-footnote">월~일 일별 목표 학습 시간</p>
-                        <div class="planner-summary">
-                            <div class="planner-summary-row">
-                                <span class="planner-summary-label">주간 목표</span>
-                                <span class="planner-summary-value">30시간</span>
-                                <div class="planner-progress"><div class="planner-progress-bar" style="width:78%"></div></div>
-                            </div>
-                            <div class="planner-summary-row">
-                                <span class="planner-summary-label">집중 과목</span>
-                                <span class="planner-summary-value">수학 · 영어</span>
-                            </div>
-                            <div class="planner-focus">
-                                <span class="planner-focus-label">이번 주 집중 전략</span>
-                                <div class="planner-focus-tags">
-                                    <span>수학 개념 보완</span>
-                                    <span>국어 독서 복습</span>
-                                    <span>영어 빈칸 약점</span>
-                                    <span>오답 재풀이</span>
-                                    <span>주말 모의고사</span>
-                                </div>
-                            </div>
-                        </div>
+                <article class="personalized-card">
+                    <span class="personalized-number">03</span>
+                    <h3>나에게 맞는 목표 성적</h3>
+                    <p class="personalized-description">입시 효과와 나의 상승 가능성을 함께<br> 반영해 과목별 목표 성적을 제시합니다.</p>
+                    <div class="personalized-panel">
+                        <table class="personalized-score-table" aria-label="설명용 과목별 목표 성적">
+                            <thead><tr><th scope="col">과목</th><th scope="col">현재</th><th scope="col">목표</th></tr></thead>
+                            <tbody><tr><th scope="row">수학</th><td>110</td><td>113</td></tr><tr><th scope="row">탐구 1</th><td>53</td><td>55</td></tr><tr><th scope="row">국어</th><td>108</td><td>108</td></tr></tbody>
+                        </table>
                     </div>
                 </article>
             </div>
-            <div class="process-cta">
-                <a href="/service" class="process-cta-link">서비스 소개 자세히 보기 <i class="fas fa-arrow-right"></i></a>
-            </div>
+            <div class="personalized-cta"><a class="btn btn--primary basic-preview-entry" data-entry="personalized" href="/basic-preview">내가 올릴 과목과 점수 확인하기</a></div>
         </div>
     </section>
 
-    <section class="section effects-section scroll-reveal">
-        <div class="effects-header">
-            <span class="section-label-badge-dark">02 · 기대 효과</span>
-            <h2>공부 방향이<br>바뀌면 결과가 달라집니다</h2>
+    <section class="section trust-section scroll-reveal">
+        <div class="container">
+            <div class="section-heading">
+                <p class="eyebrow">02 · 분석을 뒷받침하는 기준</p>
+                <h2>한 번의 결과 뒤에는,<br> 방대한 데이터 기반의 분석이 있습니다.</h2>
+                <p>보여드리는 것은 일부 결과입니다. 판단에는 데이터와 나의 조건이 함께 반영됩니다.</p>
+            </div>
+            <div class="trust-grid">
+                <article class="trust-item"><span class="trust-number">01</span><div class="trust-card"><h3>방대한 데이터 기반</h3><p>데이터 기반 분석으로<br> 점수 전략의 방향을 찾습니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">02</span><div class="trust-card"><h3>대학별 입시 효과</h3><p>대학별 반영 방식에 따른<br> 과목별 점수의 영향을 계산합니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">03</span><div class="trust-card"><h3>나의 상승 가능성</h3><p>현재 성적과 학습 성향으로<br> 내가 올리기 쉬운 과목을 찾습니다.</p></div></article>
+                <article class="trust-item"><span class="trust-number">04</span><div class="trust-card"><h3>개인별 목표 성적</h3><p>입시 효과와 상승 가능성을<br> 함께 반영해 목표를 제시합니다.</p></div></article>
+            </div>
+            <div class="trust-note"><h3>왜 이 과목이 추천됐는지, 결과와 함께 확인하세요.</h3><p>과목별 입시 효과 · 개인별 상승 가능성 · 목표 성적을 연결해 보여드립니다.</p></div>
         </div>
-        <div class="effects-grid">
-            <div class="effect-item">
-                <div class="effect-num-badge">01</div>
-                <div class="effect-img">
-                    <img src="/assets/figma/figma-asset-01.png" alt="합격 가능성 분석">
-                </div>
-                <h4>공부 방향 명확화</h4>
-                <p>어떤 과목을 먼저 올려야 하는지 즉시 파악 → 비효율 학습 감소</p>
-            </div>
-            <div class="effect-item">
-                <div class="effect-num-badge">02</div>
-                <div class="effect-img">
-                    <img src="/assets/figma/figma-asset-16.png" alt="점수 시뮬레이션">
-                </div>
-                <h4>점수 상승 최적화</h4>
-                <p>가장 큰 변화를 만드는 과목에 집중 → 성적 상승 효율 극대화</p>
-            </div>
-            <div class="effect-item">
-                <div class="effect-num-badge">03</div>
-                <div class="effect-img">
-                    <img src="/assets/figma/figma-asset-09.png" alt="맞춤 플래너">
-                </div>
-                <h4>합격 전략 완성</h4>
-                <p>목표 대학별 반영 방식에 맞춘 전략 설계 → 실제 합격 가능성 상승</p>
-            </div>
-            <div class="effect-item">
-                <div class="effect-num-badge">04</div>
-                <div class="effect-img">
-                    <img src="/assets/figma/figma-asset-05.png" alt="합격 전략">
-                </div>
-                <h4>지속 가능한 학습 관리</h4>
-                <p>주간 계획 + 성취도 추적 + 즉각적인 수정 → 공부 루틴 완성</p>
-            </div>
-        </div>
-        <div class="review-indicators" id="effectsIndicators"></div>
-        <div class="notice"><span>!</span><p>"얼마나 열심히"보다 "어떻게 올릴지"가 명확해질 때, <strong>합격은 전략으로 만들어집니다.</strong></p></div>
     </section>
 
     <section id="program" class="curriculum section-bg scroll-reveal">
         <div class="curriculum-bg-overlay"></div>
         <div class="container section-content">
             <div class="section-heading section-heading--light">
-                <p class="eyebrow">03 · 개인 맞춤 입시 설계</p>
-                <h2>나에게 딱 맞는 입시 솔루션</h2>
-                <p>현재 상황에 맞는 최적의 플랜을 선택하세요.</p>
+                <p class="eyebrow">03 · 전체 분석으로 확장하기</p>
+                <h2>내 결과를 먼저 보고, Basic을 선택하세요.</h2>
             </div>
             <div class="curriculum-grid">
                 <div class="curriculum-left">
-                    <p>현재 성적과 목표에 맞춰<br>가장 효율적인 입시 전략을 선택하세요</p>
+                    <p class="curriculum-intro">한 대학에서 확인한 내 점수 전략,<br> 다른 목표 대학까지 비교해보세요.</p>
                     <div class="tabs" id="courseTabs">
-                        <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')">
-                            <div class="tab-icon">🌱</div>
-                            <div class="tab-info">
-                                <span class="tab-name">BASIC 진단 / 분석</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="starter" onclick="selectCourse('starter')">
-                            <div class="tab-icon">⭐</div>
-                            <div class="tab-info">
-                                <span class="tab-name">STARTER 1회 플래너 피드백</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')">
-                            <div class="tab-icon">⚡️</div>
-                            <div class="tab-info">
-                                <span class="tab-name">STANDARD 전략 / 플래너</span>
-                            </div>
-                        </button>
-                        <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')">
-                            <div class="tab-icon">🔥</div>
-                            <div class="tab-info">
-                                <span class="tab-name">PRO 최적화 / 개인별맞춤</span>
-                            </div>
-                        </button>
+                        <button class="course-tab-btn active" data-tier="basic" onclick="selectCourse('basic')"><span class="tab-info"><span class="tab-name">BASIC 전체 분석</span></span></button>
+                        <button class="course-tab-btn" data-tier="starter" onclick="selectCourse('starter')"><span class="tab-info"><span class="tab-name">STARTER 1회 피드백</span></span></button>
+                        <button class="course-tab-btn" data-tier="standard" onclick="selectCourse('standard')"><span class="tab-info"><span class="tab-name">STANDARD 전략 / 플래너</span></span></button>
+                        <button class="course-tab-btn" data-tier="pro" onclick="selectCourse('pro')"><span class="tab-info"><span class="tab-name">PRO 개인별 맞춤</span></span></button>
                     </div>
+                    <p class="curriculum-scope">최대 18개 대학·학과를 비교하고<br> 나에게 맞는 과목별 목표를 확인하세요.</p>
                     <div id="mobileCourseDetail" class="mobile-course-detail"></div>
                 </div>
-                <article class="solution-card">
-                    <div class="course-detail-view" id="courseDetailView"></div>
-                </article>
+                <article class="solution-card"><div class="course-detail-view" id="courseDetailView"></div></article>
             </div>
         </div>
     </section>
@@ -442,11 +265,8 @@
 
     <div class="cta-section scroll-reveal">
         <div class="cta-content">
-            <h3>지금 바로 합격 전략을 설계하세요</h3>
-            <p>고민하는 시간에도 경쟁자의 점수는 오르고 있습니다.</p>
-            <div class="cta-container">
-                <a href="/payment" class="cta-button">내 맞춤 전략 설계받기 →</a>
-            </div>
+            <h3>열심히 올릴 1점, 나에게 가치 있는 1점으로.</h3>
+            <div class="cta-container"><a href="/basic-preview" class="cta-button basic-preview-entry" data-entry="final">내 성적으로 다음 1점 확인하기</a></div>
         </div>
     </div>
 
@@ -658,46 +478,25 @@
     </div>
 </div>
 
-    <div id="kccEventBanner-modal" class="modal hidden">
-        <div class="modal-content kcc-event-modal-content" role="dialog" aria-modal="true" aria-labelledby="kccEventTitle">
-            <div class="kcc-event-poster">
-                <div class="kcc-event-badge">스터디크랙 X KCC 특별 프로젝트</div>
-                <h2 id="kccEventTitle">올여름,<br>진짜 연고전을 시작하세요</h2>
-                <p class="kcc-event-lead">연세대 팀 vs 고려대 팀<br>목표 대학에 맞는 팀을 선택하고 현역 튜터링에 합류하세요.</p>
-                <div class="kcc-event-match" aria-hidden="true">
-                    <span>연세대 팀</span>
-                    <strong>VS</strong>
-                    <span>고려대 팀</span>
+    <div id="septemberUpdateBanner-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-content september-update-modal-content" role="dialog" aria-modal="true" aria-labelledby="septemberUpdateTitle" aria-describedby="septemberUpdateDescription septemberUpdateNotice">
+            <div class="september-update-card">
+                <button type="button" id="septemberUpdateClose" class="september-update-close" aria-label="9월 모의평가 업데이트 안내 닫기"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+                <div class="september-update-icon" aria-hidden="true"><i class="fas fa-chart-line"></i></div>
+                <div class="september-update-badge">2027학년도 9월 모의평가</div>
+                <h2 id="septemberUpdateTitle">9평 성적 분석이<br>업데이트됐어요</h2>
+                <p id="septemberUpdateDescription" class="september-update-lead">가채점 원점수를 입력하면 과목별 표준점수·백분위·등급을 확인하고 최신 합격 전략에 반영할 수 있어요.</p>
+                <div class="september-update-subjects" aria-label="업데이트 적용 과목">
+                    <span>국어·수학</span>
+                    <span>영어·한국사</span>
+                    <span>사회·과학탐구</span>
                 </div>
-                <div class="kcc-event-benefits">
-                    <span><i class="fas fa-graduation-cap"></i> 무료 밀착 튜터링</span>
-                    <span><i class="fas fa-gift"></i> STANDARD 1개월 혜택</span>
-                    <span><i class="fas fa-trophy"></i> 우승 팀 공식 굿즈</span>
-                </div>
-                <a href="/promotion/kcc01" class="kcc-event-cta">프로젝트 보러가기</a>
+                <p id="septemberUpdateNotice" class="september-update-notice"><i class="fas fa-circle-info" aria-hidden="true"></i><span><strong>성적표 발표 전 임시 추정 데이터입니다.</strong><br>가채점 등급컷을 바탕으로 보간한 값으로 실제 표준점수·백분위·등급과 다를 수 있습니다.</span></p>
+                <a id="septemberUpdateCta" href="/survey?exam=sep" class="september-update-cta">9평 성적 입력하기 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
             </div>
-            <div class="kcc-event-modal-actions">
-                <button type="button" id="kccEventHide3Days">3일간 보지 않기</button>
-                <button type="button" id="kccEventClose">닫기</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="tutorialOffer-modal" class="modal hidden">
-        <div class="modal-content offer-modal-content">
-            <div class="offer-icon">🎉</div>
-            <h2 class="offer-title">런칭 기념 이벤트!</h2>
-            <p class="offer-desc">
-                지금 1분 튜토리얼을 완료하시면<br>
-                <strong class="offer-highlight">목표대학 설정 2회 + 점수 시뮬레이션 2회</strong><br>
-                무료 체험 혜택을 즉시 지급해 드립니다!
-            </p>
-            <div class="offer-btn-group">
-                <button class="offer-btn-accept" onclick="acceptTutorialOffer()">혜택 받고 튜토리얼 시작하기</button>
-                <button class="offer-btn-decline" onclick="declineTutorialOffer()">다음에 하기</button>
-            </div>
-            <div class="offer-do-not-show">
-                <label><input type="checkbox" id="chkDoNotShowToday"> 오늘 하루 보지 않기</label>
+            <div class="september-update-actions">
+                <button type="button" id="septemberUpdateHide3Days">3일간 보지 않기</button>
+                <button type="button" id="septemberUpdateDismiss">닫기</button>
             </div>
         </div>
     </div>
@@ -736,14 +535,14 @@
     /* Hero image carousel — cross-fade */
     (function () {
         var IMGS = [
-            '/assets/figma/figma-asset-17.png',
+            '/assets/basic-v2/hero-phone.png',
             '/assets/figma/figma-asset-08.png',
             '/assets/figma/figma-asset-18.png'
         ];
         var cur = 0;
         var hero = document.getElementById('hero-main');
         var fade = document.getElementById('heroCrossFade');
-        var dots = document.querySelectorAll('.hero-dots span');
+        var dots = document.querySelectorAll('.hero-dots button');
 
         var heroBg = document.getElementById('heroBg');
 
@@ -796,7 +595,7 @@
         "alternateName": "StudyCrack",
         "url": "https://studycrack.co.kr",
         "logo": "https://studycrack.co.kr/og-image.jpg",
-        "description": "빅데이터 기반 정시 컨설팅 플랫폼. MBTI 학습유형 검사, 맞춤 플래너, 점수 상승 시뮬레이션 제공",
+        "description": "개인 성적과 학습 성향, 목표 대학을 반영해 과목별 다음 1점의 영향을 분석하는 정시 전략 서비스",
         "sameAs": [
             "https://www.threads.com/@study_cracked",
             "https://www.instagram.com/study_cracked/",

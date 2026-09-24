@@ -8,6 +8,12 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    streakSummary: { open: false, returnTarget: '' },
+    gameProfile: null,
+    gameProfileStatus: 'idle',
+    habitatDays: [],
+    habitatStatus: 'idle',
+    habitatError: '',
     user: { ...EMPTY_USER },
     userTier: '',
     selectedPlan: '',
@@ -23,6 +29,7 @@ export function createUserDataResetPatch() {
     scoreEditState: createBlankScoreState(),
     analysisResults: [],
     analysisSimulations: [],
+    analysisSimulationStatus: 'idle',
     analysisResultExamMode: '',
     analysisResultSignature: '',
     analysisCalculationRequested: false,
@@ -46,7 +53,7 @@ const TIER_TO_PLAN_DISPLAY = {
   pro: 'Pro'
 };
 
-const EXAM_PRIORITY = ['jun', 'may', 'mar', 'apr', 'jul', 'sep', 'oct', 'csat', 'active'];
+const EXAM_PRIORITY = ['sep', 'jul', 'jun', 'may', 'mar', 'apr', 'oct', 'csat', 'active'];
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -94,6 +101,7 @@ function mapTargetUnivs(targetUnivs = []) {
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {
+    analysisSimulationStatus: 'idle',
     userTier: '',
     selectedPlan: '',
     scores: {},

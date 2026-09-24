@@ -11,6 +11,7 @@ export async function fetchStudyRanking({ apiFetch, period = 'daily', signal, us
     fallbackError: '랭킹을 불러오지 못했습니다.'
   });
   if (!result.ok) return result;
+  if (result.data?.available === false) return apiInvalidResponse(result, '공부 랭킹을 현재 확인할 수 없습니다. 잠시 후 다시 시도해주세요.');
   if (!Array.isArray(result.data?.rows) || (result.data?.me !== null && result.data?.me !== undefined && !isRecord(result.data.me))) {
     return apiInvalidResponse(result, '공부 랭킹 응답이 올바르지 않습니다.');
   }
@@ -18,4 +19,15 @@ export async function fetchStudyRanking({ apiFetch, period = 'daily', signal, us
     rows: Array.isArray(result.data?.rows) ? result.data.rows : [],
     me: result.data?.me || null
   }, { status: result.status });
+}
+
+export function createPlannerTransport({ owner, apiFetch, gameApiUrl, isActive }) {
+  return async (request, { signal } = {}) => {
+    if (!isActive() || signal?.aborted) return { ok: false, status: 0, code: 'PLANNER_ACCOUNT_CHANGED' };
+    const result = await postJson({ apiFetch, url: gameApiUrl, signal,
+      payload: { type: 'planner_sync_v1', owner, operation: request.type, data: request.data }, fallbackError: '계정 계획을 확인하지 못했어요.' });
+    if (!isActive()) return { ok: false, status: 0, code: 'PLANNER_ACCOUNT_CHANGED' };
+    if (result.ok && (result.data?.plannerOwner !== owner || result.data?.plannerProtocol !== 1)) return { ok: false, status: 0, code: 'INVALID_RESPONSE' };
+    return result;
+  };
 }

@@ -4,13 +4,13 @@ import { createFeatureSlice } from '../../state/create-feature-slice.js';
 export function createAccountInitialState() {
   return {
     serverResource: {
+      productGuide: null,
       selectedPlan: '',
       personalEvents: [],
       calendarSyncStatus: 'idle'
     },
     localDraft: {
       checkoutPlan: 'Standard',
-      duration: '4주',
       calendarEventDraft: null,
       myProfileNameDraft: '',
       myProfilePhoneDraft: '',
@@ -26,6 +26,7 @@ export function createAccountInitialState() {
       calendarSaving: false,
       logoutModalOpen: false,
       withdrawModalOpen: false,
+      withdrawSubmitting: false,
       phoneChangeModalOpen: false,
       phoneChangeStep: 'input',
       phoneChangeSending: false,

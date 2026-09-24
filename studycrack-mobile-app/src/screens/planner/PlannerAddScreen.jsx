@@ -1,4 +1,9 @@
 import { formatPlannerMinutes, PLANNER_ACTIVITY_OPTIONS, PLANNER_CATEGORY_OPTIONS } from './planner-options.js';
+import { AppContent, AppFrame, SecondaryScreenHeader } from '../../components/AppFrame.js';
+import { PlannerStorageNotice } from '../../features/planner/PlannerStorageNotice.jsx';
+import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
+import { useContext } from 'react';
+import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
 
 function getWeekdayLabel(dateKey = '') {
   const [year, month, day] = String(dateKey || '').split('-').map(Number);
@@ -15,7 +20,8 @@ function RadioChip({ checked = false, name = '', value = '', children, extraAttr
   );
 }
 
-export function PlannerAddScreen(ctx) {
+function PlannerDraftScreen(ctx) {
+  const account = useContext(PlannerStorageContext)?.controller?.account;
   const {
     selectedPlannerDate = '',
     selectedPlannerDateKey = ''
@@ -36,15 +42,15 @@ export function PlannerAddScreen(ctx) {
   ];
 
   return (
-    <div className="app-shell">
-      <div className="app-frame">
-        <div className="screen app-screen app-content" data-screen="plannerAdd">
+    <AppFrame key={account?.getView().scope || 0}>
+      <AppContent screen="plannerAdd">
           <div className="planner-screen planner-add-screen" data-planner-add-root>
-            <div className="appbar"><button type="button" className="back-btn" data-action="back" aria-label="뒤로가기">←</button><div className="title">계획 추가</div></div>
+            <SecondaryScreenHeader title="계획 추가" />
+            <PlannerAccountNotice />
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>
-              <p>하나씩 입력하면 오늘 계획에 깔끔하게 정리됩니다.</p>
+              <p>하나씩 입력하면 선택한 날짜의 계획에 정리됩니다.</p>
             </section>
 
             <div className="planner-step-progress" aria-label="계획 추가 단계">
@@ -60,7 +66,7 @@ export function PlannerAddScreen(ctx) {
               <div className="planner-add-card-head">
                 <div>
                   <b>공부할 시간</b>
-                  <small>실제 공부할 시간 범위를 입력해 주세요.</small>
+                  <small>계획할 시간 범위를 입력해 주세요. 실제 공부 기록과는 별개예요.</small>
                 </div>
                 <strong data-planner-duration-preview>{defaultMinutes}</strong>
               </div>
@@ -143,10 +149,13 @@ export function PlannerAddScreen(ctx) {
                   <small>계획 제목과 메모를 남길 수 있어요.</small>
                 </div>
               </div>
-              <input className="planner-input" data-field="plannerContent" placeholder="예: 영어 인강 시청" />
-              <textarea className="planner-input planner-memo-input" data-field="plannerMemo" placeholder="메모 선택 입력" rows="3" />
+              <label className="planner-add-field-label" htmlFor="planner-add-content">계획 제목</label>
+              <textarea id="planner-add-content" className="planner-input planner-memo-input" data-field="plannerContent" placeholder="예: 영어 인강 시청" rows="3" />
+              <label className="planner-add-field-label" htmlFor="planner-add-memo">메모 (선택)</label>
+              <textarea id="planner-add-memo" className="planner-input planner-memo-input" data-field="plannerMemo" placeholder="메모 선택 입력" rows="3" />
             </section>
 
+            <PlannerStorageNotice />
             <div className="planner-add-footer">
               <button className="btn btn-secondary planner-step-prev" data-action="plannerAddPrevStep" data-planner-step-prev disabled>
                 이전
@@ -160,8 +169,9 @@ export function PlannerAddScreen(ctx) {
             </div>
             <div className="planner-bottom-space" />
           </div>
-        </div>
-      </div>
-    </div>
+      </AppContent>
+    </AppFrame>
   );
 }
+
+export function PlannerAddScreen(ctx) { return <PlannerDraftScreen {...ctx} />; }

@@ -24,6 +24,7 @@ export function createStudyInitialState() {
       studySubjectSheetOnlyPlanned: false,
       studySubjectSheetOpen: false,
       studySessionDetailsOpen: false,
+      studyPanelMode: '',
       studyTimerRunning: false,
       studyTimerTick: 0,
       timerPhase: 'idle'

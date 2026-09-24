@@ -17,6 +17,7 @@ import {
   normalizeServerResults
 } from '../features/analysis/score-store.js';
 import { getMobileBrowserServices, getMobileRuntimeContext } from '../shared/browser/mobile-runtime.js';
+import { withOperationLock } from '../shared/async/operation-lock.js';
 import {
   getHomeSliderState,
   mobileInteractions,
@@ -131,7 +132,7 @@ export function isTabbarDimmed(state = {}) {
   );
 }
 
-export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserLoad, setState, state, stateRef } = {}) {
+export function createMobileViewContext({ api, beforeGoto, buildPresentations, nav, refs, retryUserLoad, setState, state, stateRef } = {}) {
   const { scrollOps, timerOps, ...gestureRefs } = mobileInteractions;
   const derivedContext = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
   const examKey = resolveAnalysisExamMode(state);
@@ -145,7 +146,14 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
       && !(state.analysisResults || []).length
       && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
     ...derivedContext,
+    ...buildPresentations?.({ state, derived: derivedContext, liveSeconds: timerOps.studyTimerSecondsRef.current }),
     initializeApp: retryUserLoad,
+    isCurrentProfile: () => stateRef.current.user === state.user && stateRef.current.userLoadStatus === 'ready' && api.hasClientSession(),
+    applySavedProfileTarget: (target) => {
+      if (stateRef.current.user !== state.user || stateRef.current.userLoadStatus !== 'ready' || !api.hasClientSession()) return false;
+      setState({ user: { ...state.user, targetUniversity: target || '' } });
+      return true;
+    },
     homeTargets: buildUniversityCards(
       uniqueTargetList(state.homeTargetList || []),
       scoreCache,
@@ -218,6 +226,7 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
         analysisApiError: '',
         analysisResults: [],
         analysisSimulations: [],
+        analysisSimulationStatus: 'idle',
         analysisResultSignature: '',
         scoreFetchStatus: 'idle',
         scoreFetchSignature: '',
@@ -229,6 +238,8 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
       });
     },
     resetAnalysisCalculation: () => setState({
+      analysisSimulationStatus: 'idle',
+      analysisHighlightedSubject: '',
       analysisCalculationRequested: false,
       analysisApiStatus: 'idle',
       analysisApiError: '',
@@ -241,13 +252,22 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
       if ((current.coachingSubjectRows || []).length) return;
       setState({ coachingSubjectRows: buildDefaultCoachingSubjects(derivedContext) });
     },
-    addMajorToTargets: (major) => {
-      if (!major) return false;
+    addMajorToTargets: (major) => withOperationLock(refs.operationLocksRef, 'profile-targets', async () => {
+      if (!major || !baseContext.isCurrentProfile()) return false;
       const current = stateRef.current;
       const nextSlots = upsertTargetSlot(current.targetUnivSlots, major);
       const nextHome = targetSlotsToList(nextSlots);
       const nextAnalysis = uniqueTargetList(nextHome);
+      let result;
+      try { result = await api.persistTargetUnivs(nextHome, nextSlots); }
+      catch { result = { ok: false }; }
+      if (!baseContext.isCurrentProfile()) return false;
+      if (result?.ok !== true) {
+        notifySaveFailure({ ...result, ok: false }, '목표 대학 저장에 실패했습니다. 다시 시도해주세요.');
+        return false;
+      }
       setState({
+        user: { ...current.user, targetUniversity: nextHome[0] || '' },
         targetUnivSlots: nextSlots,
         analysisTargetList: nextAnalysis,
         homeTargetList: nextHome,
@@ -258,11 +278,8 @@ export function createMobileViewContext({ api, beforeGoto, nav, refs, retryUserL
         scoreFetchStatus: 'idle',
         scoreFetchSignature: ''
       });
-      api.persistTargetUnivs(nextHome, nextSlots).then((result) => {
-        notifySaveFailure(result, '목표 대학 저장에 실패했습니다.');
-      });
       return true;
-    }
+    })
   };
   return baseContext;
 }

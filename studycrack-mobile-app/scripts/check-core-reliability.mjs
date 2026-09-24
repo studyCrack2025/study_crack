@@ -53,7 +53,7 @@ const timerHandlers = createTimerHandlers({
         ok: true,
         data: {
           sessionId: 'session-5678', durationSeconds: 60, reward: { shells: 1, food: 1 },
-          profile: { shellBalance: 1, foodBalance: 1, waterQuality: 100, activeFishIds: [], dailyReward: {} }
+          profile: { shellBalance: 1, foodBalance: 1, activeFishIds: [], dailyReward: {} }
         }
       }
     };

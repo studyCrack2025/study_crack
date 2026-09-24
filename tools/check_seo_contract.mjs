@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createPublishCommands, loadPublicPolicy } from './site-release.mjs';
 
 const repoRoot = new URL('../', import.meta.url);
 const expectedSitemapUrls = [
@@ -7,8 +8,7 @@ const expectedSitemapUrls = [
   'https://studycrack.co.kr/service',
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
-  'https://studycrack.co.kr/qna',
-  'https://studycrack.co.kr/promotion/kcc01'
+  'https://studycrack.co.kr/qna'
 ];
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
@@ -127,18 +127,22 @@ function sitemapLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => match[1]);
 }
 
-const [sitemap, robots, login, signup, home, promotion, workflow] = await Promise.all([
+const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage, homeScript, surveyScript] = await Promise.all([
   read('sitemap.xml'),
   read('robots.txt'),
   read('login.html'),
   read('signup.html'),
   read('index.html'),
-  read('promotion_kcc01.html'),
-  read('.github/workflows/deploy.yml')
+  read('404.html'),
+  read('.github/workflows/deploy.yml'),
+  read('js/shared/api.js'),
+  read('success.html'),
+  read('js/script.js'),
+  read('js/survey.js')
 ]);
 
 const sitemapUrls = sitemapLocations(sitemap);
-assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the six public URLs in the approved order');
+assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the five public URLs in the approved order');
 assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'sitemap.xml contains duplicate URLs');
 assert.match(robots, /^Sitemap:\s*https:\/\/studycrack\.co\.kr\/sitemap\.xml\s*$/m, 'robots.txt must declare the production sitemap');
 assert.doesNotMatch(robots, /^Disallow:\s*\/(?:login|signup)\/?\s*$/mi, 'login and signup must remain crawlable for noindex');
@@ -165,18 +169,27 @@ for (const [fileName, canonicalUrl] of indexedPages) {
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
 
-const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/figma/figma-asset-08.png');
+const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
-assert.equal(targetImage[0].alt, '대학 전형별 반영 방식에 따라 달라지는 합격 전략 예시', 'the target homepage image alt text is incorrect');
+assert.equal(targetImage[0].alt, '', 'the decorative classroom background must use an empty alt attribute');
+assert.ok(String(targetImage[0].class || '').split(/\s+/).includes('bg-img'), 'the classroom image must remain a decorative background');
+for (const src of ['/assets/basic-v2/result-position.png', '/assets/basic-v2/result-effects.png', '/assets/basic-v2/result-priority.png']) {
+  const images = startTags(home, 'img').filter(tag => tag.src === src);
+  assert.equal(images.length, 1, `homepage result image must appear exactly once: ${src}`);
+  assert.ok(String(images[0].alt || '').trim(), `informative result image must have descriptive alt text: ${src}`);
+}
 
-const promotionHead = headSource(promotion);
-const promotionCanonical = findCanonical(promotionHead);
-const promotionOgUrl = findPropertyMeta(promotionHead, 'og:url');
-assert.equal(promotionCanonical.length, 1, 'promotion page must have exactly one canonical link');
-assert.equal(promotionCanonical[0].href, 'https://studycrack.co.kr/promotion/kcc01', 'promotion canonical must use the public clean URL');
-assert.equal(promotionOgUrl.length, 1, 'promotion page must have exactly one og:url');
-assert.equal(promotionOgUrl[0].content, 'https://studycrack.co.kr/promotion/kcc01', 'promotion og:url must use the public clean URL');
-assert.ok(workflow.includes('aws s3 cp promotion_kcc01.html s3://${{ env.S3_BUCKET }}/promotion/kcc01'), 'deploy workflow must publish the promotion clean URL');
-assert.ok(workflow.includes('--content-type "text/html; charset=utf-8"'), 'promotion clean URL must use an HTML content type');
+const publicPolicy = await loadPublicPolicy();
+assert.equal(publicPolicy.aliases['promotion/kcc01'], undefined, 'retired promotion must not be published');
+for (const file of ['promotion_kcc01.html', 'css/promotion-kcc01.css', 'js/promotion-kcc01.js']) {
+  assert.ok(!publicPolicy.files.includes(file), `retired promotion must stay outside the artifact: ${file}`);
+}
+assert.doesNotMatch(home + homeScript, /\/promotion\/kcc01|StudyCrack\s*X\s*KCC/, 'home must not restore the retired promotion');
+assert.ok(publicPolicy.files.includes('404.html') && publicPolicy.files.includes('css/not-found.css'), 'not-found page must be published');
+assert.equal(findMeta(headSource(notFound), 'robots')[0]?.content, 'noindex,follow', 'not-found page must remain noindex');
+assert.equal(publicPolicy.aliases['basic-preview'], 'basic-preview.html', 'preview clean URL must be published');
+const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
+assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
+assert.ok(publishCommands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')), 'preview clean URL must use an HTML content type');
 
 console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);

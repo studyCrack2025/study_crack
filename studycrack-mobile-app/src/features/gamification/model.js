@@ -15,7 +15,6 @@ export function validateGameProfile(value) {
   const valid = isRecord(value)
     && Number.isFinite(Number(value.shellBalance))
     && Number.isFinite(Number(value.foodBalance))
-    && Number.isFinite(Number(value.waterQuality))
     && Array.isArray(value.activeFishIds)
     && isRecord(value.dailyReward);
   return contract(valid, value, '게임 프로필 응답이 올바르지 않습니다.');
@@ -77,7 +76,7 @@ export function validateFeedFishResponse(value) {
   const profile = validateGameProfile(value?.profile);
   const fish = validateFish(value?.fish);
   const valid = isRecord(value) && profile.ok && fish.ok && typeof value.requestId === 'string'
-    && Number.isFinite(Number(value.expGranted)) && Number.isFinite(Number(value.waterGain));
+    && Number.isFinite(Number(value.expGranted));
   return contract(valid, value, '먹이 주기 응답이 올바르지 않습니다.');
 }
 

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="robots" content="noindex,nofollow">
+    <title>내 성적 분석 미리보기 | StudyCrack</title>
+    <link rel="stylesheet" href="/css/style.css?v=20260524a">
+    <link rel="stylesheet" href="/css/basic-preview.css?v=20260913a">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body class="basic-preview-page">
+    <header id="site-header" class="scrolled">
+        <div class="logo-container">
+            <a href="/" class="logo-link">
+                <img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack 로고">
+                <span class="logo">StudyCrack</span>
+            </a>
+        </div>
+        <nav class="nav-links" aria-label="주요 메뉴">
+            <a href="/analysis">전체 분석</a>
+            <a href="/mypage" id="myPageBtn">마이페이지</a>
+            <a href="#" id="logoutBtn" class="nav-btn">로그아웃</a>
+        </nav>
+        <div class="mobile-header-right">
+            <span class="mobile-nav-label">결과 미리보기</span>
+            <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="메뉴 열기">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-top">
+            <a class="mnp-logo" href="/"><img src="/assets/figma/figma-asset-04.svg" alt="StudyCrack"><span>StudyCrack</span></a>
+            <button class="mobile-nav-close" id="mobileNavClose" type="button" aria-label="메뉴 닫기">✕</button>
+        </div>
+        <nav class="mobile-nav-links" aria-label="모바일 메뉴">
+            <a href="/">홈</a>
+            <a href="/analysis">전체 분석</a>
+            <a href="/mypage">마이페이지</a>
+            <a href="#" id="mobileLogoutBtn" class="mnl-btn mnl-btn-logout">로그아웃</a>
+        </nav>
+    </div>
+
+    <main class="basic-preview-main">
+        <div class="basic-preview-shell">
+            <nav class="basic-preview-breadcrumb" aria-label="현재 위치"><a href="/analysis">내 성적 분석</a><span aria-hidden="true">/</span><strong>결과 미리보기</strong></nav>
+            <section class="basic-preview-intro" aria-labelledby="basicPreviewTitle">
+                <p class="basic-preview-eyebrow">나에게 가장 가치 있는 다음 1점</p>
+                <h1 id="basicPreviewTitle">내 성적에서 먼저 올릴 과목을 찾았습니다.</h1>
+                <p>목표 대학에 미치는 영향과 현재 성적에서의 상승 가능성을 함께 살펴본 결과예요.</p>
+            </section>
+
+            <section id="basicPreviewStatus" class="basic-preview-status" aria-live="polite" aria-busy="true">
+                <div class="basic-preview-spinner" aria-hidden="true"></div>
+                <h2 id="basicPreviewStatusTitle">개인화 결과를 불러오고 있어요</h2>
+                <p id="basicPreviewStatusDescription">저장된 성적과 목표 대학을 확인하고 있습니다.</p>
+                <div id="basicPreviewStatusActions" class="basic-preview-status-actions"></div>
+            </section>
+
+            <div id="basicPreviewResult" class="basic-preview-result hidden">
+                <section class="basic-preview-target-card" aria-labelledby="previewTargetTitle">
+                    <div>
+                        <span id="previewExamLabel" class="basic-preview-chip">분석 기준</span>
+                        <p class="basic-preview-card-kicker">무료 결과 · 목표 1개</p>
+                        <h2 id="previewTargetTitle"><span id="previewUniversity"></span> <span id="previewMajor"></span></h2>
+                    </div>
+                    <button id="previewCriteriaButton" class="basic-preview-text-button" type="button">분석 기준 보기</button>
+                </section>
+
+                <section class="basic-preview-priority" aria-labelledby="previewPriorityTitle">
+                    <div class="basic-preview-priority-copy">
+                        <p class="basic-preview-card-kicker">지금 가장 먼저</p>
+                        <h2 id="previewPriorityTitle"><strong id="previewPrioritySubject"></strong>에 집중해보세요.</h2>
+                        <p id="previewPriorityReason">입시 효과와 현재 점수에서의 상승 여지를 함께 반영했습니다.</p>
+                    </div>
+                    <div class="basic-preview-priority-metrics">
+                        <div class="basic-preview-metric">
+                            <span>추천 목표</span>
+                            <strong><span id="previewCurrentRaw">-</span><i aria-hidden="true">→</i><span id="previewRecommendedRaw">-</span></strong>
+                            <small>원점수 기준</small>
+                        </div>
+                        <div class="basic-preview-metric basic-preview-metric--accent">
+                            <span>1점의 입시 효과</span>
+                            <strong id="previewPriorityEffect">-</strong>
+                            <small>목표 대학 환산 지표</small>
+                        </div>
+                        <div class="basic-preview-metric">
+                            <span>상승 가능성</span>
+                            <strong id="previewRisePotential">-</strong>
+                            <small>성적·학습 성향 기준</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="basic-preview-effects" aria-labelledby="previewEffectsTitle">
+                    <div class="basic-preview-section-heading">
+                        <div>
+                            <p class="basic-preview-card-kicker">과목별 비교</p>
+                            <h2 id="previewEffectsTitle">같은 1점도 대학에서는 다르게 작용합니다.</h2>
+                        </div>
+                        <p>각 과목 원점수 1점 상승이 목표 대학의 환산 지표에 미치는 변화입니다.</p>
+                    </div>
+                    <div id="previewEffectsList" class="basic-preview-effect-list"></div>
+                </section>
+
+                <section class="basic-preview-combination" aria-labelledby="previewCombinationTitle">
+                    <div class="basic-preview-section-heading">
+                        <div>
+                            <p class="basic-preview-card-kicker">추천 점수 조합</p>
+                            <h2 id="previewCombinationTitle">현재 성적에서 만들기 좋은 변화입니다.</h2>
+                        </div>
+                        <p id="previewCombinationMeta"></p>
+                    </div>
+                    <div class="basic-preview-comparison">
+                        <div class="basic-preview-comparison-column">
+                            <span class="basic-preview-comparison-label">현재</span>
+                            <div id="previewCurrentCombination" class="basic-preview-score-list"></div>
+                        </div>
+                        <div class="basic-preview-comparison-arrow" aria-hidden="true">→</div>
+                        <div class="basic-preview-comparison-column basic-preview-comparison-column--after">
+                            <span class="basic-preview-comparison-label">추천 변화 후</span>
+                            <div id="previewRecommendedCombination" class="basic-preview-score-list"></div>
+                        </div>
+                    </div>
+                    <p class="basic-preview-disclaimer">이 결과는 입력 성적과 현재 분석 기준을 활용한 예측이며 실제 합격을 보장하지 않습니다.</p>
+                </section>
+
+                <section class="basic-preview-unlock" aria-labelledby="previewUnlockTitle">
+                    <div class="basic-preview-unlock-copy">
+                        <span class="basic-preview-unlock-badge">BASIC</span>
+                        <h2 id="previewUnlockTitle">나머지 목표 대학과 전체 전략을 확인하세요.</h2>
+                        <p>대학별 비교부터 전체 과목 목표 점수와 점수 상승 시뮬레이션까지 한 번에 이어집니다.</p>
+                        <ul>
+                            <li>목표 대학·학과별 현재 위치 비교</li>
+                            <li>과목별 1점 상승 효과 전체 분석</li>
+                            <li>개인별 목표 성적과 추천 조합</li>
+                            <li>점수 상승 시뮬레이션</li>
+                        </ul>
+                    </div>
+                    <div class="basic-preview-price-card">
+                        <span>Basic 전체 분석</span>
+                        <strong>25,000<small>원</small></strong>
+                        <a id="basicPreviewPurchase" class="basic-preview-primary-action" href="/payment?plan=basic">Basic으로 전체 분석 보기</a>
+                        <p>결제 전 상품 내용을 다시 확인할 수 있어요.</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <dialog id="previewCriteriaDialog" class="basic-preview-dialog" aria-labelledby="previewCriteriaTitle">
+        <div class="basic-preview-dialog-head">
+            <h2 id="previewCriteriaTitle">분석 기준</h2>
+            <button id="previewCriteriaClose" type="button" aria-label="분석 기준 닫기">✕</button>
+        </div>
+        <ul>
+            <li>입력한 성적을 대학별 반영 방식에 맞춰 비교합니다.</li>
+            <li>과목별 원점수 1점 상승이 만드는 변화를 따로 계산합니다.</li>
+            <li>학습 성향과 현재 점수에서의 상승 여지를 함께 고려합니다.</li>
+            <li>분석 결과는 예측 정보이며 실제 합격을 보장하지 않습니다.</li>
+        </ul>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
+    <script src="/js/config.js?v=20260524a"></script>
+    <script src="/js/shared/api.js?v=20260602f"></script>
+    <script src="/js/auth.js?v=20260602f"></script>
+    <script src="/js/shared/hamburger.js?v=20260602f"></script>
+    <script src="/js/basic-preview.js?v=20260913a"></script>
+</body>
+</html>

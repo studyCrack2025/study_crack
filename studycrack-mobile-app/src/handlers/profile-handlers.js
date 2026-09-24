@@ -1,11 +1,12 @@
-import { clearMobileAuthArtifacts } from '../features/session/auth-service.js';
+import { clearMobileAuthArtifacts, verifyPassword } from '../features/session/auth-service.js';
 import { convertExamScores } from '../features/analysis/api.js';
 import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
+import { withOperationLock } from '../shared/async/operation-lock.js';
 
 const MBTI_QUESTION_COUNT = MBTI_QUESTIONS.length;
-const KAKAO_SUPPORT_URL = 'http://pf.kakao.com/_wxjxcgn';
+const KAKAO_SUPPORT_URL = 'https://pf.kakao.com/_wxjxcgn';
 
 function noop() {}
 
@@ -98,7 +99,7 @@ async function clearMobileAuthSession(ctx, authApiUrl) {
   } catch (_error) {}
 }
 
-function buildSocialAuthUrl(ctx, provider) {
+function buildSocialAuthUrl(ctx, provider, purpose = 'mobile') {
   const win = getWindow(ctx);
   const social = win.CONFIG?.social;
   const clientId = social?.[provider]?.clientId;
@@ -108,9 +109,10 @@ function buildSocialAuthUrl(ctx, provider) {
   const cryptoObj = win.crypto || globalThis.crypto;
   cryptoObj?.getRandomValues?.(bytes);
   const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  const state = `${nonce}|${provider}|mobile`;
+  const state = `${nonce}|${provider}|${purpose}`;
   getSessionStorage(ctx)?.setItem?.('socialState', state);
-  getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
+  if (purpose === 'mobile') getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
+  else getSessionStorage(ctx)?.removeItem?.('socialLinkMode');
   const returnUrl = getMobileReturnPath(ctx);
   getSessionStorage(ctx)?.setItem?.('socialReturnUrl', returnUrl);
   getSessionStorage(ctx)?.setItem?.('socialEntry', 'mobile');
@@ -420,6 +422,7 @@ export function createProfileHandlers(ctx) {
     setTargetMajor,
     setUser,
     setWithdrawModalOpen,
+    setWithdrawSubmitting,
     persistQualitative = noop,
     persistQuantitative = noop,
     persistNotificationPreferences = noop,
@@ -439,11 +442,31 @@ export function createProfileHandlers(ctx) {
     return result;
   }
 
+  async function saveConfirmedQualitative(qualitative, onSaved) {
+    return withOperationLock(ctx.operationLocksRef, 'profile-qualitative', async () => {
+      let result;
+      try { result = await persistQualitative(qualitative); } catch { result = { ok: false }; }
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+      if (result?.ok !== true) {
+        alert('학습 정보를 저장하지 못했어요. 입력은 유지되니 다시 시도해주세요.');
+        return false;
+      }
+      setUser(prev => ({ ...prev, qualitative }));
+      persistUser({ ...ctx, localStorage: storage }, { qualitative });
+      onSaved?.();
+      return true;
+    });
+  }
+
   return {
     setRankingPeriod({ actionEl }) {
       const period = getData(actionEl, 'ranking-period');
       if (!['daily', 'weekly', 'monthly'].includes(period)) return false;
       setRankingPeriod(period);
+      return true;
+    },
+    retryRanking() {
+      ctx.refreshStudyRanking?.();
       return true;
     },
     openScoreEdit() {
@@ -509,9 +532,11 @@ export function createProfileHandlers(ctx) {
           ...(ctx.user?.quantitative || {}),
           [examKey]: converted.data
         };
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
         const result = await persistQuantitative(nextQuantitative);
-        if (result && result.ok === false) {
-          alert(result.error || '성적 저장에 실패했습니다.');
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (result?.ok !== true) {
+          alert(result?.error || '성적 저장에 실패했습니다.');
           return false;
         }
 
@@ -549,13 +574,11 @@ export function createProfileHandlers(ctx) {
         return false;
       }
       if (shouldReadOb1FromDom(ctx)) syncIOSSafariQualDomState(ctx, values);
-      const qualitative = buildQualitative(values);
-      setUser((prev) => ({ ...prev, qualitative }));
-      persistUser({ ...ctx, localStorage: storage }, { qualitative });
-      const result = await persistQualitative(qualitative);
-      if (result && result.ok === false) {
-        alert(result.error || '정성조사서 저장에 실패했습니다.');
-        return false;
+      const qualitative = { ...(ctx.user?.qualitative || {}), ...buildQualitative(values) };
+      if (!await saveConfirmedQualitative(qualitative)) return false;
+      if (ctx.screen === 'ob1') {
+        goto?.('ob2');
+        return true;
       }
       alert('정성조사서가 저장되었습니다.');
       return true;
@@ -591,6 +614,7 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveScoreEdit() {
+      if (ctx.scoreSubjectSaving) return false;
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
         alert('필수 항목을 모두 선택해주세요');
         return false;
@@ -601,48 +625,55 @@ export function createProfileHandlers(ctx) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return false;
       }
-      const nextKo = Number(values.koreanCommon || 0) + Number(values.koreanElective || 0);
-      const nextMa = Number(values.mathCommon || 0) + Number(values.mathElective || 0);
-      const nextEnGrade = Number(values.english || 0);
-      const nextEnScore = englishGradeToScore(nextEnGrade);
-      const nextIq1 = Number(values.inquiry1Score || 0);
-      const nextIq2 = Number(values.inquiry2Score || 0);
-      setScores((prev) => ({
-        ...prev,
-        korean: nextKo || prev.korean,
-        math: nextMa || prev.math,
-        english: nextEnScore || prev.english,
-        inquiry1: nextIq1 || prev.inquiry1,
-        inquiry2: nextIq2 || prev.inquiry2
-      }));
-      const map = getExamScoresMap();
-      map[ctx.scoreExamType] = {
-        korean: nextKo,
-        math: nextMa,
-        englishGrade: nextEnGrade,
-        english: nextEnScore,
-        inquiry1: nextIq1,
-        inquiry2: nextIq2
-      };
-      saveExamScoresMap(map);
-      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
-      const nextQuantitative = {
-        ...(ctx.user?.quantitative || {}),
-        ...quantitativePatch
-      };
-      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
-      setUser((prevUser) => ({
-        ...prevUser,
-        quantitative: nextQuantitative
-      }));
-      const result = await persistQuantitative(nextQuantitative);
-      if (result && result.ok === false) {
-        alert(result.error || '성적 저장에 실패했습니다.');
-        return false;
+      for (let step = 1; step <= 6; step += 1) {
+        const subjectError = validateScoreSubject(step, values);
+        if (subjectError) {
+          alert(subjectError);
+          return false;
+        }
       }
-      setScoreEditOpen(false);
-      setScoreEditStep(1);
-      return true;
+      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+      setScoreSubjectSaving(true);
+      try {
+        const converted = await convertExamScores({
+          apiFetch: ctx.apiFetch,
+          analysisApiUrl,
+          examMode: examKey,
+          examData: quantitativePatch[examKey]
+        });
+        if (!converted.ok) {
+          alert(converted.error || '성적 환산에 실패했습니다.');
+          return false;
+        }
+        const nextQuantitative = { ...(ctx.user?.quantitative || {}), [examKey]: converted.data };
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        const result = await persistQuantitative(nextQuantitative);
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (result?.ok !== true) {
+          alert(result?.error || '성적 저장에 실패했습니다.');
+          return false;
+        }
+        const nextKo = converted.data.kor.raw;
+        const nextMa = converted.data.math.raw;
+        const nextEnGrade = Number(values.english || 0);
+        const nextEnScore = englishGradeToScore(nextEnGrade);
+        const nextIq1 = converted.data.inq1.raw;
+        const nextIq2 = converted.data.inq2.raw;
+        setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
+        const map = getExamScoresMap();
+        map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
+        saveExamScoresMap(map);
+        setScoreExamKey(examKey);
+        setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
+        persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
+        setScoreEditOpen(false);
+        setScoreEditStep(1);
+        if (ctx.screen === 'ob2') goto?.('ob3');
+        return true;
+      } finally {
+        setScoreSubjectSaving(false);
+      }
     },
 
     applyScoreExam() {
@@ -963,8 +994,20 @@ export function createProfileHandlers(ctx) {
     },
 
     closeWithdrawModal() {
+      if (ctx.withdrawSubmitting) return false;
       setWithdrawModalOpen(false);
       setWithdrawPassword('');
+      return true;
+    },
+
+    startWithdrawSocialReauth({ actionEl }) {
+      const provider = getData(actionEl, 'provider') || String(ctx.user?.authProvider || '').toLowerCase();
+      const authUrl = buildSocialAuthUrl(ctx, provider, 'delete_reauth');
+      if (!authUrl) {
+        alert('소셜 인증 설정을 불러오지 못했습니다.');
+        return false;
+      }
+      getWindow(ctx).location.href = authUrl;
       return true;
     },
 
@@ -1010,7 +1053,7 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    mbtiNext() {
+    async mbtiNext() {
       const step = Number(ctx.mbtiStep);
       const answers = Array.isArray(ctx.mbtiAnswers) ? ctx.mbtiAnswers : [];
       if (!answers[step]) return false;
@@ -1018,17 +1061,12 @@ export function createProfileHandlers(ctx) {
         setMbtiStep(step + 1);
         return true;
       }
-      // 마지막 문항 → 코드 산출·저장·결과 표시.
       const code = computeMbtiCode(answers);
-      setMbtiResult(code);
-      setMbtiStep('result');
       const nextQualitative = { ...(ctx.user?.qualitative || {}), mbti: code };
-      setUser((prevUser) => ({ ...prevUser, qualitative: nextQualitative }));
-      persistUser({ ...ctx, localStorage: storage }, { qualitative: nextQualitative });
-      Promise.resolve()
-        .then(() => persistQualitative(nextQualitative))
-        .catch(() => {});
-      return true;
+      return saveConfirmedQualitative(nextQualitative, () => {
+        setMbtiResult(code);
+        setMbtiStep('result');
+      });
     },
 
     async confirmLogout() {
@@ -1045,11 +1083,43 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    confirmWithdraw() {
-      if (!String(ctx.withdrawPassword || '').trim()) {
+    async confirmWithdraw() {
+      if (ctx.withdrawSubmitting) return false;
+      const authProvider = String(ctx.user?.authProvider || 'local').toLowerCase();
+      const isSocial = ['google', 'naver'].includes(authProvider);
+      const storage = getSessionStorage(ctx);
+      const deleteConfirmToken = isSocial ? storage?.getItem?.('deleteConfirmToken') || '' : '';
+      const password = String(ctx.withdrawPassword || '').trim();
+      if (isSocial && !deleteConfirmToken) {
+        alert('가입한 소셜 계정으로 먼저 본인 확인을 완료해주세요.');
+        return false;
+      }
+      if (!isSocial && !password) {
         alert('현재 비밀번호를 입력해주세요.');
         return false;
       }
+      setWithdrawSubmitting(true);
+      if (!isSocial) {
+        const verify = await (ctx.verifyPassword || verifyPassword)({ email: String(ctx.user?.email || ''), password });
+        if (!verify?.ok) {
+          setWithdrawSubmitting(false);
+          alert(verify?.error || '비밀번호가 일치하지 않습니다.');
+          return false;
+        }
+      }
+      const result = await postJson({
+        apiFetch: ctx.apiFetch,
+        url: userApiUrl,
+        payload: { type: 'delete_user', ...(deleteConfirmToken ? { deleteConfirmToken } : {}) }
+      });
+      if (!result.ok) {
+        setWithdrawSubmitting(false);
+        alert(result.error || '회원탈퇴를 처리하지 못했습니다.');
+        return false;
+      }
+      storage?.removeItem?.('deleteConfirmToken');
+      await clearMobileAuthSession(ctx, authApiUrl);
+      setWithdrawSubmitting(false);
       setWithdrawModalOpen(false);
       setWithdrawPassword('');
       setLoggedIn(false);

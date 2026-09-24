@@ -9,6 +9,7 @@ export default defineConfig({
     jsx: 'automatic'
   },
   build: {
+    assetsInlineLimit: () => false,
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {

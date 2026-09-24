@@ -37,7 +37,7 @@ const [
   read('../src/screens/analysis/AnalysisScreen.jsx'),
   read('../src/screens/analysis/AnalysisContent.jsx'),
   read('../src/screens/auth/AuthScreens.jsx'),
-  read('../src/screens/mypage/LegalScreens.jsx'),
+  Promise.all([read('../src/screens/mypage/LegalScreens.jsx'), read('../src/screens/mypage/SettingsScreens.jsx')]).then(parts => parts.join('\n')),
   read('../src/screens/mypage/MyPageScreen.jsx'),
   read('../src/screens/onboarding/IntroScreens.jsx'),
   read('../src/screens/onboarding/Ob3Screen.jsx'),
@@ -213,7 +213,7 @@ assert.match(servicePlanComponent, /export function ProIntroScreen/);
 assert.match(servicePlanComponent, /export function PaymentScreen/);
 assert.match(servicePlanComponent, /export function PaymentCompleteScreen/);
 assert.match(servicePlanComponent, /data-action="selectPlan"/);
-assert.match(servicePlanComponent, /data-action="selectDuration"/);
+assert.doesNotMatch(servicePlanComponent, /data-action="selectDuration"/);
 assert.match(servicePlanComponent, /data-action="openWebPayment"/);
 assert.doesNotMatch(servicePlanComponent, /dangerouslySetInnerHTML|renderSecondaryIntro|renderSelectedPlanDetail/);
 assert.match(termsModalComponent, /<Modal dismissAction="closeTermsModal"/);

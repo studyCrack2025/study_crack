@@ -3,19 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>StudyCrack Mobile App</title>
+  <meta name="theme-color" content="#0A56B2" />
+  <meta name="application-name" content="StudyCrack" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="StudyCrack" />
+  <title>StudyCrack</title>
+  <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="./assets/pwa/studycrack-apple-touch-icon-v1-180.png" />
+  <link rel="manifest" href="./studycrack-mobile.webmanifest" />
   <link rel="stylesheet" href="./css/studycrack-mobile.css" />
   <link rel="stylesheet" href="./studycrack-mobile-app/dist/studycrack-mobile.css" />
 </head>
 <body>
-  <div id="root">StudyCrack 앱을 불러오는 중입니다...</div>
+  <div id="root"><div class="mobile-boot-shell"><div class="init-loading" role="status"><h3>앱 화면을 준비하고 있어요</h3><p>잠시만 기다려 주세요.</p></div></div></div>
   <script>
     window.__studycrackAppBooted = false;
     setTimeout(function () {
       if (window.__studycrackAppBooted) return;
       var root = document.getElementById('root');
       if (!root) return;
-      root.innerHTML = '<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다</h3><p class="sub">잠시 후 페이지를 새로고침해 주세요.</p></div></div></div></div>';
+      var shell = document.createElement('div');
+      shell.className = 'mobile-boot-shell';
+      var panel = document.createElement('div');
+      panel.className = 'init-loading';
+      var message = document.createElement('div');
+      message.setAttribute('role', 'alert');
+      var title = document.createElement('h3');
+      title.textContent = '앱을 불러오지 못했습니다';
+      var detail = document.createElement('p');
+      var describe = function () {
+        detail.textContent = navigator.onLine === false ? '오프라인 상태예요. 연결 후 다시 시도해주세요.' : '연결 상태를 확인한 뒤 페이지를 다시 불러와주세요.';
+      };
+      describe();
+      window.addEventListener('online', describe);
+      window.addEventListener('offline', describe);
+      var retry = document.createElement('button');
+      retry.type = 'button';
+      retry.textContent = '다시 불러오기';
+      retry.onclick = function () { window.location.reload(); };
+      message.append(title, detail);
+      panel.append(message, retry);
+      shell.append(panel);
+      root.replaceChildren(shell);
     }, 12000);
   </script>
   <script src="./js/config.js"></script>

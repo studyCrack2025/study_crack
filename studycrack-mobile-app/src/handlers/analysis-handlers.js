@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { setScoreCardDom } from './score-card-view.js';
 import { removeTargetSlot, targetSlotsToList } from '../features/analysis/target-model.js';
 
 function noop() {}
@@ -81,21 +82,10 @@ export function createAnalysisHandlers(ctx) {
   return {
     setScoreView({ actionEl, event }) {
       const nextView = getData(actionEl, 'score-view', 'current');
-      if (ctx.isIOSSafari?.()) {
-        ctx.setScoreCardDom?.(actionEl, nextView);
-        return true;
-      }
-      if (ctx.screen === 'ob5') {
-        const card = actionEl?.closest?.('.score-journey-card');
-        if (!card) return false;
-        card.querySelectorAll?.('.score-journey-segment button')?.forEach((btn) => {
-          btn.classList?.toggle?.('active', btn.getAttribute?.('data-score-view') === nextView);
-        });
-        const track = card.querySelector?.('.score-journey-track');
-        if (track) {
-          track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
-          track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
-        }
+      if (ctx.screen === 'ob5' || ctx.isIOSSafari?.()) {
+        if (!setScoreCardDom(actionEl, nextView)) return false;
+        setActiveScoreView(nextView);
+        setScoreDragOffset(0);
         return true;
       }
       keepScrollPosition(700);
@@ -257,6 +247,7 @@ export function createAnalysisHandlers(ctx) {
     },
 
     async confirmTargetDelete() {
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
       if (ctx.targetDeleteSaving) return true;
       const major = ctx.targetDeleteCandidate;
       if (!major) return false;
@@ -277,12 +268,14 @@ export function createAnalysisHandlers(ctx) {
       setTargetDeleteSaving(true);
       setTargetDeleteError('');
       const result = await persistTargetUnivs(nextTargets, nextSlots);
-      if (result && result.ok === false) {
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+      if (result?.ok !== true) {
         setTargetDeleteSaving(false);
-        setTargetDeleteError(result.error || '목표 대학 저장에 실패했습니다.');
+        setTargetDeleteError(result?.error || '목표 대학 저장에 실패했습니다.');
         return false;
       }
       setTargetUnivSlots(nextSlots);
+      if (result?.ok === true) ctx.applySavedProfileTarget?.(nextTargets[0]);
       setAnalysisTargetList(nextAnalysis);
       if (ctx.targetMajor === major) {
         resetAnalysisCalculation();

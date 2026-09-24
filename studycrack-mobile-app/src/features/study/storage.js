@@ -1,11 +1,11 @@
 import { STORAGE_KEYS, safeParse, safeStringifySet } from '../../state/storage.js';
-import { normalizeStoredStudySession } from './session-model.js';
+import { normalizeStoredStudySession, validateStudySessionId } from './session-model.js';
 
 export function hydrateStudyStorage(storage = globalThis.localStorage) {
   const activeStudySession = normalizeStoredStudySession(safeParse(STORAGE_KEYS.activeStudySession, null, storage));
   const studyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
   const studySubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
-  const rewardPendingSessionId = String(safeParse(STORAGE_KEYS.rewardPendingSessionId, '', storage) || '');
+  const rewardPendingSessionId = validateStudySessionId(safeParse(STORAGE_KEYS.rewardPendingSessionId, '', storage)).value || '';
   return {
     ...(Array.isArray(studyRecords) ? { studyRecords } : {}),
     ...(Array.isArray(studySubjectRecords) ? { studySubjectRecords } : {}),

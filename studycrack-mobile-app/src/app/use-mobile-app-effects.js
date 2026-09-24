@@ -8,6 +8,7 @@ import { expireMobileSessionSilently } from '../features/session/mobile-session-
 import { hasMobileClientSession, markMobileAppBooted } from '../shared/browser/mobile-runtime.js';
 import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
 import { attachVisualViewportMetrics } from '../shared/browser/visual-viewport.js';
+import { hasSeenIntro } from '../features/session/intro-storage.js';
 
 const { useCallback, useEffect, useLayoutEffect, useRef, useState } = React;
 
@@ -69,7 +70,7 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
 
   useEffect(() => {
     if (state.screen !== 'splash') return undefined;
-    const destination = hasMobileClientSession() ? 'timer' : 'on1';
+    const destination = hasMobileClientSession() ? 'timer' : hasSeenIntro() ? 'authLogin' : 'on1';
     const timer = globalThis.setTimeout?.(() => nav.goto(destination, false), 900);
     return () => {
       if (timer) globalThis.clearTimeout?.(timer);
@@ -125,20 +126,6 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
       myProfilePhoneCodeDraft: ''
     });
   }, [setState, state.screen, state.phoneChangeModalOpen, state.myProfileEditOpen]);
-
-  useEffect(() => {
-    if (state.screen === 'ob5') {
-      if (state.ob3IsAnalyzing) setState({ ob3IsAnalyzing: false });
-      return undefined;
-    }
-    if (state.screen !== 'ob3') return undefined;
-    setState({ ob3IsAnalyzing: true });
-    const timer = globalThis.setTimeout?.(() => setState({ ob3IsAnalyzing: false }), 1500);
-    return () => {
-      if (timer) globalThis.clearTimeout?.(timer);
-      setState({ ob3IsAnalyzing: false });
-    };
-  }, [setState, state.screen]);
 
   useEffect(() => attachGestureEventBridge(() => eventsRef.current?.gesture), []);
 }

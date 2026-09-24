@@ -1,32 +1,34 @@
 import { CRACKY_HI_SRC, CRACKY_SRC, STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { AppContent, AppFrame } from '../../components/AppFrame.js';
 
 function IntroScreen({ activeDot, children, description, nextLabel = '다음', nextTarget, screen, title }) {
   return (
-    <div className="app-shell"><div className="app-frame"><div className="screen app-screen app-content" data-screen={screen}>
+    <AppFrame><AppContent screen={screen}>
       <div className="onboarding-shot">
+        <button type="button" className="onboarding-skip" data-action="finishIntro">건너뛰기</button>
         <div className="onboarding-shot-head"><span className="onboarding-kicker">STUDYCRACK STRATEGY</span><h2>{title}</h2><p>{description}</p></div>
         <div className="onboarding-center">{children}</div>
         <img src={CRACKY_SRC} className={`onboarding-character ${screen}`} alt="크랙이" />
-        <div className="onboarding-shot-dots">{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
-        <button type="button" className="onboarding-next" data-action="goto" data-target={nextTarget}>{nextLabel}</button>
+        <div className="onboarding-shot-dots" role="img" aria-label={`서비스 소개 ${activeDot + 1}/3`}>{[0, 1, 2].map((index) => <i className={activeDot === index ? 'active' : ''} key={index} />)}</div>
+        <button type="button" className="onboarding-next" data-action={nextTarget === 'authLogin' ? 'finishIntro' : 'goto'} data-target={nextTarget}>{nextLabel}</button>
       </div>
-    </div></div></div>
+    </AppContent></AppFrame>
   );
 }
 
 export function SplashScreen({ crackyHiSrc = CRACKY_HI_SRC, studycrackLogoSrc = STUDYCRACK_LOGO_SRC }) {
-  return <div className="app-shell"><div className="app-frame"><div className="splash splash-v2"><div className="splash-brand"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><div className="splash-brand-copy"><span>ADMISSIONS PLATFORM</span><h1>STUDY CRACK</h1><p>합격까지 가장 빠른 전략</p></div></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><div className="splash-progress" aria-hidden="true"><i /></div></div></div></div>;
+  return <AppFrame><div className="splash splash-v2"><div className="splash-brand"><div className="splash-logo-panel"><img className="splash-real-logo" src={studycrackLogoSrc} alt="StudyCrack" /></div><div className="splash-brand-copy"><span>ADMISSIONS PLATFORM</span><h1>STUDY CRACK</h1><p>합격까지 가장 빠른 전략</p></div></div><img className="splash-cracky" src={crackyHiSrc} alt="크랙이" /><div className="splash-progress" aria-hidden="true"><i /></div></div></AppFrame>;
 }
 
 export function On1Screen() {
   return <IntroScreen screen="on1" activeDot={0} nextTarget="on2" title={<><span className="accent">데이터 기반으로</span>{'\n'}지원학과 환산점수를 분석해요</>} description={'대학별 반영 방식에 맞춘\n현재 위치를 확인할 수 있어요.'}>
-    <div className="onboarding-card data"><div className="onboarding-label">지원학과 환산 점수</div><div className="onboarding-score">128<em>점</em></div><svg className="onboarding-graph data" viewBox="0 0 320 124" aria-hidden="true"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--sc-info-blue)" stopOpacity="0.28" /><stop offset="100%" stopColor="var(--sc-info-blue)" stopOpacity="0" /></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)" /><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="var(--sc-blue)" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="310" cy="10" r="5" fill="var(--sc-blue)" /></svg></div>
+    <div className="onboarding-card data"><div className="onboarding-label">지원학과 환산 점수</div><div className="onboarding-score onboarding-score-copy">대학별 반영 방식으로 계산</div><svg className="onboarding-graph data" viewBox="0 0 320 124" aria-hidden="true"><defs><linearGradient id="obDataFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--sc-info-blue)" stopOpacity="0.28" /><stop offset="100%" stopColor="var(--sc-info-blue)" stopOpacity="0" /></linearGradient></defs><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10 L310 124 L16 124 Z" fill="url(#obDataFill)" /><path d="M16 106 L42 84 L66 92 L94 60 L122 76 L146 92 L172 74 L196 36 L224 76 L248 62 L272 24 L292 56 L310 10" stroke="var(--sc-blue)" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="310" cy="10" r="5" fill="var(--sc-blue)" /></svg></div>
   </IntroScreen>;
 }
 
 export function On2Screen() {
-  return <IntroScreen screen="on2" activeDot={1} nextTarget="on3" title={'나에게 최적화된\n점수 상승 전략을 제공해요'} description={'과목별 효율과 목표 도달 시간을\n정확하게 예측해 드려요.'}>
-    <div className="onboarding-card strategy"><div className="onboarding-stat"><span>수학 원점수 +1</span>{'\n'}환산점수 +18점</div><svg className="onboarding-graph strategy" viewBox="0 0 320 96" aria-hidden="true">{[[72, 58, 38], [142, 40, 56], [212, 22, 74], [282, -2, 98]].map(([x, y, height]) => <rect x={x} y={y} width="16" height={height} rx="3" fill="var(--sc-blue)" fillOpacity="0.85" key={x} />)}<path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="var(--sc-info-blue)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="88" r="3" fill="var(--sc-info-blue)" /><circle cx="302" cy="12" r="3" fill="var(--sc-info-blue)" /></svg></div>
+  return <IntroScreen screen="on2" activeDot={1} nextTarget="on3" title={'내 성적에 맞는\n점수 상승 전략을 비교해요'} description={'과목별 원점수 변화가 환산점수에\n미치는 영향을 비교할 수 있어요.'}>
+    <div className="onboarding-card strategy"><div className="onboarding-stat"><span>과목별 원점수 효율</span>{'\n'}내 성적으로 직접 비교</div><svg className="onboarding-graph strategy" viewBox="0 0 320 96" aria-hidden="true">{[[72, 58, 38], [142, 40, 56], [212, 22, 74], [282, -2, 98]].map(([x, y, height]) => <rect x={x} y={y} width="16" height={height} rx="3" fill="var(--sc-blue)" fillOpacity="0.85" key={x} />)}<path d="M18 88 L56 84 L92 70 L126 62 L162 48 L196 42 L232 30 L266 20 L302 12" stroke="var(--sc-info-blue)" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="88" r="3" fill="var(--sc-info-blue)" /><circle cx="302" cy="12" r="3" fill="var(--sc-info-blue)" /></svg></div>
   </IntroScreen>;
 }
 

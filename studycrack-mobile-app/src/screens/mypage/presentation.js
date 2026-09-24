@@ -1,5 +1,6 @@
 import { getMbtiProfile, normalizeMbtiCode } from '../../constants/mbti.js';
 import { buildSubscriptionSummary } from './account-presentation.js';
+import { buildAccountProfile } from '../../features/account/profile-presentation.js';
 
 const PLAN_LABELS = {
   basic: 'Basic',
@@ -59,11 +60,6 @@ export function buildPlanPresentation(user = {}, selectedPlan = '') {
   return { key, label, periodLabel };
 }
 
-function recordSeconds(record = {}) {
-  const value = record.studyTime ?? record.durationSeconds ?? record.seconds ?? 0;
-  return Math.max(0, Number(value) || 0);
-}
-
 function formatStudyDuration(seconds = 0) {
   const minutes = Math.floor(Math.max(0, Number(seconds) || 0) / 60);
   const hours = Math.floor(minutes / 60);
@@ -71,29 +67,6 @@ function formatStudyDuration(seconds = 0) {
   if (hours && rest) return `${hours}시간 ${rest}분`;
   if (hours) return `${hours}시간`;
   return `${rest}분`;
-}
-
-function dayNumber(value = '') {
-  const match = safeText(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-  return Math.floor(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) / 86400000);
-}
-
-export function getLongestStudyStreak(records = []) {
-  const days = Array.from(new Set((Array.isArray(records) ? records : [])
-    .filter((record) => recordSeconds(record) > 0)
-    .map((record) => dayNumber(record.date || record.startedAt?.slice?.(0, 10)))
-    .filter(Number.isFinite)))
-    .sort((a, b) => a - b);
-  let longest = 0;
-  let current = 0;
-  let previous = null;
-  days.forEach((day) => {
-    current = previous !== null && day === previous + 1 ? current + 1 : 1;
-    longest = Math.max(longest, current);
-    previous = day;
-  });
-  return longest;
 }
 
 function buildMbtiPresentation(user = {}, mbtiResult = '') {
@@ -114,33 +87,25 @@ function buildMbtiPresentation(user = {}, mbtiResult = '') {
   };
 }
 
-function buildProfileMeta(user = {}) {
-  const qualitative = user?.qualitative && typeof user.qualitative === 'object' ? user.qualitative : {};
-  const grade = safeText(qualitative.status);
-  const track = safeText(qualitative.stream);
-  return [grade, track].filter(Boolean).join(' · ') || '학년·계열 정보를 등록해주세요';
-}
-
-export function buildMyPagePresentation({ liveStudySeconds = 0, mbtiResult = '', plannerItems = [], selectedPlan = '', studyRecords = [], user = {} } = {}) {
-  const totalStudySeconds = (Array.isArray(studyRecords) ? studyRecords : []).reduce((sum, record) => sum + recordSeconds(record), 0)
-    + Math.max(0, Number(liveStudySeconds) || 0);
-  const completedCount = (Array.isArray(plannerItems) ? plannerItems : []).filter((item) => item?.done === true).length;
-  const plan = buildPlanPresentation(user, selectedPlan);
+export function buildMyPagePresentation({ user = {}, userLoadStatus = 'idle', selectedPlan = '', studyOverview, aquariumPresentation } = {}) {
+  const profile = buildAccountProfile({ user, userLoadStatus });
+  const plan = buildPlanPresentation(userLoadStatus === 'ready' ? user : {}, userLoadStatus === 'ready' ? selectedPlan : '');
   const subscription = buildSubscriptionSummary(user, selectedPlan);
-  const mbti = buildMbtiPresentation(user, mbtiResult);
-
+  const mbti = buildMbtiPresentation({ mbti: profile.mbtiCode });
+  const week = studyOverview?.week;
+  const aquarium = aquariumPresentation;
   return {
-    mbti,
+    mbti, profile,
     plan: { ...plan, renewalLine: subscription.renewalLine, pendingLine: subscription.pendingLine },
-    profile: {
-      avatarUrl: safeText(user?.profileImage),
-      meta: buildProfileMeta(user),
-      name: safeText(user?.name) || '회원'
-    },
     stats: [
-      { label: '누적 공부', value: formatStudyDuration(totalStudySeconds) },
-      { label: '완료 계획', value: `${completedCount}개` },
-      { label: '최장 연속', value: `${getLongestStudyStreak(studyRecords)}일` }
-    ]
+      { label: '이번 주 확정 공부', value: week?.seconds != null ? formatStudyDuration(week.seconds) : '확인 필요' },
+      { label: '보유 물고기', value: aquarium?.ownedCount != null ? `${aquarium.ownedCount}마리` : '확인 필요' },
+      { label: '연속 학습', value: aquarium?.streakDays != null ? `${aquarium.streakDays}일` : '확인 필요' }
+    ],
+    studyStatus: week?.status || 'idle',
+    studyStale: week?.seconds != null && !week.fresh,
+    weekRange: week?.startDate && week?.endDate ? `${week.startDate} ~ ${week.endDate}` : '',
+    gameStatus: aquarium?.status || 'idle',
+    shells: aquarium?.shells != null ? `${aquarium.shells}개` : '확인 필요'
   };
 }

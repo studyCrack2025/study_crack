@@ -30,7 +30,8 @@ const failedCatalog = await fetchUniversityCatalog({
   analysisApiUrl: '/analysis'
 });
 assert.equal(failedCatalog.ok, false);
-assert.equal(failedCatalog.error, '카탈로그 준비 중');
+assert.equal(failedCatalog.code, 'SERVER_ERROR');
+assert.match(failedCatalog.error, /서버 응답을 확인하지 못했어요/);
 
 let request = null;
 const recommendation = await fetchUniversityRecommendations({
