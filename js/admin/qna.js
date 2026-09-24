@@ -9,7 +9,7 @@ async function fetchQnaBadgeCount() {
             body: JSON.stringify({ type: 'admin_get_all_qna' })
         });
         const data = await response.json();
-        const qnaList = data.qnaList || [];
+        const qnaList = validateAdminQnaList(data);
 
         const waitingCount = qnaList.filter(q => q.status === 'waiting').length;
 
@@ -27,18 +27,34 @@ async function fetchQnaBadgeCount() {
     }
 }
 
+function validateAdminQnaList(data) {
+    if (!Array.isArray(data?.qnaList) || data.qnaList.some(q => !q || typeof q.userid !== 'string' || typeof q.qnaId !== 'string')) {
+        throw new Error('Invalid question list');
+    }
+    return data.qnaList;
+}
+
+let qnaLoadSequence = 0;
+
 async function loadAllQna() {
+    const sequence = ++qnaLoadSequence;
+    const owner = localStorage.getItem('userId');
     const tbody = document.getElementById('qnaListBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">데이터를 불러오는 중...</td></tr>';
 
     try {
         const response = await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_all_qna' }) });
         const data = await response.json();
-        allQnaData = data.qnaList || [];
+        if (sequence !== qnaLoadSequence || localStorage.getItem('userId') !== owner) return;
+        allQnaData = validateAdminQnaList(data);
         renderQnaList();
 
         updateQnaBadgeFromData();
-    } catch (e) { if (e.message !== "Auth expired") alert("질의 목록을 불러오는데 실패했습니다."); }
+    } catch (e) {
+        if (sequence !== qnaLoadSequence || localStorage.getItem('userId') !== owner) return;
+        allQnaData = [];
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">문의 목록을 불러오지 못했습니다. <button type="button" onclick="loadAllQna()">다시 시도</button></td></tr>';
+    }
 }
 
 function updateQnaBadgeFromData() {
@@ -74,29 +90,42 @@ function renderQnaList() {
     filtered.forEach(q => {
         const tr = document.createElement('tr'); const dateStr = new Date(q.createdAt).toLocaleDateString();
         let actionBtn = '';
-        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
-        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        if (q.status === 'waiting') actionBtn = `<button type="button" data-qna-action style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        else if (q.status === 'read') actionBtn = `<button type="button" data-qna-action style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
         let phoneStr = '-';
-        if (q.userPhone && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
+        if (typeof q.userPhone === 'string' && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
 
         tr.innerHTML = `
             <td data-label="상태">${getQnaStatusBadge(q.status)}</td>
             <td data-label="학생명">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <strong>${escapeHtml(q.userName)}</strong>
-                    <button onclick="goToStudentDetail('${escapeHtml(q.userid)}')(event)" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
+                    <button type="button" data-student-detail style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
                 </div>
                 <span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span>
             </td>
-            <td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}', true)">
+            <td data-label="제목" data-qna-view style="cursor:pointer;">
                 <strong>${escapeHtml(q.title)}</strong>
                 <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div>
             </td>
             <td data-label="등록일">${dateStr}</td>
             <td data-label="관리">${actionBtn}</td>
         `;
+        const detailButton = tr.querySelector('[data-student-detail]');
+        detailButton.disabled = !q.userid;
+        detailButton.addEventListener('click', event => {
+            event.stopPropagation();
+            goToStudentDetail(q.userid);
+        });
+        tr.querySelector('[data-qna-view]').addEventListener('click', () => openReplyModal(q.userid, q.qnaId, true));
+        const actionButton = tr.querySelector('[data-qna-action]');
+        if (actionButton) {
+            actionButton.disabled = !q.userid || !q.qnaId;
+            actionButton.addEventListener('click', () => q.status === 'waiting'
+                ? markAsRead(q.userid, q.qnaId) : openReplyModal(q.userid, q.qnaId));
+        }
         tbody.appendChild(tr);
     });
 }
@@ -108,7 +137,7 @@ function getQnaStatusBadge(status) {
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
-    const item = allQnaData.find(q => q.qnaId === qnaId);
+    const item = allQnaData.find(q => q.qnaId === qnaId && q.userid === targetUserId);
     if (!item) return;
 
     currentReplyTarget = { targetUserId, qnaId };
@@ -119,7 +148,7 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     const detailLinkBtn = document.getElementById('replyModalStudentLink');
     if (detailLinkBtn) {
         detailLinkBtn.onclick = function() {
-            window.open(`/admin/detail?uid=${targetUserId}`, '_blank');
+            if (targetUserId) window.open(`/admin/detail?uid=${encodeURIComponent(targetUserId)}`, '_blank', 'noopener');
         };
     }
 
