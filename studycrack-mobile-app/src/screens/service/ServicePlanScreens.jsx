@@ -3,7 +3,6 @@ import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { PLAN_META } from '../../constants/plans.js';
 import { CoachingMark, CoachingProcess } from '../coaching/CoachingScreen.jsx';
 import { WeeklyPlanPreview } from '../coaching/WeeklyPlanPreview.jsx';
-import { PlanComparison } from './PlanComparison.jsx';
 
 const PLAN_ORDER = ['Basic', 'Starter', 'Standard', 'Pro'];
 
@@ -92,7 +91,7 @@ export function LockedFeatureScreen(ctx) {
 
 export function ProIntroScreen({ checkoutPlan = 'Standard', upgradePromptTarget = '', upgradePromptTier = '' }) {
   const requiredPlan = upgradePromptTier ? requiredTierLabel(upgradePromptTier) : '';
-  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택하면 가격과 이용 기능이 같은 기준으로 바뀝니다." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} />{requiredPlan ? <div className="card locked-upgrade-card"><span className="badge">잠긴 기능</span><h3>{upgradePromptTarget || '선택한 기능'}은 {requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div> : null}<PlanComparison selected={checkoutPlan} selectable /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
+  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택해 아래에서 가격과 포함 기능을 확인하세요." aside={<span className="sc-chip">{planDisplayName(checkoutPlan)}</span>} />{requiredPlan ? <div className="card locked-upgrade-card"><span className="badge">잠긴 기능</span><h3>{upgradePromptTarget || '선택한 기능'}은 {requiredPlan} 이상에서 이용할 수 있어요.</h3><p>요금제를 업그레이드하면 하단 탭은 그대로 유지하면서 해당 기능이 바로 열립니다.</p></div> : null}<PlanSelector checkoutPlan={checkoutPlan} /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
 }
 
 export function PaymentScreen({ checkoutPlan = 'Standard' }) {

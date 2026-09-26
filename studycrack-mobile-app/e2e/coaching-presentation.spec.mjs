@@ -65,8 +65,9 @@ test('BASIC 잠금 미리보기는 수치나 신청 권한을 만들지 않는�
   await page.screenshot({ path: info.outputPath('coaching-basic-390.png'), animations: 'disabled' });
   await page.getByRole('button', { name: 'STANDARD 플랜 보기' }).click();
   for (const [plan, price] of [['Basic', '25,000원'], ['Starter', '39,000원'], ['Standard', '4주 결제 총 49,000원'], ['Pro', '4주 결제 총 149,000원']]) {
-    await page.locator(`.service-plan-card[data-plan="${plan}"]`).click();
-    await expect(page.locator(`.service-plan-card[data-plan="${plan}"]`)).toHaveAttribute('aria-pressed', 'true');
+    const choice = page.getByRole('group', { name: '플랜 선택', exact: true }).locator(`[data-plan="${plan}"]`);
+    await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.plan-console-price')).toContainText(price);
   }
   await expect(page.locator('.plan-benefit-row')).toHaveCount(7);

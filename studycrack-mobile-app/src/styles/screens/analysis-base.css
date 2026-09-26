@@ -15,7 +15,7 @@
 .analysis-v2 > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
 .analysis-v2 .card{border-color:var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .analysis-search-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-.analysis-search-body{display:grid;gap:12px;align-content:start;}
+.analysis-search-body{display:grid;gap:12px;grid-auto-rows:max-content;align-content:start;}
 .analysis-search-head h4{margin:0;color:var(--sc-ink-strong);font-size:16px;}
 .analysis-search-head button{display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:999px;background:var(--sc-line-strong);font:inherit;}
 .analysis-search-sticky{position:sticky;top:0;z-index:2;padding-bottom:8px;background:var(--sc-surface-canvas);}

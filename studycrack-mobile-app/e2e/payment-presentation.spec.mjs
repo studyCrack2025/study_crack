@@ -9,7 +9,21 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const api = await installApiMock(page, { tier: 'standard', userOverrides: { pendingSubscription: { tier: 'pro', startDate: '2026-10-10T00:00:00Z' } } });
     const capture = name => page.screenshot({ path: testInfo.outputPath(`${name}-${width}.png`), fullPage: true, animations: 'disabled' });
     await page.goto('/studycrack-mobile.html?screen=proIntro');
-    await expect(page.locator('.service-plan-card')).toHaveCount(4);
+    const introChoices = page.getByRole('group', { name: '플랜 선택', exact: true });
+    await expect(introChoices.getByRole('button')).toHaveCount(4);
+    const introCells = await introChoices.getByRole('button').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { y: r.y, height: r.height }; }));
+    expect(introCells[0].y).toBe(introCells[1].y);
+    expect(introCells[2].y).toBe(introCells[3].y);
+    expect(introCells.every(cell => cell.height >= 44)).toBe(true);
+    await expect(page.locator('.plan-console-head')).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('.plan-console-price b')).toBeInViewport({ ratio: 1 });
+    await capture('plans-initial');
+    for (const plan of ['Basic', 'Starter', 'Standard', 'Pro']) {
+      await introChoices.locator(`[data-plan="${plan}"]`).click();
+      await expect(introChoices.locator(`[data-plan="${plan}"]`)).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('.plan-console-head h3')).toHaveText(plan.toUpperCase());
+      await expect(page.locator('.plan-console-head')).toBeInViewport({ ratio: 1 });
+    }
     await capture('plans');
     await page.locator('[data-plan="Pro"]').click();
     const detail = page.getByRole('region', { name: '선택한 플랜 상세' });
