@@ -200,6 +200,10 @@ export function createAnalysisHandlers(ctx) {
     },
 
     openUniversitySearch() {
+      if (!ctx.canUseReverseProjection && ctx.user?.univChangeRemaining === 0) {
+        goto('proIntro');
+        return true;
+      }
       setUniversitySelectedName('');
       setAnalysisSearchTerm('');
       setAnalysisSearchOpen(true);

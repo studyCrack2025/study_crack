@@ -21,7 +21,7 @@ function SearchResult({ analysisTargetList, name, universitySelectedName, target
   if (!universitySelectedName) {
     return (
       <button type="button" className="sc-secondary-row add-univ-university-row" data-action="selectUniversityForMajor" data-university-name={name}>
-        <span className="sc-secondary-row-main"><b>{name}</b><p>학과 목록 보기</p></span><em>다음</em>
+        <span className="add-univ-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8 9-5 9 5H3ZM5 11v7m7-7v7m7-7v7M3 21h18M3 18h18" /></svg></span><span className="sc-secondary-row-main"><b>{name}</b><p>모집 학과 살펴보기</p></span><em aria-hidden="true">→</em>
       </button>
     );
   }
@@ -54,15 +54,16 @@ function CatalogResults(ctx) {
 }
 
 function UniversitySearchSheet(ctx) {
-  const { analysisSearchOpen, analysisSearchTerm, universitySelectedName, targetPolicy, targetSaveError, addingUniversity } = ctx;
+  const { analysisSearchOpen, analysisSearchTerm, universitySelectedName, targetSaveError, addingUniversity, analysisSearchList = [], universityCatalogStatus } = ctx;
   return <Sheet open={analysisSearchOpen} variant="planner" overlayClass="analysis-search-overlay" panelClass="analysis-search-modal" dismissAction="closeAnalysisSearch" ariaLabel="대학·학과 직접 추가">
-    <div className="sc-sheet-head analysis-search-head"><h4>{universitySelectedName ? '학과 선택' : '대학 선택'} <span className="sc-badge">{universitySelectedName ? '2 / 2' : '1 / 2'}</span></h4><button type="button" className="sc-overlay-close" data-action="closeAnalysisSearch" aria-label="닫기">✕</button></div>
+    <div className="sc-sheet-head analysis-search-head add-univ-modal-head"><h4>{universitySelectedName ? '학과 선택' : '대학 선택'}</h4><button type="button" className="sc-overlay-close" data-action="closeAnalysisSearch" aria-label="닫기">✕</button></div>
     <div className="sc-sheet-body analysis-search-body">
-      <TargetAllowance policy={targetPolicy} />
+      <ol className="add-univ-steps" aria-label="추가 단계"><li aria-current={!universitySelectedName ? 'step' : undefined} data-complete={Boolean(universitySelectedName)}><span aria-hidden="true">{universitySelectedName ? '✓' : '1'}</span>대학 선택</li><li aria-current={universitySelectedName ? 'step' : undefined}><span aria-hidden="true">2</span>학과 선택</li></ol>
       {universitySelectedName ? <div className="add-univ-selection"><button type="button" className="add-univ-back" data-action="backToUniversityList">← 대학 다시 선택</button><b>{universitySelectedName}</b></div> : null}
       <div className="analysis-search-inline"><input key={universitySelectedName || 'universities'} className="planner-input sc-input add-univ-search" data-field="analysisSearchTerm" defaultValue={analysisSearchTerm} aria-label={universitySelectedName ? '학과명 검색' : '대학명 검색'} placeholder={universitySelectedName ? '학과명 검색' : '대학명 검색'} autoComplete="off" enterKeyHint="search" /><button type="button" className="btn btn-secondary mini analysis-search-btn" data-action="runUniversitySearch">검색</button></div>
       {targetSaveError ? <p className="add-univ-save-error" role="alert">{targetSaveError}</p> : null}
       {addingUniversity ? <p role="status">대학을 저장하고 있어요.</p> : null}
+      <div className="add-univ-results-heading"><b>{universitySelectedName ? '학과 목록' : '대학 목록'}</b><span role="status">{universityCatalogStatus === 'ready' ? `${analysisSearchList.length}개 표시 중` : '검색할 대학·학과를 확인하세요'}</span></div>
       <div className="sc-secondary-list add-univ-results"><CatalogResults {...ctx} /></div>
     </div>
   </Sheet>;
@@ -87,7 +88,7 @@ export function AddUniversityScreen(ctx) {
     <SecondaryScreenShell screen="addUniversity" title="대학 추가" tab={tab} overlayOpen={analysisSearchOpen} overlays={analysisSearchOpen ? <UniversitySearchSheet {...ctx} /> : null}>
           <div className="sc-secondary-page add-univ-page">
             <SecondaryIntro eyebrow="TARGET UNIVERSITY" title="희망 대학 추가" description="현재 성적 추천을 확인하거나 대학과 학과를 순서대로 직접 선택하세요." aside={<span className="sc-chip">최대 6개</span>} />
-            <TargetAllowance policy={targetPolicy} />
+            <TargetAllowance policy={targetPolicy} showPlanAction={false} />
             {targetSaveError && !analysisSearchOpen ? <p className="add-univ-save-error" role="alert">{targetSaveError}</p> : null}
             <section className="sc-secondary-section add-univ-section">
               <div className="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3><p>웹과 동일한 분석 로직으로 계산한 결과입니다.</p></div><button type="button" className="btn btn-secondary mini" data-action="refreshUniversityRecommendations" disabled={universityRecommendationStatus === 'loading'}>{universityRecommendationStatus === 'loading' ? '추천 중' : '새로고침'}</button></div>
@@ -95,7 +96,8 @@ export function AddUniversityScreen(ctx) {
             </section>
             <section className="sc-secondary-section add-univ-section">
               <div className="sc-secondary-section-head add-univ-head"><div><h3>원하는 대학이 있나요?</h3><p>대학 → 학과 순서로 검색하고 추가하세요.</p></div></div>
-              <button type="button" className="btn btn-primary" data-action="openUniversitySearch">직접 추가하기 →</button>
+              <button type="button" className="btn btn-primary" data-action="openUniversitySearch" disabled={targetPolicy?.canAdd === false}>직접 추가하기 →</button>
+              {!targetPolicy?.unlimited && targetPolicy?.remaining === 0 ? <button type="button" className="btn btn-secondary" data-action="goto" data-target="proIntro">플랜 선택하기 →</button> : null}
             </section>
           </div>
     </SecondaryScreenShell>

@@ -3,6 +3,16 @@ import { fetchUniversityCatalog, fetchUniversityRecommendations, normalizeUniver
 import { buildAnalysisDerived } from '../src/runtime/derived.js';
 import { buildTargetPolicy } from '../src/features/analysis/target-policy.js';
 import { saveTargetUnivs } from '../src/features/account/api.js';
+import { createAnalysisHandlers } from '../src/handlers/analysis-handlers.js';
+
+for (const unlimited of [false, true]) {
+  let destination = '';
+  let opened = false;
+  const handlers = createAnalysisHandlers({ user: { univChangeRemaining: 0 }, canUseReverseProjection: unlimited, goto: value => { destination = value; }, setUniversitySelectedName: () => {}, setAnalysisSearchTerm: () => {}, setAnalysisSearchOpen: value => { opened = value; } });
+  handlers.openUniversitySearch();
+  assert.equal(opened, unlimited);
+  assert.equal(destination, unlimited ? '' : 'proIntro');
+}
 
 const basic = { userTier: 'basic', user: { univChangeRemaining: 0 } };
 assert.equal(buildTargetPolicy(basic).canAdd, false);

@@ -6,7 +6,7 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await installAuthenticatedSession(page);
-    await installApiMock(page, { tier: 'basic', userOverrides: { univChangeRemaining: 0 } });
+    await installApiMock(page, { tier: 'basic', userOverrides: { univChangeRemaining: 3 } });
     const universities = Array.from({ length: 40 }, (_, i) => ({ univName: `테스트${String(i + 1).padStart(2, '0')}대학교`, majors: Array.from({ length: 40 }, (_, j) => `학과${String(j + 1).padStart(2, '0')}`) }));
     await page.route('**/api/**', route => route.request().postDataJSON()?.type === 'get_univ_list_only' ? route.fulfill({ json: universities }) : route.fallback());
     await page.goto('/studycrack-mobile.html?screen=addUniversity');
@@ -15,6 +15,10 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     const body = dialog.locator('.analysis-search-body');
     const rows = dialog.locator('.add-univ-university-row');
     await expect(rows).toHaveCount(40);
+    await expect(dialog.locator('.analysis-target-allowance')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: '요금제 확인하기' })).toHaveCount(0);
+    await expect(dialog.locator('.add-univ-steps [aria-current="step"]')).toContainText('대학 선택');
+    await page.screenshot({ path: info.outputPath(`university-start-${width}.png`), animations: 'disabled' });
     const initialPanel = await dialog.boundingBox();
     const search = dialog.getByRole('textbox', { name: '대학명 검색' });
     for (const [term, count] of [['테', 40], ['테스트4', 1], ['테스트40', 1], ['없는대학', 0], ['', 40]]) {
@@ -48,6 +52,7 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     await rows.last().click();
     await expect(dialog.locator('.add-univ-selection')).toContainText('테스트40대학교');
     await expect(dialog.locator('.add-univ-row')).toHaveCount(40);
+    await expect(dialog.locator('.add-univ-steps [aria-current="step"]')).toContainText('학과 선택');
     const majorPanel = await dialog.boundingBox();
     expect(Math.abs(majorPanel.y - initialPanel.y)).toBeLessThan(1);
     expect(Math.abs(majorPanel.height - initialPanel.height)).toBeLessThan(1);

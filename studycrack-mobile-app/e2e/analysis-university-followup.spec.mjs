@@ -41,15 +41,18 @@ for (const width of [320, 390, 430]) {
   });
 }
 
-test('변경 횟수 0은 분석에도 표시하고 대학 추가 요청을 막는다', async ({ page }) => {
+test('변경 횟수 0은 직접 추가를 비활성화하고 플랜 선택으로 안내한다', async ({ page }) => {
   const api = await setup(page, { userOverrides: { univChangeRemaining: 0 } });
   await page.goto('/studycrack-mobile.html?screen=analysis');
   await expect(page.locator('.analysis-target-allowance')).toContainText('대학 변경 0회 남음');
   await page.locator('[data-field="analysisTargetMajor"]').selectOption('__add_university__');
   await expect(page.locator('.add-univ-page')).toContainText('변경 횟수를 모두 사용');
-  const dialog = await openMajor(page);
-  await expect(dialog.getByRole('button', { name: '추가', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '직접 추가하기 →' })).toBeDisabled();
+  await expect(page.getByRole('dialog', { name: '대학·학과 직접 추가' })).toHaveCount(0);
   expect(api.requests.filter(({ payload }) => payload.type === 'update_target_univs')).toHaveLength(0);
+  await page.getByRole('button', { name: '플랜 선택하기 →' }).click();
+  await expect(page.locator('[data-screen="proIntro"]')).toBeVisible();
+  await expect(page.getByRole('region', { name: '현재 멤버십' })).toContainText('대학 변경 0회 남음');
 });
 
 test('저장 400의 변경 한도는 화면에 표시하고 선택을 유지한다', async ({ page }) => {
@@ -67,6 +70,9 @@ test('저장 400의 변경 한도는 화면에 표시하고 선택을 유지한�
   await expect(dialog.locator('.add-univ-selection')).toContainText('연세대학교');
   await expect(dialog.getByRole('button', { name: '추가', exact: true })).toBeDisabled();
   expect(saves).toBe(1);
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '직접 추가하기 →' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '플랜 선택하기 →' })).toBeVisible();
 });
 
 test('마지막 1회 저장은 응답 후 닫고 잔여를 갱신하며 슬롯을 유지한다', async ({ page }) => {
@@ -92,6 +98,7 @@ test('마지막 1회 저장은 응답 후 닫고 잔여를 갱신하며 슬롯�
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('.analysis-target-allowance')).toContainText('대학 변경 0회 남음');
   await expect(page.locator('.analysis-target-allowance')).toContainText('등록 3/6');
+  await expect(page.getByRole('button', { name: '직접 추가하기 →' })).toBeDisabled();
   expect(saves).toBe(1);
   expect(saved).toHaveLength(6);
   expect(saved[0].major).toBe('정치외교학과');
