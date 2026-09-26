@@ -64,6 +64,8 @@ test('BASIC 잠금 미리보기는 수치나 신청 권한을 만들지 않는�
   await expect(page.locator('[data-action="openCoachingSheet"]')).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('coaching-basic-390.png'), animations: 'disabled' });
   await page.getByRole('button', { name: 'STANDARD 플랜 보기' }).click();
+  await expect(page.getByRole('region', { name: '현재 멤버십', exact: true }).locator('strong')).toHaveText('BASIC');
+  await expect(page.locator('[data-screen="proIntro"]')).not.toContainText('잠긴 기능');
   for (const [plan, price] of [['Basic', '25,000원'], ['Starter', '39,000원'], ['Standard', '4주 결제 총 49,000원'], ['Pro', '4주 결제 총 149,000원']]) {
     const choice = page.getByRole('group', { name: '플랜 선택', exact: true }).locator(`[data-plan="${plan}"]`);
     await choice.click();

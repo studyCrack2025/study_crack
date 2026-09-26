@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PLAN_META } from '../src/constants/plans.js';
 import { createServiceHandlers } from '../src/handlers/service-handlers.js';
+import { buildMembershipSummary } from '../src/screens/service/membership-presentation.js';
 
 const [scriptSource, serviceSource, paymentSource] = await Promise.all([
   readFile(new URL('../../js/script.js', import.meta.url), 'utf8'),
@@ -63,4 +64,13 @@ assert.match(serviceSource, /합격컷 도달 위한 목표 성적 제시/);
 assert.ok(!PLAN_META.Basic.features.includes('합격컷 도달 위한 목표 성적 제시'), 'Do not silently merge conflicting web benefits');
 assert.doesNotMatch(JSON.stringify(PLAN_META), /합격확률|합격 가능성/, 'Mobile plan copy must describe converted scores, not probability');
 
-console.log('plan contracts passed: four web purchase cards, ordered benefits, prices and stale-duration handoff.');
+const expired = buildMembershipSummary({ userTier: 'free', checkoutPlan: 'Pro', user: { currentSubscription: { tier: 'pro', endDate: '2020-01-01' } } });
+assert.equal(expired.label, 'FREE');
+assert.match(expired.detail, /유료 이용권이 없어요/);
+assert.equal(buildMembershipSummary({ checkoutPlan: 'Pro' }).label, '확인 중');
+assert.equal(buildMembershipSummary({ userTier: 'basic', targetPolicy: { label: '대학 변경 0회 남음' } }).detail, '대학 변경 0회 남음');
+assert.match(buildMembershipSummary({ userTier: 'starter' }).detail, /확인 필요/);
+assert.match(buildMembershipSummary({ userTier: 'pro', user: { currentSubscription: { tier: 'pro', endDate: '2030-10-01T00:00:00Z' } }, targetPolicy: { label: '대학 변경 무제한' } }).detail, /2030\.10\.01까지 · 대학 변경 무제한/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', startDate: '2030-10-01T00:00:00Z' } } }).detail, /2030\.10\.29까지/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', endDate: 'invalid' } } }).detail, /이용 기한 확인 필요/);
+console.log('plan contracts passed: web purchase cards, prices, membership status and stale-duration handoff.');

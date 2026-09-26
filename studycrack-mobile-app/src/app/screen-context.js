@@ -92,7 +92,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   proElite: Object.freeze([
     'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText'
   ]),
-  proIntro: Object.freeze(['checkoutPlan', 'upgradePromptTarget', 'upgradePromptTier']),
+  proIntro: Object.freeze(['checkoutPlan', 'user', 'userTier', 'selectedPlan', 'targetPolicy']),
   report: Object.freeze([
     'proReports', 'proReportsError', 'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText', 'tab'
   ]),

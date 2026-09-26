@@ -15,6 +15,15 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     const body = dialog.locator('.analysis-search-body');
     const rows = dialog.locator('.add-univ-university-row');
     await expect(rows).toHaveCount(40);
+    const initialPanel = await dialog.boundingBox();
+    const search = dialog.getByRole('textbox', { name: '대학명 검색' });
+    for (const [term, count] of [['테', 40], ['테스트4', 1], ['테스트40', 1], ['없는대학', 0], ['', 40]]) {
+      await search.fill(term);
+      await expect(rows).toHaveCount(count);
+      const current = await dialog.boundingBox();
+      expect(Math.abs(current.y - initialPanel.y)).toBeLessThan(1);
+      expect(Math.abs(current.height - initialPanel.height)).toBeLessThan(1);
+    }
     const geometry = await body.evaluate(el => ({ client: el.clientHeight, scroll: el.scrollHeight, list: el.querySelector('.add-univ-results').clientHeight, listScroll: el.querySelector('.add-univ-results').scrollHeight }));
     expect(geometry.scroll).toBeGreaterThan(geometry.client + 500);
     expect(geometry.listScroll - geometry.list).toBeLessThanOrEqual(2);
@@ -39,12 +48,20 @@ for (const [width, height] of [[320, 568], [390, 844]]) {
     await rows.last().click();
     await expect(dialog.locator('.add-univ-selection')).toContainText('테스트40대학교');
     await expect(dialog.locator('.add-univ-row')).toHaveCount(40);
+    const majorPanel = await dialog.boundingBox();
+    expect(Math.abs(majorPanel.y - initialPanel.y)).toBeLessThan(1);
+    expect(Math.abs(majorPanel.height - initialPanel.height)).toBeLessThan(1);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height - 30);
     await page.mouse.wheel(0, 10000);
     await expect(dialog.locator('.add-univ-row').last()).toBeInViewport();
     await expect(dialog.locator('.add-univ-row').last()).toContainText('학과40');
     await expectNoHorizontalOverflow(page);
     await page.screenshot({ path: info.outputPath(`long-list-${width}.png`), animations: 'disabled' });
+    await page.setViewportSize({ width, height: 380 });
+    await dialog.getByRole('textbox', { name: '학과명 검색' }).fill('없는학과');
+    await expect(dialog.locator('.add-univ-row')).toHaveCount(0);
+    await expect.poll(async () => { const panel = await dialog.boundingBox(); return panel.y + panel.height; }).toBeLessThanOrEqual(381);
+    await expect(dialog.getByRole('button', { name: '닫기', exact: true })).toBeInViewport({ ratio: 1 });
     await dialog.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(dialog).toHaveCount(0);
   });

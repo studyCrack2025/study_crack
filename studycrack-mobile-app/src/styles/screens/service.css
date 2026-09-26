@@ -1,6 +1,8 @@
-.locked-upgrade-card{display:grid;gap:7px;margin-bottom:12px;border:1px solid var(--sc-line-subtle);border-radius:18px;background:var(--sc-surface-card);}
-.locked-upgrade-card h3{margin:0;color:var(--sc-ink);font-size:18px;line-height:1.35;font-weight:900;letter-spacing:0;}
-.locked-upgrade-card p{margin:0;color:var(--sc-ink-muted);font-size:12px;line-height:1.45;font-weight:700;}
+.plan-membership-summary{min-width:0;padding:12px 14px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);}
+.plan-membership-summary > div{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;line-height:1.5;}
+.plan-membership-summary span{color:var(--sc-ink-muted);}
+.plan-membership-summary strong{color:var(--sc-ink-strong);}
+.plan-membership-summary p{margin:4px 0 0;color:var(--sc-ink-muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere;}
 .plan-console-page,.payment-console-page{padding-bottom:28px;}
 .service-plan-comparison{display:grid;gap:10px;min-width:0;}
 .service-plan-comparison h3{margin:0;font-size:var(--sc-type-section);color:var(--sc-ink);}
@@ -12,8 +14,12 @@
 .service-plan-card p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;overflow-wrap:anywhere;}
 .plan-console-selector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
 .plan-console-selector::-webkit-scrollbar{display:none;}
-.plan-console-selector button{min-width:0;min-height:64px;border:1px solid var(--sc-line-subtle);background:var(--sc-surface-card);border-radius:12px;padding:12px;display:grid;gap:6px;justify-items:start;font-family:inherit;color:var(--sc-ink-muted);box-shadow:none;}
-.plan-console-selector button.active{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);color:var(--sc-on-brand);box-shadow:var(--sc-shadow-normal);}
+.plan-console-selector button{--plan-accent:var(--sc-brand-navy);min-width:0;min-height:64px;border:1px solid color-mix(in srgb,var(--plan-accent) 35%,var(--sc-line-subtle));border-top:3px solid var(--plan-accent);background:color-mix(in srgb,var(--plan-accent) 4%,var(--sc-surface-card));border-radius:12px;padding:10px 12px;display:grid;gap:6px;justify-items:start;font-family:inherit;color:color-mix(in srgb,var(--plan-accent) 55%,var(--sc-ink-strong));box-shadow:none;}
+.plan-console-selector button[data-plan="Basic"]{--plan-accent:var(--sc-tier-basic);}
+.plan-console-selector button[data-plan="Starter"]{--plan-accent:var(--sc-tier-starter);}
+.plan-console-selector button[data-plan="Standard"]{--plan-accent:var(--sc-tier-standard);}
+.plan-console-selector button[data-plan="Pro"]{--plan-accent:var(--sc-tier-pro);}
+.plan-console-selector button.active{border-color:var(--plan-accent);background:color-mix(in srgb,var(--plan-accent) 14%,var(--sc-surface-card));box-shadow:inset 0 0 0 1px var(--plan-accent),var(--sc-shadow-normal);}
 .plan-console-selector span{font-size:12px;font-weight:900;letter-spacing:0;}
 .plan-console-selector b{font-size:11px;line-height:1.5;font-weight:700;text-align:left;overflow-wrap:anywhere;}
 .plan-console-detail{display:grid;gap:16px;padding:16px;border-radius:var(--sc-radius-card);background:var(--sc-surface-card);border:1px solid var(--sc-border-subtle);box-shadow:var(--sc-shadow-normal);}

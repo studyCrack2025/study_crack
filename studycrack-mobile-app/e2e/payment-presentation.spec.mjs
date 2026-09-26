@@ -9,6 +9,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const api = await installApiMock(page, { tier: 'standard', userOverrides: { pendingSubscription: { tier: 'pro', startDate: '2026-10-10T00:00:00Z' } } });
     const capture = name => page.screenshot({ path: testInfo.outputPath(`${name}-${width}.png`), fullPage: true, animations: 'disabled' });
     await page.goto('/studycrack-mobile.html?screen=proIntro');
+    await expect(page.getByRole('region', { name: '현재 멤버십', exact: true }).locator('strong')).toHaveText('STANDARD');
     const introChoices = page.getByRole('group', { name: '플랜 선택', exact: true });
     await expect(introChoices.getByRole('button')).toHaveCount(4);
     const introCells = await introChoices.getByRole('button').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { y: r.y, height: r.height }; }));
