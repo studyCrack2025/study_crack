@@ -8,6 +8,8 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    myReturn: null,
+    drawerOpen: false,
     streakSummary: { open: false, returnTarget: '' },
     gameProfile: null,
     gameProfileStatus: 'idle',

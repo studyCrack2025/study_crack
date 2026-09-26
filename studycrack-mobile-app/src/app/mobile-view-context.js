@@ -23,54 +23,15 @@ import {
   updatePossibleUnivSlider
 } from '../shared/browser/mobile-interactions.js';
 
-function buildDefaultCoachingSubjects(derived = {}) {
-  const { todayPlannerItems = [], todayStudySeconds = 0, todaySubjectsWithTimer = {} } = derived;
-  const rows = todayPlannerItems.map((item, index) => {
-    const subject = item.subject || '기타';
-    const plannedHour = Number(item.minutes || 0) / 60;
-    const actualHour = Number(todaySubjectsWithTimer[subject] || 0) / 3600;
-    return {
-      id: `plan-${index}-${subject}`,
-      sourceId: item.id || `plan-${index}`,
-      subject,
-      detail: item.content || '',
-      planned: plannedHour ? plannedHour.toFixed(1) : '',
-      actual: actualHour ? actualHour.toFixed(1) : '',
-      removable: true,
-      placeholder: '세부과목 입력'
-    };
-  });
-  if (rows.length) return rows;
-  return ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
-    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) || Number(todayStudySeconds || 0)) / 3600;
-    const placeholders = {
-      국어: '세부과목 (예: 언매)',
-      수학: '세부과목 (예: 미적)',
-      영어: '세부과목 (예: 독해)',
-      탐구: '세부과목 (예: 생1)'
-    };
-    return {
-      id: `${subject}-base`,
-      sourceId: `${subject}-base`,
-      subject,
-      detail: '',
-      planned: '',
-      actual: actualHour ? actualHour.toFixed(1) : '',
-      removable: subject === '기타',
-      placeholder: placeholders[subject] || '세부과목 입력'
-    };
-  });
-}
 
 function buildScoreSelectionPatch(scoreExamType, current) {
   const scoreExamKey = scoreExamTypeToKey(scoreExamType);
   const mapped = mapExamDataToScorePatch(current.user?.quantitative?.[scoreExamKey], current);
+  const selection = { scoreExamType, scoreExamKey, analysisCalculationRequested: false };
   if (mapped) {
     return {
-      scoreExamType,
-      scoreExamKey,
+      ...selection,
       ...mapped,
-      analysisCalculationRequested: false,
       analysisApiStatus: 'idle',
       analysisApiError: '',
       scoreFetchStatus: 'idle',
@@ -79,14 +40,12 @@ function buildScoreSelectionPatch(scoreExamType, current) {
   }
   const blankScoreState = createBlankScoreState();
   return {
-    scoreExamType,
-    scoreExamKey,
+    ...selection,
     scores: {},
     scoreState: blankScoreState,
     scoreEditState: blankScoreState,
     analysisResults: [],
     analysisSimulations: [],
-    analysisCalculationRequested: false,
     analysisApiStatus: 'empty',
     analysisApiError: '선택한 시험에 입력된 성적이 없습니다.'
   };
@@ -173,6 +132,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     tab: state.tab,
     goto: nav.goto,
     back: nav.back,
+    rememberMy: nav.rememberMy,
     beforeGoto,
     ...getMobileRuntimeContext(),
     canAccessStandard: canAccessTier(state, 'standard'),
@@ -206,45 +166,19 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
       const next = Math.max(0, Math.min(Number(index) || 0, max));
       setState({ homeSlideIndex: next, homeSlideMotion: motion || '' });
     },
-    closeDrawer: () => setState({ drawerOpen: false }),
+    closeDrawer: () => setState({ drawerOpen: false, myReturn: null }),
     selectPlan: (plan) => setState({ checkoutPlan: plan }),
     markOnboardingComplete: () => setState({ loggedIn: true }),
     getExamScoresMap: readExamScoresMap,
     saveExamScoresMap: writeExamScoresMap,
     applyScoreExamSelection: (scoreExamType) => setState(buildScoreSelectionPatch(scoreExamType, stateRef.current)),
-    requestAnalysisCalculation: () => {
-      const current = stateRef.current;
-      setState({
-        analysisCalculationRequested: true,
-        analysisApiStatus: 'loading',
-        analysisApiError: '',
-        analysisResults: [],
-        analysisSimulations: [],
-        analysisSimulationStatus: 'idle',
-        analysisResultSignature: '',
-        scoreFetchStatus: 'idle',
-        scoreFetchSignature: '',
-        scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1,
-        analysisBacktraceStatus: 'idle',
-        analysisBacktracePlan: null,
-        analysisBacktraceError: '',
-        analysisBacktraceSignature: ''
-      });
-    },
-    resetAnalysisCalculation: () => setState({
-      analysisSimulationStatus: 'idle',
-      analysisHighlightedSubject: '',
-      analysisCalculationRequested: false,
-      analysisApiStatus: 'idle',
-      analysisApiError: '',
-      scoreFetchStatus: 'idle',
-      scoreFetchSignature: ''
-    }),
+    requestAnalysisCalculation: () => setState(baseContext.analysisCalculationPatch(stateRef.current)),
+    resetAnalysisCalculation: () => setState(baseContext.analysisResetPatch),
     ...api,
     ensureCoachingSubjectRows: () => {
       const current = stateRef.current;
       if ((current.coachingSubjectRows || []).length) return;
-      setState({ coachingSubjectRows: buildDefaultCoachingSubjects(derivedContext) });
+      setState({ coachingSubjectRows: baseContext.buildDefaultCoachingSubjects?.() || [] });
     },
     addMajorToTargets: (major) => withOperationLock(refs.operationLocksRef, 'profile-targets', async () => {
       if (!major || !baseContext.isCurrentProfile()) return false;

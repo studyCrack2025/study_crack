@@ -140,7 +140,7 @@ try {
   assert.match(rewardedMarkup, /data-step="reward" data-state="complete"/);
   assert.match(rewardedMarkup, /data-step="aquarium" data-state="active"/);
   assert.match(rewardedMarkup, /data-step="fishdex" data-state="pending"/);
-  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="수조 재화"[\s\S]*조개 <b>2<\/b>[\s\S]*먹이 <b>2<\/b>/);
+  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="수조 재화"[\s\S]*뽑기권 <b>확인 필요<\/b>/);
   assert.match(rewardedMarkup, /class="sc-empty is-offline aquarium-offline-state"/);
   assert.match(rewardedMarkup, /data-action="retryGameResources"[^>]*>연결 후 다시 불러오기<\/button>/);
 
@@ -233,7 +233,7 @@ assert.match(aquariumCss, /\.aquarium-offline-state\{[^}]*display:none/);
 assert.match(aquariumCss, /html\[data-network-status="offline"\] \.aquarium-offline-state\{[^}]*display:grid/);
 assert.match(aquariumCss, /\.aquarium-mode-header > button\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-catalog-filter button\{[^}]*min-height:var\(--sc-touch-target\)/);
-assert.match(aquariumCss, /\.aquarium-catalog-categories button\{[^}]*min-height:var\(--sc-touch-target\)/);
+assert.match(aquariumCss, /\.aquarium-dex-filters select\{[^}]*min-height:44px/);
 assert.match(aquariumCss, /\.aquarium-slot-control button\{[^}]*min-height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-care-result button\{[^}]*min-width:var\(--sc-touch-target\);[^}]*min-height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-manage-result button\{[^}]*min-width:var\(--sc-touch-target\);[^}]*min-height:var\(--sc-touch-target\)/);

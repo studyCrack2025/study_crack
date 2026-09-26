@@ -13,6 +13,7 @@ export function MyPageScreen(ctx) {
   return (
     <AppScreenShell
       screen="my"
+      title="마이페이지"
       tab={tab}
       dimmed={dimmed || overlayOpen}
       overlays={overlayOpen ? <MyPageOverlays {...ctx} /> : null}

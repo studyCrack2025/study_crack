@@ -95,7 +95,7 @@ test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록�
   await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
   await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(page.getByRole('progressbar', { name: '과제 완료율' })).toHaveAttribute('aria-valuenow', '50');
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
 });
 
 test('작은 화면에서 여러 줄 계획 추가와 IME 입력·단계 복귀를 보존한다', async ({ page }, testInfo) => {

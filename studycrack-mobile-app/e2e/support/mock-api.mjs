@@ -238,7 +238,8 @@ function responseFor(payload, state) {
       return {
         profile: state.gameProfile,
         activeFish: state.activeFish,
-        fishCount: state.fishInventory.length
+        fishCount: state.fishInventory.length,
+        rules: { ticketPolicy: { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 }, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 }
       };
     case 'get_fish_catalog':
       return {
@@ -289,9 +290,9 @@ function responseFor(payload, state) {
       if (state.pendingDraw) return { ...state.pendingDraw, alreadyDrawn: true, profile: state.gameProfile, fish: state.pendingDraw.fish };
       const requestId = payload.data?.requestId || 'draw-e2e';
       const fish = { fishId: 'fish_draw_e2e', speciesId: 'butterflyfish', speciesName: '나비고기', rarity: 'rare', name: '나비', customName: '', level: 1, exp: 0, currentLevelExp: 0, nextLevelExp: 30, progressPct: 0, growthStage: 'young', source: 'draw' };
-      const result = { requestId, speciesId: fish.speciesId, rarity: fish.rarity, duplicate: false, protectedDraw: true, expGranted: 0, shellsRefunded: 0, cost: 30, levelBefore: 0, levelAfter: 1, createdAt: new Date().toISOString() };
+      const result = { requestId, speciesId: fish.speciesId, rarity: fish.rarity, duplicate: false, protectedDraw: true, expGranted: 0, shellsRefunded: 0, ticketsRefunded: 0, costUnit: 'ticket', cost: 1, levelBefore: 0, levelAfter: 1, createdAt: new Date().toISOString() };
       state.fishInventory = [...state.fishInventory, fish];
-      state.gameProfile = { ...state.gameProfile, shellBalance: state.gameProfile.shellBalance - 30, activeDrawRequestId: requestId, drawPity: { rareIn: 9, epicIn: 29 } };
+      state.gameProfile = { ...state.gameProfile, ticketBalance: state.gameProfile.ticketBalance - 1, activeDrawRequestId: requestId, drawPity: { rareIn: 9, epicIn: 29 } };
       state.pendingDraw = { result, fish };
       return { result, profile: state.gameProfile, fish, alreadyDrawn: false };
     }
@@ -302,15 +303,17 @@ function responseFor(payload, state) {
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
     case 'claim_study_reward': {
-      const shells = Number(state.studyReward.shells) || 0;
-      const food = Number(state.studyReward.food) || 0;
+      const seconds = state.studySeconds;
+      const progress = state.gameProfile.ticketProgressSeconds + seconds;
+      const tickets = state.studyRewardClaimed ? state.studyRewardReceipt.tickets : Math.floor(progress / 18000);
+      state.studyRewardReceipt ||= { tickets, creditedSeconds: seconds };
       if (!state.studyRewardClaimed) {
         state.gameProfile = {
           ...state.gameProfile,
-          shellBalance: state.gameProfile.shellBalance + shells,
-          foodBalance: state.gameProfile.foodBalance + food,
-          starterFishUnlocked: state.gameProfile.starterFishUnlocked || shells > 0,
-          starterState: state.gameProfile.starterState === 'locked' && shells > 0 ? 'selectable' : state.gameProfile.starterState
+          ticketBalance: state.gameProfile.ticketBalance + tickets,
+          ticketProgressSeconds: progress % 18000,
+          starterFishUnlocked: state.gameProfile.starterFishUnlocked || seconds >= 600,
+          starterState: state.gameProfile.starterState === 'locked' && seconds >= 600 ? 'selectable' : state.gameProfile.starterState
         };
       }
       const alreadyClaimed = state.studyRewardClaimed;
@@ -319,7 +322,7 @@ function responseFor(payload, state) {
         alreadyClaimed,
         sessionId: payload.data?.sessionId,
         durationSeconds: state.studySeconds,
-        reward: { shells, food },
+        reward: { shells: 0, food: 0, tickets, creditedSeconds: seconds, ticketPolicyVersion: 'study-ticket-v1' },
         profile: state.gameProfile
       };
     }
@@ -358,7 +361,7 @@ export async function installApiMock(page, {
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {}, ...initialGameProfile },
+    gameProfile: { ticketPolicyVersion: 'study-ticket-v1', ticketBalance: 2, ticketProgressSeconds: 0, ticketIntervalSeconds: 18000, shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {}, ...initialGameProfile },
     pendingDraw: null,
     studyDurationSeconds,
     studyReward,

@@ -56,12 +56,13 @@
 .timer-week-summary{display:grid;gap:var(--sc-space-12);padding:var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);}
 .timer-week-summary-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);}
 .timer-week-summary-head span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}
+.timer-week-summary-head button{min-height:44px;margin:-10px 0;padding:0;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-size:12px;font-weight:800;}
 .timer-week-summary-head b{color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;}
-.timer-week-chart{height:116px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;align-items:end;}
+.timer-week-chart{height:var(--week-chart-height,116px);display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;align-items:end;}
 .timer-week-day{height:100%;min-width:0;display:grid;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;gap:3px;padding:0 2px 4px;border:1px solid transparent;border-radius:9px;background:transparent;color:inherit;font:inherit;}
 .timer-week-day.is-selected{border-color:color-mix(in srgb,var(--sc-info-blue) 30%,var(--sc-line-subtle));background:var(--sc-surface-card);}
 .timer-week-track{width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;padding:4px 0;border-radius:7px;background:color-mix(in srgb,var(--sc-line-subtle) 72%,transparent);overflow:hidden;}
-.timer-week-stack{width:58%;min-height:2px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 3px 3px;overflow:hidden;transition:height var(--sc-motion-screen) var(--ease-enter);}
+.timer-week-stack{width:58%;min-height:0;display:flex;flex-direction:column-reverse;border-radius:6px 6px 3px 3px;overflow:hidden;transition:height var(--sc-motion-screen) var(--ease-enter);}
 .timer-week-stack i{display:block;width:100%;min-height:2px;transition:flex-grow var(--sc-motion-screen) var(--ease-enter);}
 .timer-week-stack i[data-subject-tone="korean"]{background:var(--sc-subject-korean);}
 .timer-week-stack i[data-subject-tone="math"]{background:var(--sc-subject-math);}
@@ -201,6 +202,10 @@
 .timer-v2-plan-empty p{min-width:0;margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.45;}
 .timer-v2-plan-empty button{flex:none;min-width:44px;min-height:44px;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;text-decoration:underline;text-underline-offset:3px;}
 .home-study-highlight{min-width:0;}
+.home-week-flow{min-width:0;}
+.timer-week-summary[data-compact]{--week-chart-height:64px;gap:8px;background:var(--sc-surface-card);border-radius:var(--sc-radius-card);padding:14px;}
+.timer-week-caption{display:flex;justify-content:space-between;gap:8px;color:var(--sc-ink-muted);font-size:11px;font-variant-numeric:tabular-nums;}
+.timer-week-caption small{font-size:10px;}
 .timer-session-panel{display:grid;gap:12px;scroll-margin-top:12px;}
 .timer-session-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;}
 .timer-session-head h2{margin:0;color:var(--sc-ink-strong);font-size:18px;font-weight:900;}

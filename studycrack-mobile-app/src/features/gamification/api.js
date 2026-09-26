@@ -88,7 +88,7 @@ export function fetchPendingDraw({ apiFetch, gameApiUrl, signal } = {}) {
 
 export function drawFish({ apiFetch, gameApiUrl, requestId, signal } = {}) {
   return gameRequest({
-    apiFetch, gameApiUrl, signal, data: { requestId }, type: GAME_REQUEST_TYPES.DRAW_FISH,
+    apiFetch, gameApiUrl, signal, data: { requestId, ticketPolicyVersion: 'study-ticket-v1' }, type: GAME_REQUEST_TYPES.DRAW_FISH,
     fallbackError: '물고기를 뽑지 못했습니다.', validator: validateDrawResponse
   });
 }

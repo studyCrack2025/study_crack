@@ -43,15 +43,15 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
 
 // 내비게이션 백본 (순수). React 셸이 getState/setState를 주입한다.
 // onScreenChange: 화면 전환 시 부수효과(스크롤 저장 등) 훅. 브라우저 의존은 셸이 주입.
-export function createNavigationOps({ getState, setState, onScreenChange } = {}) {
+export function createNavigationOps({ getState, setState, onScreenChange, myNavigation } = {}) {
   function goto(next, addHistory = true) {
     const target = next === 'home' ? 'analysis' : next;
     const state = getState();
     if (!target || target === state.screen) return false;
     onScreenChange?.(state.screen, target);
-    const patch = { screen: target };
+    const patch = { screen: target, ...myNavigation?.goto(state, target, MAIN_TAB_SCREENS.includes(target)) };
     if (state.studyPanelMode) patch.studyPanelMode = '';
-    if (addHistory && state.screen !== target) patch.history = [...state.history, state.screen];
+    if (addHistory && state.screen !== target && !patch.history) patch.history = [...state.history, state.screen];
     if (MAIN_TAB_SCREENS.includes(target)) patch.tab = target;
     setState(patch);
     return true;
@@ -64,9 +64,9 @@ export function createNavigationOps({ getState, setState, onScreenChange } = {})
     const clone = [...state.history];
     const prev = clone.pop();
     const target = prev === 'home' ? 'analysis' : prev;
-    setState({ history: clone, screen: target, ...(state.studyPanelMode ? { studyPanelMode: '' } : {}), ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
+    setState({ history: clone, screen: target, ...myNavigation?.back(state, target, clone.length), ...(state.studyPanelMode ? { studyPanelMode: '' } : {}), ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
     return true;
   }
 
-  return { goto, back };
+  return { goto, back, rememberMy: myNavigation?.remember };
 }

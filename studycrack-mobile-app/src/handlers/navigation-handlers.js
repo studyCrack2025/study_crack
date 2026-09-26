@@ -6,7 +6,6 @@ export function createNavigationHandlers(ctx) {
   const {
     back,
     beforeGoto,
-    closeDrawer,
     completeOnboarding,
     goto,
     initializeApp,
@@ -49,7 +48,8 @@ export function createNavigationHandlers(ctx) {
     },
 
     drawerGoto(payload) {
-      closeDrawer?.();
+      const body = payload.actionEl?.closest?.('.my-summary-body');
+      ctx.rememberMy?.({ scroll: body?.scrollTop || 0, target: getData(payload.actionEl, 'target') });
       return runGoto(payload, getData(payload.actionEl, 'target'));
     },
 

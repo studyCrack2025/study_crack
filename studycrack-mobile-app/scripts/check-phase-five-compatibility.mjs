@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createNavigationOps, MAIN_TAB_SCREENS } from '../src/runtime/app-state.js';
+import { createMyNavigation } from '../src/app/my-navigation.js';
 import { hydrateNavigationStorage, persistNavigationStorage } from '../src/runtime/navigation-storage.js';
 import { hydratePlannerStorage } from '../src/features/planner/storage.js';
 import { replaceMobileScreenParam } from '../src/shared/browser/mobile-runtime.js';
@@ -30,7 +31,7 @@ assert.deepEqual(hydrateNavigationStorage({ getItem() { throw new Error('denied'
 assert.doesNotThrow(() => persistNavigationStorage({ tab: 'timer' }, { setItem() { throw new Error('denied'); } }));
 
 let state = { screen: 'timer', tab: 'timer', history: [] };
-const nav = createNavigationOps({ getState: () => state, setState: (patch) => { state = { ...state, ...patch }; } });
+const nav = createNavigationOps({ myNavigation: createMyNavigation(), getState: () => state, setState: (patch) => { state = { ...state, ...patch }; } });
 assert.equal(nav.goto('home'), true);
 assert.deepEqual(state, { screen: 'analysis', tab: 'analysis', history: ['timer'] });
 assert.equal(nav.goto('home'), false, 'the alias must not add duplicate history');
@@ -47,6 +48,28 @@ assert.deepEqual(oldHistory, ['home'], 'back must not mutate a saved history arr
 nav.back();
 assert.equal(state.screen, 'timer');
 assert.equal(state.tab, 'timer');
+
+state = { screen: 'timer', tab: 'timer', history: [], drawerOpen: true, userLoadStatus: 'ready', user: { email: 'owner@example.test' } };
+nav.rememberMy({ scroll: 140, target: 'ranking' });
+nav.goto('ranking');
+assert.equal(state.drawerOpen, false);
+nav.goto('accountInfo');
+nav.back();
+assert.equal(state.screen, 'ranking');
+assert.equal(state.drawerOpen, false);
+nav.back();
+assert.equal(state.drawerOpen, true);
+assert.equal(state.myReturn.scroll, 140);
+nav.goto('ranking');
+state.user = { email: 'other@example.test' };
+nav.back();
+assert.equal(state.drawerOpen, false, 'MY must not restore across account ownership');
+assert.equal(state.myReturn, null);
+state.drawerOpen = true;
+nav.goto('ranking');
+nav.goto('planner');
+assert.equal(state.myReturn, null, 'direct main-tab navigation drops MY context');
+assert.deepEqual(state.history, []);
 
 const previousWindow = globalThis.window;
 try {

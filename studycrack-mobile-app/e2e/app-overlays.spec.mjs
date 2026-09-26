@@ -28,7 +28,6 @@ test('공통 MY 팝업의 닫기와 전체 MY 왕복은 초점과 스크롤을 �
   await page.keyboard.press('Escape');
   await expect(trigger).toBeFocused();
   await expect(content).not.toHaveAttribute('inert', '');
-  await trigger.click();
   await page.locator('[data-action="openStudyRecords"]').click();
   await page.locator('[data-action="openGameRules"]').click();
   await expect(dialog).toHaveCount(0);

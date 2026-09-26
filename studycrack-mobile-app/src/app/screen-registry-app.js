@@ -1,6 +1,7 @@
 import '../styles/components/navigation.css';
 export { AppOverlayHost } from './AppOverlayHost.jsx';
 export { AppOverlayProvider } from './AppOverlayProvider.jsx';
+export { createMyNavigation } from './my-navigation.js';
 import '../styles/screens/product-guide.css';
 export { buildAppPresentations } from './presentation-context.js';
 export { createPlannerStorageController } from '../features/planner/storage-controller.js';

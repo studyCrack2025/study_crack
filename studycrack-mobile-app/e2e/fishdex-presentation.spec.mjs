@@ -9,7 +9,7 @@ for (const width of [320, 390, 430]) {
     await installApiMock(page);
     await page.goto('/studycrack-mobile.html?screen=aquarium');
     await page.locator('[data-action="openAquariumCatalog"]').click();
-    const selectors = ['.aquarium-catalog-hero', '.aquarium-draw-entry', '.aquarium-catalog-filter', '.aquarium-catalog-categories'];
+    const selectors = ['.aquarium-catalog-hero', '.aquarium-draw-entry', '.aquarium-catalog-filter', '.aquarium-dex-filters'];
     const heights = async () => Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.getBoundingClientRect().height)));
     await expect(page.locator('.aquarium-catalog-group').first()).toBeVisible();
     const before = await heights();
@@ -40,7 +40,7 @@ for (const count of [1, 12, 13, 85]) {
     await page.goto('/studycrack-mobile.html?screen=aquarium');
     await page.locator('[data-action="openAquariumCatalog"]').click();
     const ids = [];
-    const pager = page.getByRole('navigation', { name: '도감 페이지 상단' });
+    const pager = page.getByRole('navigation', { name: '도감 페이지 하단' });
     const totalPages = Math.ceil(count / 12);
     for (let index = 1; index <= totalPages; index += 1) {
       await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(Math.min(12, count - (index - 1) * 12));
@@ -52,7 +52,7 @@ for (const count of [1, 12, 13, 85]) {
     }
     expect(new Set(ids).size).toBe(count);
     expect(ids.length).toBe(count);
-    await page.getByRole('group', { name: '희귀도', exact: true }).getByRole('button', { name: '희귀', exact: true }).click();
+    await page.getByRole('combobox', { name: '등급', exact: true }).selectOption('rare');
     await expect(page.locator('.aquarium-catalog-selection')).toContainText(`${Math.floor(count / 2)}종`);
     await page.getByRole('button', { name: '획득', exact: true }).click();
     await expect(page.locator('.aquarium-catalog-empty')).toBeVisible();
@@ -75,7 +75,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(trigger).toBeInViewport();
     await trigger.click();
     await expect(page.locator('.tabbar')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeFocused();
+    await expect(page.getByRole('heading', { name: 'Fish Collection' })).toBeFocused();
     const hero = await page.locator('.aquarium-catalog-hero').boundingBox();
     expect(hero.x).toBe(0);
     expect(hero.width).toBe(width);
@@ -85,7 +85,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     expect(box.height).toBeGreaterThanOrEqual(136);
     await expect(card.locator('.aquarium-catalog-sprite')).toHaveCSS('width', '60px');
     await expect(card.locator('.aquarium-catalog-card-meta')).toContainText('일반');
-    await expect(page.locator('.aquarium-dex-note')).toContainText('공부로 모은 조개');
+    await expect(page.locator('.aquarium-dex-note')).toContainText('공부로 받은 뽑기권');
     await page.screenshot({ path: testInfo.outputPath(`fishdex-${width}.png`), animations: 'disabled' });
     await card.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`fishdex-cards-${width}.png`), animations: 'disabled' });
@@ -104,18 +104,14 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
   });
 }
 
-test('생태 필터는 접힌 상태를 알리고 선택·키보드·스크롤을 보존한다', async ({ page }) => {
+test('생태 선택과 상태 필터의 키보드·스크롤을 보존한다', async ({ page }) => {
   const catalog = Array.from({ length: 18 }, (_, i) => ({ speciesId: `dex_${i}`, displayName: `긴 한글 물고기 이름 ${i}`, defaultName: '친구', colors: ['#3F6FD9', '#9DD9F2'], rarity: i < 16 ? 'common' : 'special', category: i % 2 ? 'marine_fish' : 'freshwater' }));
   await setup(page, { fishCatalog: catalog });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.locator('[data-action="openAquariumCatalog"]').click();
-  const disclosure = page.getByRole('button', { name: /생태 분류 ·/ });
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
-  await disclosure.press('Enter');
-  await page.getByRole('button', { name: '민물', exact: true }).click();
-  await disclosure.click();
-  await expect(disclosure).toContainText('민물');
-  await expect(page.getByRole('group', { name: '생태 분류' })).toBeHidden();
+  const ecology = page.getByRole('combobox', { name: '생태', exact: true });
+  await ecology.selectOption('freshwater');
+  await expect(ecology).toHaveValue('freshwater');
   const all = page.getByRole('button', { name: '전체', exact: true });
   await all.press('ArrowRight');
   await expect(page.getByRole('button', { name: '획득', exact: true })).toBeFocused();
@@ -128,8 +124,7 @@ test('생태 필터는 접힌 상태를 알리고 선택·키보드·스크롤�
   // Activate the visible mode control without scrolling the catalog back to its header.
   await page.locator('[data-action="closeAquariumMode"]').evaluate(el => el.click());
   await page.locator('[data-action="openAquariumCatalog"]').click();
-  await expect(disclosure).toContainText('민물');
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+  await expect(ecology).toHaveValue('freshwater');
   await expect.poll(() => content.evaluate(el => el.scrollTop)).toBe(550);
   await expectNoHorizontalOverflow(page);
 });

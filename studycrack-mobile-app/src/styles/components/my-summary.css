@@ -1,4 +1,7 @@
 .my-summary-overlay{align-items:stretch;justify-content:flex-end;}
+.sc-overlay.sc-overlay--drawer{align-items:stretch;justify-content:flex-end;padding:0;}
+.sc-modal.sc-side-panel,.sc-sheet.sc-side-panel{--sc-surface-enter:myDrawerIn;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);overflow:auto;align-content:start;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom));}
+.app-screen[data-my-flow]{--sc-page-enter:myDrawerIn;}
 .my-summary-sheet{--sc-surface-enter:myDrawerIn;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);background:var(--sc-surface-canvas);}
 @keyframes myDrawerIn{from{opacity:.001;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
 .my-summary-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(16px,env(safe-area-inset-top)) 20px 16px;}

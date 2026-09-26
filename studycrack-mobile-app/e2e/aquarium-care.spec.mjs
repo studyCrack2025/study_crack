@@ -21,7 +21,7 @@ for (const width of [320, 360, 390, 430]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page);
     await page.goto('/studycrack-mobile.html?screen=aquarium');
-    await expect(page.getByRole('button', { name: '먹이 주기', exact: true })).toBeVisible();
+    await expect(page.locator('.aquarium-exp')).toBeVisible();
     await expect(page.locator('.aquarium-management')).not.toHaveAttribute('open');
     await expect(page.locator('.aquarium-next-actions button').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await expect(page.locator('.aquarium-next-actions small').first()).toHaveCSS('color', 'rgb(99, 112, 131)');
@@ -50,86 +50,66 @@ for (const width of [320, 360, 390, 430]) {
   });
 }
 
-test('급식 응답 전에는 효과·선택 전환이 없고 확정 후 한 번만 반응한다', async ({ page }, info) => {
+test('수동 급식은 사라지고 기존 성장 정보는 보존된다', async ({ page }) => {
   const api = await setup(page);
-  let release;
-  const gate = new Promise(resolve => { release = resolve; });
-  await page.route('**/api/**', async route => {
-    if (route.request().postDataJSON()?.type === 'feed_fish') await gate;
-    await route.fallback();
-  });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
-  await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
-  await expect(page.getByRole('button', { name: '먹이를 주는 중...' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '코랄 선택' })).toBeDisabled();
-  await expect(effect(page)).toHaveCount(0);
-  release();
-  await expect(effect(page)).toHaveAttribute('data-care-effect', 'feed');
-  await expect(page.locator('.aquarium-care-result')).toContainText('EXP +10');
-  await page.locator('.aquarium-scene').evaluate(el => el.scrollIntoView({ block: 'center' }));
-  await page.locator('.aquarium-scene').screenshot({ path: info.outputPath('care-feed.png') });
-  await expect(effect(page)).toHaveCount(0);
-  await page.locator('.aquarium-offline-state [data-action="retryGameResources"]').evaluate(el => el.click());
-  await expect(page.locator('.aquarium-scene')).toBeVisible();
-  await expect(effect(page)).toHaveCount(0);
-  await page.reload();
-  await expect(page.locator('.aquarium-scene')).toBeVisible();
-  await expect(effect(page)).toHaveCount(0);
-  expect(requestCount(api, 'feed_fish')).toBe(1);
+  await expect(page.locator('.aquarium-exp')).toContainText('0 / 30');
+  await expect(page.locator('[data-action="feedAquariumFish"]')).toHaveCount(0);
+  expect(requestCount(api, 'feed_fish')).toBe(0);
 });
 
-for (const type of ['feed_fish', 'set_active_fish']) {
+for (const type of ['set_active_fish']) {
   test(`${type} 응답 유실은 상태 조회만 하며 자동 재전송·성공 효과가 없다`, async ({ page }) => {
     const api = await setup(page, { loseResponseOnceTypes: [type] });
     await page.goto('/studycrack-mobile.html?screen=aquarium');
-    if (type === 'feed_fish') await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
-    else {
-      await openManagement(page);
-      await page.getByRole('button', { name: '마루 관리' }).click();
-      await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
-    }
+    await openManagement(page);
+    await page.getByRole('button', { name: '마루 관리' }).click();
+    await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
     await expect(page.getByText('처리 결과 확인이 필요해요')).toBeVisible();
     await expect(effect(page)).toHaveCount(0);
-    await expect(page.locator('[data-action="feedAquariumFish"]')).toBeDisabled();
+    await expect(page.locator('[data-action="feedAquariumFish"]')).toHaveCount(0);
     await page.getByRole('button', { name: '현재 상태 확인' }).click();
-    await expect(page.getByText('현재 먹이와 물고기 상태를 불러왔어요')).toBeVisible();
+    await expect(page.getByText('현재 물고기 상태를 불러왔어요')).toBeVisible();
     await expect(effect(page)).toHaveCount(0);
-    if (type === 'feed_fish') await expect(page.locator('.aquarium-feed-row b')).toHaveText('2개');
-    else await expect(page.locator('.aquarium-fish.slot-center')).toHaveAttribute('aria-label', '마루 선택');
+    await expect(page.locator('.aquarium-fish.slot-center')).toHaveAttribute('aria-label', '마루 선택');
     expect(requestCount(api, type)).toBe(1);
     expect(requestCount(api, 'get_game_profile')).toBeGreaterThan(1);
     expect(requestCount(api, 'get_fish_catalog')).toBeGreaterThan(1);
   });
 }
 
-test('재조회 실패·잘못된 성공 응답은 잠금을 풀거나 급식을 반복하지 않는다', async ({ page }) => {
+test('재조회 실패·잘못된 성공 응답은 잠금을 풀거나 배치 요청을 반복하지 않는다', async ({ page }) => {
   const api = await setup(page);
   let failedRead = true;
   let feedRequests = 0;
   await page.route('**/api/**', async route => {
     const type = route.request().postDataJSON()?.type;
-    if (type === 'feed_fish') { feedRequests++; return route.fulfill({ json: { success: true } }); }
+    if (type === 'set_active_fish') { feedRequests++; return route.fulfill({ json: { success: true } }); }
     if (feedRequests && failedRead && type === 'get_fish_catalog') return route.fulfill({ status: 503, json: {} });
     await route.fallback();
   });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
-  await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
+  await openManagement(page);
+  await page.getByRole('button', { name: '마루 관리' }).click();
+  await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
   await page.getByRole('button', { name: '현재 상태 확인' }).click();
   await expect(page.getByText(/최신 상태를 확인하지 못했어요/)).toBeVisible();
-  await expect(page.locator('[data-action="feedAquariumFish"]')).toBeDisabled();
+  await expect(page.locator('[data-action="feedAquariumFish"]')).toHaveCount(0);
   failedRead = false;
   await page.getByRole('button', { name: '현재 상태 확인' }).click();
-  await expect(page.getByText('현재 먹이와 물고기 상태를 불러왔어요')).toBeVisible();
+  await expect(page.getByText('현재 물고기 상태를 불러왔어요')).toBeVisible();
   expect(feedRequests).toBe(1);
-  expect(requestCount(api, 'feed_fish')).toBe(0);
+  expect(requestCount(api, 'set_active_fish')).toBe(0);
 });
 
 test('미확인 상태로 탭 왕복 후 본체 조회가 실패해도 상태 확인으로 복구한다', async ({ page }) => {
-  const api = await setup(page, { loseResponseOnceTypes: ['feed_fish'] });
+  const api = await setup(page, { loseResponseOnceTypes: ['set_active_fish'] });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
-  await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
+  await openManagement(page);
+  await page.getByRole('button', { name: '마루 관리' }).click();
+  await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
   await expect(page.getByText('처리 결과 확인이 필요해요')).toBeVisible();
-  await page.getByRole('button', { name: /공부해서 먹이 모으기/ }).click();
+  await page.getByRole('button', { name: /공부해서 뽑기권 받기/ }).click();
   await expect(page.locator('.timer-v2-status-rail')).toBeVisible();
   let failProfile = true;
   await page.route('**/api/**', async route => {
@@ -140,9 +120,9 @@ test('미확인 상태로 탭 왕복 후 본체 조회가 실패해도 상태 �
   await expect(page.getByText('수조를 불러오지 못했어요', { exact: true })).toBeVisible();
   failProfile = false;
   await page.getByRole('button', { name: '다시 불러오기', exact: true }).click();
-  await expect(page.getByText('현재 먹이와 물고기 상태를 불러왔어요')).toBeVisible();
-  await expect(page.locator('.aquarium-feed-row b')).toHaveText('2개');
-  expect(requestCount(api, 'feed_fish')).toBe(1);
+  await expect(page.getByText('현재 물고기 상태를 불러왔어요')).toBeVisible();
+  await expect(page.locator('.aquarium-fish.slot-center')).toHaveAttribute('aria-label', '마루 선택');
+  expect(requestCount(api, 'set_active_fish')).toBe(1);
 });
 
 test('보관 물고기의 실제 합류만 반응하고 이동·해제는 합류로 꾸미지 않는다', async ({ page }, info) => {
@@ -169,9 +149,11 @@ test('감속 모드는 효과 이동 없이 결과를 제공하고 hidden 뒤 �
   await setup(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
-  await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
+  await openManagement(page);
+  await page.getByRole('button', { name: '마루 관리' }).click();
+  await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
   await expect(effect(page).locator('.aquarium-fish-body')).toHaveCSS('animation-name', 'none');
-  await expect(page.locator('.aquarium-care-result')).toContainText('EXP +10');
+  await expect(page.locator('.aquarium-manage-result')).toContainText('수조에 합류');
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
   await expect(effect(page)).toHaveCount(0);
   await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });

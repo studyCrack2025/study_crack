@@ -85,7 +85,7 @@ for (const width of [320, 360, 390, 430]) {
     await page.screenshot({ path: info.outputPath(`analysis-top-${width}.png`), animations: 'disabled' });
     const children = await page.locator('.analysis-unified').evaluate(el => [...el.children].map(child => child.className));
     expect(children[0]).toBe('analysis-input-entry');
-    expect(children.indexOf('card analysis-score-card ')).toBeLessThan(children.indexOf('card analysis-boost-card'));
+    expect(children.indexOf('card analysis-score-card ')).toBeLessThan(children.indexOf('analysis-improvement'));
     await expect(page.locator('.analysis-input-entry [data-field="scoreExamType"]')).toHaveCount(1);
     await expect(page.locator('.analysis-input-entry .analysis-score-summary')).toHaveCount(1);
     await expect(page.locator('.analysis-score-card [data-field="analysisTargetMajor"]')).toHaveCount(1);

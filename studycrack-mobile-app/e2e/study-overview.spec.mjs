@@ -49,17 +49,22 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
         await expect(card.getByRole('progressbar')).toHaveCount(0);
         await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
       }
-      {
+      if (screen === 'planner') {
         const detail = card.locator('details.sc-study-details');
         await expect(detail).not.toHaveAttribute('open', '');
         await expect(card.locator('dd').first()).not.toBeVisible();
         await detail.locator('summary').click();
         await expect(card.locator('dd').first()).toBeVisible();
       }
+      if (screen === 'planner') {
       await expect(card.locator('dd').nth(0)).toHaveText('00:30:00');
       await expect(card.locator('dd').nth(1)).toHaveText('25%');
       await expect(card.locator('[data-study-base-seconds]')).toHaveCount(0);
       await expect(card.locator('.sc-study-source')).toHaveText('계획 2026-09-07 · 기기 기준공부 2026-09-07 · 한국 시간 기준');
+      } else {
+        await expect(card.locator('.sc-study-details')).toHaveCount(0);
+        await expect(page.locator('.home-week-flow .timer-week-day')).toHaveCount(7);
+      }
       await page.evaluate(() => document.fonts.ready);
       const file = `${screen}-${width}.png`;
       await card.screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, file) : testInfo.outputPath(file), animations: 'disabled' });
@@ -79,20 +84,21 @@ test('기록 날짜 불일치·조회 실패·재시도를 구분한다', async 
   api.state.studySummaryOverride = summary('2026-09-08');
   await page.goto('/studycrack-mobile.html?screen=timer');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
-  await expect(card).toContainText('2026-09-08 확정 공부');
+  await expect(card.locator('.sc-study-headline')).toContainText('00:30:00');
   await expect(card).toContainText('기록 날짜가 달라');
   await expect(card.locator('details')).toHaveCount(0);
-  await expect(card.locator('dd').nth(1)).toHaveText('산정 전');
+  await expect(card.locator('.sc-study-metrics')).toHaveCount(0);
   failures.push('get_study_summary');
   await page.locator('.tabbar [data-tab="analysis"]').click();
   await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
   await expect(card).toContainText('마지막 확인 기록');
-  await expect(card.locator('dd').nth(0)).toHaveText('00:30:00');
+  await expect(card.locator('.sc-study-headline b')).toHaveText('기록 확인 필요');
+  await expect(page.locator('.home-week-flow')).toContainText('마지막 확인 기록');
   failures.length = 0;
   api.state.studySummaryOverride = summary();
   await card.getByRole('button', { name: '다시 확인' }).click();
-  await expect(card.locator('dd').nth(1)).toHaveText('25%');
+  await expect(card.locator('.sc-study-headline')).toContainText('00:30:00');
   await expect(card).not.toContainText('마지막 확인 기록');
   await expect(card).not.toContainText('기록 날짜가 달라');
 });
@@ -103,10 +109,9 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   api.state.studySeconds = 1800;
   await page.goto('/studycrack-mobile.html?screen=timer');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
-  await expect(card.locator('dd').first()).toHaveText('00:30:00');
+  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
   const week = page.locator('.timer-v2-week');
   const openRecords = async () => {
-    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     await page.locator('[data-action="openStudyRecords"]').click();
   };
   await openRecords();
@@ -121,7 +126,7 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');
   await expect(card.locator('[data-study-base-seconds]')).not.toHaveText('00:00:00');
-  await expect(card.locator('dd').first()).toHaveText('00:30:00');
+  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
   await openRecords();
   await expect(week).toHaveText(before, { useInnerText: true });
 });
@@ -131,7 +136,7 @@ test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page
   await page.goto('/studycrack-mobile.html?screen=timer');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
-  await expect(card.locator('dd').first()).toHaveText('확인 필요');
+  await expect(card.locator('.sc-study-headline b')).toHaveText('기록 확인 필요');
   await expect(card).not.toContainText('00:00:00');
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
 });

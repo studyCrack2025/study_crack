@@ -22,7 +22,7 @@ export function AppScreenShell({
   const shouldLockScroll = hasOpenOverlay || (lockScroll ?? dimmed);
   return (
     <AppFrame>
-      <AppContent inactive={hasOpenOverlay} lockScroll={shouldLockScroll} screen={screen}>
+      <AppContent myFlow={bridge?.myFlow} inactive={hasOpenOverlay} lockScroll={shouldLockScroll} screen={screen}>
         <SecondaryScreenHeader title={title} />
         {!hasOpenOverlay ? <PlannerStorageNotice /> : null}
         {children}

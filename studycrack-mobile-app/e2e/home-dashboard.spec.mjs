@@ -16,7 +16,7 @@ async function setup(page, { count = 4, tier = 'basic', ...options } = {}) {
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`홈은 플래너에서 끝나고 공부 기록은 프로필에서 연다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`홈은 플래너에서 끝나고 주간 흐름에서 상세 기록을 연다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page, { count: 5 });
@@ -29,7 +29,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(4);
     await expect(page.locator('.home-plan-more')).toContainText('+1개');
     await expect(page.getByRole('progressbar', { name: '과제 완료율' })).toHaveAttribute('aria-valuenow', '20');
-    await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+    await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
     await expect(page.locator('.timer-v2-plan-list > button').first()).toHaveAttribute('data-done', 'true');
     await expect(page.locator('.timer-v2-plan-list > button').first().locator('b')).toHaveCSS('text-decoration-line', 'line-through');
     const title = page.locator('.timer-v2-plan-list > button').nth(1).locator('b');
@@ -45,7 +45,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
       await expect(button).toHaveCSS('grid-template-rows', /24px /);
     }
-    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan'];
+    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.home-week-flow', '.timer-v2-plan'];
     const tops = await Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.offsetTop)));
     expect(tops).toEqual([...tops].sort((a, b) => a - b));
     await expectNoHorizontalOverflow(page);
@@ -55,8 +55,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await page.screenshot({ path: testInfo.outputPath(`home-${width}-preview.png`), animations: 'disabled' });
     await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/timer-v2-plan/);
     await expect(page.locator('main .timer-v2-week, main .timer-v2-quick')).toHaveCount(0);
-    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
-    await page.getByRole('button', { name: '공부 기록 주간·과목별 기록과 수조 성장 규칙' }).click();
+    await expect(page.locator('.sc-study-details')).toHaveCount(0);
+    await expect(page.locator('.home-week-flow .timer-week-day')).toHaveCount(7);
+    await page.getByRole('button', { name: '이번 주 공부 흐름 →' }).click();
     await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
     await expect(page.locator('.timer-v2-week')).toBeVisible();
     await page.getByRole('button', { name: '타이머 열기', exact: true }).click();
@@ -79,7 +80,7 @@ for (const [tier, count] of [['free', 4], ['trial', 4], ['basic', 0], ['standard
     if (count === 0) await expect(page.locator('.timer-v2-plan')).toContainText('아직 등록한 계획이 없어요');
     if (count === 4 && tier === 'pro') {
       await expect(page.getByRole('progressbar', { name: '과제 완료율' })).toHaveAttribute('aria-valuenow', '25');
-      await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+      await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
     }
   });
 }
@@ -90,7 +91,7 @@ test('수조와 공부 기록이 각각 실패해도 계획과 직접 공부를 
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('.timer-v2-status-rail [data-target="aquarium"]')).toContainText('물고기 확인 필요');
   await expect(page.locator('.home-aquarium-count')).toHaveCount(0);
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('확인 필요');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('기록 확인 필요');
   await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(4);
   await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeEnabled();
   failures.length = 0;
@@ -152,9 +153,11 @@ test('공부 시작 실패는 별도 타이머 창에서 재시도하고 홈 아
   expect(requests[0].payload.data.sessionId).toBe(requests[1].payload.data.sessionId);
 });
 
-test('전체 MY에서도 공부 기록과 랭킹으로 이동한다', async ({ page }) => {
+test('공부 기록은 주간 흐름에서 열고 MY에서는 제거된다', async ({ page }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=my');
+  await expect(page.locator('[data-action="openStudyRecords"]')).toHaveCount(0);
+  await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('[data-action="openStudyRecords"]').click();
   await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
   await page.locator('[data-action="openGameRules"]').click();

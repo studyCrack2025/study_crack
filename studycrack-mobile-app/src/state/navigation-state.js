@@ -11,7 +11,8 @@ export function createNavigationInitialState() {
       loading: true,
       loadingFadeOut: false,
       error: false,
-      drawerOpen: false
+      drawerOpen: false,
+      myReturn: null
     }
   };
 }

@@ -2,8 +2,10 @@ import { AppOverlayContext } from '../components/AppOverlayContext.js';
 import { useProductGuide } from '../features/product-guide/use-product-guide.js';
 import { useCallback, useEffect } from 'react';
 import { AquariumGrowthProvider } from '../features/gamification/AquariumGrowthProvider.jsx';
+import { useAppOverlayBridge } from './use-app-overlay-bridge.js';
 
-export function AppOverlayProvider({ value, guide, children }) {
+export function AppOverlayProvider({ value: input, guide, children }) {
+  const value = useAppOverlayBridge(input);
   const guideUi = useProductGuide(guide);
   const { state, setState } = guide;
   useEffect(() => { setState({ logoutModalOpen: false }); }, [state.screen, state.loggedIn, setState]);

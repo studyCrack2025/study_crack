@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef } from 'react';
+import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { FishArtwork } from './FishArtwork.jsx';
 import { StatusState } from '../../components/StatusState.js';
 import { nextFishDexFilter } from './presentation.js';
-import { AquariumModeHeader, RARITY_ORDER, RARITY_LABELS, RARITY_CLASSES, CATALOG_FILTERS, CATEGORY_ORDER, CATEGORY_LABELS } from './aquarium-panel-shared.jsx';
+import { RARITY_ORDER, RARITY_LABELS, RARITY_CLASSES, CATALOG_FILTERS, CATEGORY_ORDER, CATEGORY_LABELS } from './aquarium-panel-shared.jsx';
 
 function acquisitionLabel(fish) {
   if (typeof fish?.acquiredAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(fish.acquiredAt)) return '획득일 확인 필요';
@@ -13,7 +14,7 @@ function acquisitionLabel(fish) {
 }
 
 export function FishDexPanel({ selection, setSelection, catalog = [], error = '', inventory = [], profile, status = 'idle' }) {
-  const { filter, category, expanded, rarity: selectedRarity = 'all', page: requestedPage = 1 } = selection;
+  const { filter, category, rarity: selectedRarity = 'all', page: requestedPage = 1 } = selection;
   const resultRef = useRef(null);
   const moveFocus = useRef(false);
   const setFilter = (value) => setSelection(current => ({ ...current, filter: value, page: 1 }));
@@ -47,19 +48,19 @@ export function FishDexPanel({ selection, setSelection, catalog = [], error = ''
     resultRef.current?.scrollIntoView({ block: 'start' });
   }, [page]);
   const pagination = position => pages > 1 ? <nav className="aquarium-dex-pagination" aria-label={`도감 페이지 ${position}`}><button type="button" disabled={page === 1} onClick={() => changePage(page - 1)}>이전</button><span aria-live="polite">{page} / {pages} 페이지</span><button type="button" disabled={page === pages} onClick={() => changePage(page + 1)}>다음</button></nav> : null;
-  if (status === 'loading') return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /></div><StatusState className="aquarium-catalog-status" kind="loading" title="FishDex를 불러오고 있어요" description="획득한 친구와 잠긴 도감을 확인하고 있습니다." /></div>;
-  if (status === 'error') return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /></div><StatusState action={<button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button>} className="aquarium-catalog-status" kind="error" title="FishDex를 불러오지 못했어요" description={error || '물고기 목록을 다시 확인해주세요.'} /></div>;
-  if (status === 'ready' && !catalog.length) return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /></div><StatusState className="aquarium-catalog-status" kind="empty" title="FishDex가 아직 비어 있어요" description="첫 물고기 목록이 준비되면 이곳에서 만날 수 있어요." /></div>;
+  if (status === 'loading') return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><PrimaryScreenHeader title="Fish Collection" eyebrow="물고기 도감" action={<button type="button" className="aquarium-dex-back" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button>} /></div><StatusState className="aquarium-catalog-status" kind="loading" title="FishDex를 불러오고 있어요" description="획득한 친구와 잠긴 도감을 확인하고 있습니다." /></div>;
+  if (status === 'error') return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><PrimaryScreenHeader title="Fish Collection" eyebrow="물고기 도감" action={<button type="button" className="aquarium-dex-back" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button>} /></div><StatusState action={<button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button>} className="aquarium-catalog-status" kind="error" title="FishDex를 불러오지 못했어요" description={error || '물고기 목록을 다시 확인해주세요.'} /></div>;
+  if (status === 'ready' && !catalog.length) return <div className="aquarium-mode-shell aquarium-catalog-view"><div className="aquarium-catalog-hero"><PrimaryScreenHeader title="Fish Collection" eyebrow="물고기 도감" action={<button type="button" className="aquarium-dex-back" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button>} /></div><StatusState className="aquarium-catalog-status" kind="empty" title="FishDex가 아직 비어 있어요" description="첫 물고기 목록이 준비되면 이곳에서 만날 수 있어요." /></div>;
   return <div className="aquarium-mode-shell aquarium-catalog-view">
-    <div className="aquarium-catalog-hero"><AquariumModeHeader eyebrow="FISH DEX" title="물고기 도감" description="완료한 공부가 새로운 친구의 기록으로 남아요." /><section className="aquarium-collection-summary"><div><span>발견한 친구</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section></div>
-    <button type="button" className="aquarium-draw-entry" data-action="openAquariumDraw" disabled={profile?.starterState !== 'claimed'}><span>조개 {Number(profile?.shellBalance) || 0}개</span><b>새 물고기 만나기</b><small>{profile?.starterState === 'claimed' ? '한 번에 조개 30개' : '첫 물고기를 먼저 선택해주세요'}</small><i aria-hidden="true">›</i></button>
+    <div className="aquarium-catalog-hero"><PrimaryScreenHeader title="Fish Collection" eyebrow="물고기 도감" action={<button type="button" className="aquarium-dex-back" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button>} /><section className="aquarium-collection-summary"><div><span>발견한 친구</span><b>{ownedCount}<small> / {total}</small></b></div><div><span>수집률</span><b>{collectionPct}%</b></div><i><span style={{ width: `${collectionPct}%` }} /></i></section></div>
+    <button type="button" className="aquarium-draw-entry" data-action="openAquariumDraw" disabled={profile?.starterState !== 'claimed'}><span>뽑기권 {profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</span><b>새 물고기 만나기</b><small>{profile?.starterState === 'claimed' ? '한 번에 뽑기권 1장' : '첫 물고기를 먼저 선택해주세요'}</small><i aria-hidden="true">›</i></button>
     <div className="aquarium-catalog-filter" role="group" aria-label="FishDex 획득 상태">{CATALOG_FILTERS.map((item) => <button type="button" className={filter === item.id ? 'is-active' : ''} data-fishdex-filter={item.id} aria-pressed={filter === item.id} onClick={() => setFilter(item.id)} onKeyDown={handleFilterKeyDown} key={item.id}>{item.label}</button>)}</div>
-    {availableCategories.length > 2 ? <div className="aquarium-category-disclosure"><button type="button" aria-expanded={expanded} aria-controls="fishdex-categories" onClick={() => setSelection(current => ({ ...current, expanded: !current.expanded }))}>생태 분류 · {CATEGORY_LABELS[category]}<span aria-hidden="true">{expanded ? '−' : '+'}</span></button><div id="fishdex-categories" hidden={!expanded}><div className="aquarium-catalog-categories" role="group" aria-label="생태 분류">{availableCategories.map((item) => <button type="button" className={category === item ? 'is-active' : ''} aria-pressed={category === item} onClick={() => setCategory(item)} key={item}>{CATEGORY_LABELS[item] || item}</button>)}</div></div></div> : null}
-    <div className="aquarium-catalog-categories" role="group" aria-label="희귀도">{['all', ...RARITY_ORDER].map(rarity => <button type="button" key={rarity} aria-pressed={selectedRarity === rarity} className={selectedRarity === rarity ? 'is-active' : ''} onClick={() => setSelection(current => ({ ...current, rarity, page: 1 }))}>{rarity === 'all' ? '모든 등급' : RARITY_LABELS[rarity]}</button>)}</div>
+    <div className="aquarium-dex-filters"><label>생태<select value={category} onChange={event => setCategory(event.target.value)}>{availableCategories.map(item => <option value={item} key={item}>{CATEGORY_LABELS[item] || item}</option>)}</select></label><label>등급<select value={selectedRarity} onChange={event => setSelection(current => ({ ...current, rarity: event.target.value, page: 1 }))}>{['all', ...RARITY_ORDER].map(rarity => <option value={rarity} key={rarity}>{rarity === 'all' ? '모든 등급' : RARITY_LABELS[rarity]}</option>)}</select></label></div>
+
     {filter !== 'all' || category !== 'all' || selectedRarity !== 'all' ? <button type="button" className="aquarium-dex-reset" onClick={() => setSelection(current => ({ ...current, filter: 'all', category: 'all', rarity: 'all', page: 1 }))}>조건 초기화</button> : null}
     <div ref={resultRef} tabIndex={-1} className="aquarium-catalog-selection"><span>{CATEGORY_LABELS[category] || '모든 생태'} · {selectedRarity === 'all' ? '모든 등급' : RARITY_LABELS[selectedRarity]}</span><b>{visibleCatalog.length}종</b></div>
-    {pagination('상단')}
-    {filter !== 'owned' && visibleCatalog.length ? <p className="aquarium-dex-note">미획득 친구는 아직 비밀이에요. 공부로 모은 조개로 새로운 친구를 만나보세요.</p> : null}
+
+    {filter !== 'owned' && visibleCatalog.length ? <p className="aquarium-dex-note">미획득 친구는 아직 비밀이에요. 공부로 받은 뽑기권으로 새로운 친구를 만나보세요.</p> : null}
     <div className="aquarium-catalog-groups">{RARITY_ORDER.map((rarity) => {
       const rarityCatalog = categoryCatalog.filter((fish) => fish.rarity === rarity);
       const rows = pageCatalog.filter(fish => fish.rarity === rarity);

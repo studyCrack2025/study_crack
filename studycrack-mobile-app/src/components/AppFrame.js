@@ -18,10 +18,11 @@ export function AppFrame({ children }) {
   );
 }
 
-export function AppContent({ children, inactive = false, lockScroll = false, screen }) {
+export function AppContent({ children, inactive = false, lockScroll = false, screen, myFlow = false }) {
   return React.createElement('div', {
     className: `screen app-screen app-content ${lockScroll ? 'modal-lock' : ''}`.trim(),
     'data-screen': screen,
+    'data-my-flow': myFlow || undefined,
     inert: inactive ? '' : undefined,
     'aria-hidden': inactive ? 'true' : undefined
   }, children);

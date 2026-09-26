@@ -76,7 +76,7 @@ test('오프라인 첫 사용자 조회는 실패를 알리고 복구 전까지 
   expect(count(api, 'get_user_analysis')).toBe(0);
   await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); });
   await page.getByRole('button', { name: '다시 시도', exact: true }).click();
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
   expect(count(api, 'get_user_analysis')).toBe(1);
 });
 
@@ -84,7 +84,7 @@ test('공부·수조 보조 조회 실패는 0시간·0마리로 표시하지 �
   await installAuthenticatedSession(page);
   await installApiMock(page, { failGameTypes: ['get_study_summary', 'get_game_profile'] });
   await page.goto(at('timer'));
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('확인 필요');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('기록 확인 필요');
   const rail = page.locator('.timer-v2-status-rail');
   const streak = rail.getByRole('button', { name: '연속 학습 확인 필요', exact: true });
   await expect(streak).toBeVisible();
@@ -139,8 +139,8 @@ test('서버가 완료·보상한 뒤 응답만 끊겨도 재연결과 재시도
   await installAuthenticatedSession(page);
   const api = await installApiMock(page, {
     loseResponseOnceTypes: ['complete_study_session', 'claim_study_reward'],
-    studyDurationSeconds: 1500, studyReward: { shells: 2, food: 2 },
-    initialGameProfile: { shellBalance: 0, foodBalance: 0, starterState: 'locked' }
+    studyDurationSeconds: 1500,
+    initialGameProfile: { shellBalance: 0, foodBalance: 0, ticketBalance: 0, ticketProgressSeconds: 17900, starterState: 'locked' }
   });
   await page.goto(at('timer'));
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();
@@ -159,7 +159,8 @@ test('서버가 완료·보상한 뒤 응답만 끊겨도 재연결과 재시도
   await expect(page.locator('[data-action="retryStudyReward"]')).toBeVisible();
   expect(count(api, 'complete_study_session')).toBe(2);
   expect(api.state.completedStudySessions.size).toBe(1);
-  expect(api.state.gameProfile.shellBalance).toBe(2);
+  expect(api.state.gameProfile.ticketBalance).toBe(1);
+  expect(api.state.gameProfile.ticketProgressSeconds).toBe(1400);
   await context.setOffline(true);
   await context.setOffline(false);
   await expect(page.locator('.sc-network-status')).toBeHidden({ timeout: 5000 });
@@ -167,8 +168,10 @@ test('서버가 완료·보상한 뒤 응답만 끊겨도 재연결과 재시도
   await page.locator('[data-action="retryStudyReward"]').click();
   await expect(page.locator('[data-action="retryStudyReward"]')).toHaveCount(0);
   expect(count(api, 'claim_study_reward')).toBe(2);
-  expect(api.state.gameProfile.shellBalance).toBe(2);
-  expect(api.state.gameProfile.foodBalance).toBe(2);
+  expect(api.state.gameProfile.ticketBalance).toBe(1);
+  expect(api.state.gameProfile.ticketProgressSeconds).toBe(1400);
+  expect(api.state.gameProfile.shellBalance).toBe(0);
+  expect(api.state.gameProfile.foodBalance).toBe(0);
   const ids = api.requests.filter(({ payload }) => ['complete_study_session', 'claim_study_reward'].includes(payload.type)).map(({ payload }) => payload.data.sessionId);
   expect(new Set(ids).size).toBe(1);
 });
@@ -183,7 +186,7 @@ test('화면 파일 실패는 재시도와 명시적 새로고침을 제공한�
   await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toBeVisible();
   fail = false;
   await page.getByRole('button', { name: '페이지 새로고침' }).click();
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
 });
 
 test('초기 실행 파일 실패는 공개 오류 화면과 44px 재시도 버튼으로 복구한다', async ({ page }) => {

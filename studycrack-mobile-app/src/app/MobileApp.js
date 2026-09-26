@@ -23,7 +23,6 @@ import { AppContent, AppFrame } from '../components/AppFrame.js';
 import { StatusState } from '../components/StatusState.js';
 import { DeferredScreenFallback } from './DeferredScreenFallback.js';
 import { AppOverlayContext } from '../components/AppOverlayContext.js';
-import { useAppOverlayBridge } from './use-app-overlay-bridge.js';
 
 const { useCallback, useMemo, useReducer, useRef } = React;
 
@@ -77,8 +76,9 @@ export function MobileApp() {
   );
   const nav = useMemo(() => createNavigationOps({
     getState: () => stateRef.current,
-    setState
-  }), [setState]);
+    setState,
+    myNavigation: deferredScreens.registry?.createMyNavigation()
+  }), [setState, deferredScreens.registry]);
   const api = useMobileApiController({ setState, stateRef });
   const { retryUserLoad } = useMobileResourceOrchestrator({ api, setState, state, stateRef });
 
@@ -108,7 +108,7 @@ export function MobileApp() {
     state,
     stateRef
   });
-  const appOverlay = useAppOverlayBridge({ registry: deferredScreens.registry, setState, state, myPresentation: viewContext.myPresentation });
+  const appOverlay = { registry: deferredScreens.registry, setState, state, myPresentation: viewContext.myPresentation };
   const contextRef = useRef({ ...state, ...viewContext });
   contextRef.current = { ...state, ...viewContext };
   const events = useMemo(

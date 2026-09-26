@@ -7,7 +7,7 @@ export function PrimaryScreenHeader({ className = '', eyebrow = '', title, descr
     <header className={classes}>
       <img src={STUDYCRACK_LOGO_SRC} alt="" />
       <div className="primary-screen-header__copy">
-        <h1>{title}</h1>
+        <h1 tabIndex={-1}>{title}</h1>
         {eyebrow ? <span>{eyebrow}</span> : null}
         {description ? <p>{description}</p> : null}
       </div>

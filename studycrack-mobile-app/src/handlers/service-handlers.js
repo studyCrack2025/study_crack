@@ -205,15 +205,16 @@ export function createServiceHandlers(ctx) {
     openDrawer() {
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
+        ctx.setStreakSummary({ open: false, returnTarget: '' });
         setDrawerOpen(true);
       });
       return true;
     },
 
-    openStreakSummary() {
+    openStreakSummary({ actionEl } = {}) {
       if (ctx.userLoadStatus !== 'ready' || !ctx.hasClientSession?.() || !['timer', 'my'].includes(ctx.screen) || ctx.productGuideUi?.open) return false;
       preserveScrollAfterStateChange(() => {
-        ctx.setStreakSummary({ open: true, returnTarget: ctx.drawerOpen ? 'summary' : '' });
+        ctx.setStreakSummary({ open: true, returnTarget: ctx.drawerOpen ? 'summary' : '', returnSnapshot: ctx.drawerOpen ? { scroll: actionEl?.closest?.('.my-summary-body')?.scrollTop || 0, action: 'openStreakSummary' } : null });
         setDrawerOpen(false);
       });
       return true;
@@ -221,7 +222,7 @@ export function createServiceHandlers(ctx) {
 
     closeStreakSummary() {
       preserveScrollAfterStateChange(() => {
-        ctx.setStreakSummary({ open: false, returnTarget: '' });
+        ctx.setStreakSummary({ open: false, returnTarget: '', returnSnapshot: ctx.streakSummary?.returnSnapshot });
         if (ctx.streakSummary?.returnTarget === 'summary' && ctx.screen === 'timer' && ctx.userLoadStatus === 'ready' && ctx.hasClientSession?.()) setDrawerOpen(true);
       });
       return true;
@@ -229,7 +230,7 @@ export function createServiceHandlers(ctx) {
 
     closeDrawer({ actionEl, isOverlaySelfClick }) {
       if (!isOverlaySelfClick && actionEl?.classList?.contains?.('drawer-overlay')) return false;
-      preserveScrollAfterStateChange(() => setDrawerOpen(false));
+      preserveScrollAfterStateChange(() => ctx.closeDrawer?.());
       return true;
     },
 
@@ -293,12 +294,6 @@ export function createServiceHandlers(ctx) {
     closeNotiDetail({ actionEl, isOverlaySelfClick }) {
       if (!isOverlaySelfClick && actionEl?.classList?.contains?.('noti-detail-overlay')) return false;
       setNotiDetailId('');
-      return true;
-    },
-
-    drawerGoto({ actionEl }) {
-      setDrawerOpen(false);
-      goto?.(getData(actionEl, 'target'));
       return true;
     },
 
