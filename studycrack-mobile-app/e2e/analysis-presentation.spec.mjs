@@ -71,7 +71,7 @@ for (const width of [320, 360, 390, 430]) {
 }
 
 for (const width of [320, 360, 390, 430]) {
-  test(`분석은 실제 점수·비교·대학 거리·2×2 효율 순서를 유지한다 (${width}px)`, async ({ page }, info) => {
+  test(`분석은 성적·시험, 대학·환산점수, 통합 시뮬레이션 순서를 유지한다 (${width}px)`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 932 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page);
@@ -84,14 +84,17 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.analysis-score-card .analysis-main-gauge')).toHaveCount(1);
     await page.screenshot({ path: info.outputPath(`analysis-top-${width}.png`), animations: 'disabled' });
     const children = await page.locator('.analysis-unified').evaluate(el => [...el.children].map(child => child.className));
-    expect(children.indexOf('card analysis-score-card ')).toBeLessThan(children.indexOf('card analysis-preview-card'));
-    expect(children.indexOf('analysis-comparison')).toBeLessThan(children.indexOf('card analysis-boost-card'));
-    await page.locator('.analysis-preview-card').evaluate(el => el.scrollIntoView({ block: 'center' }));
-    await page.locator('.analysis-preview-card').screenshot({ path: info.outputPath(`analysis-preview-${width}.png`), animations: 'disabled' });
-    await page.locator('.analysis-comparison').evaluate(el => el.scrollIntoView({ block: 'center' }));
-    await page.locator('.analysis-comparison').screenshot({ path: info.outputPath(`analysis-comparison-${width}.png`), animations: 'disabled' });
-    await expect(page.locator('.analysis-comparison-row').first()).toContainText('+42점 여유');
-    await expect(page.locator('.analysis-comparison-row').nth(1)).toContainText('+31점 여유');
+    expect(children[0]).toBe('analysis-input-entry');
+    expect(children.indexOf('card analysis-score-card ')).toBeLessThan(children.indexOf('card analysis-boost-card'));
+    await expect(page.locator('.analysis-input-entry [data-field="scoreExamType"]')).toHaveCount(1);
+    await expect(page.locator('.analysis-input-entry .analysis-score-summary')).toHaveCount(1);
+    await expect(page.locator('.analysis-score-card [data-field="analysisTargetMajor"]')).toHaveCount(1);
+    await expect(page.locator('.analysis-comparison,.analysis-target-card,.analysis-preview-subjects')).toHaveCount(0);
+    await expect(page.locator('.analysis-score-summary')).toHaveCount(1);
+    await expect(page.locator('.analysis-boost-card')).toHaveCount(1);
+    await page.locator('.analysis-boost-card').evaluate(el => el.scrollIntoView({ block: 'center' }));
+    await page.locator('.analysis-boost-card').screenshot({ path: info.outputPath(`analysis-preview-${width}.png`), animations: 'disabled' });
+    await page.locator('.analysis-score-card').screenshot({ path: info.outputPath(`analysis-score-${width}.png`), animations: 'disabled' });
     await grid.evaluate(el => el.scrollIntoView({ block: 'center' }));
     const boxes = await grid.getByRole('button').evaluateAll(items => items.map(item => { const box = item.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width }; }));
     expect(boxes[0].y).toBe(boxes[1].y);
@@ -107,6 +110,26 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.analysis-score-summary')).toContainText('1등급');
     await expect(page.locator('.analysis-unified')).not.toContainText('합격확률');
     await expect(page.locator('input[type="range"]')).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const base of [44.5, 249.9]) {
+  test(`환산점수 소수·상한 게이지가 좁은 화면에서도 겹치지 않는다 (${base}점)`, async ({ page }, info) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await setup(page);
+    await page.route('**/api/**', route => {
+      const data = route.request().postDataJSON();
+      if (data?.type === 'analyze_my_targets') return route.fulfill({ json: data.targetUnivs.map(target => ({ ...target, converted_score: base, score_available: true, status: base < 100 ? '고위험 (F)' : '안정' })) });
+      if (data?.type === 'simulate_score_rise') return route.fulfill({ json: data.targetUnivs.map(target => ({ ...target, base_ui_score: base, sim_data: { kor: { name: '국어', uiDiff: 17.8, afterUiScore: base + 17.8 } } })) });
+      return route.fallback();
+    });
+    await calculate(page);
+    await expect(page.locator('.analysis-score-card strong')).toHaveText(`${base}점`);
+    await expect(page.locator('.analysis-main-gauge-preview-label')).toContainText(base < 100 ? '62.3점' : '250점');
+    const labels = await page.locator('.analysis-main-gauge-top span').evaluateAll(els => els.map(el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
+    expect(labels[0].right <= labels[1].left || labels[0].bottom <= labels[1].top).toBe(true);
+    await page.locator('.analysis-score-card').screenshot({ path: info.outputPath(`analysis-reference-${base}.png`), animations: 'disabled' });
     await expectNoHorizontalOverflow(page);
   });
 }
@@ -130,32 +153,34 @@ test('지원 불가 대학의 0 응답은 실제 0점과 구분한다', async ({
   await page.route('**/api/**', async route => {
     const data = route.request().postDataJSON();
     if (data?.type !== 'analyze_my_targets') return route.fallback();
-    await route.fulfill({ json: data.targetUnivs.map((target, index) => ({ ...target, converted_score: 0, score_available: index === 0, is_eligible: index === 0, status: index === 0 ? '위험' : '지원 불가', msg: index === 0 ? '' : '선택 과목 조건 확인' })) });
+    await route.fulfill({ json: data.targetUnivs.map(target => ({ ...target, converted_score: 0, score_available: !target.univ.includes('고려'), is_eligible: !target.univ.includes('고려'), status: !target.univ.includes('고려') ? '위험' : '지원 불가', msg: !target.univ.includes('고려') ? '' : '선택 과목 조건 확인' })) });
   });
   await page.route('**/api/**', async route => {
     if (route.request().postDataJSON()?.type === 'simulate_score_rise') return route.fulfill({ json: [] });
     return route.fallback();
   });
   await calculate(page);
-  await expect(page.locator('.analysis-comparison-row').first()).toContainText('100점 필요');
-  await expect(page.locator('.analysis-comparison-row').nth(1)).toContainText('선택 과목 조건 확인');
-  await expect(page.locator('.analysis-comparison-row').nth(1)).not.toContainText('환산 0점');
+  await expect(page.locator('.analysis-score-card strong')).toHaveText('0점');
+  await expect(page.locator('.analysis-score-facts')).toContainText('+100점');
+  await page.locator('[data-field="analysisTargetMajor"]').selectOption('고려대학교 경영학과');
+  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
+  await expect(page.locator('.analysis-score-prompt')).toContainText('선택 과목 조건 확인');
+  await expect(page.locator('.analysis-score-card strong')).toHaveText('—');
 });
 
-test('대학 버튼 선택은 이전 효율을 지우고 명시적 재계산 후 새 기준을 표시한다', async ({ page }) => {
+test('환산점수 카드의 대학 선택은 이전 효율을 지우고 명시적 재계산 후 새 기준을 표시한다', async ({ page }) => {
   await setup(page);
   await calculate(page);
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await page.locator('.analysis-sim-row').nth(1).click();
-  const target = page.locator('.analysis-comparison-row').nth(1);
-  await target.click();
+  await page.locator('[data-field="analysisTargetMajor"]').selectOption('고려대학교 경영학과');
   await expect(page.locator('[data-field="analysisTargetMajor"]')).toHaveValue('고려대학교 경영학과');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(0);
   await expect(page.locator('.analysis-reverse-plan')).toHaveCount(0);
   await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-row').first()).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('.analysis-comparison-row').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.analysis-score-card-head')).toContainText('고려대학교 경영학과');
 });
 
 test('늦은 이전 시험의 시뮬레이션은 새 시험에 표시되지 않는다', async ({ page }) => {
@@ -191,9 +216,9 @@ test('시뮬레이션 실패는 점수·대학 결과를 유지하고 명시적 
     return route.fallback();
   });
   await calculate(page);
-  await expect(page.locator('.analysis-preview-card')).toContainText('과목별 결과를 불러오지 못했어요.');
+  await expect(page.locator('.analysis-boost-card')).toContainText('과목별 결과를 불러오지 못했어요.');
   await expect(page.locator('.analysis-score-card strong')).toHaveText('142점');
-  await expect(page.locator('.analysis-comparison-row').first()).toContainText('+42점 여유');
+  await expect(page.locator('.analysis-score-facts')).toContainText('도달');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(0);
   await page.getByRole('button', { name: '과목 결과 다시 확인' }).click();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);

@@ -732,7 +732,7 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await expect(analysisContent).not.toHaveClass(/modal-lock/);
   expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   await expect(examSelect).toBeVisible();
-  await expect(page.locator('.analysis-target-card')).toBeVisible();
+  await expect(page.locator('.analysis-score-card .analysis-target-select')).toBeVisible();
   await expect(page.locator('.analysis-score-card')).toBeVisible();
   await expect(page.locator('.analysis-score-detail-card')).toHaveCount(0);
   await expect(page.locator('.analysis-result-card')).toHaveCount(0);

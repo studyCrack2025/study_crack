@@ -55,19 +55,10 @@ function SimulationGrid({ rows = [], selectedSubject = '' }) {
 }
 
 function SimulationPreview({ rows, selectedRow, currentScore, afterScore, canSimulate, status = 'idle' }) {
-  return <section className="card analysis-preview-card" aria-label="원점수 1점 비교">
+  return <section className="card analysis-boost-card" aria-label="원점수 1점 비교">
     <div className="analysis-section-head"><div><h4>점수 상승 시뮬레이션</h4><p>실제 과목별 원점수 +1점 결과를 비교해 보세요.</p></div></div>
-    {rows.length ? <><div className="analysis-preview-values" aria-live="polite"><span><small>{selectedRow?.subject || '과목'} 원점수</small><b>+1점</b></span><span><small>적용 후 환산점수</small><b>{formatPoint(afterScore)}점</b><small>현재 {formatPoint(currentScore)}점</small></span></div><div className="analysis-preview-subjects" role="group" aria-label="비교할 과목">{rows.map(row => <button type="button" key={row.key || row.subject} data-action="highlightSimSubject" data-sim-subject={row.subject} aria-pressed={row.subject === selectedRow?.subject} disabled={row.unavailable}>{row.subject}</button>)}</div></> : <p className="analysis-boost-empty">{!canSimulate ? '과목별 +1점 비교는 Basic 이상에서 제공해요.' : status === 'loading' ? '과목별 +1점 결과를 불러오는 중이에요.' : status === 'error' ? '과목별 결과를 불러오지 못했어요.' : status === 'empty' ? '현재 조건의 과목별 결과가 없어요.' : '점수를 계산하면 확인된 과목별 결과를 표시해요.'}</p>}
+    {rows.length ? <><div className="analysis-preview-values" aria-live="polite"><span><small>{selectedRow?.subject || '과목'} 원점수</small><b>+1점</b></span><span><small>적용 후 환산점수</small><b>{formatPoint(afterScore)}점</b><small>현재 {formatPoint(currentScore)}점</small></span></div><SimulationGrid rows={rows} selectedSubject={selectedRow?.subject} /></> : <p className="analysis-boost-empty">{!canSimulate ? '과목별 +1점 비교는 Basic 이상에서 제공해요.' : status === 'loading' ? '과목별 +1점 결과를 불러오는 중이에요.' : status === 'error' ? '과목별 결과를 불러오지 못했어요.' : status === 'empty' ? '현재 조건의 과목별 결과가 없어요.' : '점수를 계산하면 확인된 과목별 결과를 표시해요.'}</p>}
     {canSimulate && ['error', 'empty'].includes(status) ? <button type="button" className="btn btn-secondary" data-action="calculateAnalysisScore">과목 결과 다시 확인</button> : null}
-  </section>;
-}
-
-function UniversityComparison({ rows = [], selectedMajor = '', ready = false }) {
-  return <section className="analysis-comparison" aria-label="목표 대학 합격컷 거리">
-    <div className="analysis-section-head"><div><h4>목표 대학 합격컷 거리</h4><p>같은 시험 · 대학별 환산 100점이 합격컷 기준이에요.</p></div></div>
-    <ul>{rows.map((row, index) => <li key={row.major}><button type="button" className="analysis-comparison-row" data-action="selectTarget" data-target-major={row.major} aria-pressed={row.major === selectedMajor}>
-      <i aria-hidden="true">{index + 1}</i><span><b>{row.major}</b><small>{row.score === null ? row.reason || (ready ? '결과 확인 필요' : '계산 필요') : `환산 ${formatPoint(row.score)}점 · 합격컷 100점`}</small></span><strong>{row.score === null ? '—' : row.score < 100 ? `${formatPoint(100 - row.score)}점 필요` : row.score === 100 ? '컷 도달' : `+${formatPoint(row.score - 100)}점 여유`}</strong>
-    </button></li>)}</ul>
   </section>;
 }
 
@@ -84,7 +75,7 @@ function CurrentScoreSummary({ scores = {}, confirmedItems = null }) {
   ].filter(([, value]) => value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value)));
   if (!items.length) return null;
   return (
-    <div className="card analysis-score-summary">
+    <div className="analysis-score-summary">
       <div className="analysis-score-summary-head"><h4>현재 성적</h4><span>{confirmedItems ? '원점수 · 영어 등급' : '원점수 기준'}</span></div>
       <div className="analysis-score-summary-grid">
         {items.map(([label, value, unit = '점'], index) => <div key={`${label}-${index}`}><span>{label}</span><b>{formatPoint(value)}{unit}</b></div>)}
@@ -187,15 +178,15 @@ export function AnalysisContent(ctx) {
     scoreView,
     fallbackScore: analysisSelected.score
   });
-  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLabelAlign, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
+  const { sortedRows, selectedRow, bestRow, currentScore, afterScore, currentPct, afterPct, previewLeftPct, previewWidthPct, hasPreview, gapToPass } = presentation;
   const targetOptions = Array.from(new Set([normalizedTargetMajor, ...analysisMajorOptions].filter(Boolean)));
-  const activeSubject = selectedRow?.subject || '';
   const isScoreLoading = analysisCalculationRequested
     && (isAnalyzing || scoreView.pending || analysisApiStatus === 'loading');
   const currentScoreText = isScoreLoading ? '계산 중' : scoreView.hasScore ? `${formatPoint(currentScore)}점` : '성적 필요';
   const showCalculationPrompt = !isScoreLoading && !scoreView.hasScore
-    && (!analysisCalculationRequested || ['empty', 'error'].includes(analysisApiStatus));
+    && (!analysisCalculationRequested || analysisPresentation?.ready || ['empty', 'error'].includes(analysisApiStatus));
   const needsRecalculation = analysisPresentation?.needsCalculation && scoreView.hasScore;
+  const unavailableReason = analysisPresentation?.ready && !scoreView.hasScore ? analysisPresentation.comparison?.find(row => row.major === normalizedTargetMajor)?.reason : '';
   const showScoreDetails = !isScoreLoading && scoreView.hasScore && (!analysisPresentation || analysisPresentation.ready);
   const selectedEffectText = selectedRow && scoreView.hasScore
     ? `${selectedRow.subject} 원점수 +1 적용 시 ${formatPoint(currentScore)}점 → ${formatPoint(afterScore)}점`
@@ -204,29 +195,32 @@ export function AnalysisContent(ctx) {
   const safePct = 60;
   return (
     <div className="analysis-unified">
-      <div className="card analysis-target-card">
+      <section className="analysis-input-entry" aria-label="분석 전 성적 확인">
+        <div><b>내 성적부터 확인해요</b><p>저장한 시험 성적이 분석 기준이에요. 성적을 확인하고 대학별 점수를 계산해보세요.</p></div>
         <div className="analysis-result-head">
-          <label><span>희망 대학</span><select className="analysis-target-select planner-input" data-field="analysisTargetMajor" value={normalizedTargetMajor} onChange={() => {}}>{targetOptions.length ? targetOptions.map((label) => <option value={label} key={label}>{label}</option>) : <option value="">목표 대학을 추가해주세요</option>}<option value="__add_university__">+ 희망 대학 추가</option></select></label>
           <label><span>시험 기준</span><select className="analysis-exam-select planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>{!EXAM_OPTIONS.includes(scoreExamType) && scoreExamType ? <option value={scoreExamType}>{scoreExamType}</option> : null}{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></label>
         </div>
-      </div>
+        <CurrentScoreSummary scores={scores} confirmedItems={analysisPresentation?.currentScores} />
+        <button type="button" className="btn btn-secondary" data-action="goto" data-target="scoreInfo">성적 입력·수정</button>
+      </section>
       <div className={`card analysis-score-card ${isScoreLoading ? 'is-loading' : ''}`} aria-busy={isScoreLoading}>
+        <div className="analysis-result-head"><label><span>희망 대학</span><select className="analysis-target-select planner-input" data-field="analysisTargetMajor" value={normalizedTargetMajor} onChange={() => {}}>{targetOptions.length ? targetOptions.map((label) => <option value={label} key={label}>{label}</option>) : <option value="">목표 대학을 추가해주세요</option>}<option value="__add_university__">+ 희망 대학 추가</option></select></label></div>
         {isScoreLoading ? <div className="analysis-score-local-loading" role="status" aria-live="polite">
           <div className="analysis-loading-orbit" aria-hidden="true"><i /><i /><i /></div>
           <div><span>환산 분석 진행 중</span><b>목표 대학 기준 점수를 계산하고 있어요</b><p>계산이 끝나면 이 카드만 결과로 전환됩니다.</p></div>
         </div> : <>
         <div className="analysis-score-card-head">
-          <div><span>내 환산점수</span><strong>{showCalculationPrompt ? '—' : currentScoreText}</strong><small>250점 만점</small></div>
-          <div><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{showCalculationPrompt ? '계산 전' : needsRecalculation ? '마지막 확인' : analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>
+          <div><span>내 환산점수</span><strong>{showCalculationPrompt ? '—' : scoreView.hasScore ? <>{formatPoint(currentScore)}<span>점</span></> : currentScoreText}</strong><small>250점 만점</small></div>
+          <div><em className={`analysis-status-pill ${scoreTierClass(currentScore)}`}>{showCalculationPrompt ? (unavailableReason ? '확인 필요' : '계산 전') : needsRecalculation ? '마지막 확인' : analysisStatus || '분석 결과'}</em><b>{normalizedTargetMajor || '희망 대학을 선택해주세요'}</b><span>{scoreExamType || '시험 기준 선택'}</span></div>
         </div>
-        {showCalculationPrompt || needsRecalculation ? <div className="analysis-score-prompt"><p>{needsRecalculation ? '마지막 확인 점수예요. 현재 성적과 대학 기준으로 다시 계산해주세요.' : '저장된 성적과 희망 대학 기준으로 환산점수를 계산합니다.'}</p><button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button></div> : null}
+        {showCalculationPrompt || needsRecalculation ? <div className="analysis-score-prompt"><p>{unavailableReason || (needsRecalculation ? '마지막 확인 점수예요. 현재 성적과 대학 기준으로 다시 계산해주세요.' : '저장된 성적과 희망 대학 기준으로 환산점수를 계산합니다.')}</p><button type="button" className="analysis-calculate-btn" data-action="calculateAnalysisScore">{analysisCalculationRequested ? '다시 계산하기' : '점수 계산하기'}</button></div> : null}
         </>}
       {showScoreDetails ? <div className="analysis-score-detail-card">
         <div className={`analysis-main-gauge-wrap ${scoreTierClass(currentScore)}`}>
-          <div className="analysis-main-gauge-top"><span>{currentScoreText}</span></div>
+          <div className="analysis-main-gauge-top"><span>현재 {currentScoreText}</span>{hasPreview ? <span className="analysis-main-gauge-preview-label">적용 후 {formatPoint(afterScore)}점</span> : null}</div>
           <div className="analysis-main-gauge" aria-label="환산점수 게이지">
             <i className="analysis-main-gauge-fill" style={{ width: `${currentPct}%` }} />
-            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }}><em /><em /></i><span className={`analysis-main-gauge-preview-label is-${previewLabelAlign}`} style={{ left: `${afterPct}%` }}>적용 후 환산 {formatPoint(afterScore)}점</span></> : null}
+            {hasPreview ? <><i className="analysis-main-gauge-preview-fill" style={{ left: `${previewLeftPct}%`, width: `${previewWidthPct}%` }} /><span className="analysis-main-gauge-after-pin" style={{ left: `${afterPct}%` }} /></> : null}
             <span className="analysis-main-gauge-pin" style={{ left: `${currentPct}%` }}><i /></span>
             <span className="analysis-main-gauge-marker pass" style={{ left: `${passPct}%` }} />
             <span className="analysis-main-gauge-marker safe" style={{ left: `${safePct}%` }} />
@@ -239,13 +233,7 @@ export function AnalysisContent(ctx) {
       </div> : null}
       </div>
       <SimulationPreview rows={sortedRows} selectedRow={selectedRow} currentScore={currentScore} afterScore={afterScore} canSimulate={analysisPresentation?.canSimulate !== false} status={analysisPresentation?.simulationStatus} />
-      <UniversityComparison rows={analysisPresentation?.comparison || []} selectedMajor={normalizedTargetMajor} ready={analysisPresentation?.ready} />
-      <div className="card analysis-boost-card">
-        <div className="analysis-section-head"><div><span className="analysis-card-eyebrow">원점수 +1 효율</span><h4>한 점을 어디에 투자할까요?</h4><p>{bestRow ? `${bestRow.subject} 1점이 환산점수에 가장 크게 반영돼요.` : '성적 분석이 끝나면 과목별 효율을 비교해드려요.'}</p></div><b>{bestRow && scoreView.hasScore ? `${bestRow.subject} ${bestRow.displayGain}` : '효과 대기'}</b></div>
-        <SimulationGrid rows={sortedRows} selectedSubject={activeSubject} />
-      </div>
       <ReverseProjectionCard analysisSimRows={scopedRows} canUseReverseProjection={canUseReverseProjection} currentScore={currentScore} backtraceStatus={analysisPresentation && !analysisPresentation.backtraceReady ? 'idle' : analysisBacktraceStatus} backtracePlan={analysisBacktracePlan} backtraceError={analysisBacktraceError} />
-      <CurrentScoreSummary scores={scores} confirmedItems={analysisPresentation?.currentScores} />
     </div>
   );
 }

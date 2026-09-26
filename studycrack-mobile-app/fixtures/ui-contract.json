@@ -59,7 +59,7 @@
     },
     "requiredScreenConsumers": {
       "src/styles/screens/analysis-unified.css": ["--sc-surface", "--sc-action-positive", "--sc-surface-positive"],
-      "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-action-urgent", "--sc-state-threshold"],
+      "src/styles/screens/analysis.css": ["--sc-action-positive", "--sc-brand-navy", "--sc-surface-muted"],
       "src/styles/screens/planner.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold", "--sc-subject-math"],
       "src/styles/screens/planner-calendar.css": ["--sc-brand-navy", "--sc-surface-positive", "--sc-action-positive-strong", "--sc-subject-korean"],
       "src/styles/screens/coaching.css": ["--sc-brand-navy", "--sc-action-positive", "--sc-state-threshold"],
