@@ -67,7 +67,7 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
       captures.push({ day, width, variant, screenshot, ...metrics });
     };
     await page.goto('/studycrack-mobile.html?screen=timer');
-    await capture('home', page.locator('.home-aquarium-preview'));
+    await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
     await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     await page.getByRole('button', { name: /사용법 다시 보기/ }).click();
     const dialog = page.getByRole('dialog', { name: 'StudyCrack 사용법' });
@@ -76,7 +76,7 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
     await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
     await page.getByRole('button', { name: '프로필 메뉴 닫기' }).click();
     await expect(page.getByRole('dialog', { name: '프로필 메뉴' })).not.toBeVisible();
-    await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click();
+    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
     await page.locator('.aquarium-growth-caption').evaluate(el => el.scrollIntoView({ block: 'center' }));
     await expect(page.locator('.aquarium-unlock-notice')).toBeVisible();
     await page.getByRole('button', { name: '해금 안내 닫기' }).click();

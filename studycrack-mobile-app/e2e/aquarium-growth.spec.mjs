@@ -34,7 +34,7 @@ for (const days of stages) test(`서버 DAY${days} 배경과 공유 미리보기
   await expect(page.locator('.aquarium-scene')).toHaveAttribute('data-background-key', `day${days}`);
   await expect(page.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
   await expect(page.locator('.aquarium-growth-caption')).toContainText(`성장 인정 ${days}일`);
-  await expect(page.locator('.aquarium-day-badge')).toContainText(`DAY ${days}`);
+  await expect(page.getByRole('region', { name: '수조 성장 요약' })).toContainText(`DAY ${days}`);
   await expect(page.locator('.aquarium-habitat-header .aquarium-wallet')).toHaveCount(0);
   await page.locator('.aquarium-scene-wrap').evaluate(el => el.scrollIntoView({ block: 'center' }));
   await page.locator('.aquarium-scene-wrap').screenshot({ path: info.outputPath(`day-${days}-full.png`) });
@@ -47,8 +47,8 @@ for (const days of stages) test(`서버 DAY${days} 배경과 공유 미리보기
 test('헤더 성장 일수와 배경 단계를 구분하고 출처는 펼쳐서 확인한다', async ({ page }) => {
   await setup(page, 12);
   await page.goto('/studycrack-mobile.html?screen=aquarium');
-  await expect(page.locator('.aquarium-day-badge')).toContainText('DAY 12');
-  await expect(page.locator('.aquarium-day-badge')).not.toContainText('200');
+  await expect(page.getByRole('region', { name: '수조 성장 요약' })).toContainText('DAY 12');
+  await expect(page.getByRole('region', { name: '수조 성장 요약' })).not.toContainText('200');
   await expect(page.locator('.aquarium-scene')).toHaveAttribute('data-background-key', 'day7');
   const caption = page.locator('.aquarium-growth-caption');
   await expect(caption).toContainText('3일 더 공부하면 다음 수조가 열려요');
@@ -62,9 +62,8 @@ for (const width of [320, 360, 430]) test(`홈·사용법도 같은 성장 배�
   await page.setViewportSize({ width, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' });
   const state = await setup(page, 50);
   await page.goto('/studycrack-mobile.html?screen=timer');
-  await expect(page.locator('.home-aquarium-preview .aquarium-scene')).toHaveAttribute('data-background-key', 'day50');
-  await page.locator('.home-aquarium-preview').evaluate(el => el.scrollIntoView({ block: 'center' }));
-  await page.locator('.home-aquarium-preview').screenshot({ path: info.outputPath(`home-${width}.png`) });
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+  await expect(page.locator('.timer-v2-status-rail [data-target="aquarium"]')).toBeVisible();
   await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
   await page.getByRole('button', { name: /사용법 다시 보기/ }).click();
   const dialog = page.getByRole('dialog', { name: 'StudyCrack 사용법' });
@@ -124,10 +123,10 @@ const showCaption = async page => {
 
 test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재로드에는 반복하지 않는다', async ({ page }) => {
   const state = await setup(page, 7); await page.goto('/studycrack-mobile.html?screen=timer');
-  await expect(page.locator('.home-aquarium-preview .aquarium-scene')).toHaveAttribute('data-background-key', 'day7');
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
   expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBeNull();
-  await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click(); await showCaption(page);
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click(); await showCaption(page);
   const notice = page.locator('.aquarium-unlock-notice');
   await expect(notice).toContainText('DAY 7 배경을 열었어요');
   await expect(notice.locator('button')).not.toBeFocused();
@@ -137,7 +136,7 @@ test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재�
   await expect(notice).toHaveCount(0);
   await page.locator('[data-action="openAquariumShare"]').click(); await expect(notice).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
-  await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click(); await showCaption(page);
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click(); await showCaption(page);
   await expect(notice).toHaveCount(0);
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.reload(); await showCaption(page); await expect(notice).toHaveCount(0);

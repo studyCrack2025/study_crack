@@ -130,13 +130,13 @@ test('미확인 상태로 탭 왕복 후 본체 조회가 실패해도 상태 �
   await page.getByRole('button', { name: '먹이 주기', exact: true }).click();
   await expect(page.getByText('처리 결과 확인이 필요해요')).toBeVisible();
   await page.getByRole('button', { name: /공부해서 먹이 모으기/ }).click();
-  await expect(page.locator('.home-aquarium-preview')).toBeVisible();
+  await expect(page.locator('.timer-v2-status-rail')).toBeVisible();
   let failProfile = true;
   await page.route('**/api/**', async route => {
     if (failProfile && route.request().postDataJSON()?.type === 'get_game_profile') return route.fulfill({ status: 503, json: {} });
     await route.fallback();
   });
-  await page.getByRole('button', { name: /수조 전체 보기/ }).click();
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
   await expect(page.getByText('수조를 불러오지 못했어요', { exact: true })).toBeVisible();
   failProfile = false;
   await page.getByRole('button', { name: '다시 불러오기', exact: true }).click();

@@ -1,6 +1,6 @@
 import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import { AquariumGrowthContext } from '../../features/gamification/AquariumGrowthContext.js';
-import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
+import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { catalogMeta } from './aquarium-panel-shared.jsx';
 import { FishCarePanel } from './FishCarePanel.jsx';
 import { FishInventoryPanel } from './FishInventoryPanel.jsx';
@@ -8,7 +8,7 @@ import { FishDexPanel } from './FishDexPanel.jsx';
 import { DiscoveryPanel, DiscoveryResult } from './DiscoveryPanel.jsx';
 import { AquariumSharePanel } from './AquariumSharePanel.jsx';
 import { AquariumScene } from '../../components/aquarium/AquariumScene.jsx';
-import { StudyOverviewCard } from '../../components/StudyOverviewCard.jsx';
+
 import { AQUARIUM_SLOTS, aquariumCollectionLabel, buildAquariumPresentation } from '../../features/gamification/aquarium-presentation.js';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { Icon } from '../../components/Icon.jsx';
@@ -19,10 +19,13 @@ import { useCareEffect } from './use-care-effect.js';
 import { AquariumNextStudy } from './AquariumNextStudy.jsx';
 
 function AquariumHabitatHeader() {
+  return <PrimaryScreenHeader title="Fish Tank" eyebrow="나의 수조" />;
+}
+
+function AquariumGrowthSummary({ fishCount }) {
   const view = useContext(AquariumGrowthContext);
-  const days = view?.growth?.validDayCount;
-  const known = Number.isInteger(days) && days >= 0;
-  return <header className="aquarium-habitat-header"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><div><h1>합격 페이스메이커</h1><span>STUDYCRACK / LIVE</span></div><div className="aquarium-day-badge" aria-label="수조 성장 인정 일수"><b>{known ? `DAY ${days}` : '확인 중'}</b>{view?.status !== 'ready' ? <small>{known ? '마지막 확인' : '기록 확인 필요'}</small> : null}</div></header>;
+  const growth = view?.growth;
+  return <section className="sc-study-banner" aria-label="수조 성장 요약"><div className="sc-study-headline"><small>{view?.status === 'ready' ? '함께 키운 수조' : '성장 기록 · 최신 확인 필요'}</small><b>{growth ? `DAY ${growth.validDayCount}` : '확인 중'}</b><small>{growth ? growth.nextStageDays === null ? '마지막 수조까지 성장했어요' : `다음 수조까지 ${growth.nextStageDays}일` : '성장 기록을 확인해주세요'}</small></div><div className="sc-study-headline"><small>함께하는 친구</small><b>{fishCount === null ? '확인 필요' : `${fishCount}마리`}</b><small>물고기와 함께 성장해요</small></div></section>;
 }
 
 function AquariumWallet({ fishCount = 0, profile }) {
@@ -139,7 +142,7 @@ function AquariumWorkspace(ctx) {
         <AquariumOfflineState />
         <AquariumHabitatHeader />
         {loading ? <StatusState className="aquarium-main-status" kind="loading" title="수조를 채우고 있어요" description="보상과 물고기 상태를 확인하고 있습니다." /> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
-          <StudyOverviewCard overview={ctx.studyOverview} scoreView={ctx.analysisScoreView} variant="banner" compact />
+          <AquariumGrowthSummary fishCount={snapshot.ownedCount} />
           <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canAccessBasic={ctx.canAccessBasic} />
           <div className="aquarium-scene-wrap"><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={aquariumSelectedFishId} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           <section className="aquarium-next-actions"><button type="button" data-action="goto" data-target="timer"><Icon name="timer" /><span><b>공부해서 먹이 모으기</b><small>타이머로 이동</small></span><i aria-hidden="true">›</i></button><button type="button" data-action="openAquariumCatalog" disabled={careBusy}><Icon name="report" /><span><b>물고기 도감</b><small>{aquariumCollectionLabel(snapshot)}</small></span><i aria-hidden="true">›</i></button><button type="button" data-action="openAquariumDraw" disabled={careBusy || gameProfile?.starterState !== 'claimed'}><Icon name="plus" /><span><b>{pendingDraw ? '뽑기 결과 확인' : '새 물고기 만나기'}</b><small>{pendingDraw ? '확인하지 않은 결과가 있어요' : '조개 30개 사용'}</small></span><i aria-hidden="true">›</i></button><button type="button" data-action="openAquariumShare" disabled={careBusy || !fishInventory.length}><Icon name="share" /><span><b>수조 공유하기</b><small>성적 없이 공부 기록만</small></span><i aria-hidden="true">›</i></button></section>

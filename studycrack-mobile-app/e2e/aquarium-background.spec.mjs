@@ -63,11 +63,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [
     await page.goto('/studycrack-mobile.html?screen=timer');
     const scene = page.locator('.aquarium-scene');
     await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
-    await expect(scene.locator('.aquarium-mini-plants')).toHaveCount(1);
-    await expect(scene).toHaveAttribute('data-background-key', 'day1');
-    await expect(scene).toHaveCSS('height', '96px');
-    await captureScene(scene, testInfo.outputPath(`background-home-${width}.png`));
-    await page.getByRole('button', { name: /수조 전체 보기/ }).click();
+    await expect(scene).toHaveCount(0);
+    expect(urls.size).toBe(0);
+    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
     await expect(scene).toHaveAttribute('data-scene-variant', 'full');
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
@@ -157,10 +155,10 @@ test('홈은 전체 배경을 요청하지 않고 전체 배경 실패에도 수
   await page.route(backgrounds, route => route.abort());
   await page.goto('/studycrack-mobile.html?screen=timer');
   const scene = page.locator('.aquarium-scene');
-  await expect(scene.locator('.aquarium-mini-plants')).toBeVisible();
+  await expect(scene).toHaveCount(0);
   await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
   await expect(scene.locator('button')).toHaveCount(0);
-  await page.getByRole('button', { name: /수조 전체 보기/ }).click();
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
   await expect(scene).toHaveAttribute('data-scene-variant', 'full');
   await expect(scene.getByRole('button', { name: '배경 다시 보기' })).toBeVisible();
 });

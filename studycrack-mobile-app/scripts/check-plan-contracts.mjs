@@ -45,7 +45,8 @@ for (const [plan, meta] of Object.entries(PLAN_META)) {
   assert.ok(text(card).includes(totals[tier]));
   assert.ok(text(card).includes(`${plan.toUpperCase()} 선택하기`));
   if (['standard', 'pro'].includes(tier)) {
-    assert.equal(meta.weeklyPrice, `${text(card.match(/<strong>(.*?)<\/strong>/s)[1])}원 / 주`);
+    assert.equal(meta.payPrice, `${text(card.match(/<strong>(.*?)<\/strong>/s)[1])}원 / 4주`);
+    assert.ok(text(card).includes(`주당 환산 ${meta.weeklyPrice.replace(" / 주", "")}`));
     assert.equal(meta.payPrice, `${totals[tier]}원 / 4주`);
   } else {
     assert.equal(meta.weeklyPrice, '');
@@ -74,3 +75,14 @@ assert.match(buildMembershipSummary({ userTier: 'pro', user: { currentSubscripti
 assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', startDate: '2030-10-01T00:00:00Z' } } }).detail, /2030\.10\.29까지/);
 assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', endDate: 'invalid' } } }).detail, /이용 기한 확인 필요/);
 console.log('plan contracts passed: web purchase cards, prices, membership status and stale-duration handoff.');
+
+const transferSource = await readFile(new URL('../../checkout-transfer.html', import.meta.url), 'utf8');
+const adminSource = await readFile(new URL('../../admin_index.html', import.meta.url), 'utf8');
+for (const [tier, amount] of Object.entries({ BASIC: 25000, STARTER: 39000, STANDARD: 49000, PRO: 149000 })) {
+  assert.match(transferSource, new RegExp("name: '" + tier + "', price: " + amount + "[,\\\\s]"), tier + ' transfer display');
+}
+assert.ok(adminSource.includes('STANDARD 플랜 (4주 49,000원)'));
+assert.ok(adminSource.includes('PRO 플랜 (4주 149,000원)'));
+assert.doesNotMatch(adminSource, /월 (149,000|299,000)원/);
+assert.match(PLAN_META.Standard.originalPrice, /149,000원 \/ 4주/);
+assert.match(PLAN_META.Pro.originalPrice, /299,000원 \/ 4주/);

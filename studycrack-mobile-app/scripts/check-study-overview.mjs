@@ -78,17 +78,22 @@ try {
     assert.match(compactMarkup(attention), /sc-study-metrics/);
   }
   assert.doesNotMatch(render(idle), /<details/);
+  const records = renderToStaticMarkup(createElement(StudyOverviewCard, { overview: idle, variant: 'banner', compact: true, recordsOnly: true }));
+  assert.match(records, /2026-09-07 · 확정 공부 01:00:00/);
+  assert.doesNotMatch(records, /role="progressbar"|sc-study-banner|환산점수/);
   assert.match(render(empty), /등록한 계획 없음/);
   assert.doesNotMatch(render(empty), /aria-valuenow/);
   assert.equal(render(undefined), '');
   for (const value of [0, 512.4]) {
     const banner = renderToStaticMarkup(createElement(StudyOverviewCard, { overview: idle, variant: 'banner', compact: true, scoreView: { hasScore: true, score: value } }));
-    assert.match(banner, new RegExp(`<b>${Math.round(value)}점</b>`));
+    assert.match(banner, /오늘의 학습 진행/);
+    assert.match(banner, /01:00:00/);
+    assert.doesNotMatch(banner, /환산점수|sc-study-score/);
     assert.doesNotMatch(banner, /합격 가능성|55\.5%/);
   }
   for (const scoreView of [null, { hasScore: false, score: 512 }, { hasScore: true, score: NaN }]) {
     const banner = renderToStaticMarkup(createElement(StudyOverviewCard, { overview: idle, variant: 'banner', scoreView }));
-    assert.match(banner, /환산점수 확인/);
+    assert.match(banner, /확정 공부 시간/);
     assert.doesNotMatch(banner, /NaN|512점/);
   }
 } finally {

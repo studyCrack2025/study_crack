@@ -22,7 +22,7 @@ async function setup(page, options = {}) {
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`홈·수조·플래너·코칭은 같은 학습 배너를 재사용한다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`홈·플래너만 확정 기록을 표시하고 수조·코칭은 고유 요약을 표시한다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page);
@@ -31,14 +31,24 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const summaryRequests = () => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length;
     for (const screen of ['timer', 'aquarium', 'planner', 'strategy']) {
       if (screen !== 'timer') await page.locator(`.tabbar [data-tab="${screen}"]`).click();
+      if (screen === 'aquarium' || screen === 'strategy') {
+        await expect(card).toHaveCount(0);
+        await expect(page.locator('.sc-study-details')).toHaveCount(0);
+        await expect(screen === 'aquarium' ? page.getByRole('region', { name: '수조 성장 요약' }) : page.locator('.coaching-hero')).toBeVisible();
+        await expectNoHorizontalOverflow(page);
+        continue;
+      }
       await expect(card).toBeVisible();
       await expect(card).toHaveAttribute('data-variant', 'banner');
-      await expect(card.locator('.sc-study-score')).toContainText('저장 성적 기반 환산점수');
-      await expect(card.locator('.sc-study-score')).not.toContainText('%');
-      await expect(card.locator('.sc-study-banner')).toHaveCSS('border-radius', '16px');
-      await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
-      await expect(card).toContainText('1/2');
-      await expect(card).toContainText('과제 50% 완료');
+      await expect(card).not.toContainText('환산점수');
+      if (screen === 'timer') {
+        await expect(card.locator('.sc-study-headline')).toContainText('확정 공부 시간');
+        await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+        await expect(card).toContainText('1/2');
+      } else {
+        await expect(card.getByRole('progressbar')).toHaveCount(0);
+        await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
+      }
       {
         const detail = card.locator('details.sc-study-details');
         await expect(detail).not.toHaveAttribute('open', '');
@@ -118,7 +128,7 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
 
 test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page }) => {
   await setup(page, { failGameTypes: ['get_study_summary'] });
-  await page.goto('/studycrack-mobile.html?screen=strategy');
+  await page.goto('/studycrack-mobile.html?screen=timer');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
   await expect(card.locator('dd').first()).toHaveText('확인 필요');
@@ -126,12 +136,13 @@ test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
 });
 
-test('플래너 직접 진입도 학습 기록을 조회하고 배너에서 성적 화면을 연다', async ({ page }) => {
+test('플래너 직접 진입도 학습 기록을 조회하고 분석은 탭으로 연다', async ({ page }) => {
   const api = await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.locator('summary')).toContainText('00:30:00');
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBe(1);
-  await card.locator('.sc-study-score').click();
+  await expect(card.locator('.sc-study-score')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="analysis"]').click();
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
 });

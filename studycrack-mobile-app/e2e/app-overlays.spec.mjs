@@ -112,11 +112,13 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 800 }
     await page.screenshot({ path: testInfo.outputPath('home-foundation.png'), animations: 'disabled' });
     await page.locator('.tabbar [data-tab="planner"]').click();
     const title = page.locator('.primary-screen-header h1');
-    await expect(title).toHaveCSS('font-size', '22px');
+    await expect(title).toHaveCSS('font-size', '16px');
     await expect(title).toHaveCSS('font-weight', '900');
     const titleBounds = await title.boundingBox();
     const contentBounds = await content.boundingBox();
-    expect(titleBounds.x - contentBounds.x).toBe(gutter + 4);
+    const logoBounds = await page.locator('.primary-screen-header > img').boundingBox();
+    expect(logoBounds.x - contentBounds.x).toBe(gutter + 2);
+    expect(titleBounds.x - logoBounds.x - logoBounds.width).toBe(9);
     await expectNoHorizontalOverflow(page);
     await page.screenshot({ path: testInfo.outputPath('planner-foundation.png'), animations: 'disabled' });
   });

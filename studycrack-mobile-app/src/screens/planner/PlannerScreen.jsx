@@ -106,13 +106,13 @@ function PlannerMonthGrid({ plannerCalendarMonthCells = [] }) {
   );
 }
 
-function PlannerProgress({ presentation, isToday }) {
+function PlannerProgress({ presentation, isToday, accountMode }) {
   const progressTone = presentation.remainingCount ? 'pending' : presentation.totalCount ? 'complete' : 'waiting';
   return (
     <section className="card planner-progress-card">
       <div className="planner-progress-head"><div><span>{isToday ? '오늘의 계획 진행률' : '선택한 날의 계획 진행률'}</span><h4 className="sc-metric">{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`} aria-hidden="true"><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
       <div className="progress planner-progress-track" role="progressbar" aria-label="플래너 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow={presentation.progress}><i style={{ width: `${presentation.progress}%` }} /></div>
-      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '선택한 날의 계획을 모두 완료했어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span></div>
+      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '선택한 날의 계획을 모두 완료했어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span><span>{accountMode ? '계정 계획을 보고 있어요. 완료와 성장은 서버 확인 뒤 반영돼요.' : '계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.'}</span></div>
     </section>
   );
 }
@@ -172,11 +172,10 @@ function PlannerWorkspaceScreen(ctx) {
       overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
-            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title={isToday ? '오늘의 플래너' : '선택한 날의 플래너'} description={accountMode ? '계정 계획을 보고 있어요. 완료와 성장은 서버 확인 뒤 반영돼요.' : '계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.'} />
-            <StudyOverviewCard overview={ctx.studyOverview} scoreView={ctx.analysisScoreView} variant="banner" compact />
+            <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="Planner of Today" />
+            <PlannerProgress presentation={presentation} isToday={isToday} accountMode={accountMode} />
+            <StudyOverviewCard overview={ctx.studyOverview} variant="banner" compact recordsOnly />
             {accountMode ? <><PlannerAccountNotice /><button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button></> : null}
-
-            <PlannerProgress presentation={presentation} isToday={isToday} />
 
             <section className="planner-tasks-section">
               <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" className="planner-add-icon" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>

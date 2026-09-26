@@ -115,12 +115,7 @@ function ReverseProjectionCard({
 }) {
   const backtrace = summarizeBacktracePlan(backtracePlan);
   if (!canUseReverseProjection) {
-    return (
-      <div className="card analysis-reverse-card locked">
-        <div><span className="analysis-card-eyebrow">Standard Exclusive</span><h4>합격권까지 필요한 최소 원점수</h4><p>최소 노력 대비 도달 성적은 Standard 이상에서 확인할 수 있어요.</p></div>
-        <button type="button" className="btn btn-secondary mini" data-action="goto" data-target="proIntro">Standard 기능 보기</button>
-      </div>
-    );
+    return null;
   }
   if (!analysisSimRows.length || backtraceStatus === 'loading' || backtraceStatus === 'idle') {
     return <div className="card analysis-reverse-card"><span className="analysis-card-eyebrow">역산 대기</span><h4>시뮬레이션 결과를 불러오는 중</h4><p>과목별 상승 효율이 준비되면 최소 조합을 계산합니다.</p></div>;
@@ -238,6 +233,7 @@ export function AnalysisContent(ctx) {
       </div>
       <SimulationPreview rows={sortedRows} selectedRow={selectedRow} currentScore={currentScore} afterScore={afterScore} canSimulate={analysisPresentation?.canSimulate !== false} status={analysisPresentation?.simulationStatus} />
       <ReverseProjectionCard analysisSimRows={scopedRows} canUseReverseProjection={canUseReverseProjection} currentScore={currentScore} backtraceStatus={analysisPresentation && !analysisPresentation.backtraceReady ? 'idle' : analysisBacktraceStatus} backtracePlan={analysisBacktracePlan} backtraceError={analysisBacktraceError} />
+      <button type="button" className="btn btn-secondary" data-action="goto" data-target="proIntro">플랜별 기능 보기 →</button>
     </div>
   );
 }

@@ -743,7 +743,8 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await expect(page.locator('.analysis-score-detail-card')).toBeVisible();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
-  await expect(page.getByText('Standard Exclusive')).toBeVisible();
+  await expect(page.getByText('Standard Exclusive')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '플랜별 기능 보기 →' })).toBeVisible();
   await expect(page.locator('[data-screen="analysis"]')).not.toContainText('합격확률');
 
   await targetSelect.selectOption({ label: '고려대학교 경영학과' });

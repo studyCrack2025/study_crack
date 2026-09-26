@@ -16,7 +16,7 @@ async function setup(page, { count = 4, tier = 'basic', ...options } = {}) {
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`홈은 내 물고기에서 끝나고 공부 기록은 프로필에서 연다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`홈은 플래너에서 끝나고 공부 기록은 프로필에서 연다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page, { count: 5 });
@@ -34,9 +34,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('.timer-v2-plan-list > button').first().locator('b')).toHaveCSS('text-decoration-line', 'line-through');
     const title = page.locator('.timer-v2-plan-list > button').nth(1).locator('b');
     expect((await title.boundingBox()).height).toBeGreaterThan(30);
-    await expect(page.locator('[data-scene-variant="home"]')).toHaveCSS('height', '96px');
+    await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
     await expect(page.locator('[data-scene-variant="home"] button')).toHaveCount(0);
-    await expect(page.locator('.home-aquarium-count')).toHaveText('물고기 1마리');
+
     const rail = page.getByRole('region', { name: '학습 현황 바로가기' });
     await expect(rail.getByRole('button')).toHaveCount(4);
     await expect(rail.locator('[data-target="aquarium"]')).toHaveText('물고기 1마리');
@@ -45,15 +45,15 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
       await expect(button).toHaveCSS('grid-template-rows', /24px /);
     }
-    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan', '.home-aquarium-preview'];
+    const selectors = ['.timer-v2-brand-head', '.timer-v2-status-rail', '.timer-v2-target-summary', '.home-study-highlight', '.timer-v2-plan'];
     const tops = await Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.offsetTop)));
     expect(tops).toEqual([...tops].sort((a, b) => a - b));
     await expectNoHorizontalOverflow(page);
     await page.locator('.app-content').evaluate(el => { el.scrollTop = 0; });
     await page.screenshot({ path: testInfo.outputPath(`home-${width}-top.png`), animations: 'disabled' });
-    await page.locator('.home-aquarium-preview').scrollIntoViewIfNeeded();
+    await page.locator('.timer-v2-plan').scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`home-${width}-preview.png`), animations: 'disabled' });
-    await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/home-aquarium-preview/);
+    await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/timer-v2-plan/);
     await expect(page.locator('main .timer-v2-week, main .timer-v2-quick')).toHaveCount(0);
     await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     await page.getByRole('button', { name: '공부 기록 주간·과목별 기록과 수조 성장 규칙' }).click();
@@ -88,14 +88,14 @@ test('수조와 공부 기록이 각각 실패해도 계획과 직접 공부를 
   const failures = ['get_game_profile', 'get_study_summary'];
   await setup(page, { failGameTypes: failures });
   await page.goto('/studycrack-mobile.html?screen=timer');
-  await expect(page.locator('.home-aquarium-state')).toContainText('수조를 불러오지 못했어요');
+  await expect(page.locator('.timer-v2-status-rail [data-target="aquarium"]')).toContainText('물고기 확인 필요');
   await expect(page.locator('.home-aquarium-count')).toHaveCount(0);
   await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('확인 필요');
   await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(4);
   await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeEnabled();
   failures.length = 0;
-  await page.getByRole('button', { name: '수조 다시 확인' }).click();
-  await expect(page.locator('.home-aquarium-count')).toHaveText('물고기 0마리');
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
+  await expect(page.getByRole('region', { name: '수조 성장 요약' })).toContainText('0마리');
 });
 
 test('타이머 창을 닫아도 공부가 유지되고 새로고침·보상 오류에서 다시 열 수 있다', async ({ page }, testInfo) => {
@@ -143,7 +143,7 @@ test('공부 시작 실패는 별도 타이머 창에서 재시도하고 홈 아
   await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
   await expect(dialog.locator('[data-action="retryStudyStart"]')).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/home-aquarium-preview/);
+  await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/timer-v2-plan/);
   await page.locator('.home-active-study').click();
   await dialog.locator('[data-action="retryStudyStart"]').click();
   await expect(dialog.getByRole('button', { name: '공부 완료', exact: true })).toBeEnabled();

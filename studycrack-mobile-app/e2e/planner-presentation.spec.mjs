@@ -81,7 +81,7 @@ test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록�
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
   await page.locator('.planner-date-strip [data-planner-date="2026-09-08"]').click();
-  await expect(page.getByRole('heading', { name: '선택한 날의 플래너', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Planner of Today', exact: true })).toBeVisible();
   await expect(page.locator('.planner-progress-head')).toContainText('선택한 날의 계획 진행률');
   await expect(page.locator('article.planner-item')).toHaveCount(1);
   await expect(page.locator('article.planner-item')).toContainText('다른 날짜의 계획');

@@ -27,7 +27,7 @@ export const PLAN_META = {
   Standard: {
     introPrice: '49,000원 / 4주',
     payPrice: '49,000원 / 4주',
-    originalPrice: '정가 37,250원 / 주',
+    originalPrice: '정가 149,000원 / 4주',
     weeklyPrice: '12,250원 / 주',
     billingNote: '4주 총 49,000원',
     discountNote: '약 67% 할인 · 4주 결제 총 49,000원',
@@ -40,7 +40,7 @@ export const PLAN_META = {
   Pro: {
     introPrice: '149,000원 / 4주',
     payPrice: '149,000원 / 4주',
-    originalPrice: '정가 74,750원 / 주',
+    originalPrice: '정가 299,000원 / 4주',
     weeklyPrice: '37,250원 / 주',
     billingNote: '4주 총 149,000원',
     discountNote: '약 50% 할인 · 4주 결제 총 149,000원',

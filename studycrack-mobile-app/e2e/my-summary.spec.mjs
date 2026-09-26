@@ -5,7 +5,7 @@ import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow
 test.use({ deviceScaleFactor: 1 });
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`MY 하단 요약과 전체 MY는 같은 저장 정보로 연결된다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`MY 우측 요약과 전체 MY는 같은 저장 정보로 연결된다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await installAuthenticatedSession(page);
@@ -28,7 +28,10 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const box = await dialog.boundingBox();
     const frame = await page.locator('.app-frame').boundingBox();
     expect(Math.abs(box.y + box.height - frame.y - frame.height)).toBeLessThan(2);
-    expect(box.height).toBeLessThanOrEqual(height * .88 + 1);
+    expect(Math.abs(box.height - frame.height)).toBeLessThan(2);
+    expect(Math.abs(box.x + box.width - frame.x - frame.width)).toBeLessThan(2);
+    expect(box.x).toBeGreaterThan(frame.x);
+    await expect(dialog.locator('.sc-sheet-handle')).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     const capture = async name => page.screenshot({ path: process.env.STUDYCRACK_MY_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_MY_CAPTURE_DIR, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`), animations: 'disabled' });
     await capture('sheet');

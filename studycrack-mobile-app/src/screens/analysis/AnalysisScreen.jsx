@@ -25,7 +25,7 @@ export function AnalysisScreen(ctx) {
     >
           <section className={`analysis-v2 ${isAnalyzing ? 'loading' : 'ready'}`}>
             <div className="analysis-content-stage">
-              <PrimaryScreenHeader className="analysis-context-head" eyebrow="대학별 성적 분석" title="환산점수 분석" />
+              <PrimaryScreenHeader className="analysis-context-head" eyebrow="대학별 성적 분석" title="Score Analysis" />
               {isStale && (
                 <div className="analysis-stale-note" role="status" aria-live="polite">
                   <i aria-hidden="true" />
