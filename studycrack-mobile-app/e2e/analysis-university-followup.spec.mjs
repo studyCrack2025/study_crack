@@ -30,6 +30,7 @@ for (const width of [320, 390, 430]) {
     await expect(dialog.locator('.add-univ-row')).toContainText('연세대학교 경제학과');
     await dialog.getByRole('textbox').fill('없는학과');
     await dialog.getByRole('button', { name: '검색', exact: true }).click();
+    await expect(dialog).toContainText('검색 결과가 없어요');
     await dialog.getByRole('button', { name: '← 대학 다시 선택' }).click();
     await expect(dialog.getByRole('textbox', { name: '대학명 검색' })).toHaveValue('');
     await expectNoHorizontalOverflow(page);
