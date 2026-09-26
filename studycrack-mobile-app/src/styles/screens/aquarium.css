@@ -1,13 +1,13 @@
 .aquarium-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .aquarium-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.aquarium-habitat-header{min-width:0;display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;padding:16px 4px;border:0;border-radius:0;background:transparent;color:var(--sc-ink-strong);}
-.aquarium-habitat-header > img{width:36px;height:36px;object-fit:contain;border-radius:50%;background:var(--sc-surface-card);}
-.aquarium-habitat-header > div{min-width:0;display:grid;gap:5px;}
+.aquarium-habitat-header{min-width:0;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;padding:2px 2px 4px;border:0;border-radius:0;background:transparent;color:var(--sc-ink-strong);}
+.aquarium-habitat-header > img{width:38px;height:38px;object-fit:contain;border-radius:50%;background:var(--sc-surface-card);}
+.aquarium-habitat-header > div{min-width:0;display:grid;gap:1px;}
 .aquarium-habitat-header > div > span{color:var(--sc-brand-navy);font-size:9px;font-weight:900;letter-spacing:.08em;}
-.aquarium-habitat-header h1{margin:0;color:var(--sc-ink-strong);font-size:17px;font-weight:900;line-height:1.4;letter-spacing:0;overflow-wrap:anywhere;}
-.aquarium-day-badge{padding:10px;border:1px solid color-mix(in srgb,var(--sc-action-positive) 25%,var(--sc-surface-card));border-radius:20px;background:var(--sc-surface-positive);text-align:center;}
+.aquarium-habitat-header h1{margin:0;color:var(--sc-brand-navy-deep);font-size:18px;font-weight:900;line-height:1.15;letter-spacing:0;overflow-wrap:anywhere;}
+.aquarium-day-badge{min-height:38px;align-content:center;max-width:88px;padding:6px 8px;border:1px solid color-mix(in srgb,var(--sc-action-positive) 25%,var(--sc-surface-card));border-radius:20px;background:var(--sc-surface-positive);text-align:center;}
 .aquarium-day-badge small{color:var(--sc-action-positive-strong);font-size:9px;font-weight:800;}
-.aquarium-day-badge b{color:var(--sc-ink-strong);font-size:15px;font-weight:900;}
+.aquarium-day-badge b{color:var(--sc-ink-strong);font-size:12px;font-weight:900;}
 .aquarium-wallet{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px;border:1px solid var(--sc-line-subtle);border-radius:16px;background:var(--sc-surface-card);}
 .aquarium-wallet span{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:68px;padding:6px 9px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-card);color:var(--sc-ink-muted);font-size:11px;font-weight:800;}
 .aquarium-wallet b{color:var(--sc-ink-strong);font-size:12px;font-variant-numeric:tabular-nums;}
@@ -132,7 +132,12 @@
 .aquarium-mode-header h1{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-display);line-height:1.2;letter-spacing:0;}
 .aquarium-mode-header p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.45;}
 .app-content:has(> .aquarium-catalog-page){padding:0;}
-.aquarium-catalog-page{min-height:100%;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+.aquarium-catalog-page{min-height:100%;align-content:start;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+.aquarium-catalog-view{align-content:start;align-self:start;}
+.aquarium-dex-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;color:var(--sc-ink-muted);font-size:12px;}
+.aquarium-dex-pagination button,.aquarium-dex-reset{min-height:44px;padding:8px 12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:12px;font-weight:800;}
+.aquarium-dex-pagination button:disabled{opacity:.45;}
+.aquarium-dex-note{margin-block:0;color:var(--sc-ink-muted);font-size:11px;line-height:1.5;}
 .aquarium-catalog-view > :not(.aquarium-catalog-hero){margin-inline:var(--mobile-page-gutter);}
 .aquarium-catalog-card-meta{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;}
 .aquarium-catalog-card-meta > span:first-child{padding:4px 6px;border-radius:6px;background:color-mix(in srgb,var(--fishdex-accent) 10%,var(--sc-surface-card));color:var(--sc-ink-strong);font-size:10px;font-weight:800;}
@@ -140,7 +145,7 @@
 .aquarium-catalog-group article::before{content:"";position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:color-mix(in srgb,var(--fishdex-accent) 10%,transparent);pointer-events:none;}
 .aquarium-category-disclosure > button{display:flex;justify-content:space-between;gap:8px;align-items:center;width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-ink-muted);font:inherit;font-size:12px;font-weight:700;}
 .aquarium-category-disclosure .aquarium-catalog-categories{margin-top:8px;}
-.aquarium-catalog-hero{display:grid;gap:var(--sc-space-16);padding:calc(20px + env(safe-area-inset-top)) 20px 24px;background:linear-gradient(155deg,color-mix(in srgb,var(--sc-info-blue) 42%,var(--sc-brand-navy-deep)),var(--sc-brand-navy-deep));}
+.aquarium-catalog-hero{display:grid;gap:var(--sc-space-12);padding:calc(12px + env(safe-area-inset-top)) 16px 16px;background:linear-gradient(155deg,color-mix(in srgb,var(--sc-info-blue) 42%,var(--sc-brand-navy-deep)),var(--sc-brand-navy-deep));}
 .aquarium-catalog-hero .aquarium-mode-header > button{border-color:color-mix(in srgb,var(--sc-surface-card) 16%,transparent);background:color-mix(in srgb,var(--sc-surface-card) 10%,transparent);color:var(--sc-surface-card);box-shadow:none;}
 .aquarium-catalog-hero .aquarium-mode-header span{color:color-mix(in srgb,var(--sc-action-positive) 76%,var(--sc-surface-card));}
 .aquarium-catalog-hero .aquarium-mode-header h1{color:var(--sc-surface-card);font-size:25px;}
@@ -161,8 +166,8 @@
 .aquarium-draw-entry > i{display:none;}
 .aquarium-catalog-filter{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);}
 .aquarium-catalog-filter button{min-width:0;min-height:var(--sc-touch-target);padding:6px;border:0;border-radius:calc(var(--sc-radius-control) - 4px);background:transparent;color:var(--sc-ink-muted);font:inherit;font-size:var(--sc-type-caption);font-weight:800;}
-.aquarium-catalog-filter button.is-active{background:var(--sc-surface-card);color:var(--sc-brand-blue);box-shadow:var(--sc-shadow-normal);}
-.aquarium-catalog-categories{display:flex;overflow-x:auto;gap:6px;margin-inline:calc(var(--sc-space-8) * -1);padding:0 var(--sc-space-8) 2px;scrollbar-width:none;overscroll-behavior-inline:contain;}
+.aquarium-catalog-filter button.is-active{background:var(--sc-surface-card);color:var(--sc-brand-navy);box-shadow:var(--sc-shadow-normal);}
+.aquarium-catalog-categories{display:flex;min-height:calc(var(--sc-touch-target) + 2px);overflow-x:auto;gap:6px;margin-inline:calc(var(--sc-space-8) * -1);padding:0 var(--sc-space-8) 2px;scrollbar-width:none;overscroll-behavior-inline:contain;}
 .aquarium-catalog-categories::-webkit-scrollbar{display:none;}
 .aquarium-catalog-categories button{flex:none;min-height:var(--sc-touch-target);padding:7px 12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-card);color:var(--sc-ink-muted);font:inherit;font-size:var(--sc-type-micro);font-weight:800;white-space:nowrap;}
 .aquarium-catalog-categories button.is-active{border-color:color-mix(in srgb,var(--sc-info-blue) 35%,var(--sc-line-subtle));background:color-mix(in srgb,var(--sc-info-blue) 8%,var(--sc-surface-card));color:var(--sc-info-blue);}
@@ -176,10 +181,10 @@
 .aquarium-catalog-group > header b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);}
 .aquarium-catalog-group > header small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;}
 .aquarium-catalog-group > div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-.aquarium-catalog-group article{--fishdex-accent:var(--sc-action-positive-strong);position:relative;overflow:hidden;min-width:0;min-height:174px;display:grid;align-content:start;gap:6px;padding:14px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);text-align:left;content-visibility:auto;contain-intrinsic-size:auto 200px;}
+.aquarium-catalog-group article{--fishdex-accent:var(--sc-action-positive-strong);position:relative;overflow:hidden;min-width:0;min-height:136px;display:grid;align-content:start;gap:6px;padding:10px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);text-align:left;content-visibility:auto;contain-intrinsic-size:auto 150px;}
 .aquarium-catalog-group article.is-owned{border-color:color-mix(in srgb,var(--sc-action-positive) 30%,var(--sc-line-subtle));}
 .aquarium-catalog-group article.is-locked{background:var(--sc-surface-subtle);}
-.aquarium-catalog-sprite{width:80px;max-width:100%;height:80px;justify-self:center;display:grid;place-items:center;}
+.aquarium-catalog-sprite{width:60px;max-width:100%;height:60px;justify-self:center;display:grid;place-items:center;}
 .aquarium-catalog-sprite .aquarium-fish-svg,.aquarium-catalog-sprite .aquarium-fish-artwork{width:100%;}
 .aquarium-catalog-group article.is-locked .aquarium-fish-svg,.aquarium-catalog-group article.is-locked .aquarium-fish-artwork{filter:grayscale(1) brightness(.45);opacity:.3;}
 .aquarium-catalog-group article > b{max-width:100%;color:var(--sc-ink-strong);font-size:13px;font-weight:900;line-height:1.5;overflow-wrap:anywhere;}

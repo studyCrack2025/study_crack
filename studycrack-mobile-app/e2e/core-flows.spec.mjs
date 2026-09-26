@@ -683,20 +683,26 @@ test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 
 
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.getByRole('button', { name: /물고기 도감/ }).click();
-  await expect(page.locator('.aquarium-catalog-group')).toHaveCount(5);
-  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(85);
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(12);
   await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 85');
   await expect(page.locator('.aquarium-catalog-group.rarity-common > header')).toContainText('1 / 21');
-  await expect(page.locator('.aquarium-catalog-group.rarity-special > header')).toContainText('0 / 10');
-  await expect(page.locator('.aquarium-catalog-group img[loading="lazy"]')).toHaveCount(85);
-
+  await expect(page.locator('.aquarium-catalog-group img[loading="lazy"]')).toHaveCount(12);
   const initiallyLoaded = await page.evaluate(() => performance.getEntriesByType('resource').filter((entry) => entry.name.includes('fishdex-')).length);
   expect(initiallyLoaded).toBeGreaterThan(0);
   expect(initiallyLoaded).toBeLessThan(85);
+  const allSpecies = new Set();
+  for (let index = 1; index <= 8; index += 1) {
+    const ids = await page.locator('.aquarium-catalog-group article').evaluateAll(rows => rows.map(row => row.dataset.speciesId));
+    ids.forEach(id => allSpecies.add(id));
+    if (index < 8) await page.getByRole('navigation', { name: '도감 페이지 상단' }).getByRole('button', { name: '다음' }).click();
+  }
+  expect(allSpecies.size).toBe(85);
+  await expect(page.locator('.aquarium-catalog-group.rarity-special > header')).toContainText('0 / 10');
+  await expect(page.getByRole('navigation', { name: '도감 페이지 상단' }).getByRole('button', { name: '다음' })).toBeDisabled();
 
   await page.getByRole('button', { name: /생태 분류 ·/ }).click();
   await page.getByRole('button', { name: '민물', exact: true }).click();
-  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(17);
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(12);
   await expect(page.locator('.aquarium-catalog-selection')).toContainText('민물');
   await expect(page.locator('.aquarium-catalog-selection')).toContainText('17종');
   await page.getByRole('button', { name: '획득', exact: true }).click();

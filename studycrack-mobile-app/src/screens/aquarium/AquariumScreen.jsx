@@ -22,7 +22,7 @@ function AquariumHabitatHeader() {
   const view = useContext(AquariumGrowthContext);
   const days = view?.growth?.validDayCount;
   const known = Number.isInteger(days) && days >= 0;
-  return <header className="aquarium-habitat-header"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><div><span>STUDYCRACK / LIVE</span><h1>합격 페이스메이커</h1></div><div className="aquarium-day-badge" aria-label="수조 성장 인정 일수"><small>AQUARIUM</small><b>{known ? `DAY ${days}` : '확인 중'}</b>{view?.status !== 'ready' ? <small>{known ? '마지막 확인' : '기록 확인 필요'}</small> : null}</div></header>;
+  return <header className="aquarium-habitat-header"><img src={STUDYCRACK_LOGO_SRC} alt="StudyCrack" /><div><h1>합격 페이스메이커</h1><span>STUDYCRACK / LIVE</span></div><div className="aquarium-day-badge" aria-label="수조 성장 인정 일수"><b>{known ? `DAY ${days}` : '확인 중'}</b>{view?.status !== 'ready' ? <small>{known ? '마지막 확인' : '기록 확인 필요'}</small> : null}</div></header>;
 }
 
 function AquariumWallet({ fishCount = 0, profile }) {

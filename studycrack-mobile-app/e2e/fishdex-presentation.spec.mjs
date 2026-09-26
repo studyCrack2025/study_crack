@@ -2,6 +2,25 @@ import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
 test.use({ deviceScaleFactor: 1 });
+for (const width of [320, 390, 430]) {
+  test(`도감 빈 결과에서도 상단 높이는 변하지 않는다 (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
+    await page.goto('/studycrack-mobile.html?screen=aquarium');
+    await page.locator('[data-action="openAquariumCatalog"]').click();
+    const selectors = ['.aquarium-catalog-hero', '.aquarium-draw-entry', '.aquarium-catalog-filter', '.aquarium-catalog-categories'];
+    const heights = async () => Promise.all(selectors.map(selector => page.locator(selector).evaluate(el => el.getBoundingClientRect().height)));
+    await expect(page.locator('.aquarium-catalog-group').first()).toBeVisible();
+    const before = await heights();
+    await page.getByRole('button', { name: '획득', exact: true }).click();
+    await expect(page.locator('.aquarium-catalog-empty')).toBeVisible();
+    (await heights()).forEach((height, index) => expect(Math.abs(height - before[index])).toBeLessThanOrEqual(1));
+    await page.getByRole('button', { name: '미획득', exact: true }).click();
+    (await heights()).forEach((height, index) => expect(Math.abs(height - before[index])).toBeLessThanOrEqual(1));
+    await expectNoHorizontalOverflow(page);
+  });
+}
 async function setup(page, options = {}) {
   await page.clock.setFixedTime(new Date('2026-09-07T03:00:00Z'));
   await installAuthenticatedSession(page);
@@ -12,6 +31,37 @@ async function setup(page, options = {}) {
   api.state.activeFish = [null, fish, null];
   api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeFishIds: [null, fish.fishId, null] };
   return api;
+}
+
+for (const count of [1, 12, 13, 85]) {
+  test(`도감 ${count}종 페이지는 중복·누락 없이 탐색하고 조건 변경 시 처음으로 돌아간다`, async ({ page }) => {
+    const catalog = Array.from({ length: count }, (_, i) => ({ speciesId: `paged-${i}`, displayName: `친구 ${i}`, defaultName: '친구', colors: ['#3F6FD9', '#9DD9F2'], rarity: i % 2 ? 'rare' : 'common', category: i % 2 ? 'marine_fish' : 'freshwater' }));
+    const api = await setup(page, { fishCatalog: catalog });
+    await page.goto('/studycrack-mobile.html?screen=aquarium');
+    await page.locator('[data-action="openAquariumCatalog"]').click();
+    const ids = [];
+    const pager = page.getByRole('navigation', { name: '도감 페이지 상단' });
+    const totalPages = Math.ceil(count / 12);
+    for (let index = 1; index <= totalPages; index += 1) {
+      await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(Math.min(12, count - (index - 1) * 12));
+      ids.push(...await page.locator('.aquarium-catalog-group article').evaluateAll(rows => rows.map(row => row.dataset.speciesId)));
+      if (index < totalPages) {
+        await pager.getByRole('button', { name: '다음' }).click();
+        await expect(page.locator('.aquarium-catalog-selection')).toBeFocused();
+      }
+    }
+    expect(new Set(ids).size).toBe(count);
+    expect(ids.length).toBe(count);
+    await page.getByRole('group', { name: '희귀도', exact: true }).getByRole('button', { name: '희귀', exact: true }).click();
+    await expect(page.locator('.aquarium-catalog-selection')).toContainText(`${Math.floor(count / 2)}종`);
+    await page.getByRole('button', { name: '획득', exact: true }).click();
+    await expect(page.locator('.aquarium-catalog-empty')).toBeVisible();
+    await expect(pager).toHaveCount(0);
+    await page.getByRole('button', { name: '조건 초기화' }).click();
+    await expect(page.locator('.aquarium-catalog-selection')).toContainText(`${count}종`);
+    if (totalPages > 1) await expect(pager).toContainText(`1 / ${totalPages} 페이지`);
+    expect(api.requests.filter(({ payload }) => payload.type === 'get_fish_catalog')).toHaveLength(1);
+  });
 }
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
@@ -32,10 +82,10 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const card = page.locator('.aquarium-catalog-group article[data-state="owned"]').first();
     await expect(card).toContainText('획득일 · 2026. 09. 06.');
     const box = await card.boundingBox();
-    expect(box.height).toBeGreaterThanOrEqual(174);
-    await expect(card.locator('.aquarium-catalog-sprite')).toHaveCSS('width', '80px');
+    expect(box.height).toBeGreaterThanOrEqual(136);
+    await expect(card.locator('.aquarium-catalog-sprite')).toHaveCSS('width', '60px');
     await expect(card.locator('.aquarium-catalog-card-meta')).toContainText('일반');
-    await expect(page.locator('.aquarium-catalog-group article[data-state="locked"]').first()).toContainText('공부로 모은 조개');
+    await expect(page.locator('.aquarium-dex-note')).toContainText('공부로 모은 조개');
     await page.screenshot({ path: testInfo.outputPath(`fishdex-${width}.png`), animations: 'disabled' });
     await card.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`fishdex-cards-${width}.png`), animations: 'disabled' });
