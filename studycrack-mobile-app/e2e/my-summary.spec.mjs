@@ -128,6 +128,7 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await checklist.locator('summary').click();
   await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click();
   await expect(page.locator('[data-screen="addUniversity"]')).toBeVisible();
+  await page.getByRole('button', { name: '직접 추가하기 →' }).click();
   await page.locator('[data-field="analysisSearchTerm"]').fill('연세');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await page.getByRole('button', { name: /연세대학교/ }).click();
@@ -135,14 +136,11 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await page.getByRole('button', { name: '검색', exact: true }).click();
   const row = page.locator('.add-univ-row').filter({ hasText: '연세대학교 경제학과' });
   await row.getByRole('button', { name: '추가', exact: true }).click();
-  await expect.poll(() => messages.length).toBe(1);
+  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
+  expect(messages).toHaveLength(0);
   await expect(row.getByRole('button', { name: '추가', exact: true })).toBeEnabled();
-  await page.locator('[data-action="back"]').first().click();
-  await expect(checklist.locator('summary')).toContainText('1/4');
-  await checklist.locator('summary').click();
-  await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click();
   await row.getByRole('button', { name: '추가', exact: true }).click();
-  await expect(row.getByRole('button', { name: '추가됨', exact: true })).toBeDisabled();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.locator('[data-action="back"]').first().click();
   await expect(checklist.locator('summary')).toContainText('2/4');
   await checklist.locator('summary').click();

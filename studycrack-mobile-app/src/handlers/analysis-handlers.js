@@ -53,7 +53,6 @@ export function createAnalysisHandlers(ctx) {
     resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
     setActiveScoreView,
-    setAddingUniversity,
     setAnalysisBarProjectionTarget,
     setAnalysisHighlightedSubject,
     setAnalysisSearchOpen,
@@ -68,14 +67,12 @@ export function createAnalysisHandlers(ctx) {
     setTargetDeleteSaving,
     setTargetUnivSlots,
     setTargetOpen,
-    setUniversityModalOpen,
     setUniversityCatalogError,
     setUniversityCatalogRetryTick,
     setUniversityCatalogStatus,
     setUniversitySelectedName,
     setUniversityRecommendationRetryTick,
     persistTargetUnivs = noop,
-    timeout = setTimeout,
     updatePossibleUnivSlider = noop
   } = ctx;
 
@@ -202,18 +199,17 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
-    addAnalysisTarget({ actionEl }) {
-      const major = getData(actionEl, 'target-major');
-      if (!major) return false;
-      afterSafariViewportStable(() => setUniversityModalOpen(false));
-      afterSafariViewportStable(() => setAnalysisSearchOpen(false));
+    openUniversitySearch() {
+      setUniversitySelectedName('');
       setAnalysisSearchTerm('');
-      setAddingUniversity(true);
-      timeout(() => {
-        addMajorToTargets(major);
-        setAddingUniversity(false);
-      }, 500);
+      setAnalysisSearchOpen(true);
       return true;
+    },
+
+    async addAnalysisTarget({ actionEl }) {
+      const major = getData(actionEl, 'target-major');
+      if (!major || ctx.addingUniversity) return false;
+      return await addMajorToTargets(major);
     },
 
     addPossibleUniversity({ actionEl }) {

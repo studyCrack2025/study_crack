@@ -1,4 +1,5 @@
 const ANALYSIS_CONTEXT_KEYS = [
+  'targetPolicy',
   'analysisPresentation',
   'analysisApiError', 'analysisApiStatus', 'analysisBacktraceError', 'analysisBacktracePlan',
   'analysisBacktraceStatus', 'analysisHighlightedSubject', 'analysisMajorOptions', 'analysisScoreView',
@@ -15,6 +16,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'withdrawModalOpen', 'withdrawPassword', 'withdrawSubmitting'
   ]),
   addUniversity: Object.freeze([
+    'targetPolicy', 'targetSaveError', 'addingUniversity', 'analysisSearchOpen',
     'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
     'tab', 'universityCatalogError', 'universityCatalogStatus',
     'universityRecommendationError', 'universityRecommendationStatus', 'universitySelectedName'

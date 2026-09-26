@@ -114,6 +114,7 @@ releaseAuthExpiredHandler();
 
 const apiModules = [
   'src/features/account/api.js',
+  'src/features/account/target-api.js',
   'src/features/analysis/api.js',
   'src/features/gamification/api.js',
   'src/features/notifications/api.js',

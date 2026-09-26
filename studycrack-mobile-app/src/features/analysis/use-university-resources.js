@@ -6,7 +6,7 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
   const recommendationRequestRef = useRef(0);
 
   useEffect(() => {
-    if (screen !== 'addUniversity') return undefined;
+    if (screen !== 'addUniversity' || !userReady) return undefined;
     const requestKey = catalogRequestRef.current + 1;
     catalogRequestRef.current = requestKey;
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
@@ -21,7 +21,7 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       controller?.abort();
       if (catalogRequestRef.current === requestKey) catalogRequestRef.current += 1;
     };
-  }, [getApiBinding, retryTick, screen, setState]);
+  }, [getApiBinding, retryTick, screen, setState, userReady]);
 
   useEffect(() => {
     if (!['addUniversity', 'ob4'].includes(screen) || !userReady) return undefined;
@@ -41,7 +41,7 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       const recommendations = result.data || [];
       setState({
         universityRecommendations: recommendations,
-        universityRecommendationStatus: result.ok && recommendations.length ? 'ready' : 'empty',
+        universityRecommendationStatus: !result.ok ? 'error' : recommendations.length ? 'ready' : 'empty',
         universityRecommendationError: result.error || ''
       });
     });

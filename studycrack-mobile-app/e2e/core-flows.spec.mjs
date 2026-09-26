@@ -205,12 +205,14 @@ test('대학 검색은 한글 입력 후 대학과 학과를 순서대로 선택
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=addUniversity');
 
+  await page.getByRole('button', { name: '직접 추가하기 →' }).click();
+
   const search = page.locator('[data-field="analysisSearchTerm"]');
   await expect(search).toBeVisible();
   await search.fill('연세');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await page.getByRole('button', { name: /연세대학교/ }).click();
-  await expect(page.getByRole('heading', { name: '연세대학교 학과' })).toBeVisible();
+  await expect(page.locator('.add-univ-selection')).toContainText('연세대학교');
 
   const majorSearch = page.locator('[data-field="analysisSearchTerm"]');
   await majorSearch.fill('경제');

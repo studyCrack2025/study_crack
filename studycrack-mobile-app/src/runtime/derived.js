@@ -299,7 +299,7 @@ export function buildServerSimRows(simulation) {
   return SIM_SUBJECT_ORDER
     .map((key, idx) => {
       const item = simData[key] || {};
-      const unavailable = !Object.hasOwn(simData, key);
+      const unavailable = !Object.hasOwn(simData, key) || /데이터 오류|시뮬레이션 불가/.test(String(item.msg || ''));
       const gainNum = Number(item.uiDiff ?? item.diff ?? 0);
       const rounded = Number.isFinite(gainNum) ? Math.max(0, gainNum) : 0;
       const afterUiScore = Number(item.afterUiScore ?? item.after_ui_score);
@@ -314,6 +314,7 @@ export function buildServerSimRows(simulation) {
         baseUiScore: hasBaseUiScore ? baseUiScore : null,
         afterUiScore: Number.isFinite(afterUiScore) ? afterUiScore : (hasBaseUiScore ? baseUiScore + rounded : null),
         rawNeeded,
+        atMaximum: /이미 만점/.test(String(item.msg || '')),
         firstPositiveUiDiff: Number(item.firstPositiveUiDiff ?? item.first_positive_ui_diff ?? 0) || 0,
         isEvaporation: rounded <= 0,
         unavailable,

@@ -1,6 +1,25 @@
 import assert from 'node:assert/strict';
 import { fetchUniversityCatalog, fetchUniversityRecommendations, normalizeUniversityCatalog } from '../src/features/analysis/api.js';
 import { buildAnalysisDerived } from '../src/runtime/derived.js';
+import { buildTargetPolicy } from '../src/features/analysis/target-policy.js';
+import { saveTargetUnivs } from '../src/features/account/api.js';
+
+const basic = { userTier: 'basic', user: { univChangeRemaining: 0 } };
+assert.equal(buildTargetPolicy(basic).canAdd, false);
+assert.equal(buildTargetPolicy({ ...basic, user: { univChangeRemaining: 1 } }).canAdd, true);
+assert.equal(buildTargetPolicy({ user: {} }).remaining, null);
+const thrownLimit = await saveTargetUnivs({ userApiUrl: '/user', targetList: [], apiFetch: async () => { throw Object.assign(new Error('남은 변경 횟수(0회)가 부족합니다.'), { status: 400 }); } });
+assert.equal(thrownLimit.code, 'TARGET_CHANGE_LIMIT');
+assert.equal(thrownLimit.data.remainCount, 0);
+assert.equal(buildTargetPolicy({ ...basic, user: { univChangeRemaining: 0, currentSubscription: { tier: 'standard', status: 'active', startDate: new Date(Date.now() - 1000).toISOString(), endDate: new Date(Date.now() + 86400000).toISOString() } } }).unlimited, true);
+assert.equal(buildTargetPolicy({ ...basic, user: { univChangeRemaining: 10 }, targetUnivSlots: Array.from({ length: 6 }, (_, i) => ({ univ: '대학', major: String(i) })) }).canAdd, false);
+for (const [message, code] of [['남은 변경 횟수(0회)가 부족합니다.', 'TARGET_CHANGE_LIMIT'], ['internal details should not leak', '']]) {
+  const result = await saveTargetUnivs({ userApiUrl: '/user', targetList: [], apiFetch: async () => ({ ok: false, status: 400, json: async () => ({ error: message }) }) });
+  assert.equal(result.ok, false);
+  assert.equal(result.code, code);
+  assert.notEqual(result.error, message, 'only allowlisted validation failures receive a local explanation');
+  if (code) assert.equal(result.data.remainCount, 0);
+}
 
 const catalog = normalizeUniversityCatalog([
   { univName: '연세대학교', majors: ['경영학과', '정치외교학과', '경영학과'] },

@@ -76,6 +76,7 @@ export function createAnalysisInitialState() {
       universityModalOpen: false,
       analysisSelectedIndex: 0,
       addingUniversity: false,
+      targetSaveError: '',
       homeSlideIndex: 0,
       homeSlideMotion: '',
       scoreSlideMotion: '',

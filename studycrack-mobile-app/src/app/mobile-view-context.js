@@ -7,7 +7,6 @@ import {
   canUseScoreSimulation
 } from './access-policy.js';
 import { createBlankScoreState, mapExamDataToScorePatch, scoreExamTypeToKey } from '../features/analysis/score-model.js';
-import { targetSlotsToList, upsertTargetSlot } from '../features/analysis/target-model.js';
 import { resolveAnalysisExamMode, uniqueTargetList } from '../features/analysis/resource-model.js';
 import {
   buildAnalysisScoreView,
@@ -16,18 +15,13 @@ import {
   mergeScoreCache,
   normalizeServerResults
 } from '../features/analysis/score-store.js';
-import { getMobileBrowserServices, getMobileRuntimeContext } from '../shared/browser/mobile-runtime.js';
+import { getMobileRuntimeContext } from '../shared/browser/mobile-runtime.js';
 import { withOperationLock } from '../shared/async/operation-lock.js';
 import {
   getHomeSliderState,
   mobileInteractions,
   updatePossibleUnivSlider
 } from '../shared/browser/mobile-interactions.js';
-
-function notifySaveFailure(result, message) {
-  if (!result || result.ok !== false) return;
-  getMobileBrowserServices().alert(result.error || message);
-}
 
 function buildDefaultCoachingSubjects(derived = {}) {
   const { todayPlannerItems = [], todayStudySeconds = 0, todaySubjectsWithTimer = {} } = derived;
@@ -254,31 +248,13 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     },
     addMajorToTargets: (major) => withOperationLock(refs.operationLocksRef, 'profile-targets', async () => {
       if (!major || !baseContext.isCurrentProfile()) return false;
-      const current = stateRef.current;
-      const nextSlots = upsertTargetSlot(current.targetUnivSlots, major);
-      const nextHome = targetSlotsToList(nextSlots);
-      const nextAnalysis = uniqueTargetList(nextHome);
-      let result;
-      try { result = await api.persistTargetUnivs(nextHome, nextSlots); }
-      catch { result = { ok: false }; }
-      if (!baseContext.isCurrentProfile()) return false;
-      if (result?.ok !== true) {
-        notifySaveFailure({ ...result, ok: false }, '목표 대학 저장에 실패했습니다. 다시 시도해주세요.');
+      try {
+        const { saveTargetAddition } = await import('../features/analysis/save-target-addition.js');
+        return await saveTargetAddition({ api, isCurrentProfile: baseContext.isCurrentProfile, setState, stateRef }, major);
+      } catch {
+        if (baseContext.isCurrentProfile()) setState({ addingUniversity: false, targetSaveError: '대학 추가를 준비하지 못했어요. 연결을 확인하고 다시 시도해주세요.' });
         return false;
       }
-      setState({
-        user: { ...current.user, targetUniversity: nextHome[0] || '' },
-        targetUnivSlots: nextSlots,
-        analysisTargetList: nextAnalysis,
-        homeTargetList: nextHome,
-        targetMajor: current.targetMajor || major,
-        analysisCalculationRequested: false,
-        analysisApiStatus: 'idle',
-        analysisApiError: '',
-        scoreFetchStatus: 'idle',
-        scoreFetchSignature: ''
-      });
-      return true;
     })
   };
   return baseContext;

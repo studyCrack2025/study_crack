@@ -19,8 +19,10 @@ const registeredScreens = [
 ].sort();
 assert.deepEqual(Object.keys(SCREEN_CONTEXT_KEYS).sort(), registeredScreens, '모든 React screen은 명시 context 계약을 가져야 합니다.');
 assert.equal(Object.keys(createInitialAppState()).length, 12, 'root state는 12개 feature slice를 유지해야 합니다.');
-assert.equal(Object.keys(APP_STATE_FIELD_OWNERS).length, 245, 'state field 분류 누락 또는 무단 추가를 확인하세요.');
-assert.equal(Object.keys(APP_STATE_FIELD_KINDS).length, 245, 'state field 종류 분류 누락 또는 무단 추가를 확인하세요.');
+assert.equal(Object.keys(APP_STATE_FIELD_OWNERS).length, 246, 'state field 분류 누락 또는 무단 추가를 확인하세요.');
+assert.equal(Object.keys(APP_STATE_FIELD_KINDS).length, 246, 'state field 종류 분류 누락 또는 무단 추가를 확인하세요.');
+assert.equal(APP_STATE_FIELD_OWNERS.targetSaveError, 'analysis');
+assert.equal(APP_STATE_FIELD_KINDS.targetSaveError, 'ephemeralUi');
 assert.equal(APP_STATE_FIELD_OWNERS.studyPanelMode, 'study');
 assert.equal(APP_STATE_FIELD_KINDS.studyPanelMode, 'ephemeralUi');
 assert.equal(APP_STATE_FIELD_OWNERS.duration, undefined, '판매하지 않는 기간 선택 상태를 남기지 않습니다.');
@@ -81,4 +83,4 @@ assert.doesNotMatch(stateSource, /STORAGE_KEYS|safeStringifySet/);
 assert.doesNotMatch(schemaSource, /from ['"]\.\.\/runtime\//, '순수 state schema가 runtime 계층을 참조하면 안 됩니다.');
 assert.doesNotMatch(persistenceSource, /selectFlatAppState|flatSlice/, 'storage persistence는 필요한 state kind selector만 사용해야 합니다.');
 
-console.log('state architecture contracts passed: 12 slices, 245 fields, scoped handlers and React screens.');
+console.log(`state architecture contracts passed: 12 slices, ${Object.keys(APP_STATE_FIELD_OWNERS).length} fields, scoped handlers and React screens.`);

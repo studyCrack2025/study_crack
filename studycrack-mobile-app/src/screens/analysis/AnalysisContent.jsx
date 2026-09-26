@@ -1,5 +1,6 @@
 import { EXAM_OPTIONS } from '../../constants/options.js';
 import { Sheet } from '../../components/Sheet.jsx';
+import { TargetAllowance } from './TargetAllowance.jsx';
 import {
   buildAnalysisPresentation,
   clampAnalysisScore
@@ -20,14 +21,15 @@ function formatPoint(value, digits = 1) {
 }
 
 function rawNeededText(row = {}) {
-  return row.rawNeeded > 1 ? `원점수 +${row.rawNeeded}점부터 변화` : '';
+  return row.rawNeeded > 1 ? `원점수 +${row.rawNeeded}점에서 처음 상승해요.` : '';
 }
 
 function simulationStatusText(row = {}, isBest = false) {
-  if (row.unavailable) return '계산 대기';
+  if (row.unavailable) return '환산 데이터 확인 필요';
+  if (row.atMaximum) return '이미 원점수 만점';
   if (isBest && Number(row.displayGainNum || 0) > 0) return '가장 크게 반영';
   if (Number(row.displayGainNum || 0) > 0) return '반영 있음';
-  return rawNeededText(row) || '변동 대기';
+  return '+1점에서는 변화 없음';
 }
 
 function SimulationGrid({ rows = [], selectedSubject = '' }) {
@@ -38,15 +40,15 @@ function SimulationGrid({ rows = [], selectedSubject = '' }) {
   return (
     <ul className="analysis-sim-table" aria-label="과목별 원점수 1점 상승의 환산점수 효과">
       {rows.map((row) => {
-        const active = activeSubject === row.subject;
+        const active = !row.unavailable && !row.atMaximum && activeSubject === row.subject;
         const before = clampAnalysisScore(row.baseUiScore);
         const after = clampAnalysisScore(row.afterUiScore);
         const className = ['analysis-sim-row', row.isBest ? 'best' : '', active ? 'active' : '', row.isEvaporation ? 'is-flat' : ''].filter(Boolean).join(' ');
         return (
-          <li key={row.key || row.subject}><button type="button" className={className} data-action="highlightSimSubject" data-sim-subject={row.subject} aria-pressed={active} disabled={row.unavailable}>
+          <li key={row.key || row.subject}><button type="button" className={className} data-action="highlightSimSubject" data-sim-subject={row.subject} aria-pressed={active && !row.unavailable && !row.atMaximum} disabled={row.unavailable || row.atMaximum}>
             <span className="analysis-sim-subject"><b>{row.subject}</b>{row.isBest ? <em>최고 반영</em> : null}</span>
-            <span className="analysis-sim-effect">{row.unavailable ? '확인 필요' : row.displayGain}</span>
-            <span className="analysis-sim-status"><b>{simulationStatusText(row, row.isBest)}</b><small>{row.unavailable ? '과목 결과 없음' : `${formatPoint(before)} → ${formatPoint(after)}점`}</small></span>
+            <span className="analysis-sim-effect">{row.unavailable ? '확인 필요' : row.atMaximum ? '만점' : row.displayGain}</span>
+            <span className="analysis-sim-status"><b>{simulationStatusText(row, row.isBest)}</b><small>{row.unavailable ? '현재 시험·과목 데이터를 확인해주세요.' : row.atMaximum ? '더 올릴 원점수가 없어요.' : rawNeededText(row) || `${formatPoint(before)} → ${formatPoint(after)}점`}</small></span>
           </button></li>
         );
       })}
@@ -56,8 +58,8 @@ function SimulationGrid({ rows = [], selectedSubject = '' }) {
 
 function SimulationPreview({ rows, selectedRow, currentScore, afterScore, canSimulate, status = 'idle' }) {
   return <section className="card analysis-boost-card" aria-label="원점수 1점 비교">
-    <div className="analysis-section-head"><div><h4>점수 상승 시뮬레이션</h4><p>실제 과목별 원점수 +1점 결과를 비교해 보세요.</p></div></div>
-    {rows.length ? <><div className="analysis-preview-values" aria-live="polite"><span><small>{selectedRow?.subject || '과목'} 원점수</small><b>+1점</b></span><span><small>적용 후 환산점수</small><b>{formatPoint(afterScore)}점</b><small>현재 {formatPoint(currentScore)}점</small></span></div><SimulationGrid rows={rows} selectedSubject={selectedRow?.subject} /></> : <p className="analysis-boost-empty">{!canSimulate ? '과목별 +1점 비교는 Basic 이상에서 제공해요.' : status === 'loading' ? '과목별 +1점 결과를 불러오는 중이에요.' : status === 'error' ? '과목별 결과를 불러오지 못했어요.' : status === 'empty' ? '현재 조건의 과목별 결과가 없어요.' : '점수를 계산하면 확인된 과목별 결과를 표시해요.'}</p>}
+    <div className="analysis-section-head"><div><span className="analysis-card-eyebrow">한 점의 효과</span><h4>점수 상승 시뮬레이션</h4><p>과목을 선택해 원점수 +1점의 실제 환산 효과를 비교하세요.</p></div></div>
+    {rows.length ? <>{selectedRow && !selectedRow.atMaximum ? <div className="analysis-preview-values" aria-live="polite"><span><small>{selectedRow.subject} 원점수</small><b>+1점</b></span><span><small>적용 후 환산점수</small><b>{formatPoint(afterScore)}점</b><small>현재 {formatPoint(currentScore)}점</small></span></div> : <p className="analysis-boost-empty">원점수를 올려 비교할 수 있는 과목 결과가 없어요.</p>}<SimulationGrid rows={rows} selectedSubject={selectedRow?.subject} /><p className="analysis-simulation-note">0점은 원점수 +1점을 적용해도 환산점수가 같다는 뜻이에요. 더 올려야 상승하는 과목은 확인된 최초 상승 폭을 따로 표시해요.</p></> : <p className="analysis-boost-empty">{!canSimulate ? '과목별 +1점 비교는 Basic 이상에서 제공해요.' : status === 'loading' ? '과목별 +1점 결과를 불러오는 중이에요.' : status === 'error' ? '과목별 결과를 불러오지 못했어요.' : status === 'empty' ? '현재 조건의 과목별 결과가 없어요.' : '점수를 계산하면 확인된 과목별 결과를 표시해요.'}</p>}
     {canSimulate && ['error', 'empty'].includes(status) ? <button type="button" className="btn btn-secondary" data-action="calculateAnalysisScore">과목 결과 다시 확인</button> : null}
   </section>;
 }
@@ -196,7 +198,7 @@ export function AnalysisContent(ctx) {
   return (
     <div className="analysis-unified">
       <section className="analysis-input-entry" aria-label="분석 전 성적 확인">
-        <div><b>내 성적부터 확인해요</b><p>저장한 시험 성적이 분석 기준이에요. 성적을 확인하고 대학별 점수를 계산해보세요.</p></div>
+        <div><span className="analysis-card-eyebrow">01 · 성적 확인</span><b>내 성적부터 확인해요</b><p>저장한 시험 성적이 분석 기준이에요. 성적을 확인하고 대학별 점수를 계산해보세요.</p></div>
         <div className="analysis-result-head">
           <label><span>시험 기준</span><select className="analysis-exam-select planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>{!EXAM_OPTIONS.includes(scoreExamType) && scoreExamType ? <option value={scoreExamType}>{scoreExamType}</option> : null}{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></label>
         </div>
@@ -204,6 +206,8 @@ export function AnalysisContent(ctx) {
         <button type="button" className="btn btn-secondary" data-action="goto" data-target="scoreInfo">성적 입력·수정</button>
       </section>
       <div className={`card analysis-score-card ${isScoreLoading ? 'is-loading' : ''}`} aria-busy={isScoreLoading}>
+        <span className="analysis-card-eyebrow">02 · 대학별 환산</span>
+        <TargetAllowance policy={ctx.targetPolicy} />
         <div className="analysis-result-head"><label><span>희망 대학</span><select className="analysis-target-select planner-input" data-field="analysisTargetMajor" value={normalizedTargetMajor} onChange={() => {}}>{targetOptions.length ? targetOptions.map((label) => <option value={label} key={label}>{label}</option>) : <option value="">목표 대학을 추가해주세요</option>}<option value="__add_university__">+ 희망 대학 추가</option></select></label></div>
         {isScoreLoading ? <div className="analysis-score-local-loading" role="status" aria-live="polite">
           <div className="analysis-loading-orbit" aria-hidden="true"><i /><i /><i /></div>
