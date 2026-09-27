@@ -1,6 +1,12 @@
+import { exitMySurface } from './my-exit-motion.js';
+
 export function createMyNavigation() {
   let snapshot = {};
   return {
+    deferBack(state, commit) {
+      if (!state.myReturn || state.myReturn.restored) return false;
+      return exitMySurface(globalThis.document?.querySelector('.app-content[data-my-flow]'), commit);
+    },
     remember(value) { snapshot = value || {}; },
     goto(state, target, mainTab) {
       if (state.drawerOpen && !mainTab) {

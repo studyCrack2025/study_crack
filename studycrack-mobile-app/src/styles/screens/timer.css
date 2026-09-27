@@ -75,6 +75,7 @@
 .timer-week-day.is-today b{color:var(--sc-action-positive-strong);}
 .timer-week-day small{color:var(--sc-ink-subtle);font-size:8px;font-weight:700;font-variant-numeric:tabular-nums;}
 .timer-day-subjects{display:grid;gap:8px;padding-top:var(--sc-space-8);border-top:1px solid var(--sc-line-subtle);}
+.timer-day-subjects[hidden]{display:none;}
 .timer-day-subjects > div:first-child{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);}
 .timer-day-subjects > div:first-child span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}
 .timer-day-subjects > div:first-child b{color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-variant-numeric:tabular-nums;}

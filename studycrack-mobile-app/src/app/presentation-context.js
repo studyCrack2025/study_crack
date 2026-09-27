@@ -4,7 +4,30 @@ import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import { buildMyPagePresentation } from '../screens/mypage/presentation.js';
 import { buildStreakPresentation } from '../features/gamification/streak-presentation.js';
 import { buildAnalysisSnapshot } from '../screens/analysis/snapshot.js';
+import { mergeScoreCache, normalizeServerResults } from '../features/analysis/score-store.js';
+import { resolveAnalysisExamMode } from '../features/analysis/resource-model.js';
 import { buildTargetPolicy } from '../features/analysis/target-policy.js';
+
+function buildRenderScoreCache(state = {}, examKey = '') {
+  const baseCache = state.scoreCache || {};
+  const snapshot = state.lastAnalysisSnapshot;
+  const snapshotMatches = snapshot && snapshot.examMode === examKey;
+  const liveResultsMatch = state.analysisResultExamMode === examKey
+    && state.analysisResultSignature
+    && state.analysisResultSignature === state.scoreFetchSignature;
+  const analysisResults = liveResultsMatch
+    ? state.analysisResults || []
+    : snapshotMatches
+      ? snapshot.analysisResults || []
+      : [];
+  const analysisSimulations = liveResultsMatch
+    ? state.analysisSimulations || []
+    : snapshotMatches
+      ? snapshot.analysisSimulations || []
+      : [];
+  const merged = normalizeServerResults(analysisResults, analysisSimulations, state.scoreFetchSignature || '');
+  return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
+}
 
 function analysisCalculationPatch(current) {
   return { analysisCalculationRequested: true, analysisApiStatus: 'loading', analysisApiError: '', analysisResults: [], analysisSimulations: [], analysisSimulationStatus: 'idle', analysisResultSignature: '', scoreFetchStatus: 'idle', scoreFetchSignature: '', scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1, analysisBacktraceStatus: 'idle', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: '' };
@@ -55,5 +78,5 @@ export function buildAppPresentations({ state, derived, liveSeconds }) {
   const studyOverview = buildStudyOverview({ ...state, plannerItems, localDate: TODAY_DATE, liveSeconds });
   const aquariumPresentation = buildAquariumPresentation({ ...state, todayPlannerItems: derived.todayPlannerItems, planner: studyOverview.planner });
   const myPresentation = buildMyPagePresentation({ ...state, studyOverview, aquariumPresentation });
-  return { analysisResetPatch: { analysisSimulationStatus: 'idle', analysisHighlightedSubject: '', analysisCalculationRequested: false, analysisApiStatus: 'idle', analysisApiError: '', scoreFetchStatus: 'idle', scoreFetchSignature: '' }, analysisCalculationPatch, buildDefaultCoachingSubjects: () => buildDefaultCoachingSubjects(derived), studyOverview, aquariumPresentation, myPresentation, targetPolicy: buildTargetPolicy(state), analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
+  return { renderScoreCache: buildRenderScoreCache(state, resolveAnalysisExamMode(state)), analysisResetPatch: { analysisSimulationStatus: 'idle', analysisHighlightedSubject: '', analysisCalculationRequested: false, analysisApiStatus: 'idle', analysisApiError: '', scoreFetchStatus: 'idle', scoreFetchSignature: '' }, analysisCalculationPatch, buildDefaultCoachingSubjects: () => buildDefaultCoachingSubjects(derived), studyOverview, aquariumPresentation, myPresentation, targetPolicy: buildTargetPolicy(state), analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
 }

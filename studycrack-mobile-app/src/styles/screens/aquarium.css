@@ -1,10 +1,14 @@
 .aquarium-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .aquarium-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.aquarium-wallet{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px;border:1px solid var(--sc-line-subtle);border-radius:16px;background:var(--sc-surface-card);}
+.aquarium-wallet{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0;border:0;border-radius:0;background:transparent;}
 .aquarium-wallet span{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:68px;padding:6px 9px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-card);color:var(--sc-ink-muted);font-size:11px;font-weight:800;}
 .aquarium-wallet b{color:var(--sc-ink-strong);font-size:12px;font-variant-numeric:tabular-nums;}
-.aquarium-wallet small{color:var(--sc-ink-muted);font-size:10px;text-align:left;}
 .aquarium-care-area{display:grid;gap:12px;min-width:0;}
+.aquarium-discovery-card{display:grid;gap:12px;}
+.aquarium-wallet progress{width:100%;height:6px;appearance:none;border:0;border-radius:var(--sc-radius-pill);overflow:hidden;background:var(--sc-line-subtle);accent-color:var(--sc-action-positive);}
+.aquarium-wallet progress::-webkit-progress-bar{background:var(--sc-line-subtle);border-radius:var(--sc-radius-pill);}
+.aquarium-wallet progress::-webkit-progress-value{background:var(--sc-action-positive);border-radius:var(--sc-radius-pill);}
+.aquarium-wallet progress::-moz-progress-bar{background:var(--sc-action-positive);border-radius:var(--sc-radius-pill);}
 .aquarium-next-study{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:16px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);box-shadow:var(--sc-shadow-normal);}
 .aquarium-next-study-time{display:flex;flex-direction:column;align-items:center;justify-content:center;width:44px;min-height:44px;border-radius:50%;background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);overflow-wrap:anywhere;}
 .aquarium-next-study-time b{max-width:100%;font-size:13px;font-variant-numeric:tabular-nums;}
@@ -31,6 +35,7 @@
 .aquarium-section-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-section);line-height:1.35;letter-spacing:0;}
 .aquarium-section-head p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.45;}
 .aquarium-section-head > b{flex:none;padding:6px 9px;border-radius:var(--sc-radius-pill);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);}
+.aquarium-care-area > .aquarium-section-head > .btn{flex:none;width:auto;min-height:44px;padding:8px 12px;font-size:var(--sc-type-caption);}
 .aquarium-starter{display:grid;gap:var(--sc-space-16);}
 .aquarium-starter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sc-space-8);}
 .aquarium-starter-grid button{min-width:0;display:grid;justify-items:center;gap:2px;padding:10px 6px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink);}
@@ -106,15 +111,14 @@
 .aquarium-manage-result{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);padding:10px 12px;border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:700;animation:timerPanelIn var(--sc-motion-panel) var(--ease-enter);}
 .aquarium-manage-result button{flex:none;min-width:var(--sc-touch-target);min-height:var(--sc-touch-target);border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-weight:800;}
 .aquarium-next-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-8);}
-.aquarium-next-actions button{min-width:0;min-height:92px;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:var(--sc-space-8);padding:var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);color:var(--sc-brand-navy);box-shadow:var(--sc-shadow-normal);text-align:left;}
+.aquarium-next-actions button{min-width:0;min-height:60px;display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:var(--sc-space-8);padding:var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);color:var(--sc-brand-navy);box-shadow:var(--sc-shadow-normal);text-align:left;}
 .aquarium-next-actions button:disabled{opacity:.58;}
 .aquarium-next-actions .icon{width:20px;height:20px;stroke:currentColor;}
 .aquarium-next-actions button > span{min-width:0;display:grid;gap:3px;}
 .aquarium-next-actions b{color:var(--sc-brand-navy-deep);font-size:var(--sc-type-body);line-height:1.4;}
 .aquarium-next-actions small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;}
 .aquarium-next-actions button > i{font-style:normal;}
-.aquarium-next-actions button:first-child{grid-column:1/-1;min-height:72px;}
-.aquarium-next-actions button:last-child{grid-column:1/-1;min-height:72px;}
+.aquarium-next-actions button:first-child{grid-column:1/-1;min-height:60px;}
 .aquarium-mode-shell{min-width:0;display:grid;gap:var(--sc-card-gap);animation:timerPanelIn var(--sc-motion-screen) var(--ease-enter);}
 .aquarium-mode-header{display:grid;grid-template-columns:var(--sc-touch-target) minmax(0,1fr);align-items:start;gap:var(--sc-space-12);padding:var(--sc-space-8) 2px;}
 .aquarium-mode-header > button{width:var(--sc-touch-target);height:var(--sc-touch-target);display:grid;place-items:center;padding:0;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:28px;line-height:1;box-shadow:var(--sc-shadow-normal);}

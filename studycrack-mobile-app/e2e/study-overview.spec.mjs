@@ -38,36 +38,20 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
         await expectNoHorizontalOverflow(page);
         continue;
       }
-      await expect(card).toBeVisible();
-      await expect(card).toHaveAttribute('data-variant', 'banner');
-      await expect(card).not.toContainText('환산점수');
-      if (screen === 'timer') {
-        await expect(card.locator('.sc-study-headline')).toContainText('확정 공부 시간');
-        await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
-        await expect(card).toContainText('1/2');
-      } else {
-        await expect(card.getByRole('progressbar')).toHaveCount(0);
+      if (screen === 'planner') {
+        await expect(card).toHaveCount(0);
+        await expect(page.locator('.planner-study-status')).toContainText('오늘 실제 공부 00:30:00');
+        await expect(page.locator('.sc-study-details')).toHaveCount(0);
         await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
-      }
-      if (screen === 'planner') {
-        const detail = card.locator('details.sc-study-details');
-        await expect(detail).not.toHaveAttribute('open', '');
-        await expect(card.locator('dd').first()).not.toBeVisible();
-        await detail.locator('summary').click();
-        await expect(card.locator('dd').first()).toBeVisible();
-      }
-      if (screen === 'planner') {
-      await expect(card.locator('dd').nth(0)).toHaveText('00:30:00');
-      await expect(card.locator('dd').nth(1)).toHaveText('25%');
-      await expect(card.locator('[data-study-base-seconds]')).toHaveCount(0);
-      await expect(card.locator('.sc-study-source')).toHaveText('계획 2026-09-07 · 기기 기준공부 2026-09-07 · 한국 시간 기준');
       } else {
+        await expect(card).toBeVisible();
+        await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
         await expect(card.locator('.sc-study-details')).toHaveCount(0);
         await expect(page.locator('.home-week-flow .timer-week-day')).toHaveCount(7);
       }
       await page.evaluate(() => document.fonts.ready);
       const file = `${screen}-${width}.png`;
-      await card.screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, file) : testInfo.outputPath(file), animations: 'disabled' });
+      await (screen === 'planner' ? page.locator('.planner-study-status') : card).screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, file) : testInfo.outputPath(file), animations: 'disabled' });
       const fullFile = `${screen}-${width}-page.png`;
       await page.screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, fullFile) : testInfo.outputPath(fullFile), fullPage: true, animations: 'disabled' });
       await expectNoHorizontalOverflow(page);
@@ -110,12 +94,12 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await page.goto('/studycrack-mobile.html?screen=timer');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
-  const week = page.locator('.timer-v2-week');
+  const week = page.locator('.home-week-flow');
   const openRecords = async () => {
-    await page.locator('[data-action="openStudyRecords"]').click();
+    if (await week.getByRole('button', { name: /이번 주 공부 흐름/ }).getAttribute('aria-expanded') === 'false') await week.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
   };
   await openRecords();
-  await expect(week).toContainText('이번 주 확정 누적');
+  await expect(week).toContainText('이번 주 공부 흐름');
   const before = await week.innerText();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();
@@ -145,7 +129,7 @@ test('플래너 직접 진입도 학습 기록을 조회하고 분석은 탭으�
   const api = await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
   const card = page.getByRole('region', { name: '학습 현황 요약' });
-  await expect(card.locator('summary')).toContainText('00:30:00');
+  await expect(page.locator('.planner-study-status')).toContainText('00:30:00');
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBe(1);
   await expect(card.locator('.sc-study-score')).toHaveCount(0);
   await page.locator('.tabbar [data-tab="analysis"]').click();

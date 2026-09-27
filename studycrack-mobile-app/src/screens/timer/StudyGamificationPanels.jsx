@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { buildTimerJourneyPresentation } from './presentation.js';
 
 const STUDY_WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -23,6 +23,8 @@ function subjectTone(subject = '') {
 
 export function StudyWeekSummary({ overview, summary = null, status = 'idle', compact = false }) {
   const [selectedDate, setSelectedDate] = useState('');
+  const [expanded, setExpanded] = useState(false);
+  const detailId = useId();
   if (status === 'loading' && !summary) return <div className="timer-week-loading" role="status"><i /><span>이번 주 공부 흐름을 정리하고 있어요.</span></div>;
   if (!summary?.week?.days?.length || overview?.week.seconds == null) {
     return (
@@ -42,21 +44,23 @@ export function StudyWeekSummary({ overview, summary = null, status = 'idle', co
   const selectedSubjects = [...(selectedDay?.subjects || [])].filter((row) => row.seconds > 0).sort((left, right) => right.seconds - left.seconds);
   return (
     <div className="timer-week-summary" data-compact={compact || undefined}>
-      <div className="timer-week-summary-head">{compact ? <button type="button" data-action="openStudyRecords">이번 주 공부 흐름 →</button> : <span>이번 주 확정 누적</span>}<b>{exactDurationLabel(overview.week.seconds)}</b></div>
+      <div className="timer-week-summary-head">{compact ? <button type="button" aria-expanded={expanded} aria-controls={detailId} onClick={() => setExpanded(value => !value)}>이번 주 공부 흐름 {expanded ? '접기 −' : '더보기 +'}</button> : <span>이번 주 확정 누적</span>}<b>{exactDurationLabel(overview.week.seconds)}</b></div>
       {!overview.week.fresh ? <p className="timer-session-empty">마지막 확인 기록이에요. 최신 상태는 위 학습 요약에서 다시 확인해주세요.</p> : null}
       <div className="timer-week-chart" aria-label="이번 주 일별 공부 시간">
         {days.map((day, index) => (
-          <button type="button" className={`timer-week-day ${day.date === todayDate ? 'is-today' : ''} ${day.date === selectedDay?.date ? 'is-selected' : ''}`} onClick={() => setSelectedDate(day.date)} aria-pressed={day.date === selectedDay?.date} aria-label={`${day.date} ${STUDY_WEEK_LABELS[index]}요일 ${exactDurationLabel(day.totalSeconds)}`} key={day.date}>
+          <button type="button" className={`timer-week-day ${day.date === todayDate ? 'is-today' : ''} ${day.date === selectedDay?.date ? 'is-selected' : ''}`} onClick={() => { setSelectedDate(day.date); if (compact) setExpanded(true); }} aria-pressed={day.date === selectedDay?.date} aria-label={`${day.date} ${STUDY_WEEK_LABELS[index]}요일 ${exactDurationLabel(day.totalSeconds)}`} key={day.date}>
             <span className="timer-week-track"><span className="timer-week-stack" style={{ height: `${Math.round((day.totalSeconds / maxSeconds) * 100)}%` }}>{day.subjects.length ? day.subjects.map((row) => <i data-subject-tone={subjectTone(row.subject)} style={{ flexGrow: Math.max(1, row.seconds) }} title={`${row.subject} ${exactDurationLabel(row.seconds)}`} key={row.subject} />) : <i className="is-empty" />}</span></span>
             <b>{STUDY_WEEK_LABELS[index]}</b>
             {!compact ? <small>{day.date.slice(-2)}</small> : null}
           </button>
         ))}
       </div>
-      {compact ? <div className="timer-week-caption" aria-live="polite"><span>{selectedDay.date.slice(5)} · {exactDurationLabel(selectedDay.totalSeconds)}</span><small>{summary.week.startDate.slice(5)} — {summary.week.endDate.slice(5)}</small></div> : <div className="timer-day-subjects">
+      {compact ? <div className="timer-week-caption" aria-live="polite"><span>{selectedDay.date.slice(5)} · {exactDurationLabel(selectedDay.totalSeconds)}</span><small>{summary.week.startDate.slice(5)} — {summary.week.endDate.slice(5)}</small></div> : null}
+      <div id={detailId} className="timer-day-subjects" hidden={compact && !expanded}>
         <div><span>{selectedDay?.date?.slice(5).replace('-', '월 ')}일 과목별 기록</span><b>{exactDurationLabel(selectedDay?.totalSeconds)}</b></div>
         <div>{selectedSubjects.length ? selectedSubjects.map((row) => <span data-subject-tone={subjectTone(row.subject)} key={row.subject}><i /><b>{row.subject}</b><small>{exactDurationLabel(row.seconds)}</small></span>) : <p>선택한 날짜에는 아직 완료한 공부가 없어요.</p>}</div>
-      </div>}
+      </div>
+      {compact && expanded ? <button type="button" className="btn btn-secondary" data-action="openGameRules">수조 성장 규칙 보기</button> : null}
     </div>
   );
 }

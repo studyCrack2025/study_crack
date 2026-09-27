@@ -52,7 +52,7 @@ test('팝업 형태별 진입 모션과 메뉴 눌림은 기본 모션과 분리
   await trigger.click();
   const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
   await expect(drawer).toHaveCSS('animation-name', 'myDrawerIn');
-  await expect(drawer).toHaveCSS('animation-duration', '0.28s');
+  await expect(drawer).toHaveCSS('animation-duration', '0.38s');
   await drawer.press('Escape');
   await expect(trigger).toBeFocused();
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();

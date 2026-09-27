@@ -1,8 +1,13 @@
 .my-summary-overlay{align-items:stretch;justify-content:flex-end;}
 .sc-overlay.sc-overlay--drawer{align-items:stretch;justify-content:flex-end;padding:0;}
-.sc-modal.sc-side-panel,.sc-sheet.sc-side-panel{--sc-surface-enter:myDrawerIn;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);overflow:auto;align-content:start;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom));}
-.app-screen[data-my-flow]{--sc-page-enter:myDrawerIn;}
-.my-summary-sheet{--sc-surface-enter:myDrawerIn;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);background:var(--sc-surface-canvas);}
+.sc-modal.sc-side-panel,.sc-sheet.sc-side-panel{--sc-surface-enter:myDrawerIn;--sc-surface-duration:380ms;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);overflow:auto;align-content:start;padding-top:max(20px,env(safe-area-inset-top));padding-bottom:max(20px,env(safe-area-inset-bottom));}
+.app-screen[data-my-flow]{--sc-page-enter:myDrawerIn;--motion-page:380ms;position:relative;z-index:1;background:var(--sc-surface-canvas);}
+.my-summary-sheet{--sc-surface-enter:myDrawerIn;--sc-surface-duration:380ms;width:calc(100% - 20px);height:100%;max-height:100%;margin:0;border-radius:var(--sc-radius-my) 0 0 var(--sc-radius-my);background:var(--sc-surface-canvas);}
+.my-summary-sheet.is-restored{animation:none;}
+.my-return-backdrop{position:absolute;inset:0;display:none;flex-direction:column;background:var(--sc-surface-canvas);overflow:hidden;}
+.app-frame:has(.app-content[data-my-exit]) > .my-return-backdrop{display:flex;}
+[data-my-exit]{animation:myDrawerOut 320ms var(--ease-exit) both !important;pointer-events:none;}
+@keyframes myDrawerOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(100%);opacity:0;}}
 @keyframes myDrawerIn{from{opacity:.001;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
 .my-summary-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(16px,env(safe-area-inset-top)) 20px 16px;}
 .my-summary-head h1{margin:0;color:var(--sc-ink-strong);font-size:18px;font-weight:900;}

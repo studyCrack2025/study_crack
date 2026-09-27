@@ -265,12 +265,12 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(journey.locator('[data-step="completion"]')).toHaveAttribute('data-state', 'complete');
   await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
   await page.getByRole('button', { name: '타이머 닫기' }).click();
-  await page.locator('[data-action="openStudyRecords"]').click();
-  await expect(page.locator('.study-record-sheet .timer-week-summary')).toBeVisible();
-  await page.locator('.study-record-sheet .timer-week-day.is-today').click();
+  await page.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
+  await expect(page.locator('.home-week-flow .timer-week-summary')).toBeVisible();
+  await page.locator('.home-week-flow .timer-week-day.is-today').click();
   await expect(page.locator('.timer-day-subjects')).toContainText('00:00:02');
   await expect(page.locator('.timer-day-subjects [data-subject-tone="korean"]')).toContainText('국어');
-  await expect(page.locator('.study-record-sheet .timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
+  await expect(page.locator('.home-week-flow .timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -304,8 +304,7 @@ test('종료 보상이 수조 잔액과 첫 물고기 FishDex 여정으로 이�
 
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
-  await expect(journey.locator('[data-step="aquarium"]')).toHaveAttribute('data-state', 'complete');
-  await expect(journey.locator('[data-step="fishdex"]')).toHaveAttribute('data-state', 'complete');
+  await expect(journey).toHaveCount(0);
   await page.getByRole('button', { name: /물고기 도감/ }).click();
 
   await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 12');
@@ -545,10 +544,10 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
 
+  if (await page.locator('.aquarium-management').getAttribute('open') === null) await page.locator('.aquarium-management > summary').click();
   await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '먹이 주기' })).toHaveCount(0);
   await expect(page.locator('.aquarium-exp')).toContainText('0 / 30');
-  await page.locator('.aquarium-management > summary').click();
   await page.locator('[data-field="aquariumFishName"]').fill('마루별');
   await page.locator('[data-action="saveAquariumFishName"]').click();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
@@ -559,6 +558,7 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'rename_fish').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'set_active_fish').length).toBe(1);
   await page.reload();
+  await page.locator('.aquarium-management > summary').click();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
   await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-path')).toHaveCSS('animation-name', 'aquariumFishPath');

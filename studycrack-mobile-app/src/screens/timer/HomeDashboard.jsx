@@ -56,7 +56,7 @@ export function HomeDashboard(props) {
     <HomeStatusRail aquariumPresentation={aquariumPresentation} normalizedTargetMajor={normalizedTargetMajor} />
     <HomeTargetSummary calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} normalizedTargetMajor={normalizedTargetMajor} />
     <section className="home-study-highlight" aria-label="오늘의 학습 지표"><StudyOverviewCard overview={studyOverview} variant="banner" showDetails={false} /></section>
-    <section className="home-week-flow" aria-label="이번 주 공부 흐름"><StudyWeekSummary overview={studyOverview} summary={props.studySummary} status={props.studySummaryStatus} compact /></section>
+    <section className="home-week-flow" aria-label="이번 주 공부 흐름"><StudyWeekSummary key={props.user?.email || 'guest'} overview={studyOverview} summary={props.studySummary} status={props.studySummaryStatus} compact /></section>
     <HomePlannerPreview {...props} showStudyPanel={forcedOpen} />
   </main>;
 }

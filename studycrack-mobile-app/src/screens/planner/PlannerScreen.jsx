@@ -4,7 +4,7 @@ import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
-import { StudyOverviewCard } from '../../components/StudyOverviewCard.jsx';
+import { PlannerStudyStatus } from './PlannerStudyStatus.jsx';
 import { TODAY_DATE } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
 import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.jsx';
@@ -174,7 +174,7 @@ function PlannerWorkspaceScreen(ctx) {
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="Planner of Today" />
             <PlannerProgress presentation={presentation} isToday={isToday} accountMode={accountMode} />
-            <StudyOverviewCard overview={ctx.studyOverview} variant="banner" compact recordsOnly />
+            <PlannerStudyStatus overview={ctx.studyOverview} isToday={isToday} />
             {accountMode ? <><PlannerAccountNotice /><button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button></> : null}
 
             <section className="planner-tasks-section">

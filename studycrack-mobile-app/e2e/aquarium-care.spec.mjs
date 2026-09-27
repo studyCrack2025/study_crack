@@ -21,7 +21,7 @@ for (const width of [320, 360, 390, 430]) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const api = await setup(page);
     await page.goto('/studycrack-mobile.html?screen=aquarium');
-    await expect(page.locator('.aquarium-exp')).toBeVisible();
+    await expect(page.locator('.aquarium-exp')).toBeHidden();
     await expect(page.locator('.aquarium-management')).not.toHaveAttribute('open');
     await expect(page.locator('.aquarium-next-actions button').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     await expect(page.locator('.aquarium-next-actions small').first()).toHaveCSS('color', 'rgb(99, 112, 131)');
@@ -40,6 +40,12 @@ for (const width of [320, 360, 390, 430]) {
     await expect(input).toHaveValue('마루');
     await page.getByRole('button', { name: '코랄 관리' }).click();
     await expect(input).toHaveValue('작성중');
+    await openManagement(page);
+    await page.locator('.aquarium-scene [data-action="selectAquariumFish"]').click();
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('작성중');
+    const share = await page.locator('.aquarium-care-area [data-action="openAquariumShare"]').boundingBox();
+    expect(share.width).toBeLessThan(90);
     await page.getByRole('button', { name: /물고기 도감/ }).click();
     await page.getByRole('button', { name: '수조로 돌아가기' }).click();
     await expect(input).toHaveValue('작성중');
@@ -109,7 +115,7 @@ test('미확인 상태로 탭 왕복 후 본체 조회가 실패해도 상태 �
   await page.getByRole('button', { name: '마루 관리' }).click();
   await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
   await expect(page.getByText('처리 결과 확인이 필요해요')).toBeVisible();
-  await page.getByRole('button', { name: /공부해서 뽑기권 받기/ }).click();
+  await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(page.locator('.timer-v2-status-rail')).toBeVisible();
   let failProfile = true;
   await page.route('**/api/**', async route => {

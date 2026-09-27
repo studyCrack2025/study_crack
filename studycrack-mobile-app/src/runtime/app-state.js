@@ -57,8 +57,9 @@ export function createNavigationOps({ getState, setState, onScreenChange, myNavi
     return true;
   }
 
-  function back() {
+  function back(afterMotion = false) {
     const state = getState();
+    if (!afterMotion && myNavigation?.deferBack?.(state, () => back(true))) return true;
     onScreenChange?.(state.screen, null);
     if (!state.history.length) return goto('timer', false);
     const clone = [...state.history];

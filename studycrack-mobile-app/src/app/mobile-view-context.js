@@ -11,9 +11,7 @@ import { resolveAnalysisExamMode, uniqueTargetList } from '../features/analysis/
 import {
   buildAnalysisScoreView,
   buildSimulationTargets,
-  buildUniversityCards,
-  mergeScoreCache,
-  normalizeServerResults
+  buildUniversityCards
 } from '../features/analysis/score-store.js';
 import { getMobileRuntimeContext } from '../shared/browser/mobile-runtime.js';
 import { withOperationLock } from '../shared/async/operation-lock.js';
@@ -51,26 +49,6 @@ function buildScoreSelectionPatch(scoreExamType, current) {
   };
 }
 
-function buildRenderScoreCache(state = {}, examKey = '') {
-  const baseCache = state.scoreCache || {};
-  const snapshot = state.lastAnalysisSnapshot;
-  const snapshotMatches = snapshot && snapshot.examMode === examKey;
-  const liveResultsMatch = state.analysisResultExamMode === examKey
-    && state.analysisResultSignature
-    && state.analysisResultSignature === state.scoreFetchSignature;
-  const analysisResults = liveResultsMatch
-    ? state.analysisResults || []
-    : snapshotMatches
-      ? snapshot.analysisResults || []
-      : [];
-  const analysisSimulations = liveResultsMatch
-    ? state.analysisSimulations || []
-    : snapshotMatches
-      ? snapshot.analysisSimulations || []
-      : [];
-  const merged = normalizeServerResults(analysisResults, analysisSimulations, state.scoreFetchSignature || '');
-  return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
-}
 
 export function isTabbarDimmed(state = {}) {
   return Boolean(
@@ -89,7 +67,8 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
   const { scrollOps, timerOps, ...gestureRefs } = mobileInteractions;
   const derivedContext = buildDerivedContext(state, timerOps.studyTimerSecondsRef.current);
   const examKey = resolveAnalysisExamMode(state);
-  const scoreCache = buildRenderScoreCache(state, examKey);
+  const presentations = buildPresentations?.({ state, derived: derivedContext, liveSeconds: timerOps.studyTimerSecondsRef.current });
+  const scoreCache = presentations?.renderScoreCache || state.scoreCache || {};
   const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || [])]);
   const selectedMajor = targets.includes(state.targetMajor) ? state.targetMajor : targets[0] || state.targetMajor || '';
   const analysisView = buildAnalysisScoreView(selectedMajor, scoreCache, examKey, state.scoreFetchStatus);
@@ -99,7 +78,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
       && !(state.analysisResults || []).length
       && !(state.lastAnalysisSnapshot?.analysisResults || []).length,
     ...derivedContext,
-    ...buildPresentations?.({ state, derived: derivedContext, liveSeconds: timerOps.studyTimerSecondsRef.current }),
+    ...presentations,
     initializeApp: retryUserLoad,
     isCurrentProfile: () => stateRef.current.user === state.user && stateRef.current.userLoadStatus === 'ready' && api.hasClientSession(),
     applySavedProfileTarget: (target) => {

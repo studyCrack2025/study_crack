@@ -28,15 +28,14 @@ test('공통 MY 팝업의 닫기와 전체 MY 왕복은 초점과 스크롤을 �
   await page.keyboard.press('Escape');
   await expect(trigger).toBeFocused();
   await expect(content).not.toHaveAttribute('inert', '');
-  await page.locator('[data-action="openStudyRecords"]').click();
+  await page.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
   await page.locator('[data-action="openGameRules"]').click();
   await expect(dialog).toHaveCount(0);
   const rules = page.getByRole('dialog');
   await expect(rules).toHaveCount(1);
   await expect(nav).toHaveAttribute('inert', '');
   await rules.press('Escape');
-  await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(page.locator('.home-week-flow .timer-day-subjects')).toBeVisible();
   await expect(page.locator('.app-screen-overlays')).toHaveCount(0);
   await expect(dialog).toHaveCount(0);
   await expect(content).not.toHaveAttribute('inert', '');
