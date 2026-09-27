@@ -568,6 +568,9 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveQualInfo() {
+      const originScreen = ctx.screen;
+      const originButton = globalThis.document?.querySelector('.qual-save-btn');
+      const originUser = ctx.user;
       const values = readQualValues(ctx);
       if (isQualInfoMissing(values)) {
         alert('필수 입력 사항을 모두 입력해주세요');
@@ -575,12 +578,20 @@ export function createProfileHandlers(ctx) {
       }
       if (shouldReadOb1FromDom(ctx)) syncIOSSafariQualDomState(ctx, values);
       const qualitative = { ...(ctx.user?.qualitative || {}), ...buildQualitative(values) };
-      if (!await saveConfirmedQualitative(qualitative)) return false;
+      if (originButton?.disabled) return false;
+      if (originButton) originButton.disabled = true;
+      let saved;
+      try { saved = await saveConfirmedQualitative(qualitative); }
+      finally { if (originButton?.isConnected) originButton.disabled = false; }
+      if (!saved) return false;
       if (ctx.screen === 'ob1') {
         goto?.('ob2');
         return true;
       }
-      alert('정성조사서가 저장되었습니다.');
+      if ((!originButton || originButton.isConnected) && ctx.isCurrentScreen?.(originScreen, originUser) !== false) {
+        globalThis.document?.dispatchEvent(new CustomEvent('sc-profile-saved'));
+        ctx.back?.();
+      }
       return true;
     },
 

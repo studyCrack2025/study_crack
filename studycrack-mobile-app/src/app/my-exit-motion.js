@@ -8,6 +8,7 @@ export function exitMySurface(panel, commit) {
   if (!panel || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
   if (pending.has(panel)) return true;
   let timer;
+  let finished = false;
   const cleanup = () => {
     clearTimeout(timer);
     panel.removeEventListener('animationend', end);
@@ -15,7 +16,7 @@ export function exitMySurface(panel, commit) {
     pending.delete(panel);
     if (panel.matches('.app-content')) document.dispatchEvent(new CustomEvent('sc-my-exit', { detail: false }));
   };
-  const finish = () => { cleanup(); if (panel.isConnected) commit(); };
+  const finish = () => { if (finished) return; finished = true; clearTimeout(timer); if (panel.isConnected) commit(); requestAnimationFrame(cleanup); };
   const end = event => { if (event.target === panel && event.animationName === 'myDrawerOut') finish(); };
   pending.set(panel, cleanup);
   panel.dataset.myExit = 'true';

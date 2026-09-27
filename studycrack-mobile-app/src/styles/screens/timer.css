@@ -212,6 +212,10 @@
 .timer-session-head h2{margin:0;color:var(--sc-ink-strong);font-size:18px;font-weight:900;}
 .timer-session-head button{min-width:44px;min-height:44px;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-weight:800;}
 .study-record-sheet{padding:0 16px max(16px,env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;}
+.home-study-inline{display:grid;gap:12px;}
+.home-study-body{display:grid;gap:12px;}
+.home-study-body[hidden],.home-study-form[hidden]{display:none;}
+.home-study-form{display:grid;gap:12px;padding:12px;border:1px solid var(--sc-line-subtle);border-radius:16px;background:var(--sc-surface-card);}
 .home-active-study{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;border:1px solid var(--sc-line-subtle);border-radius:12px;background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font:inherit;font-size:12px;font-weight:800;text-align:left;}
 .home-active-study > span:first-child{flex:1;}
 .timer-v2-week{display:grid;gap:var(--sc-space-12);}

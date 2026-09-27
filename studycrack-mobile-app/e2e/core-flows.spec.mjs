@@ -143,16 +143,14 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
   await expectNoHorizontalOverflow(page);
 });
 
-test('로그인 세션의 환산점수는 사용자가 계산을 요청한 뒤 로드된다', async ({ page }, testInfo) => {
+test('로그인 세션의 환산점수는 분석 첫 진입에 자동으로 로드된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   const startedAt = Date.now();
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: '점수 계산하기' })).toBeVisible();
-  expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets')).toBe(false);
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
+  await expect(page.getByRole('button', { name: '분석 새로고침' })).toBeVisible();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
@@ -244,7 +242,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'start_study_session')?.payload?.data?.activity).toBe('독서');
   await page.waitForTimeout(1100);
   await page.reload();
-  await page.locator('[data-action="openStudyPanel"]').click();
+  await expect(page.locator('.home-study-body')).toBeVisible();
   await expect(page.getByText('국어 공부를 이어서 기록 중이에요')).toBeVisible();
   await expect(page.getByText('앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.')).toBeVisible();
   await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
@@ -264,7 +262,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(journey).toContainText('00:00:02');
   await expect(journey.locator('[data-step="completion"]')).toHaveAttribute('data-state', 'complete');
   await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
-  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
   await page.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
   await expect(page.locator('.home-week-flow .timer-week-summary')).toBeVisible();
   await page.locator('.home-week-flow .timer-week-day.is-today').click();
@@ -731,9 +729,7 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await expect(examSelect).toBeVisible();
   await expect(page.locator('.analysis-score-card .analysis-target-select')).toBeVisible();
   await expect(page.locator('.analysis-score-card')).toBeVisible();
-  await expect(page.locator('.analysis-score-detail-card')).toHaveCount(0);
   await expect(page.locator('.analysis-result-card')).toHaveCount(0);
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   await expect(page.locator('.analysis-score-detail-card')).toBeVisible();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
@@ -746,7 +742,6 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('131점');
   await examSelect.selectOption({ label: '6월 평가원' });
   await examSelect.selectOption({ label: '3월 모의고사' });
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
@@ -764,7 +759,6 @@ test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보�
   const api = await installApiMock(page, { tier: 'standard' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-effect')).toHaveText(['+3.2점', '+2.4점', '+1.1점', '+0.8점']);
   await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
@@ -923,7 +917,6 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
 
   await page.goto('/studycrack-mobile.html?screen=my');

@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import { createAnalysisSession } from '../src/features/analysis/analysis-session.js';
+
+const calls = [];
+let pending = 0, peak = 0, mode = 'ready';
+const binding = { analysisApiUrl: '/analysis', apiFetch: async (_url, options) => {
+  const payload = JSON.parse(options.body); calls.push(payload);
+  if (payload.type === 'backtrace_required_raw') { pending++; peak = Math.max(peak, pending); }
+  await new Promise(resolve => setTimeout(resolve, 4));
+  if (payload.type === 'backtrace_required_raw') pending--;
+  if (mode === 'error') return new Response('{}', { status: 503 });
+  if (payload.type === 'backtrace_required_raw') return Response.json({ result: { reachable: true, bySubject: { inq1: 1 } } });
+  return Response.json(mode === 'empty' ? [] : payload.targetUnivs.map(target => ({ ...target, converted_score: 42, base_ui_score: 42, sim_data: {} })));
+} };
+const store = createAnalysisSession();
+store.scope('owner-a:paid');
+const options = { exam: 'jun', scores: { inq1: { name: '물리학I', raw: 30 } }, targets: ['가대학교 A', '나대학교 B', '다대학교 C'], signature: 'a', selected: '나대학교 B', refresh: 0, canSimulate: true, canBacktrace: true, binding, notify() {} };
+const done = async exam => { for (let i = 0; i < 100 && store.get(exam)?.busy; i++) await new Promise(resolve => setTimeout(resolve, 5)); assert.equal(store.get(exam)?.busy, false); };
+store.ensure(options); store.ensure(options);
+await done('jun');
+assert.equal(calls.length, 5);
+assert.equal(peak, 2);
+assert.equal(calls.find(row => row.type === 'backtrace_required_raw').targetUniv.univ, '나대학교');
+for (let i = 0; i < 10; i++) store.ensure(options);
+assert.equal(calls.length, 5);
+store.ensure({ ...options, signature: 'changed', scores: { inq1: { name: '화학I' } } });
+assert.equal(store.get('jun').scores.inq1.name, '물리학I');
+assert.equal(calls.length, 5);
+store.ensure({ ...options, refresh: 1 }); store.ensure({ ...options, refresh: 1 });
+assert.equal(store.get('jun').results.length, 3, 'Refresh retains the last successful result');
+await done('jun'); assert.equal(calls.length, 10);
+store.ensure({ ...options, exam: 'mar', refresh: 1 }); await done('mar');
+store.ensure({ ...options, refresh: 1 }); assert.equal(calls.length, 15);
+mode = 'error'; store.ensure({ ...options, refresh: 2 }); await done('jun');
+assert.equal(store.get('jun').mainStatus, 'error'); assert.equal(store.get('jun').results.length, 3);
+store.ensure({ ...options, refresh: 2 }); assert.equal(calls.length, 16);
+store.scope('owner-b:free'); assert.equal(store.get('jun'), undefined);
+mode = 'empty'; store.ensure({ ...options, canSimulate: false, canBacktrace: false, refresh: 2 }); await done('jun');
+assert.equal(store.get('jun').mainStatus, 'empty'); assert.equal(calls.length, 17);
+store.clear(); mode = 'ready'; store.ensure(options); const abandoned = store.get('jun'); store.scope('owner-c:free');
+await new Promise(resolve => setTimeout(resolve, 15));
+assert.equal(abandoned.controller.signal.aborted, true); assert.equal(store.get('jun'), undefined);
+store.ensure({ ...options, scores: undefined });
+assert.equal(store.get('jun').busy, false); assert.equal(store.get('jun').mainStatus, 'empty');
+store.clear();
+console.log('Analysis session contracts passed: once, pool, reuse, explicit refresh, snapshots, errors, empty and owner isolation.');

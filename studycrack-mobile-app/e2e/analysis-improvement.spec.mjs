@@ -33,8 +33,6 @@ test('지연된 시뮬레이션·역산은 실제 요청 중만 움직이고 전
     await page.goto('/studycrack-mobile.html?screen=analysis');
     const switcher = page.getByRole('group', { name: '계산 결과 선택' });
     await switcher.getByRole('button', { name: '합격권 도달 조합' }).click();
-    await expect(page.locator('.analysis-reverse-card [aria-busy]')).toHaveCount(0);
-    await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
     await expect(page.locator('.analysis-reverse-card [aria-busy="true"]')).toBeVisible();
     releaseSimulation();
     await expect.poll(() => reverseStarted).toBe(true);
@@ -42,6 +40,8 @@ test('지연된 시뮬레이션·역산은 실제 요청 중만 움직이고 전
     releaseReverse();
     await expect(page.locator('.analysis-reverse-card')).toContainText('+6점');
     await expect(page.locator('.analysis-reverse-plan')).toContainText('국어 +3점');
+    await expect(page.locator('.analysis-reverse-plan')).toContainText('생명과학I +1점');
+    await expect(page.locator('.analysis-reverse-plan')).not.toContainText('탐구1');
     await expect(page.locator('.analysis-reverse-card [aria-busy]')).toHaveCount(0);
     await page.locator('.analysis-improvement').screenshot({ path: info.outputPath('reverse-result.png') });
     const requestCount = () => api.requests.filter(({ payload }) => ['simulate_score_rise', 'backtrace_required_raw'].includes(payload.type)).length;
@@ -60,9 +60,12 @@ for (const type of ['simulate_score_rise', 'backtrace_required_raw']) {
   test(`${type} 실패는 무한 계산 중이 아니라 재시도로 표시한다`, async ({ page }) => {
     await setup(page, { failGameTypes: [type] });
     await page.goto('/studycrack-mobile.html?screen=analysis');
-    await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
     await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
-    await expect(page.locator('.analysis-reverse-card').getByRole('button', { name: '결과 다시 확인' })).toBeVisible();
+    if (type === 'simulate_score_rise') {
+      await page.getByRole('button', { name: '과목별 +1점', exact: true }).click();
+      await expect(page.locator('.analysis-boost-card')).toContainText('불러오지 못했어요');
+    } else await expect(page.locator('.analysis-reverse-card')).toContainText('못했');
+    await expect(page.getByRole('button', { name: '분석 새로고침', exact: true })).toBeEnabled();
     await expect(page.locator('.analysis-reverse-card [aria-busy]')).toHaveCount(0);
   });
 }

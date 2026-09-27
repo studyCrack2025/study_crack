@@ -61,8 +61,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('.home-week-flow .timer-day-subjects')).toBeVisible();
     await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '공부 시작', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toBeVisible();
-    await page.keyboard.press('Escape');
+    await expect(page.locator('.home-study-form')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.locator('[data-action="closeStudySubjectSheet"]').click();
     await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
     await expect(page.locator('#home-timer-detail')).toHaveCount(0);
     expect(api.requests.filter(({ payload }) => payload.type === 'get_game_profile')).toHaveLength(1);
@@ -100,51 +101,50 @@ test('수조와 공부 기록이 각각 실패해도 계획과 직접 공부를 
   await expect(page.getByRole('region', { name: '수조 성장 요약' })).toContainText('0마리');
 });
 
-test('타이머 창을 닫아도 공부가 유지되고 새로고침·보상 오류에서 다시 열 수 있다', async ({ page }, testInfo) => {
+test('타이머를 접어도 공부가 유지되고 새로고침·보상 오류에서 다시 열 수 있다', async ({ page }, testInfo) => {
   const api = await setup(page, { failOnceTypes: ['claim_study_reward'], studyDurationSeconds: 1500 });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.timer-v2-plan-list > button').nth(1).click();
   await page.locator('.study-start-confirm').click();
-  const dialog = page.getByRole('dialog', { name: '공부 타이머', exact: true });
+  const dialog = page.locator('.home-study-body');
   await expect(dialog).toBeVisible();
-  await page.getByRole('button', { name: '타이머 닫기' }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(page.locator('.home-active-study')).toContainText('공부 기록 중');
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('.home-active-study')).toContainText('수학');
   await page.locator('.home-active-study').click();
   await expect(page.locator('.timer-v2-clock')).toBeInViewport();
-  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
   await expect(page.locator('.home-active-study')).toBeFocused();
   await page.locator('.tabbar [data-tab="planner"]').click();
   await page.locator('.tabbar [data-tab="timer"]').click();
-  await expect(dialog).toHaveCount(0);
-  await expect(page.locator('.home-active-study')).toContainText('공부 기록 중');
+  await expect(dialog).toBeVisible();
+  await expect(page.locator('.home-active-study')).toContainText('수학');
   await page.reload();
-  await page.locator('.home-active-study').filter({ hasText: '타이머 열기' }).click();
   await expect(dialog).toBeVisible();
   expect(api.requests.filter(({ payload }) => payload.type === 'start_study_session')).toHaveLength(1);
   await page.getByRole('button', { name: '공부 완료', exact: true }).click();
   await expect(page.locator('[data-action="retryStudyReward"]')).toBeVisible();
   await expect(dialog).toBeVisible();
-  await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeDisabled();
+  await expect(page.locator('.study-start-confirm')).toHaveCount(0);
   await page.locator('.timer-session-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('home-reward-error.png'), animations: 'disabled' });
   await page.locator('[data-action="retryStudyReward"]').click();
   await expect(page.locator('.timer-reward-values')).toBeVisible();
   await page.locator('[data-action="dismissRewardResult"]').click();
-  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await expect(dialog).toBeHidden();
   await expect(page.getByRole('button', { name: '공부 시작', exact: true })).toBeEnabled();
 });
 
-test('공부 시작 실패는 별도 타이머 창에서 재시도하고 홈 아래에 패널을 남기지 않는다', async ({ page }) => {
+test('공부 시작 실패는 홈 인라인 영역에서 동일 세션으로 재시도한다', async ({ page }) => {
   const api = await setup(page, { failOnceTypes: ['start_study_session'] });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.timer-v2-plan-list > button').nth(1).click();
   await page.locator('.study-start-confirm').click();
-  const dialog = page.getByRole('dialog', { name: '공부 타이머', exact: true });
+  const dialog = page.locator('.home-study-body');
   await expect(dialog).toBeVisible();
   await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
   await expect(dialog.locator('[data-action="retryStudyStart"]')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
   await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/timer-v2-plan/);
   await page.locator('.home-active-study').click();
   await dialog.locator('[data-action="retryStudyStart"]').click();

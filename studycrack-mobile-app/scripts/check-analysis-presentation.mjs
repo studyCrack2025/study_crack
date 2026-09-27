@@ -83,11 +83,16 @@ for (const key of ['mar', 'may', 'jun', 'jul', 'sep', 'oct', 'csat']) {
 }
 snapshotState.analysisResultSignature = buildScoreSignature('mar', snapshotState.analysisTargetList, snapshotState.user.quantitative.mar);
 const scoped = buildAnalysisSnapshot(snapshotState);
+const retained = buildAnalysisSnapshot({ ...snapshotState, analysisApiStatus: 'stale', user: { ...snapshotState.user, quantitative: { mar: { inq1: { name: '화학I', raw: 42 } } } }, lastAnalysisSnapshot: { examMode: 'mar', signature: snapshotState.analysisResultSignature, scores: { inq1: { name: '물리학I', raw: 40 } }, changed: true } });
+assert.equal(retained.ready, true);
+assert.equal(retained.needsCalculation, true);
+assert.equal(retained.resultScores.inq1.name, '물리학I');
+assert.equal(retained.currentScores[0][0], '화학I');
 assert.equal(scoped.ready, true);
 assert.equal(scoped.score, 0);
 assert.deepEqual(scoped.comparison.map(row => row.score), [0, null, null]);
 assert.deepEqual(scoped.rows.map(row => row.unavailable), [false, true, true, true]);
-for (const patch of [{ scoreExamKey: 'jun' }, { analysisApiStatus: 'stale' }, { analysisCalculationRequested: false }, { analysisResultSignature: 'old' }, { userLoadStatus: 'loading' }]) {
+for (const patch of [{ scoreExamKey: 'jun' }, { analysisCalculationRequested: false }, { analysisResultSignature: 'old' }, { userLoadStatus: 'loading' }]) {
   const pending = buildAnalysisSnapshot({ ...snapshotState, ...patch });
   assert.equal(pending.ready, false);
   assert.equal(pending.rows.length, 0);

@@ -26,7 +26,6 @@ test('화면 진입은 한 번만 움직이고 수조의 국소 모션은 독립
   await expect(page.locator('.planner-screen > *').first()).toHaveCSS('animation-delay', '0s');
   await expect(page.locator('.planner-progress-track i')).toHaveCSS('transition-duration', '0.5s');
   await page.locator('.tabbar [data-tab="analysis"]').click();
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   await expect(page.locator('.analysis-main-gauge-fill')).toHaveCSS('transition-duration', '0.5s');
   await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-name', 'aquariumFishPath');
@@ -55,11 +54,11 @@ test('팝업 형태별 진입 모션과 메뉴 눌림은 기본 모션과 분리
   await expect(drawer).toHaveCSS('animation-duration', '0.38s');
   await drawer.press('Escape');
   await expect(trigger).toBeFocused();
-  await page.getByRole('button', { name: '공부 시작', exact: true }).click();
+  await page.locator('.home-active-study').click();
   const sheet = page.locator('.study-subject-sheet');
-  await expect(sheet).toHaveCSS('animation-name', 'bottomSheetIn');
-  await expect(sheet).toHaveCSS('animation-duration', '0.28s');
-  await sheet.press('Escape');
+  await expect(sheet).toHaveCSS('animation-name', 'none');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await sheet.locator('[data-action="closeStudySubjectSheet"]').click();
   await expect(sheet).toBeHidden();
 });
 
@@ -70,10 +69,10 @@ test('모션 줄이기에서도 화면·팝업·수조·메뉴의 상태 전환�
   const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
   expect(parseFloat(await drawer.evaluate(node => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(.001);
   await drawer.press('Escape');
-  await page.getByRole('button', { name: '공부 시작', exact: true }).click();
+  await page.locator('.home-active-study').click();
   const sheet = page.locator('.study-subject-sheet');
   expect(parseFloat(await sheet.evaluate(node => getComputedStyle(node).animationDuration))).toBeLessThanOrEqual(.001);
-  await sheet.press('Escape');
+  await sheet.locator('[data-action="closeStudySubjectSheet"]').click();
   await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-name', 'none');
   await expect(page.locator('.aquarium-scene-background')).toHaveCSS('animation-name', 'none');

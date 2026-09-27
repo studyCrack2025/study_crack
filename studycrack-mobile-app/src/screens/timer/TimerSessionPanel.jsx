@@ -35,7 +35,7 @@ function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, di
 
 export function TimerSessionPanel(props) {
   return <section className="timer-session-panel" aria-label="공부 타이머">
-    <header className="timer-session-head"><h2>공부 타이머</h2><button type="button" data-action="closeStudyPanel" aria-label="타이머 닫기">닫기</button></header>
+    <header className="timer-session-head"><h2>공부 타이머</h2></header>
     <div id="home-timer-detail">
       <TimerControlCard {...props} />
       <StudyJourneyPanel {...props} />

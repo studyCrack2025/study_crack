@@ -30,7 +30,7 @@ function buildRenderScoreCache(state = {}, examKey = '') {
 }
 
 function analysisCalculationPatch(current) {
-  return { analysisCalculationRequested: true, analysisApiStatus: 'loading', analysisApiError: '', analysisResults: [], analysisSimulations: [], analysisSimulationStatus: 'idle', analysisResultSignature: '', scoreFetchStatus: 'idle', scoreFetchSignature: '', scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1, analysisBacktraceStatus: 'idle', analysisBacktracePlan: null, analysisBacktraceError: '', analysisBacktraceSignature: '' };
+  return current.lastAnalysisSnapshot?.busy ? {} : { analysisCalculationRequested: true, scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1 };
 }
 
 
@@ -78,5 +78,5 @@ export function buildAppPresentations({ state, derived, liveSeconds }) {
   const studyOverview = buildStudyOverview({ ...state, plannerItems, localDate: TODAY_DATE, liveSeconds });
   const aquariumPresentation = buildAquariumPresentation({ ...state, todayPlannerItems: derived.todayPlannerItems, planner: studyOverview.planner });
   const myPresentation = buildMyPagePresentation({ ...state, studyOverview, aquariumPresentation });
-  return { renderScoreCache: buildRenderScoreCache(state, resolveAnalysisExamMode(state)), analysisResetPatch: { analysisSimulationStatus: 'idle', analysisHighlightedSubject: '', analysisCalculationRequested: false, analysisApiStatus: 'idle', analysisApiError: '', scoreFetchStatus: 'idle', scoreFetchSignature: '' }, analysisCalculationPatch, buildDefaultCoachingSubjects: () => buildDefaultCoachingSubjects(derived), studyOverview, aquariumPresentation, myPresentation, targetPolicy: buildTargetPolicy(state), analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
+  return { renderScoreCache: buildRenderScoreCache(state, resolveAnalysisExamMode(state)), analysisResetPatch: {}, analysisCalculationPatch, buildDefaultCoachingSubjects: () => buildDefaultCoachingSubjects(derived), studyOverview, aquariumPresentation, myPresentation, targetPolicy: buildTargetPolicy(state), analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
 }

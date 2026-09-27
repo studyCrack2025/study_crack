@@ -8,7 +8,6 @@ async function setup(page, options = {}) {
 }
 async function calculate(page) {
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
 }
 
 test('분석 상단 성적 입력 안내는 기존 성적 정보로 이동하고 돌아온다', async ({ page }) => {
@@ -84,7 +83,8 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.analysis-score-card .analysis-main-gauge')).toHaveCount(1);
     await page.screenshot({ path: info.outputPath(`analysis-top-${width}.png`), animations: 'disabled' });
     const children = await page.locator('.analysis-unified').evaluate(el => [...el.children].map(child => child.className));
-    expect(children[0]).toBe('analysis-input-entry');
+    expect(children[0]).toBe('analysis-refresh-bar');
+    expect(children[1]).toBe('analysis-input-entry');
     expect(children.indexOf('card analysis-score-card ')).toBeLessThan(children.indexOf('analysis-improvement'));
     await expect(page.locator('.analysis-input-entry [data-field="scoreExamType"]')).toHaveCount(1);
     await expect(page.locator('.analysis-input-entry .analysis-score-summary')).toHaveCount(1);
@@ -163,23 +163,19 @@ test('지원 불가 대학의 0 응답은 실제 0점과 구분한다', async ({
   await expect(page.locator('.analysis-score-card strong')).toHaveText('0점');
   await expect(page.locator('.analysis-score-facts')).toContainText('+100점');
   await page.locator('[data-field="analysisTargetMajor"]').selectOption('고려대학교 경영학과');
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   await expect(page.locator('.analysis-score-prompt')).toContainText('선택 과목 조건 확인');
   await expect(page.locator('.analysis-score-card strong')).toHaveText('—');
 });
 
-test('환산점수 카드의 대학 선택은 이전 효율을 지우고 명시적 재계산 후 새 기준을 표시한다', async ({ page }) => {
+test('환산점수 카드의 대학 선택은 세션에 계산된 해당 대학의 결과를 즉시 표시한다', async ({ page }) => {
   await setup(page);
   await calculate(page);
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await page.locator('.analysis-sim-row').nth(1).click();
   await page.locator('[data-field="analysisTargetMajor"]').selectOption('고려대학교 경영학과');
   await expect(page.locator('[data-field="analysisTargetMajor"]')).toHaveValue('고려대학교 경영학과');
-  await expect(page.locator('.analysis-sim-row')).toHaveCount(0);
-  await expect(page.locator('.analysis-reverse-plan')).toHaveCount(0);
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
-  await expect(page.locator('.analysis-sim-row').first()).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.analysis-sim-row').nth(1)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.analysis-score-card-head')).toContainText('고려대학교 경영학과');
 });
 
@@ -196,8 +192,6 @@ test('늦은 이전 시험의 시뮬레이션은 새 시험에 표시되지 않�
   await calculate(page);
   await expect.poll(() => oldStarted).toBe(true);
   await page.locator('[data-field="scoreExamType"]').selectOption('3월 모의고사');
-  await expect(page.locator('.analysis-sim-row')).toHaveCount(0);
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-score-card strong')).toHaveText('126점');
   await page.waitForTimeout(550);
@@ -220,7 +214,7 @@ test('시뮬레이션 실패는 점수·대학 결과를 유지하고 명시적 
   await expect(page.locator('.analysis-score-card strong')).toHaveText('142점');
   await expect(page.locator('.analysis-score-facts')).toContainText('도달');
   await expect(page.locator('.analysis-sim-row')).toHaveCount(0);
-  await page.getByRole('button', { name: '과목 결과 다시 확인' }).click();
+  await page.getByRole('button', { name: '분석 새로고침', exact: true }).click();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.getByRole('button', { name: '과목 결과 다시 확인' })).toHaveCount(0);
 });

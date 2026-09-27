@@ -1,3 +1,5 @@
+.analysis-refresh-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
+.analysis-refresh-bar > .btn{width:auto;flex:none;min-height:44px;padding:8px 12px;font-size:var(--sc-type-caption);}
 /* Analysis gauge and subject-efficiency table. */
 .analysis-main-gauge-wrap{position:relative;display:grid;gap:10px;padding:8px 4px 0;}
 .analysis-main-gauge-top{min-height:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;align-items:flex-end;}

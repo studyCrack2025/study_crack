@@ -54,7 +54,7 @@ export function isTabbarDimmed(state = {}) {
   return Boolean(
     state.coachingSheetOpen
       || state.gameRulesOpen
-      || state.studySubjectSheetOpen
+      || (state.studySubjectSheetOpen && state.screen !== 'timer')
       || state.plannerEditIndex !== null
       || state.drawerOpen
       || state.universityModalOpen
@@ -80,6 +80,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     ...derivedContext,
     ...presentations,
     initializeApp: retryUserLoad,
+    isCurrentScreen: (screen, user) => stateRef.current.screen === screen && stateRef.current.user?.email === user?.email,
     isCurrentProfile: () => stateRef.current.user === state.user && stateRef.current.userLoadStatus === 'ready' && api.hasClientSession(),
     applySavedProfileTarget: (target) => {
       if (stateRef.current.user !== state.user || stateRef.current.userLoadStatus !== 'ready' || !api.hasClientSession()) return false;

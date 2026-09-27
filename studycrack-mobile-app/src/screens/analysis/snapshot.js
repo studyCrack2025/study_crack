@@ -8,9 +8,12 @@ export function buildAnalysisSnapshot(state = {}) {
   const targets = uniqueTargetList([...(state.analysisTargetList || []), ...(state.homeTargetList || []), state.targetMajor]);
   const scores = state.user?.quantitative?.[exam] || state.user?.quantitative?.active || {};
   const signature = buildScoreSignature(exam, targets, scores);
-  const ready = state.userLoadStatus === 'ready' && Boolean(state.user?.quantitative?.[exam]) && state.analysisCalculationRequested === true
-    && state.analysisApiStatus === 'ready' && state.analysisResultExamMode === exam
-    && state.analysisResultSignature === signature;
+  const saved = state.lastAnalysisSnapshot?.examMode === exam ? state.lastAnalysisSnapshot : null;
+  const resultScores = saved?.scores || scores;
+  const resultSignature = saved?.signature || signature;
+  const ready = state.userLoadStatus === 'ready' && Boolean(saved?.scores || state.user?.quantitative?.[exam]) && state.analysisCalculationRequested === true
+    && (state.analysisApiStatus === 'ready' || state.analysisApiStatus === 'stale' || (state.analysisApiStatus === 'loading' && state.analysisResults?.length)) && state.analysisResultExamMode === exam
+    && state.analysisResultSignature === resultSignature;
   const results = ready ? state.analysisResults || [] : [];
   const comparison = targets.map(major => {
     const result = results.find(item => univKey(`${item.univ}${item.major || ''}`) === univKey(major));
@@ -25,7 +28,7 @@ export function buildAnalysisSnapshot(state = {}) {
   const base = simulation?.base_ui_score;
   const rows = base !== null && base !== undefined && base !== '' && Number.isFinite(Number(base)) ? buildServerSimRows(simulation) : [];
   return {
-    ready, score: selected?.score ?? null, needsCalculation: state.analysisCalculationRequested !== true, comparison,
+    ready, score: selected?.score ?? null, needsCalculation: Boolean(saved?.changed), comparison, busy: Boolean(saved?.busy), updatedAt: saved?.updatedAt || 0, resultScores, error: state.analysisApiError || '',
     simulationStatus: ready ? state.analysisSimulationStatus === 'ready' && !rows.length ? 'empty' : state.analysisSimulationStatus || 'idle' : 'idle',
     currentScores: state.userLoadStatus === 'ready' && state.user?.quantitative?.[exam] ? [
       ['국어', scores.kor?.raw, '점'], ['수학', scores.math?.raw, '점'],
@@ -34,6 +37,6 @@ export function buildAnalysisSnapshot(state = {}) {
     ].filter(([, value]) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))) : [],
     rows, canSimulate: canUseScoreSimulation(state),
     backtraceReady: ready && canUseReverseProjection(state)
-      && state.analysisBacktraceSignature === `backtrace::${buildScoreSignature(exam, [selected?.major || ''], scores)}`
+      && state.analysisBacktraceSignature === `backtrace::${buildScoreSignature(exam, [selected?.major || ''], resultScores)}`
   };
 }

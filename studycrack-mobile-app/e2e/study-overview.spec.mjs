@@ -105,7 +105,7 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
   await page.locator('.study-start-confirm').click();
-  await page.getByRole('button', { name: '타이머 닫기' }).click();
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
   await expect(card).toContainText('진행 중 · 아직 미확정');
   await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');

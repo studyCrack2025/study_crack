@@ -140,7 +140,6 @@ test('시뮬레이션의 최초 상승·무변화·데이터 오류·만점을 �
     } })) });
   });
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await page.getByRole('button', { name: '점수 계산하기', exact: true }).click();
   const rows = page.locator('.analysis-sim-row');
   await expect(rows.filter({ hasText: '국어' })).toContainText('원점수 +3점에서 처음 상승');
   await expect(rows.filter({ hasText: '수학' })).toContainText('+1점에서는 변화 없음');

@@ -1,4 +1,3 @@
-import { Sheet } from '../../components/Sheet.jsx';
 import { useState } from 'react';
 const DEFAULT_STUDY_SUBJECTS = ['국어', '수학', '영어', '탐구'];
 function StudyStartActivity({ defaultValue = '', selectedSubject = '' }) {
@@ -14,12 +13,13 @@ export function StudySubjectSheet({
   const selectedSubject = String(studyStartDraft.subject || '');
   const selectedActivity = String(studyStartDraft.activity || '');
   return (
-    <Sheet open={studySubjectSheetOpen} variant="planner" panelClass="study-subject-sheet" dismissAction="closeStudySubjectSheet" ariaLabel="공부 시작">
+    <section className="study-subject-sheet home-study-form" aria-label="공부 시작" hidden={!studySubjectSheetOpen}>
       <div className="study-start-head"><span>공부 기록</span><h3>무엇을 공부할까요?</h3><p>과목과 구체적인 학습 내용을 남기면 오늘 기록에서 다시 확인할 수 있어요.</p></div>
       {plannedScheduleOptions.length ? <section className="study-start-section"><b>오늘 플래너에서 선택</b><div className="study-plan-options">{plannedScheduleOptions.map((row) => <button type="button" className={studyStartDraft.plannerItemId === row.id ? 'is-selected' : ''} data-action="selectStudySubject" data-study-subject={row.subject} data-study-activity={row.activity} data-study-item-id={row.id} key={row.id || row.label}><span>{row.subject}</span><b>{row.activity || row.label}</b></button>)}</div></section> : null}
       {!studySubjectSheetOnlyPlanned ? <section className="study-start-section"><b>직접 공부 선택</b><div className="study-subject-grid">{DEFAULT_STUDY_SUBJECTS.map((subject) => <button type="button" className={`planner-pill ${selectedSubject === subject && !studyStartDraft.plannerItemId ? 'active' : ''}`} data-action="selectStudySubject" data-study-subject={subject} key={subject}>{subject}</button>)}<button type="button" className={`planner-pill ${selectedSubject === '기타' && !studyStartDraft.plannerItemId ? 'active' : ''}`} data-action="selectStudySubject" data-study-subject="기타">기타</button></div>{selectedSubject === '기타' ? <input className="planner-input" data-field="studyStartCustomSubject" maxLength="30" placeholder="과목 또는 영역을 입력하세요" /> : null}</section> : null}
       {selectedSubject ? <StudyStartActivity defaultValue={selectedActivity} key={`${selectedSubject}-${studyStartDraft.plannerItemId || 'direct'}`} selectedSubject={selectedSubject} /> : <p className="study-start-guide">플래너 일정이나 과목을 먼저 선택해주세요.</p>}
-    </Sheet>
+      <button type="button" className="btn btn-secondary" data-action="closeStudySubjectSheet">입력 취소</button>
+    </section>
   );
 
 }
