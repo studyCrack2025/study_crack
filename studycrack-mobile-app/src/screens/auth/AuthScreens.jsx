@@ -196,6 +196,7 @@ export function AuthLoginScreen(ctx) {
           </div>
           <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
           <p className="auth-entry-footnote">환산 분석 · 플래너 · 학습 코칭을 한 곳에서</p>
+          <p className="auth-entry-footnote"><a href="/terms">이용약관</a> · <a href="/privacy">개인정보 처리방침</a> · <a href="/delete-account">계정 삭제 안내</a></p>
           <button type="button" className="auth-link-btn" data-action="goto" data-target="on1">서비스 소개 다시 보기</button>
         </div>
       </div>

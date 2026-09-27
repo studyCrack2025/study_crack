@@ -412,8 +412,8 @@ footer { background: var(--color-footer); color: rgba(255,255,255,.72); padding:
 .company-info { margin-bottom: 16px; line-height: 1.8; }
 .company-info p { font-size: 10.5px; color: rgba(255,255,255,.7); margin: 0; }
 .legal-links { display: flex; flex-wrap: wrap; gap: 8px 32px; margin-bottom: 14px; }
-.legal-links span { font-size: 11px; color: rgba(255,255,255,.55); cursor: pointer; text-decoration: underline; transition: color .2s; }
-.legal-links span:hover { color: #fff; }
+.legal-links span, .legal-links a { font-size: 11px; color: rgba(255,255,255,.75); cursor: pointer; text-decoration: underline; transition: color .2s; }
+.legal-links span:hover, .legal-links a:hover { color: #fff; }
 .copyright { font-size: 10.5px; color: rgba(255,255,255,.4); }
 
 /* =========================================

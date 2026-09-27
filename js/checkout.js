@@ -9,6 +9,17 @@ const TIER_DATA = {
 
 let checkoutData = null;
 
+function checkoutProductNotice(tier, effectiveStartDate, now = new Date()) {
+    const normalized = String(tier || '').toLowerCase();
+    const product = TIER_DATA[normalized];
+    if (!product) return { notice: '', agreement: '상품 정보를 확인해주세요.' };
+    const start = new Date(effectiveStartDate || now);
+    const reserved = ['standard', 'pro'].includes(normalized) && Number.isFinite(start.getTime()) && start > now;
+    const date = reserved ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'long', day: 'numeric' }).format(start) : '';
+    const notice = `${product.desc} · 단건 결제${date ? ` · ${date}부터 이용` : ''}`;
+    return { notice, agreement: `${product.desc}의 제공 내용과 단건 결제 금액을 확인했습니다.` };
+}
+
 function initCheckoutExitGuard() {
     if (!window.PaymentExitGuard) return;
     window.PaymentExitGuard.init({
@@ -74,20 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnPayAmount').textContent = formattedPrice;
 
     // 5. 결제 안내 문구 (단건 결제 기준)
+    const productNotice = checkoutProductNotice(checkoutData.tier, checkoutData.effectiveStartDate);
+    const agreementText = document.getElementById('checkoutAgreementText');
+    if (agreementText) agreementText.textContent = productNotice.agreement;
     const noticeBox = document.getElementById('billingNotice');
     if (noticeBox) {
         if (checkoutData.tier === 'free' || checkoutData.tier === 'test') {
             noticeBox.style.display = 'none';
         } else {
-            const effectiveStart = new Date(checkoutData.effectiveStartDate || new Date());
-            const startM = effectiveStart.getMonth() + 1;
-            const startD = effectiveStart.getDate();
-
-            if (effectiveStart > new Date()) {
-                noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 예약 결제 안내<br>선택한 4주 이용권은 <strong>${startM}월 ${startD}일</strong>부터 적용됩니다.`;
-            } else {
-                noticeBox.innerHTML = `<i class="fas fa-info-circle" style="color:#0284c7;"></i> 본 결제는 단건 결제이며, 결제 후 <strong>4주 이용권</strong>이 제공됩니다.`;
-            }
+            noticeBox.textContent = productNotice.notice;
         }
     }
 

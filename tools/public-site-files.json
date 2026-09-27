@@ -161,9 +161,18 @@
     "survey.html",
     "tutor_login.html",
     "tutorial.html",
-    "welcome.html"
+    "welcome.html",
+    "terms.html",
+    "privacy.html",
+    "refund.html",
+    "delete-account.html",
+    "css/legal-page.css"
   ],
   "aliases": {
-    "basic-preview": "basic-preview.html"
+    "basic-preview": "basic-preview.html",
+    "terms": "terms.html",
+    "privacy": "privacy.html",
+    "refund": "refund.html",
+    "delete-account": "delete-account.html"
   }
 }
