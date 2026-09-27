@@ -15,6 +15,14 @@ test('all generated surfaces match the current legal source', async () => {
   assert.deepEqual(await synchronizeLegalContent(), { documents: 5, surfaces: 7, changed: [] });
 });
 
+test('public business footers use the approved representative without changing registration details', async () => {
+  for (const file of ['index.html', 'analysis.html']) {
+    const html = await readFile(new URL(`../../${file}`, import.meta.url), 'utf8');
+    assert.match(html, /대표자: 김태윤 \| 사업자등록번호: 201-61-00623/);
+    assert.doesNotMatch(html, /대표자:\s*임태룽/);
+  }
+});
+
 test('mobile and social texts match while existing display titles remain intact', () => {
   const mobile = vm.runInNewContext(renderMobileTerms(registry).replace('export const TERMS_CONTENT =', '(').replace(/;\n$/, ')'));
   const socialCode = renderSocialTerms(socialShell, registry).split('// legal-content:start')[1].split('// legal-content:end')[0];

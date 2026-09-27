@@ -340,6 +340,7 @@ function responseFor(payload, state) {
 }
 
 export async function installApiMock(page, {
+  deletionResponse = { success: true, completed: false, status: 'review_required' },
   analysisDelayByExam = {},
   failGameTypes = [],
   failOnceTypes = [],
@@ -388,14 +389,14 @@ export async function installApiMock(page, {
       ? Math.max(0, Number(analysisDelayByExam[payload.examMode] || 0))
       : 0;
     if (analysisDelay) await new Promise((resolve) => setTimeout(resolve, analysisDelay));
-    const body = responseFor(payload, state);
+    const body = payload.type === 'request_account_deletion' ? deletionResponse : responseFor(payload, state);
     if (loseResponseOnceTypes.includes(payload.type) && !failedOnce.has(payload.type)) {
       failedOnce.add(payload.type);
       await route.abort('failed');
       return;
     }
     await route.fulfill({
-      status: 200,
+      status: payload.type === 'request_account_deletion' && body.status === 'review_required' ? 202 : 200,
       contentType: 'application/json',
       body: JSON.stringify(body)
     });

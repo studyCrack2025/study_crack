@@ -59,7 +59,7 @@ test('한글 조합 중 작성한 문의는 DOM의 최종 값으로 저장한다
 
 test('회원탈퇴는 소셜 본인 확인 토큰과 서버 삭제 성공 뒤에만 완료된다', async ({ page }) => {
   await installAuthenticatedSession(page);
-  const api = await installApiMock(page, { userOverrides: { authProvider: 'google' } });
+  const api = await installApiMock(page, { userOverrides: { authProvider: 'google' }, deletionResponse: { success: true, completed: true, status: 'complete' } });
   await page.goto('/studycrack-mobile.html?screen=accountInfo');
   await page.evaluate(() => sessionStorage.setItem('deleteConfirmToken', 'delete-confirm-e2e'));
   await page.locator('.account-withdraw-link').click();
@@ -67,14 +67,34 @@ test('회원탈퇴는 소셜 본인 확인 토큰과 서버 삭제 성공 뒤에
   await expect(dialog).toContainText('소셜 계정 본인 확인이 완료되었습니다.');
   page.once('dialog', (browserDialog) => browserDialog.accept());
   await dialog.getByRole('button', { name: '탈퇴하기' }).click();
-  await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'delete_user')?.payload.deleteConfirmToken).toBe('delete-confirm-e2e');
+  await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'request_account_deletion')?.payload.deleteConfirmToken).toBe('delete-confirm-e2e');
   await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+});
+
+for (const [label, deletionResponse, pending] of [
+  ['접수', { success: true, completed: false, status: 'review_required' }, true],
+  ['불명확한 성공', { success: true }, false]
+]) test(`회원탈퇴 ${label} 응답은 완료 안내나 로그아웃을 하지 않는다`, async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { userOverrides: { authProvider: 'google' }, deletionResponse });
+  await page.goto('/studycrack-mobile.html?screen=accountInfo');
+  await page.evaluate(() => sessionStorage.setItem('deleteConfirmToken', 'delete-confirm-pending'));
+  await page.locator('.account-withdraw-link').click();
+  const alerts = [];
+  page.on('dialog', async dialog => { alerts.push(dialog.message()); await dialog.accept(); });
+  await page.getByRole('dialog').getByRole('button', { name: '탈퇴하기' }).click();
+  await expect.poll(() => alerts.length).toBe(1);
+  expect(alerts[0]).not.toContain('회원탈퇴가 완료되었습니다');
+  await expect(page.locator('[data-screen="accountInfo"]')).toBeVisible();
+  expect(api.requests.some(({ payload }) => payload.type === 'logout')).toBe(false);
+  expect(await page.evaluate(() => Boolean(sessionStorage.getItem('accessToken')))).toBe(true);
+  await expect(page.getByRole('dialog')).toHaveCount(pending ? 0 : 1);
 });
 
 test('회원탈퇴 서버 요청이 실패하면 현재 세션과 확인 창을 유지한다', async ({ page }) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page, {
-    failOnceTypes: ['delete_user'],
+    failOnceTypes: ['request_account_deletion'],
     userOverrides: { authProvider: 'google' }
   });
   await page.goto('/studycrack-mobile.html?screen=accountInfo');
@@ -87,7 +107,7 @@ test('회원탈퇴 서버 요청이 실패하면 현재 세션과 확인 창을 
     await browserDialog.accept();
   });
   await modal.getByRole('button', { name: '탈퇴하기' }).click();
-  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'delete_user').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'request_account_deletion').length).toBe(1);
   await expect.poll(() => alerts.length).toBe(1);
   await expect(page.locator('[data-screen="accountInfo"]')).toBeVisible();
   await expect(modal).toBeVisible();

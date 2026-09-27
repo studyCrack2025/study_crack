@@ -5,6 +5,21 @@ import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession
 const { documents } = JSON.parse(await readFile(new URL('../../content/legal/legacy.json', import.meta.url), 'utf8'));
 const webOrder = ['standard', 'service', 'privacy', 'refund', 'marketing'];
 
+test('공개 홈페이지와 분석 소개의 대표자 정보는 승인된 이름으로 일치한다', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.route('**/*', route => new URL(route.request().url()).origin === new URL(baseURL).origin ? route.continue() : route.abort());
+    for (const url of ['/', '/analysis.html']) {
+      await page.goto(`${baseURL}${url}`);
+      const representative = page.getByText('대표자: 김태윤 | 사업자등록번호: 201-61-00623', { exact: true });
+      await representative.scrollIntoViewIfNeeded();
+      await expect(representative).toBeVisible();
+      await expect(page.getByText(/대표자:\s*임태룽/)).toHaveCount(0);
+    }
+  } finally { await context.close(); }
+});
+
 test('웹과 모바일 환불 FAQ는 동일한 착수 기준과 예외를 표시한다', async ({ page }) => {
   await installAuthenticatedSession(page);
   await installApiMock(page, { userOverrides: { tutorialRewardClaimed: true } });

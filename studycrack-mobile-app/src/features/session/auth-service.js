@@ -247,7 +247,7 @@ export function verifyPassword({ email, password } = {}) {
     const authDetails = new AuthenticationDetails({ Username: email, Password: password });
     const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
     cognitoUser.authenticateUser(authDetails, {
-      onSuccess: () => resolve({ ok: true }),
+      onSuccess: session => resolve({ ok: true, reauthAccessToken: session.getAccessToken().getJwtToken() }),
       onFailure: (err) => resolve({ ok: false, error: mapCognitoError(err) }),
       newPasswordRequired: () => resolve({ ok: false, error: '비밀번호 재설정이 필요합니다. 비밀번호 찾기를 이용해주세요.' })
     });

@@ -1096,48 +1096,14 @@ export function createProfileHandlers(ctx) {
 
     async confirmWithdraw() {
       if (ctx.withdrawSubmitting) return false;
-      const authProvider = String(ctx.user?.authProvider || 'local').toLowerCase();
-      const isSocial = ['google', 'naver'].includes(authProvider);
-      const storage = getSessionStorage(ctx);
-      const deleteConfirmToken = isSocial ? storage?.getItem?.('deleteConfirmToken') || '' : '';
-      const password = String(ctx.withdrawPassword || '').trim();
-      if (isSocial && !deleteConfirmToken) {
-        alert('가입한 소셜 계정으로 먼저 본인 확인을 완료해주세요.');
-        return false;
-      }
-      if (!isSocial && !password) {
-        alert('현재 비밀번호를 입력해주세요.');
-        return false;
-      }
-      setWithdrawSubmitting(true);
-      if (!isSocial) {
-        const verify = await (ctx.verifyPassword || verifyPassword)({ email: String(ctx.user?.email || ''), password });
-        if (!verify?.ok) {
-          setWithdrawSubmitting(false);
-          alert(verify?.error || '비밀번호가 일치하지 않습니다.');
-          return false;
-        }
-      }
-      const result = await postJson({
-        apiFetch: ctx.apiFetch,
-        url: userApiUrl,
-        payload: { type: 'delete_user', ...(deleteConfirmToken ? { deleteConfirmToken } : {}) }
+      return withOperationLock(ctx.operationLocksRef, 'account-deletion', async () => {
+        try {
+          const { confirmDeletionRequest } = await import('../features/account/deletion-request.js');
+          return confirmDeletionRequest(ctx, { alert, storage: getSessionStorage(ctx), postJson, verifyPassword, userApiUrl,
+            clearSession: () => clearMobileAuthSession(ctx, authApiUrl),
+            setWithdrawSubmitting, setWithdrawPassword, setWithdrawModalOpen, setLoggedIn, setHistory, goto });
+        } catch { alert('삭제 안내를 불러오지 못했습니다. 다시 시도해주세요.'); return false; }
       });
-      if (!result.ok) {
-        setWithdrawSubmitting(false);
-        alert(result.error || '회원탈퇴를 처리하지 못했습니다.');
-        return false;
-      }
-      storage?.removeItem?.('deleteConfirmToken');
-      await clearMobileAuthSession(ctx, authApiUrl);
-      setWithdrawSubmitting(false);
-      setWithdrawModalOpen(false);
-      setWithdrawPassword('');
-      setLoggedIn(false);
-      setHistory([]);
-      goto?.('authLogin', false);
-      alert('회원탈퇴가 완료되었습니다.');
-      return true;
     },
 
     setObGradeStatus({ actionEl }) {
