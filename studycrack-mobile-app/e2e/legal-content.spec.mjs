@@ -1,9 +1,35 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, installApiMock } from './support/mock-api.mjs';
+import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 const { documents } = JSON.parse(await readFile(new URL('../../content/legal/legacy.json', import.meta.url), 'utf8'));
 const webOrder = ['standard', 'service', 'privacy', 'refund', 'marketing'];
+
+test('웹과 모바일 환불 FAQ는 동일한 착수 기준과 예외를 표시한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page, { userOverrides: { tutorialRewardClaimed: true } });
+  await page.route('**/api/user', async route => {
+    const { type } = route.request().postDataJSON() || {};
+    if (['get_login_profile', 'get_user'].includes(type)) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ userid: 'e2e-student', name: '테스트', role: 'student', computedTier: 'basic', tutorialRewardClaimed: true }) });
+    } else await route.fallback();
+  });
+  await page.goto('/qna.html');
+  const webFaq = page.locator('.faq-item').filter({ hasText: '환불 규정이 궁금합니다.' });
+  await webFaq.locator('.faq-question').click();
+  await expect(webFaq.locator('.faq-answer')).toBeVisible();
+  await expect(webFaq).toContainText('분석 착수 전 요청은 전액 환불');
+  await webFaq.getByRole('link', { name: '환불 규정 전문 보기' }).click();
+  await expect(page).toHaveURL(/\/refund$/);
+  await expect(page.locator('#refund')).toContainText('가분적 서비스의 미제공 부분');
+  await page.goto('/studycrack-mobile.html?screen=customerSupport');
+  const mobileFaq = page.locator('[data-faq-id="faq3"]');
+  await mobileFaq.click();
+  await expect(mobileFaq).toHaveAttribute('aria-expanded', 'true');
+  await expect(mobileFaq.locator('.faq-answer')).toContainText('분석 착수 전 요청은 전액 환불');
+  await expect(mobileFaq.locator('.faq-answer')).toContainText('회사 귀책 사유 및 관계 법령');
+  await expectNoHorizontalOverflow(page);
+});
 
 test('일반 가입 약관은 JavaScript 없이도 공통 원문을 포함하고 동의를 미리 선택하지 않는다', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });

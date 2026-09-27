@@ -28,20 +28,28 @@ export function legacyRevision(body) {
   return `legacy-${createHash('sha256').update(body).digest('hex').slice(0, 12)}`;
 }
 
+export function legalRevision(body, status) {
+  return status === 'legacy' ? legacyRevision(body) : `clarified-${createHash('sha256').update(body).digest('hex').slice(0, 12)}`;
+}
+
 export function validateLegalRegistry(registry) {
-  assert.equal(registry?.schema, 1, 'Unknown legal registry schema');
+  assert.equal(registry?.schema, 2, 'Unknown legal registry schema');
   assert.ok(registry.documents && !Array.isArray(registry.documents), 'Missing legal documents');
   assert.deepEqual(Object.keys(registry.documents).sort(), [...LEGAL_IDS].sort(), 'Unexpected legal document IDs');
   for (const id of LEGAL_IDS) {
     const doc = registry.documents[id];
     assert.equal(doc?.id, id, `Legal ID mismatch: ${id}`);
-    assert.equal(doc.status, 'legacy', `Unreleased legal document: ${id}`);
-    // Legacy snapshots are not evidence of a new effective date or user consent.
-    assert.equal(doc.effectiveDate, null, `Legacy effective date must remain unknown: ${id}`);
+    assert.ok(['legacy', 'clarified'].includes(doc.status), `Unreleased legal document: ${id}`);
+    // Content clarification is not evidence of an effective date or user consent.
+    assert.equal(doc.effectiveDate, null, `Effective date must remain unassigned: ${id}`);
+    if (doc.status === 'clarified') {
+      assert.match(doc.revisedAt || '', /^\d{4}-\d{2}-\d{2}$/, `Missing clarification date: ${id}`);
+      assert.equal(new Date(`${doc.revisedAt}T00:00:00Z`).toISOString().slice(0, 10), doc.revisedAt, `Invalid clarification date: ${id}`);
+    } else assert.equal(doc.revisedAt, undefined, `Unexpected legacy revision date: ${id}`);
     assert.ok(typeof doc.title === 'string' && doc.title.trim(), `Missing legal title: ${id}`);
     assert.ok(typeof doc.body === 'string' && doc.body.trim(), `Missing legal body: ${id}`);
     assert.doesNotMatch(doc.body, /\[(?:TODO|TBD|미정|입력 필요)\]/i, `Unfinished legal body: ${id}`);
-    assert.equal(doc.revision, legacyRevision(doc.body), `Stale legal revision: ${id}`);
+    assert.equal(doc.revision, legalRevision(doc.body, doc.status), `Stale legal revision: ${id}`);
   }
   return registry;
 }
@@ -97,7 +105,7 @@ export function renderPolicyPage(kind, registry) {
 <section class="legal-page-card"><h2>어떤 자료를 확인하나요?</h2><p>회원 정보 외에도 학습 기록·수조 기록·문의·파일·보고서·알림 등 계정과 연결된 자료를 함께 확인하도록 요청할 수 있습니다. 현재 앱의 탈퇴 기능만으로 모든 연관 자료가 일괄 정리되지는 않으므로 연관 자료의 삭제 여부도 고객센터로 문의해주세요.</p><p>결제·환불 등 보존이 필요한 기록은 일반 서비스 자료와 구분해 적용 근거와 기간을 확인해야 합니다. 계정 삭제 요청은 결제 취소·환불 신청과 별개입니다. 유료 이용 중이라면 환불 문의도 함께 남겨주세요.</p><a href="/refund">환불 규정 확인</a></section>`;
   return `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,follow"><meta name="description" content="스터디크랙 ${page.title}. 로그인 없이 안내를 확인할 수 있습니다."><title>${page.title} | StudyCrack</title><link rel="canonical" href="https://studycrack.co.kr/${slug}"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/css/legal-page.css"></head>
-<body class="legal-page-body"><a class="legal-page-skip" href="#legal-main">본문 바로가기</a><div class="legal-page-wrap"><header class="legal-page-header"><a class="legal-page-brand" href="/"><img src="/assets/images/studycrack_logo_wo_bg.png" alt="" width="40" height="40">STUDY CRACK</a><a href="/studycrack-mobile">앱으로 이동</a></header><nav class="legal-page-nav" aria-label="정책 안내">${Object.entries(pages).map(([key, item]) => `<a href="/${key === 'deletion' ? 'delete-account' : key}"${kind === key ? ' aria-current="page"' : ''}>${item.title}</a>`).join('')}</nav><main id="legal-main" tabindex="-1"><h1>${page.title}</h1><p class="legal-page-intro">${kind === 'deletion' ? '계정 삭제 방법과 요청 시 유의사항을 확인해주세요.' : '현재 게시된 약관 본문입니다. 문서 열람은 새로운 동의나 약관 변경을 의미하지 않습니다.'}</p>${kind === 'deletion' ? deletion : documents}</main><footer class="legal-page-footer"><a href="mailto:contact@studycrack.co.kr">고객센터 contact@studycrack.co.kr</a><a href="tel:07081281126">고객센터 070-8128-1126</a></footer></div></body></html>\n`;
+<body class="legal-page-body"><a class="legal-page-skip" href="#legal-main">본문 바로가기</a><div class="legal-page-wrap"><header class="legal-page-header"><a class="legal-page-brand" href="/"><img src="/assets/images/studycrack_logo_wo_bg.png" alt="" width="40" height="40">STUDY CRACK</a><a href="/studycrack-mobile">앱으로 이동</a></header><nav class="legal-page-nav" aria-label="정책 안내">${Object.entries(pages).map(([key, item]) => `<a href="/${key === 'deletion' ? 'delete-account' : key}"${kind === key ? ' aria-current="page"' : ''}>${item.title}</a>`).join('')}</nav><main id="legal-main" tabindex="-1"><h1>${page.title}</h1><p class="legal-page-intro">${kind === 'deletion' ? '계정 삭제 방법과 요청 시 유의사항을 확인해주세요.' : '현재 게시된 약관 본문입니다. 문서 열람만으로 동의가 처리되지는 않습니다.'}</p>${kind === 'deletion' ? deletion : documents}</main><footer class="legal-page-footer"><a href="mailto:contact@studycrack.co.kr">고객센터 contact@studycrack.co.kr</a><a href="tel:07081281126">고객센터 070-8128-1126</a></footer></div></body></html>\n`;
 }
 
 export async function synchronizeLegalContent({ root = defaultRoot, write = false } = {}) {
