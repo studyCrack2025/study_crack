@@ -1473,6 +1473,7 @@ async function handleRecommendUniv() {
             ? `기준을 충족하는 대학이 부족해 ${recommendedUnivCandidates.length}개만 추천합니다.`
             : '';
         showRecommendedUnivChoices(recommendedUnivCandidates, shortageMessage);
+        if (res.ok) window.SCTrack?.event('university_recommendation_view', { analysis_type: 'recommendations' });
     } catch(e) {
         console.error('추천대학 API 오류:', e);
         alert('추천 중 오류가 발생했습니다.');
@@ -1740,6 +1741,7 @@ async function saveTargetUnivs() {
         });
         const resData = await response.json();
         if(response.ok) { 
+            if (resData.changedCount > 0) window.SCTrack?.event('target_university_set');
             let msg = (['free', 'basic', 'trial'].includes(currentUserTier)) 
                 ? (resData.changedCount > 0 ? `저장되었습니다. (차감 횟수: ${resData.changedCount}회, 남은 횟수: ${resData.remainCount}회)` : "저장되었습니다. (변경된 내용 없음)")
                 : "목표 대학이 성공적으로 저장되었습니다.";
@@ -1816,6 +1818,7 @@ async function updateAnalysisUI() {
             cardsContainer.innerHTML = `<div style="text-align:center; padding:40px;">분석 가능한 결과가 없습니다.</div>`;
         } else {
             cardsContainer.innerHTML = results.map(item => renderAnalysisCard(item)).join('');
+            if (res.ok) window.SCTrack?.once('analysis-' + currentExamMode, 'analysis_view', { analysis_type: 'target_university' });
             // 카드 컨테이너가 이제 막 DOM에 채워졌으니 univ 탭 힌트 재시도 (DOMContentLoaded 시점엔 아직 비어있었을 수 있음)
             if (window.innerWidth <= 768) triggerSwipeHintForTab('univ');
         }

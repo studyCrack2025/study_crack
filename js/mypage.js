@@ -697,10 +697,12 @@ function goToMbtiTestMypage() {
 
 async function saveMbti(mbtiCode) {
     try {
-        await apiFetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
             body: JSON.stringify({ type: 'update_member_info', data: { mbti: mbtiCode } })
         });
+        if (!response.ok) return false;
+        window.SCTrack?.event('learning_profile_complete');
         return true;
     } catch (error) {
         if (error.message !== "Auth expired") alert("저장 중 오류가 발생했습니다.");

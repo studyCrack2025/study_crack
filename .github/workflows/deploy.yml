@@ -35,6 +35,8 @@ jobs:
         run: node ../tools/check_seo_contract.mjs
       - name: Check Basic v2 frontend contracts
         run: node ../tools/check_basic_v2_contract.mjs
+      - name: Check Measurement V2 regression suites
+        run: node ../tools/check_measurement_v2.cjs
       - name: Build mobile app bundle
         run: npm run build
       - name: Record architecture baseline

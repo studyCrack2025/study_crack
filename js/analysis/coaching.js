@@ -519,6 +519,7 @@ async function downloadReportPDF(reportTitle) {
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
     if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일 렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
 
+    window.SCTrack?.event('download_report_click');
     const attachedPdfEl = reportElement.querySelector('#attachedPdfData');
     const attachedPdfUrl = attachedPdfEl ? attachedPdfEl.getAttribute('data-pdf-url') : null;
 

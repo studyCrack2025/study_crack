@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
     initMobileSwipeUX();
+    window.SCTrack?.once('plans', 'plan_view');
     const requestedTier = normalizePaymentTier(urlParams.get('plan'));
     if (requestedTier) {
         const requestedRow = document.querySelector(`.price-row[data-tier="${requestedTier}"]`);
@@ -600,6 +601,11 @@ function processPayment() {
     };
 
     localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    if (!isTestPayment) {
+        window.SCTrack?.event('begin_checkout', { plan_type: checkoutTier, ecommerce: {
+            plan_type: checkoutTier, value: amount, currency: 'KRW'
+        }});
+    }
     allowPaymentNavigationOnce();
     window.location.href = '/checkout';
 }

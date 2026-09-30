@@ -330,11 +330,15 @@
                 });
             } catch (_) {}
         }
+        if (IS_LOCAL && !getSharedBearerToken() && !localStorage.getItem('refreshToken')) {
+            window.SCTrack?.identify(null);
+            showError('소셜 인증은 완료됐지만 로컬 사이트용 로그인 정보가 서버 응답에 없습니다. 로컬 인증 서버 설정을 확인해야 합니다.');
+            return;
+        }
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
 
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'login', user_id: userId });
+
 
         statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
 
@@ -348,10 +352,18 @@
             body: JSON.stringify({ type: 'get_login_profile' })
         });
 
+        if (!userRes.ok) {
+            if (typeof clearClientSession === 'function') clearClientSession();
+            window.SCTrack?.identify(null);
+            showError(`로그인 상태 확인에 실패했습니다. (HTTP ${userRes.status}) 서버 인증 설정 확인이 필요합니다.`);
+            return;
+        }
         if (userRes.ok) {
             const userData = await userRes.json();
             localStorage.setItem('userName', userData.name || '');
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
+            window.SCTrack?.identify(userId);
+            if (!isLinkMode) window.SCTrack?.event(isNewUser ? 'sign_up' : 'login', { method: 'social' });
         }
 
         const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
