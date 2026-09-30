@@ -178,6 +178,9 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
     if (!localStorage.getItem('userId')) return;
 
     try {
+        if (options.waitFor && typeof options.waitFor.then === 'function') {
+            await options.waitFor;
+        }
         const headers = { 'Content-Type': 'application/json' };
         const bearerToken = options.accessToken || getAccessToken();
         if (bearerToken) {
@@ -235,6 +238,10 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             const userName = data.name || (role === 'admin' ? '관리자' : role === 'tutor' ? '선생님' : '학생');
             localStorage.setItem('userName', userName);
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
+            window.SCTrack?.identify(localStorage.getItem('userId'));
+            if (role === 'student' && (eventType === 'login' || eventType === 'signup')) {
+                window.SCTrack?.event(eventType === 'signup' ? 'sign_up' : 'login', { method: 'password' });
+            }
 
             // 학생만 튜토리얼 체크
             if (role === 'student') {
@@ -264,6 +271,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
         }
 
     } catch (error) {
+        window.SCTrack?.identify(null);
         console.error("Identity Resolve Error:", error);
         if (eventType === 'none' && String(error?.message || '').includes('Auth expired')) {
             clearClientSession();
@@ -738,8 +746,6 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
             const cookiePromise = registerRefreshCookie(refreshToken);
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
 
             resolveUserIdentity('signup', promoCode, {
                 accessToken: getAccessToken(),
@@ -888,6 +894,7 @@ async function handleFinalSubmit() {
 // ==========================================
 
 function clearClientSession() {
+    window.SCTrack?.identify(null);
     // 메모리 토큰 정리 — sessionStorage.removeItem도 같이 수행
     clearAccessToken();
     clearIdToken();
@@ -1044,8 +1051,6 @@ function handleSignIn() {
 
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: userId });
 
             timing.mark('identity_start');
             resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise })
@@ -1118,6 +1123,7 @@ function handleTutorSignIn() {
             // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
+                await cookiePromise;
                 timing.mark('identity_start');
                 const res = await fetch(USER_API_URL, {
                     method: 'POST',
@@ -1155,8 +1161,6 @@ function handleTutorSignIn() {
             localStorage.setItem('userRole', 'tutor');
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: userId });
 
             alert(`${userName} 선생님, 안녕하세요.`);
             timing.flush('success');

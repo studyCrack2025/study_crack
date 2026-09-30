@@ -198,8 +198,10 @@ assert.doesNotMatch(workflow, /aws s3 cp promotion_kcc01\.html/, 'deploy workflo
 assert.ok(workflow.includes('--key "promotion/kcc01"'), 'deploy workflow must delete the retired clean URL object');
 assert.ok(workflow.includes('--key "promotion_kcc01.html"'), 'deploy workflow must delete the retired legacy object');
 assert.doesNotMatch(sharedApi, /['"]\/promotion(?:\/kcc01|_kcc01(?:\.html)?)['"]/, 'retired promotion routes must not be public session routes');
-assert.match(successPage, /종료된<br>프로모션입니다/, 'legacy KCC success URLs must show the retired state');
+const successController = await read('js/payment-success-v2.js');
+assert.match(successPage, /js\/payment-success-v2\.js/, 'success page must load the verified payment controller');
+assert.match(successController, /종료된 프로모션입니다/, 'legacy KCC success URLs must show the retired state');
 assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
-assert.match(successPage, /if \(orderId && !isRetiredKccPromo\)/, 'legacy KCC success URLs must not retain a payment-looking query on refresh');
+assert.match(successController, /if \(isRetiredKccPromo\) \{[\s\S]*?replaceState\(\{\}, root\.document\.title, root\.location\.pathname\);[\s\S]*?return;/, 'retired promotion must clear payment-looking query and stop before API lookup');
 
 console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 3 noindex pages.`);

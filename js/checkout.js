@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 7. 결제창 호출
 let isPaymentInProgress = false;
-function submitCheckout() {
+async function submitCheckout() {
     if (isPaymentInProgress) return;
     const agree = document.getElementById('agreeTerms').checked;
     if (!agree) {
@@ -138,25 +138,38 @@ function submitCheckout() {
     if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
 
     try {
-        const mallReserved = {
-            userId:             checkoutData.userId,
-            tier:               checkoutData.tier,
-            productName:        checkoutData.productName,
-            orderId:            checkoutData.orderId,
-            amount:             amount,
-            payMethod:          selectedMethod.value,
-            isTestPayment:      !!checkoutData.isTestPayment,
-            testPayMode:        checkoutData.testPayMode || null,
-            testPayForced:      !!checkoutData.testPayForced,
-            effectiveStartDate: checkoutData.effectiveStartDate,
-            siteOrigin:         window.location.origin
-        };
+        // The gateway return handler accepts only server-issued payment intents.
+        // Keep the original checkout order key stable for safe request retries.
+        const intentResponse = await apiFetch(CONFIG.api.payment, {
+            method: 'POST',
+            body: JSON.stringify({ type: 'create_payment_intent', data: {
+                purchaseKind: 'subscription',
+                tier: checkoutData.tier,
+                idempotencyKey: checkoutData.orderId,
+                ...(checkoutData.isTestPayment ? { testPayMode: checkoutData.testPayMode } : {})
+            } })
+        });
+        const intentEnvelope = await intentResponse.json();
+        const intent = intentEnvelope?.data;
+        if (intentEnvelope?.success !== true || !intent
+            || !/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(intent.paymentIntentId || '')
+            || intent.orderId !== intent.paymentIntentId
+            || intent.purchaseKind !== 'subscription'
+            || String(intent.tier || '').toLowerCase() !== checkoutData.tier
+            || intent.status !== 'intent_created'
+            || !Number.isSafeInteger(intent.amount) || intent.amount !== amount
+            || !(Date.parse(intent.expiresAt) > Date.now())) {
+            throw new Error('주문 상태 또는 금액이 변경되었습니다. 상품을 다시 확인해주세요. 이미 결제했다면 다시 결제하지 말고 결제 내역을 확인해주세요.');
+        }
+        checkoutData.paymentIntentId = intent.paymentIntentId;
+        localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+        const mallReserved = { paymentIntentId: intent.paymentIntentId };
 
         const requestPayload = {
             clientId:   CONFIG.nicepay.clientId,
             method:     selectedMethod.value,
-            orderId:    checkoutData.orderId,
-            amount:     amount,
+            orderId:    intent.orderId,
+            amount:     intent.amount,
             goodsName:  `스터디크랙 ${checkoutData.productName} 이용권`,
             buyerName:  checkoutData.name,
             buyerEmail: checkoutData.email,

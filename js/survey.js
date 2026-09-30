@@ -356,6 +356,7 @@ async function requestScoreConversion(type) {
 }
 
 function handleScoreInput(el, maxVal, subject) {
+    window.SCTrack?.once('survey-score-input', 'score_input_start');
     let val = parseInt(el.value);
     
     if (isNaN(val) || val < 0) { 
@@ -650,6 +651,7 @@ async function saveQuantitative() {
         // 💡 [해결] 응답 성공 여부를 확실히 체크
         if (!response.ok) throw new Error("서버 응답 오류");
         
+        window.SCTrack?.event('score_input_complete');
         // 튜토리얼 여부에 따라 알림 메시지와 이동 경로 분기
         if (localStorage.getItem('pending_tutorial') === 'true') {
             alert("성적 데이터가 저장되었습니다.\n이어서 다음 튜토리얼을 진행합니다!");

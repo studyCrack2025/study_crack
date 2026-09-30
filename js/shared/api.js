@@ -63,6 +63,7 @@ const SESSION_KEYS_LOCAL = [
 ];
 
 function clearClientSession() {
+    window.SCTrack?.identify(null);
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
     // SDK 잔여 세션 키까지 정리해 계정 전환 혼선을 막는다.
     try {
@@ -322,3 +323,28 @@ const ADMIN_API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
 const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin;
+
+// Pages without auth.js still verify the session before identifying analytics.
+// This helper does not redirect or mutate the site's login state on failure.
+async function resolveMeasurementIdentity() {
+    const expectedId = localStorage.getItem('userId');
+    if (!expectedId) return null;
+    const request = () => {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = getSharedBearerToken();
+        if (token) headers.Authorization = `Bearer ${token}`;
+        return fetch(CONFIG.api.user, { method: 'POST', credentials: 'include', headers,
+            body: JSON.stringify({ type: 'get_login_profile' }) });
+    };
+    try {
+        let response = await request();
+        if ((response.status === 401 || response.status === 403) && await tryRefreshToken()) response = await request();
+        if (!response.ok) return null;
+        const profile = await response.json();
+        if (!profile || profile.success === false || !profile.role) return null;
+        if (localStorage.getItem('userId') !== expectedId) return null;
+        const token = getSharedBearerToken();
+        const verifiedId = profile.userId || profile.userid || profile.sub || (token && getSharedPayloadFromToken(token).sub) || expectedId;
+        return verifiedId === expectedId ? verifiedId : null;
+    } catch (_) { return null; }
+}
