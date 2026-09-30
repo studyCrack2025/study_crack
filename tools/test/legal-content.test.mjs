@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
+import { renderTermsRevisions } from '../legal-content.mjs';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,7 +13,7 @@ const signupShell = LEGAL_IDS.map(id => `<div><!-- legal:${id}:start -->old<!-- 
 const socialShell = 'before\n// legal-content:start\nold\n// legal-content:end\nafter';
 
 test('all generated surfaces match the current legal source', async () => {
-  assert.deepEqual(await synchronizeLegalContent(), { documents: 5, surfaces: 7, changed: [] });
+  assert.deepEqual(await synchronizeLegalContent(), { documents: 5, surfaces: 8, changed: [] });
 });
 
 test('public business footers use the approved representative without changing registration details', async () => {
@@ -24,12 +25,16 @@ test('public business footers use the approved representative without changing r
 });
 
 test('mobile and social texts match while existing display titles remain intact', () => {
-  const mobile = vm.runInNewContext(renderMobileTerms(registry).replace('export const TERMS_CONTENT =', '(').replace(/;\n$/, ')'));
+  const generated = renderMobileTerms(registry).replaceAll('export const ', 'const ');
+  const mobile = vm.runInNewContext(`${generated}\nTERMS_CONTENT`);
+  const revisions = vm.runInNewContext(`${renderTermsRevisions(registry).replace('export const ', 'const ')}\nTERMS_REVISIONS`);
   const socialCode = renderSocialTerms(socialShell, registry).split('// legal-content:start')[1].split('// legal-content:end')[0];
   const social = vm.runInNewContext(`${socialCode}\nSOCIAL_TERM_DETAILS`);
   for (const id of LEGAL_IDS) {
     assert.equal(mobile[id].body, registry.documents[id].body);
     assert.equal(social[id].body, mobile[id].body);
+    assert.equal(revisions[id], registry.documents[id].revision);
+    assert.equal(social[id].revision, revisions[id]);
   }
   assert.equal(social.service.title, '스터디크랙 서비스 이용약관');
   assert.equal(mobile.service.title, '서비스 이용약관');
@@ -92,7 +97,7 @@ test('check mode detects stale artifacts without writing; generate only repairs 
   }
   await assert.rejects(synchronizeLegalContent({ root }), /Legal content drift/);
   assert.equal(await readFile(path.join(root, LEGAL_TARGETS.mobile), 'utf8'), 'old');
-  assert.equal((await synchronizeLegalContent({ root, write: true })).changed.length, 7);
+  assert.equal((await synchronizeLegalContent({ root, write: true })).changed.length, 8);
   assert.equal((await synchronizeLegalContent({ root })).changed.length, 0);
 });
 

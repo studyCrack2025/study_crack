@@ -949,23 +949,28 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveMarketingConsent({ actionEl, isAgreed } = {}) {
-      const fromAttr = getData(actionEl, 'marketing-agreed', '');
-      const nextValue = isAgreed === undefined
-        ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
-        : isAgreed === true;
-      setUser((prev) => ({
-        ...(prev || {}),
-        marketingAgreed: nextValue,
-        marketingAgreedAt: nextValue ? new Date().toISOString() : null
-      }));
-      const result = await updateMemberInfo({ marketingAgreed: nextValue });
-      if (!result.ok) {
-        setUser((prev) => ({ ...(prev || {}), marketingAgreed: !nextValue }));
-        alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
-        return false;
-      }
-      alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
-      return true;
+      return withOperationLock(ctx.operationLocksRef, 'marketing-consent', async () => {
+        const fromAttr = getData(actionEl, 'marketing-agreed', '');
+        const nextValue = isAgreed === undefined
+          ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
+          : isAgreed === true;
+        const result = await updateMemberInfo({ marketingAgreed: nextValue });
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (!result.ok) {
+          alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
+          return false;
+        }
+        const consent = result.data?.consent;
+        const patch = { marketingAgreed: nextValue };
+        if (consent?.marketingAgreed === nextValue) {
+          for (const field of ['marketingAgreedAt', 'marketingRevokedAt', 'marketingConsentUpdatedAt']) {
+            if (consent[field] === null || (typeof consent[field] === 'string' && Number.isFinite(Date.parse(consent[field])))) patch[field] = consent[field];
+          }
+        }
+        setUser(prev => ({ ...(prev || {}), ...patch }));
+        alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
+        return true;
+      });
     },
 
     linkSocial({ actionEl }) {

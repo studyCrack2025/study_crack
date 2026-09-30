@@ -181,6 +181,7 @@ function openFeedbackModal(data) {
     const modal = document.getElementById('feedbackModal');
     const contentArea = document.querySelector('#feedbackModal .modal-body') || document.getElementById('modalContent');
     if (!contentArea) return;
+    contentArea.dataset.reportWeekId = typeof data.weekId === 'string' ? data.weekId : '';
 
     // formVersion 분기: v2이면 새 렌더링
     if ((data.formVersion || 1) >= 2) { openFeedbackModalV2(data, modal, contentArea); return; }
@@ -359,6 +360,7 @@ function openFeedbackModal(data) {
 }
 
 function openFeedbackModalV2(data, modal, contentArea) {
+    contentArea.dataset.reportWeekId = typeof data.weekId === 'string' ? data.weekId : '';
     const fb = data.tutorFeedback || {};
     const isSubmitted = fb && fb.submitted === true;
     const hasFeedback = isSubmitted && (
@@ -517,10 +519,9 @@ function openFeedbackModalV2(data, modal, contentArea) {
 async function downloadReportPDF(reportTitle) {
     const reportElement = document.getElementById('pdfTargetDocument');
     if (!reportElement) return alert('리포트 내용을 찾을 수 없습니다.');
-    if (reportElement.querySelector('.pdf-loading-spinner')) return alert("첨부파일 렌더링 중입니다. 잠시 후 다시 클릭해주세요.");
-
-    const attachedPdfEl = reportElement.querySelector('#attachedPdfData');
-    const attachedPdfUrl = attachedPdfEl ? attachedPdfEl.getAttribute('data-pdf-url') : null;
+    const weekId = reportElement.closest('[data-report-week-id]')?.dataset.reportWeekId;
+    if (!weekId) return alert('화면을 새로고침한 뒤 보고서를 다시 열어주세요.');
+    if (document.getElementById('pdf-loading-overlay')) return;
 
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
@@ -531,68 +532,16 @@ async function downloadReportPDF(reportTitle) {
     let finalDownloadUrl = null;
 
     try {
-        const clonedReport = reportElement.cloneNode(true);
-        const attachedPdfDataEl = clonedReport.querySelector('#attachedPdfData');
-        
-        if (attachedPdfDataEl && attachedPdfUrl) {
-            const section5Box = attachedPdfDataEl.nextElementSibling;
-            if (section5Box && section5Box.classList.contains('doc-matched-box')) {
-                section5Box.remove();
-            }
-
-            const noticeHtml = `
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px dashed #cbd5e1; text-align: right; color: #2563eb; font-weight: 800; font-size: 1.1rem;">
-                    <i class="fas fa-file-pdf" style="margin-right: 5px;"></i> 5. 튜터 플래너 첨삭은 다음 장에서 이어집니다 ▶
-                </div>
-            `;
-            clonedReport.insertAdjacentHTML('beforeend', noticeHtml);
-        }
-
-        const rawHtml = `
-            <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="https://studycrack.co.kr">
-            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
-            <style>
-                body { font-family: 'Noto Sans KR', sans-serif; background: #fff; color: #333; margin: 0; padding: 0; zoom: 0.9; }
-                .report-wrapper { width: 100%; max-width: 900px; margin: 0 auto; background: transparent; padding: 30px 10px; box-sizing: border-box; }
-                .doc-controls, .mobile-only-msg { display: none !important; }
-                .doc-header { border-bottom: 3px solid #1e293b; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .doc-subtitle { font-size: 0.85rem; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 5px; }
-                .doc-title { font-size: 2.2rem; font-weight: 900; color: #0f172a; margin: 0; }
-                .doc-meta { font-size: 0.95rem; color: #64748b; text-align: right; line-height: 1.6; }
-                .doc-matched-box { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 30px; background: #fff; page-break-inside: avoid; break-inside: avoid; }
-                .doc-matched-header { background: #f8fafc; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 1.1rem; color: #1e293b; border-radius: 12px 12px 0 0; }
-                .doc-matched-body { display: table; width: 100%; box-sizing: border-box; table-layout: fixed; }
-                .doc-student-data { display: table-cell; width: 40%; vertical-align: top; padding: 20px; border-right: 1px dashed #cbd5e1; word-break: break-word; overflow-wrap: break-word; }
-                .doc-tutor-feedback { display: table-cell; width: 60%; vertical-align: top; padding: 20px; background: #fafafa; border-radius: 0 0 12px 0; word-break: break-word; overflow-wrap: break-word; }
-                .doc-text { font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; color: #334155; word-break: break-word; overflow-wrap: break-word; }
-                .doc-table th { padding: 8px 4px; border-bottom: 1px solid #e2e8f0; color: #94a3b8; vertical-align: middle; }
-                .doc-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
-                .doc-badge { display: inline-block; padding: 4px 10px; background: #f1f5f9; color: #475569; border-radius: 6px; font-size: 0.8rem; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; border: 1px solid #e2e8f0; }
-                .doc-badge.tutor-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-                .qna-pair-container { display: block; margin-bottom: 15px; }
-                .qna-student { background: #fff1f2; padding: 18px; border-radius: 8px; border: 1px solid #fecaca; margin-bottom: 15px; }
-                .qna-tutor { background: #f0fdf4; padding: 18px; border-radius: 8px; border: 1px solid #bbf7d0; }
-                .allow-page-break { page-break-before: always !important; break-before: page !important; page-break-inside: auto !important; break-inside: auto !important; margin-top: 0 !important; }
-                .allow-page-break-body { display: block !important; }
-                img { page-break-inside: avoid !important; break-inside: avoid !important; max-width: 100% !important; max-height: 250mm !important; object-fit: contain !important; display: block !important; margin: 0 auto 15px auto !important; }
-            </style></head>
-            <body><img src="https://studycrack.co.kr/assets/backgrounds/bg_studycrack_logo.png" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; opacity:0.08; z-index:9999; pointer-events:none; max-height:none !important;">
-                <div class="report-wrapper">${clonedReport.innerHTML}</div>
-            </body></html>
-        `;
-
-        const response = await apiFetch(PDF_API_URL, { 
-            method: 'POST', 
-            body: JSON.stringify({ 
-                title: reportTitle, 
-                html: rawHtml,
-                attachedPdfUrl: attachedPdfUrl 
-            })
+        const response = await apiFetch(PDF_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ weekId })
         });
         const data = await response.json();
 
         if (response.ok && data.success) {
-            finalDownloadUrl = data.downloadUrl;
+            const url = new URL(data.downloadUrl);
+            if (url.protocol !== 'https:' || url.username || url.password || url.port || !/^[a-z0-9.-]+\.s3\.ap-northeast-2\.amazonaws\.com$/.test(url.hostname)) throw new Error('다운로드 주소를 확인할 수 없습니다.');
+            finalDownloadUrl = url.href;
         } else { throw new Error(data.error || "서버에서 PDF를 생성하지 못했습니다."); }
     } catch (error) { alert("PDF 생성 중 오류가 발생했습니다: " + error.message); } 
     finally { 
@@ -610,8 +559,8 @@ async function downloadReportPDF(reportTitle) {
                         <div class="mobile-only-msg" style="display:flex !important; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; background:#ffffff; border-radius:12px; margin:0 auto; width:100%; box-sizing:border-box;">
                             <i class="fas fa-file-pdf" style="font-size:3rem; color:#ef4444; margin-bottom:15px;"></i>
                             <h3 style="margin:0 0 10px 0; color:#1e293b; font-size:1.4rem;">PDF 준비 완료</h3>
-                            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">리포트 생성이 성공적으로 완료되었습니다.<br>아래 버튼을 눌러 기기에 저장하거나 확인해 주세요.</p>
-                            <a href="${finalDownloadUrl}" download="스터디크랙_${reportTitle}.pdf" target="_blank" class="mobile-pdf-btn" style="width:100%; padding:14px 20px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; cursor:pointer; text-decoration:none;">리포트 열기 / 다운로드</a>
+                            <p style="color:#64748b; font-size:0.95rem; margin-bottom:25px; line-height:1.5; word-break:keep-all;">리포트 생성이 완료되었습니다.<br>1분 안에 아래 버튼을 눌러주세요. 시간이 지나면 보고서를 다시 열어 생성할 수 있어요.</p>
+                            <a href="${escapeHtml(finalDownloadUrl)}" download="스터디크랙_주간리포트.pdf" target="_blank" rel="noopener noreferrer" class="mobile-pdf-btn" style="width:100%; padding:14px 20px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px; cursor:pointer; text-decoration:none;">리포트 열기 / 다운로드</a>
                             <button class="mobile-close-btn" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%; padding:14px; font-size:1rem; background:#f1f5f9; border:none; border-radius:8px; color:#475569; font-weight:700; cursor:pointer;">닫기</button>
                         </div>
                     `;
@@ -620,6 +569,7 @@ async function downloadReportPDF(reportTitle) {
                 const link = document.createElement('a'); 
                 link.href = finalDownloadUrl; 
                 link.target = '_blank'; 
+                link.rel = 'noopener noreferrer';
                 link.download = `스터디크랙_${reportTitle}.pdf`; 
                 document.body.appendChild(link); 
                 link.click(); 
@@ -1061,4 +1011,3 @@ function updateMockFileName(input) {
     if (input.files && input.files.length > 0) { display.textContent = input.files[0].name; display.style.color = "#2563eb"; display.style.fontWeight = "bold"; } 
     else { display.textContent = "선택된 파일 없음"; display.style.color = "#94a3b8"; display.style.fontWeight = "normal"; }
 }
-

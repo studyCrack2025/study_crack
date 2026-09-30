@@ -142,6 +142,10 @@ export function createServiceHandlers(ctx) {
   const win = window || getWindow(ctx);
 
   const handlers = {
+    async blockAssignedTutor() {
+      try { return await (await import('../features/account/tutor-block.js')).blockAssignedTutor(ctx); }
+      catch { if (ctx.isCurrentProfile?.() !== false) alert('담당 관리 화면을 불러오지 못했어요. 다시 시도해주세요.'); return false; }
+    },
     retryNotifications() { ctx.setNotiRefreshTick((value) => value + 1); return true; },
     retryQnaHistory() { ctx.setQnaRefreshTick((value) => value + 1); return true; },
     retryReportResources() { ctx.setReportsRefreshTick((value) => value + 1); return true; },
@@ -335,7 +339,7 @@ export function createServiceHandlers(ctx) {
 
     openQnaComposer({ actionEl } = {}) {
       const title = getData(actionEl, 'qna-title');
-      const content = getData(actionEl, 'qna-content');
+      const content = getData(actionEl, 'qna-content').replace(/\\n/g, '\n');
       if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title, content };
       setQnaDraftTitle(title);
       setQnaDraftContent(content);
@@ -560,7 +564,7 @@ export function createServiceHandlers(ctx) {
       return true;
     }
   };
-  for (const action of ['submitMobileQna', 'submitProRequest', 'coachingNext']) {
+  for (const action of ['submitMobileQna', 'submitProRequest', 'coachingNext', 'blockAssignedTutor']) {
     const run = handlers[action];
     handlers[action] = (...args) => withOperationLock(ctx.operationLocksRef, action, () => run(...args));
   }

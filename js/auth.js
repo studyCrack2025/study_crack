@@ -756,27 +756,19 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
 
 // ------------------------------------------
 // [공유] 회원가입 완료 — 학생/튜터 공통
-// signUp → update_profile(역할은 서버가 promoCode로 결정) → 자동 로그인.
-// 호출부는 attributeList/profileData/promoCode와 onError(버튼 복구 등)만 주입한다.
-// onError(err, ctx): ctx.afterAccountCreated=true면 계정 생성 후 단계(update_profile/통신) 실패.
+// 실패 시 입력과 버튼 상태를 복원한다.
 // ------------------------------------------
 function completeSignUp({ email, password, attributeList, profileData, promoCode = '', loginPathOnFail = '/login', onError }) {
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
-        if (err) {
+        if (err && err.code !== 'UsernameExistsException') {
             if (typeof onError === 'function') onError(err, { afterAccountCreated: false });
             return;
         }
-
-        const userSub = result.userSub;
-
         try {
-            const response = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'update_profile', userId: userSub, data: profileData })
-            });
-
-            if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
+            const { submitSignupProfile, reauthenticateSignup } = await import('./shared/signup-submit.js');
+            const recovered = err ? await reauthenticateSignup({ CognitoUser: AmazonCognitoIdentity.CognitoUser,
+                AuthenticationDetails: AmazonCognitoIdentity.AuthenticationDetails, pool: userPool, email, password }) : null;
+            await submitSignupProfile({ url: AUTH_URL, userId: result?.userSub, profile: profileData, recoveryAccessToken: recovered?.accessToken });
 
             autoLoginAfterSignup(email, password, { promoCode, loginPathOnFail });
         } catch (error) {
@@ -811,6 +803,14 @@ async function handleFinalSubmit() {
     
     const chkMarketingEl = document.getElementById('chkMarketing');
     const marketingAgreed = chkMarketingEl ? chkMarketingEl.checked : false;
+    const signupConsent = { schema: 1, documents: Object.fromEntries(Array.from(document.querySelectorAll('[data-signup-document]')).map(el => [el.dataset.signupDocument, { revision: el.dataset.revision, accepted: el.dataset.signupDocument === 'marketing' ? marketingAgreed : true }])) };
+    const birthDay = new Date(`${birthdate}T00:00:00Z`);
+    const ageDay = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const cutoff = `${ageDay.getUTCFullYear() - 14}-${String(ageDay.getUTCMonth() + 1).padStart(2, '0')}-${String(ageDay.getUTCDate()).padStart(2, '0')}`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthdate) || !Number.isFinite(birthDay.getTime()) || birthDay.toISOString().slice(0, 10) !== birthdate || birthdate > cutoff) {
+        alert('만 14세 이상만 가입할 수 있습니다. 생년월일을 확인해주세요.');
+        return;
+    }
     const promoCode = document.getElementById('promoCode') ? document.getElementById('promoCode').value.trim() : "";
 
     const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -863,6 +863,7 @@ async function handleFinalSubmit() {
         referral: referral,
         gender: gender,
         birthdate: birthdate,
+        signupConsent,
         termsAgreed: true,
         marketingAgreed: marketingAgreed
     };
@@ -872,7 +873,7 @@ async function handleFinalSubmit() {
         loginPathOnFail: '/login',
         onError: (err, ctx) => {
             if (ctx && ctx.afterAccountCreated) {
-                alert("계정은 생성되었으나 서버 통신 지연으로 활성화에 실패했습니다. 관리자에게 문의하세요.");
+                alert(err?.message || '계정 활성화에 실패했습니다. 고객센터에 문의해주세요.');
                 submitBtn.innerText = "다시 시도하기";
             } else {
                 alert(getErrorMessage(err));

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const previewPort = 4177;
+const previewPort = Number(process.env.PLAYWRIGHT_PREVIEW_PORT || 4177);
+if (!Number.isInteger(previewPort) || previewPort < 1024 || previewPort > 65535) throw new Error('Invalid preview port');
 const noServer = process.env.PLAYWRIGHT_NO_SERVER === '1';
 
 export default defineConfig({

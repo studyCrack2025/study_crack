@@ -9,6 +9,7 @@ export const LEGAL_IDS = Object.freeze(['standard', 'privacy', 'service', 'refun
 export const LEGAL_SOURCE = 'content/legal/legacy.json';
 export const LEGAL_TARGETS = Object.freeze({
   mobile: 'studycrack-mobile-app/src/constants/terms.js',
+  revisions: 'studycrack-mobile-app/src/constants/terms-revisions.js',
   social: 'js/social-callback.js',
   signup: 'signup.html',
   terms: 'terms.html',
@@ -57,13 +58,18 @@ export function validateLegalRegistry(registry) {
 const serialize = value => JSON.stringify(value, null, 2).replaceAll('<', '\\u003c').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
 export const escapeLegalText = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 
-function documentsFor(registry, titles) {
+function documentsFor(registry, titles, includeRevision = false) {
   validateLegalRegistry(registry);
-  return Object.fromEntries(LEGAL_IDS.map(id => [id, { title: titles?.[id] || registry.documents[id].title, body: registry.documents[id].body }]));
+  return Object.fromEntries(LEGAL_IDS.map(id => [id, { title: titles?.[id] || registry.documents[id].title, body: registry.documents[id].body, ...(includeRevision ? { revision: registry.documents[id].revision } : {}) }]));
 }
 
 export function renderMobileTerms(registry) {
   return `export const TERMS_CONTENT = ${serialize(documentsFor(registry))};\n`;
+}
+
+export function renderTermsRevisions(registry) {
+  validateLegalRegistry(registry);
+  return `export const TERMS_REVISIONS = ${serialize(Object.fromEntries(LEGAL_IDS.map(id => [id, registry.documents[id].revision])))};\n`;
 }
 
 export function replaceLegalRegion(source, start, end, body) {
@@ -76,13 +82,13 @@ export function replaceLegalRegion(source, start, end, body) {
 }
 
 export function renderSocialTerms(source, registry) {
-  const body = `\n    const SOCIAL_TERM_DETAILS = ${serialize(documentsFor(registry, socialTitles))};\n    `;
+  const body = `\n    const SOCIAL_TERM_DETAILS = ${serialize(documentsFor(registry, socialTitles, true))};\n    `;
   return replaceLegalRegion(source, '// legal-content:start', '// legal-content:end', body);
 }
 
 export function renderSignupTerms(source, registry) {
   validateLegalRegistry(registry);
-  return LEGAL_IDS.reduce((html, id) => replaceLegalRegion(html, `<!-- legal:${id}:start -->`, `<!-- legal:${id}:end -->`, escapeLegalText(registry.documents[id].body)), source);
+  return LEGAL_IDS.reduce((html, id) => replaceLegalRegion(html, `<!-- legal:${id}:start -->`, `<!-- legal:${id}:end -->`, `<span data-signup-document="${id}" data-revision="${registry.documents[id].revision}"></span>${escapeLegalText(registry.documents[id].body)}`), source);
 }
 
 export function renderPolicyPage(kind, registry) {
@@ -112,10 +118,11 @@ export async function synchronizeLegalContent({ root = defaultRoot, write = fals
   const registry = validateLegalRegistry(JSON.parse(await readFile(path.join(root, LEGAL_SOURCE), 'utf8')));
   const originals = Object.fromEntries(await Promise.all(Object.entries(LEGAL_TARGETS).map(async ([id, file]) => {
     try { return [id, await readFile(path.join(root, file), 'utf8')]; }
-    catch (error) { if (error.code === 'ENOENT' && ['terms', 'privacy', 'refund', 'deletion'].includes(id)) return [id, '']; throw error; }
+    catch (error) { if (error.code === 'ENOENT' && ['terms', 'privacy', 'refund', 'deletion', 'revisions'].includes(id)) return [id, '']; throw error; }
   })));
   const rendered = {
     mobile: renderMobileTerms(registry),
+    revisions: renderTermsRevisions(registry),
     social: renderSocialTerms(originals.social, registry),
     signup: renderSignupTerms(originals.signup, registry),
     ...Object.fromEntries(['terms', 'privacy', 'refund', 'deletion'].map(kind => [kind, renderPolicyPage(kind, registry)]))

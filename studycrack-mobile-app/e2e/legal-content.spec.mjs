@@ -5,6 +5,41 @@ import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession
 const { documents } = JSON.parse(await readFile(new URL('../../content/legal/legacy.json', import.meta.url), 'utf8'));
 const webOrder = ['standard', 'service', 'privacy', 'refund', 'marketing'];
 
+test('소셜 신규 가입은 연령 확인을 별도 필수 선택으로 표시한다', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${baseURL}/social-callback.html`);
+    await expect(page.locator('#socialSignupAge14')).not.toBeChecked();
+    await expect(page.locator('.social-required-term')).toHaveCount(5);
+    await expect(page.locator('#socialSignupMarketingConsent')).not.toBeChecked();
+    await expect(page.locator('#socialSignupAge14').locator('..')).toContainText('만 14세 이상');
+  } finally { await context.close(); }
+});
+
+test('계정 정보는 가입 당시 동의와 현재 수신 상태를 구분하고 기존 회원 버전을 꾸미지 않는다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page, { userOverrides: { termsAgreed: true, marketingAgreed: false, tutorialRewardClaimed: true } });
+  await page.goto('/studycrack-mobile.html?screen=accountInfo');
+  await page.getByText('가입 약관 동의 기록', { exact: true }).click();
+  await expect(page.getByText(/문서별 버전 기록은 남아 있지 않습니다/)).toBeVisible();
+  await expect(page.getByRole('switch', { name: '마케팅 수신 동의' })).not.toBeChecked();
+  await expectNoHorizontalOverflow(page);
+});
+
+test('가입 당시 선택 동의는 철회 후에도 당시 기록으로만 표시한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page, { userOverrides: { termsAgreed: true, marketingAgreed: false, tutorialRewardClaimed: true,
+    signupConsent: { schema: 1, recordedAt: '2026-09-28T00:00:00Z', documents: Object.fromEntries(Object.entries(documents).map(([id, doc]) => [id, { revision: doc.revision, accepted: true }])) }
+  } });
+  await page.goto('/studycrack-mobile.html?screen=accountInfo');
+  await page.getByText('가입 약관 동의 기록', { exact: true }).click();
+  await expect(page.getByText(documents.privacy.revision, { exact: true })).toBeVisible();
+  await expect(page.getByText(/현재 마케팅 수신 상태는 위 설정/)).toBeVisible();
+  await expect(page.getByRole('switch', { name: '마케팅 수신 동의' })).not.toBeChecked();
+  await expectNoHorizontalOverflow(page);
+});
+
 test('공개 홈페이지와 분석 소개의 대표자 정보는 승인된 이름으로 일치한다', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   try {
