@@ -12,7 +12,12 @@ export function validateFish(value) {
 }
 
 export function validateGameProfile(value) {
+  const ticketValid = value?.ticketPolicyVersion === undefined || (value.ticketPolicyVersion === 'study-ticket-v1'
+    && Number.isSafeInteger(value.ticketBalance) && value.ticketBalance >= 0
+    && Number.isSafeInteger(value.ticketProgressSeconds) && value.ticketProgressSeconds >= 0 && value.ticketProgressSeconds < 18000
+    && value.ticketIntervalSeconds === 18000);
   const valid = isRecord(value)
+    && ticketValid
     && Number.isFinite(Number(value.shellBalance))
     && Number.isFinite(Number(value.foodBalance))
     && Array.isArray(value.activeFishIds)

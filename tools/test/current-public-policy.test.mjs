@@ -9,6 +9,12 @@ test('current web release includes its new pages and artwork without retired or 
     assert.ok(policy.files.includes(file), `Missing current public file: ${file}`);
   }
   assert.equal(policy.aliases['basic-preview'], 'basic-preview.html');
+  for (const slug of ['terms', 'privacy', 'refund', 'delete-account']) {
+    assert.equal(policy.aliases[slug], `${slug}.html`);
+    assert.ok(policy.files.includes(`${slug}.html`));
+  }
+  assert.ok(policy.files.includes('css/legal-page.css'));
+  assert.ok(!policy.files.some(file => file.startsWith('content/legal/')));
   assert.equal(policy.aliases['promotion/kcc01'], undefined);
   assert.ok(policy.files.every(file => !/promotion[-_]kcc01|basic-preview-example/.test(file)));
   const contents = new Map(policy.files.map(file => [file, Buffer.alloc(0)]));

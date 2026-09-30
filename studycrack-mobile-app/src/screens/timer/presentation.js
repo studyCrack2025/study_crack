@@ -45,7 +45,7 @@ export function buildTimerJourneyPresentation({
   const subject = String(session?.subject || '').trim();
   const studyLabel = subject ? `${subject} 공부` : '공부';
   const activity = String(session?.activity || '').trim();
-  const hasReward = Boolean(rewardResult) && (Number(rewardResult.shells) > 0 || Number(rewardResult.food) > 0);
+  const hasReward = Boolean(rewardResult) && (Number(rewardResult.tickets) > 0 || Number(rewardResult.creditedSeconds) > 0 || Number(rewardResult.shells) > 0 || Number(rewardResult.food) > 0);
 
   let title = '';
   let detail = activity;

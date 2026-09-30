@@ -14,8 +14,10 @@ const [profileHandlers, profileOverlays, secondaryScreens, screenContext, accoun
 ]);
 
 assert.match(profileHandlers, /verifyPassword/);
-assert.match(profileHandlers, /type:\s*'delete_user'/);
-assert.match(profileHandlers, /deleteConfirmToken/);
+const deletionRequest = await readFile(new URL('../src/features/account/deletion-request.js', import.meta.url), 'utf8');
+assert.match(deletionRequest, /type:\s*'request_account_deletion'/);
+assert.match(deletionRequest, /deleteConfirmToken/);
+assert.match(profileHandlers, /import\('\.\.\/features\/account\/deletion-request.js'\)/);
 assert.match(profileHandlers, /startWithdrawSocialReauth/);
 assert.match(profileHandlers, /https:\/\/pf\.kakao\.com/);
 assert.doesNotMatch(profileHandlers, /회원탈퇴가 완료되었습니다[\s\S]{0,180}goto\?\.\('authLogin'/);
@@ -55,7 +57,7 @@ const handlers = createProfileHandlers({
   apiBase: { auth: '/api/auth', user: '/api/user' },
   apiFetch: async (_url, options) => {
     requestTypes.push(JSON.parse(options.body).type);
-    return { ok: true, json: async () => ({ success: true }) };
+    return { ok: true, json: async () => ({ success: true, completed: true, status: 'complete' }) };
   },
   goto: (screen) => { destination = screen; },
   localStorage,
@@ -68,16 +70,35 @@ const handlers = createProfileHandlers({
   user: { authProvider: 'local', email: 'student@example.com' },
   verifyPassword: async (credentials) => {
     verifiedCredentials = credentials;
-    return { ok: true };
+    return { ok: true, reauthAccessToken: 'fresh-proof' };
   },
   window: { localStorage, location: { pathname: '/studycrack-mobile.html' }, sessionStorage },
   withdrawPassword: 'safe-password'
 });
 assert.equal(await handlers.confirmWithdraw(), true);
 assert.deepEqual(verifiedCredentials, { email: 'student@example.com', password: 'safe-password' });
-assert.deepEqual(requestTypes, ['delete_user', 'logout']);
+assert.deepEqual(requestTypes, ['request_account_deletion', 'logout']);
 assert.deepEqual(submittingStates, [true, false]);
 assert.equal(destination, 'authLogin');
 assert.equal(sessionStorage.getItem('accessToken'), null);
+
+for (const data of [{ success: true, completed: false, status: 'review_required' }, { success: true }, { success: false, completed: true, status: 'complete' }]) {
+  const calls = [], states = [];
+  const storage = createStorage([['accessToken', 'keep-session']]);
+  const pending = createProfileHandlers({
+    alert: () => {}, apiBase: { user: '/user', auth: '/auth' },
+    apiFetch: async (_url, options) => { calls.push(JSON.parse(options.body)); return { ok: true, json: async () => data }; },
+    sessionStorage: storage, localStorage: createStorage(), window: {},
+    user: { authProvider: 'local', email: 'student@example.com' }, withdrawPassword: ' password ',
+    verifyPassword: async ({ password }) => { assert.equal(password, ' password '); return { ok: true, reauthAccessToken: 'fresh' }; },
+    setWithdrawSubmitting: value => states.push(value), setWithdrawPassword: () => {}, setWithdrawModalOpen: () => {},
+    setLoggedIn: () => assert.fail('pending must not log out'), setHistory: () => assert.fail('pending must not reset history'),
+    goto: () => assert.fail('pending must not navigate')
+  });
+  await pending.confirmWithdraw();
+  assert.equal(storage.getItem('accessToken'), 'keep-session');
+  assert.equal(calls.length, 1); assert.equal(calls[0].reauthAccessToken, 'fresh');
+  assert.deepEqual(states, [true, false]);
+}
 
 console.log('phase 3 MY/settings/operation tracer contract ok');

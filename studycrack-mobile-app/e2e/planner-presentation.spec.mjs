@@ -81,7 +81,7 @@ test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록�
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
   await page.locator('.planner-date-strip [data-planner-date="2026-09-08"]').click();
-  await expect(page.getByRole('heading', { name: '선택한 날의 플래너', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Planner of Today', exact: true })).toBeVisible();
   await expect(page.locator('.planner-progress-head')).toContainText('선택한 날의 계획 진행률');
   await expect(page.locator('article.planner-item')).toHaveCount(1);
   await expect(page.locator('article.planner-item')).toContainText('다른 날짜의 계획');
@@ -95,7 +95,7 @@ test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록�
   await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
   await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(page.getByRole('progressbar', { name: '과제 완료율' })).toHaveAttribute('aria-valuenow', '50');
-  await expect(page.locator('.sc-study-metrics dd').first()).toHaveText('00:00:00');
+  await expect(page.locator('.sc-study-headline b').first()).toHaveText('00:00:00');
 });
 
 test('작은 화면에서 여러 줄 계획 추가와 IME 입력·단계 복귀를 보존한다', async ({ page }, testInfo) => {

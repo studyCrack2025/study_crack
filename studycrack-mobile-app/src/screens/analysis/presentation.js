@@ -34,9 +34,9 @@ export function buildAnalysisPresentation({
   fallbackScore = 0
 } = {}) {
   const sortedRows = sortAnalysisSimulationRows(rows);
-  const selectedRow = sortedRows.find((row) => !row.unavailable && row.subject === selectedSubject)
-    || sortedRows.find((row) => !row.unavailable && row.subject === rows[recommendedIndex]?.subject)
-    || sortedRows.find((row) => !row.unavailable)
+  const selectedRow = sortedRows.find((row) => !row.unavailable && !row.atMaximum && row.subject === selectedSubject)
+    || sortedRows.find((row) => !row.unavailable && !row.atMaximum && row.subject === rows[recommendedIndex]?.subject)
+    || sortedRows.find((row) => !row.unavailable && !row.atMaximum)
     || null;
   const metadataRow = rows.find((row) => Number.isFinite(Number(row.baseUiScore))) || null;
   const rawBaseScore = metadataRow

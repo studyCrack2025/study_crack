@@ -114,6 +114,7 @@ releaseAuthExpiredHandler();
 
 const apiModules = [
   'src/features/account/api.js',
+  'src/features/account/target-api.js',
   'src/features/analysis/api.js',
   'src/features/gamification/api.js',
   'src/features/notifications/api.js',
@@ -188,9 +189,9 @@ const cancellableResourceHooks = [
 ];
 for (const path of cancellableResourceHooks) {
   const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-  const owner = source.includes('useListResource') ? await readFile(new URL('../src/shared/api/use-list-resource.js', import.meta.url), 'utf8') : source;
+  const owner = source.includes('useListResource') ? await readFile(new URL('../src/shared/api/use-list-resource.js', import.meta.url), 'utf8') : source.includes('createAnalysisSession') ? await readFile(new URL('../src/features/analysis/analysis-session.js', import.meta.url), 'utf8') : source;
   assert.match(owner, /AbortController/, `${path} must cancel obsolete requests.`);
-  assert.match(owner, /RequestRef|requestKeyRef|requestKey|if \(!active\) return/, `${path} must reject stale responses.`);
+  assert.match(owner, /RequestRef|requestKeyRef|requestKey|if \(!active\) return|entries\.get\(exam\) === entry/, `${path} must reject stale responses.`);
 }
 
 console.log('domain API envelope and ownership contracts passed');

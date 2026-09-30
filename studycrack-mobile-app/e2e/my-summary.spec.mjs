@@ -5,7 +5,7 @@ import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow
 test.use({ deviceScaleFactor: 1 });
 
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
-  test(`MY 하단 요약과 전체 MY는 같은 저장 정보로 연결된다 (${width}px)`, async ({ page }, testInfo) => {
+  test(`MY 우측 요약과 전체 MY는 같은 저장 정보로 연결된다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await installAuthenticatedSession(page);
@@ -28,7 +28,10 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const box = await dialog.boundingBox();
     const frame = await page.locator('.app-frame').boundingBox();
     expect(Math.abs(box.y + box.height - frame.y - frame.height)).toBeLessThan(2);
-    expect(box.height).toBeLessThanOrEqual(height * .88 + 1);
+    expect(Math.abs(box.height - frame.height)).toBeLessThan(2);
+    expect(Math.abs(box.x + box.width - frame.x - frame.width)).toBeLessThan(2);
+    expect(box.x).toBeGreaterThan(frame.x);
+    await expect(dialog.locator('.sc-sheet-handle')).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     const capture = async name => page.screenshot({ path: process.env.STUDYCRACK_MY_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_MY_CAPTURE_DIR, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`), animations: 'disabled' });
     await capture('sheet');
@@ -128,6 +131,7 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await checklist.locator('summary').click();
   await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click();
   await expect(page.locator('[data-screen="addUniversity"]')).toBeVisible();
+  await page.getByRole('button', { name: '직접 추가하기 →' }).click();
   await page.locator('[data-field="analysisSearchTerm"]').fill('연세');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await page.getByRole('button', { name: /연세대학교/ }).click();
@@ -135,14 +139,11 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await page.getByRole('button', { name: '검색', exact: true }).click();
   const row = page.locator('.add-univ-row').filter({ hasText: '연세대학교 경제학과' });
   await row.getByRole('button', { name: '추가', exact: true }).click();
-  await expect.poll(() => messages.length).toBe(1);
+  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
+  expect(messages).toHaveLength(0);
   await expect(row.getByRole('button', { name: '추가', exact: true })).toBeEnabled();
-  await page.locator('[data-action="back"]').first().click();
-  await expect(checklist.locator('summary')).toContainText('1/4');
-  await checklist.locator('summary').click();
-  await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click();
   await row.getByRole('button', { name: '추가', exact: true }).click();
-  await expect(row.getByRole('button', { name: '추가됨', exact: true })).toBeDisabled();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.locator('[data-action="back"]').first().click();
   await expect(checklist.locator('summary')).toContainText('2/4');
   await checklist.locator('summary').click();

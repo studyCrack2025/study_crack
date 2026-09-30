@@ -106,6 +106,6 @@ export function buildMyPagePresentation({ user = {}, userLoadStatus = 'idle', se
     studyStale: week?.seconds != null && !week.fresh,
     weekRange: week?.startDate && week?.endDate ? `${week.startDate} ~ ${week.endDate}` : '',
     gameStatus: aquarium?.status || 'idle',
-    shells: aquarium?.shells != null ? `${aquarium.shells}개` : '확인 필요'
+    tickets: aquarium?.tickets != null ? `${aquarium.tickets}장` : '확인 필요'
   };
 }

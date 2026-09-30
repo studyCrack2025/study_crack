@@ -8,6 +8,8 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    myReturn: null,
+    drawerOpen: false,
     streakSummary: { open: false, returnTarget: '' },
     gameProfile: null,
     gameProfileStatus: 'idle',
@@ -115,7 +117,7 @@ export function mapUserToStatePatch(userData, base = {}) {
   const userPatch = { ...EMPTY_USER };
   if (userData.role) userPatch.role = userData.role;
   if (userData.name) userPatch.name = userData.name;
-  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName'].forEach((key) => {
+  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName', 'signupConsent', 'termsAgreed', 'termsAgreedAt', 'marketingRevokedAt', 'marketingConsentUpdatedAt'].forEach((key) => {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];
   });
   if (userData.tutorInfo && typeof userData.tutorInfo === 'object') userPatch.tutorInfo = userData.tutorInfo;

@@ -4,11 +4,79 @@ import { TODAY_DATE } from '../constants/runtime-defaults.js';
 import { buildMyPagePresentation } from '../screens/mypage/presentation.js';
 import { buildStreakPresentation } from '../features/gamification/streak-presentation.js';
 import { buildAnalysisSnapshot } from '../screens/analysis/snapshot.js';
+import { mergeScoreCache, normalizeServerResults } from '../features/analysis/score-store.js';
+import { resolveAnalysisExamMode } from '../features/analysis/resource-model.js';
+import { buildTargetPolicy } from '../features/analysis/target-policy.js';
+
+function buildRenderScoreCache(state = {}, examKey = '') {
+  const baseCache = state.scoreCache || {};
+  const snapshot = state.lastAnalysisSnapshot;
+  const snapshotMatches = snapshot && snapshot.examMode === examKey;
+  const liveResultsMatch = state.analysisResultExamMode === examKey
+    && state.analysisResultSignature
+    && state.analysisResultSignature === state.scoreFetchSignature;
+  const analysisResults = liveResultsMatch
+    ? state.analysisResults || []
+    : snapshotMatches
+      ? snapshot.analysisResults || []
+      : [];
+  const analysisSimulations = liveResultsMatch
+    ? state.analysisSimulations || []
+    : snapshotMatches
+      ? snapshot.analysisSimulations || []
+      : [];
+  const merged = normalizeServerResults(analysisResults, analysisSimulations, state.scoreFetchSignature || '');
+  return Object.keys(merged).length ? mergeScoreCache(baseCache, examKey, merged) : baseCache;
+}
+
+function analysisCalculationPatch(current) {
+  return current.lastAnalysisSnapshot?.busy ? {} : { analysisCalculationRequested: true, scoreFetchRetryTick: Number(current.scoreFetchRetryTick || 0) + 1 };
+}
+
+
+function buildDefaultCoachingSubjects(derived = {}) {
+  const { todayPlannerItems = [], todayStudySeconds = 0, todaySubjectsWithTimer = {} } = derived;
+  const rows = todayPlannerItems.map((item, index) => {
+    const subject = item.subject || '기타';
+    const plannedHour = Number(item.minutes || 0) / 60;
+    const actualHour = Number(todaySubjectsWithTimer[subject] || 0) / 3600;
+    return {
+      id: `plan-${index}-${subject}`,
+      sourceId: item.id || `plan-${index}`,
+      subject,
+      detail: item.content || '',
+      planned: plannedHour ? plannedHour.toFixed(1) : '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: true,
+      placeholder: '세부과목 입력'
+    };
+  });
+  if (rows.length) return rows;
+  return ['국어', '수학', '영어', '탐구', '기타'].map((subject) => {
+    const actualHour = (Number(todaySubjectsWithTimer[subject] || 0) || Number(todayStudySeconds || 0)) / 3600;
+    const placeholders = {
+      국어: '세부과목 (예: 언매)',
+      수학: '세부과목 (예: 미적)',
+      영어: '세부과목 (예: 독해)',
+      탐구: '세부과목 (예: 생1)'
+    };
+    return {
+      id: `${subject}-base`,
+      sourceId: `${subject}-base`,
+      subject,
+      detail: '',
+      planned: '',
+      actual: actualHour ? actualHour.toFixed(1) : '',
+      removable: subject === '기타',
+      placeholder: placeholders[subject] || '세부과목 입력'
+    };
+  });
+}
 
 export function buildAppPresentations({ state, derived, liveSeconds }) {
   const plannerItems = Array.isArray(derived.todayPlannerItems) ? derived.todayPlannerItems.map(item => ({ ...item, date: TODAY_DATE })) : undefined;
   const studyOverview = buildStudyOverview({ ...state, plannerItems, localDate: TODAY_DATE, liveSeconds });
   const aquariumPresentation = buildAquariumPresentation({ ...state, todayPlannerItems: derived.todayPlannerItems, planner: studyOverview.planner });
   const myPresentation = buildMyPagePresentation({ ...state, studyOverview, aquariumPresentation });
-  return { studyOverview, aquariumPresentation, myPresentation, analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
+  return { renderScoreCache: buildRenderScoreCache(state, resolveAnalysisExamMode(state)), analysisResetPatch: {}, analysisCalculationPatch, buildDefaultCoachingSubjects: () => buildDefaultCoachingSubjects(derived), studyOverview, aquariumPresentation, myPresentation, targetPolicy: buildTargetPolicy(state), analysisPresentation: buildAnalysisSnapshot(state), streakPresentation: buildStreakPresentation(state), aquariumShareText: aquariumShareText(aquariumPresentation) };
 }

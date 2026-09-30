@@ -968,26 +968,34 @@ window.executeTutorWithdrawal = function() {
     if (!tutorCognitoUser) { alert("세션이 만료되었습니다. 다시 로그인해주세요."); handleSignOut(); return; }
 
     const btn = document.querySelector('#withdrawalFinalForm .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`; btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 삭제 요청 중...`; btn.disabled = true;
 
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: password });
 
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                await apiFetch(CONFIG.api.user, {
-                    method: 'POST', body: JSON.stringify({ type: 'delete_user' })
+                const response = await apiFetch(CONFIG.api.user, {
+                    method: 'POST', body: JSON.stringify({ type: 'request_account_deletion', reauthAccessToken: result.getAccessToken().getJwtToken() })
                 });
+                const deletion = await response.json();
+                if (deletion?.success !== true || deletion?.completed !== true || deletion?.status !== 'complete') {
+                    alert(deletion?.success === true && deletion?.completed === false && deletion?.status === 'review_required'
+                        ? '삭제 요청이 접수되었습니다. 담당자 확인 후 처리되며 아직 탈퇴 완료는 아닙니다. 문의: contact@studycrack.co.kr'
+                        : '삭제 완료 여부를 확인하지 못했습니다. 고객센터에 문의해주세요.');
+                    btn.innerText = '삭제 요청하기'; btn.disabled = false;
+                    return;
+                }
                 alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
                 handleSignOut();
             } catch (e) {
                 if (e.message !== "Auth expired") alert("탈퇴 처리 중 오류가 발생했습니다.");
-                btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다"; btn.disabled = false;
+                btn.innerText = "자료 삭제 요청하기"; btn.disabled = false;
             }
         },
         onFailure: function(err) {
             alert("비밀번호가 일치하지 않습니다.");
-            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다"; btn.disabled = false;
+            btn.innerText = "자료 삭제 요청하기"; btn.disabled = false;
         }
     });
 };

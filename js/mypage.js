@@ -6,6 +6,7 @@ let cognitoUser = null;
 let currentTutorData = null;
 let currentUserAuthProvider = 'local';
 let currentUserEmail = '';
+let deletionReauthAccessToken = '';
 
 let mypagePhoneTimerInterval = null;
 
@@ -904,6 +905,7 @@ function checkDeleteButtonVisibility(url) {
 // [기능 4] 회원 탈퇴
 // ==========================================
 function handleDeleteAccount() {
+    deletionReauthAccessToken = '';
     const isSocialOnly = currentUserAuthProvider !== 'local';
     const authGroup = document.getElementById('deleteAuthGroup');
     const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
@@ -967,7 +969,8 @@ function deleteStep1Submit() {
         });
 
         cognitoUser.authenticateUser(authDetails, {
-            onSuccess: function () {
+            onSuccess: function (session) {
+                deletionReauthAccessToken = session.getAccessToken().getJwtToken();
                 _proceedToDeleteStep2();
             },
             onFailure: function () {
@@ -997,22 +1000,29 @@ function deleteStep2Submit() {
     }
 
     const btn = document.querySelector('#deleteStep2 .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 삭제 요청 중...`;
     btn.disabled = true;
     processBackendDeletion();
 }
 
 async function processBackendDeletion() {
-    // 소셜 계정 탈퇴 시 재인증으로 발급된 deleteConfirmToken 첨부 (5분 이내 사용)
     const deleteConfirmToken = sessionStorage.getItem('deleteConfirmToken') || null;
-    sessionStorage.removeItem('deleteConfirmToken');
 
     try {
-        await apiFetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'delete_user', ...(deleteConfirmToken && { deleteConfirmToken }) })
+            body: JSON.stringify({ type: 'request_account_deletion', ...(deleteConfirmToken ? { deleteConfirmToken } : { reauthAccessToken: deletionReauthAccessToken }) })
         });
-
+        const result = await response.json();
+        if (result?.success !== true || result?.completed !== true || result?.status !== 'complete') {
+            if (result?.success === true && result?.completed === false && result?.status === 'review_required') {
+                sessionStorage.removeItem('deleteConfirmToken');
+                alert('삭제 요청이 접수되었습니다. 담당자가 삭제·보존 범위를 확인한 뒤 처리합니다. 아직 삭제가 완료된 것은 아닙니다. 문의: contact@studycrack.co.kr');
+                document.getElementById('deleteAccountModal').classList.add('hidden');
+            } else alert('삭제 완료 여부를 확인하지 못했습니다. 고객센터에 문의해주세요.');
+            return;
+        }
+        sessionStorage.removeItem('deleteConfirmToken');
         alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다.");
         clearClientSession();
         window.location.href = '/';
@@ -1020,6 +1030,14 @@ async function processBackendDeletion() {
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         const btn = document.querySelector('#deleteStep2 .danger-btn');
         if (btn) { btn.innerText = '탈퇴하기'; btn.disabled = false; }
+    } finally {
+        deletionReauthAccessToken = '';
+        document.getElementById('deleteStep1').classList.remove('hidden');
+        document.getElementById('deleteStep2').classList.add('hidden');
+        const verifyBtn = document.querySelector('#deleteStep1 .primary-btn');
+        if (verifyBtn) { verifyBtn.innerText = '본인 확인'; verifyBtn.disabled = false; }
+        const btn = document.querySelector('#deleteStep2 .danger-btn');
+        if (btn) { btn.innerText = '삭제 요청하기'; btn.disabled = false; }
     }
 }
 

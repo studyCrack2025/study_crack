@@ -23,6 +23,7 @@ export function SettingsTermsPickerScreen(ctx) {
               <span aria-hidden="true">›</span>
             </button>
           ))}
+          <a className="sc-secondary-row" href="/delete-account"><span className="sc-secondary-row-main"><b>계정 삭제 요청 안내</b><p>앱 없이 요청하는 방법과 처리 범위</p></span><span aria-hidden="true">›</span></a>
         </div>
       </div>
     </SecondaryScreenShell>
@@ -35,6 +36,7 @@ function ReadingScreen({ content, description, eyebrow, screen }) {
       <div className="sc-reading-page">
         <SecondaryIntro eyebrow={eyebrow} title={content.title} description={description} />
         <div className="sc-reading-content">{content.body}</div>
+        <p><a href={screen === 'privacyPolicy' ? '/privacy' : '/terms'}>공개 웹 페이지에서 보기</a></p>
       </div>
     </SecondaryScreenShell>
   );

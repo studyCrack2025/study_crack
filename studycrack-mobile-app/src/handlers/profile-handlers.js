@@ -568,6 +568,9 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveQualInfo() {
+      const originScreen = ctx.screen;
+      const originButton = globalThis.document?.querySelector('.qual-save-btn');
+      const originUser = ctx.user;
       const values = readQualValues(ctx);
       if (isQualInfoMissing(values)) {
         alert('필수 입력 사항을 모두 입력해주세요');
@@ -575,12 +578,20 @@ export function createProfileHandlers(ctx) {
       }
       if (shouldReadOb1FromDom(ctx)) syncIOSSafariQualDomState(ctx, values);
       const qualitative = { ...(ctx.user?.qualitative || {}), ...buildQualitative(values) };
-      if (!await saveConfirmedQualitative(qualitative)) return false;
+      if (originButton?.disabled) return false;
+      if (originButton) originButton.disabled = true;
+      let saved;
+      try { saved = await saveConfirmedQualitative(qualitative); }
+      finally { if (originButton?.isConnected) originButton.disabled = false; }
+      if (!saved) return false;
       if (ctx.screen === 'ob1') {
         goto?.('ob2');
         return true;
       }
-      alert('정성조사서가 저장되었습니다.');
+      if ((!originButton || originButton.isConnected) && ctx.isCurrentScreen?.(originScreen, originUser) !== false) {
+        globalThis.document?.dispatchEvent(new CustomEvent('sc-profile-saved'));
+        ctx.back?.();
+      }
       return true;
     },
 
@@ -938,23 +949,28 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveMarketingConsent({ actionEl, isAgreed } = {}) {
-      const fromAttr = getData(actionEl, 'marketing-agreed', '');
-      const nextValue = isAgreed === undefined
-        ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
-        : isAgreed === true;
-      setUser((prev) => ({
-        ...(prev || {}),
-        marketingAgreed: nextValue,
-        marketingAgreedAt: nextValue ? new Date().toISOString() : null
-      }));
-      const result = await updateMemberInfo({ marketingAgreed: nextValue });
-      if (!result.ok) {
-        setUser((prev) => ({ ...(prev || {}), marketingAgreed: !nextValue }));
-        alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
-        return false;
-      }
-      alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
-      return true;
+      return withOperationLock(ctx.operationLocksRef, 'marketing-consent', async () => {
+        const fromAttr = getData(actionEl, 'marketing-agreed', '');
+        const nextValue = isAgreed === undefined
+          ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
+          : isAgreed === true;
+        const result = await updateMemberInfo({ marketingAgreed: nextValue });
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (!result.ok) {
+          alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
+          return false;
+        }
+        const consent = result.data?.consent;
+        const patch = { marketingAgreed: nextValue };
+        if (consent?.marketingAgreed === nextValue) {
+          for (const field of ['marketingAgreedAt', 'marketingRevokedAt', 'marketingConsentUpdatedAt']) {
+            if (consent[field] === null || (typeof consent[field] === 'string' && Number.isFinite(Date.parse(consent[field])))) patch[field] = consent[field];
+          }
+        }
+        setUser(prev => ({ ...(prev || {}), ...patch }));
+        alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
+        return true;
+      });
     },
 
     linkSocial({ actionEl }) {
@@ -1085,48 +1101,14 @@ export function createProfileHandlers(ctx) {
 
     async confirmWithdraw() {
       if (ctx.withdrawSubmitting) return false;
-      const authProvider = String(ctx.user?.authProvider || 'local').toLowerCase();
-      const isSocial = ['google', 'naver'].includes(authProvider);
-      const storage = getSessionStorage(ctx);
-      const deleteConfirmToken = isSocial ? storage?.getItem?.('deleteConfirmToken') || '' : '';
-      const password = String(ctx.withdrawPassword || '').trim();
-      if (isSocial && !deleteConfirmToken) {
-        alert('가입한 소셜 계정으로 먼저 본인 확인을 완료해주세요.');
-        return false;
-      }
-      if (!isSocial && !password) {
-        alert('현재 비밀번호를 입력해주세요.');
-        return false;
-      }
-      setWithdrawSubmitting(true);
-      if (!isSocial) {
-        const verify = await (ctx.verifyPassword || verifyPassword)({ email: String(ctx.user?.email || ''), password });
-        if (!verify?.ok) {
-          setWithdrawSubmitting(false);
-          alert(verify?.error || '비밀번호가 일치하지 않습니다.');
-          return false;
-        }
-      }
-      const result = await postJson({
-        apiFetch: ctx.apiFetch,
-        url: userApiUrl,
-        payload: { type: 'delete_user', ...(deleteConfirmToken ? { deleteConfirmToken } : {}) }
+      return withOperationLock(ctx.operationLocksRef, 'account-deletion', async () => {
+        try {
+          const { confirmDeletionRequest } = await import('../features/account/deletion-request.js');
+          return confirmDeletionRequest(ctx, { alert, storage: getSessionStorage(ctx), postJson, verifyPassword, userApiUrl,
+            clearSession: () => clearMobileAuthSession(ctx, authApiUrl),
+            setWithdrawSubmitting, setWithdrawPassword, setWithdrawModalOpen, setLoggedIn, setHistory, goto });
+        } catch { alert('삭제 안내를 불러오지 못했습니다. 다시 시도해주세요.'); return false; }
       });
-      if (!result.ok) {
-        setWithdrawSubmitting(false);
-        alert(result.error || '회원탈퇴를 처리하지 못했습니다.');
-        return false;
-      }
-      storage?.removeItem?.('deleteConfirmToken');
-      await clearMobileAuthSession(ctx, authApiUrl);
-      setWithdrawSubmitting(false);
-      setWithdrawModalOpen(false);
-      setWithdrawPassword('');
-      setLoggedIn(false);
-      setHistory([]);
-      goto?.('authLogin', false);
-      alert('회원탈퇴가 완료되었습니다.');
-      return true;
     },
 
     setObGradeStatus({ actionEl }) {

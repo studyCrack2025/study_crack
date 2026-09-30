@@ -3,6 +3,37 @@ import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession
 
 test.use({ deviceScaleFactor: 1 });
 const longText = '학습 기록과 목표 대학을 함께 확인하고 싶은 문의입니다.\n' + '긴 한글 답변과 줄바꿈을 끝까지 읽을 수 있어야 합니다. '.repeat(12) + '마지막 확인 문장';
+test('담당 차단은 현재 배정을 확인하고 명시적 확인 후 처리한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  const writes = [];
+  await page.route('**/api/**', async route => {
+    const payload = route.request().postDataJSON() || {};
+    if (payload.type === 'get_tutor_contact_state') return route.fulfill({ json: { assignedTutorId: 'tutor-a', tutorName: '튜터', revision: 7 } });
+    if (payload.type === 'block_assigned_tutor') { writes.push(payload); return route.fulfill({ json: { success: true, blocked: true, revision: 8 } }); }
+    await route.fallback();
+  });
+  const messages = [];
+  page.on('dialog', async dialog => { messages.push(dialog.message()); await dialog.accept(); });
+  await page.goto('/studycrack-mobile.html?screen=customerSupport');
+  await page.getByRole('button', { name: '담당 튜터 차단하기' }).click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0].data).toEqual({ tutorId: 'tutor-a', expectedRevision: 7 });
+  await expect.poll(() => messages.some(message => message.includes('새 담당 배정을 요청했어요'))).toBe(true);
+  await expectNoHorizontalOverflow(page);
+});
+test('안전 신고는 관리자 문의 접수와 상태 확인으로 연결된다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=customerSupport');
+  await page.getByRole('button', { name: '상담·콘텐츠 신고하기' }).click();
+  const dialog = page.getByRole('dialog', { name: '1:1 문의 작성' });
+  await expect(dialog.getByLabel('문의 제목')).toHaveValue('[안전 신고] ');
+  await expect(dialog.getByLabel('문의 내용')).toHaveValue(/신고 대상.*\n발생 시각 및 화면:/);
+  await expectNoHorizontalOverflow(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByText(/신고만으로 상대가 자동 차단되지는/)).toBeVisible();
+});
 async function installLists(page, { unavailableRanking = false } = {}) {
   let rankingCalls = 0;
   await page.route('**/api/**', async route => {

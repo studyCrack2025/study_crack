@@ -56,6 +56,16 @@ export function AccountInfoScreen(ctx) {
           <SectionHead title="소셜 계정 연동" description="Google과 Naver 계정을 연결하거나 해제합니다." badge="2개 제공" />
           <div className="mobile-social-list"><SocialAccountRows user={user} /></div>
         </section>
+          <details className="sc-secondary-section mobile-account-card">
+            <summary>가입 약관 동의 기록</summary>
+            {user.signupConsent?.schema === 1 ? <>
+              <p>{formatMarketingConsentDate(user.signupConsent.recordedAt)} 가입 시 동의 기록입니다. 현재 마케팅 수신 상태는 위 설정을 확인해주세요.</p>
+              {Object.entries({ standard: '표준이용약관', privacy: '개인정보 처리방침', service: '서비스 이용약관', refund: '환불 규정', marketing: '마케팅 정보 수신' }).map(([id, title]) => {
+                const record = user.signupConsent.documents?.[id];
+                return record ? <div className="account-info-row" key={id}><span>{title}<br /><small>{record.revision}</small></span><strong>{record.accepted ? '동의' : '미동의'}</strong></div> : null;
+              })}
+            </> : <p>{user.termsAgreed === true ? '기존 가입 시 약관 동의 기록이 있습니다. 문서별 버전 기록은 남아 있지 않습니다.' : '가입 약관 동의 기록을 확인할 수 없습니다.'} 새 약관에 동의한 것으로 변경하지 않습니다.</p>}
+          </details>
         <footer className="account-danger-utility">
           <div><b>계정 탈퇴</b><p>탈퇴하면 학습 기록과 계정 정보를 복구할 수 없습니다.</p></div>
           <button type="button" className="account-withdraw-link" data-action="openWithdrawModal">탈퇴하기</button>

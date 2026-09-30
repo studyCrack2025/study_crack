@@ -63,18 +63,16 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [
     await page.goto('/studycrack-mobile.html?screen=timer');
     const scene = page.locator('.aquarium-scene');
     await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
-    await expect(scene.locator('.aquarium-mini-plants')).toHaveCount(1);
-    await expect(scene).toHaveAttribute('data-background-key', 'day1');
-    await expect(scene).toHaveCSS('height', '96px');
-    await captureScene(scene, testInfo.outputPath(`background-home-${width}.png`));
-    await page.getByRole('button', { name: /수조 전체 보기/ }).click();
+    await expect(scene).toHaveCount(0);
+    expect(urls.size).toBe(0);
+    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
     await expect(scene).toHaveAttribute('data-scene-variant', 'full');
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
     const box = await scene.boundingBox();
-    expect(box.height).toBe(278);
+    expect(box.height).toBeCloseTo(Math.min(326, Math.max(294, width * .8)), 1);
     await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-fit', 'cover');
-    await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-position', '50% 50%');
+    await expect(scene.locator('.aquarium-scene-background')).toHaveCSS('object-position', '50% 100%');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-plants,.aquarium-ground,.aquarium-rays,.aquarium-bubbles,.aquarium-water-line')).toHaveCount(0);
     await scene.getByRole('button', { name: '친구 1 선택' }).click();
@@ -110,7 +108,7 @@ for (const day of [1, 7, 15, 30, 50, 100]) {
     expect(new Set(images.map(image => image.src)).size).toBe(1);
     expect(images.map(image => image.fit)).toEqual(['cover', 'cover', 'cover', 'cover']);
     const full = await page.locator('.aquarium-scene').first().boundingBox();
-    expect(full.height).toBe(278);
+    expect(full.height).toBeCloseTo(Math.min(326, Math.max(294, page.viewportSize().width * .8)), 1);
     await page.screenshot({ path: testInfo.outputPath(`background-stage-${day}.png`), animations: 'disabled' });
   });
 }
@@ -157,10 +155,10 @@ test('홈은 전체 배경을 요청하지 않고 전체 배경 실패에도 수
   await page.route(backgrounds, route => route.abort());
   await page.goto('/studycrack-mobile.html?screen=timer');
   const scene = page.locator('.aquarium-scene');
-  await expect(scene.locator('.aquarium-mini-plants')).toBeVisible();
+  await expect(scene).toHaveCount(0);
   await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
   await expect(scene.locator('button')).toHaveCount(0);
-  await page.getByRole('button', { name: /수조 전체 보기/ }).click();
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
   await expect(scene).toHaveAttribute('data-scene-variant', 'full');
   await expect(scene.getByRole('button', { name: '배경 다시 보기' })).toBeVisible();
 });

@@ -143,16 +143,14 @@ test('스플래시·인트로·온보딩 입력과 결과 화면이 React 경로
   await expectNoHorizontalOverflow(page);
 });
 
-test('로그인 세션의 환산점수는 사용자가 계산을 요청한 뒤 로드된다', async ({ page }, testInfo) => {
+test('로그인 세션의 환산점수는 분석 첫 진입에 자동으로 로드된다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   const startedAt = Date.now();
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
   await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
-  await expect(page.getByRole('button', { name: '점수 계산하기' })).toBeVisible();
-  expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets')).toBe(false);
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
+  await expect(page.getByRole('button', { name: '분석 새로고침' })).toBeVisible();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   expect(api.requests.some(({ payload }) => payload.type === 'get_user_analysis')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
@@ -205,12 +203,14 @@ test('대학 검색은 한글 입력 후 대학과 학과를 순서대로 선택
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=addUniversity');
 
+  await page.getByRole('button', { name: '직접 추가하기 →' }).click();
+
   const search = page.locator('[data-field="analysisSearchTerm"]');
   await expect(search).toBeVisible();
   await search.fill('연세');
   await page.getByRole('button', { name: '검색', exact: true }).click();
   await page.getByRole('button', { name: /연세대학교/ }).click();
-  await expect(page.getByRole('heading', { name: '연세대학교 학과' })).toBeVisible();
+  await expect(page.locator('.add-univ-selection')).toContainText('연세대학교');
 
   const majorSearch = page.locator('[data-field="analysisSearchTerm"]');
   await majorSearch.fill('경제');
@@ -242,7 +242,7 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect.poll(() => api.requests.find(({ payload }) => payload.type === 'start_study_session')?.payload?.data?.activity).toBe('독서');
   await page.waitForTimeout(1100);
   await page.reload();
-  await page.locator('[data-action="openStudyPanel"]').click();
+  await expect(page.locator('.home-study-body')).toBeVisible();
   await expect(page.getByText('국어 공부를 이어서 기록 중이에요')).toBeVisible();
   await expect(page.getByText('앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.')).toBeVisible();
   await page.getByRole('button', { name: '공부 완료', exact: true }).evaluate((button) => {
@@ -262,14 +262,13 @@ test('공부 타이머 완료 뒤 보상과 랭킹 데이터가 이어진다', a
   await expect(journey).toContainText('00:00:02');
   await expect(journey.locator('[data-step="completion"]')).toHaveAttribute('data-state', 'complete');
   await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
-  await page.getByRole('button', { name: '타이머 닫기' }).click();
-  await page.locator('.timer-v2-profile').click();
-  await page.locator('[data-action="openStudyRecords"]').click();
-  await expect(page.locator('.timer-week-summary')).toBeVisible();
-  await page.locator('.timer-week-day.is-today').click();
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
+  await page.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
+  await expect(page.locator('.home-week-flow .timer-week-summary')).toBeVisible();
+  await page.locator('.home-week-flow .timer-week-day.is-today').click();
   await expect(page.locator('.timer-day-subjects')).toContainText('00:00:02');
   await expect(page.locator('.timer-day-subjects [data-subject-tone="korean"]')).toContainText('국어');
-  await expect(page.locator('.timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
+  await expect(page.locator('.home-week-flow .timer-week-day.is-today .timer-week-stack [data-subject-tone="korean"]')).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -289,13 +288,13 @@ test('종료 보상이 수조 잔액과 첫 물고기 FishDex 여정으로 이�
 
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_study_reward').length).toBe(1);
   const rewardPanel = page.locator('.timer-journey-panel');
-  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('조개 +2');
-  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('먹이 +2');
+  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('뽑기권 +0장');
+  await expect(rewardPanel.locator('.timer-reward-values')).toContainText('남은 시간은 이월');
   await rewardPanel.getByRole('button', { name: '수조에서 확인' }).click();
 
   const wallet = page.getByRole('group', { name: '수조 재화' });
-  await expect(wallet).toContainText(/조개\s*2/);
-  await expect(wallet).toContainText(/먹이\s*2/);
+  await expect(wallet).toContainText(/뽑기권\s*2장/);
+  await expect(wallet).toContainText(/다음 뽑기권까지/);
   const journey = page.locator('section.aquarium-journey[aria-label="공부 보상 여정"]');
   await expect(journey.locator('[data-step="reward"]')).toHaveAttribute('data-state', 'complete');
   await expect(journey.locator('[data-step="aquarium"]')).toHaveAttribute('data-state', 'active');
@@ -303,8 +302,7 @@ test('종료 보상이 수조 잔액과 첫 물고기 FishDex 여정으로 이�
 
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
-  await expect(journey.locator('[data-step="aquarium"]')).toHaveAttribute('data-state', 'complete');
-  await expect(journey.locator('[data-step="fishdex"]')).toHaveAttribute('data-state', 'complete');
+  await expect(journey).toHaveCount(0);
   await page.getByRole('button', { name: /물고기 도감/ }).click();
 
   await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 12');
@@ -359,8 +357,8 @@ test('타이머 프로필 서랍은 공부·수조 요약과 기존 마이 기�
   await expect(drawer).toBeVisible();
   await expect(drawer).toContainText('테스트학생님');
   await expect(drawer).toContainText('Basic');
-  await expect(drawer).toContainText('보유 조개');
-  await expect(drawer).toContainText('62개');
+  await expect(drawer).toContainText('보유 뽑기권');
+  await expect(drawer).toContainText('보유 뽑기권 2장');
   await expect(drawer).toContainText('연속 학습');
   await expect.poll(async () => {
     const drawerBox = await drawer.boundingBox();
@@ -544,23 +542,21 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
 
+  if (await page.locator('.aquarium-management').getAttribute('open') === null) await page.locator('.aquarium-management > summary').click();
   await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '먹이 주기' }).evaluate((button) => {
-    button.click();
-    button.click();
-  });
-  await expect(page.getByText('EXP +10')).toBeVisible();
-  await page.locator('.aquarium-management > summary').click();
+  await expect(page.getByRole('button', { name: '먹이 주기' })).toHaveCount(0);
+  await expect(page.locator('.aquarium-exp')).toContainText('0 / 30');
   await page.locator('[data-field="aquariumFishName"]').fill('마루별');
   await page.locator('[data-action="saveAquariumFishName"]').click();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await page.locator('[data-action="setAquariumFishSlot"][data-slot="left"]').click();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'claim_starter_fish').length).toBe(1);
-  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'feed_fish').length).toBe(1);
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'feed_fish').length).toBe(0);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'rename_fish').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'set_active_fish').length).toBe(1);
   await page.reload();
+  await page.locator('.aquarium-management > summary').click();
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
   await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-path')).toHaveCSS('animation-name', 'aquariumFishPath');
@@ -603,7 +599,7 @@ test('물고기 뽑기는 확정 결과를 바로 표시하고 미확인 결과�
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
   await page.locator('[data-action="openAquariumDraw"]').click();
-  await page.getByRole('button', { name: '조개 30개로 만나기' }).evaluate((button) => {
+  await page.getByRole('button', { name: '뽑기권 1장으로 만나기' }).evaluate((button) => {
     button.click();
     button.click();
   });
@@ -620,10 +616,10 @@ test('물고기 뽑기는 확정 결과를 바로 표시하고 미확인 결과�
   await testInfo.attach('aquarium-draw-result-390.png', { path: drawScreenshotPath, contentType: 'image/png' });
   await page.getByRole('button', { name: '도감에서 확인하기' }).click();
 
-  await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fish Collection' })).toBeVisible();
   await expect(page.locator('.aquarium-collection-summary')).toContainText('2 / 12');
   await expect(page.locator('.aquarium-catalog-group.rarity-rare')).toContainText('나비고기');
-  await expect(page.locator('.aquarium-mode-header')).toHaveCSS('display', 'grid');
+  await expect(page.locator('.aquarium-catalog-hero .primary-screen-header')).toHaveCSS('display', 'flex');
   await expect(page.locator('.aquarium-catalog-group article').first()).toHaveCSS('display', 'grid');
   await page.getByRole('button', { name: '획득', exact: true }).click();
   await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(2);
@@ -683,20 +679,25 @@ test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 
 
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.getByRole('button', { name: /물고기 도감/ }).click();
-  await expect(page.locator('.aquarium-catalog-group')).toHaveCount(5);
-  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(85);
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(12);
   await expect(page.locator('.aquarium-collection-summary')).toContainText('1 / 85');
   await expect(page.locator('.aquarium-catalog-group.rarity-common > header')).toContainText('1 / 21');
-  await expect(page.locator('.aquarium-catalog-group.rarity-special > header')).toContainText('0 / 10');
-  await expect(page.locator('.aquarium-catalog-group img[loading="lazy"]')).toHaveCount(85);
-
+  await expect(page.locator('.aquarium-catalog-group img[loading="lazy"]')).toHaveCount(12);
   const initiallyLoaded = await page.evaluate(() => performance.getEntriesByType('resource').filter((entry) => entry.name.includes('fishdex-')).length);
   expect(initiallyLoaded).toBeGreaterThan(0);
   expect(initiallyLoaded).toBeLessThan(85);
+  const allSpecies = new Set();
+  for (let index = 1; index <= 8; index += 1) {
+    const ids = await page.locator('.aquarium-catalog-group article').evaluateAll(rows => rows.map(row => row.dataset.speciesId));
+    ids.forEach(id => allSpecies.add(id));
+    if (index < 8) await page.getByRole('navigation', { name: '도감 페이지 하단' }).getByRole('button', { name: '다음' }).click();
+  }
+  expect(allSpecies.size).toBe(85);
+  await expect(page.locator('.aquarium-catalog-group.rarity-special > header')).toContainText('0 / 10');
+  await expect(page.getByRole('navigation', { name: '도감 페이지 하단' }).getByRole('button', { name: '다음' })).toBeDisabled();
 
-  await page.getByRole('button', { name: /생태 분류 ·/ }).click();
-  await page.getByRole('button', { name: '민물', exact: true }).click();
-  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(17);
+  await page.getByRole('combobox', { name: '생태', exact: true }).selectOption('freshwater');
+  await expect(page.locator('.aquarium-catalog-group article')).toHaveCount(12);
   await expect(page.locator('.aquarium-catalog-selection')).toContainText('민물');
   await expect(page.locator('.aquarium-catalog-selection')).toContainText('17종');
   await page.getByRole('button', { name: '획득', exact: true }).click();
@@ -704,7 +705,7 @@ test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 
   await expect(page.locator('.aquarium-catalog-group.rarity-common > header')).toContainText('1 / 5');
 
   await page.getByRole('button', { name: '전체', exact: true }).click();
-  await page.getByRole('button', { name: '모든 생태', exact: true }).click();
+  await page.getByRole('combobox', { name: '생태', exact: true }).selectOption('all');
   for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
     await expectNoHorizontalOverflow(page);
@@ -726,23 +727,21 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await expect(analysisContent).not.toHaveClass(/modal-lock/);
   expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   await expect(examSelect).toBeVisible();
-  await expect(page.locator('.analysis-target-card')).toBeVisible();
+  await expect(page.locator('.analysis-score-card .analysis-target-select')).toBeVisible();
   await expect(page.locator('.analysis-score-card')).toBeVisible();
-  await expect(page.locator('.analysis-score-detail-card')).toHaveCount(0);
   await expect(page.locator('.analysis-result-card')).toHaveCount(0);
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   await expect(page.locator('.analysis-score-detail-card')).toBeVisible();
   await expect(page.locator('.analysis-sim-row')).toHaveCount(4);
   await expect(page.locator('.analysis-sim-subject > b')).toHaveText(['국어', '수학', '탐구1', '탐구2']);
-  await expect(page.getByText('Standard Exclusive')).toBeVisible();
+  await expect(page.getByText('Standard Exclusive')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '플랜별 기능 보기 →' })).toBeVisible();
   await expect(page.locator('[data-screen="analysis"]')).not.toContainText('합격확률');
 
   await targetSelect.selectOption({ label: '고려대학교 경영학과' });
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('131점');
   await examSelect.selectOption({ label: '6월 평가원' });
   await examSelect.selectOption({ label: '3월 모의고사' });
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
@@ -760,12 +759,11 @@ test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보�
   const api = await installApiMock(page, { tier: 'standard' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
 
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
   await expect(page.locator('.analysis-sim-effect')).toHaveText(['+3.2점', '+2.4점', '+1.1점', '+0.8점']);
   await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
-  await expect(page.locator('.analysis-reverse-plan')).toContainText('국어 +3점 / 수학 +2점 / 탐구1 +1점');
-  await expect(page.locator('.analysis-reverse-plan')).toContainText('151점 도달');
+  await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+  await expect(page.locator('.analysis-reverse-card')).toContainText('이미 합격 기준에 도달');
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(true);
   await expectNoHorizontalOverflow(page);
 });
@@ -830,7 +828,7 @@ test('MY 계정·알림·지원 흐름은 실제 구독과 수신 계약을 유�
   await profileDialog.getByRole('button', { name: '닫기' }).click();
 
   await page.goto('/studycrack-mobile.html?screen=accountInfo');
-  await expect(page.locator('[data-screen="accountInfo"]')).toHaveCSS('animation-name', 'mobileScreenEnter');
+  await expect(page.locator('[data-screen="accountInfo"]')).toHaveCSS('animation-name', 'myDrawerIn');
   await expect(page.locator('.account-subscription-card')).toContainText('다음 결제 안내');
   await expect(page.locator('.mobile-social-row')).toHaveCount(2);
   await expect(page.locator('.account-danger-utility')).toBeVisible();
@@ -919,7 +917,6 @@ test('잠긴 PRO 기능에서 플랜 선택과 웹 결제 조건이 이어진다
   await installAuthenticatedSession(page);
   await installApiMock(page, { tier: 'basic' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('142점');
 
   await page.goto('/studycrack-mobile.html?screen=my');

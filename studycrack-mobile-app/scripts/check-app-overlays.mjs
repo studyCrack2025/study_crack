@@ -60,7 +60,11 @@ try {
   const markup = render(bridge);
   assert.equal((markup.match(/class="app-frame"/g) || []).length, 1);
   assert.equal((markup.match(/class="app-screen-overlays"/g) || []).length, 1);
-  assert.match(markup, /aria-label="프로필 메뉴"/);
+  assert.doesNotMatch(markup, /aria-label="프로필 메뉴"/, 'MY is retained outside the changing screen shell');
+  const { MySummarySheet } = await vite.ssrLoadModule('/src/screens/mypage/MySummarySheet.jsx');
+  const my = renderToStaticMarkup(createElement(MySummarySheet, { drawerOpen: true, suspended: true }));
+  assert.match(my, /aria-label="프로필 메뉴"/);
+  assert.match(my, /inert="" aria-hidden="true"/);
   assert.match(markup, /data-screen="timer" inert="" aria-hidden="true"/);
   assert.match(markup, /aria-label="주요 메뉴"[^>]*inert=""/);
   const local = render(bridge, { overlays: createElement('div', { role: 'dialog', 'aria-label': '작성 중' }, '입력'), lockScroll: false });

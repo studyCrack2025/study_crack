@@ -20,11 +20,9 @@ test('빠른 목표·시험 변경은 늦게 도착한 이전 분석으로 현�
   await installAuthenticatedSession(page);
   const api = await installApiMock(page, { analysisDelayByExam: { jun: 400 } });
   await page.goto('/studycrack-mobile.html?screen=analysis');
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect.poll(() => api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'jun')).toBe(true);
   await page.locator('[data-field="analysisTargetMajor"]').selectOption({ label: '고려대학교 경영학과' });
   await page.locator('[data-field="scoreExamType"]').selectOption('3월 모의고사');
-  await page.getByRole('button', { name: '점수 계산하기' }).click();
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');
   await page.waitForTimeout(500);
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');

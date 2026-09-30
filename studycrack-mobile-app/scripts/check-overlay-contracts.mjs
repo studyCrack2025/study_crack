@@ -52,7 +52,7 @@ assert.match(overlayHook, /trapOverlayFocus/);
 assert.match(overlayHook, /restoreOverlayFocus/);
 assert.match(overlayBrowser, /FOCUSABLE_SELECTOR/);
 assert.match(overlayBrowser, /requestAnimationFrame/);
-assert.match(profileDrawer, /<Sheet open=\{drawerOpen\} dismissAction="closeDrawer"/);
+assert.match(profileDrawer, /<Sheet open=\{drawerOpen\} suspended=\{suspended\} dismissAction="closeDrawer"/);
 assert.match(profileDrawer, /ariaLabel="프로필 메뉴"/);
 assert.match(termsComponent, /sc-modal-head terms-modal-head/);
 assert.match(termsComponent, /sc-modal-body terms-modal-body/);
@@ -131,12 +131,13 @@ try {
     assert.match(markup, /data-action="savePlannerEdit"/);
     assert.equal(render(PlannerEditSheet), '');
   });
-  check('study selection preserves planner geometry and confirmation action', () => {
+  check('study selection is inline and preserves confirmation action', () => {
     const markup = render(StudySubjectSheet, { studySubjectSheetOpen: true, studyStartDraft: { subject: '국어', activity: '독서 지문 분석' } });
-    assertSheetMarkup(markup, { ...plannerClasses, panelClasses: ['planner-sheet', 'study-subject-sheet'], dismissAction: 'closeStudySubjectSheet', ariaLabel: '공부 시작' });
+    assert.match(markup, /home-study-form/);
+    assert.doesNotMatch(markup, /role="dialog"|sc-overlay/);
     assert.match(markup, /data-field="studyStartActivity"/);
     assert.match(markup, /data-action="confirmStudyStart"/);
-    assert.equal(render(StudySubjectSheet), '');
+    assert.match(render(StudySubjectSheet), /hidden=""/);
   });
   check('analysis search preserves its explicit compatibility composition', () => {
     const markup = render(AnalysisSearchSheet, { analysisSearchOpen: true, analysisSearchTerm: '대학' });

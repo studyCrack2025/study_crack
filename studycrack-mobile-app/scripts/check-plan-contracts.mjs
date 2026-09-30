@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PLAN_META } from '../src/constants/plans.js';
 import { createServiceHandlers } from '../src/handlers/service-handlers.js';
+import { buildMembershipSummary } from '../src/screens/service/membership-presentation.js';
 
 const [scriptSource, serviceSource, paymentSource] = await Promise.all([
   readFile(new URL('../../js/script.js', import.meta.url), 'utf8'),
@@ -44,7 +45,8 @@ for (const [plan, meta] of Object.entries(PLAN_META)) {
   assert.ok(text(card).includes(totals[tier]));
   assert.ok(text(card).includes(`${plan.toUpperCase()} 선택하기`));
   if (['standard', 'pro'].includes(tier)) {
-    assert.equal(meta.weeklyPrice, `${text(card.match(/<strong>(.*?)<\/strong>/s)[1])}원 / 주`);
+    assert.equal(meta.payPrice, `${text(card.match(/<strong>(.*?)<\/strong>/s)[1])}원 / 4주`);
+    assert.ok(text(card).includes(`주당 환산 ${meta.weeklyPrice.replace(" / 주", "")}`));
     assert.equal(meta.payPrice, `${totals[tier]}원 / 4주`);
   } else {
     assert.equal(meta.weeklyPrice, '');
@@ -63,4 +65,24 @@ assert.match(serviceSource, /합격컷 도달 위한 목표 성적 제시/);
 assert.ok(!PLAN_META.Basic.features.includes('합격컷 도달 위한 목표 성적 제시'), 'Do not silently merge conflicting web benefits');
 assert.doesNotMatch(JSON.stringify(PLAN_META), /합격확률|합격 가능성/, 'Mobile plan copy must describe converted scores, not probability');
 
-console.log('plan contracts passed: four web purchase cards, ordered benefits, prices and stale-duration handoff.');
+const expired = buildMembershipSummary({ userTier: 'free', checkoutPlan: 'Pro', user: { currentSubscription: { tier: 'pro', endDate: '2020-01-01' } } });
+assert.equal(expired.label, 'FREE');
+assert.match(expired.detail, /유료 이용권이 없어요/);
+assert.equal(buildMembershipSummary({ checkoutPlan: 'Pro' }).label, '확인 중');
+assert.equal(buildMembershipSummary({ userTier: 'basic', targetPolicy: { label: '대학 변경 0회 남음' } }).detail, '대학 변경 0회 남음');
+assert.match(buildMembershipSummary({ userTier: 'starter' }).detail, /확인 필요/);
+assert.match(buildMembershipSummary({ userTier: 'pro', user: { currentSubscription: { tier: 'pro', endDate: '2030-10-01T00:00:00Z' } }, targetPolicy: { label: '대학 변경 무제한' } }).detail, /2030\.10\.01까지 · 대학 변경 무제한/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', startDate: '2030-10-01T00:00:00Z' } } }).detail, /2030\.10\.29까지/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', endDate: 'invalid' } } }).detail, /이용 기한 확인 필요/);
+console.log('plan contracts passed: web purchase cards, prices, membership status and stale-duration handoff.');
+
+const transferSource = await readFile(new URL('../../checkout-transfer.html', import.meta.url), 'utf8');
+const adminSource = await readFile(new URL('../../admin_index.html', import.meta.url), 'utf8');
+for (const [tier, amount] of Object.entries({ BASIC: 25000, STARTER: 39000, STANDARD: 49000, PRO: 149000 })) {
+  assert.match(transferSource, new RegExp("name: '" + tier + "', price: " + amount + "[,\\\\s]"), tier + ' transfer display');
+}
+assert.ok(adminSource.includes('STANDARD 플랜 (4주 49,000원)'));
+assert.ok(adminSource.includes('PRO 플랜 (4주 149,000원)'));
+assert.doesNotMatch(adminSource, /월 (149,000|299,000)원/);
+assert.match(PLAN_META.Standard.originalPrice, /149,000원 \/ 4주/);
+assert.match(PLAN_META.Pro.originalPrice, /299,000원 \/ 4주/);

@@ -364,8 +364,9 @@ const [timerScreen, panels, screenContext, timerHandlers, timerStyles] = await P
 assert.match(timerScreen, /<HomeDashboard/, 'Timer must delegate the home presentation.');
 const dashboard = await readFile(new URL('../src/screens/timer/HomeDashboard.jsx', import.meta.url), 'utf8');
 const sessionPanel = await readFile(new URL('../src/screens/timer/TimerSessionPanel.jsx', import.meta.url), 'utf8');
-assert.doesNotMatch(dashboard, /<TimerSessionPanel/, 'Home must end at the aquarium preview, without an embedded timer.');
-assert.match(timerScreen, /<TimerSessionPanel/, 'The screen overlay must preserve the timer panel.');
+const inlineStudy = await readFile(new URL('../src/screens/timer/HomeStudyPanel.jsx', import.meta.url), 'utf8');
+assert.match(inlineStudy, /<TimerSessionPanel/, 'The home inline owner must preserve the timer panel.');
+assert.doesNotMatch(inlineStudy, /<Sheet|role="dialog"/, 'Study controls must not open a dialog.');
 assert.match(sessionPanel, /<StudyJourneyPanel/, 'The timer panel must preserve the study journey owner.');
 assert.match(timerScreen, /lastCompletedSession=\{lastCompletedSession\}/, 'Timer must pass the confirmed session summary to the journey.');
 assert.match(timerScreen, /rewardPendingSessionId=\{rewardPendingSessionId\}/, 'Timer controls must observe an unresolved reward before another study can start.');

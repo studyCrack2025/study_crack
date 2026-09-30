@@ -550,6 +550,8 @@ export function createAuthHandlers(ctx) {
         marketingAgreed: terms.marketingAgreed
       };
       try {
+        const { buildSignupConsent } = await import('../domain/signup-consent.js');
+        profileData.signupConsent = buildSignupConsent(fields.birthdate, terms.marketingAgreed);
         const signup = await signUpWithEmailImpl({
           authApiUrl: ctx.authApiUrl,
           email: fields.email,
@@ -559,7 +561,7 @@ export function createAuthHandlers(ctx) {
         });
         if (!signup?.ok) {
           setSignupError(signup?.afterAccountCreated
-            ? '계정은 생성되었으나 프로필 저장에 실패했습니다. 관리자에게 문의해주세요.'
+            ? (signup?.error || '계정은 생성되었으나 프로필 저장에 실패했습니다. 관리자에게 문의해주세요.')
             : (signup?.error || '회원가입에 실패했습니다.'));
           setSignupSubmitting(false);
           return false;

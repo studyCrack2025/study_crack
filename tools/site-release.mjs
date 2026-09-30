@@ -94,7 +94,7 @@ function releaseFiles(commit, release) {
 }
 
 export function cacheControlFor(file) {
-  if (['js/config.js', 'js/shared/api.js', ...GENERATED_FILES, ...FIXED_ENTRIES].includes(file)) return NO_CACHE;
+  if (['js/config.js', 'js/shared/api.js', 'js/shared/signup-submit.js', ...GENERATED_FILES, ...FIXED_ENTRIES].includes(file)) return NO_CACHE;
   return /^(?:js\/|css\/|assets\/pwa\/|studycrack-mobile-app\/dist\/(?:chunks|assets)\/)/.test(file) ? IMMUTABLE : NO_CACHE;
 }
 
@@ -215,7 +215,7 @@ export function createPublishCommands(site, bucket, aliases) {
   return [
     sync(`${DIST}/chunks`, IMMUTABLE), sync(`${DIST}/assets`, IMMUTABLE),
     sync('assets', NO_CACHE), sync('js', IMMUTABLE), sync('css', IMMUTABLE),
-    copy('js/config.js', NO_CACHE), copy('js/shared/api.js', NO_CACHE), copy('js/release.js', NO_CACHE),
+    copy('js/config.js', NO_CACHE), copy('js/shared/api.js', NO_CACHE), copy('js/shared/signup-submit.js', NO_CACHE), copy('js/release.js', NO_CACHE),
     [...copy('assets/pwa', IMMUTABLE), '--recursive'],
     ...FIXED_ENTRIES.map((entry) => copy(entry, NO_CACHE)),
     ['s3', 'sync', site, destination, '--exclude', 'assets/*', '--exclude', 'js/*', '--exclude', 'css/*', '--exclude', 'studycrack-mobile-app/*', '--exclude', 'release.json', '--cache-control', NO_CACHE, '--only-show-errors'],

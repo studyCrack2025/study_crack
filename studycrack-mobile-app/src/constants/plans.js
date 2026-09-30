@@ -7,7 +7,7 @@ export const PLAN_META = {
     billingNote: '단건 결제',
     discountNote: '약 49% 할인 · 할인 기간 적용',
     theme: 'green',
-    desc: 'AI 기반 합격 예측 분석',
+    desc: '성적·대학별 기준 기반 합격 분석',
     features: ['목표대학 최대 18개 설정', '합격 컷 대비 거리 분석', '목표 대학별 효자 과목 발굴', '과목별 1점당 환산 효율 계산', '현재 점수 기준 목표 대학 위치 진단', '점수 상승 시뮬레이션 제공'],
     complete: '개인 플래너와 대학별 환산점수 분석을 함께 관리할 수 있어요.',
     audience: ['혼자 계획을 세우되 기록을 한곳에서 관리하고 싶은 학생', '목표 대학별 점수 효율을 먼저 확인하고 싶은 학생']
@@ -27,7 +27,7 @@ export const PLAN_META = {
   Standard: {
     introPrice: '49,000원 / 4주',
     payPrice: '49,000원 / 4주',
-    originalPrice: '정가 37,250원 / 주',
+    originalPrice: '정가 149,000원 / 4주',
     weeklyPrice: '12,250원 / 주',
     billingNote: '4주 총 49,000원',
     discountNote: '약 67% 할인 · 4주 결제 총 49,000원',
@@ -40,12 +40,12 @@ export const PLAN_META = {
   Pro: {
     introPrice: '149,000원 / 4주',
     payPrice: '149,000원 / 4주',
-    originalPrice: '정가 74,750원 / 주',
+    originalPrice: '정가 299,000원 / 4주',
     weeklyPrice: '37,250원 / 주',
     billingNote: '4주 총 149,000원',
     discountNote: '약 50% 할인 · 4주 결제 총 149,000원',
     theme: 'rose',
-    desc: '합격 보장형 프리미엄 전략 관리',
+    desc: '프리미엄 입시 전략 관리',
     features: ['STANDARD 모든 기능 포함', '목표 성적 정밀 제시', '정밀 역추적', '상향 지원 중장기 로드맵', '심화 합격 전략 리포트', '학부모 공유용 전략 리포트', '조건부 환급 혜택 제공'],
     complete: '심화 합격 전략 리포트와 중장기 로드맵을 확인할 수 있어요.',
     audience: ['상위권 대학을 목표로 정밀 전략이 필요한 학생', '학습과 지원 전략을 함께 관리받고 싶은 학생']

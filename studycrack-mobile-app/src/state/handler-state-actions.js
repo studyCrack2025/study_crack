@@ -37,7 +37,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'withdrawPassword', 'withdrawSubmitting'
   ]),
   service: Object.freeze([
-    'streakSummary',
+    'streakSummary', 'user',
     'notiRefreshTick', 'qnaRefreshTick', 'reportsRefreshTick',
     'analysisSearchOpen', 'checkoutPlan', 'coachingDropReasons', 'coachingExamFiles',
     'coachingExamScores', 'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen',

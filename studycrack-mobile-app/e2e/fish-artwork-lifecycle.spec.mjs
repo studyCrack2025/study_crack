@@ -20,10 +20,11 @@ for (const rate of [4, 12]) test(`cached fish remain visible after home to aquar
   const client = await context.newCDPSession(page);
   await client.send('Emulation.setCPUThrottlingRate', { rate });
   try {
-    await page.goto('/studycrack-mobile.html?screen=timer');
-    const home = page.locator('.home-aquarium-preview');
-    await expect(home.locator('.aquarium-fish-image')).toHaveCount(3);
-    await home.locator('[data-target="aquarium"]').first().click();
+    await page.goto('/studycrack-mobile.html?screen=aquarium');
+    await expect(page.locator('.aquarium-scene-wrap .aquarium-fish-artwork.is-loaded')).toHaveCount(3);
+    await page.locator('.tabbar [data-tab="timer"]').click();
+    await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
     const scene = page.locator('.aquarium-scene-wrap');
     await expect(scene.locator('.aquarium-fish-image')).toHaveCount(3);
     await expect.poll(() => scene.locator('.aquarium-fish-image').evaluateAll(es => es.every(e => e.complete && e.naturalWidth > 0))).toBe(true);

@@ -54,6 +54,7 @@ function applyRewardState(ctx, rewardData) {
     durationSeconds: numeric(rewardData.durationSeconds),
     shells: numeric(rewardData.reward?.shells),
     food: numeric(rewardData.reward?.food),
+    ...(rewardData.reward?.ticketPolicyVersion ? { tickets: numeric(rewardData.reward.tickets), creditedSeconds: numeric(rewardData.reward.creditedSeconds), ticketPolicyVersion: rewardData.reward.ticketPolicyVersion } : {}),
     alreadyClaimed: rewardData.alreadyClaimed === true
   });
   ctx.setGameRefreshTick((value) => numeric(value) + 1);

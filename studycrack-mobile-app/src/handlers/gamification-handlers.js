@@ -132,9 +132,9 @@ export function createGamificationHandlers(ctx) {
     },
     async startAquariumDraw() {
       if (ctx.pendingDraw || aquariumBusy(ctx.aquariumActionStatus) || ctx.pendingDrawStatus !== 'ready') return false;
-      if (Number(ctx.gameProfile?.shellBalance) < 30) {
+      if (ctx.gameProfile?.ticketPolicyVersion !== 'study-ticket-v1' || !(Number(ctx.gameProfile?.ticketBalance) >= 1)) {
         ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError('조개가 30개 이상 있어야 물고기를 만날 수 있어요.');
+        ctx.setAquariumActionError('사용 가능한 뽑기권이 필요해요. 공부 시간을 모아 다음 친구를 만나보세요.');
         return true;
       }
       return withOperationLock(ctx.operationLocksRef, 'aquarium-draw', async () => {

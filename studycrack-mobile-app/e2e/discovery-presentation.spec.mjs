@@ -12,7 +12,7 @@ async function setup(page, { rarity = 'rare', duplicate = false, refund = 0, pen
   const fish = { fishId: 'discovery-fish', speciesId: 'butterflyfish', name: '나비', level: refund ? 10 : 2, exp: 30, currentLevelExp: 0, nextLevelExp: 90, progressPct: 25, growthStage: 'growing' };
   api.state.fishInventory = [fish];
   api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeDrawRequestId: pending ? 'discovery-confirmed-1' : null };
-  if (pending) api.state.pendingDraw = { fish, result: { requestId: 'discovery-confirmed-1', speciesId: fish.speciesId, rarity, duplicate, expGranted: duplicate && !refund ? 20 : 0, shellsRefunded: refund, cost: 30, createdAt: '2026-09-07T03:00:00Z' } };
+  if (pending) api.state.pendingDraw = { fish, result: { requestId: 'discovery-confirmed-1', speciesId: fish.speciesId, rarity, duplicate, expGranted: duplicate && !refund ? 20 : 0, shellsRefunded: 0, ticketsRefunded: refund ? 1 : 0, costUnit: 'ticket', cost: 1, createdAt: '2026-09-07T03:00:00Z' } };
   await page.addInitScript(() => {
     window.__discoveryAudio = { opened: 0, closed: 0, reject: false };
     window.AudioContext = class {
@@ -64,7 +64,7 @@ for (const [width, height] of [[320, 600], [360, 800], [390, 844], [430, 932]]) 
     expect(await page.evaluate(() => window.__discoveryAudio.opened)).toBe(0);
     await result.getByRole('button', { name: '도감에서 확인하기' }).click();
     await expect(result).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: '물고기 도감' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Fish Collection' })).toBeVisible();
     expect(requests(api, 'acknowledge_fish_draw')).toHaveLength(1);
     await expectNoHorizontalOverflow(page);
   });
@@ -81,7 +81,7 @@ for (const [rarity, count, duplicate, refund] of [['common', 12, false, 0], ['ra
     await expect(page.locator('.aquarium-result-ring').first()).toHaveCSS('animation-iteration-count', '1');
     await expect(page.locator('.aquarium-result-burst i').first()).toHaveCSS('animation-iteration-count', '1');
     await expect(page.locator('.aquarium-result-rays')).toHaveCount(rarity === 'legendary' ? 1 : 0);
-    await expect(dialog(page)).toContainText(refund ? '조개 15개 환급' : duplicate ? 'EXP +20' : '보관함에 등록됐어요');
+    await expect(dialog(page)).toContainText(refund ? '뽑기권 1장 반환' : duplicate ? 'EXP +20' : '보관함에 등록됐어요');
     if (duplicate) await expect(dialog(page)).not.toContainText('도감 등록 완료');
     await expect(dialog(page)).not.toContainText('MYTHIC');
     await page.screenshot({ path: testInfo.outputPath(`discovery-${rarity}.png`), animations: 'disabled' });
@@ -134,13 +134,13 @@ test('응답을 잃은 뽑기는 새 결과를 만들지 않고 기존 결과를
   const api = await setup(page, { pending: false, loseResponseOnceTypes: ['draw_fish'] });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.locator('[data-action="openAquariumDraw"]').click();
-  await page.getByRole('button', { name: '조개 30개로 만나기' }).click();
+  await page.getByRole('button', { name: '뽑기권 1장으로 만나기' }).click();
   await expect(page.locator('.aquarium-draw-ready .aquarium-action-error')).toBeVisible();
   await expect(dialog(page)).toHaveCount(0);
-  const balance = api.state.gameProfile.shellBalance;
+  const balance = api.state.gameProfile.ticketBalance;
   await page.reload();
   await expect(dialog(page)).toBeVisible();
-  expect(api.state.gameProfile.shellBalance).toBe(balance);
+  expect(api.state.gameProfile.ticketBalance).toBe(balance);
   expect(requests(api, 'draw_fish')).toHaveLength(1);
   expect(requests(api, 'acknowledge_fish_draw')).toHaveLength(0);
 });

@@ -6,8 +6,9 @@ export function AquariumGrowthCaption({ view, interactive }) {
   const pending = ['idle', 'loading'].includes(view.status);
   const healthy = view.status === 'ready' && Boolean(growth);
   const Details = healthy ? 'details' : 'div';
+  const label = growth ? `성장 인정 ${growth.validDayCount}일${growth.highestUnlockedStage ? ` · DAY ${growth.highestUnlockedStage.slice(3)}` : ' · 첫 성장 준비'}` : pending ? '성장 기록 확인 중' : '성장 기록 확인 필요';
   return <div className="aquarium-growth-caption" data-growth-status={view.status}>
-    <span>{growth ? `성장 인정 ${growth.validDayCount}일${growth.highestUnlockedStage ? ` · DAY ${growth.highestUnlockedStage.slice(3)}` : ' · 첫 성장 준비'}` : pending ? '성장 기록 확인 중' : '성장 기록 확인 필요'}</span>
+    {interactive ? <div className="aquarium-growth-heading"><i aria-hidden="true">{growth ? growth.validDayCount : '—'}</i><div><b>수조 성장 기록</b><span>{label}</span></div></div> : <span>{label}</span>}
     {interactive ? <>
       <AquariumUnlockNotice view={view} />
       {healthy ? <strong>{growth.nextStageDays === null ? '마지막 수조까지 성장했어요' : `${growth.nextStageDays}일 더 공부하면 다음 수조가 열려요`}</strong> : null}

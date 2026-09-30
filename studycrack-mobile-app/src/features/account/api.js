@@ -1,15 +1,14 @@
 import { normalizePersonalEvent } from '../../constants/admission-calendar.js';
-import { apiInvalidResponse, apiSuccess, postJson, postUserData } from '../../shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson, postUserData } from '../../shared/api/client.js';
 import { USER_REQUEST_TYPES } from '../../shared/api/request-types.js';
-import { buildTargetUnivsPayload } from '../analysis/target-model.js';
 
-export function saveTargetUnivs({ apiFetch, targetList, targetSlots, userApiUrl } = {}) {
-  return postUserData({
-    apiFetch,
-    userApiUrl,
-    type: USER_REQUEST_TYPES.UPDATE_TARGET_UNIVERSITIES,
-    data: buildTargetUnivsPayload(targetList, new Date().toISOString(), targetSlots)
-  });
+export async function saveTargetUnivs(options = {}) {
+  try {
+    const targetApi = await import('./target-api.js');
+    return await targetApi.saveTargetUnivs(options);
+  } catch {
+    return apiFailure('대학 저장을 준비하지 못했어요. 연결을 확인하고 다시 시도해주세요.');
+  }
 }
 
 export function saveQuantitative({ apiFetch, quantitative, userApiUrl } = {}) {

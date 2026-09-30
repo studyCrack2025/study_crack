@@ -15,10 +15,12 @@ assert.match(profileHandlers, /refreshStudyRanking\?\.\(\)/);
 assert.match(profileScreens, /scoreInfoSubjects\.length\s*\?/);
 assert.match(profileScreens, /아직 저장된 시험 성적이 없어요/);
 
-assert.match(scoreResources, /const requestKeyRef = useRef\(0\)/);
-assert.match(scoreResources, /requestKeyRef\.current !== requestKey \|\| scoreSignatureRef\.current !== scoreSignature/);
-assert.match(scoreResources, /simulationSignatureRef\.current !== simulationSignature/);
-assert.match(scoreResources, /backtraceSignatureRef\.current !== signature/);
+assert.match(scoreResources, /createAnalysisSession/);
+assert.match(scoreResources, /ownerOf\(current\) !== owner/);
+assert.match(scoreResources, /resolveAnalysisExamMode\(current\) !== exam/);
+const sessionSource = await readFile(new URL('../src/features/analysis/analysis-session.js', import.meta.url), 'utf8');
+assert.match(sessionSource, /entries\.get\(exam\) === entry && !entry\.controller\.signal\.aborted/);
+assert.match(sessionSource, /previous && \(!forced \|\| previous\.busy\)/);
 assert.match(universityResources, /catalogRequestRef\.current !== requestKey/);
 assert.match(universityResources, /recommendationRequestRef\.current !== requestKey/);
 assert.match(packageSource, /check-phase-three-auth-onboarding-tracer\.mjs && node scripts\/check-phase-three-analysis-profile-tracer\.mjs && node scripts\/check-phase-three-service-tracer\.mjs/);

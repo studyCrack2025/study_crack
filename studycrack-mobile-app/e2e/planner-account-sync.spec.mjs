@@ -74,7 +74,7 @@ async function accountMode(page) {
   const panel = await open(page);
   await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
   await panel.getByRole('button', { name: '계정 계획으로 전환' }).click();
-  await expect(page.locator('.planner-context-head')).toContainText('계정 계획을 보고 있어요');
+  await expect(page.locator('.planner-progress-caption')).toContainText('계정 계획을 보고 있어요');
 }
 async function addAccountDraft(page, title = '새 계정 계획') {
   await page.getByRole('button', { name: '계획 추가', exact: true }).click();
@@ -114,8 +114,8 @@ test('서버 완료 확정 성장값은 추가 조회 없이 홈과 수조에 �
   await expect(page.locator('article[data-planner-id]')).toContainText('서버 완료 확인');
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
-  await expect(page.locator('.home-aquarium-preview .aquarium-scene')).toHaveAttribute('data-background-key', 'day1');
-  await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click();
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
   await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 1일');
   expect(state.requests.some(row => row.operation === 'get_aquarium_growth')).toBe(false);
 });
@@ -128,8 +128,8 @@ test('기기에 변조된 성장 캐시가 있어도 배경은 실제 조회 응
   await accountMode(page);
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
-  await expect(page.locator('.home-aquarium-preview .aquarium-scene')).toHaveAttribute('data-background-key', 'day1');
-  await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click();
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
   await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 0일');
   await expect(page.locator('.aquarium-scene')).toHaveAttribute('data-background-key', 'day1');
 });

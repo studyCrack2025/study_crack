@@ -52,7 +52,7 @@ export function buildAquariumPresentation({ activeFish, fishCatalog, fishCatalog
     ownedCount: ready ? count(fishCount) : null,
     activeCount: ready ? slots.filter(Boolean).length : null,
     streakDays: ready ? count(gameProfile.streakDays) : null,
-    shells: ready ? count(gameProfile.shellBalance) : null,
+    tickets: ready && gameProfile.ticketPolicyVersion === 'study-ticket-v1' ? count(gameProfile.ticketBalance) : null,
     collection: Object.freeze({ status: fishCatalogStatus, collected, total, percent: total ? Math.round(collected / total * 100) : null }),
     planner: planner || Object.freeze({ source: 'local', status: plannerReady ? 'ready' : dates.size > 1 ? 'date-mismatch' : 'unknown', date: dates.size === 1 ? [...dates][0] : null, total: plannerTotal, completed, percent: plannerTotal ? Math.round(completed / plannerTotal * 100) : null })
   });

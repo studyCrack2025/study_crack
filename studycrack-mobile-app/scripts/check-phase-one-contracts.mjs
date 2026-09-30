@@ -76,7 +76,7 @@ assert.match(tabBar, /inert=\{inactive \? '' : undefined\}/, 'Covered bottom nav
 assert.match(tabBar, /aria-hidden=\{inactive \? 'true' : undefined\}/, 'Covered bottom navigation must leave the accessibility tree');
 
 assert.match(primaryHeader, /description/, 'PrimaryScreenHeader must support the shared subtitle hierarchy');
-assert.match(primaryHeader, /<h1>/, 'PrimaryScreenHeader must own the primary page heading');
+assert.match(primaryHeader, /<h1(?:\s[^>]*)?>/, 'PrimaryScreenHeader must own the primary page heading');
 assert.match(secondaryScreen, /StatusState/, 'SecondaryState must delegate status semantics to StatusState');
 assert.doesNotMatch(secondaryScreen, /sc-secondary-state/, 'SecondaryState must not retain a second status DOM owner');
 assert.doesNotMatch(addUniversity, /function ScreenState/, 'Feature screens must not fork the shared status owner');

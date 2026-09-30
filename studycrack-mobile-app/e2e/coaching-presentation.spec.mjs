@@ -31,14 +31,15 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.coaching-process-step small').first()).toHaveCSS('font-size', '10px');
     await expect(page.locator('.coaching-week-preview')).toContainText('등록 1개 · 계획 30분');
     const order = await page.locator('.coach-page').evaluate(el => [...el.children].map(child => child.className));
-    for (const [before, after] of [['sc-study-overview', 'coaching-process'], ['coaching-process', 'coaching-week-preview'], ['coaching-week-preview', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-hero'], ['coaching-hero', 'coaching-history'], ['coaching-history', 'service-plan-comparison']]) {
+    for (const [before, after] of [['coaching-hero', 'coaching-process'], ['coaching-process', 'coaching-week-preview'], ['coaching-week-preview', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-history'], ['coaching-history', 'btn btn-secondary']]) {
       expect(order).toContain(before); expect(order).toContain(after);
       expect(order.indexOf(before)).toBeLessThan(order.indexOf(after));
     }
     await page.screenshot({ path: info.outputPath(`coaching-top-${width}.png`), animations: 'disabled' });
-    await expect(page.locator('.service-plan-card')).toHaveCount(4);
-    await page.locator('.service-plan-comparison').evaluate(el => el.scrollIntoView({ block: 'center' }));
-    await page.locator('.service-plan-comparison').screenshot({ path: info.outputPath(`coaching-plans-${width}.png`), animations: 'disabled' });
+    await expect(page.locator('.service-plan-card')).toHaveCount(0);
+    await expect(page.locator('.sc-study-overview')).toHaveCount(0);
+    await page.getByRole('button', { name: '플랜별 기능 보기 →' }).evaluate(el => el.scrollIntoView({ block: 'center' }));
+    await page.getByRole('button', { name: '플랜별 기능 보기 →' }).screenshot({ path: info.outputPath(`coaching-plans-${width}.png`), animations: 'disabled' });
     await expectNoHorizontalOverflow(page);
     await page.goto('/studycrack-mobile.html?screen=weekly');
     await expect(page.locator('.weekly-feedback')).toHaveCount(3);
@@ -64,9 +65,12 @@ test('BASIC 잠금 미리보기는 수치나 신청 권한을 만들지 않는�
   await expect(page.locator('[data-action="openCoachingSheet"]')).toHaveCount(0);
   await page.screenshot({ path: info.outputPath('coaching-basic-390.png'), animations: 'disabled' });
   await page.getByRole('button', { name: 'STANDARD 플랜 보기' }).click();
+  await expect(page.getByRole('region', { name: '현재 멤버십', exact: true }).locator('strong')).toHaveText('BASIC');
+  await expect(page.locator('[data-screen="proIntro"]')).not.toContainText('잠긴 기능');
   for (const [plan, price] of [['Basic', '25,000원'], ['Starter', '39,000원'], ['Standard', '4주 결제 총 49,000원'], ['Pro', '4주 결제 총 149,000원']]) {
-    await page.locator(`.service-plan-card[data-plan="${plan}"]`).click();
-    await expect(page.locator(`.service-plan-card[data-plan="${plan}"]`)).toHaveAttribute('aria-pressed', 'true');
+    const choice = page.getByRole('group', { name: '플랜 선택', exact: true }).locator(`[data-plan="${plan}"]`);
+    await choice.click();
+    await expect(choice).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.plan-console-price')).toContainText(price);
   }
   await expect(page.locator('.plan-benefit-row')).toHaveCount(7);

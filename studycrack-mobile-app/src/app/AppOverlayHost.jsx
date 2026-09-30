@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { MySummarySheet } from '../screens/mypage/MySummarySheet.jsx';
 import { ProductGuideError, ProductGuideOverlay } from '../screens/product-guide/ProductGuideOverlay.jsx';
 import { StreakSummarySheet } from '../screens/mypage/StreakSummarySheet.jsx';
 import { LogoutModal } from '../screens/mypage/LogoutModal.jsx';
@@ -12,7 +11,7 @@ export function AppOverlayHost({ localOpen = false, localOverlays = null, onDism
   if (!localOpen && !profile.drawerOpen && !streakOpen && !guideUi?.open && !guideUi?.error && !logoutModalOpen) return null;
   return (
     <div className="app-screen-overlays">
-      {localOpen ? localOverlays : guideUi?.open ? <ProductGuideOverlay ui={guideUi} presentation={guidePresentation} /> : streakOpen ? <StreakSummarySheet open presentation={streakPresentation} /> : <MySummarySheet {...profile} />}
+      {localOpen ? localOverlays : guideUi?.open ? <ProductGuideOverlay ui={guideUi} presentation={guidePresentation} /> : streakOpen ? <StreakSummarySheet open presentation={streakPresentation} /> : null}
       {!localOpen && !profile.drawerOpen && !streakOpen && !guideUi?.open ? <ProductGuideError ui={guideUi} /> : null}
       {logoutModalOpen ? <LogoutModal open /> : null}
     </div>

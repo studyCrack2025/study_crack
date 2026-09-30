@@ -88,7 +88,7 @@ try {
     let finish;
     const ctx = createMobileViewContext({
       state, stateRef, nav: {}, refs: { qnaDraftRef: { current: {} }, operationLocksRef: { current: new Set() } },
-      setState: patch => { assert.equal(patch.user.targetUniversity, '연세대학교 경제학과'); applied++; },
+      setState: patch => { if (patch.user) { assert.equal(patch.user.targetUniversity, '연세대학교 경제학과'); applied++; } },
       api: { hasClientSession: () => true, persistTargetUnivs: () => { calls++; return new Promise((yes, no) => { finish = () => outcome === 'throw' ? no(new Error('offline')) : yes(outcome === 'missing' ? undefined : { ok: outcome !== 'failure' }); }); } }
     });
     if (outcome === 'stale-before') stateRef.current = { ...state, user: {} };
@@ -100,6 +100,7 @@ try {
     }
     assert.equal(applied, 0);
     assert.equal(await ctx.addMajorToTargets('다른대학교 학과'), false);
+    for (let attempt = 0; calls === 0 && attempt < 100; attempt++) await new Promise(resolve => setTimeout(resolve, 5));
     assert.equal(calls, 1);
     if (outcome === 'stale-after') stateRef.current = { ...state, user: {} };
     finish();

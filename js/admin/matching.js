@@ -25,12 +25,14 @@ async function loadMatchingData(isSilent = false) {
         ]);
 
         const tutorData = await tutorRes.json(); const studentData = await studentRes.json();
-        globalTutorsForMatch = tutorData.tutors || [];
+        if (!tutorRes.ok || !studentRes.ok) throw new Error('목록을 불러오지 못했습니다. 다시 시도해주세요.');
+        globalTutorsForMatch = (tutorData.tutors || []).filter(t => t.tutorId);
         let allUsers = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
         globalAllStudentsForMatch = allUsers.filter(u => u.role !== 'admin' && u.role !== 'tutor');
 
         globalUnmatchedStudents = globalAllStudentsForMatch.filter(s => {
-            if (s.tutorName) return false;
+            if (s.assignedTutorId) return false;
+            if (s.tutorName) return true;
             const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
             const tierLower = tier.toLowerCase();
             return tierLower === 'standard' || tierLower === 'pro';
@@ -56,7 +58,7 @@ function renderNewMatchingList() {
         return;
     }
 
-    const tutorOptions = globalTutorsForMatch.map(t => `<option value="${t.nickname}">${t.nickname} (${t.name}) - 배정 ${t.totalStudents}명</option>`).join('');
+    const tutorOptions = globalTutorsForMatch.map(t => `<option value="${escapeHtml(t.tutorId)}">${escapeHtml(t.nickname)} (${escapeHtml(t.name)}) - 배정 ${Number(t.totalStudents) || 0}명</option>`).join('');
 
     globalUnmatchedStudents.forEach(s => {
         const tierBadge = getTierBadgeHTML(s);
@@ -69,6 +71,7 @@ function renderNewMatchingList() {
                 <div>
                     <h4 class="match-card-name" style="margin:0 0 5px 0; font-size:1.1rem; color:#1e293b;">${escapeHtml(s.name)}</h4>
                     <div class="match-card-date" style="font-size:0.85rem; color:#94a3b8;">가입일: ${new Date(s.createdAt).toLocaleDateString()}</div>
+                    ${s.tutorName ? `<p>기존 표시명: ${escapeHtml(s.tutorName)} · 실제 담당자를 확인 후 배정해주세요.</p>` : ''}
                 </div>
                 <div>${tierBadge}</div>
             </div>
@@ -87,14 +90,14 @@ function renderNewMatchingList() {
 function initTutorChangeSelects() {
     const oldSel = document.getElementById('changeOldTutor'); const newSel = document.getElementById('changeNewTutor');
     let options = '<option value="">선택하세요</option>';
-    globalTutorsForMatch.forEach(t => { options += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} (${escapeHtml(t.name)})</option>`; });
+    globalTutorsForMatch.forEach(t => { options += `<option value="${escapeHtml(t.tutorId)}">${escapeHtml(t.nickname)} (${escapeHtml(t.name)})</option>`; });
     oldSel.innerHTML = options; newSel.innerHTML = options;
 }
 
 function updateChangeStudentList() {
     const oldTutorName = document.getElementById('changeOldTutor').value; const stuSel = document.getElementById('changeStudent');
     if (!oldTutorName) { stuSel.innerHTML = '<option value="">먼저 튜터를 선택하세요</option>'; return; }
-    const myStus = globalAllStudentsForMatch.filter(s => s.tutorName === oldTutorName);
+    const myStus = globalAllStudentsForMatch.filter(s => s.assignedTutorId === oldTutorName);
     if (myStus.length === 0) { stuSel.innerHTML = '<option value="">배정된 학생이 없습니다.</option>'; return; }
 
     let stuOptions = '<option value="">학생을 선택하세요</option>';
@@ -112,18 +115,24 @@ function confirmTutorChange() {
     if (!oldTutor || !studentId || !newTutor) return alert("모든 항목을 선택해 주세요.");
     if (oldTutor === newTutor) return alert("현재 튜터와 변경할 튜터가 동일합니다.");
 
-    if (confirm(`🚨 [튜터 변경 최종 확인]\n\n학생: ${studentName}\n기존 튜터: ${oldTutor} 선생님\n변경 튜터: ${newTutor} 선생님\n\n정말로 튜터를 변경하시겠습니까? 이 작업은 즉시 반영됩니다.`)) {
+    const oldLabel = document.getElementById('changeOldTutor').selectedOptions[0]?.text || '';
+    const newLabel = document.getElementById('changeNewTutor').selectedOptions[0]?.text || '';
+    if (confirm(`🚨 [튜터 변경 최종 확인]\n\n학생: ${studentName}\n기존 튜터: ${oldLabel}\n변경 튜터: ${newLabel}\n\n정말로 튜터를 변경하시겠습니까? 이 작업은 즉시 반영됩니다.`)) {
         executeMatching(studentId, true, newTutor, oldTutor);
     }
 }
 
 async function executeMatching(studentId, isChange, newTutorArg = null, oldTutorArg = null) {
-    const newTutorName = isChange ? newTutorArg : document.getElementById(`select_tutor_${studentId}`).value;
-    if (!newTutorName) return alert("튜터를 선택해주세요.");
+    const newTutorId = isChange ? newTutorArg : document.getElementById(`select_tutor_${studentId}`).value;
+    if (!newTutorId) return alert("튜터를 선택해주세요.");
+    const student = globalAllStudentsForMatch.find(s => s.userid === studentId);
+    if (!student) return alert('학생 목록을 새로고침해주세요.');
+    const expectedRevision = student.tutorAssignmentRevision ?? 0;
     const adminId = localStorage.getItem('userId');
 
     try {
-        await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_assign_tutor', userId: adminId, data: { targetUserId: studentId, newTutorName: newTutorName, isChange: isChange, oldTutorName: oldTutorArg } }) });
+        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_assign_tutor', userId: adminId, data: { targetUserId: studentId, newTutorId, expectedRevision } }) });
+        if (!response.ok) { alert(response.status === 409 ? '담당 정보가 변경되었습니다. 새 목록에서 다시 확인해주세요.' : '배정하지 못했습니다. 계정 상태와 선택 항목을 확인해주세요.'); await loadMatchingData(); return; }
         alert(isChange ? "튜터가 성공적으로 변경되었습니다." : "튜터 배정이 완료되었습니다.");
         if (isChange) { document.getElementById('changeOldTutor').value = ''; document.getElementById('changeStudent').innerHTML = '<option value="">먼저 튜터를 선택하세요</option>'; document.getElementById('changeNewTutor').value = ''; }
         await loadMatchingData();

@@ -71,7 +71,7 @@ export function DiscoveryResult({ actionError = '', actionStatus = 'idle', catal
   const meta = catalogMeta(catalog, fish.speciesId);
   const duplicate = Boolean(result.duplicate);
   const rarity = Object.hasOwn(PARTICLES, result.rarity) ? result.rarity : 'common';
-  const refund = Number(result.shellsRefunded) > 0;
+  const refund = Number(result.ticketsRefunded) > 0;
   return (
     <Modal ariaLabel="물고기 발견 결과" dismissAction="closeAquariumMode" overlayClass="aquarium-discovery-overlay" panelClass={`aquarium-draw-result ${RARITY_CLASSES[rarity]}`}>
       <div className="aquarium-discovery-art" data-effects-active={visible}>
@@ -93,7 +93,7 @@ export function DiscoveryResult({ actionError = '', actionStatus = 'idle', catal
         <p>{fish.name}</p>
       </div>
       <div className="aquarium-discovery-body">
-        <div className="aquarium-result-reward">{duplicate ? <><span>{refund ? '최대 레벨 보상' : '중복 성장 보상'}</span><b>{refund ? `조개 ${result.shellsRefunded}개 환급` : `EXP +${Number(result.expGranted) || 0}`}</b><small>{refund ? '이미 최고 레벨인 친구를 만나 조개를 돌려받았어요.' : '새 개체가 늘어나는 대신 기존 친구의 성장에 반영됐어요.'}</small></> : <><span>도감 등록 완료</span><b>새 친구가 보관함에 등록됐어요.</b><small>수조에서 함께 헤엄치려면 내 물고기에서 위치를 선택해주세요.</small></>}</div>
+        <div className="aquarium-result-reward">{duplicate ? <><span>{refund ? '최대 레벨 보상' : '중복 성장 보상'}</span><b>{refund ? `뽑기권 ${result.ticketsRefunded}장 반환` : `EXP +${Number(result.expGranted) || 0}`}</b><small>{refund ? '이미 최고 레벨인 친구를 만나 뽑기권을 돌려받았어요.' : '새 개체가 늘어나는 대신 기존 친구의 성장에 반영됐어요.'}</small></> : <><span>도감 등록 완료</span><b>새 친구가 보관함에 등록됐어요.</b><small>수조에서 함께 헤엄치려면 내 물고기에서 위치를 선택해주세요.</small></>}</div>
         {actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}
         <button type="button" className="btn btn-primary" data-action="acknowledgeAquariumDraw" data-target="catalog" disabled={actionStatus === 'acknowledging-draw'}>{actionStatus === 'acknowledging-draw' ? '확인 처리 중...' : '도감에서 확인하기'}</button>
         <button type="button" className="btn btn-secondary" data-action="closeAquariumMode">나중에 볼게요</button>
@@ -105,8 +105,8 @@ export function DiscoveryResult({ actionError = '', actionStatus = 'idle', catal
 export function DiscoveryPanel({ actionError = '', actionStatus = 'idle', pendingDrawError = '', pendingDrawStatus = 'idle', profile }) {
   const drawing = actionStatus === 'drawing';
   return <div className="aquarium-mode-shell aquarium-draw-view">
-    <AquariumModeHeader eyebrow="DISCOVERY" title="새로운 친구 만나기" description="공부로 모은 조개로 다음 친구를 발견해보세요." />
+    <AquariumModeHeader eyebrow="DISCOVERY" title="새로운 친구 만나기" description="확정 공부 5시간마다 받는 뽑기권으로 다음 친구를 만나보세요." />
     <DrawPity profile={profile} />
-    <section className="aquarium-draw-ready"><div className="aquarium-sealed-chest" aria-hidden="true"><i /><b /></div><span>DISCOVERY</span><h2>어떤 친구가 기다리고 있을까요?</h2><p>확정된 결과는 나중에 다시 볼 수 있어요. 확인하기 전에는 새 뽑기를 진행하지 않습니다.</p><div className="aquarium-draw-cost"><span>보유 조개</span><b>{Number(profile?.shellBalance) || 0}</b><i /><span>필요 조개</span><b>30</b></div>{pendingDrawError ? <p className="aquarium-action-error" role="alert">{pendingDrawError}</p> : null}{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}{pendingDrawStatus === 'error' ? <button type="button" className="btn btn-secondary" data-action="retryGameResources">결과 다시 확인</button> : null}<button type="button" className="btn btn-primary" data-action="startAquariumDraw" disabled={drawing || pendingDrawStatus !== 'ready' || Number(profile?.shellBalance) < 30}>{drawing ? '결과를 확인하는 중...' : Number(profile?.shellBalance) < 30 ? '조개가 더 필요해요' : '조개 30개로 만나기'}</button></section>
+    <section className="aquarium-draw-ready"><div className="aquarium-sealed-chest" aria-hidden="true"><i /><b /></div><span>DISCOVERY</span><h2>어떤 친구가 기다리고 있을까요?</h2><p>확정된 결과는 나중에 다시 볼 수 있어요. 확인하기 전에는 새 뽑기를 진행하지 않습니다.</p><div className="aquarium-draw-cost"><span>보유 뽑기권</span><b>{profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b><i /><span>사용 뽑기권</span><b>1장</b></div>{pendingDrawError ? <p className="aquarium-action-error" role="alert">{pendingDrawError}</p> : null}{actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}{pendingDrawStatus === 'error' ? <button type="button" className="btn btn-secondary" data-action="retryGameResources">결과 다시 확인</button> : null}<button type="button" className="btn btn-primary" data-action="startAquariumDraw" disabled={drawing || pendingDrawStatus !== 'ready' || (profile?.ticketPolicyVersion !== 'study-ticket-v1' || !(Number(profile?.ticketBalance) >= 1))}>{drawing ? '결과를 확인하는 중...' : (profile?.ticketPolicyVersion !== 'study-ticket-v1' || !(Number(profile?.ticketBalance) >= 1)) ? '사용 가능한 뽑기권이 필요해요' : '뽑기권 1장으로 만나기'}</button></section>
   </div>;
 }

@@ -132,6 +132,7 @@
     "js/script.js",
     "js/service.js",
     "js/shared/api.js",
+    "js/shared/signup-submit.js",
     "js/shared/hamburger.js",
     "js/shared/store.js",
     "js/shared/utils.js",
@@ -161,9 +162,18 @@
     "survey.html",
     "tutor_login.html",
     "tutorial.html",
-    "welcome.html"
+    "welcome.html",
+    "terms.html",
+    "privacy.html",
+    "refund.html",
+    "delete-account.html",
+    "css/legal-page.css"
   ],
   "aliases": {
-    "basic-preview": "basic-preview.html"
+    "basic-preview": "basic-preview.html",
+    "terms": "terms.html",
+    "privacy": "privacy.html",
+    "refund": "refund.html",
+    "delete-account": "delete-account.html"
   }
 }

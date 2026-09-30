@@ -49,11 +49,11 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
       });
       if (variant !== 'home') {
         expect(metrics.naturalWidth).toBe(day === 100 ? 376 : 377); expect(metrics.naturalHeight).toBe(502);
-        expect(metrics.fit).toBe('cover'); expect(metrics.position).toBe(variant === 'full' ? '50% 50%' : '50% 100%');
+        expect(metrics.fit).toBe('cover'); expect(metrics.position).toBe('50% 100%');
       }
       expect(metrics.overlaps).toBe(false);
       if (variant === 'share') expect(Math.abs(metrics.height - metrics.width * 502 / metrics.naturalWidth)).toBeLessThan(.1);
-      else expect(metrics.height).toBe(variant === 'full' ? 278 : variant === 'home' ? 96 : 210);
+      else expect(metrics.height).toBeCloseTo(variant === 'full' ? Math.min(326, Math.max(294, width * .8)) : variant === 'home' ? 96 : 210, 1);
       if (variant === 'full') {
         await expect(scene).toHaveCSS('border-top-width', '1px');
         await expect(scene).toHaveCSS('border-radius', '24px');
@@ -67,7 +67,7 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
       captures.push({ day, width, variant, screenshot, ...metrics });
     };
     await page.goto('/studycrack-mobile.html?screen=timer');
-    await capture('home', page.locator('.home-aquarium-preview'));
+    await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
     await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     await page.getByRole('button', { name: /사용법 다시 보기/ }).click();
     const dialog = page.getByRole('dialog', { name: 'StudyCrack 사용법' });
@@ -76,7 +76,7 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
     await page.keyboard.press('Escape'); await expect(dialog).not.toBeVisible();
     await page.getByRole('button', { name: '프로필 메뉴 닫기' }).click();
     await expect(page.getByRole('dialog', { name: '프로필 메뉴' })).not.toBeVisible();
-    await page.locator('.home-aquarium-preview [data-target="aquarium"]').first().click();
+    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
     await page.locator('.aquarium-growth-caption').evaluate(el => el.scrollIntoView({ block: 'center' }));
     await expect(page.locator('.aquarium-unlock-notice')).toBeVisible();
     await page.getByRole('button', { name: '해금 안내 닫기' }).click();

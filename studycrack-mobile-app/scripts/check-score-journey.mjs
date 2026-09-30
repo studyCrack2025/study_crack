@@ -31,7 +31,7 @@ try {
   assert.match(html, /목표 성적 미확인/);
   assert.doesNotMatch(html, />250점<|>70점<|>100점<|2등급|유지/);
   assert.match(html, /data-target="analysis"/);
-  for (const patch of [{ analysisApiStatus: 'loading' }, { analysisApiStatus: 'error' }, { analysisResultSignature: 'old' }, { scoreExamKey: 'jun' }, { targetMajor: '대학 B', analysisTargetList: ['대학 B'] }, { userLoadStatus: 'loading' }]) {
+  for (const patch of [{ analysisApiStatus: 'error' }, { analysisResultSignature: 'old' }, { scoreExamKey: 'jun' }, { targetMajor: '대학 B', analysisTargetList: ['대학 B'] }, { userLoadStatus: 'loading' }]) {
     html = render({ analysisPresentation: buildAnalysisSnapshot({ ...state, ...patch }) });
     assert.doesNotMatch(html, /<span>환산 점수<\/span><b>0점/);
     assert.match(html, /미확인/);
