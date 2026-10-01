@@ -11,6 +11,7 @@ import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.
 import { useContext } from 'react';
 import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
 import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
+import { eventCoversDate, eventMarksDateInGrid } from '../../constants/admission-calendar.js';
 
 function PlannerItemCard({ item }) {
   const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
@@ -55,7 +56,7 @@ function PlannerCalendarSegment({ activeMode = 'week' }) {
   );
 }
 
-function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '' }) {
+function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '', calendarEvents = [] }) {
   return (
     <div className="planner-days planner-date-strip">
       {plannerWeekDates.map(({ date, day, weekday, empty }, idx) => (
@@ -66,10 +67,12 @@ function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '' }
           data-action="selectPlannerDate"
           data-planner-date={date || ''}
           aria-pressed={selectedPlannerDateKey === date}
+          aria-label={`${date} ${weekday}요일 · 일정 ${calendarEvents.filter(event => eventMarksDateInGrid(event, date)).length}개`}
           disabled={empty}
         >
           <small>{weekday}</small>
           <strong>{day}</strong>
+          <span className="planner-date-events" aria-hidden="true">{calendarEvents.some(event => eventMarksDateInGrid(event, date)) ? '●' : ''}</span>
         </button>
       ))}
     </div>
@@ -152,6 +155,7 @@ function PlannerWorkspaceScreen(ctx) {
     plannerWeekDates = [],
     normalizedTargetMajor = '',
     calendarNearestDdayLabel = '',
+    calendarEvents = [],
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
@@ -193,7 +197,7 @@ function PlannerWorkspaceScreen(ctx) {
             <PlannerAccountPanel />
 
             <section className="planner-calendar-section">
-              <div className="planner-section-head"><div><span>&#xC77C;&#xC815; &#xD0D0;&#xC0C9;</span><h4>&#xB2E4;&#xB978; &#xB0A0;&#xC9DC; &#xBCF4;&#xAE30;</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet">&#xC218;&#xD5D8; &#xC77C;&#xC815;</button></div>
+              <div className="planner-section-head"><div><span>시험·입시·내 일정</span><h4>주간 일정</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet" data-date={selectedPlannerDateKey}>일정 더보기</button></div>
               <div className="card planner-calendar-card">
                 <div className="planner-inline-calendar-toolbar">
                   <PlannerCalendarSegment activeMode={calendarMode} />
@@ -206,8 +210,15 @@ function PlannerWorkspaceScreen(ctx) {
                 {calendarMode === 'month' ? (
                   <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
                 ) : (
-                  <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} />
+                  <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} calendarEvents={calendarEvents} />
                 )}
+                <div className="planner-day-events" aria-label="선택한 날의 일정">
+                  <b>{selectedPlannerDate}일 일정</b>
+                  {calendarEvents.some(event => eventCoversDate(event, selectedPlannerDateKey))
+                    ? calendarEvents.filter(event => eventCoversDate(event, selectedPlannerDateKey)).slice(0, 3).map(event => <button type="button" key={event.id} data-action="openCalendarSheet" data-date={selectedPlannerDateKey}><span>{event.title}</span><small>{event.source === 'personal' ? '내 일정' : '공식 일정'} ›</small></button>)
+                    : <p>등록된 일정이 없어요. 일정 더보기에서 추가해보세요.</p>}
+                  {calendarEvents.filter(event => eventCoversDate(event, selectedPlannerDateKey)).length > 3 ? <button type="button" data-action="openCalendarSheet" data-date={selectedPlannerDateKey}>이 날짜의 일정 모두 보기 ›</button> : null}
+                </div>
               </div>
             </section>
 

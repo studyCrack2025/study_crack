@@ -8,6 +8,12 @@ const ANALYSIS_CONTEXT_KEYS = [
   'scoreExamType', 'scoreTierClass', 'scores', 'tab'
 ];
 
+const CALENDAR_CONTEXT_KEYS = [
+  'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel',
+  'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving', 'calendarSelectedDate', 'calendarSelectedEvents',
+  'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays'
+];
+
 export const SCREEN_CONTEXT_KEYS = Object.freeze({
   accountInfo: Object.freeze([
     'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep', 'myProfileEditOpen',
@@ -76,11 +82,11 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   on2: Object.freeze([]),
   on3: Object.freeze([]),
   planner: Object.freeze([
+    'calendarEvents',
     'studyOverview', 'analysisScoreView',
     'dimmed', 'plannerCalendarMode', 'plannerCalendarMonthCells', 'plannerEditIndex', 'plannerEditItem',
     'plannerFeedback', 'plannerMonthLabel', 'plannerViewItems', 'plannerWeekDates',
-    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving',
-    'calendarSelectedDate', 'calendarSelectedEvents', 'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays', 'personalEvents',
+    ...CALENDAR_CONTEXT_KEYS, 'personalEvents',
     'normalizedTargetMajor', 'selectedPlannerDate', 'selectedPlannerDateKey', 'selectedPlannerWeekday', 'tab'
   ]),
   plannerAdd: Object.freeze(['selectedPlannerDate', 'selectedPlannerDateKey']),
@@ -112,9 +118,10 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'tab', 'weeklyReports', 'weeklyReportsError', 'weeklyReportsStatus'
   ]),
   timer: Object.freeze([
+    ...CALENDAR_CONTEXT_KEYS,
     'studyPanelMode',
     'studyOverview', 'aquariumPresentation',
-    'activeStudySession', 'analysisScoreView', 'calendarNearestDdayLabel', 'calendarNearestEvent', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
+    'activeStudySession', 'analysisScoreView', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
     'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',
     'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
     'studySubjectSheetOpen', 'studySummary', 'studySummaryStatus', 'studyTimerRunning',

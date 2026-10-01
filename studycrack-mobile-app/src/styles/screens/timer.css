@@ -118,12 +118,12 @@
 .timer-v2-status-rail small{width:100%;color:var(--sc-ink-muted);font-size:10px;font-weight:700;line-height:1.4;overflow-wrap:anywhere;}
 .timer-v2-status-rail b{font-size:14px;font-weight:850;line-height:1;}
 .timer-v2-target-summary{width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--sc-space-12);padding:var(--sc-space-12) var(--sc-space-16);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);color:var(--sc-ink);box-shadow:var(--sc-shadow-normal);font:inherit;text-align:left;}
-.timer-v2-target-summary > span{min-width:0;display:grid;gap:3px;}
-.timer-v2-target-summary > span:last-child{max-width:100px;justify-items:center;padding:10px;border-radius:20px;background:var(--sc-surface-subtle);text-align:center;}
+.timer-v2-target-summary > button{min-width:0;min-height:var(--sc-touch-target);display:grid;gap:3px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;}
+.timer-v2-target-summary > button:last-child{max-width:112px;justify-items:center;padding:10px;border-radius:20px;background:var(--sc-surface-subtle);text-align:center;}
 .timer-v2-target-summary small{overflow:hidden;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:750;text-overflow:ellipsis;white-space:nowrap;}
 .timer-v2-target-summary b{overflow:hidden;color:var(--sc-ink-strong);font-size:15px;font-weight:900;text-overflow:ellipsis;white-space:nowrap;}
-.timer-v2-target-summary > span:first-child b{font-size:17px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;}
-.timer-v2-target-summary > span:last-child b{color:var(--sc-deadline-ink);}
+.timer-v2-target-summary > button:first-child b{font-size:17px;line-height:1.5;white-space:normal;overflow-wrap:anywhere;}
+.timer-v2-target-summary > button:last-child b{color:var(--sc-deadline-ink);}
 .timer-v2-target-summary em{overflow:hidden;color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-style:normal;font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
 .timer-v2-control{display:grid;gap:var(--sc-space-12);padding:var(--sc-space-16);background:var(--sc-surface-card);overflow:hidden;}
 .timer-v2-control.is-running{border-color:color-mix(in srgb,var(--sc-action-positive) 42%,var(--sc-line-subtle));box-shadow:0 10px 28px color-mix(in srgb,var(--sc-action-positive) 14%,transparent);}

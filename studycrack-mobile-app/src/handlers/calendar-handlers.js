@@ -1,5 +1,5 @@
 import { getData } from './action-utils.js';
-import { PERSONAL_EVENT_LIMITS, normalizePersonalEvent } from '../constants/admission-calendar.js';
+import { PERSONAL_EVENT_LIMITS, normalizePersonalEvent, isValidIsoDate } from '../constants/admission-calendar.js';
 import { deleteMobileAdmissionEvent, upsertMobileAdmissionEvent } from '../features/account/api.js';
 
 function noop() {}
@@ -48,6 +48,11 @@ export function createCalendarHandlers(ctx = {}) {
 
   return {
     openCalendarSheet({ actionEl } = {}) {
+      const date = getData(actionEl, 'date');
+      if (isValidIsoDate(date)) {
+        setCalendarSelectedDate(date);
+        setCalendarMonthAnchor(`${date.slice(0, 7)}-01`);
+      }
       setCalendarSheetOpen(true);
       if (getData(actionEl, 'calendar-retry') === 'true' && ctx.calendarSyncStatus === 'error') setCalendarSyncStatus('idle');
       return true;

@@ -85,7 +85,7 @@ function CalendarEventForm(ctx) {
               <input id="calendar-event-date" className="planner-input" type="date" data-calendar-field="date" defaultValue={draft.date || ''} />
             </div>
             <div>
-              <label htmlFor="calendar-event-end-date">종료일</label>
+              <label htmlFor="calendar-event-end-date">종료일 (선택)</label>
               <input id="calendar-event-end-date" className="planner-input" type="date" data-calendar-field="endDate" defaultValue={draft.endDate || ''} />
             </div>
           </div>
