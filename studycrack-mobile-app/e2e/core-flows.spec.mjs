@@ -387,7 +387,7 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   const plannerContent = page.locator('.app-content');
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
-  await page.getByRole('button', { name: '수험 일정' }).click();
+  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
   await expect(plannerContent).toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('hidden');
   await page.locator('.calendar-sheet-overlay').getByRole('button', { name: '닫기' }).click();
@@ -473,7 +473,7 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await editedRow.getByRole('button', { name: '계획 삭제' }).click();
   await expect(editedRow).toHaveCount(0);
 
-  await page.getByRole('button', { name: '수험 일정' }).click();
+  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
   const calendar = page.locator('.calendar-sheet-overlay');
   await expect(calendar.getByRole('alert')).toContainText('내 일정을 불러오지 못했습니다.');
   await calendar.getByRole('button', { name: '다시 불러오기' }).click();
