@@ -81,6 +81,7 @@ export function normalizePersonalEvent(input = {}) {
   const title = String(input.title ?? '').trim().slice(0, PERSONAL_EVENT_LIMITS.titleMaxLength);
   if (!title) return null;
   if (!isValidIsoDate(input.date)) return null;
+  if (input.endDate && (!isValidIsoDate(input.endDate) || input.endDate < input.date)) return null;
   const category = PERSONAL_CALENDAR_CATEGORIES.includes(input.category) ? input.category : 'personal';
   const endDate = isValidIsoDate(input.endDate) && input.endDate >= input.date ? input.endDate : undefined;
   const note = String(input.note ?? '').trim().slice(0, PERSONAL_EVENT_LIMITS.noteMaxLength) || undefined;
@@ -129,11 +130,11 @@ export function mergeCalendarEvents(officialEvents = [], personalEvents = []) {
   return all.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
-// 오늘(todayYmd) 이후 가장 가까운 일정. 진행 중 기간 일정도 포함. 없으면 null.
+// 오늘 또는 앞으로 시작하는 일정만 요약한다. 진행 중/지난 일정은 달력에서 확인한다.
 export function getNearestUpcomingEvent(events = [], todayYmd) {
   if (!Array.isArray(events) || !todayYmd) return null;
   const upcoming = events
-    .filter((e) => e && e.date && (e.endDate || e.date) >= todayYmd)
+    .filter((e) => e && isValidIsoDate(e.date) && e.date >= todayYmd)
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return upcoming[0] || null;
 }

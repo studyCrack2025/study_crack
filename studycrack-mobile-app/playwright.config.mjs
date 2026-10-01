@@ -24,7 +24,11 @@ export default defineConfig({
         ...devices['iPhone 13'],
         browserName: 'chromium'
       }
-    }
+    },
+    ...(process.env.PLAYWRIGHT_WEBKIT === '1' ? [{
+      name: 'mobile-webkit',
+      use: { ...devices['iPhone 13'], browserName: 'webkit' }
+    }] : [])
   ],
   webServer: noServer ? undefined : {
     command: `PORT=${previewPort} node ../tools/static-preview.mjs`,

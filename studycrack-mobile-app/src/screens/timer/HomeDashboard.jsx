@@ -41,10 +41,10 @@ function HomeStatusRail({ aquariumPresentation, normalizedTargetMajor = '' }) {
 
 function HomeTargetSummary({ calendarNearestDdayLabel = '', calendarNearestEvent = null, normalizedTargetMajor = '' }) {
   return (
-    <button type="button" className="timer-v2-target-summary" data-action="goto" data-target="analysis">
-      <span><small>1지망 목표</small><b>{normalizedTargetMajor || '희망 대학을 설정해주세요'}</b><em>오늘의 공부를 목표와 연결해보세요</em></span>
-      <span><b>{calendarNearestDdayLabel || '일정'}</b><small>{calendarNearestEvent?.title || '입시 일정 확인'}</small></span>
-    </button>
+    <section className="timer-v2-target-summary" aria-label="목표 대학과 다가오는 일정">
+      <button type="button" data-action="goto" data-target="analysis"><small>1지망 목표</small><b>{normalizedTargetMajor || '희망 대학을 설정해주세요'}</b><em>오늘의 공부를 목표와 연결해보세요</em></button>
+      <button type="button" data-action="openCalendarSheet" data-date={calendarNearestEvent?.date} aria-label="다가오는 일정 확인 및 추가"><b>{calendarNearestDdayLabel || '일정 추가'}</b><small>{calendarNearestEvent?.title || '다가오는 일정 없음'}</small><em>일정 관리 ›</em></button>
+    </section>
   );
 }
 
