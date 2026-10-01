@@ -16,7 +16,7 @@ test('일정 수정은 키보드로 열고 앱 뒤로가기 계약은 중첩 창
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ events: [{ id: 'event-1', title: '수정할 일정', date: '2026-09-07', category: 'personal', source: 'personal', note: '남겨둔 메모' }] }) });
   });
   await page.goto('/studycrack-mobile.html?screen=planner');
-  const trigger = page.getByRole('button', { name: '수험 일정', exact: true });
+  const trigger = page.getByRole('button', { name: '일정 더보기', exact: true });
   await trigger.click();
   const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
   const edit = calendar.getByRole('button', { name: /수정할 일정/ });
@@ -48,7 +48,7 @@ test('일정 수정은 키보드로 열고 앱 뒤로가기 계약은 중첩 창
 test('일정 수정창 초기 키보드 포커스는 다음 프레임을 기다리지 않는다', async ({ page }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
-  await page.getByRole('button', { name: '수험 일정', exact: true }).click();
+  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
   const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
   const add = calendar.getByRole('button', { name: '+ 내 일정 추가' });
   await add.focus();
@@ -136,7 +136,7 @@ for (const width of [320, 360, 390, 430]) {
       return route.fulfill({ status: saves === 1 ? 409 : 200, contentType: 'application/json', body: JSON.stringify(saves === 1 ? { error: '저장 충돌 테스트' } : { events: [] }) });
     });
     await page.goto('/studycrack-mobile.html?screen=planner');
-    const trigger = page.getByRole('button', { name: '수험 일정', exact: true });
+    const trigger = page.getByRole('button', { name: '일정 더보기', exact: true });
     await trigger.click();
     const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
     await checkCycle(page, calendar, '+ 내 일정 추가');

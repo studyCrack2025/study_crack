@@ -98,7 +98,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 800 }
     await installAuthenticatedSession(page);
     await installApiMock(page);
     await page.goto('/studycrack-mobile.html?screen=timer');
-    const target = page.locator('.timer-v2-target-summary > span:first-child b');
+    const target = page.locator('.timer-v2-target-summary').getByRole('button', { name: /1지망 목표/ }).locator('b');
     await expect(target).toHaveCSS('font-size', '17px');
     await expect(target).toHaveCSS('font-weight', '900');
     const content = page.locator('.app-content');
