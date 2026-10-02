@@ -1,5 +1,5 @@
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
-import { Modal } from '../../components/Modal.jsx';
+import { GameRulesGuide } from '../../components/aquarium/GameRulesGuide.jsx';
 import { defaultFormatHms } from './presentation.js';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { Sheet } from '../../components/Sheet.jsx';
@@ -33,20 +33,6 @@ function TimerLoadFailure({ message = '', tab = 'timer' }) {
     </AppScreenShell>
   );
 }
-
-
-
-function GameRulesModal({ gameRules = null, open = false }) {
-  const tiers = gameRules?.ticketPolicy?.version === 'study-ticket-v1' ? [{ minimumMinutes: gameRules.ticketPolicy.intervalSeconds / 60, tickets: 1 }] : [];
-  const stages = Array.isArray(gameRules?.habitatStages) ? gameRules.habitatStages : [];
-  const drawOdds = gameRules?.drawPolicy?.oddsBasisPoints || null;
-  const drawPity = gameRules?.drawPolicy?.pityLimits || null;
-  const rarityLabels = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' };
-  return <Modal open={open} dismissAction="closeGameRules" ariaLabel="수조 성장 규칙" panelClass="timer-rules-modal"><div className="timer-rules-head"><span>수조 성장 규칙</span><h3>공부한 만큼 수조가 자라요</h3><p>확정 공부 시간이 쌓이면 뽑기권을 받아요. 실제 공부 기록은 줄어들지 않아요.</p></div>{tiers.length ? <section><b>공부 완료 보상</b><div className="timer-rules-tiers">{tiers.map((tier) => <span key={tier.minimumMinutes}><b>누적 {tier.minimumMinutes / 60}시간</b><small>뽑기권 {tier.tickets}장</small></span>)}</div><p>남은 시간은 다음 뽑기권으로 이월돼요. 날짜가 바뀌어도 사라지지 않아요.</p></section> : <p className="timer-rules-unavailable">규칙 정보를 불러오는 중이에요. 잠시 후 다시 확인해주세요.</p>}{stages.length ? <section><b>서식지 성장</b><div className="timer-rules-stages">{stages.map((stage, index) => <span data-stage={index} key={stage.minimumMinutes}><i /><b>{stage.minimumMinutes}분</b><small>{stage.label}</small></span>)}</div></section> : null}{gameRules?.ticketPolicy ? <section><b>물고기 만나기</b><div className="timer-rules-care"><span>같은 친구를 다시 만나면 성장 경험치를 받아요</span><span>뽑기권 1장으로 무작위 물고기 만나기</span></div></section> : null}{drawOdds ? <section><b>물고기 만남 확률</b><div className="timer-rules-odds">{Object.entries(drawOdds).map(([rarity, basisPoints]) => <span data-rarity={rarity} key={rarity}><b>{rarityLabels[rarity] || rarity}</b><small>{Number(basisPoints) / 100}%</small></span>)}</div>{drawPity ? <p>희귀 {drawPity.rare}회, 영웅 {drawPity.epic}회, 전설 {drawPity.legendary}회 안에는 해당 등급 이상을 확정해요.</p> : null}<p>Special 물고기는 일반 뽑기가 아닌 업적과 이벤트 보상으로 만날 수 있어요.</p></section> : null}<button type="button" className="btn btn-primary" data-action="closeGameRules">확인</button></Modal>;
-}
-
-
-
 export function TimerScreen(ctx) {
   const {
     activeStudySession = null,
@@ -92,7 +78,7 @@ export function TimerScreen(ctx) {
     : activeStudySession
       ? '진행 중인 공부를 완료한 뒤 새 공부를 시작할 수 있어요.'
       : '공부 기록 처리가 끝난 뒤 새 공부를 시작할 수 있어요.';
-  const overlays = gameRulesOpen ? <GameRulesModal gameRules={gameRules} open /> : ctx.studyPanelMode === 'records' ? <Sheet dismissAction="closeStudyPanel" ariaLabel={ctx.studyPanelMode === 'records' ? '공부 기록' : '공부 타이머'} panelClass="study-record-sheet">
+  const overlays = gameRulesOpen ? <GameRulesGuide gameRules={gameRules} gameProfileStatus={ctx.gameProfileStatus} open /> : ctx.studyPanelMode === 'records' ? <Sheet dismissAction="closeStudyPanel" ariaLabel={ctx.studyPanelMode === 'records' ? '공부 기록' : '공부 타이머'} panelClass="study-record-sheet">
     {ctx.studyPanelMode === 'records' ? <section className="timer-v2-week"><header className="timer-session-head"><h2>공부 기록</h2><button type="button" data-action="closeStudyPanel">닫기</button></header><div className="timer-section-head"><h2>이번 주 흐름</h2><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div><StudyWeekSummary overview={ctx.studyOverview} summary={studySummary} status={studySummaryStatus} /><button type="button" className="btn btn-secondary" data-action="openStudyPanel">타이머 열기</button></section> : null}
   </Sheet> : null;
 

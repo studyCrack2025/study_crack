@@ -32,12 +32,12 @@ function CoachingHero({ statusSummary }) {
 
 export function CoachingProcess() {
   return (
-    <section className="coaching-process">
-      <div className="coaching-process-head"><span>3단계 합격 설계</span><h3>분석부터 실행까지 한 흐름으로 이어가요</h3></div>
+    <details className="coaching-process">
+      <summary className="coaching-process-head"><span>코칭 진행 방식 보기</span><h3>분석부터 실행까지 이어지는 3단계</h3></summary>
       <div className="coaching-process-list">
         {COACHING_PROCESS_STEPS.map((step) => <div className="coaching-process-step" key={step.number}><strong>{step.number}</strong><span><b>{step.title}</b><small>{step.description}</small></span></div>)}
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -149,5 +149,25 @@ export function CoachingScreen(ctx) {
   const presentation = buildCoachingPresentation(weeklyReports, weeklyReportsStatus);
   const activeView = coachingView === 'feedback' ? 'feedback' : 'sessions';
   const rows = activeView === 'feedback' ? presentation.feedback : presentation.sessions;
-  return <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}><main className="coach-page coaching-screen"><PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="Study Coaching" /><CoachingHero statusSummary={presentation.statusSummary} /><CoachingProcess /><WeeklyPlanPreview plannerItems={ctx.plannerItems} /><button type="button" className="btn btn-primary coaching-request-cta" data-action="openCoachingSheet">이번 주 코칭 신청하기</button><section className="coaching-history"><div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div><CoachingSegment active={activeView} /><div className="coaching-history-list"><ResourceFeedback status={weeklyReportsStatus} error={weeklyReportsError} hasData={weeklyReports.length > 0} loadingTitle="코칭 내역을 불러오는 중이에요" errorTitle="코칭 내역을 불러오지 못했어요" retryAction="retryReportResources" />{rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : !presentation.isError && !presentation.isLoading ? <CoachingEmpty view={activeView} /> : null}</div>{activeView === 'sessions' && !presentation.isLoading && !presentation.isError ? <button type="button" className="coaching-new-request" data-action="openCoachingSheet"><span>+</span><b>새 학습 점검 작성</b><small>이번 주 기록과 질문 남기기</small></button> : null}</section><PlanComparison /></main></AppScreenShell>;
+  return (
+    <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}>
+      <main className="coach-page coaching-screen">
+        <PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="Study Coaching" />
+        <CoachingHero statusSummary={presentation.statusSummary} />
+        <button type="button" className="btn btn-primary coaching-request-cta" data-action="openCoachingSheet">이번 주 코칭 신청하기</button>
+        {presentation.feedbackReady ? <button type="button" className="btn btn-secondary" data-action="goto" data-target="weekly">받은 피드백 확인하기</button> : null}
+        <section className="coaching-history">
+          <div className="coaching-history-head"><div><span>코칭 내역</span><h3>{activeView === 'feedback' ? '받은 피드백' : '이번 주 점검'}</h3></div>{presentation.feedbackReady ? <em>새 피드백</em> : null}</div>
+          <CoachingSegment active={activeView} />
+          <div className="coaching-history-list">
+            <ResourceFeedback status={weeklyReportsStatus} error={weeklyReportsError} hasData={weeklyReports.length > 0} loadingTitle="코칭 내역을 불러오는 중이에요" errorTitle="코칭 내역을 불러오지 못했어요" retryAction="retryReportResources" />
+            {rows.length ? rows.map((item) => activeView === 'feedback' ? <FeedbackRow item={item} key={item.weekId} /> : <SessionRow item={item} key={item.weekId} />) : !presentation.isError && !presentation.isLoading ? <CoachingEmpty view={activeView} /> : null}
+          </div>
+        </section>
+        <WeeklyPlanPreview plannerItems={ctx.plannerItems} />
+        <CoachingProcess />
+        <PlanComparison />
+      </main>
+    </AppScreenShell>
+  );
 }

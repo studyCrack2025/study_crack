@@ -17,9 +17,10 @@ import { FishArtwork } from './FishArtwork.jsx';
 import { buildAquariumJourneyPresentation } from './presentation.js';
 import { useCareEffect } from './use-care-effect.js';
 import { AquariumNextStudy } from './AquariumNextStudy.jsx';
+import { GameRulesGuide } from '../../components/aquarium/GameRulesGuide.jsx';
 
 function AquariumHabitatHeader() {
-  return <PrimaryScreenHeader title="Fish Tank" eyebrow="나의 수조" />;
+  return <PrimaryScreenHeader title="Fish Tank" eyebrow="나의 수조" action={<button type="button" className="aquarium-rules-button" data-action="openGameRules">수조 이용법</button>} />;
 }
 
 function AquariumGrowthSummary({ fishCount }) {
@@ -140,13 +141,13 @@ function AquariumWorkspace(ctx) {
   if (!unavailable && aquariumMode === 'share') return <AppScreenShell screen="aquarium" tab={tab} dimmed={dimmed}><main ref={rootRef} className="aquarium-screen"><AquariumOfflineState /><AquariumSharePanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} snapshot={snapshot} result={aquariumResult} /></main></AppScreenShell>;
 
   return (
-    <AppScreenShell screen="aquarium" tab={tab} dimmed={dimmed}>
+    <AppScreenShell screen="aquarium" tab={tab} dimmed={dimmed} overlayOpen={Boolean(ctx.gameRulesOpen)} overlays={ctx.gameRulesOpen ? <GameRulesGuide gameRules={ctx.gameRules} gameProfileStatus={gameProfileStatus} open /> : null}>
       <main ref={rootRef} className="aquarium-screen">
         <AquariumOfflineState />
         <AquariumHabitatHeader />
         {loading ? <StatusState className="aquarium-main-status" kind="loading" title="수조를 채우고 있어요" description="보상과 물고기 상태를 확인하고 있습니다." /> : unavailable ? <div className="aquarium-error sc-card" role="status"><b>수조를 순차적으로 열고 있어요</b><p>{gameProfileError || '계정별 적용이 완료되면 이곳에서 바로 확인할 수 있습니다.'}</p><button type="button" className="btn btn-primary" data-action="goto" data-target="timer">타이머로 돌아가기</button></div> : fatalError ? <div className="aquarium-error sc-card" role="alert"><b>수조를 불러오지 못했어요</b><p>{fatalError}</p><button type="button" className="btn btn-primary" data-action="retryGameResources">다시 불러오기</button></div> : <>
           <AquariumGrowthSummary fishCount={snapshot.ownedCount} />
-          <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canAccessBasic={ctx.canAccessBasic} />
+          <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canUsePersonalPlanner={ctx.canUsePersonalPlanner} />
           <div className="aquarium-scene-wrap" onClick={event => { if (event.target.closest('[data-action="selectAquariumFish"]:not(:disabled)')) setManagementOpen(true); }}><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={aquariumSelectedFishId} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           <section className="aquarium-discovery-card sc-card" aria-label="물고기 만나기">
           <div className="aquarium-section-head"><h2>물고기 만나기</h2><small>공부 5시간마다 뽑기권 1장</small></div>

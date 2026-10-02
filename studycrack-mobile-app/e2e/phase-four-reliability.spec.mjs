@@ -85,11 +85,14 @@ test('공부·수조 보조 조회 실패는 0시간·0마리로 표시하지 �
   await installApiMock(page, { failGameTypes: ['get_study_summary', 'get_game_profile'] });
   await page.goto(at('timer'));
   await expect(page.locator('.sc-study-headline b').first()).toHaveText('기록 확인 필요');
-  const rail = page.locator('.timer-v2-status-rail');
-  const streak = rail.getByRole('button', { name: '연속 학습 확인 필요', exact: true });
+  const streak = page.locator('.home-study-highlight .home-study-streak');
   await expect(streak).toBeVisible();
-  await expect(streak.locator('b')).toHaveText('—');
-  await expect(rail.getByRole('button', { name: '물고기 확인 필요', exact: true })).toBeVisible();
+  await expect(streak).toHaveAccessibleName('연속 학습 확인 필요 ›');
+  await expect(streak).not.toContainText('0일');
+  await expect(page.locator('.timer-v2-status-rail')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
+  await expect(page.locator('.aquarium-error')).toContainText('수조를 불러오지 못했어요');
+  await expect(page.getByRole('region', { name: '수조 성장 요약' })).toHaveCount(0);
 });
 
 test('문의 전송 실패 뒤 재연결은 입력을 보존하고 저장을 자동 재전송하지 않는다', async ({ page, context }) => {
@@ -149,13 +152,13 @@ test('서버가 완료·보상한 뒤 응답만 끊겨도 재연결과 재시도
   await page.locator('[data-action="confirmStudyStart"]').click();
   await expect(page.getByRole('button', { name: '공부 완료', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: '공부 완료', exact: true }).click();
-  await expect(page.locator('.timer-v2-actions').getByRole('button', { name: '완료 다시 확인', exact: true })).toBeEnabled();
+  await expect(page.locator('.sc-study-banner-actions').getByRole('button', { name: '완료 다시 확인', exact: true })).toBeEnabled();
   expect(api.state.completedStudySessions.size).toBe(1);
   await context.setOffline(true);
   await context.setOffline(false);
   await expect(page.locator('.sc-network-status')).toBeHidden({ timeout: 5000 });
   expect(count(api, 'complete_study_session')).toBe(1);
-  await page.locator('.timer-v2-actions').getByRole('button', { name: '완료 다시 확인', exact: true }).click();
+  await page.locator('.sc-study-banner-actions').getByRole('button', { name: '완료 다시 확인', exact: true }).click();
   await expect(page.locator('[data-action="retryStudyReward"]')).toBeVisible();
   expect(count(api, 'complete_study_session')).toBe(2);
   expect(api.state.completedStudySessions.size).toBe(1);

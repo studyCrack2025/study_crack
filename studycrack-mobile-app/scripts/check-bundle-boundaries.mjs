@@ -141,8 +141,8 @@ const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
-// Independent study-panel navigation adds scoped ephemeral state and guarded actions.
-assert.ok(initialBytes <= Math.floor(528 * 1024), `Initial JS grew above the 528 KiB study-panel budget: ${formatKiB(initialBytes)}`);
+// Inline plan start and field-scoped score validation add guarded actions; full screens and rule artwork stay deferred.
+assert.ok(initialBytes <= Math.floor(531 * 1024), `Initial JS grew above the 531 KiB readability budget: ${formatKiB(initialBytes)}`);
 // VP7 adds the public auth brand, service note, and real signup progress styles.
 assert.ok(bootstrapCss.length <= Math.floor(76.8 * 1024), `VP7 bootstrap CSS grew above the 76.8 KiB baseline: ${formatKiB(bootstrapCss.length)}`);
 console.log(

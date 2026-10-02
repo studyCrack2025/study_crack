@@ -65,7 +65,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [
     await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
     await expect(scene).toHaveCount(0);
     expect(urls.size).toBe(0);
-    await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
+    await page.locator('.tabbar [data-tab="aquarium"]').click();
     await expect(scene).toHaveAttribute('data-scene-variant', 'full');
     await expect(scene.locator('.aquarium-background-layer')).toHaveAttribute('data-background-status', 'ready');
     await expect(scene).toHaveAttribute('data-background-key', 'day1');
@@ -158,7 +158,7 @@ test('홈은 전체 배경을 요청하지 않고 전체 배경 실패에도 수
   await expect(scene).toHaveCount(0);
   await expect(scene.locator('.aquarium-background-layer')).toHaveCount(0);
   await expect(scene.locator('button')).toHaveCount(0);
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(scene).toHaveAttribute('data-scene-variant', 'full');
   await expect(scene.getByRole('button', { name: '배경 다시 보기' })).toBeVisible();
 });

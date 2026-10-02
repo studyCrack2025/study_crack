@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import {
   canAccessTier,
+  canUsePersonalPlanner,
   canUseReverseProjection,
   canUseScoreSimulation,
   filterTabItemsForTier,
@@ -71,7 +72,7 @@ for (const file of allSourceFiles) {
   assert.doesNotMatch(source, /dangerouslySetInnerHTML|tabBarHtml/, `React 화면에 HTML 문자열 bridge가 남아 있습니다: ${file.pathname}`);
 }
 
-const freeState = { userTier: 'free', selectedPlan: 'Free', user: {} };
+const freeState = { userTier: 'free', selectedPlan: 'Free', userLoadStatus: 'ready', user: { role: 'student' } };
 const basicState = {
   userTier: 'basic',
   selectedPlan: 'Basic',
@@ -95,10 +96,27 @@ assert.equal(canUseReverseProjection(basicState), false);
 assert.equal(canUseReverseProjection(standardState), true);
 assert.equal(canUseReverseProjection(expiredStandardState), false);
 assert.deepEqual(resolveScreenAccess(freeState, 'planner'), {
-  allowed: false,
-  requiredTier: 'basic',
-  label: '플래너'
+  allowed: true,
+  requiredTier: '',
+  label: ''
 });
+assert.deepEqual(resolveScreenAccess(freeState, 'plannerAdd'), { allowed: true, requiredTier: '', label: '' });
+assert.equal(resolveScreenAccess(freeState, 'strategy').allowed, false);
+assert.equal(resolveScreenAccess(freeState, 'weekly').allowed, false);
+assert.equal(resolveScreenAccess(freeState, 'report').allowed, false);
+assert.equal(canUsePersonalPlanner(freeState, true), true);
+assert.equal(canUsePersonalPlanner(freeState), false);
+for (const tier of ['free', 'trial', 'test', 'basic', 'starter', 'standard', 'pro']) {
+  assert.equal(canUsePersonalPlanner({ ...freeState, userTier: tier }, true), true, `${tier} personal planner`);
+}
+for (const status of ['idle', 'loading', 'error']) assert.equal(canUsePersonalPlanner({ ...freeState, userLoadStatus: status }, true), false);
+for (const role of ['tutor', 'admin', undefined]) assert.equal(canUsePersonalPlanner({ ...freeState, user: { role } }, true), false);
+for (const key of ['deletionState', 'deletedAt', 'redirectTo']) for (const value of [null, false, '', 'blocked']) {
+  assert.equal(canUsePersonalPlanner({ ...freeState, user: { ...freeState.user, [key]: value } }, true), false);
+}
+assert.equal(canUseScoreSimulation(freeState), false);
+assert.equal(canUseReverseProjection(freeState), false);
+assert.match(viewContextSource, /canUsePersonalPlanner\(state, api\.hasClientSession\(\)\)/);
 const tabs = [{ id: 'timer' }, { id: 'analysis' }];
 assert.equal(filterTabItemsForTier(tabs), tabs, '잠긴 플랜도 하단 탭 자체는 유지해야 합니다.');
 

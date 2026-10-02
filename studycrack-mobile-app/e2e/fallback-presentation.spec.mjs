@@ -30,6 +30,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       const capture = name => page.screenshot({ path: testInfo.outputPath(`${name}-${width}-${cssReady ? 'ready' : 'missing'}.png`), animations: 'disabled' });
       await capture('loading');
       await expect(page.locator('.mobile-boot-shell [role="status"]')).toContainText('앱 화면을 준비하고 있어요');
+      await expect(page.locator('.init-loading h3')).toHaveCSS('font-size', '20px');
+      await expect(page.locator('.init-loading p')).toHaveCSS('font-size', '14px');
       await expectCentered(page, width, height);
       await page.clock.fastForward(12001);
       await expect(page.getByRole('alert')).toContainText('앱을 불러오지 못했습니다');
@@ -37,7 +39,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       const retry = page.getByRole('button', { name: '다시 불러오기' });
       expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
       await expect(retry).toHaveCSS('background-color', 'rgb(10, 86, 178)');
-      await expect(retry).toHaveCSS('font-size', '13px');
+      await expect(retry).toHaveCSS('font-size', '16px');
+      await expect(page.getByRole('alert').locator('h3')).toHaveCSS('font-size', '20px');
+      await expect(page.getByRole('alert').locator('p')).toHaveCSS('font-size', '14px');
       await retry.focus();
       await expect(retry).toHaveCSS('outline-style', 'solid');
       await capture('error');

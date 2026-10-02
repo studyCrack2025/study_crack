@@ -102,7 +102,8 @@ try {
   assert.match(plannerMarkup, /data-planner-date="2026-09-04"[^>]*aria-pressed="true"/, 'selected planner date must expose selection');
 
   const timerMarkup = renderToStaticMarkup(TimerScreen({
-    canAccessBasic: true,
+    canAccessBasic: false,
+    canUsePersonalPlanner: true,
     tab: 'timer',
     todayPlannerItems: [plannerItem],
     todayPlannerTotalMinutes: 30

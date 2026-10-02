@@ -17,7 +17,6 @@ function PlannerItemCard({ item }) {
   const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
     ? `${item.start} - ${item.end}`
     : item.minutes ? `${item.minutes}분` : '시간 미설정';
-  const detailLabel = [item.detailSubject, item.activityType].filter(Boolean).join(' · ');
   const titleId = `planner-title-${encodeURIComponent(item.id)}`;
   return (
     <article className={`planner-item planner-item-v2 ${item.done ? 'done' : ''}`} data-planner-id={item.id}>
@@ -25,11 +24,9 @@ function PlannerItemCard({ item }) {
       <button type="button" className="planner-item-main" data-action="openPlannerEdit" data-planner-id={item.id} aria-label="계획 편집" aria-describedby={titleId}>
         <span className="planner-item-meta"><span className={`planner-item-subject ${item.dot || 'etc'}`}><i aria-hidden="true" />{item.subject || '기타'}</span><small className="planner-item-time">{timeLabel}</small></span>
         <b id={titleId}>{item.content}</b>
-        {item.accountStored ? <span className="planner-item-detail">{item.accountPending ? '서버 반영 대기' : item.done ? '서버 완료 확인' : '계정 저장 확인'}</span> : null}
-        {detailLabel ? <span className="planner-item-detail">{detailLabel}</span> : null}
+        {item.accountPending ? <span className="planner-item-detail">서버 반영 대기</span> : null}
       </button>
       <div className="planner-item-actions">
-        <span>{item.minutes}분</span>
         <div>
           <button type="button" disabled={item.accountPending} className="planner-item-remove" data-action="removePlannerItem" data-planner-id={item.id} aria-describedby={titleId} aria-label="계획 삭제">×</button>
         </div>
@@ -120,14 +117,14 @@ function PlannerProgress({ presentation, isToday, accountMode }) {
   );
 }
 
-function PlannerFeedback({ plannerFeedback = {}, hasItems = false }) {
-  const warning = plannerFeedback.tone === 'warn';
-  const title = warning ? '과목 균형을 한 번 점검해 보세요' : hasItems ? '이번 주 계획을 함께 점검해요' : '계획을 만들면 피드백을 받을 수 있어요';
-  const description = plannerFeedback.message || (warning ? '특정 과목에 시간이 몰려 있어 우선순위 조정이 필요해요.' : '주간 계획과 실행 기록을 바탕으로 다음 학습 방향을 정리합니다.');
+function PlannerFeedback({ plannerFeedback = {}, hasItems = false, canAccessStandard = false }) {
+  const warning = canAccessStandard && plannerFeedback.tone === 'warn';
+  const title = !canAccessStandard ? '개인 플래너는 무료로 이용해요' : warning ? '과목 균형을 한 번 점검해 보세요' : hasItems ? '이번 주 계획을 함께 점검해요' : '계획을 만들면 피드백을 받을 수 있어요';
+  const description = !canAccessStandard ? 'SKY 튜터의 계획 진단·주간 피드백은 이용권에 따라 제공됩니다.' : plannerFeedback.message || (warning ? '특정 과목에 시간이 몰려 있어 우선순위 조정이 필요해요.' : '주간 계획과 실행 기록을 바탕으로 다음 학습 방향을 정리합니다.');
   return (
     <section className={`card planner-feedback-card ${warning ? 'warn' : ''}`}>
-      <div className="planner-feedback-copy"><span>SKY MENTOR</span><h4>{title}</h4><p>{description}</p></div>
-      <button type="button" data-action="goto" data-target="weekly">주간 피드백 보기 <b aria-hidden="true">›</b></button>
+      <div className="planner-feedback-copy"><span>{canAccessStandard ? 'SKY MENTOR' : '무료 개인 플래너 · 선택형 튜터 코칭'}</span><h4>{title}</h4><p>{description}</p></div>
+      <button type="button" data-action="goto" data-target={canAccessStandard ? 'weekly' : 'proIntro'}>{canAccessStandard ? '주간 피드백 보기' : '튜터 코칭 알아보기'} <b aria-hidden="true">›</b></button>
     </section>
   );
 }
@@ -150,6 +147,7 @@ function PlannerWorkspaceScreen(ctx) {
     plannerEditIndex = null,
     plannerEditItem,
     plannerFeedback = {},
+    canAccessStandard = false,
     plannerMonthLabel = '',
     plannerViewItems = [],
     plannerWeekDates = [],
@@ -193,7 +191,7 @@ function PlannerWorkspaceScreen(ctx) {
               </div>
             </section>
 
-            <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} />
+            <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} canAccessStandard={canAccessStandard} />
             <PlannerAccountPanel />
 
             <section className="planner-calendar-section">

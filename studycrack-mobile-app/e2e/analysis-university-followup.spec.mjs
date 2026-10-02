@@ -142,6 +142,8 @@ test('시뮬레이션의 최초 상승·무변화·데이터 오류·만점을 �
   await page.goto('/studycrack-mobile.html?screen=analysis');
   const rows = page.locator('.analysis-sim-row');
   await expect(rows.filter({ hasText: '국어' })).toContainText('원점수 +3점에서 처음 상승');
+  await expect(rows.filter({ hasText: '수학' }).locator('.analysis-sim-status')).toHaveCount(0);
+  await rows.filter({ hasText: '수학' }).click();
   await expect(rows.filter({ hasText: '수학' })).toContainText('+1점에서는 변화 없음');
   await expect(rows.filter({ hasText: '물리' })).toBeDisabled();
   await expect(rows.filter({ hasText: '물리' })).not.toContainText('+0.0점');

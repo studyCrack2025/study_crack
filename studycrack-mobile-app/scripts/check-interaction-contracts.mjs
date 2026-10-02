@@ -85,14 +85,15 @@ for (const item of contract.allowlistedActions) {
 assert.deepEqual(Object.keys(contract.planFixtures), ['free', 'starter', 'basic', 'standard', 'pro'], 'Plan fixture order or coverage changed');
 assert.deepEqual(contract.planFixtures.starter, contract.planFixtures.basic, 'Starter and Basic currently share the same mobile access contract');
 assert.equal(contract.planFixtures.free.mainTabsVisible, true, 'Free users must keep the five-tab navigation visible');
-assert.equal(contract.planFixtures.basic.planner, true, 'Planner must be available from Basic');
+assert.equal(contract.planFixtures.free.planner, true, 'Personal planner must be available to free students');
+assert.equal(contract.planFixtures.basic.planner, true, 'Personal planner must remain available to Basic');
 assert.equal(contract.planFixtures.standard.coaching, true, 'Coaching must be available from Standard');
 assert.equal(contract.planFixtures.basic.scoreSimulation, true, 'Score simulation must be available from Basic');
 assert.equal(contract.planFixtures.basic.reverseProjection, false, 'Reverse projection must stay locked below Standard');
 assert.equal(contract.planFixtures.standard.reverseProjection, true, 'Reverse projection must be available from Standard');
 assert.match(accessPolicySource, /const\s+PLAN_RANK\s*=\s*\{[^}]*free:\s*0[^}]*basic:\s*1[^}]*starter:\s*1[^}]*standard:\s*2[^}]*pro:\s*3[^}]*\}/, 'Runtime plan rank changed');
 assert.match(accessPolicySource, /strategy:\s*['"]standard['"]/, 'Coaching access tier changed');
-assert.match(accessPolicySource, /planner:\s*['"]basic['"]/, 'Planner access tier changed');
+assert.doesNotMatch(accessPolicySource, /planner(?:Add)?:\s*['"]basic['"]/, 'Personal planner must not depend on a paid plan');
 assert.match(accessPolicySource, /function\s+filterTabItemsForTier\s*\([^)]*\)\s*\{\s*return\s+items;\s*\}/, 'Bottom tabs must remain visible for locked plans');
 
 console.log(`Interaction contract check passed: ${registeredScreens.length} screens, ${discoveredActions.length} static actions, ${Object.keys(contract.planFixtures).length} plan fixtures.`);

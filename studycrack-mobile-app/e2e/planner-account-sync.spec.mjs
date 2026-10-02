@@ -83,20 +83,29 @@ async function addAccountDraft(page, title = '새 계정 계획') {
   await page.getByLabel('메모 (선택)', { exact: true }).fill('이 계정의 기기 메모');
   await page.getByRole('button', { name: '계획 저장하기' }).click();
 }
+async function expectAccountConfirmed(page, row, completed = false) {
+  await expect(row.locator('.planner-item-done')).toBeEnabled();
+  await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', String(completed));
+  await expect(row.locator('.planner-item-detail')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true }).getByRole('status')).toHaveText('계정 기록을 확인했어요.');
+}
 
 test('기본 버튼으로 계정 계획 추가·완료·취소·편집·삭제하고 기기 원본은 그대로 보존한다', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 700 });
   const state = await setup(page); await accountMode(page); const before = await stored(page);
   await addAccountDraft(page);
   const row = page.locator('article[data-planner-id]');
-  await expect(row).toHaveCount(1); await expect(row).toContainText('계정 저장 확인');
+  await expect(row).toHaveCount(1); await expectAccountConfirmed(page, row);
+  expect(state.items).toHaveLength(1); expect(state.items[0]).toMatchObject({ title: '새 계정 계획', completed: false, revision: 1 });
   expect(state.requests.at(-1).data.memo).toBeUndefined();
   await row.getByRole('button', { name: '계획 완료', exact: true }).click();
-  await expect(row).toContainText('서버 완료 확인'); expect(state.growth.validDayCount).toBe(1);
+  await expectAccountConfirmed(page, row, true);
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf }); expect(state.growth.validDayCount).toBe(1);
   await row.getByRole('button', { name: '완료 취소', exact: true }).click();
   await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', 'false');
   await row.getByRole('button', { name: '계획 편집', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: '플래너 항목 수정' });
+  await expect(sheet.getByRole('region', { name: '계정 저장 상태', exact: true }).getByRole('status')).toHaveText('계정 기록을 확인했어요.');
   await expect(sheet.getByLabel('메모', { exact: true })).toHaveValue('이 계정의 기기 메모');
   await sheet.getByLabel('세부 내용', { exact: true }).fill('수정한 계정 계획');
   await sheet.getByRole('button', { name: '수정 저장' }).click();
@@ -110,12 +119,14 @@ test('기본 버튼으로 계정 계획 추가·완료·취소·편집·삭제�
 
 test('서버 완료 확정 성장값은 추가 조회 없이 홈과 수조에 전달한다', async ({ page }) => {
   const state = await setup(page); await accountMode(page); await addAccountDraft(page);
-  await page.locator('article[data-planner-id]').getByRole('button', { name: '계획 완료', exact: true }).click();
-  await expect(page.locator('article[data-planner-id]')).toContainText('서버 완료 확인');
+  const row = page.locator('article[data-planner-id]');
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expectAccountConfirmed(page, row, true);
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf });
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
   await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 1일');
   expect(state.requests.some(row => row.operation === 'get_aquarium_growth')).toBe(false);
 });
@@ -129,7 +140,7 @@ test('기기에 변조된 성장 캐시가 있어도 배경은 실제 조회 응
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
   await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click();
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 0일');
   await expect(page.locator('.aquarium-scene')).toHaveAttribute('data-background-key', 'day1');
 });
@@ -155,7 +166,9 @@ test('완료 응답 대기 중에는 완료율·성장이 선반영되지 않고
   await expect(row.locator('.planner-item-done')).toBeDisabled(); await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '0');
   expect(state.growth.validDayCount).toBe(0); release();
-  await expect(row).toContainText('서버 완료 확인'); expect(state.growth.validDayCount).toBe(1);
+  await expectAccountConfirmed(page, row, true);
+  await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '100');
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf }); expect(state.growth.validDayCount).toBe(1);
 });
 
 test('다른 기기와 충돌한 편집은 초안을 남기고 명시적으로 서버 기록을 선택할 수 있다', async ({ page }) => {

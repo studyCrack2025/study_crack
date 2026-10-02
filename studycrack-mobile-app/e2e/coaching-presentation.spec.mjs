@@ -18,7 +18,7 @@ async function setup(page, { tier = 'standard', response = reports } = {}) {
 }
 
 for (const width of [320, 360, 390, 430]) {
-  test(`코칭·주간·상품은 실제 기록과 원본 카드 순서를 유지한다 (${width}px)`, async ({ page }, info) => {
+  test(`코칭은 상태와 행동부터 표시하고 진행 설명을 펼친다 (${width}px)`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 932 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await setup(page);
@@ -28,14 +28,23 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.coaching-week-days li')).toHaveCount(7);
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('background-color', 'rgb(237, 249, 247)');
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('color', 'rgb(15, 127, 117)');
-    await expect(page.locator('.coaching-process-step small').first()).toHaveCSS('font-size', '10px');
+    await expect(page.locator('.coaching-request-cta')).toHaveCSS('font-size', '16px');
+    await expect(page.getByRole('button', { name: '받은 피드백 확인하기', exact: true })).toBeVisible();
+    await expect(page.locator('.coaching-process')).not.toHaveAttribute('open');
+    await expect(page.locator('.coaching-process-list')).not.toBeVisible();
     await expect(page.locator('.coaching-week-preview')).toContainText('등록 1개 · 계획 30분');
     const order = await page.locator('.coach-page').evaluate(el => [...el.children].map(child => child.className));
-    for (const [before, after] of [['coaching-hero', 'coaching-process'], ['coaching-process', 'coaching-week-preview'], ['coaching-week-preview', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-history'], ['coaching-history', 'btn btn-secondary']]) {
+    for (const [before, after] of [['coaching-hero', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-history'], ['coaching-history', 'coaching-week-preview'], ['coaching-week-preview', 'coaching-process']]) {
       expect(order).toContain(before); expect(order).toContain(after);
       expect(order.indexOf(before)).toBeLessThan(order.indexOf(after));
     }
     await page.screenshot({ path: info.outputPath(`coaching-top-${width}.png`), animations: 'disabled' });
+    await page.locator('.coaching-process summary').click();
+    await expect(page.locator('.coaching-process-step small').first()).toHaveCSS('font-size', '14px');
+    const processRows = await page.locator('.coaching-process-step').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().y));
+    expect(processRows[1]).toBeGreaterThan(processRows[0]);
+    expect(processRows[2]).toBeGreaterThan(processRows[1]);
+    await page.locator('.coaching-process summary').click();
     await expect(page.locator('.service-plan-card')).toHaveCount(0);
     await expect(page.locator('.sc-study-overview')).toHaveCount(0);
     await page.getByRole('button', { name: '플랜별 기능 보기 →' }).evaluate(el => el.scrollIntoView({ block: 'center' }));

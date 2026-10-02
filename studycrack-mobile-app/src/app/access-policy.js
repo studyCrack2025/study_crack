@@ -2,8 +2,6 @@ const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3
 
 const SCREEN_REQUIREMENTS = {
   strategy: 'standard',
-  planner: 'basic',
-  plannerAdd: 'basic',
   weekly: 'standard',
   report: 'pro',
   reportDetail: 'pro',
@@ -55,6 +53,12 @@ function pickActiveAccessSubscription(user = {}, now = Date.now()) {
 export function canAccessTier(state, requiredTier) {
   if (!requiredTier) return true;
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
+}
+
+export function canUsePersonalPlanner(state = {}, hasSession = false) {
+  const user = state.user;
+  return Boolean(hasSession && state.userLoadStatus === 'ready' && user?.role === 'student'
+    && !['deletionState', 'deletedAt', 'redirectTo'].some(field => Object.hasOwn(user, field)));
 }
 
 export function canUseScoreSimulation(state) {

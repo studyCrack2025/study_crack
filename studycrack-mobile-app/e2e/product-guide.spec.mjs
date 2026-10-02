@@ -155,13 +155,15 @@ test('구버전 서버는 자동 안내를 띄우지 않고 MY의 수동 안내�
   expect(guide.requests.some(item => item.type === 'save_product_guide')).toBe(false);
 });
 
-test('Free 완료는 권한을 올리지 않고 홈으로 돌아간다', async ({ page }) => {
+test('Free 안내 완료는 무료 플래너로 이동하고 유료 피드백 권한은 올리지 않는다', async ({ page }) => {
   const { guide } = await setup(page, { tier: 'free', saved: { version: 'ob_2026_09', status: 'in_progress', lastStep: 5, revision: 3 } });
   await page.goto('/studycrack-mobile.html');
   await next(page);
   await expect(guideDialog(page)).not.toBeVisible();
-  await expect(page.locator('[data-screen="timer"]')).toBeVisible();
+  await expect(page.locator('[data-screen="planner"]')).toBeVisible();
   expect(guide.student.productGuide.status).toBe('completed');
+  await page.locator('.tabbar [data-tab="strategy"]').click();
+  await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
 });
 
 test('기존 deep link를 안내가 가로채지 않는다', async ({ page }) => {

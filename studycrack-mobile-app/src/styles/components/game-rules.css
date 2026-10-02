@@ -1,0 +1,50 @@
+.game-rules-modal{min-height:0;padding:0;overflow:hidden;}
+.game-rules-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);padding:var(--sc-space-16);border-bottom:1px solid var(--sc-line-subtle);}
+.game-rules-head > div{min-width:0;display:grid;gap:var(--sc-space-4);}
+.game-rules-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);line-height:1.3;}
+.game-rules-eyebrow{color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
+.game-rules-body{flex:1;min-height:0;display:grid;gap:var(--sc-space-24);padding:var(--sc-space-16);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.game-rules-intro{margin:0;color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.6;}
+.game-rules-steps{display:grid;gap:var(--sc-space-16);margin:0;padding:0;list-style:none;}
+.game-rules-steps > li{min-width:0;display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:var(--sc-space-12);padding:var(--sc-space-12);border-radius:var(--sc-radius-card);background:var(--sc-surface-subtle);}
+.game-rules-steps > li > div:last-child{min-width:0;display:grid;gap:var(--sc-space-4);}
+.game-rules-step-number{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:800;line-height:1.55;}
+.game-rules-body h3{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-section);line-height:1.4;overflow-wrap:anywhere;}
+.game-rules-body p{margin:0;color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.6;overflow-wrap:anywhere;}
+.game-rules-illustration{min-width:0;display:grid;justify-items:center;gap:var(--sc-space-4);color:var(--sc-brand-navy);}
+.game-rules-illustration > .icon{width:28px;height:28px;stroke:currentColor;}
+.game-rules-illustration .aquarium-fish-artwork{width:68px;height:68px;}
+.game-rules-ticket{width:56px;height:56px;fill:var(--sc-surface-positive);stroke:var(--sc-action-positive-strong);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.game-rules-details{min-width:0;display:grid;gap:var(--sc-space-12);border-top:1px solid var(--sc-line-subtle);}
+.game-rules-details > summary{min-height:48px;align-content:center;padding:var(--sc-space-12) 0;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;cursor:pointer;}
+.game-rules-details > :not(summary){margin-top:var(--sc-space-12);}
+.game-rules-duplicate{display:grid;gap:var(--sc-space-8);}
+.game-rules-duplicate > div{display:flex;align-items:center;gap:var(--sc-space-8);color:var(--sc-action-positive-strong);font-size:var(--sc-type-section);}
+.game-rules-duplicate .aquarium-fish-artwork{width:68px;height:68px;}
+.game-rules-duplicate .icon{width:28px;height:28px;stroke:currentColor;}
+.game-rules-duplicate > b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-odds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-8);}
+.game-rules-odds > div{min-width:0;display:grid;gap:var(--sc-space-4);padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);}
+.game-rules-odds span,.game-rules-odds small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;}
+.game-rules-odds b{color:var(--sc-brand-navy);font-size:var(--sc-type-section);font-variant-numeric:tabular-nums;}
+.game-rules-growth{min-width:0;display:grid;gap:var(--sc-space-12);padding-top:var(--sc-space-20);border-top:1px solid var(--sc-line-subtle);}
+.game-rules-body .game-rules-note{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
+.game-rules-growth-state{padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);}
+.game-rules-background-pair,.game-rules-background-grid{min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-12);}
+.game-rules-background{min-width:0;display:grid;gap:var(--sc-space-8);margin:0;}
+.game-rules-background > div{aspect-ratio:377/502;display:grid;place-items:center;overflow:hidden;border-radius:var(--sc-radius-card);background:var(--sc-brand-navy-deep);}
+.game-rules-background img{width:100%;height:100%;display:block;object-fit:cover;}
+.game-rules-background > div > span{padding:var(--sc-space-12);color:var(--sc-on-brand);font-size:var(--sc-type-caption);line-height:1.55;text-align:center;}
+.game-rules-background figcaption{display:grid;gap:var(--sc-space-4);}
+.game-rules-background small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;}
+.game-rules-background b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-first-day{min-width:0;display:grid;justify-items:center;align-content:center;gap:var(--sc-space-12);padding:var(--sc-space-12);border:1px dashed var(--sc-line-strong);border-radius:var(--sc-radius-card);background:var(--sc-surface-subtle);text-align:center;}
+.game-rules-first-day .icon{width:36px;height:36px;stroke:var(--sc-brand-navy);}
+.game-rules-first-day b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-first-day span{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;}
+.game-rules-status{display:grid;gap:var(--sc-space-12);padding:var(--sc-space-16);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);}
+.game-rules-status b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-footer{flex:none;padding:var(--sc-space-12) var(--sc-space-16) max(var(--sc-space-12),env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);}
+.game-rules-footer > .btn{width:100%;min-height:48px;font-size:var(--sc-type-body);}
+.aquarium-rules-button{min-height:48px;padding:var(--sc-space-8) var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
+@media (max-width:360px){.game-rules-steps > li{grid-template-columns:1fr;}.game-rules-illustration{display:flex;justify-content:center;}.game-rules-background-pair,.game-rules-background-grid{gap:var(--sc-space-8);}.game-rules-head{padding:var(--sc-space-12);}.game-rules-body{padding:var(--sc-space-12);}}

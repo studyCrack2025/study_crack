@@ -11,6 +11,7 @@ import '../styles/components/streak-summary.css';
 import '../styles/components/primary-screen-header.css';
 import '../styles/screens/timer.css';
 import '../styles/components/aquarium-scene.css';
+import '../styles/components/game-rules.css';
 import '../styles/components/study-overview.css';
 import '../styles/screens/aquarium.css';
 import '../styles/screens/analysis-base.css';

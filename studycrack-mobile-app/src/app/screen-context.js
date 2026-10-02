@@ -33,7 +33,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'activeFish', 'aquariumActionError', 'aquariumActionStatus', 'aquariumResult',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumSelectedFishId', 'aquariumStarterSpeciesId', 'dimmed', 'fishCatalog',
     'fishCatalogError', 'fishCatalogStatus', 'fishCount', 'fishInventory', 'gameProfile',
-    'gameProfileError', 'gameProfileStatus', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems', 'canAccessBasic'
+    'gameProfileError', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus', 'tab', 'todayPlannerItems', 'canAccessBasic', 'canUsePersonalPlanner'
   ]),
   authFindId: Object.freeze(['foundEmailMasked']),
   authFindPw: Object.freeze(['resetPasswordEmail', 'resetPasswordSending', 'resetPasswordStep']),
@@ -82,6 +82,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   on2: Object.freeze([]),
   on3: Object.freeze([]),
   planner: Object.freeze([
+    'canAccessStandard',
     'calendarEvents',
     'studyOverview', 'analysisScoreView',
     'dimmed', 'plannerCalendarMode', 'plannerCalendarMonthCells', 'plannerEditIndex', 'plannerEditItem',
@@ -104,7 +105,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   ]),
   reportDetail: Object.freeze([]),
   scoreInfo: Object.freeze([
-    'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreExamKey', 'scoreExamType',
+    'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreEditErrors', 'scoreEditSaveError', 'scoreExamKey', 'scoreExamType',
     'scoreInfoSubjects', 'scoreSubjectSaving', 'user'
   ]),
   settingsMain: Object.freeze(['logoutModalOpen']),
@@ -121,7 +122,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     ...CALENDAR_CONTEXT_KEYS,
     'studyPanelMode',
     'studyOverview', 'aquariumPresentation',
-    'activeStudySession', 'analysisScoreView', 'canAccessBasic', 'completionError', 'dimmed', 'fishCount', 'formatHms',
+    'activeStudySession', 'analysisScoreView', 'canAccessBasic', 'canUsePersonalPlanner', 'completionError', 'dimmed', 'fishCount', 'formatHms',
     'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',
     'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
     'studySubjectSheetOpen', 'studySummary', 'studySummaryStatus', 'studyTimerRunning',

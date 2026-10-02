@@ -376,7 +376,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
     todaySubjectsWithTimer[activeStudySubject] = (todaySubjectsWithTimer[activeStudySubject] || 0) + live;
   }
 
-  const plannedScheduleOptions = todayPlannerItems.map((item) => ({
+  const plannedScheduleOptions = todayPlannerItems.filter((item) => !item.done).map((item) => ({
     id: item.id,
     subject: item.subject || '기타',
     activity: item.content || '',

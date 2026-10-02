@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import './check-aquarium-growth.mjs';
+import './check-game-rules-guide.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
@@ -67,12 +68,12 @@ assert.equal(buildAquariumPresentation({ ...input, todayPlannerItems: [{ date: '
 const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
 try {
   const { AquariumNextStudy } = await vite.ssrLoadModule('/src/screens/aquarium/AquariumNextStudy.jsx');
-  const nextProps = { canAccessBasic: true, planner: { status: 'ready' }, items: [{ content: '완료한 공부', done: true }, { content: '다음 수학', subject: '수학', minutes: 90, done: false }] };
+  const nextProps = { canUsePersonalPlanner: true, planner: { status: 'ready' }, items: [{ content: '완료한 공부', done: true }, { content: '다음 수학', subject: '수학', minutes: 90, done: false }] };
   const renderNext = props => renderToStaticMarkup(createElement(AquariumNextStudy, props));
   const nextMarkup = renderNext(nextProps);
-  const screenContext = createScreenContext('aquarium', { canAccessBasic: true, todayPlannerItems: nextProps.items, studyOverview: { planner: nextProps.planner } });
-  assert.equal(screenContext.canAccessBasic, true);
-  assert.match(renderNext({ canAccessBasic: screenContext.canAccessBasic, items: screenContext.todayPlannerItems, planner: screenContext.studyOverview.planner }), /다음 수학/);
+  const screenContext = createScreenContext('aquarium', { canAccessBasic: false, canUsePersonalPlanner: true, todayPlannerItems: nextProps.items, studyOverview: { planner: nextProps.planner } });
+  assert.equal(screenContext.canUsePersonalPlanner, true);
+  assert.match(renderNext({ canUsePersonalPlanner: screenContext.canUsePersonalPlanner, items: screenContext.todayPlannerItems, planner: screenContext.studyOverview.planner }), /다음 수학/);
   assert.match(nextMarkup, /NEXT ACTION · 수학/);
   assert.match(nextMarkup, /다음 수학/);
   assert.match(nextMarkup, /<b>90<\/b>/);
@@ -80,7 +81,7 @@ try {
   assert.doesNotMatch(nextMarkup, /완료한 공부|selectStudySubject|자동 급식|55\.5/);
   assert.match(renderNext({ ...nextProps, items: [] }), /첫 공부 계획/);
   assert.match(renderNext({ ...nextProps, items: [{ done: true }] }), /모두 체크/);
-  for (const props of [{ ...nextProps, canAccessBasic: false }, { ...nextProps, planner: { status: 'date-mismatch' } }, { ...nextProps, planner: null }]) {
+  for (const props of [{ ...nextProps, canUsePersonalPlanner: false }, { ...nextProps, planner: { status: 'date-mismatch' } }, { ...nextProps, planner: null }]) {
     assert.doesNotMatch(renderNext(props), /다음 수학|<b>90<\/b>|모두 체크/);
   }
   for (const minutes of [0, -1, 'unknown', Infinity, null]) assert.doesNotMatch(renderNext({ ...nextProps, items: [{ content: '시간 미정', minutes }] }), /<b>/);
