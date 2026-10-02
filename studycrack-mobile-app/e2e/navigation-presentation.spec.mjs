@@ -58,7 +58,7 @@ for (const viewport of viewports) {
     await expect(home.locator('svg')).toHaveCSS('stroke-width', '2.15px');
     await expect(home.locator('.tabbar-label')).toHaveCSS('font-weight', '700');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-weight', '500');
-    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-size', '10px');
+    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-size', '12px');
     await expect(nav.getByRole('button', { name: '학습 코칭', exact: true })).toHaveText('코칭');
     for (const endpoint of idleStyle.background.match(/rgb\([^)]+\)/g)) expect(contrast(idleStyle.stroke, endpoint)).toBeGreaterThanOrEqual(3);
     expect(contrast(idleStyle.color, 'rgb(247, 249, 252)')).toBeGreaterThanOrEqual(4.5);
@@ -74,6 +74,7 @@ for (const viewport of viewports) {
     await expect(icon.locator('svg')).toHaveCSS('stroke-width', '2.15px');
     await expect(home.locator('svg')).toHaveCSS('stroke-width', '1.75px');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-weight', '700');
+    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-size', '12px');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(10, 86, 178)');
     for (const endpoint of activeStyle.background.match(/rgb\([^)]+\)/g)) expect(contrast(activeStyle.stroke, endpoint)).toBeGreaterThanOrEqual(3);
     expect(contrast('rgb(10, 86, 178)', 'rgb(247, 249, 252)')).toBeGreaterThanOrEqual(4.5);

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { buildMyPagePresentation, buildPlanPresentation } from '../src/screens/mypage/presentation.js';
 import { buildSocialProviders, buildSubscriptionSummary, displayAccountEmail, displayAccountName } from '../src/screens/mypage/account-presentation.js';
 
@@ -43,5 +44,12 @@ assert.equal(buildSubscriptionSummary({ currentSubscription: { tier: 'pro', endD
 assert.deepEqual(buildSocialProviders({ authProvider: 'google' }).map(({ isLinked, isPrimary }) => [isLinked, isPrimary]), [[true, true], [false, false]]);
 assert.deepEqual(buildPlanPresentation({ computedTier: 'basic' }), { key: 'basic', label: 'Basic', periodLabel: '평생 이용' });
 assert.deepEqual(buildPlanPresentation({ currentSubscription: { tier: 'standard', endDate: '2026-08-31T00:00:00.000Z' } }), { key: 'standard', label: 'Standard', periodLabel: '2026.08.31까지 이용' });
+const insight = await readFile(new URL('../src/screens/mypage/MbtiInsightCard.jsx', import.meta.url), 'utf8');
+assert.match(insight, /<details className="my-insight-details">\s*<summary>학습 성향 자세히 보기<\/summary>/, '학습 성향 세부 설명은 필요할 때 펼쳐 봅니다.');
+const myPage = await readFile(new URL('../src/screens/mypage/MyPageScreen.jsx', import.meta.url), 'utf8');
+assert.ok(myPage.indexOf('<MyMenuList') < myPage.indexOf('<MbtiInsightCard'), '주요 메뉴를 성향 세부보다 먼저 보여야 합니다.');
+const css = await readFile(new URL('../src/styles/screens/mypage.css', import.meta.url), 'utf8');
+assert.match(css, /\.my-menu-copy b\{font-size:var\(--sc-type-body\)/);
+assert.match(css, /\.my-profile-copy strong\{[^}]*white-space:normal;overflow-wrap:anywhere;/, '긴 이름은 읽을 수 있도록 줄바꿈합니다.');
 
 console.log('mypage-presentation contracts passed');

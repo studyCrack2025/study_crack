@@ -27,6 +27,7 @@ const expectedDeferredStyles = new Set([
   'components/streak-summary.css',
   'screens/product-guide.css',
   'components/aquarium-scene.css',
+  'components/game-rules.css',
   'components/study-overview.css',
   'components/primary-screen-header.css',
   'components/my-summary.css',

@@ -14,7 +14,7 @@ function StudySessionRows({ activeStudySession, formatHms, liveSeconds = 0, sess
   return <div className="timer-session-list">{rows.map((session, index) => <div className={`timer-session-row ${session.isActive ? 'is-active' : ''}`} key={session.sessionId || `${session.startedAt}-${index}`}><span><b>{session.subject || '기타'}</b><small>{session.activity || `${session.subject || '기타'} 학습`}</small></span><span><b>{formatHms(Number(session.durationSeconds) || 0)}</b><small>{sessionTimeLabel(session.startedAt)}{session.endedAt ? ` - ${sessionTimeLabel(session.endedAt)}` : ' - 진행 중'}</small></span></div>)}</div>;
 }
 
-function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, displayedTodaySeconds, formatHms, liveSeconds, studySessionDetailsOpen, studyStartBlocked, studySummary, studyTimerRunning, timerPhase }) {
+function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, displayedTodaySeconds, formatHms, liveSeconds, studySessionDetailsOpen, studyStartBlocked, studySummary, studyTimerRunning, timerPhase, hideControls }) {
   const timerBusy = STUDY_START_BUSY_PHASES.includes(timerPhase);
   const canComplete = Boolean(activeStudySession) && ['running', 'recoverable-error'].includes(timerPhase);
   const subject = activeStudySession?.subject || '';
@@ -25,9 +25,9 @@ function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, di
       <p>{studyTimerRunning ? `${subject || '선택 과목'} 공부가 기록되고 있어요.` : '플래너 일정이나 직접 입력한 공부로 시작할 수 있어요.'}</p>
       {studyTimerRunning ? <div className="timer-resume-note" role="status"><Icon name="timer" /><span>앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.</span></div> : null}
       {studySessionDetailsOpen ? <StudySessionRows activeStudySession={activeStudySession} formatHms={formatHms} liveSeconds={liveSeconds} sessions={studySummary?.today?.sessions || []} /> : null}
-      <div className="timer-v2-actions">
+      {!hideControls ? <div className="timer-v2-actions">
         <button type="button" className="btn btn-secondary" data-action="stopStudyTimer" disabled={!canComplete || timerBusy}>{timerPhase === 'recoverable-error' ? '완료 다시 확인' : '공부 완료'}</button>
-      </div>
+      </div> : null}
     </section>
   );
 }
@@ -40,8 +40,8 @@ export function TimerSessionPanel(props) {
       <TimerControlCard {...props} />
       <StudyJourneyPanel {...props} />
     </div>
-    <div className="timer-v2-actions">
+    {!props.hideControls ? <div className="timer-v2-actions">
         <button type="button" className="btn btn-primary" data-action="openStudySubjectSheet" disabled={props.studyStartBlocked} aria-describedby={props.studyStartBlocked ? 'timer-study-start-blocked' : undefined}><Icon name="timer" /> 공부 시작</button>
-    </div>
+    </div> : null}
   </section>;
 }

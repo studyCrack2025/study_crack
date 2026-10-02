@@ -49,7 +49,7 @@ function SimulationGrid({ rows = [], selectedSubject = '' }) {
           <li key={row.key || row.subject}><button type="button" className={className} data-action="highlightSimSubject" data-sim-subject={row.subject} aria-pressed={active && !row.unavailable && !row.atMaximum} disabled={row.unavailable || row.atMaximum}>
             <span className="analysis-sim-subject"><b>{row.subject}</b>{row.isBest ? <em>최고 반영</em> : null}</span>
             <span className="analysis-sim-effect">{row.unavailable ? '확인 필요' : row.atMaximum ? '만점' : row.displayGain}</span>
-            <span className="analysis-sim-status"><b>{simulationStatusText(row, row.isBest)}</b><small>{row.unavailable ? '현재 시험·과목 데이터를 확인해주세요.' : row.atMaximum ? '더 올릴 원점수가 없어요.' : rawNeededText(row) || `${formatPoint(before)} → ${formatPoint(after)}점`}</small></span>
+            {active || row.unavailable || row.atMaximum ? <span className="analysis-sim-status"><b>{simulationStatusText(row, row.isBest)}</b><small>{row.unavailable ? '현재 시험·과목 데이터를 확인해주세요.' : row.atMaximum ? '더 올릴 원점수가 없어요.' : rawNeededText(row) || `${formatPoint(before)} → ${formatPoint(after)}점`}</small></span> : null}
           </button></li>
         );
       })}

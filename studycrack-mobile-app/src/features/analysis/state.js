@@ -84,6 +84,8 @@ export function createAnalysisInitialState() {
       scoreDragOffset: 0,
       scoreEditOpen: false,
       scoreEditStep: 1,
+      scoreEditErrors: {},
+      scoreEditSaveError: '',
       scoreSubjectSaving: false
     }
   };

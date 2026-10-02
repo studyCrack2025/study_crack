@@ -63,7 +63,7 @@ for (const width of [320, 360, 430]) test(`홈·사용법도 같은 성장 배�
   const state = await setup(page, 50);
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
-  await expect(page.locator('.timer-v2-status-rail [data-target="aquarium"]')).toBeVisible();
+  await expect(page.locator('.tabbar [data-tab="aquarium"]')).toBeVisible();
   await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
   await page.getByRole('button', { name: /사용법 다시 보기/ }).click();
   const dialog = page.getByRole('dialog', { name: 'StudyCrack 사용법' });
@@ -126,7 +126,7 @@ test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재�
   await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
   await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
   expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBeNull();
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click(); await showCaption(page);
+  await page.locator('.tabbar [data-tab="aquarium"]').click(); await showCaption(page);
   const notice = page.locator('.aquarium-unlock-notice');
   await expect(notice).toContainText('DAY 7 배경을 열었어요');
   await expect(notice.locator('button')).not.toBeFocused();
@@ -136,7 +136,7 @@ test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재�
   await expect(notice).toHaveCount(0);
   await page.locator('[data-action="openAquariumShare"]').click(); await expect(notice).toHaveCount(0);
   await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').first().click(); await showCaption(page);
+  await page.locator('.tabbar [data-tab="aquarium"]').click(); await showCaption(page);
   await expect(notice).toHaveCount(0);
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.reload(); await showCaption(page); await expect(notice).toHaveCount(0);

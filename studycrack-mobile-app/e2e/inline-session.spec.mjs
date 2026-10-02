@@ -7,6 +7,8 @@ test('공부 입력과 진행 타이머는 홈 카드 안에서 펼쳐지고 접
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.home-active-study').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.home-study-highlight .home-study-form')).toHaveCount(1);
+  await expect(page.locator('.timer-v2-plan .home-study-form')).toHaveCount(0);
   await page.locator('.home-study-form [data-study-subject="국어"]').last().click();
   await page.locator('[data-field="studyStartActivity"]').fill('인라인 공부');
   await page.locator('.home-active-study').click();
@@ -16,12 +18,16 @@ test('공부 입력과 진행 타이머는 홈 카드 안에서 펼쳐지고 접
   await page.screenshot({ path: info.outputPath('inline-study-form-320.png') });
   await page.locator('.study-start-confirm').click();
   await expect(page.locator('.home-study-body .timer-v2-clock')).toBeVisible();
+  await expect(page.locator('.home-study-highlight .home-study-complete')).toBeEnabled();
+  await expect(page.locator('.home-study-body [data-action="stopStudyTimer"]')).toHaveCount(0);
+  await expect(page.locator('.sc-study-headline')).toContainText('국어 · 현재 집중 시간');
   await page.locator('.home-active-study').click();
   await expect(page.locator('.home-study-body')).toBeHidden();
   await page.locator('.tabbar [data-tab="aquarium"]').click();
   await page.locator('.tabbar [data-tab="timer"]').click();
   await expect(page.locator('.home-study-body .timer-v2-clock')).toBeVisible();
   expect(api.requests.filter(r => r.payload.type === 'start_study_session')).toHaveLength(1);
+  expect(api.requests.find(r => r.payload.type === 'start_study_session').payload.data).toMatchObject({ subject: '국어', activity: '인라인 공부', plannerItemId: '' });
   await page.locator('.timer-v2-clock').scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('inline-timer-320.png') });
 });

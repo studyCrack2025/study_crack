@@ -71,7 +71,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const { state, api } = await installRecords(page);
     await page.goto('/studycrack-mobile.html?screen=timer');
-    const trigger = page.locator('[data-action="openStreakSummary"]').first();
+    const trigger = page.locator('.home-study-highlight .home-study-streak');
     await trigger.click();
     const sheet = dialog(page);
     await expect(sheet.locator('.streak-summary-hero')).toContainText('7일 연속 학습');

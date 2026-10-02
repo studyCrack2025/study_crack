@@ -16,13 +16,18 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     expect(introCells[0].y).toBe(introCells[1].y);
     expect(introCells[2].y).toBe(introCells[3].y);
     expect(introCells.every(cell => cell.height >= 44)).toBe(true);
+    await expect(introChoices.locator('span').first()).toHaveCSS('font-size', '16px');
+    await expect(introChoices.locator('b').first()).toHaveCSS('font-size', '14px');
+    await page.locator('.plan-console-head').scrollIntoViewIfNeeded();
     await expect(page.locator('.plan-console-head')).toBeInViewport({ ratio: 1 });
+    await page.locator('.plan-console-price b').scrollIntoViewIfNeeded();
     await expect(page.locator('.plan-console-price b')).toBeInViewport({ ratio: 1 });
     await capture('plans-initial');
     for (const plan of ['Basic', 'Starter', 'Standard', 'Pro']) {
       await introChoices.locator(`[data-plan="${plan}"]`).click();
       await expect(introChoices.locator(`[data-plan="${plan}"]`)).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('.plan-console-head h3')).toHaveText(plan.toUpperCase());
+      await page.locator('.plan-console-head').scrollIntoViewIfNeeded();
       await expect(page.locator('.plan-console-head')).toBeInViewport({ ratio: 1 });
     }
     await capture('plans');

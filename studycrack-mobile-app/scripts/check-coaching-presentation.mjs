@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { buildCoachingPresentation, buildCoachingWeek, COACHING_PROCESS_STEPS, formatCoachingWeekLabel } from '../src/screens/coaching/presentation.js';
 
 const presentation = buildCoachingPresentation([
@@ -33,4 +34,14 @@ assert.equal(buildCoachingWeek([], '2026-02-30').days.length, 0);
 assert.equal(buildCoachingWeek(null, '2026-09-08').total, 0);
 assert.equal(buildCoachingPresentation([{ weekId: '260701' }, { weekId: '260702' }], 'ready').latest.weekId, '260702');
 assert.equal(buildCoachingPresentation([{ weekId: '260901', weeklyGoal: '학생이 쓴 목표', tutorFeedback: { submitted: true } }], 'ready').feedback[0].summary, '튜터 피드백 내용을 확인해 보세요.');
+const source = await readFile(new URL('../src/screens/coaching/CoachingScreen.jsx', import.meta.url), 'utf8');
+assert.match(source, /<details className="coaching-process">/, '진행 설명은 기본 접힘 상태로 시작해야 합니다.');
+const screen = source.slice(source.indexOf('export function CoachingScreen'));
+const order = ['<CoachingHero', 'coaching-request-cta', 'className="coaching-history"', '<WeeklyPlanPreview', '<CoachingProcess', '<PlanComparison'].map(marker => screen.indexOf(marker));
+assert.ok(order.every((position, index) => position >= 0 && (!index || position > order[index - 1])), '현재 상태와 신청이 설명보다 먼저 보여야 합니다.');
+assert.match(screen, /presentation\.feedbackReady \? <button[^>]+data-target="weekly">받은 피드백 확인하기/);
+assert.doesNotMatch(screen, /coaching-new-request/, '같은 신청 행동을 내역 아래에 반복하지 않습니다.');
+const css = await readFile(new URL('../src/styles/screens/coaching.css', import.meta.url), 'utf8');
+assert.match(css, /\.coaching-process-step small\{[^}]*font-size:var\(--sc-type-caption\)/);
+assert.match(css, /\.coaching-process-list\{[^}]*grid-template-columns:minmax\(0,1fr\)/, '모바일의 진행 단계는 세로로 읽을 수 있어야 합니다.');
 console.log('coaching-presentation contracts passed');

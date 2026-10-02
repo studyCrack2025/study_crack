@@ -494,7 +494,7 @@ export function createFormHandlers(ctx) {
       updateScoreStateFromField({ alert, field, setScoreState, target, value });
     }
     if (field?.startsWith('v2e-')) {
-      updateScoreStateFromField({ alert, field, setScoreState: setScoreEditState, target, value });
+      updateScoreStateFromField({ alert: ctx.scoreEditOpen ? noop : alert, field, setScoreState: setScoreEditState, target, value });
     }
     restoreIfUnexpectedTopJump();
     return { handled: true, field };

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon.jsx';
 import { STUDYCRACK_LOGO_SRC } from '../../constants/assets.js';
-import { StudyOverviewCard } from '../../components/StudyOverviewCard.jsx';
 import { HomePlannerPreview } from './HomePlannerPreview.jsx';
+import { HomeStudyPanel } from './HomeStudyPanel.jsx';
 import { StudyWeekSummary } from './StudyGamificationPanels.jsx';
 
 
@@ -26,19 +26,6 @@ function TimerHeader({ user = {} }) {
   );
 }
 
-function HomeStatusRail({ aquariumPresentation, normalizedTargetMajor = '' }) {
-  const targetLabel = normalizedTargetMajor ? String(normalizedTargetMajor).split(' ')[0] : '목표 설정';
-  const streakDays = aquariumPresentation?.streakDays;
-  return (
-    <section className="timer-v2-status-rail" aria-label="학습 현황 바로가기">
-      <button type="button" data-action="goto" data-target="analysis" aria-label={`목표 대학 ${targetLabel}`}><span className="home-status-icon"><Icon name="target" /></span><small>목표 대학</small></button>
-      <button type="button" data-action="openStreakSummary" aria-label={`연속 학습 ${streakDays != null ? `${streakDays}일` : '확인 필요'}`}><span className="home-status-streak"><Icon name="bolt" /><b>{streakDays ?? '—'}</b></span><small>연속 학습</small></button>
-      <button type="button" data-action="goto" data-target="aquarium"><span className="home-status-icon"><Icon name="fish" /></span><small>{aquariumPresentation?.ownedCount != null ? `물고기 ${aquariumPresentation.ownedCount}마리` : '물고기 확인 필요'}</small></button>
-      <button type="button" data-action="goto" data-target="strategy"><span className="home-status-icon"><Icon name="chat" /></span><small>SKY 코칭</small></button>
-    </section>
-  );
-}
-
 function HomeTargetSummary({ calendarNearestDdayLabel = '', calendarNearestEvent = null, normalizedTargetMajor = '' }) {
   return (
     <section className="timer-v2-target-summary" aria-label="목표 대학과 다가오는 일정">
@@ -49,14 +36,13 @@ function HomeTargetSummary({ calendarNearestDdayLabel = '', calendarNearestEvent
 }
 
 export function HomeDashboard(props) {
-  const { user, aquariumPresentation, normalizedTargetMajor, calendarNearestDdayLabel, calendarNearestEvent, studyOverview } = props;
+  const { user, normalizedTargetMajor, calendarNearestDdayLabel, calendarNearestEvent, studyOverview } = props;
   const forcedOpen = Boolean(props.studyStartBlocked || props.studyTimerRunning || props.timerPhase !== 'idle' || props.lastCompletedSession || props.rewardResult);
   return <main className="timer-screen-v2">
     <TimerHeader user={user} />
-    <HomeStatusRail aquariumPresentation={aquariumPresentation} normalizedTargetMajor={normalizedTargetMajor} />
+    <section className="home-study-highlight" aria-label="오늘의 학습 지표"><HomeStudyPanel {...props} showStudyPanel={forcedOpen} /></section>
     <HomeTargetSummary calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} normalizedTargetMajor={normalizedTargetMajor} />
-    <section className="home-study-highlight" aria-label="오늘의 학습 지표"><StudyOverviewCard overview={studyOverview} variant="banner" showDetails={false} /></section>
+    <HomePlannerPreview {...props} />
     <section className="home-week-flow" aria-label="이번 주 공부 흐름"><StudyWeekSummary key={props.user?.email || 'guest'} overview={studyOverview} summary={props.studySummary} status={props.studySummaryStatus} compact /></section>
-    <HomePlannerPreview {...props} showStudyPanel={forcedOpen} />
   </main>;
 }

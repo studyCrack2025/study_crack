@@ -13,7 +13,7 @@
     "passive": ["ready"]
   },
   "planFixtures": {
-    "free": { "rank": 0, "mainTabsVisible": true, "planner": false, "coaching": false, "scoreSimulation": false, "reverseProjection": false },
+    "free": { "rank": 0, "mainTabsVisible": true, "planner": true, "coaching": false, "scoreSimulation": false, "reverseProjection": false },
     "starter": { "rank": 1, "mainTabsVisible": true, "planner": true, "coaching": false, "scoreSimulation": true, "reverseProjection": false },
     "basic": { "rank": 1, "mainTabsVisible": true, "planner": true, "coaching": false, "scoreSimulation": true, "reverseProjection": false },
     "standard": { "rank": 2, "mainTabsVisible": true, "planner": true, "coaching": true, "scoreSimulation": true, "reverseProjection": true },
@@ -21,8 +21,8 @@
   },
   "screens": {
     "timer": { "profile": "main", "actions": ["openDrawer", "closeDrawer", "drawerGoto", "openStudyPanel", "closeStudyPanel",
-    "closeStudySubjectSheet", "openStudySubjectSheet", "confirmStudyStart", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "openGameRules", "closeGameRules", "toggleStudySessionDetails", "retryInit"] },
-    "aquarium": { "profile": "main", "actions": ["selectStarterCandidate", "claimStarterFish", "selectAquariumFish", "setAquariumFishSlot", "saveAquariumFishName", "dismissAquariumResult", "openAquariumCatalog", "openAquariumDraw", "openAquariumShare", "closeAquariumMode", "startAquariumDraw", "acknowledgeAquariumDraw", "shareAquarium", "retryGameResources", "goto"] },
+    "closeStudySubjectSheet", "openStudySubjectSheet", "startPlannedStudy", "confirmStudyStart", "stopStudyTimer", "retryStudyStart", "retryStudyReward", "retryStudySummary", "dismissRewardResult", "retryGameResources", "openGameRules", "closeGameRules", "toggleStudySessionDetails", "retryInit"] },
+    "aquarium": { "profile": "main", "actions": ["selectStarterCandidate", "claimStarterFish", "selectAquariumFish", "setAquariumFishSlot", "saveAquariumFishName", "dismissAquariumResult", "openAquariumCatalog", "openAquariumDraw", "openAquariumShare", "closeAquariumMode", "startAquariumDraw", "acknowledgeAquariumDraw", "shareAquarium", "retryGameResources", "openGameRules", "closeGameRules", "goto"] },
     "analysis": { "profile": "main", "actions": ["selectTarget", "setScoreView", "highlightSimSubject", "calculateAnalysisScore"] },
     "addUniversity": { "profile": "secondary", "actions": ["openUniversitySearch", "refreshUniversityRecommendations", "retryUniversityCatalog", "selectUniversityForMajor", "runUniversitySearch", "addAnalysisTarget", "backToUniversityList"] },
     "ranking": { "profile": "secondary", "actions": ["setRankingPeriod", "retryRanking", "back"] },
@@ -226,6 +226,7 @@
     "ssoSuccess",
     "startAquariumDraw",
     "startMbti",
+    "startPlannedStudy",
     "startStandard",
     "startWithdrawSocialReauth",
     "stopStudyTimer",

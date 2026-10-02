@@ -64,6 +64,15 @@ assert.match(paymentSource, /모든 플랜은 VAT 포함 단건 결제/);
 assert.match(serviceSource, /합격컷 도달 위한 목표 성적 제시/);
 assert.ok(!PLAN_META.Basic.features.includes('합격컷 도달 위한 목표 성적 제시'), 'Do not silently merge conflicting web benefits');
 assert.doesNotMatch(JSON.stringify(PLAN_META), /합격확률|합격 가능성/, 'Mobile plan copy must describe converted scores, not probability');
+assert.match(PLAN_META.Basic.complete, /무료 개인 플래너/);
+const mobileServiceCss = await readFile(new URL('../src/styles/screens/service.css', import.meta.url), 'utf8');
+assert.match(mobileServiceCss, /\.plan-console-selector b\{font-size:var\(--sc-type-caption\)/, '플랜 선택 가격은 14px 보조 기준을 사용합니다.');
+assert.doesNotMatch(mobileServiceCss, /font-size:(?:10|11|12|13)(?:\.\d+)?px/, '좁은 화면에서 상품명이나 조건을 다시 작게 줄이지 않습니다.');
+assert.match(mobileServiceCss, /\.plan-console-cta\{[^}]*min-height:52px;height:auto;[^}]*white-space:normal/, '긴 결제 문구와 글자 확대에도 버튼 높이가 자연스럽게 늘어나야 합니다.');
+for (const source of [serviceSource, paymentSource]) {
+  assert.match(text(source), /개인 플래너[\s\S]*공부 타이머[\s\S]*무료/);
+  assert.match(text(source), /SKY 튜터[\s\S]*이용권/);
+}
 
 const expired = buildMembershipSummary({ userTier: 'free', checkoutPlan: 'Pro', user: { currentSubscription: { tier: 'pro', endDate: '2020-01-01' } } });
 assert.equal(expired.label, 'FREE');

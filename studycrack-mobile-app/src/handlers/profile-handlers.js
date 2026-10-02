@@ -1,6 +1,7 @@
 import { clearMobileAuthArtifacts, verifyPassword } from '../features/session/auth-service.js';
 import { convertExamScores } from '../features/analysis/api.js';
 import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
+import { getScoreStepErrors } from '../features/analysis/score-edit-validation.js';
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
 import { withOperationLock } from '../shared/async/operation-lock.js';
@@ -186,17 +187,17 @@ function readScoreEditValues(ctx) {
   const state = ctx.scoreEditState || {};
   return {
     koreanType: getInputValue(ctx, 'v2e-korean-type', state.korean?.type || ''),
-    koreanCommon: getInputValue(ctx, 'v2e-korean-common', state.korean?.common || ''),
-    koreanElective: getInputValue(ctx, 'v2e-korean-elective', state.korean?.elective || ''),
+    koreanCommon: getInputValue(ctx, 'v2e-korean-common', state.korean?.common ?? ''),
+    koreanElective: getInputValue(ctx, 'v2e-korean-elective', state.korean?.elective ?? ''),
     mathType: getInputValue(ctx, 'v2e-math-type', state.math?.type || ''),
-    mathCommon: getInputValue(ctx, 'v2e-math-common', state.math?.common || ''),
-    mathElective: getInputValue(ctx, 'v2e-math-elective', state.math?.elective || ''),
+    mathCommon: getInputValue(ctx, 'v2e-math-common', state.math?.common ?? ''),
+    mathElective: getInputValue(ctx, 'v2e-math-elective', state.math?.elective ?? ''),
     english: getInputValue(ctx, 'v2e-english', state.english || ''),
     history: getInputValue(ctx, 'v2e-history', state.history || ''),
     inquiry1Subject: getInputValue(ctx, 'v2e-inq1-subject', state.inquiry1?.subject || ''),
     inquiry2Subject: getInputValue(ctx, 'v2e-inq2-subject', state.inquiry2?.subject || ''),
-    inquiry1Score: getInputValue(ctx, 'v2e-inq1-score', state.inquiry1?.score || ''),
-    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score || '')
+    inquiry1Score: getInputValue(ctx, 'v2e-inq1-score', state.inquiry1?.score ?? ''),
+    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score ?? '')
   };
 }
 
@@ -323,38 +324,20 @@ function persistUser(ctx, patch) {
   return user;
 }
 
-// 현재 과목만 검증. 통과 시 '' 반환, 실패 시 안내 문구.
 function validateScoreSubject(step, values) {
-  if (step === 1) {
-    if (!String(values.koreanCommon).trim() || !String(values.koreanElective).trim()) return '국어 공통/선택 원점수를 모두 입력해주세요.';
-    if (!isValidRawScore(values.koreanCommon, 76) || !isValidRawScore(values.koreanElective, 24)) return '국어 점수를 정확히 입력해주세요.';
-  }
-  if (step === 2) {
-    if (!String(values.mathCommon).trim() || !String(values.mathElective).trim()) return '수학 공통/선택 원점수를 모두 입력해주세요.';
-    if (!isValidRawScore(values.mathCommon, 74) || !isValidRawScore(values.mathElective, 26)) return '수학 점수를 정확히 입력해주세요.';
-  }
-  if (step === 3 && !Number(values.english || 0)) return '영어 등급을 선택해주세요.';
-  if (step === 4 && !Number(values.history || 0)) return '한국사 등급을 선택해주세요.';
-  if (step === 5) {
-    if (isInvalidRequiredSelectValue(values.inquiry1Subject) || !String(values.inquiry1Score).trim()) return '탐구 1 과목과 원점수를 입력해주세요.';
-    if (!isValidRawScore(values.inquiry1Score, 50)) return '탐구 1 원점수를 정확히 입력해주세요.';
-  }
-  if (step === 6) {
-    if (isInvalidRequiredSelectValue(values.inquiry2Subject) || !String(values.inquiry2Score).trim()) return '탐구 2 과목과 원점수를 입력해주세요.';
-    if (!isValidRawScore(values.inquiry2Score, 50)) return '탐구 2 원점수를 정확히 입력해주세요.';
-  }
-  return '';
+  return Object.values(getScoreStepErrors(step, values))[0] || '';
 }
 
-// 모달 진입 시 저장된 quantitative[examKey]로 입력 초안을 채운다(재진입 시 기존 값 보임).
+// 저장된 입력값으로 초안을 채운다.
 function seedScoreEditFromQuant(quant) {
   const q = quant || {};
+  const history = q.hist || q.history || {};
   const numStr = (v) => (v === 0 || v === '0' ? '0' : (Number(v) ? String(Number(v)) : ''));
   return {
     korean: { type: q.kor?.opt || '', common: numStr(q.kor?.common), elective: numStr(q.kor?.elective) },
     math: { type: q.math?.opt || '', common: numStr(q.math?.common), elective: numStr(q.math?.elective) },
-    english: q.eng?.grd ? String(q.eng.grd) : '',
-    history: q.hist?.grd ? String(q.hist.grd) : '',
+    english: numStr(q.eng?.grd ?? q.eng?.grade),
+    history: numStr(history.grd ?? history.grade),
     inquiry1: { subject: q.inq1?.name || '', score: numStr(q.inq1?.raw) },
     inquiry2: { subject: q.inq2?.name || '', score: numStr(q.inq2?.raw) }
   };
@@ -415,6 +398,8 @@ export function createProfileHandlers(ctx) {
     setScoreEditOpen,
     setScoreEditState,
     setScoreEditStep,
+    setScoreEditErrors,
+    setScoreEditSaveError,
     setScoreSubjectSaving,
     setScoreExamKey,
     setRankingPeriod,
@@ -473,6 +458,8 @@ export function createProfileHandlers(ctx) {
       const examKey = scoreExamTypeToKey(ctx.scoreExamType);
       const quant = ctx.user?.quantitative?.[examKey];
       if (quant) setScoreEditState(() => seedScoreEditFromQuant(quant));
+      setScoreEditErrors({});
+      setScoreEditSaveError('');
       setScoreEditOpen(true);
       setScoreEditStep(1);
       return true;
@@ -483,6 +470,7 @@ export function createProfileHandlers(ctx) {
       const next = Number(getData(actionEl, 'step') || 1);
       if (!(next >= 1 && next <= 6)) return false;
       patchCurrentScoreStep(ctx);
+      setScoreEditErrors({});
       setScoreEditStep(Math.min(6, Math.max(1, next)));
       return true;
     },
@@ -492,9 +480,10 @@ export function createProfileHandlers(ctx) {
       const step = Number(ctx.scoreEditStep || 1);
       patchCurrentScoreStep(ctx);
       const values = readScoreEditValues(ctx);
-      const error = validateScoreSubject(step, values);
-      if (error) {
-        alert(error);
+      const errors = getScoreStepErrors(step, values);
+      setScoreEditSaveError('');
+      setScoreEditErrors(errors);
+      if (Object.keys(errors).length) {
         return false;
       }
       if (step < 6) {
@@ -502,66 +491,73 @@ export function createProfileHandlers(ctx) {
         return true;
       }
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
-        alert('시험을 먼저 선택해주세요.');
+        setScoreEditSaveError('시험을 먼저 선택해 주세요.');
         return false;
       }
       for (let subjectStep = 1; subjectStep <= 6; subjectStep += 1) {
-        const subjectError = validateScoreSubject(subjectStep, values);
-        if (subjectError) {
-          alert(subjectError);
+        const subjectErrors = getScoreStepErrors(subjectStep, values);
+        if (Object.keys(subjectErrors).length) {
+          setScoreEditErrors(subjectErrors);
           setScoreEditStep(subjectStep);
           return false;
         }
       }
 
-      setScoreSubjectSaving(true);
-      try {
-        const examKey = scoreExamTypeToKey(ctx.scoreExamType);
-        const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
-        const converted = await convertExamScores({
-          apiFetch: ctx.apiFetch,
-          analysisApiUrl,
-          examMode: examKey,
-          examData: quantitativePatch[examKey]
-        });
-        if (!converted.ok) {
-          alert(converted.error || '성적 환산에 실패했습니다.');
-          return false;
-        }
-        const nextQuantitative = {
-          ...(ctx.user?.quantitative || {}),
-          [examKey]: converted.data
-        };
-        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
-        const result = await persistQuantitative(nextQuantitative);
-        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
-        if (result?.ok !== true) {
-          alert(result?.error || '성적 저장에 실패했습니다.');
-          return false;
-        }
+      return withOperationLock(ctx.operationLocksRef, 'profile-score', async () => {
+        setScoreSubjectSaving(true);
+        try {
+          const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+          const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+          const converted = await convertExamScores({
+            apiFetch: ctx.apiFetch,
+            analysisApiUrl,
+            examMode: examKey,
+            examData: quantitativePatch[examKey]
+          });
+          if (!converted.ok) {
+            if (ctx.isCurrentProfile?.() !== false) setScoreEditSaveError(converted.error || '성적 환산에 실패했어요. 입력은 유지되니 다시 시도해 주세요.');
+            return false;
+          }
+          const nextQuantitative = {
+            ...(ctx.user?.quantitative || {}),
+            [examKey]: converted.data
+          };
+          if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+          const result = await persistQuantitative(nextQuantitative);
+          if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+          if (result?.ok !== true) {
+            setScoreEditSaveError(result?.error || '성적을 저장하지 못했어요. 입력은 유지되니 다시 시도해 주세요.');
+            return false;
+          }
 
-        const nextKo = converted.data.kor.raw;
-        const nextMa = converted.data.math.raw;
-        const nextEnGrade = Number(values.english || 0);
-        const nextEnScore = englishGradeToScore(nextEnGrade);
-        const nextIq1 = converted.data.inq1.raw;
-        const nextIq2 = converted.data.inq2.raw;
-        setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
-        const map = getExamScoresMap();
-        map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
-        saveExamScoresMap(map);
-        setScoreExamKey(examKey);
-        setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
-        persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
-        setScoreEditOpen(false);
-        setScoreEditStep(1);
-        return true;
-      } finally {
-        setScoreSubjectSaving(false);
-      }
+          const nextKo = converted.data.kor.raw;
+          const nextMa = converted.data.math.raw;
+          const nextEnGrade = Number(values.english || 0);
+          const nextEnScore = englishGradeToScore(nextEnGrade);
+          const nextIq1 = converted.data.inq1.raw;
+          const nextIq2 = converted.data.inq2.raw;
+          setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
+          const map = getExamScoresMap();
+          map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
+          saveExamScoresMap(map);
+          setScoreExamKey(examKey);
+          setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
+          persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
+          setScoreEditOpen(false);
+          setScoreEditStep(1);
+          return true;
+        } catch (_error) {
+          if (ctx.isCurrentProfile?.() !== false) setScoreEditSaveError('성적을 저장하지 못했어요. 입력은 유지되니 다시 시도해 주세요.');
+          return false;
+        } finally {
+          setScoreSubjectSaving(false);
+        }
+      });
     },
 
     closeScoreEdit() {
+      setScoreEditErrors({});
+      setScoreEditSaveError('');
       setScoreEditOpen(false);
       setScoreEditStep(1);
       return true;
@@ -609,6 +605,7 @@ export function createProfileHandlers(ctx) {
 
     scoreStepPrev() {
       patchCurrentScoreStep(ctx);
+      setScoreEditErrors({});
       setScoreEditStep((value) => Math.max(1, value - 1));
       return true;
     },

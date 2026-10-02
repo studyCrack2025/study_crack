@@ -161,6 +161,19 @@ export function createTimerHandlers(ctx) {
       ctx.setStudySubjectSheetOpen(true);
       return true;
     },
+    startPlannedStudy({ actionEl }) {
+      const id = getData(actionEl, 'study-item-id');
+      const item = (ctx.todayPlannerItems || []).find((row) => row.id === id && !row.done);
+      if (!ctx.canUsePersonalPlanner || !item || ctx.activeStudySession || ctx.rewardPendingSessionId || /(-session|claiming-reward)$/.test(ctx.timerPhase)) return false;
+      const subject = String(item.subject || '기타').trim().slice(0, 30);
+      const activity = String(item.content || '').trim().slice(0, 80);
+      if (!activity) {
+        ctx.setStudyStartDraft({ subject, activity: '', plannerItemId: item.id });
+        ctx.setStudySubjectSheetOpen(true);
+        return true;
+      }
+      return beginStudy(ctx, subject, activity, item.id);
+    },
     confirmStudyStart() {
       const draft = ctx.studyStartDraft || {};
       const subject = String(draft.subject === '기타' ? inputValue(ctx, '[data-field="studyStartCustomSubject"]') : draft.subject || '').trim().slice(0, 30);
@@ -224,6 +237,7 @@ export function createTimerHandlers(ctx) {
       ctx.setLastCompletedSession(null);
       ctx.setCompletionError('');
       ctx.setTimerPhase('idle');
+      ctx.setStudyPanelMode('');
       return true;
     },
     toggleStudySessionDetails() {

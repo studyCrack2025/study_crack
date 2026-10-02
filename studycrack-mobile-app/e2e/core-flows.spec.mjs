@@ -62,6 +62,7 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
 });
 
 test('로그인과 회원가입 첫 화면은 설치형 모바일 화면 중앙에 안정적으로 배치된다', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await installApiMock(page);
   for (const viewport of [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
@@ -395,7 +396,8 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
   await expect(page.locator('.planner-progress-track')).toHaveCSS('height', '10px');
-  await expect(page.locator('.planner-item-main b').first()).toHaveCSS('font-size', '14px');
+  await expect(page.locator('.planner-item-main b').first()).toHaveCSS('font-size', '16px');
+  await expect(page.locator('.planner-item-time').first()).toHaveCSS('font-size', '14px');
   const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
   const calendarBox = await page.locator('.planner-calendar-section').boundingBox();
   expect(progressBox).not.toBeNull();

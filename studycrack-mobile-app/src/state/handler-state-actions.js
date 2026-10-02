@@ -32,7 +32,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'myProfileEditOpen', 'myProfileNameDraft', 'myProfilePhoneCodeDraft', 'myProfilePhoneDraft',
     'notifications', 'ob2SkippedNoScore', 'obGed', 'obGradeStatus', 'openFaq', 'openTermsType',
     'phoneChangeModalOpen', 'phoneChangeSending', 'phoneChangeStep', 'profileDetailModalOpen',
-    'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep',
+    'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreEditErrors', 'scoreEditSaveError',
     'scoreExamKey', 'scoreSubjectSaving', 'scores', 'targetMajor', 'user', 'withdrawModalOpen',
     'withdrawPassword', 'withdrawSubmitting'
   ]),

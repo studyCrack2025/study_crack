@@ -72,7 +72,7 @@ try {
           assert.equal(buildAccountProfile({ user: callback(user), userLoadStatus: 'ready' }).checklist.find(row => row.id === 'scores').complete, true);
           applied++;
         },
-        setScoreSubjectSaving: () => {}, setScoreEditState: () => {}, setScores: () => {},
+        setScoreSubjectSaving: () => {}, setScoreEditState: () => {}, setScoreEditErrors: () => {}, setScoreEditSaveError: () => {}, setScores: () => {},
         getExamScoresMap: () => ({}), saveExamScoresMap: () => {}, setScoreExamKey: () => {}, setScoreEditOpen: () => {}, setScoreEditStep: () => {}
       };
       assert.equal(await createProfileHandlers(ctx)[action](), outcome === 'success');

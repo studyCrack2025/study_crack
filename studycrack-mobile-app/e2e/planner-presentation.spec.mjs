@@ -28,6 +28,10 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const done = row.getByRole('button', { name: '계획 완료', exact: true });
     const edit = row.getByRole('button', { name: '계획 편집', exact: true });
     await expect(edit).toHaveAccessibleDescription(longTitle);
+    await expect(edit.locator('b')).toHaveCSS('font-size', '16px');
+    await expect(edit.locator('.planner-item-time')).toHaveCSS('font-size', '14px');
+    await expect(row.locator('.planner-item-actions > span')).toHaveCount(0);
+    await expect(edit).not.toContainText('오답 정리');
     await expect(row).not.toHaveAttribute('data-action', 'openPlannerEdit');
     await expect(row.locator('button button')).toHaveCount(0);
     const [doneBox, editBox, removeBox] = await Promise.all([done.boundingBox(), edit.boundingBox(), row.locator('.planner-item-remove').boundingBox()]);
@@ -131,9 +135,8 @@ test('작은 화면에서 여러 줄 계획 추가와 IME 입력·단계 복귀�
 test('계정 변경 후 서버 지표·권한을 새 계정으로 읽고 기기 계획은 보존한다', async ({ page }) => {
   const api = await setup(page);
   await page.goto('/studycrack-mobile.html?screen=timer');
-  const streak = page.locator('.timer-v2-status-rail').getByRole('button', { name: /^연속 학습 / });
-  await expect(streak).toHaveAccessibleName('연속 학습 9일');
-  await expect(streak.locator('b')).toHaveText('9');
+  const streak = page.locator('.home-study-highlight .home-study-streak');
+  await expect(streak).toHaveAccessibleName('연속 학습 9일 ›');
   api.state.userTier = 'free';
   api.state.userOverrides = { name: '다른계정', targetUnivs: [], quantitative: {} };
   api.state.gameProfile.streakDays = 0;
@@ -144,11 +147,13 @@ test('계정 변경 후 서버 지표·권한을 새 계정으로 읽고 기기 
   });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await expect(page.locator('.timer-v2-brand-head')).toContainText('다른계정');
-  await expect(streak).toHaveAccessibleName('연속 학습 0일');
-  await expect(streak.locator('b')).toHaveText('0');
-  await expect(page.locator('.timer-v2-plan')).toContainText('Basic 이상');
-  await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(0);
+  await expect(streak).toHaveAccessibleName('연속 학습 0일 ›');
+  await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(1);
+  await expect(page.locator('.timer-v2-plan')).toContainText(longTitle);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('plannerItems')).length)).toBe(3);
   await page.locator('.tabbar [data-tab="planner"]').click();
-  await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
+  await expect(page.locator('[data-screen="planner"]')).toBeVisible();
+  await expect(page.locator('.planner-feedback-card')).toContainText('개인 플래너는 무료로 이용해요');
+  await expect(page.locator('.planner-feedback-card')).toContainText('이용권에 따라 제공됩니다');
+  await expect(page.locator('.planner-feedback-card [data-target="weekly"]')).toHaveCount(0);
 });

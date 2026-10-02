@@ -116,13 +116,13 @@ test('미확인 상태로 탭 왕복 후 본체 조회가 실패해도 상태 �
   await page.locator('[data-action="setAquariumFishSlot"][data-slot="center"]').click();
   await expect(page.getByText('처리 결과 확인이 필요해요')).toBeVisible();
   await page.locator('.tabbar [data-tab="timer"]').click();
-  await expect(page.locator('.timer-v2-status-rail')).toBeVisible();
+  await expect(page.locator('.home-study-highlight')).toBeVisible();
   let failProfile = true;
   await page.route('**/api/**', async route => {
     if (failProfile && route.request().postDataJSON()?.type === 'get_game_profile') return route.fulfill({ status: 503, json: {} });
     await route.fallback();
   });
-  await page.locator('.timer-v2-status-rail [data-target="aquarium"]').click();
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
   await expect(page.getByText('수조를 불러오지 못했어요', { exact: true })).toBeVisible();
   failProfile = false;
   await page.getByRole('button', { name: '다시 불러오기', exact: true }).click();

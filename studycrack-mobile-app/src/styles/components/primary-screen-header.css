@@ -2,6 +2,6 @@
 .primary-screen-header > img{width:38px;height:38px;flex:none;object-fit:contain;}
 .primary-screen-header__copy{flex:1;min-width:0;display:grid;gap:1px;}
 .primary-screen-header span{display:block;color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:700;line-height:1.5;}
-.primary-screen-header h1{margin:0;color:var(--sc-brand-navy-deep);font-size:var(--sc-type-section);font-weight:900;line-height:1.15;letter-spacing:0;word-break:keep-all;}
+.primary-screen-header h1{margin:0;color:var(--sc-brand-navy-deep);font-size:var(--sc-type-title);font-weight:900;line-height:1.25;letter-spacing:0;word-break:keep-all;}
 .primary-screen-header p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.45;word-break:keep-all;}
 .primary-screen-header__action{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;}

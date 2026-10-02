@@ -106,11 +106,12 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
   await page.locator('.study-start-confirm').click();
   await page.getByRole('button', { name: '공부 영역 접기' }).click();
-  await expect(card).toContainText('진행 중 · 아직 미확정');
+  await expect(card).toContainText('국어 · 현재 집중 시간');
   await expect(card.locator('details')).toHaveCount(0);
   await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');
   await expect(card.locator('[data-study-base-seconds]')).not.toHaveText('00:00:00');
-  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
+  await expect(card.locator('.sc-study-headline > small').last()).toHaveText('오늘 확정 00:30:00');
+  expect(api.state.studySeconds).toBe(1800);
   await openRecords();
   await expect(week).toHaveText(before, { useInnerText: true });
 });

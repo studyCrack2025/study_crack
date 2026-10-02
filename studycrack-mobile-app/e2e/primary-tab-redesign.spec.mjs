@@ -22,6 +22,7 @@ for (const width of [320, 360, 390, 430]) {
       await page.locator(`.tabbar [data-tab="${tab}"]`).click();
       const head = page.locator('.primary-screen-header');
       await expect(head.getByRole('heading', { level: 1 })).toHaveText(title);
+      await expect(head.getByRole('heading', { level: 1 })).toHaveCSS('font-size', '24px');
       await expect(head.locator('img')).toHaveCSS('width', '38px');
       expect((await head.boundingBox()).height).toBeLessThan(110);
       await expect(page.locator('.sc-study-score')).toHaveCount(0);
