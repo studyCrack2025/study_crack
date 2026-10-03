@@ -338,3 +338,56 @@ const ADMIN_API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
 const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin;
+
+// 첨부 권한을 재확인하며, 실패한 경우 오래된 주소로 우회하지 않는다.
+async function resolvePrivateAttachment(value) {
+    const original = new URL(value, window.location.origin);
+    if (!original.hash.startsWith('#scFile=')) return value;
+    const owner = localStorage.getItem('userId') || '';
+    if (!owner || original.protocol !== 'https:' || original.username || original.password || original.hash.length > 2048) throw new Error('첨부파일을 다시 확인해주세요.');
+    const context = JSON.parse(decodeURIComponent(original.hash.slice(8)));
+    if (!context || typeof context.subjectUserId !== 'string' || !/^[A-Za-z0-9_@.+:-]{1,128}$/.test(context.subjectUserId)
+        || (context.reportKind !== undefined && (!['weekly', 'pro'].includes(context.reportKind) || !/^[A-Za-z0-9_:.-]{1,100}$/.test(context.reportId || '')))) throw new Error('첨부파일을 다시 확인해주세요.');
+    const response = await apiFetch(FILE_API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_study_file_download', data: { fileUrl: value, subjectUserId: context.subjectUserId, ...(context.reportKind ? { reportKind: context.reportKind, reportId: context.reportId } : {}) } }) });
+    const result = await response.json();
+    if (owner !== (localStorage.getItem('userId') || '')) throw new Error('계정이 변경되었습니다. 다시 확인해주세요.');
+    const fresh = new URL(result.downloadUrl);
+    if (fresh.protocol !== 'https:' || fresh.username || fresh.password || fresh.host !== original.host || fresh.pathname !== original.pathname || !fresh.searchParams.has('X-Amz-Signature')) throw new Error('첨부파일을 다시 확인해주세요.');
+    return fresh.href;
+}
+
+async function openPrivateAttachment(value) {
+    let url;
+    try {
+        url = new URL(value, window.location.origin);
+        if (url.protocol !== 'https:' || url.username || url.password) return false;
+    } catch (_) { return false; }
+    const tab = window.open('about:blank', '_blank');
+    if (tab) tab.opener = null;
+    try {
+        const href = await resolvePrivateAttachment(value);
+        if (tab) tab.location.replace(href);
+        else window.location.assign(href);
+        return true;
+    } catch (_) {
+        tab?.close();
+        window.alert('첨부파일을 열 수 없습니다. 계정과 보고서 상태를 확인한 뒤 다시 시도해주세요.');
+        return false;
+    }
+}
+
+if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('click', event => {
+        const anchor = event.target?.closest?.('a[href]');
+        if (!anchor || event.defaultPrevented || !anchor.href.includes('#scFile=')) return;
+        event.preventDefault();
+        void openPrivateAttachment(anchor.href);
+    });
+    const refreshedImages = new WeakSet();
+    document.addEventListener('error', event => {
+        const img = event.target;
+        if (img?.tagName !== 'IMG' || !img.src.includes('#scFile=') || refreshedImages.has(img)) return;
+        refreshedImages.add(img);
+        resolvePrivateAttachment(img.src).then(href => { if (img.isConnected) img.src = href; }).catch(() => { img.alt = '첨부파일을 다시 확인해주세요.'; });
+    }, true);
+}

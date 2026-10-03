@@ -2371,7 +2371,7 @@ function renderProReportList(ctx) {
             itemDiv.className = 'report-item';
             itemDiv.style.cssText = `cursor:${isReady ? 'pointer' : 'default'}; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 12px;`;
             itemDiv.onclick = () => {
-                if(isReady) window.open(rep.reportLink);
+                if(isReady) void openPrivateAttachment(rep.reportLink);
                 else if (isPublishedNoLink) alert('리포트 파일 연결을 준비 중입니다. 잠시 후 다시 확인해주세요.');
                 else alert('튜터가 리포트를 최종 검수 중입니다. 잠시만 기다려주세요.');
             };

@@ -442,7 +442,7 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
             method: 'POST',
             body: JSON.stringify({ type: 'get_presigned_url', data: { fileName: encodeURIComponent(file.name), fileType: file.type, folder: 'tutor_feedback' } })
         });
-        const { uploadUrl, fileUrl, fields } = await urlResponse.json();
+        const { uploadUrl, fileUrl, previewUrl, fields } = await urlResponse.json();
 
         // 2. S3 직접 업로드
         const formData = new FormData();
@@ -490,7 +490,7 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
         // 탭 전체 새로고침 없이 해당 UI 부분만 즉시 업데이트
         const existingContainer = document.getElementById(`wfb_existing_file_${idk}`);
         if (existingContainer) {
-            const safeFileUrl = safeAttachmentUrl(fileUrl);
+            const safeFileUrl = safeAttachmentUrl(previewUrl || fileUrl);
             existingContainer.innerHTML = safeFileUrl ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(safeFileUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline; font-weight:bold;">보기</a></div>` : '';
         }
 

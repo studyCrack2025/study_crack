@@ -284,12 +284,12 @@ function openFeedbackModal(data) {
         if (isPdfFile) {
             fileDisplayHtml = `<div id="${uniqueContainerId}" style="width: 100%; display: block; text-align: center;"><div style="padding: 40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터의 첨삭 PDF 문서를 불러오는 중입니다...</div></div>`;
         } else {
-            const noCacheUrl = `${escapeHtml(fb.tutorImage)}?t=${new Date().getTime()}`;
+            const noCacheUrl = escapeHtml(fb.tutorImage);
             fileDisplayHtml = `<div style="text-align:center; padding: 10px 0;"><img src="${noCacheUrl}" crossorigin="anonymous" alt="튜터 플래너 코칭" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1; display:block; margin: 0 auto;"></div>`;
         }
         
         tutorFileBlockHtml = `
-            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div id="attachedPdfData" data-pdf-url="${escapeHtml(actualPdfUrl)}" style="display:none;"></div>
             <div class="doc-matched-box allow-page-break" style="margin-top: 30px;">
                 <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 5. 주간 플래너 코칭 & 첨삭</div>
                 <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
@@ -422,9 +422,9 @@ function openFeedbackModalV2(data, modal, contentArea) {
         actualPdfUrl = fb.tutorImage;
         let fileDisplayHtml = isPdfFile
             ? `<div id="${uniqueContainerId}" style="width:100%; text-align:center;"><div style="padding:40px 0; color:#3b82f6; font-weight:bold;" class="pdf-loading-spinner"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:10px;"></i><br>튜터 첨부 파일을 불러오는 중...</div></div>`
-            : `<div style="text-align:center; padding:10px 0;"><img src="${escapeHtml(fb.tutorImage)}?t=${Date.now()}" crossorigin="anonymous" alt="튜터 첨부" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1;"></div>`;
+            : `<div style="text-align:center; padding:10px 0;"><img src="${escapeHtml(fb.tutorImage)}" crossorigin="anonymous" alt="튜터 첨부" style="max-width:100%; height:auto; border-radius:8px; border:1px solid #cbd5e1;"></div>`;
         tutorFileBlockHtml = `
-            <div id="attachedPdfData" data-pdf-url="${actualPdfUrl}" style="display:none;"></div>
+            <div id="attachedPdfData" data-pdf-url="${escapeHtml(actualPdfUrl)}" style="display:none;"></div>
             <div class="doc-matched-box allow-page-break" style="margin-top:30px;">
                 <div class="doc-matched-header"><i class="fas fa-paperclip" style="color:#3b82f6;"></i> 4. 첨부파일</div>
                 <div class="doc-matched-body allow-page-break-body" style="padding:25px;">${fileDisplayHtml}</div>
@@ -588,7 +588,7 @@ async function renderPdfToImages(url, containerId) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // S3에서 PDF 파일 다운로드 및 파싱
-        const loadingTask = pdfjsLib.getDocument(url);
+        const loadingTask = pdfjsLib.getDocument(await resolvePrivateAttachment(url));
         const pdf = await loadingTask.promise;
         
         // 렌더링 시작 전 무한 로딩 스피너 제거
