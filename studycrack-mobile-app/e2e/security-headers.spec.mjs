@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { auditSecurityHeaders, inspectSecurityHeaders } from '../../tools/audit-security-headers.mjs';
+import { prepareMobileResponsePolicy } from '../../tools/prepare-mobile-response-policy.mjs';
 import { installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 test.skip(!process.env.STUDYCRACK_PREVIEW_ROOT, 'Requires the verified public artifact.');
@@ -48,9 +48,9 @@ test('로컬 hash CSP 실험은 기존 앱을 시작하고 승인하지 않은 �
   await page.route('**/studycrack-mobile.html?*', async (route) => {
     const response = await route.fetch();
     const html = await response.text();
-    const hashes = [...html.matchAll(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script\s*>/gi)].map((match) => `'sha256-${createHash('sha256').update(match[1]).digest('base64')}'`);
-    expect(hashes.length).toBeGreaterThan(0);
-    const csp = `default-src 'self'; script-src 'self' ${hashes.join(' ')}; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${mockApiOrigin}; frame-src 'none'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; manifest-src 'self'; worker-src 'none'`;
+    const candidate = prepareMobileResponsePolicy({ html, connectOrigins: [mockApiOrigin] });
+    expect(candidate.compatibilityVerified).toBe(false);
+    const csp = candidate.responseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy.ContentSecurityPolicy;
     await route.fulfill({ response, headers: { ...response.headers(), 'content-security-policy': csp, 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer', 'permissions-policy': 'camera=(), microphone=(), geolocation=()' } });
   });
   await page.goto('/studycrack-mobile.html?screen=timer');
