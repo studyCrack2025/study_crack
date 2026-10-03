@@ -6,6 +6,8 @@
 let globalUnmatchedStudents = [];
 let globalTutorsForMatch = [];
 let globalAllStudentsForMatch = [];
+let globalLegacyAssignments = [];
+let matchingLoadSequence = 0;
 
 function switchMatchingTab(tabName) {
     document.getElementById('matchTab_new').style.display = tabName === 'new' ? 'block' : 'none';
@@ -15,6 +17,7 @@ function switchMatchingTab(tabName) {
 }
 
 async function loadMatchingData(isSilent = false) {
+    const sequence = ++matchingLoadSequence;
     const adminId = localStorage.getItem('userId');
     if (!isSilent) document.getElementById('newMatchList').innerHTML = '<p>데이터를 불러오는 중...</p>';
 
@@ -25,14 +28,17 @@ async function loadMatchingData(isSilent = false) {
         ]);
 
         const tutorData = await tutorRes.json(); const studentData = await studentRes.json();
+        if (sequence !== matchingLoadSequence || localStorage.getItem('userId') !== adminId) return;
         if (!tutorRes.ok || !studentRes.ok) throw new Error('목록을 불러오지 못했습니다. 다시 시도해주세요.');
-        globalTutorsForMatch = (tutorData.tutors || []).filter(t => t.tutorId);
-        let allUsers = Array.isArray(studentData) ? studentData : (studentData.students || studentData.Items || []);
+        let allUsers = Array.isArray(studentData) ? studentData : studentData?.students;
+        if (!Array.isArray(tutorData?.tutors) || !Array.isArray(allUsers)) throw new Error('Invalid matching lists');
+        globalTutorsForMatch = tutorData.tutors.filter(t => t?.tutorId);
         globalAllStudentsForMatch = allUsers.filter(u => u.role !== 'admin' && u.role !== 'tutor');
+        globalLegacyAssignments = globalAllStudentsForMatch.filter(s => !s.assignedTutorId && typeof s.tutorName === 'string' && s.tutorName.trim());
 
         globalUnmatchedStudents = globalAllStudentsForMatch.filter(s => {
             if (s.assignedTutorId) return false;
-            if (s.tutorName) return true;
+            if (s.tutorName) return false;
             const tier = (getTierBadgeHTML(s).match(/>(.*?)<\/span>/) || [])[1] || 'FREE';
             const tierLower = tier.toLowerCase();
             return tierLower === 'standard' || tierLower === 'pro';
@@ -40,27 +46,42 @@ async function loadMatchingData(isSilent = false) {
 
         const badge = document.getElementById('matchingBadge'); const countText = document.getElementById('newMatchCount');
         if (badge && countText) {
-            countText.innerText = `(${globalUnmatchedStudents.length})`;
-            if (globalUnmatchedStudents.length > 0) { badge.style.display = 'inline-block'; badge.innerText = globalUnmatchedStudents.length; }
+            countText.innerText = `(신규 ${globalUnmatchedStudents.length} · 기존 배정 확인 ${globalLegacyAssignments.length})`;
+            const pending = globalUnmatchedStudents.length + globalLegacyAssignments.length;
+            if (pending > 0) { badge.style.display = 'inline-block'; badge.innerText = pending; }
             else { badge.style.display = 'none'; }
         }
 
         if (!isSilent) { renderNewMatchingList(); initTutorChangeSelects(); }
-    } catch (e) { console.error("Matching Data Load Error:", e); }
+    } catch (e) {
+        if (sequence !== matchingLoadSequence || localStorage.getItem('userId') !== adminId) return;
+        globalAllStudentsForMatch = []; globalTutorsForMatch = []; globalUnmatchedStudents = []; globalLegacyAssignments = [];
+        document.getElementById('newMatchList').innerHTML = '<p>배정 정보를 확인하지 못했습니다. 미배정 상태를 뜻하지 않습니다. <button type="button" onclick="loadMatchingData()">다시 시도</button></p>';
+        document.getElementById('newMatchCount').innerText = '(조회 실패)';
+        document.getElementById('matchingBadge').style.display = 'none';
+        initTutorChangeSelects();
+        document.getElementById('changeStudent').innerHTML = '<option value="">배정 정보를 다시 조회해주세요</option>';
+        console.error('Matching data unavailable');
+    }
 }
 
 function renderNewMatchingList() {
     const container = document.getElementById('newMatchList');
     container.innerHTML = '';
 
-    if (globalUnmatchedStudents.length === 0) {
+    if (globalUnmatchedStudents.length === 0 && globalLegacyAssignments.length === 0) {
         container.innerHTML = '<div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px;">현재 신규 매칭 대기 중인 학생이 없습니다.</div>';
         return;
     }
 
     const tutorOptions = globalTutorsForMatch.map(t => `<option value="${escapeHtml(t.tutorId)}">${escapeHtml(t.nickname)} (${escapeHtml(t.name)}) - 배정 ${Number(t.totalStudents) || 0}명</option>`).join('');
 
-    globalUnmatchedStudents.forEach(s => {
+    if (globalLegacyAssignments.length) {
+        const notice = document.createElement('p');
+        notice.textContent = `기존 이름 배정 ${globalLegacyAssignments.length}건은 미배정이 아닙니다. 실제 담당자를 확인한 뒤 ID 연결을 확정해주세요. 이름 일치만으로 자동 연결하지 않습니다.`;
+        container.appendChild(notice);
+    }
+    [...globalLegacyAssignments, ...globalUnmatchedStudents].forEach(s => {
         const tierBadge = getTierBadgeHTML(s);
         const card = document.createElement('div');
         card.className = 'match-card';
@@ -80,10 +101,10 @@ function renderNewMatchingList() {
                     <option value="">튜터 선택...</option>
                     ${tutorOptions}
                 </select>
-                <button class="match-btn" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
+                <button class="match-btn" type="button" data-confirm-assignment style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">${s.tutorName ? '기존 배정 확인 후 연결' : '배정하기'}</button>
             </div>
         `;
-        card.querySelector('.match-btn').addEventListener('click', () => executeMatching(s.userid, false));
+        card.querySelector('[data-confirm-assignment]').addEventListener('click', () => executeMatching(s.userid, false));
         container.appendChild(card);
     });
 }
@@ -128,6 +149,7 @@ async function executeMatching(studentId, isChange, newTutorArg = null, oldTutor
     if (!newTutorId) return alert("튜터를 선택해주세요.");
     const student = globalAllStudentsForMatch.find(s => s.userid === studentId);
     if (!student) return alert('학생 목록을 새로고침해주세요.');
+    if (!student.assignedTutorId && student.tutorName && !confirm('기존 이름 배정을 ID로 연결합니다. 선택한 튜터가 실제 담당자인지 확인하셨습니까? 저장 시 배정 알림이 발송됩니다.')) return;
     const expectedRevision = student.tutorAssignmentRevision ?? 0;
     const adminId = localStorage.getItem('userId');
 

@@ -183,13 +183,75 @@ for (const status of ['waiting', 'read']) test(`문의 관리 ${status} 버튼�
     window.goToStudentDetail = id => window.__calls.push(['detail', id]);
     renderQnaList();
   });
-  await page.locator(`[data-action="${status === 'waiting' ? 'mark-read' : 'reply'}"]`).click();
-  await page.locator('[data-action="student-detail"]').click();
-  await page.locator('[data-label="제목"]').click();
+  await page.locator('[data-qna-action]').click();
+  await page.locator('[data-student-detail]').click();
+  await page.locator('[data-qna-view]').click();
   expect(await page.evaluate(() => window.__calls)).toEqual([
     [status === 'waiting' ? 'read' : 'reply', payload, payload], ['detail', payload], ['reply', payload, payload, true]
   ]);
   expect(await page.locator('#qnaListBody [onclick]').count()).toBe(0);
+  await safe(page);
+});
+
+test('문의 상세는 학생과 문의 ID를 함께 확인하고 새 창 보안 옵션을 유지한다', async ({ page }) => {
+  await prepare(page, '<div id="reply-modal" class="hidden"><h2 id="replyModalTitle"></h2><p id="replyModalContent"></p><button id="replyModalStudentLink">학생 상세</button><textarea id="replyInput"></textarea><button id="replySubmitBtn"></button><div id="macroWrapper"></div></div>');
+  await page.addScriptTag({ content: await source('js/admin/qna.js') });
+  await page.evaluate(() => {
+    allQnaData = [
+      { userid: 'other-student', qnaId: 'same-id', title: '다른 학생', content: '다른 문의', status: 'read' },
+      { userid: 'student&other=1', qnaId: 'same-id', title: '선택한 학생', content: '선택한 문의', status: 'read' }
+    ];
+    window.open = (...args) => window.__calls.push(args);
+    openReplyModal('student&other=1', 'same-id');
+  });
+  await expect(page.locator('#replyModalTitle')).toHaveText('선택한 학생');
+  await expect(page.locator('#replyModalContent')).toHaveText('선택한 문의');
+  await page.locator('#replyModalStudentLink').click();
+  expect(await page.evaluate(() => window.__calls)).toEqual([
+    ['/admin/detail?uid=student%26other%3D1', '_blank', 'noopener,noreferrer']
+  ]);
+  await page.evaluate(() => {
+    allQnaData = [{ userid: '', qnaId: 'invalid-id', title: '잘못된 ID', status: 'read' }];
+    openReplyModal('', 'invalid-id');
+    document.getElementById('replyModalStudentLink').click();
+  });
+  expect(await page.evaluate(() => window.__calls.length)).toBe(1);
+  await safe(page);
+});
+
+test('튜터 배정 인원은 숫자로 표시하면서 기존 이름 배정 안내를 유지한다', async ({ page }) => {
+  await prepare(page, '<div id="tutorListBody"></div>');
+  await page.addScriptTag({ content: await source('js/admin/tutors.js') });
+  await page.evaluate(value => {
+    window.apiFetch = async () => ({ json: async () => ({ tutors: [
+      { tutorId: 'tutor-a', nickname: '정상 튜터', totalStudents: '3' },
+      { tutorId: 'tutor-b', nickname: value, totalStudents: value }
+    ] }) });
+    return loadTutorStats();
+  }, payload);
+  await expect(page.locator('.tutor-info-main').nth(0)).toContainText('ID 확인 배정 3명 · 기존 이름 배정은 매칭 관리에서 확인');
+  await expect(page.locator('.tutor-info-main').nth(1)).toContainText('ID 확인 배정 0명 · 기존 이름 배정은 매칭 관리에서 확인');
+  await expect(page.locator('.tutor-name').nth(1)).toHaveText(payload);
+  expect(await page.locator('#tutorListBody img, #tutorListBody [onerror]').count()).toBe(0);
+  await safe(page);
+});
+
+test('기존 이름 배정은 별도 안내와 확인 버튼을 표시하고 안전하게 ID를 전달한다', async ({ page }) => {
+  await prepare(page, '<div id="newMatchList"></div>');
+  await page.addScriptTag({ content: await source('js/admin/matching.js') });
+  await page.evaluate(value => {
+    window.getTierBadgeHTML = () => '';
+    globalUnmatchedStudents = [];
+    globalLegacyAssignments = [{ userid: value, name: value, tutorName: value, createdAt: '2026-10-03' }];
+    globalTutorsForMatch = [{ tutorId: 'tutor-a', nickname: value, name: value }];
+    window.executeMatching = (...args) => window.__calls.push(args);
+    renderNewMatchingList();
+  }, payload);
+  await expect(page.locator('#newMatchList > p')).toContainText('미배정이 아닙니다');
+  await expect(page.locator('[data-confirm-assignment]')).toHaveText('기존 배정 확인 후 연결');
+  await page.locator('[data-confirm-assignment]').click();
+  expect(await page.evaluate(() => window.__calls)).toEqual([[payload, false]]);
+  expect(await page.locator('#newMatchList [onclick], #newMatchList img, #newMatchList [onerror]').count()).toBe(0);
   await safe(page);
 });
 

@@ -46,7 +46,7 @@ async function loadTutorStats() {
                     <div class="tutor-info-main">
                         <span class="tutor-badge">Tutor</span>
                         <span class="tutor-name">${escapeHtml(t.nickname)}</span>
-                        <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(총 ${Number(t.totalStudents) || 0}명)</span>
+                        <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(ID 확인 배정 ${Number(t.totalStudents) || 0}명 · 기존 이름 배정은 매칭 관리에서 확인)</span>
                         ${t.withdrawalStatus === 'pending' ? '<span style="color:#ef4444; font-size:0.8rem; font-weight:bold; margin-left:5px;">[탈퇴요청]</span>' : ''}
                         ${urgentBadge}
                         ${settlementHint}
