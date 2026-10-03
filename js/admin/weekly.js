@@ -51,9 +51,9 @@ function renderWeeklyTab() {
             d.studyTime.details.forEach(sub => {
                 const rate = sub.plan > 0 ? Math.min((sub.act / sub.plan) * 100, 100).toFixed(0) : 0;
                 const rateClass = rate >= 100 ? 'text-green' : (rate >= 80 ? 'text-blue' : 'text-gray');
-                rows += `<tr><td style="text-align:left;">${escapeHtml(sub.subject)}</td><td class="text-center">${sub.plan}h</td><td class="text-center">${sub.act}h</td><td class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
+                rows += `<tr><td style="text-align:left;">${escapeHtml(sub.subject)}</td><td class="text-center">${escapeHtml(sub.plan)}h</td><td class="text-center">${escapeHtml(sub.act)}h</td><td class="text-center font-bold ${rateClass}">${rate}%</td></tr>`;
             });
-            studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${d.studyTime.totalRate || '0%'}</span>)</div><div class="table-responsive" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="compact-table" style="min-width:300px; width:100%;"><thead><tr><th style="text-align:left;">과목</th><th class="text-center">계획</th><th class="text-center">실행</th><th class="text-center">달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+            studyHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clock"></i> 과목별 학습 달성도 (총 달성률: <span style="color:#2563eb;">${escapeHtml(d.studyTime.totalRate || '0%')}</span>)</div><div class="table-responsive" style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table class="compact-table" style="min-width:300px; width:100%;"><thead><tr><th style="text-align:left;">과목</th><th class="text-center">계획</th><th class="text-center">실행</th><th class="text-center">달성</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
         }
 
         const reportFormVer = Number(d.formVersion) || 1;
@@ -72,7 +72,7 @@ function renderWeeklyTab() {
                 const wt = d.weeklyAvailableTime;
                 const days = [['월',wt.mon],['화',wt.tue],['수',wt.wed],['목',wt.thu],['금',wt.fri],['토',wt.sat],['일',wt.sun]];
                 const total = days.reduce((s, x) => s + (parseFloat(x[1]) || 0), 0);
-                v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#1e293b;">공부 가능 시간</strong><div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${days.map(x => `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:0.8rem;"><strong>${x[0]}</strong> ${x[1]||0}h</span>`).join('')}</div><div style="text-align:right; font-size:0.85rem; color:#475569; margin-top:4px;">합계: <strong style="color:#2563eb;">${total}시간</strong></div></div>`;
+                v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#1e293b;">공부 가능 시간</strong><div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px;">${days.map(x => `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-size:0.8rem;"><strong>${x[0]}</strong> ${escapeHtml(x[1]||0)}h</span>`).join('')}</div><div style="text-align:right; font-size:0.85rem; color:#475569; margin-top:4px;">합계: <strong style="color:#2563eb;">${total}시간</strong></div></div>`;
             }
             if (d.currentMaterials) v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#64748b;">진행 중 교재/강의</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px; white-space:pre-wrap;">${nl2br(d.currentMaterials)}</div></div>`;
             if (d.weeklyGoal) v2Items += `<div style="margin-bottom:8px;"><strong style="font-size:0.85rem; color:#64748b;">이번 주 목표</strong><div style="color:#334155; font-size:0.9rem; margin-top:4px; white-space:pre-wrap;">${nl2br(d.weeklyGoal)}</div></div>`;
@@ -101,7 +101,8 @@ function renderWeeklyTab() {
                         const translatedReasons = d.trend.reasons.map(r => reasonMap[r] || r).join(', ');
                         reasonHtml = `<div style="font-size: 0.85rem; color: #dc2626; margin-top: 8px; padding: 8px 12px; background: #fef2f2; border-radius: 6px; display: inline-block; font-weight: normal; border: 1px solid #fecaca;">⚠️ <strong>원인:</strong> ${escapeHtml(translatedReasons)}</div>`;
                     }
-                    trendHtml = `<div class="trend-badge ${d.trend.status || 'keep'}" style="display: flex; flex-direction: column; align-items: flex-start;"><div style="font-weight: bold;">학습 흐름: ${statusText}</div>${reasonHtml}</div>`;
+                    const trendClass = ['up', 'down', 'keep'].includes(d.trend.status) ? d.trend.status : 'keep';
+                    trendHtml = `<div class="trend-badge ${trendClass}" style="display: flex; flex-direction: column; align-items: flex-start;"><div style="font-weight: bold;">학습 흐름: ${statusText}</div>${reasonHtml}</div>`;
                 }
                 checkHtml = `<div class="weekly-section"><div class="section-title"><i class="fas fa-clipboard-check"></i> 이번주 심층 질문</div><ul class="check-list">${listItems}</ul>${trendHtml}</div>`;
             }
@@ -111,14 +112,16 @@ function renderWeeklyTab() {
                 const s = d.mockExam.scores;
                 const typeMap = { 'school': '교내', 'edu': '평가원/교육청', 'private': '사설' };
                 const typeLabel = typeMap[d.mockExam.type] || '기타';
-                const typeBadge = `<span class="mock-type-badge ${d.mockExam.type || ''}">${typeLabel}</span>`;
+                const typeClass = ['school', 'edu', 'private'].includes(d.mockExam.type) ? d.mockExam.type : '';
+                const typeBadge = `<span class="mock-type-badge ${typeClass}">${typeLabel}</span>`;
                 const scoreItems = [
                     { l: '국어', v: s.kor }, { l: '수학', v: s.math }, { l: '영어', v: s.eng },
                     { l: s.inq1Name || '탐1', v: s.inq1 }, { l: s.inq2Name || '탐2', v: s.inq2 }
-                ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${item.l}</span><span class="val">${item.v}</span></div>` : '').join('');
+                ].map(item => item.v ? `<div class="score-pill"><span class="lbl">${escapeHtml(item.l)}</span><span class="val">${escapeHtml(item.v)}</span></div>` : '').join('');
                 let proofHtml = '';
-                if (d.mockExam.proofFile && d.mockExam.proofFile.startsWith('http')) {
-                    proofHtml = `<div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;"><a href="${d.mockExam.proofFile}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s; white-space:nowrap;"><i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기</a></div>`;
+                const proofUrl = safeAttachmentUrl(d.mockExam.proofFile);
+                if (proofUrl) {
+                    proofHtml = `<div style="margin-top:15px; padding-top:15px; border-top:1px dashed #e2e8f0; text-align:right;"><a href="${escapeHtml(proofUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:0.85rem; font-weight:bold; transition:all 0.2s; white-space:nowrap;"><i class="fas fa-file-invoice"></i> 📝 모의고사 성적표 원본 보기</a></div>`;
                 }
                 mockHtml = `<div class="weekly-mock-box"><div class="mock-header"><i class="fas fa-edit"></i> 주간 모의고사 결과 ${typeBadge}</div><div class="score-pills-container">${scoreItems}</div>${proofHtml}</div>`;
             }
@@ -129,9 +132,12 @@ function renderWeeklyTab() {
                 let fileLinks = '';
                 if (hasFiles) {
                     fileLinks = d.plannerFiles.map((f, i) => {
-                        let rawName = typeof f === 'string' ? decodeURIComponent(f.split('/').pop()) : `파일 ${i+1}`;
+                        const fileUrl = safeAttachmentUrl(f);
+                        if (!fileUrl) return '';
+                        let rawName = `파일 ${i+1}`;
+                        try { rawName = decodeURIComponent(new URL(fileUrl).pathname.split('/').pop()); } catch (_) {}
                         let cleanName = rawName.includes('_') ? rawName.split('_').slice(1).join('_') : rawName;
-                        return `<a href="${f}" target="_blank" class="file-chip" style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; padding:8px 14px; border-radius:20px; text-decoration:none; font-size:0.85rem; margin:0 8px 8px 0; transition:all 0.2s;"><i class="fas fa-paperclip" style="color:#64748b;"></i> ${cleanName}</a>`;
+                        return `<a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" class="file-chip" style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; padding:8px 14px; border-radius:20px; text-decoration:none; font-size:0.85rem; margin:0 8px 8px 0; transition:all 0.2s;"><i class="fas fa-paperclip" style="color:#64748b;"></i> ${escapeHtml(cleanName)}</a>`;
                     }).join('');
                 }
                 footerHtml = `<div class="weekly-section planner-auth-section" style="margin-top:20px; padding-top:20px; border-top:1px solid #e2e8f0; background:#ffffff;">${hasFiles ? `<div class="section-title" style="margin-bottom:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-camera-retro" style="color:#10b981;"></i> 주간 플래너 인증 사진</div><div class="file-area" style="display:flex; flex-wrap:wrap;">${fileLinks}</div>` : ''}${hasComment ? `<div class="comment-box" style="margin-top:${hasFiles ? '15px' : '0'}; background:#f1f5f9; padding:15px; border-radius:8px; color:#334155; font-size:0.95rem;"><strong style="color:#2563eb;"><i class="fas fa-comment-dots"></i> 학생 전달사항:</strong><div style="margin-top:8px; line-height:1.6;">${safeComment}</div></div>` : ''}</div>`;
@@ -160,7 +166,7 @@ function renderWeeklyTab() {
         card.innerHTML = `
             <div class="card-header-row">
                 <div class="left">
-                    <span class="week-title">${displayTitle}</span> <span class="week-date">${dateStr}</span>
+                    <span class="week-title">${escapeHtml(displayTitle)}</span> <span class="week-date">${dateStr}</span>
                 </div>
             </div>
             <div class="card-grid-body">${studyHtml}${checkHtml}</div>
@@ -213,7 +219,7 @@ function resolveWeeklyFeedbackFields(formVersion, feedback = {}) {
     const baseKeys = new Set(baseFields.map(f => f.key));
     const dynamicFields = Object.keys(feedback || {})
         .filter((k) => {
-            if (WEEKLY_FB_META_KEYS.has(k) || baseKeys.has(k)) return false;
+            if (WEEKLY_FB_META_KEYS.has(k) || baseKeys.has(k) || !/^[A-Za-z0-9_-]{1,100}$/.test(k)) return false;
             const val = feedback[k];
             return typeof val === 'string' && val.trim() !== '';
         })
@@ -303,12 +309,13 @@ function createWeeklyFbReadOnly(fb, isLockedTutor, formVersion) {
 
     const content = hasAny
         ? fields.map(f => fb[f.key] && String(fb[f.key]).trim() !== ''
-            ? `<div style="margin-bottom:14px;"><strong>${f.label}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
+            ? `<div style="margin-bottom:14px;"><strong>${escapeHtml(f.label)}:</strong><div style="margin-top:4px; line-height:1.6; white-space:pre-wrap;">${escapeHtml(fb[f.key])}</div></div>`
             : '').join('')
         : '<span style="color:#94a3b8">튜터가 코멘트를 작성하지 않았습니다.</span>';
 
-    const fileHtml = fb.tutorImage
-        ? `<div style="margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;"><strong>📎 첨삭 플래너 / 추가 자료:</strong><br><a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="display:inline-block; margin-top:8px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:bold;"><i class="fas fa-file-download"></i> 첨부 파일 확인하기</a></div>`
+    const fileUrl = safeAttachmentUrl(fb.tutorImage);
+    const fileHtml = fileUrl
+        ? `<div style="margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:15px;"><strong>📎 첨삭 플래너 / 추가 자료:</strong><br><a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin-top:8px; background:#eff6ff; color:#2563eb; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:bold;"><i class="fas fa-file-download"></i> 첨부 파일 확인하기</a></div>`
         : '';
 
     return `
@@ -324,10 +331,11 @@ function createWeeklyFbReadOnly(fb, isLockedTutor, formVersion) {
 }
 
 function createWeeklyFbInput(weeklyKey, fb, formVersion, reportMeta = {}) {
+    if (!isSafeReportDomKey(weeklyKey)) return createWeeklyFbReadOnly(fb, false, formVersion);
     const idk = weeklyIdKey(weeklyKey);
     const resolvedFormVersion = Number(reportMeta.formVersion || formVersion || fb.feedbackVersion) || 1;
     const fields = resolveWeeklyFeedbackFields(resolvedFormVersion, fb);
-    const attr = (v) => String(v || '').replace(/"/g, '&quot;');
+    const attr = escapeHtml;
     const fieldsHtml = fields.map(f => {
         const val = fb[f.key] || '';
         const len = val.replace(/\s/g, '').length;
@@ -339,9 +347,9 @@ function createWeeklyFbInput(weeklyKey, fb, formVersion, reportMeta = {}) {
 
         return `
         <div class="write-item" style="margin-bottom:15px;">
-            <label class="write-label">${f.label}</label>
+            <label class="write-label">${escapeHtml(f.label)}</label>
             <textarea id="wfb_${idk}_${f.key}" class="write-textarea"
-                placeholder="${f.placeholder} (최소 ${WEEKLY_FB_MIN}자)"
+                placeholder="${escapeHtml(f.placeholder)} (최소 ${WEEKLY_FB_MIN}자)"
                 oninput="updateCharCount(this,'wfb_cnt_${idk}_${f.key}',${WEEKLY_FB_MIN}); handleWeeklyInput('${idk}', '${f.key}');"
             >${escapeHtml(val)}</textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
@@ -355,8 +363,9 @@ function createWeeklyFbInput(weeklyKey, fb, formVersion, reportMeta = {}) {
     const allPreSaved = fields.every(f => (fb[f.key] || '').replace(/\s/g, '').length >= WEEKLY_FB_MIN);
     const submitBtnClass = allPreSaved ? 'complete-write-btn active' : 'complete-write-btn';
 
-    const existingFileHtml = fb.tutorImage
-        ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fb.tutorImage)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>`
+    const fileUrl = safeAttachmentUrl(fb.tutorImage);
+    const existingFileHtml = fileUrl
+        ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline; font-weight:bold;">보기</a></div>`
         : '';
 
     return `
@@ -481,7 +490,8 @@ window.uploadWeeklyTutorFile = async function(weeklyKey) {
         // 탭 전체 새로고침 없이 해당 UI 부분만 즉시 업데이트
         const existingContainer = document.getElementById(`wfb_existing_file_${idk}`);
         if (existingContainer) {
-            existingContainer.innerHTML = `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(fileUrl)}" target="_blank" style="text-decoration:underline; font-weight:bold;">보기</a></div>`;
+            const safeFileUrl = safeAttachmentUrl(fileUrl);
+            existingContainer.innerHTML = safeFileUrl ? `<div style="margin-bottom:10px; font-size:0.85rem; color:#2563eb; background:#eff6ff; padding:8px 12px; border-radius:6px; border:1px solid #bfdbfe;"><i class="fas fa-file-check"></i> 현재 첨부된 파일: <a href="${escapeHtml(safeFileUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:underline; font-weight:bold;">보기</a></div>` : '';
         }
 
         fileInput.value = '';

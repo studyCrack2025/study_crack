@@ -295,6 +295,11 @@
         showError('지원하지 않는 로그인 방식입니다.');
         return;
     }
+    if (isLinkMode || statePurpose === 'link_account') {
+        showError('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요. 현재 계정은 유지됩니다.');
+        clearSocialReturnState();
+        return;
+    }
     const callbackUrl = CONFIG.social.callbackUrl;
 
     // 3. 서버에 인증 code 전달.
@@ -344,30 +349,6 @@
         if (result.deleteReauthVerified && result.deleteConfirmToken) {
             sessionStorage.setItem('deleteConfirmToken', result.deleteConfirmToken);
             window.location.href = getSafeSocialReturnUrl() || '/mypage?reauth=success&purpose=delete_account';
-            return;
-        }
-
-        // 4. 연동 모드 + 새 계정 생성된 경우: 기존 세션 보관 후 확인
-        if (isLinkMode && result.isNewUser) {
-            const prevUserId = localStorage.getItem('userId');
-            const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
-
-            const confirmed = confirm(
-                '연동하려는 소셜 계정의 이메일이 현재 계정과 달라\n새로운 별도 계정이 생성되었습니다.\n\n' +
-                '새 계정으로 계속 진행하시겠습니까?\n(취소 시 기존 계정을 유지합니다)'
-            );
-
-            if (!confirmed) {
-                if (prevUserId) localStorage.setItem('userId', prevUserId);
-                clearSocialReturnState();
-                window.location.href = socialReturnUrl || '/mypage';
-                return;
-            }
-
-            localStorage.setItem('userId', result.userId);
-            localStorage.setItem('userRole', 'student');
-            clearSocialReturnState();
-            window.location.href = socialReturnUrl || '/welcome';
             return;
         }
 

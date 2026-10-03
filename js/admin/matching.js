@@ -76,13 +76,14 @@ function renderNewMatchingList() {
                 <div>${tierBadge}</div>
             </div>
             <div class="match-select-box" style="display:flex; gap:10px;">
-                <select id="select_tutor_${s.userid}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
+                <select id="select_tutor_${escapeHtml(s.userid)}" style="flex:1; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.9rem;">
                     <option value="">튜터 선택...</option>
                     ${tutorOptions}
                 </select>
-                <button class="match-btn" onclick="executeMatching('${s.userid}', false)" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
+                <button class="match-btn" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer;">배정하기</button>
             </div>
         `;
+        card.querySelector('.match-btn').addEventListener('click', () => executeMatching(s.userid, false));
         container.appendChild(card);
     });
 }

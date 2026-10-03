@@ -158,7 +158,7 @@ async function searchStudents() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="selection-col" data-label="선택">
-                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck(this)" ${isChecked}>
+                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" ${isChecked}>
                 </td>
                 <td data-label="학생 정보">
                     <div class="student-info-cell">
@@ -172,12 +172,17 @@ async function searchStudents() {
                 <td data-label="최근 활동"><span class="student-meta-text">결제: ${lastActive}</span></td>
                 <td data-label="관리 액션">
                     <div class="action-buttons">
-                        <button class="btn-detail" onclick="goToStudentDetail('${escapeHtml(s.userid)}')"><i class="fas fa-user-cog"></i> 상세관리</button>
-                        <button class="btn-up" onclick="openGrantTierModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">등급UP</button>
-                        <button class="btn-del" onclick="openForceDeleteModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">탈퇴</button>
+                        <button class="btn-detail"><i class="fas fa-user-cog"></i> 상세관리</button>
+                        <button class="btn-up">등급UP</button>
+                        <button class="btn-del">탈퇴</button>
                     </div>
                 </td>
             `;
+            // 사용자 문자열은 실행 코드가 아니라 이벤트의 데이터로만 전달한다.
+            tr.querySelector('.student-checkbox').addEventListener('change', event => handleStudentCheck(event.currentTarget));
+            tr.querySelector('.btn-detail').addEventListener('click', () => goToStudentDetail(s.userid));
+            tr.querySelector('.btn-up').addEventListener('click', () => openGrantTierModal(s.userid, s.name));
+            tr.querySelector('.btn-del').addEventListener('click', () => openForceDeleteModal(s.userid, s.name));
             tbody.appendChild(tr);
         });
 
@@ -189,7 +194,7 @@ async function searchStudents() {
 }
 
 function goToStudentDetail(targetUserId) {
-    window.location.href = `/admin/detail?uid=${targetUserId}`;
+    window.location.href = `/admin/detail?uid=${encodeURIComponent(targetUserId)}`;
 }
 
 // 학생 등급을 텍스트로 반환 (CSV용)

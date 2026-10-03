@@ -560,6 +560,7 @@ window.loadMyStudents = async function() {
         students.forEach(s => {
             // 💡 [수정] 백엔드에서 주는 최신 계산식 티어를 받아서 렌더링
             let tier = (s.tier || 'FREE').toUpperCase();
+            if (!['FREE', 'BASIC', 'STARTER', 'STANDARD', 'PRO', 'TRIAL'].includes(tier)) tier = 'FREE';
             let tierClass = 'tier-free';
              
             if (tier === 'PRO') tierClass = 'tier-pro';
@@ -571,7 +572,7 @@ window.loadMyStudents = async function() {
             const needsAliasSync = (!canonicalNickname && !!matchedAlias) || (!!canonicalNickname && !!matchedAlias && canonicalNickname !== matchedAlias);
             const manageButtons = needsAliasSync
                 ? `<span style="font-size:0.78rem; color:#b45309; font-weight:700;">튜터명 동기화 필요</span>`
-                : `<button class="manage-btn" onclick="goToStudentDetail('${studentId}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${studentId}', '${escapeHtml(s.name)}')">긴급</button>`;
+                : `<button class="manage-btn" data-action="detail">상세관리</button><button class="manage-btn" data-action="urgent" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;">긴급</button>`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -581,6 +582,8 @@ window.loadMyStudents = async function() {
                 <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
                 <td data-label="관리">${manageButtons}</td>
             `;
+            tr.querySelector('[data-action="detail"]')?.addEventListener('click', () => goToStudentDetail(studentId));
+            tr.querySelector('[data-action="urgent"]')?.addEventListener('click', () => openUrgentModal(studentId, s.name));
             tbody.appendChild(tr);
         });
 
@@ -598,7 +601,7 @@ window.loadMyStudents = async function() {
 
 window.goToStudentDetail = function(studentId) { 
     if (!studentId) return alert("학생 식별자 정보가 없습니다.");
-    window.location.href = `/admin/detail?uid=${studentId}`; 
+    window.location.href = `/admin/detail?uid=${encodeURIComponent(studentId)}`;
 }
 
 // ==========================================
