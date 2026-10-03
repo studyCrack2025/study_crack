@@ -31,7 +31,13 @@ for (const origins of [['https:'], ['https://*.example.test'], ['http://api.exam
     for (const purpose of ['connectOrigins', 'imageOrigins', 'formOrigins']) assert.throws(() => prepareMobileResponsePolicy({ html, [purpose]: origins }));
   });
 }
-for (const shell of ['<script nonce="static">boot()</script>', '<script src="https://cdn.example.test/app.js"></script><script>boot()</script>', '<button onclick="boot()">Start</button><script>boot()</script>', '<button onclick=boot()>Start</button><script>boot()</script>', '<script src=https://cdn.example.test/app.js></script><script>boot()</script>', '<script src="./app.js"></script>']) {
+test('an externalized shell needs neither an inline hash nor a nonce', () => {
+  const candidate = prepareMobileResponsePolicy({ html: '<script src="./app.js"></script>' });
+  const policy = candidate.responseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy.ContentSecurityPolicy;
+  assert.match(policy, /script-src 'self';/);
+  assert.doesNotMatch(policy, /sha256-|nonce-|unsafe-eval/);
+});
+for (const shell of ['<script nonce="static">boot()</script>', '<script src="https://cdn.example.test/app.js"></script><script>boot()</script>', '<button onclick="boot()">Start</button><script>boot()</script>', '<button onclick=boot()>Start</button><script>boot()</script>', '<script src=https://cdn.example.test/app.js></script><script>boot()</script>', '<html></html>']) {
   test('unsupported shell requires explicit review instead of a permissive fallback', () => {
     assert.throws(() => prepareMobileResponsePolicy({ html: shell }));
   });

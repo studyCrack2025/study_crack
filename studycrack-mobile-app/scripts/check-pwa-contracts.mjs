@@ -12,6 +12,7 @@ const fallbackCssPath = path.join(repositoryRoot, 'css', 'studycrack-mobile.css'
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 const html = fs.readFileSync(htmlPath, 'utf8');
+const boot = fs.readFileSync(path.join(repositoryRoot, 'js/mobile-boot.js'), 'utf8');
 const fallbackCss = fs.readFileSync(fallbackCssPath, 'utf8');
 
 assert.equal(manifest.id, '/studycrack-mobile');
@@ -29,8 +30,10 @@ assert.match(html, /<meta name="mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-title" content="StudyCrack" \/>/);
 assert.match(html, /<div id="root"><div class="mobile-boot-shell"><div class="init-loading" role="status"><h3>앱 화면을 준비하고 있어요<\/h3><p>잠시만 기다려 주세요\.<\/p>/);
-assert.match(html, /shell\.className = 'mobile-boot-shell'/);
-assert.match(html, /root\.replaceChildren\(shell\)/);
+assert.match(html, /<script src="\.\/js\/mobile-boot\.js"><\/script>/);
+assert.doesNotMatch(html, /<script\b[^>]*>\s*[^<\s]/i, 'Mobile shell must not require inline execution');
+assert.match(boot, /shell\.className = 'mobile-boot-shell'/);
+assert.match(boot, /root\.replaceChildren\(shell\)/);
 assert.match(fallbackCss, /\.mobile-boot-shell \{[^}]*min-height:100dvh;[^}]*place-items:center;[^}]*safe-area-inset-top/);
 assert.doesNotMatch(fallbackCss, /\.(?:app-shell|app-frame|app-screen|tabbar|screen)\b/, 'Fallback must not own runtime screen selectors');
 const tokens = fs.readFileSync(path.join(appRoot, 'src/styles/foundation/tokens.css'), 'utf8');

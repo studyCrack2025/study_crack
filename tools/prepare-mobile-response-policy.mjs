@@ -16,7 +16,9 @@ export function prepareMobileResponsePolicy({ html, connectOrigins = [], imageOr
   assert.ok(typeof html === 'string' && html.length < 256_000, 'Use a bounded verified mobile shell');
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i, 'Move HTML event handlers out of the shell');
   const hashes = [];
+  let scriptCount = 0;
   for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    scriptCount += 1;
     const attributes = match[1];
     assert.doesNotMatch(attributes, /\bnonce\s*=/i, 'Do not reuse a static nonce');
     const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(attributes);
@@ -26,9 +28,9 @@ export function prepareMobileResponsePolicy({ html, connectOrigins = [], imageOr
     }
     else hashes.push(`'sha256-${createHash('sha256').update(match[2], 'utf8').digest('base64')}'`);
   }
-  assert.ok(hashes.length > 0 && hashes.length <= 6, 'Expected a small mobile boot-script inventory');
+  assert.ok(scriptCount > 0 && hashes.length <= 6, 'Expected a small mobile script inventory');
   const policy = [
-    "default-src 'self'", `script-src 'self' ${[...new Set(hashes)].join(' ')}`, "script-src-attr 'none'",
+    "default-src 'self'", `script-src 'self' ${[...new Set(hashes)].join(' ')}`.trim(), "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'", `img-src 'self' data: blob: ${sources(imageOrigins)}`.trim(),
     "font-src 'self' data:", `connect-src 'self' ${sources(connectOrigins)}`.trim(),
     "frame-src 'none'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'self'",
