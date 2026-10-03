@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { CognitoAccessToken, CognitoIdToken, CognitoRefreshToken, CognitoUser, CognitoUserPool, CognitoUserSession } from 'amazon-cognito-identity-js';
 
 const sharedApiSource = fs.readFileSync(new URL('../../js/shared/api.js', import.meta.url), 'utf8');
 
@@ -47,7 +48,7 @@ function createRuntime({ localValues, sessionValues, fetch, isLocal = true, diag
     sessionStorage,
     window
   });
-  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession, tryRefreshToken };`, context);
+  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession, tryRefreshToken, createCognitoMemoryStorage };`, context);
   return { api: context.__sharedApi, localStorage, sessionStorage };
 }
 
@@ -55,6 +56,16 @@ const now = Math.floor(Date.now() / 1000);
 const expiredAccessToken = token({ exp: now - 60, sub: 'student-1' });
 const freshAccessToken = token({ exp: now + 3600, sub: 'student-1' });
 const freshIdToken = token({ exp: now + 3600, sub: 'student-1' });
+// 실제 SDK의 세션 캐시도 메모리에만 저장되는지 확인한다.
+const memoryRuntime = createRuntime({ isLocal: false, localValues: {}, sessionValues: {}, fetch: async () => { throw new Error('No external requests'); } });
+const memoryStorage = memoryRuntime.api.createCognitoMemoryStorage();
+const pool = new CognitoUserPool({ UserPoolId: 'synthetic_pool', ClientId: 'synthetic', Storage: memoryStorage });
+const sdkUser = new CognitoUser({ Username: 'synthetic-user', Pool: pool, Storage: memoryStorage });
+sdkUser.setSignInUserSession(new CognitoUserSession({ AccessToken: new CognitoAccessToken({ AccessToken: freshAccessToken }), IdToken: new CognitoIdToken({ IdToken: freshIdToken }), RefreshToken: new CognitoRefreshToken({ RefreshToken: 'synthetic-refresh' }) }));
+assert.equal(memoryStorage.getItem('CognitoIdentityServiceProvider.synthetic.synthetic-user.refreshToken'), 'synthetic-refresh');
+assert.equal(memoryRuntime.localStorage.length, 0);
+sdkUser.signOut();
+assert.equal(memoryStorage.getItem('CognitoIdentityServiceProvider.synthetic.synthetic-user.refreshToken'), null);
 const diagnosticEvents = [];
 const observed = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: { accessToken: freshAccessToken },
   diagnostics: { record: (...args) => diagnosticEvents.push(args) }, fetch: async () => response({ message: 'private-email@example.com', payload: 'secret' }, 503)

@@ -165,7 +165,11 @@
                     idToken: result.idToken,
                     replaceExisting: true
                 });
-            } catch (_) {}
+            } catch (_) {
+                clearClientSession();
+                showError('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
+                return;
+            }
         }
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');

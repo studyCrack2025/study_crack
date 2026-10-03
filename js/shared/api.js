@@ -1,4 +1,20 @@
 // js/shared/api.js — shared API/session helpers.
+function createCognitoMemoryStorage() {
+    const values = new Map();
+    return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key), clear: () => values.clear() };
+}
+
+// 장기 인증 정보가 브라우저 저장소에 남지 않도록 정리한다.
+if (typeof IS_LOCAL !== 'undefined' && !IS_LOCAL) {
+    try {
+        const stale = ['refreshToken', 'accessToken', 'idToken', 'token'];
+        for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (key?.startsWith('CognitoIdentityServiceProvider.')) stale.push(key);
+        }
+        stale.forEach(key => localStorage.removeItem(key));
+    } catch (_) {}
+}
 // bfcache 복원 시 stale 세션 노출을 막기 위해 페이지 세션을 재검증한다.
 const PAGE_SESSION_USER_ID = typeof window !== 'undefined'
     ? (localStorage.getItem('userId') || '')
@@ -36,7 +52,7 @@ function hasClientSession() {
     if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL) return hasBearerToken || hasRefreshToken;
 
     // dev/prod의 HttpOnly 쿠키 세션은 JS에서 토큰을 직접 확인할 수 없다.
-    return !!(localStorage.getItem('userId') || hasBearerToken || hasRefreshToken);
+    return !!(localStorage.getItem('userId') || hasBearerToken);
 }
 
 function enforceClientSessionOnPageShow(event) {
@@ -233,23 +249,7 @@ function tryRefreshToken({ preserveTransientErrors = false } = {}) {
             return syncTokensFromAuthResponse(data);
         }
 
-        const fallbackRt = localStorage.getItem('refreshToken');
-        if (!fallbackRt) return false;
-
-        const registerRes = await refreshFetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken: fallbackRt })
-        });
-        if (!registerRes.ok) return false;
-
-        localStorage.removeItem('refreshToken');
-        const retryRes = await callSilentRefresh();
-        if (!retryRes.ok) return false;
-
-        const data = await retryRes.json().catch(() => ({}));
-        return syncTokensFromAuthResponse(data);
+        return false;
     })();
 
     _sharedRefreshPromise = p.then((refreshed) => {

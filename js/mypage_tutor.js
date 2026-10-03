@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initTutorCognito() {
     const poolData = { 
         UserPoolId: CONFIG.cognito.userPoolId, 
-        ClientId: CONFIG.cognito.clientId 
+        ClientId: CONFIG.cognito.clientId,
+        Storage: createCognitoMemoryStorage()
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
     
@@ -161,7 +162,8 @@ function initTutorCognito() {
         if (userEmail) {
             tutorCognitoUser = new AmazonCognitoIdentity.CognitoUser({
                 Username: userEmail,
-                Pool: userPool
+                Pool: userPool,
+                Storage: userPool.storage
             });
         }
     }
@@ -1212,7 +1214,30 @@ window.requestEmailChange = function() {
     startTutorTimer(300, 'emailTimer');
 }
 window.verifyEmailChange = function() { alert("이메일이 변경되었습니다."); closeModal('emailModal'); }
-window.changePassword = function() { alert("비밀번호가 변경되었습니다."); closeModal('passwordModal'); }
+window.changePassword = function() {
+    const oldPw = document.getElementById('currentPassword').value;
+    const newPw = document.getElementById('newChangePassword').value;
+    const confirmPw = document.getElementById('newChangePasswordConfirm').value;
+    if (!oldPw || !newPw || newPw !== confirmPw) return alert('비밀번호 입력을 확인해주세요.');
+    if (!tutorCognitoUser) return alert('현재 로그인한 계정을 확인해주세요.');
+    const details = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: oldPw });
+    tutorCognitoUser.authenticateUser(details, {
+        onFailure: () => alert('현재 비밀번호를 확인해주세요.'),
+        newPasswordRequired: () => alert('비밀번호 찾기로 다시 설정해주세요.'),
+        onSuccess: session => {
+            if (session.getIdToken().payload.sub !== localStorage.getItem('userId')) {
+                tutorCognitoUser.signOut();
+                alert('현재 로그인한 계정을 확인해주세요.');
+                return;
+            }
+            tutorCognitoUser.changePassword(oldPw, newPw, error => {
+                if (error) return alert('새 비밀번호 조건을 확인해주세요.');
+                alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+                handleSignOut();
+            });
+        }
+    });
+};
 
 // 알림 타입에 따른 액션 처리 (공지사항 모달 등)
 function handleTutorNotiAction(noti) {
