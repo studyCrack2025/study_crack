@@ -39,6 +39,7 @@ function restoreScroll(ctx, y) {
 }
 
 function clickDownload(ctx, href, fileName) {
+  if (href?.includes('#scFile=')) return getWindow(ctx).openPrivateAttachment?.(href) || false;
   const doc = getDocument(ctx);
   if (!href || !doc?.createElement || !doc?.body) return false;
   const anchor = doc.createElement('a');

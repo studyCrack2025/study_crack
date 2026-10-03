@@ -148,7 +148,9 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     const detailLinkBtn = document.getElementById('replyModalStudentLink');
     if (detailLinkBtn) {
         detailLinkBtn.onclick = function() {
-            if (targetUserId) window.open(`/admin/detail?uid=${encodeURIComponent(targetUserId)}`, '_blank', 'noopener');
+            if (typeof targetUserId === 'string' && targetUserId) {
+                window.open(`/admin/detail?uid=${encodeURIComponent(targetUserId)}`, '_blank', 'noopener,noreferrer');
+            }
         };
     }
 

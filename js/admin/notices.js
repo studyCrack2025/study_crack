@@ -33,12 +33,13 @@ async function loadNotifications() {
     <div style="width: 100%;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
             <div class="noti-time" style="font-size: 0.85rem; color: #94a3b8;">${new Date(n.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</div>
-            ${!n.isRead ? `<button class="noti-btn" onclick="markAsReadNoti('${n.id}')" style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">확인</button>` : '<span style="color:#10b981; font-size:0.8rem; font-weight:bold;">읽음</span>'}
+            ${!n.isRead ? `<button class="noti-btn" style="background:#f59e0b; color:white; border:none; padding:4px 10px; border-radius:4px; font-size:0.8rem; cursor:pointer;">확인</button>` : '<span style="color:#10b981; font-size:0.8rem; font-weight:bold;">읽음</span>'}
         </div>
         <div style="font-weight:bold; color:#1e293b; font-size:1.05rem; margin-bottom:4px;">${escapeHtml(n.title || n.message)}</div>
         ${n.detail ? `<div class="noti-text" style="color:#475569; font-size:0.95rem; line-height:1.4;">${escapeHtml(n.detail)}</div>` : ''}
     </div>
             `;
+            card.querySelector('.noti-btn')?.addEventListener('click', () => markAsReadNoti(n.id));
             container.appendChild(card);
         });
         fetchUnreadNotiCount();
@@ -221,12 +222,16 @@ function renderTargetTags() {
 
     selectedTargetMap.forEach((info, uid) => {
         const safeName = escapeHtml(info.name || '이름없음');
-        container.innerHTML += `
+        const tag = document.createElement('div');
+        tag.innerHTML = `
             <div class="target-tag">
-                <span style="color:#93c5fd; font-size:0.75rem; margin-right:4px;">[${info.tag}]</span> ${safeName}
-                <span class="remove-tag" onclick="removeTarget('${uid}')">&times;</span>
+                <span style="color:#93c5fd; font-size:0.75rem; margin-right:4px;">[${escapeHtml(info.tag)}]</span> ${safeName}
+                <span class="remove-tag">&times;</span>
             </div>
         `;
+        const element = tag.firstElementChild;
+        element.querySelector('.remove-tag').addEventListener('click', () => removeTarget(uid));
+        container.appendChild(element);
     });
 }
 

@@ -157,11 +157,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initCognitoAndFetchData() {
     const poolData = {
         UserPoolId: CONFIG.cognito.userPoolId,
-        ClientId: CONFIG.cognito.clientId
+        ClientId: CONFIG.cognito.clientId,
+        Storage: createCognitoMemoryStorage()
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
-    cognitoUser = userPool.getCurrentUser();
+    const email = localStorage.getItem('userEmail');
+    cognitoUser = email ? new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage }) : null;
 
     // 세션이 유효하면 데이터 조회.
     const userId = localStorage.getItem('userId');
@@ -639,14 +641,27 @@ function changePassword() {
         return;
     }
 
-    cognitoUser.changePassword(oldPw, newPw, function(err, result) {
-        if (err) {
-            if (err.name === 'NotAuthorizedException') alert("현재 비밀번호가 일치하지 않습니다.");
-            else alert("비밀번호 변경 실패: 정책에 맞지 않거나 오류가 발생했습니다.");
-            return;
+    if (!cognitoUser) return alert('현재 로그인한 계정을 확인해주세요.');
+    const details = new AmazonCognitoIdentity.AuthenticationDetails({ Username: cognitoUser.getUsername(), Password: oldPw });
+    cognitoUser.authenticateUser(details, {
+        onFailure: () => alert('현재 비밀번호를 확인해주세요.'),
+        newPasswordRequired: () => alert('비밀번호 찾기로 다시 설정해주세요.'),
+        onSuccess: session => {
+            if (session.getIdToken().payload.sub !== localStorage.getItem('userId')) {
+                cognitoUser.signOut();
+                alert('현재 로그인한 계정을 확인해주세요.');
+                return;
+            }
+            cognitoUser.changePassword(oldPw, newPw, async function(err, result) {
+                if (err) {
+                    if (err.name === 'NotAuthorizedException') alert("현재 비밀번호가 일치하지 않습니다.");
+                    else alert("비밀번호 변경 실패: 정책에 맞지 않거나 오류가 발생했습니다.");
+                    return;
+                }
+                alert("비밀번호가 변경되었습니다. 안전을 위해 다시 로그인해주세요.");
+                handleSignOut();
+            });
         }
-        alert("비밀번호가 변경되었습니다. 안전을 위해 다시 로그인해주세요.");
-        handleSignOut(); 
     });
 }
 

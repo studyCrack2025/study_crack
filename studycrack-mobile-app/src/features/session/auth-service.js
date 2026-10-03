@@ -7,12 +7,16 @@ function getConfig() {
   return getMobileBrowserServices().browser?.CONFIG || {};
 }
 
+function memoryStorage() {
+  const values = new Map();
+  return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key), clear: () => values.clear() };
+}
 let cachedPool = null;
 function getUserPool() {
   if (cachedPool) return cachedPool;
   const { cognito } = getConfig();
   if (!cognito || !cognito.userPoolId || !cognito.clientId) return null;
-  cachedPool = new CognitoUserPool({ UserPoolId: cognito.userPoolId, ClientId: cognito.clientId });
+  cachedPool = new CognitoUserPool({ UserPoolId: cognito.userPoolId, ClientId: cognito.clientId, Storage: memoryStorage() });
   return cachedPool;
 }
 
@@ -29,7 +33,7 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
     return false;
   }
   const authUrl = getConfig().api && getConfig().api.auth;
-  if (!authUrl || !accessToken || !idToken || !refreshToken) return false;
+  if (!authUrl || !accessToken || !idToken || !refreshToken) throw new Error('로그인 세션을 등록하지 못했습니다.');
   try {
     const res = await browser?.fetch?.(authUrl, {
       method: 'POST',
@@ -39,15 +43,15 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
     });
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
-      browser?.syncTokensFromAuthResponse?.(data);
+      if (data.success !== true || data.accessToken !== accessToken || data.idToken !== idToken) throw new Error('INVALID_SESSION_RESPONSE');
+      if (browser?.syncTokensFromAuthResponse && !browser.syncTokensFromAuthResponse(data)) throw new Error('INVALID_SESSION_RESPONSE');
       try { storage?.removeItem?.('refreshToken'); } catch (_) {}
       return true;
     }
   } catch (_) {
-    // 제한 환경에서는 기존 클라이언트 세션 경로로 폴백한다.
+    // 인증 실패는 아래에서 처리한다.
   }
-  try { storage?.setItem?.('refreshToken', refreshToken); } catch (_) {}
-  return false;
+  throw new Error('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
 }
 
 function clearPreviousSession() {
@@ -167,7 +171,7 @@ export function loginWithPassword({ email, password } = {}) {
     }
     clearPreviousSession();
     const authDetails = new AuthenticationDetails({ Username: email, Password: password });
-    const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
+    const cognitoUser = new CognitoUser({ Username: email, Pool: pool, Storage: pool.storage });
     cognitoUser.authenticateUser(authDetails, {
       onSuccess: async (result) => {
         try {
@@ -185,6 +189,7 @@ export function loginWithPassword({ email, password } = {}) {
           await registerLoginCookies({ accessToken, idToken: idTokenJwt, refreshToken });
           resolve({ ok: true });
         } catch (error) {
+          clearMobileAuthArtifacts();
           resolve({ ok: false, error: mapCognitoError(error) });
         }
       },
@@ -202,7 +207,7 @@ export function verifyPassword({ email, password } = {}) {
       return;
     }
     const authDetails = new AuthenticationDetails({ Username: email, Password: password });
-    const cognitoUser = new CognitoUser({ Username: email, Pool: pool });
+    const cognitoUser = new CognitoUser({ Username: email, Pool: pool, Storage: memoryStorage() });
     cognitoUser.authenticateUser(authDetails, {
       onSuccess: session => resolve({ ok: true, reauthAccessToken: session.getAccessToken().getJwtToken() }),
       onFailure: (err) => resolve({ ok: false, error: mapCognitoError(err) }),

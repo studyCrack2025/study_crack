@@ -99,7 +99,7 @@
 
             const authData = { Username: email, Password: password };
             const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-            const userData = { Username: email, Pool: userPool };
+            const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
             globalCognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
             globalCognitoUser.authenticateUser(authDetails, {
@@ -178,39 +178,12 @@
             localStorage.setItem('userId', payload.sub);
 
             try {
-                await fetch(CONFIG.api.auth, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'logout' })
-                });
-            } catch (e) { /* noop */ }
-
-            let cookieRegistered = false;
-            try {
-                const regRes = await fetch(CONFIG.api.auth, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-                });
-                cookieRegistered = regRes.ok;
-            } catch (e) {
-                cookieRegistered = false;
-            }
-
-            if (cookieRegistered) {
-                try {
-                    await fetch(CONFIG.api.auth, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ type: 'silent_refresh' })
-                    });
-                } catch (e) { /* noop */ }
-                localStorage.removeItem('refreshToken');
-            } else {
-                localStorage.setItem('refreshToken', refreshToken);
+                await registerRefreshCookie(refreshToken, { accessToken, idToken, replaceExisting: true });
+            } catch (_) {
+                if (globalCognitoUser) globalCognitoUser.signOut();
+                clearClientSession();
+                alert('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
+                return;
             }
 
             alert("관리자 인증이 완료되었습니다.");

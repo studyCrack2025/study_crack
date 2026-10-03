@@ -23,7 +23,7 @@ function setup() {
         setTimeout() {}, alert() {}, escapeHtml: value => String(value ?? '').replaceAll("'", '&#039;'),
         document: { addEventListener() {}, getElementById: get,
             createElement(tag) { const el = element(); if (tag === 'tr') el.parts = Object.fromEntries(
-                ['[data-student-detail]', '[data-qna-view]', '[data-qna-action]'].map(key => [key, element()])); return el; } },
+                ['[data-student-detail]', '[data-qna-view]', '[data-qna-action]', '.student-checkbox', '.btn-detail', '.btn-up', '.btn-del'].map(key => [key, element()])); return el; } },
         location: { href: '' }, apiFetch: async () => ({ json: async () => [] }) });
     context.window = context;
     for (const file of ['admin_ui.js', 'admin/students.js', 'admin/qna.js']) vm.runInContext(source(file), context);

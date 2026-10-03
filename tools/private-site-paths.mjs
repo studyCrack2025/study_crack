@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 
 export const PRIVATE_SITE_PREFIXES = Object.freeze([
+  '.agents/',
+  '.aws/',
   '.claude/',
+  '.codex/',
+  '.git/',
+  'backend-backup/',
+  'docs/',
   'studycrack-mobile-app/e2e/',
   'studycrack-mobile-app/fixtures/',
   'studycrack-mobile-app/playwright-report/',
@@ -12,6 +18,10 @@ export const PRIVATE_SITE_PREFIXES = Object.freeze([
 ]);
 
 export const PRIVATE_SITE_FILES = Object.freeze([
+  'AGENTS.md',
+  'ARCHITECTURE.md',
+  'CLAUDE.md',
+  '.env',
   '.gitignore',
   'IMG_2648.jpeg',
   'MOBILE_DEVELOPMENT.md',
@@ -34,7 +44,13 @@ export const PRIVATE_SITE_FILES = Object.freeze([
 ]);
 
 const PRIVATE_SITE_PREFIX_SAMPLES = Object.freeze([
+  '.agents/settings.json',
+  '.aws/config',
   '.claude/launch.json',
+  '.codex/config.toml',
+  '.git/config',
+  'backend-backup/StudyCrack_Auth/index.mjs',
+  'docs/exec-plans/current.md',
   'studycrack-mobile-app/e2e/core-flows.spec.mjs',
   'studycrack-mobile-app/fixtures/ui-contract.json',
   'studycrack-mobile-app/playwright-report/index.html',

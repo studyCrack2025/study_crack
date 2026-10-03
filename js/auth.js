@@ -35,7 +35,8 @@ const AUTH_URL = CONFIG.api.auth;
 
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
-    ClientId: CONFIG.cognito.clientId
+    ClientId: CONFIG.cognito.clientId,
+    Storage: createCognitoMemoryStorage()
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
@@ -89,72 +90,29 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken, options = {}) {
-    // 로컬 프리뷰에서는 서버 세션 등록을 생략하고 클라이언트 fallback을 사용한다.
     if (IS_LOCAL) {
         localStorage.setItem('refreshToken', refreshToken);
         return false;
     }
-
     const accessToken = options.accessToken || getAccessToken();
     const idToken = options.idToken || getIdToken();
-    const shouldReplaceExisting = options.replaceExisting !== false;
-
     if (accessToken && idToken && refreshToken) {
         try {
-            const fastCookieRes = await fetch(AUTH_URL, {
+            const response = await fetch(AUTH_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    type: 'register_login_cookies',
-                    accessToken,
-                    idToken,
-                    refreshToken
-                })
+                body: JSON.stringify({ type: 'register_login_cookies', accessToken, idToken, refreshToken })
             });
-            if (fastCookieRes.ok) {
-                const cookieData = await fastCookieRes.json().catch(() => ({}));
-                if (typeof syncTokensFromAuthResponse === 'function') {
-                    const synced = syncTokensFromAuthResponse(cookieData);
-                    if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
-                        return false;
-                    }
-                }
+            const data = await response.json();
+            if (response.ok && data.success === true && data.accessToken === accessToken && data.idToken === idToken && syncTokensFromAuthResponse(data)) {
                 localStorage.removeItem('refreshToken');
                 return true;
             }
-        } catch (e) {
-            // 레거시 경로로 폴백
-        }
+        } catch (_) {}
     }
-
-    if (shouldReplaceExisting && typeof clearServerSessionCookies === 'function') {
-        try { await clearServerSessionCookies(); } catch (_) {}
-    }
-
-    try {
-        const cookieRes = await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-        });
-        if (cookieRes.ok) {
-            const cookieData = await cookieRes.json().catch(() => ({}));
-            if (typeof syncTokensFromAuthResponse === 'function') {
-                const synced = syncTokensFromAuthResponse(cookieData);
-                if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
-                    return false;
-                }
-            }
-            localStorage.removeItem('refreshToken');
-            return true;
-        }
-    } catch (e) {
-        // noop: fallback below
-    }
-    localStorage.setItem('refreshToken', refreshToken);
-    return false;
+    clearClientSession();
+    throw new Error('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
 }
 
 // tryRefreshToken / apiFetch 본문은 js/shared/api.js 로 이관됨.
@@ -178,6 +136,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
     if (!localStorage.getItem('userId')) return;
 
     try {
+        if (options.waitFor && typeof options.waitFor.then === 'function') await options.waitFor;
         const headers = { 'Content-Type': 'application/json' };
         const bearerToken = options.accessToken || getAccessToken();
         if (bearerToken) {
@@ -254,9 +213,6 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 }
             }
 
-            if (options.waitFor && typeof options.waitFor.then === 'function') {
-                try { await options.waitFor; } catch (e) { /* noop */ }
-            }
             handleRoleSuccess(role, eventType, userName, promoCode);
             return true;
         } else {
@@ -725,7 +681,7 @@ function startTimer(duration, displayId, intervalVar) {
 function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-    const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+    const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUserToAuth.authenticateUser(authDetails, {
         onSuccess: async function(authResult) {
@@ -1013,7 +969,7 @@ function handleSignIn() {
 
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-    const userData = { Username: email, Pool: userPool };
+    const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
     cognitoUser.authenticateUser(authDetails, {
@@ -1089,7 +1045,7 @@ function handleTutorSignIn() {
     clearClientSession();
 
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
@@ -1116,6 +1072,13 @@ function handleTutorSignIn() {
                 throw error;
             });
 
+            try { await cookiePromise; } catch (_) {
+                cognitoUser.signOut();
+                clearClientSession();
+                alert('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
+                return;
+            }
+
             // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
@@ -1133,8 +1096,6 @@ function handleTutorSignIn() {
                 }
                 timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
-
-            await cookiePromise.catch(() => {});
 
             if (role !== 'tutor') {
                 const dest = role === 'admin' ? '/admin/login' : '/login';

@@ -32,13 +32,13 @@ async function loadTutorStats() {
             card.dataset.loaded = 'false';
 
             const urgentBadge = t.urgentTotal > 0
-                ? `<span style="color:#f59e0b; font-size:0.78rem; font-weight:bold; margin-left:8px;">🚨 긴급 ${t.urgentTotal}건</span>`
+                ? `<span style="color:#f59e0b; font-size:0.78rem; font-weight:bold; margin-left:8px;">🚨 긴급 ${Number(t.urgentTotal) || 0}건</span>`
                 : '';
 
             // 최근 정산 요약 (카드 헤더에 한 줄)
             const latestSettlement = t.recentSettlements && t.recentSettlements[0];
             const settlementHint = latestSettlement
-                ? `<span style="font-size:0.78rem; color:#475569; margin-left:8px;">최근 ${formatSettlementMonth(latestSettlement.month)} <strong>${(latestSettlement.totalAmount || 0).toLocaleString()}원</strong> · <span style="color:${PAY_STATUS_COLORS[latestSettlement.payStatus] || '#64748b'}; font-weight:bold;">${latestSettlement.payStatus}</span></span>`
+                ? `<span style="font-size:0.78rem; color:#475569; margin-left:8px;">최근 ${escapeHtml(formatSettlementMonth(String(latestSettlement.month || '')))} <strong>${(Number(latestSettlement.totalAmount) || 0).toLocaleString()}원</strong> · <span style="color:${PAY_STATUS_COLORS[latestSettlement.payStatus] || '#64748b'}; font-weight:bold;">${escapeHtml(latestSettlement.payStatus)}</span></span>`
                 : '';
 
             card.innerHTML = `
@@ -46,7 +46,7 @@ async function loadTutorStats() {
                     <div class="tutor-info-main">
                         <span class="tutor-badge">Tutor</span>
                         <span class="tutor-name">${escapeHtml(t.nickname)}</span>
-                        <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(ID 확인 배정 ${t.totalStudents}명 · 기존 이름 배정은 매칭 관리에서 확인)</span>
+                        <span style="font-size:0.85rem; color:#94a3b8; margin-left:8px;">(ID 확인 배정 ${Number(t.totalStudents) || 0}명 · 기존 이름 배정은 매칭 관리에서 확인)</span>
                         ${t.withdrawalStatus === 'pending' ? '<span style="color:#ef4444; font-size:0.8rem; font-weight:bold; margin-left:5px;">[탈퇴요청]</span>' : ''}
                         ${urgentBadge}
                         ${settlementHint}
@@ -93,7 +93,7 @@ async function ensureTutorDetailLoaded(card) {
         // 탈퇴 요청 상태 UI
         let withdrawalUI = '';
         if (t.withdrawalStatus === 'pending') {
-            withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; display:flex; justify-content:space-between; align-items:center;"><span style="color:#991b1b; font-size:0.9rem;"><strong>⚠️ 파트너십 해지(탈퇴) 요청 대기 중</strong></span><button onclick="approveTutorWithdrawal('${escapeHtml(t.tutorId)}')" style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; font-weight:bold;">요청 승인하기</button></div>`;
+            withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; display:flex; justify-content:space-between; align-items:center;"><span style="color:#991b1b; font-size:0.9rem;"><strong>⚠️ 파트너십 해지(탈퇴) 요청 대기 중</strong></span><button data-action="approve-withdrawal" style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; font-weight:bold;">요청 승인하기</button></div>`;
         } else if (t.withdrawalStatus === 'approved') {
             withdrawalUI = `<div style="margin-top:15px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;"><span style="color:#475569; font-size:0.9rem;"><strong>✅ 탈퇴 승인 완료</strong> (튜터의 최종 확인 및 탈퇴 대기 중)</span></div>`;
         }
@@ -113,11 +113,11 @@ async function ensureTutorDetailLoaded(card) {
                 const statusColor = PAY_STATUS_COLORS[payStatus] || '#64748b';
 
                 return `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #e2e8f0; font-size:0.85rem; gap:8px; flex-wrap:wrap;">
-                    <span style="color:#475569; font-weight:bold; min-width:80px;">${formatSettlementMonth(month)}</span>
+                    <span style="color:#475569; font-weight:bold; min-width:80px;">${escapeHtml(formatSettlementMonth(month))}</span>
                     <span style="color:#2563eb;">주간 ${weeklyCount}건(${weeklyAmt}원) + PRO ${proCount}건(${proAmt}원) = <strong>${totalAmt}원</strong></span>
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="color:${statusColor}; font-weight:bold; font-size:0.8rem;">${payStatus}</span>
-                        <select onchange="setTutorPayStatus('${escapeHtml(t.tutorId)}', '${month}', this.value, this)"
+                        <span style="color:${statusColor}; font-weight:bold; font-size:0.8rem;">${escapeHtml(payStatus)}</span>
+                        <select data-settlement-month="${escapeHtml(month)}"
                             style="font-size:0.78rem; padding:3px 6px; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer;">
                             <option value="미지급"  ${payStatus === '미지급'  ? 'selected' : ''}>미지급</option>
                             <option value="지급대기" ${payStatus === '지급대기' ? 'selected' : ''}>지급대기</option>
@@ -144,7 +144,7 @@ async function ensureTutorDetailLoaded(card) {
         detailsEl.innerHTML = `
             <div class="tutor-grid" style="margin-bottom:15px; padding-bottom:15px; border-bottom:1px dashed #e2e8f0;">
                 <div><p><strong>본명:</strong> ${escapeHtml(t.name) || '-'}</p><p><strong>학교:</strong> ${escapeHtml(t.school) || '-'}</p><p><strong>계약시작일:</strong> ${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '-'}</p></div>
-                <div><p><strong>최대 학생 수:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxStudents ? t.maxStudents + '명' : '미설정'}</span></p><p><strong>주 최대 시간:</strong> <span style="color:#2563eb; font-weight:bold;">${t.maxHours ? t.maxHours + '시간' : '미설정'}</span></p><p><strong>입금 계좌:</strong> ${escapeHtml(t.accountNumber) || '<span style="color:#94a3b8">미등록</span>'}</p></div>
+                <div><p><strong>최대 학생 수:</strong> <span style="color:#2563eb; font-weight:bold;">${Number(t.maxStudents) ? Number(t.maxStudents) + '명' : '미설정'}</span></p><p><strong>주 최대 시간:</strong> <span style="color:#2563eb; font-weight:bold;">${Number(t.maxHours) ? Number(t.maxHours) + '시간' : '미설정'}</span></p><p><strong>입금 계좌:</strong> ${escapeHtml(t.accountNumber) || '<span style="color:#94a3b8">미등록</span>'}</p></div>
             </div>
 
             ${settlementUI}
@@ -157,6 +157,15 @@ async function ensureTutorDetailLoaded(card) {
                 <div class="tier-acc-group"><div class="tier-acc-header exp" onclick="toggleTierList(this)"><span>⏳ 구독 만료 / 대기 학생</span><strong>${t.freeStudents.length}명 <i class="fas fa-chevron-down"></i></strong></div><div class="tier-acc-content">${generateStudentListHtml(t.freeStudents, '만료되거나 대기 중인 학생이 없습니다.', 'free')}</div></div>
             </div>
         `;
+        detailsEl.querySelector('[data-action="approve-withdrawal"]')?.addEventListener('click', event => {
+            event.stopPropagation();
+            approveTutorWithdrawal(t.tutorId);
+        });
+        detailsEl.querySelectorAll('[data-settlement-month]').forEach(select => select.addEventListener('change', event => {
+            event.stopPropagation();
+            setTutorPayStatus(t.tutorId, select.dataset.settlementMonth, select.value, select);
+        }));
+        detailsEl.querySelectorAll('.urgent-etc-text').forEach(el => el.addEventListener('click', () => toggleUrgentText(el, el.dataset.urgentText)));
         card.dataset.loaded = 'true';
     } catch (e) {
         if (e.message !== 'Auth expired') {
@@ -167,7 +176,6 @@ async function ensureTutorDetailLoaded(card) {
 }
 
 window.approveTutorWithdrawal = async function(tutorId) {
-    if (event) event.stopPropagation();
     if (!confirm("이 튜터의 파트너십 해지(탈퇴)를 승인하시겠습니까?\n승인 시 튜터에게 알림이 전송되며, 튜터가 직접 최종 탈퇴 처리를 진행하게 됩니다.")) return;
 
     try {
@@ -199,7 +207,7 @@ function generateStudentListHtml(students, emptyMsg, tier = 'free') {
     students.forEach(s => {
         const jDate = s.joinDate ? new Date(s.joinDate).toLocaleDateString() : '-';
         const lDate = s.lastPayDate ? new Date(s.lastPayDate).toLocaleDateString() : '<span style="color:#ef4444;">결제 없음</span>';
-        const pays = Object.entries(s.payCounts || {}).map(([prod, cnt]) => `<span class="pay-badge">${prod} ${cnt}회</span>`).join(' ') || '-';
+        const pays = Object.entries(s.payCounts || {}).map(([prod, cnt]) => `<span class="pay-badge">${escapeHtml(prod)} ${Number(cnt) || 0}회</span>`).join(' ') || '-';
 
         let urgentHtml = '<span style="color:#cbd5e1;">-</span>';
         let rowClass = '';
@@ -213,7 +221,7 @@ function generateStudentListHtml(students, emptyMsg, tier = 'free') {
                 rowClass = 'urgent-row-transfer';
             } else if (s.urgentStatus.type === 'etc') {
                 const safeText = escapeHtml(s.urgentStatus.text || '');
-                urgentHtml = `<span class="urgent-badge etc">기타 긴급</span> <span class="urgent-etc-text" onclick="toggleUrgentText(this, '${safeText}')">...</span>`;
+                urgentHtml = `<span class="urgent-badge etc">기타 긴급</span> <span class="urgent-etc-text" data-urgent-text="${safeText}">...</span>`;
                 rowClass = 'urgent-row-etc';
             }
         }
@@ -273,7 +281,6 @@ window.toggleNoticeTree = function(iconEl) {
 };
 
 window.setTutorPayStatus = async function(tutorId, month, payStatus, selectEl) {
-    if (event) event.stopPropagation();
     const originalValue = selectEl.dataset.original || selectEl.value;
     selectEl.disabled = true;
     try {
