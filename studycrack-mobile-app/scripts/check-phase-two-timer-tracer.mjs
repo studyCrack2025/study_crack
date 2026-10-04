@@ -29,6 +29,9 @@ function createProductionApiFetch(fetch) {
     IS_LOCAL: true,
     console: { error() {}, warn() {} },
     fetch,
+    AbortController,
+    setTimeout,
+    clearTimeout,
     localStorage: createStorage(),
     sessionStorage: createStorage(),
     window: {

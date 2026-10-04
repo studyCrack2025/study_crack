@@ -47,6 +47,18 @@ function MissingScreenFallback({ screen }) {
 }
 
 export function MobileApp() {
+  const [generation, reset] = React.useState(0);
+  React.useEffect(() => {
+    const ended = () => {
+      if (!globalThis.document?.querySelector('[data-screen="authLogin"], [data-screen="authSignup"]')) reset(value => value + 1);
+    };
+    globalThis.addEventListener?.('studycrack:session-ended', ended);
+    return () => globalThis.removeEventListener?.('studycrack:session-ended', ended);
+  }, []);
+  return React.createElement(MobileAppSession, { key: generation });
+}
+
+function MobileAppSession() {
   const [rootState, dispatchState] = useReducer(appStateReducer, undefined, createInitialMobileAppState);
   const state = useMemo(() => selectFlatAppState(rootState), [rootState]);
   const setState = useCallback((patch) => dispatchState({ type: 'app/patch', payload: patch }), []);

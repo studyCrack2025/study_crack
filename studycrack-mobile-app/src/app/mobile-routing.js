@@ -32,7 +32,7 @@ export function createInitialMobileAppState() {
   if (hasSession && (screen === 'authLogin' || screen === 'authSignup')) {
     return appStateReducer(sessionSafeBase, { type: 'app/patch', payload: { screen: 'timer', tab: 'timer' } });
   }
-  if (!hasSession && screen && !isLocalMobilePreview() && !PUBLIC_MOBILE_SCREENS.has(screen)) {
+  if (!hasSession && screen && (!isLocalMobilePreview() || globalThis.window?.isClientSessionEnded?.()) && !PUBLIC_MOBILE_SCREENS.has(screen)) {
     replaceMobileScreenParam('authLogin');
     return appStateReducer(base, { type: 'app/patch', payload: { screen: 'authLogin', tab: 'timer' } });
   }

@@ -90,22 +90,26 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken, options = {}) {
+    const scope = options.sessionScope || captureClientSession();
     if (IS_LOCAL) {
+        if (!isClientSessionCurrent(scope, { login: true })) throw createSharedSessionChangedError();
         localStorage.setItem('refreshToken', refreshToken);
+        completeClientLogin({ accessToken: options.accessToken || getAccessToken(), idToken: options.idToken || getIdToken() }, scope);
         return false;
     }
     const accessToken = options.accessToken || getAccessToken();
     const idToken = options.idToken || getIdToken();
     if (accessToken && idToken && refreshToken) {
         try {
-            const { response, data } = await fetchSharedAuthJson({ type: 'register_login_cookies', accessToken, idToken, refreshToken });
-            if (response.ok && data.success === true && data.accessToken === accessToken && data.idToken === idToken && syncTokensFromAuthResponse(data)) {
+            const { response, data } = await fetchSharedAuthJson({ type: 'register_login_cookies', accessToken, idToken, refreshToken }, { sessionScope: scope });
+            if (response.ok && data.success === true && data.accessToken === accessToken && data.idToken === idToken) {
+                completeClientLogin(data, scope);
                 localStorage.removeItem('refreshToken');
                 return true;
             }
         } catch (_) {}
     }
-    clearClientSession();
+    if (!options.sessionScope && isClientSessionCurrent(scope, { login: true })) clearClientSession();
     throw new Error('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
 }
 
@@ -131,36 +135,13 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
 
     try {
         if (options.waitFor && typeof options.waitFor.then === 'function') await options.waitFor;
-        const headers = { 'Content-Type': 'application/json' };
-        const bearerToken = options.accessToken || getAccessToken();
-        if (bearerToken) {
-            headers.Authorization = `Bearer ${bearerToken}`;
-        }
-
-        // 인증 오류 시 세션 갱신 후 한 번 재시도한다.
-        const fetchIdentity = async (requestType) => {
-            const doFetch = () => fetch(USER_API_URL, {
-                method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ type: requestType })
-            });
-            let res = await doFetch();
-            // 인증 오류 처리.
-            if (res.status === 401 || res.status === 403) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const refreshedBearerToken = getAccessToken();
-                    if (refreshedBearerToken) {
-                        headers.Authorization = `Bearer ${refreshedBearerToken}`;
-                    } else {
-                        delete headers.Authorization;
-                    }
-                    res = await doFetch();
-                }
-            }
-            return res;
-        };
+        const scope = captureClientSession();
+        const fetchIdentity = (requestType) => apiFetch(USER_API_URL, {
+            method: 'POST', body: JSON.stringify({ type: requestType })
+        }).catch(error => {
+            if ([400, 404].includes(error.status)) return { ok: false, status: error.status };
+            throw error;
+        });
 
         const profileMode = sessionStorage.getItem('user_profile_api_mode');
         const shouldUseLegacy = profileMode === 'legacy';
@@ -178,12 +159,9 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
-        if (userRes.status === 401 || userRes.status === 403) {
-            throw new Error("Auth expired");
-        }
-
         if (userRes.ok) {
             const data = await userRes.json();
+            if (!isClientSessionCurrent(scope)) return false;
             const role = data.role || 'student';
             const userName = data.name || (role === 'admin' ? '관리자' : role === 'tutor' ? '선생님' : '학생');
             localStorage.setItem('userName', userName);
@@ -214,8 +192,10 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
         }
 
     } catch (error) {
-        console.error("Identity Resolve Error:", error);
-        if (eventType === 'none' && String(error?.message || '').includes('Auth expired')) {
+        if (options.sessionScope && !isClientSessionCurrent(options.sessionScope, { login: true })) return false;
+        if (error?.code === 'AUTH_SESSION_CHANGED') return false;
+        console.error('계정 정보를 확인하지 못했습니다.');
+        if (eventType === 'none' && error?.code === 'AUTH_EXPIRED') {
             clearClientSession();
             const currentPath = window.location.pathname || '/';
             if (!isPublicRoute(currentPath)) {
@@ -673,25 +653,28 @@ function startTimer(duration, displayId, intervalVar) {
 // 역할은 서버 응답 기준으로만 확정한다.
 // ------------------------------------------
 function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
+    const scope = beginClientLogin();
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
     const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUserToAuth.authenticateUser(authDetails, {
         onSuccess: async function(authResult) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const refreshToken = authResult.getRefreshToken().getToken();
             setAccessToken(authResult.getAccessToken().getJwtToken());
             setIdToken(authResult.getIdToken().getJwtToken());
             localStorage.setItem('userId', authResult.getIdToken().payload.sub);
             localStorage.setItem('userEmail', email);
 
-            const cookiePromise = registerRefreshCookie(refreshToken);
+            const cookiePromise = registerRefreshCookie(refreshToken, { sessionScope: scope });
             markPostLoginIdentitySkip();
 
             window.dataLayer = window.dataLayer || [];
             window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
 
             resolveUserIdentity('signup', promoCode, {
+                sessionScope: scope,
                 accessToken: getAccessToken(),
                 waitFor: cookiePromise
             });
@@ -709,7 +692,9 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
 // 실패 시 입력과 버튼 상태를 복원한다.
 // ------------------------------------------
 function completeSignUp({ email, password, attributeList, profileData, promoCode = '', loginPathOnFail = '/login', onError }) {
+    const scope = captureClientSession();
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
+        if (!isClientSessionCurrent(scope, { login: true })) return;
         if (err && err.code !== 'UsernameExistsException') {
             if (typeof onError === 'function') onError(err, { afterAccountCreated: false });
             return;
@@ -719,9 +704,10 @@ function completeSignUp({ email, password, attributeList, profileData, promoCode
             const recovered = err ? await reauthenticateSignup({ CognitoUser: AmazonCognitoIdentity.CognitoUser,
                 AuthenticationDetails: AmazonCognitoIdentity.AuthenticationDetails, pool: userPool, email, password }) : null;
             await submitSignupProfile({ url: AUTH_URL, userId: result?.userSub, profile: profileData, recoveryAccessToken: recovered?.accessToken });
-
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             autoLoginAfterSignup(email, password, { promoCode, loginPathOnFail });
         } catch (error) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             console.error(error);
             if (typeof onError === 'function') onError(error, { afterAccountCreated: true });
         }
@@ -951,12 +937,14 @@ function handleSignIn() {
     clearClientSession();
 
     const authData = { Username: email, Password: password };
+    const scope = captureClientSession();
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
     const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const idTokenJwt = idToken.getJwtToken();
@@ -973,6 +961,7 @@ function handleSignIn() {
             const cookiePromise = registerRefreshCookie(refreshToken, {
                 accessToken,
                 idToken: idTokenJwt,
+                sessionScope: scope,
                 replaceExisting: true
             }).then((result) => {
                 timing.mark('cookie_register_done');
@@ -988,7 +977,7 @@ function handleSignIn() {
             window.dataLayer.push({ event: "login", user_id: userId });
 
             timing.mark('identity_start');
-            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise })
+            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise, sessionScope: scope })
                 .then((ok) => {
                     timing.mark('identity_done');
                     timing.flush(ok === false ? 'identity_failed' : 'success');
@@ -1000,6 +989,7 @@ function handleSignIn() {
         onFailure: function(err) {
             timing.mark('cognito_failure');
             timing.flush('failure');
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             alert(getErrorMessage(err));
         }
     });
@@ -1028,10 +1018,12 @@ function handleTutorSignIn() {
     clearClientSession();
 
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
+    const scope = captureClientSession();
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const idTokenJwt = idToken.getJwtToken();
@@ -1046,6 +1038,7 @@ function handleTutorSignIn() {
             const cookiePromise = registerRefreshCookie(refreshToken, {
                 accessToken,
                 idToken: idTokenJwt,
+                sessionScope: scope,
                 replaceExisting: true
             }).then((result) => {
                 timing.mark('cookie_register_done');
@@ -1056,6 +1049,7 @@ function handleTutorSignIn() {
             });
 
             try { await cookiePromise; } catch (_) {
+                if (!isClientSessionCurrent(scope, { login: true })) return;
                 cognitoUser.signOut();
                 clearClientSession();
                 alert('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
@@ -1066,7 +1060,7 @@ function handleTutorSignIn() {
             let role = null, userName = '선생님';
             try {
                 timing.mark('identity_start');
-                const res = await fetch(USER_API_URL, {
+                const res = await apiFetch(USER_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
                     credentials: 'include',
@@ -1079,6 +1073,7 @@ function handleTutorSignIn() {
                 }
                 timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
+            if (!isClientSessionCurrent(scope)) return;
 
             if (role !== 'tutor') {
                 const dest = role === 'admin' ? '/admin/login' : '/login';
@@ -1089,8 +1084,8 @@ function handleTutorSignIn() {
                         : "튜터 계정이 아니거나 정보를 확인할 수 없습니다. 계정을 확인해주세요.";
                 const prev = userPool.getCurrentUser();
                 if (prev) prev.signOut();
-                if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
                 clearClientSession();
+                if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
                 alert(msg);
                 timing.flush('role_blocked');
                 window.location.replace(dest);

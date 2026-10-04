@@ -1,7 +1,8 @@
 import { STORAGE_KEYS, safeParse, safeStringifySet } from '../../state/storage.js';
 import { normalizeStoredStudySession, validateStudySessionId } from './session-model.js';
+import { getMobileAccountStorage } from '../../shared/browser/mobile-runtime.js';
 
-export function hydrateStudyStorage(storage = globalThis.localStorage) {
+export function hydrateStudyStorage(storage = getMobileAccountStorage()) {
   const activeStudySession = normalizeStoredStudySession(safeParse(STORAGE_KEYS.activeStudySession, null, storage));
   const studyRecords = safeParse(STORAGE_KEYS.studyRecords, null, storage);
   const studySubjectRecords = safeParse(STORAGE_KEYS.studySubjectRecords, null, storage);
@@ -25,7 +26,7 @@ export function hydrateStudyStorage(storage = globalThis.localStorage) {
   };
 }
 
-export function persistStudyStorage(state = {}, storage = globalThis.localStorage) {
+export function persistStudyStorage(state = {}, storage = getMobileAccountStorage()) {
   safeStringifySet(STORAGE_KEYS.studyRecords, state.studyRecords || [], storage);
   safeStringifySet(STORAGE_KEYS.studySubjectRecords, state.studySubjectRecords || [], storage);
   safeStringifySet(STORAGE_KEYS.activeStudySession, state.activeStudySession || null, storage);

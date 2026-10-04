@@ -80,9 +80,10 @@ async function postJson({ apiFetch, url, payload }) {
 async function clearMobileAuthSession(ctx, authApiUrl) {
   const win = getWindow(ctx);
   try { clearMobileAuthArtifacts(win); } catch (_error) {}
+  const scope = win.captureClientSession?.();
   if (typeof win.clearServerSessionCookies === 'function') {
     await win.clearServerSessionCookies({ includeLocal: true });
-    return;
+    return scope;
   }
   const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
   let timeout;
@@ -102,6 +103,7 @@ async function clearMobileAuthSession(ctx, authApiUrl) {
     } catch (_error) {}
     finally { globalThis.clearTimeout(timeout); }
   }
+  return scope;
 }
 
 function buildSocialAuthUrl(ctx, provider, purpose = 'mobile') {
@@ -1089,7 +1091,10 @@ export function createProfileHandlers(ctx) {
 
     async confirmLogout() {
       setLogoutModalOpen(false);
-      await clearMobileAuthSession(ctx, authApiUrl);
+      const scope = await clearMobileAuthSession(ctx, authApiUrl);
+      const win = getWindow(ctx);
+      if (scope && !win.isClientSessionCurrent(scope, { login: true })) return true;
+      if (win.document?.querySelector('[data-screen="authLogin"]')) return true;
       setLoggedIn(false);
       setHistory([]);
       if (typeof getWindow(ctx).location?.replace === 'function') {

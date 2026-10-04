@@ -5,6 +5,7 @@ import { hydrateStudyStorage } from '../features/study/storage.js';
 import { hydrateAccountStorage } from '../features/account/storage.js';
 import { hydrateNotificationsStorage } from '../features/notifications/storage.js';
 import { notificationsSlice } from '../features/notifications/state.js';
+import { getMobileAccountStorage } from '../shared/browser/mobile-runtime.js';
 import {
   appStateReducer,
   createInitialAppState
@@ -27,12 +28,13 @@ export const MAIN_TAB_SCREENS = ['timer', 'planner', 'aquarium', 'analysis', 'st
 export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   if (!storage) return state;
   const currentNotifications = notificationsSlice.selectors.field(state, 'notifications');
-  const notificationPatch = hydrateNotificationsStorage(storage);
+  const accountStorage = getMobileAccountStorage(storage);
+  const notificationPatch = hydrateNotificationsStorage(accountStorage);
   const patch = {
-    ...hydrateAnalysisStorage(storage),
+    ...hydrateAnalysisStorage(accountStorage),
     ...hydratePlannerStorage(storage),
-    ...hydrateStudyStorage(storage),
-    ...hydrateAccountStorage(storage),
+    ...hydrateStudyStorage(accountStorage),
+    ...hydrateAccountStorage(accountStorage),
     ...hydrateNavigationStorage(storage),
     ...(notificationPatch.notifications
       ? { notifications: { ...currentNotifications, ...notificationPatch.notifications } }

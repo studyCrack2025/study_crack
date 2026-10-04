@@ -1,6 +1,29 @@
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
+test('세션 종료는 회원 화면을 정리하고 이전 계정 저장소의 늦은 쓰기를 차단한다', async ({ page }) => {
+  await installAuthenticatedSession(page, { restoreOnNavigation: false });
+  await installApiMock(page, { tier: 'standard', userOverrides: { name: '이전계정학생' } });
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await expect(page.getByText(/이전계정학생/).first()).toBeVisible();
+  await page.evaluate(() => {
+    window.__oldStorage = getClientAccountStorage();
+    window.__oldStorage.setItem('scope-test', 'old-value');
+    clearClientSession();
+  });
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+  await expect(page.getByText(/이전계정학생/)).toHaveCount(0);
+  const result = await page.evaluate(() => {
+    const scope = beginClientLogin();
+    localStorage.setItem('userId', 'new-owner');
+    completeClientLogin({ accessToken: 'new-token', idToken: 'new-id' }, scope);
+    let blocked = false;
+    try { window.__oldStorage.setItem('scope-test', 'stale'); } catch (_) { blocked = true; }
+    return { blocked, old: localStorage.getItem('sc_account:e2e-student:scope-test'), next: getClientAccountStorage().getItem('scope-test') };
+  });
+  expect(result).toEqual({ blocked: true, old: 'old-value', next: null });
+});
+
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [568, 320]]) {
   test(`프로필 고정 로그아웃과 취소 초점·스크롤 복원 (${width}x${height})`, async ({ page }, info) => {
     await page.setViewportSize({ width, height });

@@ -9,10 +9,15 @@ for (const target of ['ranking', 'weekly', 'report', 'proIntro', 'accountInfo', 
     await page.goto('/studycrack-mobile.html?screen=timer');
     await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     const drawer = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
+    await expect(drawer.locator('.my-summary-notice')).toHaveCount(0);
     const button = drawer.locator(`[data-target="${target}"]`).first();
     await button.scrollIntoViewIfNeeded();
-    const scroll = await drawer.locator('.my-summary-body').evaluate(el => el.scrollTop);
+    await button.evaluate(el => el.addEventListener('click', () => {
+      const body = el.closest('.my-summary-body');
+      body.dataset.entryScroll = String(body.scrollTop);
+    }, { capture: true, once: true }));
     await button.click();
+    const scroll = await page.locator('.my-persistent-host .my-summary-body').evaluate(el => Number(el.dataset.entryScroll));
     await expect(page.locator(`[data-screen="${target}"]`)).toHaveAttribute('data-my-flow', 'true');
     await page.locator('[data-action="back"]').first().click();
     await expect(drawer).toBeVisible();

@@ -97,6 +97,7 @@
                 return;
             }
 
+            const scope = beginClientLogin();
             const authData = { Username: email, Password: password };
             const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
             const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
@@ -104,16 +105,20 @@
 
             globalCognitoUser.authenticateUser(authDetails, {
                 onSuccess: function(result) {
-                    processAdminSuccess(result);
+                    processAdminSuccess(result, scope);
                 },
                 onFailure: function(err) {
                     alert("인증 실패: " + (err.message || "이메일 또는 비밀번호가 틀렸습니다."));
                 },
                 // SMS MFA가 걸려있을 때 호출됨
                 mfaRequired: function(codeDeliveryDetails) {
+                    if (!isClientSessionCurrent(scope, { login: true })) return;
+                    globalCognitoUser.sessionScope = scope;
                     showMFAInput();
                 },
                 totpRequired: function(secretCode) {
+                    if (!isClientSessionCurrent(scope, { login: true })) return;
+                    globalCognitoUser.sessionScope = scope;
                     showMFAInput();
                 }
             });
@@ -135,9 +140,11 @@
                 return;
             }
             
+            const scope = globalCognitoUser?.sessionScope;
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             globalCognitoUser.sendMFACode(mfaCode, {
                 onSuccess: function(result) {
-                    processAdminSuccess(result);
+                    processAdminSuccess(result, scope);
                 },
                 onFailure: function(err) {
                     alert("인증 코드가 틀렸거나 만료되었습니다.\n(" + err.message + ")");
@@ -146,6 +153,7 @@
         }
 
         function cancelMFA() {
+            clearClientSession();
             globalCognitoUser = null;
             document.getElementById('formTitle').innerText = "관리자 로그인";
             document.getElementById('loginStep').classList.remove('hidden');
@@ -155,7 +163,8 @@
         }
 
         // 관리자 인증 후처리.
-        async function processAdminSuccess(authResult) {
+        async function processAdminSuccess(authResult, scope) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const accessToken = authResult.getAccessToken().getJwtToken();
             const idToken = authResult.getIdToken().getJwtToken();
             const refreshToken = authResult.getRefreshToken().getToken();
@@ -178,8 +187,9 @@
             localStorage.setItem('userId', payload.sub);
 
             try {
-                await registerRefreshCookie(refreshToken, { accessToken, idToken, replaceExisting: true });
+                await registerRefreshCookie(refreshToken, { accessToken, idToken, replaceExisting: true, sessionScope: scope });
             } catch (_) {
+                if (!isClientSessionCurrent(scope, { login: true })) return;
                 if (globalCognitoUser) globalCognitoUser.signOut();
                 clearClientSession();
                 alert('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');

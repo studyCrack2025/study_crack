@@ -6,6 +6,75 @@ function createCognitoMemoryStorage() {
 
 let _clientSessionGeneration = 0;
 let _sharedRefreshController = null;
+const _sessionRequests = new Set();
+const SESSION_EPOCH_KEY = 'sc_session_epoch';
+const SESSION_ENDED_KEY = 'sc_session_ended';
+let _observedSessionEpoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
+
+function isClientSessionEnded() {
+    return localStorage.getItem(SESSION_ENDED_KEY) === '1';
+}
+
+function captureClientSession() {
+    return { generation: _clientSessionGeneration, owner: localStorage.getItem('userId') || '', epoch: localStorage.getItem(SESSION_EPOCH_KEY) || '' };
+}
+
+function isClientSessionCurrent(scope, { login = false } = {}) {
+    return !!scope && scope.generation === _clientSessionGeneration
+        && scope.epoch === (localStorage.getItem(SESSION_EPOCH_KEY) || '')
+        && (login || (!isClientSessionEnded() && scope.owner === (localStorage.getItem('userId') || '')));
+}
+
+function notifyClientSessionEnded() {
+    if (typeof clearAccessToken === 'function') clearAccessToken();
+    if (typeof clearIdToken === 'function') clearIdToken();
+    if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('studycrack:session-ended'));
+}
+
+function invalidateClientSession() {
+    _clientSessionGeneration += 1;
+    const controller = _sharedRefreshController;
+    _sharedRefreshController = null;
+    _sharedRefreshPromise = null;
+    _resumePromise = null;
+    _lastResumeCheck = 0;
+    controller?.abort();
+    for (const request of _sessionRequests) request.abort();
+    sessionStorage.clear();
+    notifyClientSessionEnded();
+}
+
+function beginClientLogin() {
+    clearClientSession();
+    return captureClientSession();
+}
+
+function completeClientLogin(data, scope) {
+    if (!isClientSessionCurrent(scope, { login: true })) throw createSharedSessionChangedError();
+    if (!syncTokensFromAuthResponse(data, { expectedGeneration: scope.generation })) throw createSharedSessionChangedError();
+    localStorage.removeItem(SESSION_ENDED_KEY);
+    sessionStorage.setItem(SESSION_EPOCH_KEY, scope.epoch);
+}
+
+// 다른 탭에서 복제된 오래된 인증 정보를 재사용하지 않는다.
+if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sessionStorage.getItem(SESSION_EPOCH_KEY) !== _observedSessionEpoch)) sessionStorage.clear();
+sessionStorage.setItem(SESSION_EPOCH_KEY, _observedSessionEpoch);
+if (!isClientSessionEnded() && localStorage.getItem('userId') && !localStorage.getItem('sc_legacy_data_owner')) localStorage.setItem('sc_legacy_data_owner', localStorage.getItem('userId'));
+
+function getClientAccountStorage() {
+    const scope = captureClientSession();
+    const prefix = `sc_account:${encodeURIComponent(scope.owner)}:`;
+    return {
+        getItem(key) {
+            if (!scope.owner || !isClientSessionCurrent(scope)) return null;
+            return localStorage.getItem(prefix + key) ?? (localStorage.getItem('sc_legacy_data_owner') === scope.owner ? localStorage.getItem(key) : null);
+        },
+        setItem(key, value) {
+            if (!scope.owner || !isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
+            localStorage.setItem(prefix + key, value);
+        }
+    };
+}
 
 // 장기 인증 정보가 브라우저 저장소에 남지 않도록 정리한다.
 if (typeof IS_LOCAL !== 'undefined' && !IS_LOCAL) {
@@ -18,14 +87,14 @@ if (typeof IS_LOCAL !== 'undefined' && !IS_LOCAL) {
         stale.forEach(key => localStorage.removeItem(key));
     } catch (_) {}
 }
-// bfcache 복원 시 stale 세션 노출을 막기 위해 페이지 세션을 재검증한다.
-const PAGE_SESSION_USER_ID = typeof window !== 'undefined'
-    ? (localStorage.getItem('userId') || '')
-    : '';
-
 if (typeof window !== 'undefined') {
-    window.addEventListener('pageshow', (e) => {
-        enforceClientSessionOnPageShow(e);
+    window.addEventListener('pageshow', enforceClientSessionOnPageShow);
+    window.addEventListener('storage', (event) => {
+        if (event.key === SESSION_EPOCH_KEY || event.key === null) enforceClientSessionOnPageShow();
+    });
+    window.addEventListener('online', () => coordinateClientSessionResume());
+    window.document?.addEventListener('visibilitychange', () => {
+        if (window.document.visibilityState === 'visible') coordinateClientSessionResume();
     });
 }
 
@@ -44,6 +113,7 @@ function isPublicRoute(pathname) {
 }
 
 function hasClientSession() {
+    if (isClientSessionEnded()) return false;
     const hasBearerToken = !!(
         sessionStorage.getItem('accessToken') ||
         localStorage.getItem('accessToken') ||
@@ -60,11 +130,13 @@ function hasClientSession() {
 
 function enforceClientSessionOnPageShow(event) {
     const currentPath = window.location.pathname || '/';
-    const currentUserId = localStorage.getItem('userId') || '';
     const isPublic = isPublicRoute(currentPath);
-
-    if (PAGE_SESSION_USER_ID && currentUserId && PAGE_SESSION_USER_ID !== currentUserId) {
-        window.location.reload();
+    const epoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
+    if (_observedSessionEpoch !== epoch) {
+        _observedSessionEpoch = epoch;
+        invalidateClientSession();
+        if (currentPath.startsWith('/studycrack-mobile')) window.location.replace(`${currentPath}?screen=authLogin`);
+        else if (!isPublic) window.location.replace(getRoleLoginPath());
         return;
     }
 
@@ -72,9 +144,30 @@ function enforceClientSessionOnPageShow(event) {
         window.location.replace(getRoleLoginPath());
         return;
     }
-    if (event && event.persisted) {
-        window.location.reload();
-    }
+    if (event?.persisted) coordinateClientSessionResume();
+}
+
+let _resumePromise = null;
+let _lastResumeCheck = 0;
+function coordinateClientSessionResume() {
+    enforceClientSessionOnPageShow();
+    if (!hasClientSession() || window.navigator?.onLine === false) return Promise.resolve(false);
+    if (typeof IS_LOCAL !== 'undefined' && IS_LOCAL && isSharedBearerTokenFresh(getSharedBearerToken())) return Promise.resolve(true);
+    if (_resumePromise) return _resumePromise;
+    if (Date.now() - _lastResumeCheck < 15000) return Promise.resolve(true);
+    _lastResumeCheck = Date.now();
+    const scope = captureClientSession();
+    const pending = tryRefreshToken({ preserveTransientErrors: true }).then(valid => {
+        if (!valid && isClientSessionCurrent(scope)) {
+            clearClientSession();
+            void clearServerSessionCookies();
+            if (window.location.pathname.startsWith('/studycrack-mobile')) window.location.replace(`${window.location.pathname}?screen=authLogin`);
+            else if (!isPublicRoute()) window.location.replace(getRoleLoginPath());
+        }
+        return valid;
+    }).catch(() => false).finally(() => { if (_resumePromise === pending) _resumePromise = null; });
+    _resumePromise = pending;
+    return pending;
 }
 
 // 세션 정리. 결제 진행 데이터처럼 세션 외 localStorage 값은 보존한다.
@@ -86,11 +179,10 @@ const SESSION_KEYS_LOCAL = [
 ];
 
 function clearClientSession() {
-    _clientSessionGeneration += 1;
-    const refreshController = _sharedRefreshController;
-    _sharedRefreshController = null;
-    _sharedRefreshPromise = null;
-    refreshController?.abort();
+    localStorage.setItem(SESSION_ENDED_KEY, '1');
+    _observedSessionEpoch = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(SESSION_EPOCH_KEY, _observedSessionEpoch);
+    invalidateClientSession();
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
     // SDK 잔여 세션 키까지 정리해 계정 전환 혼선을 막는다.
     try {
@@ -203,7 +295,7 @@ function assertSharedSessionCurrent(generation, owner) {
     if (generation !== _clientSessionGeneration || (owner && owner !== (localStorage.getItem('userId') || ''))) throw createSharedSessionChangedError();
 }
 
-function fetchSharedAuthJson(payload, { timeoutMs = 12000, signal } = {}) {
+function fetchSharedAuthJson(payload, { timeoutMs = 12000, signal, sessionScope = captureClientSession() } = {}) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
     return new Promise((resolve, reject) => {
         let settled = false;
@@ -230,6 +322,13 @@ function fetchSharedAuthJson(payload, { timeoutMs = 12000, signal } = {}) {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                 body: JSON.stringify(payload), ...(controller ? { signal: controller.signal } : {})
             });
+            if (response.ok && ['silent_refresh', 'register_login_cookies', 'register_refresh_cookie', 'social_callback', 'social_complete_signup'].includes(payload.type) && payload.purpose !== 'delete_reauth'
+                && !isClientSessionCurrent(sessionScope, { login: payload.type !== 'silent_refresh' })) {
+                // 늦은 응답이 종료한 세션을 복원하지 않도록 다시 정리한다.
+                if (!isClientSessionEnded()) clearClientSession();
+                void clearServerSessionCookies();
+                throw createSharedSessionChangedError();
+            }
             let data;
             try { data = await response.json(); }
             catch (_) { throw Object.assign(new Error('연결을 다시 확인해주세요.'), { code: 'AUTH_RESPONSE_INVALID', status: response.status }); }
@@ -260,10 +359,12 @@ async function performClientLogout(redirectPath) {
 let _sharedRefreshPromise = null;
 
 function tryRefreshToken({ preserveTransientErrors = false } = {}) {
+    if (isClientSessionEnded()) return Promise.resolve(false);
     const result = (promise) => preserveTransientErrors ? promise : promise.catch(() => false);
     if (_sharedRefreshPromise) return result(_sharedRefreshPromise);
     const generation = _clientSessionGeneration;
     const owner = localStorage.getItem('userId') || '';
+    const scope = captureClientSession();
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
     _sharedRefreshController = controller;
     const p = (async () => {
@@ -271,6 +372,7 @@ function tryRefreshToken({ preserveTransientErrors = false } = {}) {
         if (IS_LOCAL && !rt) return false;
         const { response, data } = await fetchSharedAuthJson(IS_LOCAL ? { type: 'refresh_token', refreshToken: rt } : { type: 'silent_refresh' }, { signal: controller?.signal });
         assertSharedSessionCurrent(generation, owner);
+        if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
         if (!response.ok) {
             if (response.status === 401 || ["AUTH_SESSION_EXPIRED", "AUTH_ACCOUNT_UNAVAILABLE"].includes(data?.code)) return false;
             throw Object.assign(new Error('인증 연결을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.'), { status: response.status, code: 'AUTH_CONNECTION_FAILED' });
@@ -300,6 +402,9 @@ function tryRefreshToken({ preserveTransientErrors = false } = {}) {
 async function apiFetch(url, options = {}) {
     const generation = _clientSessionGeneration;
     const owner = localStorage.getItem('userId') || '';
+    const scope = captureClientSession();
+    if (isClientSessionEnded()) throw createSharedAuthExpiredError();
+    options = { ...options };
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
@@ -309,6 +414,7 @@ async function apiFetch(url, options = {}) {
         const currentBearerToken = getSharedBearerToken();
         if (!isSharedBearerTokenFresh(currentBearerToken)) {
             const refreshed = await tryRefreshToken({ preserveTransientErrors: true });
+            if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
             if (!refreshed || !isSharedBearerTokenFresh(getSharedBearerToken(), 0)) {
                 throw createSharedAuthExpiredError(401);
             }
@@ -322,24 +428,27 @@ async function apiFetch(url, options = {}) {
     options.credentials = 'include';
 
     try {
-        let response = await fetch(url, options);
+        let response = await boundedClientRequest(signal => fetch(url, { ...options, signal }), options.signal);
         assertSharedSessionCurrent(generation, owner);
+        if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
 
-        if (response.ok) return response;
+        if (response.ok) return guardSharedResponse(response, scope);
 
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken({ preserveTransientErrors: true });
             assertSharedSessionCurrent(generation, owner);
             if (refreshed) {
+                if (!canReplaySharedRequest(options)) throw Object.assign(new Error('연결이 복구됐어요. 처리 결과를 확인한 뒤 다시 시도해주세요.'), { code: 'AUTH_RETRY_REQUIRED', status: 409 });
                 const refreshedBearerToken = getSharedBearerToken();
                 if (refreshedBearerToken) {
                     options.headers.Authorization = `Bearer ${refreshedBearerToken}`;
                 } else {
                     delete options.headers.Authorization;
                 }
-                response = await fetch(url, options);
+                response = await boundedClientRequest(signal => fetch(url, { ...options, signal }), options.signal);
                 assertSharedSessionCurrent(generation, owner);
-                if (response.ok) return response;
+                if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
+                if (response.ok) return guardSharedResponse(response, scope);
             }
             if (!refreshed || response.status === 401) {
                 const expiredError = createSharedAuthExpiredError(response.status);
@@ -351,10 +460,10 @@ async function apiFetch(url, options = {}) {
         let errorMessage = `서버 통신 오류 (상태 코드: ${response.status})`;
         let errorCode = '';
         try {
-            const errorData = await response.json();
+            const errorData = await boundedClientRequest(() => response.json(), options.signal);
             if (errorData.message || errorData.error) errorMessage = errorData.message || errorData.error;
             if (typeof errorData.code === 'string') errorCode = errorData.code;
-        } catch (e) { /* ignore */ }
+        } catch (e) { if (e?.name === 'AbortError' || e?.code === 'TIMEOUT') throw e; }
         const apiError = new Error(errorMessage);
         apiError.status = response.status;
         apiError.code = errorCode;
@@ -370,6 +479,57 @@ async function apiFetch(url, options = {}) {
         }
         throw error;
     }
+}
+
+function guardSharedResponse(response, scope) {
+    return new Proxy(response, { get(target, key) {
+        const value = Reflect.get(target, key, target);
+        if (key === 'clone') return () => guardSharedResponse(target.clone(), scope);
+        if (['json', 'text', 'blob', 'arrayBuffer', 'formData'].includes(key) && typeof value === 'function') return async (...args) => {
+            if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
+            const data = await boundedClientRequest(() => value.apply(target, args));
+            if (!isClientSessionCurrent(scope)) throw createSharedSessionChangedError();
+            return data;
+        };
+        return typeof value === 'function' ? value.bind(target) : value;
+    } });
+}
+
+function boundedClientRequest(task, signal) {
+    const controller = new AbortController();
+    _sessionRequests.add(controller);
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let timer;
+        const finish = (callback, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', cancel);
+            _sessionRequests.delete(controller);
+            callback(value);
+        };
+        const cancel = () => controller.abort();
+        controller.signal.addEventListener('abort', () => finish(reject, Object.assign(new Error('요청이 취소됐어요.'), { name: 'AbortError' })), { once: true });
+        if (signal?.aborted) { cancel(); return; }
+        signal?.addEventListener('abort', cancel, { once: true });
+        timer = setTimeout(() => {
+            finish(reject, Object.assign(new Error('응답을 확인하지 못했어요.'), { code: 'TIMEOUT' }));
+            controller.abort();
+        }, 45000);
+        Promise.resolve().then(() => task(controller.signal)).then(value => finish(resolve, value), error => finish(reject, error));
+    });
+}
+
+function canReplaySharedRequest(options) {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(String(options.method || 'GET').toUpperCase())) return true;
+    try {
+        const payload = JSON.parse(options.body);
+        if (['get_user', 'get_login_profile', 'get_user_analysis', 'get_product_guide', 'get_study_summary', 'get_study_ranking', 'get_admission_calendar', 'get_game_profile', 'get_study_habitat', 'get_fish_catalog', 'get_fish_detail', 'get_pending_draw', 'get_pro_reports', 'get_weekly_reports', 'get_qna_list', 'student_get_notifications', 'analyze_my_targets', 'backtrace_required_raw', 'convert_score', 'get_tutorial_recommendations', 'get_univ_list_only', 'simulate_score_rise', 'get_study_file_download', 'get_planner'].includes(payload.type)) return true;
+        if (payload.type === 'planner_sync_v1') return payload.operation === 'get_server_planner';
+        return ['start_study_session', 'complete_study_session', 'claim_study_reward'].includes(payload.type)
+            && typeof payload.data?.sessionId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(payload.data.sessionId);
+    } catch (_) { return false; }
 }
 
 // Shared URL constants.

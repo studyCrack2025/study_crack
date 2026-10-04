@@ -5,7 +5,7 @@ import { shouldLoadDeferredMobileScreens } from './mobile-routing.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
 import { setApiAuthExpiredHandler } from '../shared/api/client.js';
 import { expireMobileSessionSilently } from '../features/session/mobile-session-adapter.js';
-import { hasMobileClientSession, markMobileAppBooted } from '../shared/browser/mobile-runtime.js';
+import { hasMobileClientSession, markMobileAppBooted, prepareMobileRecovery } from '../shared/browser/mobile-runtime.js';
 import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
 import { attachVisualViewportMetrics } from '../shared/browser/visual-viewport.js';
 import { hasSeenIntro } from '../features/session/intro-storage.js';
@@ -37,6 +37,7 @@ export function useDeferredScreenRegistry(screen) {
   }, [registry, retryTick, screen]);
 
   const retry = useCallback(() => {
+    prepareMobileRecovery();
     setStatus('idle');
     setRetryTick((value) => value + 1);
   }, []);
