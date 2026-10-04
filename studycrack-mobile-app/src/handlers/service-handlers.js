@@ -207,7 +207,8 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openDrawer() {
+    openDrawer({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
         ctx.setStreakSummary({ open: false, returnTarget: '' });
@@ -218,6 +219,7 @@ export function createServiceHandlers(ctx) {
 
     openStreakSummary({ actionEl } = {}) {
       if (ctx.userLoadStatus !== 'ready' || !ctx.hasClientSession?.() || !['timer', 'my'].includes(ctx.screen) || ctx.productGuideUi?.open) return false;
+      actionEl?.focus?.({ preventScroll: true });
       preserveScrollAfterStateChange(() => {
         ctx.setStreakSummary({ open: true, returnTarget: ctx.drawerOpen ? 'summary' : '', returnSnapshot: ctx.drawerOpen ? { scroll: actionEl?.closest?.('.my-summary-body')?.scrollTop || 0, action: 'openStreakSummary' } : null });
         setDrawerOpen(false);
@@ -290,6 +292,7 @@ export function createServiceHandlers(ctx) {
     openNotiDetail({ actionEl }) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
+      actionEl?.focus?.({ preventScroll: true });
       setNotiDetailId(id);
       setNotiList((ctx.notiList || []).map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
       markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
@@ -302,7 +305,8 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openProRequestModal() {
+    openProRequestModal({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       setProRequestModalOpen(true);
       return true;
     },
@@ -339,6 +343,7 @@ export function createServiceHandlers(ctx) {
     },
 
     openQnaComposer({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       const title = getData(actionEl, 'qna-title');
       const content = getData(actionEl, 'qna-content').replace(/\\n/g, '\n');
       if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title, content };
@@ -391,7 +396,9 @@ export function createServiceHandlers(ctx) {
       return clickDownload(ctx, pdfPath, fileName);
     },
 
-    openCoachingSheet() {
+    openCoachingSheet({ actionEl } = {}) {
+      // Pointer activation does not focus buttons in every browser.
+      actionEl?.focus?.({ preventScroll: true });
       ensureCoachingSubjectRows();
       setCoachingStep(1);
       setCoachingSheetOpen(true);

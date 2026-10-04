@@ -122,7 +122,7 @@ test('기존 공개 개인정보·서비스 약관 화면은 비로그인 직접
 });
 
 for (const width of [320, 390, 1024]) {
-  test(`공개 정책 네 페이지는 JS·로그인 없이 읽고 이동할 수 있다 (${width}px)`, async ({ browser, baseURL }, testInfo) => {
+  test(`공개 정책 네 페이지는 JS·로그인 없이 읽고 이동할 수 있다 (${width}px)`, async ({ browser, browserName, baseURL }, testInfo) => {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width, height: 844 } });
     try {
       const page = await context.newPage();
@@ -139,7 +139,7 @@ for (const width of [320, 390, 1024]) {
           await expect(text).toHaveAttribute('data-legal-revision', documents[id].revision);
         }
         await expectNoHorizontalOverflow(page);
-        await page.keyboard.press('Tab');
+        await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
         await expect(page.getByRole('link', { name: '본문 바로가기' })).toBeFocused();
         await page.keyboard.press('Enter');
         await expect(page.locator('#legal-main')).toBeFocused();

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
 for (const target of ['ranking', 'weekly', 'report', 'proIntro', 'accountInfo', 'notificationList', 'settingsMain', 'customerSupport', 'my']) {
-  test(`MY → ${target} → 뒤로는 메뉴 위치와 초점을 복원한다`, async ({ page }) => {
+  test(`MY → ${target} → 뒤로는 메뉴 위치와 초점을 복원한다`, async ({ page }, testInfo) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await installAuthenticatedSession(page);
     await installApiMock(page, { tier: 'pro' });
@@ -10,6 +10,7 @@ for (const target of ['ranking', 'weekly', 'report', 'proIntro', 'accountInfo', 
     await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
     const drawer = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
     await expect(drawer.locator('.my-summary-notice')).toHaveCount(0);
+    await page.evaluate(() => document.fonts.ready);
     const button = drawer.locator(`[data-target="${target}"]`).first();
     await button.scrollIntoViewIfNeeded();
     await button.evaluate(el => el.addEventListener('click', () => {
@@ -22,6 +23,7 @@ for (const target of ['ranking', 'weekly', 'report', 'proIntro', 'accountInfo', 
     await page.locator('[data-action="back"]').first().click();
     await expect(drawer).toBeVisible();
     await expect(button).toBeFocused();
+    await testInfo.attach('restored-menu-geometry', { contentType: 'application/json', body: JSON.stringify(await drawer.locator('.my-summary-body').evaluate((el, saved) => ({ saved, scrollTop: el.scrollTop, maxScroll: el.scrollHeight - el.clientHeight }), scroll)) });
     await expect.poll(() => drawer.locator('.my-summary-body').evaluate(el => el.scrollTop)).toBeCloseTo(scroll, 0);
     await expect(drawer.locator('[data-action="openStudyRecords"]')).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
