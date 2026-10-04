@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { acknowledgeFishDraw, claimStudyReward, drawFish, fetchGameProfile, fetchPendingDraw, fetchStudyHabitat, renameFish, setActiveFish } from '../src/features/gamification/api.js';
 import { GAME_REQUEST_TYPES } from '../src/shared/api/request-types.js';
+import { validateGameProfile, normalizeGameProfileResponse } from '../src/features/gamification/model.js';
 
 function response(body, ok = true, status = 200) {
   return { ok, status, json: async () => body };
@@ -75,5 +76,15 @@ const invalid = await fetchGameProfile({
 });
 assert.equal(invalid.ok, false);
 assert.equal(invalid.code, 'INVALID_RESPONSE');
+
+const planProfile = { ...profile, ticketPolicyVersion: 'planner-ticket-v1', ticketBalance: 3, legacyTicketBalance: 1,
+  planTicketCounts: { base: 0, h2: 1, h4: 1 }, ticketProgressSeconds: 17999, ticketIntervalSeconds: null };
+assert.equal(validateGameProfile(planProfile).ok, true);
+for (const changed of [{ ticketBalance: 4 }, { legacyTicketBalance: -1 }, { ticketIntervalSeconds: 18000 }, { planTicketCounts: { base: 0, h2: 1 } }, { planTicketCounts: { base: 0, h2: '1', h4: 1 } }]) assert.equal(validateGameProfile({ ...planProfile, ...changed }).ok, false);
+const planRules = { dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: {}, drawCostShells: 0,
+  drawPolicy: { version: 'draw-plan-v1', randomSelection: true, duplicateEffect: 'none' } };
+assert.equal(normalizeGameProfileResponse({ profile: planProfile, rules: planRules }).gameRules, planRules);
+assert.equal((await drawFish({ apiFetch, gameApiUrl: '/game', requestId: 'plan_draw_1', ticketPolicyVersion: 'planner-ticket-v1' })).ok, true);
+assert.equal(payloads.at(-1).data.ticketPolicyVersion, 'planner-ticket-v1');
 
 console.log('game API request and response contracts passed');

@@ -7,19 +7,17 @@ const positive = value => Number.isSafeInteger(value) && value > 0;
 
 export function buildRulesGuidePresentation(rules, status = 'ready') {
   const ticket = rules?.ticketPolicy;
-  const ready = status === 'ready' && ticket?.version === 'study-ticket-v1'
-    && positive(ticket.intervalSeconds) && positive(ticket.drawCost);
+  const plan = ticket?.version === 'planner-ticket-v1';
+  const ready = status === 'ready' && positive(ticket?.drawCost) && (plan ? ticket.minimumPlanMinutes === 30 && ticket.grantPerPlan === 1
+    && ticket.completionMode === 'server_check' && JSON.stringify(ticket.boostPlanMinutes) === '[120,240]' : ticket?.version === 'study-ticket-v1' && positive(ticket.intervalSeconds));
   if (!ready) return { ready: false, starter: null, draw: null };
   const starter = rules.starterPolicy?.version === 'starter-study-v1'
     && positive(rules.starterPolicy.minimumSessionSeconds) && positive(rules.starterPolicy.choiceCount)
     ? rules.starterPolicy : null;
   const draw = rules.drawPolicy;
-  const odds = draw?.oddsBasisPoints;
-  const drawReady = draw?.version === 'draw-ticket-v1'
-    && GUIDE_RARITIES.every(rarity => Number.isSafeInteger(odds?.[rarity]) && odds[rarity] >= 0)
-    && GUIDE_RARITIES.reduce((sum, rarity) => sum + odds[rarity], 0) === 10000
-    && ['rare', 'epic', 'legendary'].every(rarity => positive(draw.pityLimits?.[rarity]));
-  return { ready: true, ticket, starter, draw: drawReady ? draw : null };
+  const drawReady = draw?.version === (plan ? 'draw-plan-v1' : 'draw-ticket-v1') && draw.randomSelection === true
+    && draw.duplicateEffect === (plan ? 'none' : 'growth');
+  return { ready: true, plan, ticket, starter, draw: drawReady ? draw : null };
 }
 
 export function buildRulesGrowthPresentation(view) {

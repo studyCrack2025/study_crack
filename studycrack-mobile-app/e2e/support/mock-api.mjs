@@ -239,7 +239,7 @@ function responseFor(payload, state) {
         profile: state.gameProfile,
         activeFish: state.activeFish,
         fishCount: state.fishInventory.length,
-        rules: { ticketPolicy: { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 }, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 }
+        rules: { ticketPolicy: state.gameProfile.ticketPolicyVersion === 'planner-ticket-v1' ? { version: 'planner-ticket-v1', minimumPlanMinutes: 30, boostPlanMinutes: [120, 240], drawCost: 1, completionMode: 'server_check', grantPerPlan: 1 } : { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 }, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 }
       };
     case 'get_fish_catalog':
       return {
@@ -292,7 +292,11 @@ function responseFor(payload, state) {
       const fish = { fishId: 'fish_draw_e2e', speciesId: 'butterflyfish', speciesName: '나비고기', rarity: 'rare', name: '나비', customName: '', level: 1, exp: 0, currentLevelExp: 0, nextLevelExp: 30, progressPct: 0, growthStage: 'young', source: 'draw' };
       const result = { requestId, speciesId: fish.speciesId, rarity: fish.rarity, duplicate: false, protectedDraw: true, expGranted: 0, shellsRefunded: 0, ticketsRefunded: 0, costUnit: 'ticket', cost: 1, levelBefore: 0, levelAfter: 1, createdAt: new Date().toISOString() };
       state.fishInventory = [...state.fishInventory, fish];
-      state.gameProfile = { ...state.gameProfile, ticketBalance: state.gameProfile.ticketBalance - 1, activeDrawRequestId: requestId, drawPity: { rareIn: 9, epicIn: 29 } };
+      state.gameProfile = { ...state.gameProfile, ticketBalance: state.gameProfile.ticketBalance - 1, activeDrawRequestId: requestId };
+      if (state.gameProfile.ticketPolicyVersion === 'planner-ticket-v1') {
+        if (state.gameProfile.legacyTicketBalance > 0) state.gameProfile.legacyTicketBalance--;
+        else { const ticket = state.planTickets.shift(); state.gameProfile.planTicketCounts[ticket.band]--; }
+      }
       state.pendingDraw = { result, fish };
       return { result, profile: state.gameProfile, fish, alreadyDrawn: false };
     }
@@ -362,7 +366,7 @@ export async function installApiMock(page, {
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { ticketPolicyVersion: 'study-ticket-v1', ticketBalance: 2, ticketProgressSeconds: 0, ticketIntervalSeconds: 18000, shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {}, ...initialGameProfile },
+    gameProfile: { ticketPolicyVersion: 'study-ticket-v1', ticketBalance: 2, ticketProgressSeconds: 0, ticketIntervalSeconds: 18000, shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, dailyReward: {}, ...initialGameProfile },
     pendingDraw: null,
     studyDurationSeconds,
     studyReward,

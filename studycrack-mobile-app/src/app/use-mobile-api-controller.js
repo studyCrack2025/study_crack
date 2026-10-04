@@ -69,7 +69,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     [getGameApiBinding]
   );
   const startAquariumFishDraw = useCallback(
-    (requestId) => drawFish({ ...getGameApiBinding(), requestId }),
+    (requestId, ticketPolicyVersion) => drawFish({ ...getGameApiBinding(), requestId, ticketPolicyVersion }),
     [getGameApiBinding]
   );
   const acknowledgeAquariumFishDraw = useCallback(

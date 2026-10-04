@@ -1,4 +1,3 @@
-import { createPlannerTransport } from '../planner/api.js';
 import { createPlannerSyncModel } from '../planner/sync-model.js';
 import { claimAquariumUnlock } from './unlock-ledger.js';
 
@@ -30,7 +29,10 @@ export function createAquariumGrowthResource({ browser, api, apiFetch }, notify 
         owner = browser.localStorage.getItem('userId');
         if (!owner || !browser.hasClientSession() || !api?.game || !apiFetch) { clear('unavailable'); return; }
         epoch = browser.crypto.randomUUID(); browser.sessionStorage.setItem(marker, epoch);
-        send = createPlannerTransport({ owner, apiFetch, gameApiUrl: api.game, isActive: active });
+        send = async (...args) => {
+          const { createPlannerTransport } = await import('../planner/transport.js');
+          return createPlannerTransport({ owner, apiFetch, gameApiUrl: api.game, isActive: active })(...args);
+        };
         browser.addEventListener('storage', changed); browser.addEventListener('focus', checked); browser.addEventListener('pageshow', checked);
       } catch { clear('unavailable'); }
     },

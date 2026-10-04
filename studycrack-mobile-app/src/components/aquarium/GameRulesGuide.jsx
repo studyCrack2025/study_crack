@@ -34,14 +34,14 @@ function RulesGrowthGuide({ view }) {
 
 function RulesDetails({ presentation }) {
   const draw = presentation.draw;
-  return <details className="game-rules-details"><summary>중복 성장 · 확률과 상세 규칙</summary>
-    <div className="game-rules-duplicate"><div aria-hidden="true"><FishArtwork speciesId="guppy" variant="pixel" /><span>+</span><FishArtwork speciesId="guppy" variant="pixel" /><Icon name="chevron" /></div><b>같은 친구를 만나면 성장해요</b><p>같은 종은 새 개체가 늘어나는 대신 기존 친구의 성장 경험치로 반영돼요.</p>{draw?.maxLevelRefund && positiveRefund(draw.maxLevelRefund.tickets) ? <p>Lv.10 친구를 다시 만나면 뽑기권 {draw.maxLevelRefund.tickets}장을 돌려받아요.</p> : null}</div>
+  return <details className="game-rules-details"><summary>중복과 만남 규칙</summary>
+    <div className="game-rules-duplicate"><div aria-hidden="true"><FishArtwork speciesId="guppy" variant="pixel" /><span>+</span><FishArtwork speciesId="guppy" variant="pixel" /><Icon name="chevron" /></div><b>{presentation.plan ? '같은 친구는 중복으로 기록해요' : '같은 친구를 만나면 성장해요'}</b><p>{presentation.plan ? '뽑기권 1장을 사용하며, 보유 물고기와 경험치·배치는 그대로예요.' : '같은 종은 새 개체가 늘어나는 대신 기존 친구의 성장 경험치로 반영돼요.'}</p>{!presentation.plan && draw?.maxLevelRefund && positiveRefund(draw.maxLevelRefund.tickets) ? <p>Lv.10 친구를 다시 만나면 뽑기권 {draw.maxLevelRefund.tickets}장을 돌려받아요.</p> : null}</div>
     {draw ? <>
-      <h3>물고기 만남 확률</h3><div className="game-rules-odds">{GUIDE_RARITIES.map(rarity => <div key={rarity}><span>{RARITY_LABELS[rarity]}</span><b>{draw.oddsBasisPoints[rarity] / 100}%</b>{Number.isSafeInteger(draw.duplicateExp?.[rarity]) && draw.duplicateExp[rarity] >= 0 ? <small>중복 EXP +{draw.duplicateExp[rarity]}</small> : null}</div>)}</div>
-      <p>희귀 {draw.pityLimits.rare}회, 영웅 {draw.pityLimits.epic}회, 전설 {draw.pityLimits.legendary}회 안에는 해당 등급 이상을 확정해요.</p>
+      <h3>무작위로 만나는 친구</h3><div className="game-rules-odds">{GUIDE_RARITIES.map(rarity => <div key={rarity}><b>{RARITY_LABELS[rarity]}</b></div>)}</div>
+      {presentation.plan ? <p>2시간·4시간 이상 계획의 뽑기권은 상위 등급 친구를 만날 기회가 조금 높아요.</p> : null}
       {positiveRefund(draw.protectedDrawCount) ? <p>첫 {draw.protectedDrawCount}회는 뽑힌 등급에 아직 만나지 않은 친구가 있으면 그 친구를 우선해요.</p> : null}
       {draw.specialAcquisition === 'achievement_or_event' ? <p>Special 친구는 업적과 이벤트 보상으로 만나요.</p> : null}
-    </> : <p className="game-rules-note">확률과 상세 규칙은 최신 정보를 불러온 뒤 확인할 수 있어요.</p>}
+    </> : <p className="game-rules-note">만남 규칙은 최신 정보를 불러온 뒤 확인할 수 있어요.</p>}
     <p className="game-rules-note">뽑기권을 사용해도 실제 공부 기록은 줄어들지 않아요.</p>
   </details>;
 }
@@ -54,11 +54,11 @@ export function GameRulesGuide({ gameRules = null, gameProfileStatus = 'idle', o
   return <Modal open={open} dismissAction="closeGameRules" ariaLabel="수조 성장 규칙" panelClass="game-rules-modal">
     <header className="game-rules-head"><div><span className="game-rules-eyebrow">공부와 함께하는 수조</span><h2>수조 이용법</h2></div><button type="button" className="sc-overlay-close" data-action="closeGameRules" aria-label="수조 이용법 닫기">×</button></header>
     <div className="game-rules-body">
-      <p className="game-rules-intro">공부 시간으로 새 친구를 만나고, 계획 완료 일수로 배경을 키워요.</p>
+      <p className="game-rules-intro">{presentation.plan ? '계획을 완료해 새 친구를 만나고, 꾸준한 달성으로 배경을 키워요.' : '공부 시간으로 새 친구를 만나고, 계획 완료 일수로 배경을 키워요.'}</p>
       {presentation.ready ? <>
         <ol className="game-rules-steps">
           <li><div className="game-rules-illustration" aria-hidden="true"><Icon name="timer" /><FishArtwork speciesId="guppy" variant="pixel" /></div><div><span className="game-rules-step-number">01 · 첫 친구</span><h3>{presentation.starter ? `${guideDuration(presentation.starter.minimumSessionSeconds)} 이상 공부 완료` : '첫 유효 공부 완료'}</h3><p>보상 확인 후 첫 친구를 골라요.{presentation.starter ? ` ${presentation.starter.choiceCount}종 중 선택한 친구가` : ' 선택한 친구가'} 수조 중앙에 배치돼요.</p></div></li>
-          <li><div className="game-rules-illustration" aria-hidden="true"><Icon name="timer" /><TicketArtwork /></div><div><span className="game-rules-step-number">02 · 공부 보상</span><h3>확정 공부 {guideDuration(presentation.ticket.intervalSeconds)}마다 1장</h3><p>뽑기권을 받아요. 남은 시간은 날짜가 바뀌어도 다음 뽑기권으로 이월돼요.</p></div></li>
+          <li><div className="game-rules-illustration" aria-hidden="true"><Icon name="calendar" /><TicketArtwork /></div><div><span className="game-rules-step-number">02 · 공부 보상</span><h3>{presentation.plan ? '30분 이상 계획 첫 완료마다 1장' : `확정 공부 ${guideDuration(presentation.ticket.intervalSeconds)}마다 1장`}</h3><p>{presentation.plan ? '계정에 저장한 계획의 완료가 확인되면 받아요. 완료 취소·재완료로는 다시 지급되지 않아요.' : '뽑기권을 받아요. 남은 시간은 날짜가 바뀌어도 다음 뽑기권으로 이월돼요.'}</p></div></li>
           <li><div className="game-rules-illustration" aria-hidden="true"><TicketArtwork /><FishArtwork speciesId="clownfish" variant="pixel" /></div><div><span className="game-rules-step-number">03 · 새로운 친구</span><h3>뽑기권 {presentation.ticket.drawCost}장으로 만나기</h3><p>무작위 친구가 보관함에 들어와요. 내 물고기에서 위치를 골라 수조에 배치하세요.</p></div></li>
         </ol>
         <RulesDetails presentation={presentation} />

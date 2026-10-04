@@ -4,15 +4,22 @@ const date = value => typeof value === 'string' && /^[1-9]\d{3}-\d{2}-\d{2}$/.te
 const text = (value, max) => typeof value === 'string' && value.length <= max && Boolean(value.replace(/[\s\u200b-\u200d\ufeff]/g, '')) && !/[\u0000-\u001f\u007f]/.test(value);
 const timestamp = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 const exact = (value, keys) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(key => keys.includes(key));
-const same = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => a[key] === b[key]);
+const same = (a, b) => a === b || Boolean(a && b && typeof a === 'object' && typeof b === 'object' && Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => same(a[key], b[key])));
 
-export function createPlannerSyncModel() {
-  const validItem = item => exact(item, ['id', 'date', 'subject', 'title', 'revision', 'completed', 'deleted', 'firstCompletedAt', 'growthDate', 'updatedAt'])
+export function createPlannerSyncModel({ protocol = 1 } = {}) {
+  const minutes = value => Number.isSafeInteger(value) && value >= 1 && value <= 1440;
+  const validSnapshot = snapshot => exact(snapshot, ['date', 'subject', 'plannedMinutes', 'revision', 'completedAt', 'policyVersion', 'status'])
+    && date(snapshot.date) && text(snapshot.subject, 40) && minutes(snapshot.plannedMinutes) && timestamp(snapshot.completedAt)
+    && count(snapshot.revision) && snapshot.revision > 0
+    && ((snapshot.policyVersion === null && snapshot.status === 'not_active')
+      || (snapshot.policyVersion === 'planner-ticket-v1' && snapshot.status === (snapshot.plannedMinutes >= 30 ? 'issued' : 'ineligible')));
+  const validItem = item => exact(item, ['id', 'date', 'subject', 'title', 'revision', 'completed', 'deleted', 'firstCompletedAt', 'growthDate', 'updatedAt', ...(protocol === 2 ? ['plannedMinutes', 'completionSnapshot'] : [])])
     && id(item.id) && date(item.date) && text(item.subject, 40) && text(item.title, 200) && count(item.revision) && item.revision > 0
     && typeof item.completed === 'boolean' && typeof item.deleted === 'boolean' && timestamp(item.updatedAt)
     && (item.firstCompletedAt === null || timestamp(item.firstCompletedAt)) && (!item.completed || item.firstCompletedAt !== null)
     && (item.firstCompletedAt === null || item.firstCompletedAt <= item.updatedAt)
-    && (item.growthDate === null || (date(item.growthDate) && item.firstCompletedAt !== null && new Date(Date.parse(item.firstCompletedAt) + 9 * 3600000).toISOString().slice(0, 10) === item.growthDate));
+    && (item.growthDate === null || (date(item.growthDate) && item.firstCompletedAt !== null && new Date(Date.parse(item.firstCompletedAt) + 9 * 3600000).toISOString().slice(0, 10) === item.growthDate))
+    && (protocol !== 2 || ((item.plannedMinutes === null || minutes(item.plannedMinutes)) && (item.completionSnapshot === null || (validSnapshot(item.completionSnapshot) && item.completionSnapshot.revision < item.revision && item.completionSnapshot.completedAt === item.firstCompletedAt))));
   const validGrowth = value => {
     if (!exact(value, ['supported', 'policyVersion', 'countingSince', 'revision', 'asOf', 'historyStatus', 'validDayCount', 'highestUnlockedStage', 'nextStageDays'])
       || value.supported !== true || value.policyVersion !== 'planner-days-v1' || !date(value.countingSince) || !count(value.revision)
@@ -26,15 +33,15 @@ export function createPlannerSyncModel() {
     if (!exact(request, ['type', 'data'])) return false;
     const data = request.data;
     if (!['save_server_planner', 'complete_server_planner', 'delete_server_planner'].includes(request.type)
-      || !exact(data, request.type === 'save_server_planner' ? ['id', 'requestId', 'revision', 'date', 'subject', 'title', 'completed'] : ['id', 'requestId', 'revision'])
+      || !exact(data, request.type === 'save_server_planner' ? ['id', 'requestId', 'revision', 'date', 'subject', 'title', 'completed', ...(protocol === 2 ? ['plannedMinutes'] : [])] : ['id', 'requestId', 'revision'])
       || !id(data.id) || !id(data.requestId) || data.requestId.length < 8 || !count(data.revision)) return false;
-    return request.type === 'save_server_planner' ? date(data.date) && text(data.subject, 40) && text(data.title, 200) && data.completed === false : data.revision > 0;
+    return request.type === 'save_server_planner' ? date(data.date) && text(data.subject, 40) && text(data.title, 200) && data.completed === false && (protocol !== 2 || minutes(data.plannedMinutes) || (data.plannedMinutes === null && data.revision > 0)) : data.revision > 0;
   };
   const validDetails = row => exact(row, ['id', 'minutes', 'start', 'end', 'detailSubject', 'activityType', 'memo']) && id(row.id)
     && Number.isFinite(row.minutes) && row.minutes >= 0 && row.minutes <= 1440
     && ['start', 'end'].every(key => row[key] === '--:--' || /^([01]\d|2[0-3]):[0-5]\d$/.test(row[key]))
     && ['detailSubject', 'activityType', 'memo'].every(key => typeof row[key] === 'string' && row[key].length <= (key === 'memo' ? 2000 : 100) && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(row[key]));
-  const validDocument = (doc, owner) => exact(doc, ['version', 'owner', 'items', 'growth', 'queue', 'imports', 'details', 'resolved']) && doc.version === 1 && doc.owner === owner
+  const validDocument = (doc, owner) => exact(doc, ['version', 'owner', 'items', 'growth', 'queue', 'imports', 'details', 'resolved']) && doc.version === protocol && doc.owner === owner
     && (doc.details === undefined || (Array.isArray(doc.details) && doc.details.length <= 5000 && doc.details.every(validDetails) && new Set(doc.details.map(row => row.id)).size === doc.details.length))
     && (doc.resolved === undefined || (Array.isArray(doc.resolved) && doc.resolved.length <= 100 && doc.resolved.every(validRequest)))
     && Array.isArray(doc.items) && doc.items.length <= 5000 && doc.items.every(validItem) && new Set(doc.items.map(item => item.id)).size === doc.items.length
@@ -56,7 +63,8 @@ export function createPlannerSyncModel() {
     const previous = doc.items.find(value => value.id === item.id);
     if (previous && previous.revision === item.revision && !same(previous, item)) throw new Error('response');
     if (previous && item.revision > previous.revision && (previous.deleted || (previous.firstCompletedAt !== null && previous.firstCompletedAt !== item.firstCompletedAt)
-      || (previous.growthDate !== null && previous.growthDate !== item.growthDate))) throw new Error('response');
+      || (previous.growthDate !== null && previous.growthDate !== item.growthDate)
+      || (previous.completionSnapshot != null && !same(previous.completionSnapshot, item.completionSnapshot)))) throw new Error('response');
     return { ...doc, items: !previous ? [...doc.items, item] : doc.items.map(value => value.id === item.id && value.revision < item.revision ? item : value),
       growth: acceptGrowth(doc, growth) };
   };

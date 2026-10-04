@@ -1,5 +1,5 @@
 import { getMobileBrowserServices } from '../../shared/browser/mobile-runtime.js';
-import { createPlannerTransport } from './api.js';
+import { createPlannerTransport } from './transport.js';
 
 export function createPlannerAccountConnection(controller, onInvalidated, environment = getMobileBrowserServices()) {
   const { browser, api, apiFetch } = environment;

@@ -293,7 +293,7 @@ test('종료 보상이 수조 잔액과 첫 물고기 FishDex 여정으로 이�
   await expect(rewardPanel.locator('.timer-reward-values')).toContainText('남은 시간은 이월');
   await rewardPanel.getByRole('button', { name: '수조에서 확인' }).click();
 
-  const wallet = page.getByRole('group', { name: '수조 재화' });
+  const wallet = page.getByRole('group', { name: '뽑기권' });
   await expect(wallet).toContainText(/뽑기권\s*2장/);
   await expect(wallet).toContainText(/다음 뽑기권까지/);
   const journey = page.locator('section.aquarium-journey[aria-label="공부 보상 여정"]');
@@ -677,7 +677,7 @@ test('85종 도감은 다섯 등급과 생태 분류를 탐색하고 화면 밖 
   const starter = { fishId: 'fish_fd05_owned', speciesId: catalog[0].speciesId, speciesName: catalog[0].displayName, rarity: 'common', name: '첫 친구', customName: '', level: 2, exp: 30, currentLevelExp: 0, nextLevelExp: 90, progressPct: 0, growthStage: 'young', source: 'starter' };
   api.state.fishInventory = [starter];
   api.state.activeFish = [null, starter, null];
-  api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeFishIds: [null, starter.fishId, null], drawPity: { rareIn: 10, epicIn: 30, legendaryIn: 100 } };
+  api.state.gameProfile = { ...api.state.gameProfile, starterState: 'claimed', activeFishIds: [null, starter.fishId, null] };
 
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.getByRole('button', { name: /물고기 도감/ }).click();

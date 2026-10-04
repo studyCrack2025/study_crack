@@ -10,8 +10,7 @@ const rules = {
   ticketPolicy: { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 },
   starterPolicy: { version: 'starter-study-v1', minimumSessionSeconds: 600, choiceCount: 3 },
   drawPolicy: {
-    version: 'draw-ticket-v1', oddsBasisPoints: { common: 7000, rare: 2500, epic: 400, legendary: 100 },
-    pityLimits: { rare: 10, epic: 30, legendary: 100 }, duplicateExp: { common: 30, rare: 80, epic: 180, legendary: 400 },
+    version: 'draw-ticket-v1', randomSelection: true, duplicateEffect: 'growth', duplicateExp: { common: 30, rare: 80, epic: 180, legendary: 400 },
     protectedDrawCount: 3, maxLevelRefund: { tickets: 1 }, specialAcquisition: 'achievement_or_event'
   },
   habitatStages: [{ minimumMinutes: 180, label: '풍성한 서식지' }]
@@ -24,7 +23,7 @@ for (const value of [null, {}, { ...rules, ticketPolicy: { ...rules.ticketPolicy
 }
 for (const status of ['idle', 'loading', 'error', 'unavailable']) assert.equal(buildRulesGuidePresentation(rules, status).ready, false);
 assert.equal(buildRulesGuidePresentation({ ...rules, starterPolicy: undefined }).starter, null);
-assert.equal(buildRulesGuidePresentation({ ...rules, drawPolicy: { ...rules.drawPolicy, oddsBasisPoints: { common: 9000, rare: 2500, epic: 400, legendary: 100 } } }).draw, null);
+assert.equal(buildRulesGuidePresentation({ ...rules, drawPolicy: { ...rules.drawPolicy, randomSelection: false } }).draw, null);
 assert.deepEqual(buildRulesGrowthPresentation({ status: 'ready', growth }), { growth, current: 7, next: 15 });
 for (const status of ['stale', 'error', 'unavailable', 'account-changed', 'loading']) assert.equal(buildRulesGrowthPresentation({ status, growth }), null);
 for (const corrupt of [{ policyVersion: 'future' }, { highestUnlockedStage: 'day100' }, { nextStageDays: 1 }, { validDayCount: -1 }, { revision: 0 }]) {
@@ -46,9 +45,18 @@ try {
   assert.match(markup, /성장 인정 <b>12일<\/b> · 다음 배경까지 3일/);
   assert.match(markup, /DAY 7 수조 배경/);
   assert.match(markup, /DAY 15 수조 배경/);
-  assert.match(markup, /해당 등급 이상을 확정/);
+  assert.match(markup, /무작위로 만나는 친구/);
+  assert.doesNotMatch(markup, /\d+%|\d+회 안에는/);
   assert.match(markup, /첫 3회는 뽑힌 등급/);
   assert.match(markup, /뽑기권 1장을 돌려받아요/);
+  const planRules = { ...rules, ticketPolicy: { version: 'planner-ticket-v1', minimumPlanMinutes: 30, boostPlanMinutes: [120, 240], drawCost: 1, completionMode: 'server_check', grantPerPlan: 1 },
+    drawPolicy: { version: 'draw-plan-v1', randomSelection: true, duplicateEffect: 'none', specialAcquisition: 'achievement_or_event' } };
+  const planMarkup = render({ gameRules: planRules });
+  assert.match(planMarkup, /30분 이상 계획 첫 완료마다 1장/);
+  assert.match(planMarkup, /완료 취소·재완료로는 다시 지급되지/);
+  assert.match(planMarkup, /2시간·4시간 이상 계획/);
+  assert.match(planMarkup, /경험치·배치는 그대로/);
+  assert.doesNotMatch(planMarkup, /\d+%|확정 공부 5시간|돌려받아요|경험치로 반영/);
   assert.doesNotMatch(markup, /풍성한 서식지|180분|플랑크톤|조개/);
   assert.match(render({ gameRules: null }), /공부 보상 규칙 확인 필요/);
   assert.doesNotMatch(render({ gameRules: null }), /확정 공부 5시간|10분 이상|70%/);

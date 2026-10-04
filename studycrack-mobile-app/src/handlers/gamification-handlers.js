@@ -132,9 +132,9 @@ export function createGamificationHandlers(ctx) {
     },
     async startAquariumDraw() {
       if (ctx.pendingDraw || aquariumBusy(ctx.aquariumActionStatus) || ctx.pendingDrawStatus !== 'ready') return false;
-      if (ctx.gameProfile?.ticketPolicyVersion !== 'study-ticket-v1' || !(Number(ctx.gameProfile?.ticketBalance) >= 1)) {
+      if (!['study-ticket-v1', 'planner-ticket-v1'].includes(ctx.gameProfile?.ticketPolicyVersion) || !(Number(ctx.gameProfile?.ticketBalance) >= 1)) {
         ctx.setAquariumActionStatus('error');
-        ctx.setAquariumActionError('사용 가능한 뽑기권이 필요해요. 공부 시간을 모아 다음 친구를 만나보세요.');
+        ctx.setAquariumActionError(ctx.gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? '30분 이상 계정 계획을 완료하면 뽑기권을 받아요.' : '사용 가능한 뽑기권이 필요해요. 공부 시간을 모아 다음 친구를 만나보세요.');
         return true;
       }
       return withOperationLock(ctx.operationLocksRef, 'aquarium-draw', async () => {
@@ -142,7 +142,7 @@ export function createGamificationHandlers(ctx) {
         ctx.setActiveDrawRequestId(drawRequestId);
         ctx.setAquariumActionStatus('drawing');
         ctx.setAquariumActionError('');
-        const response = await ctx.startAquariumFishDraw(drawRequestId);
+        const response = await ctx.startAquariumFishDraw(drawRequestId, ctx.gameProfile.ticketPolicyVersion);
         if (!response?.ok) {
           ctx.setAquariumActionStatus('error');
           ctx.setAquariumActionError(response?.error || '물고기를 뽑지 못했습니다.');

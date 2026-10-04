@@ -141,7 +141,7 @@ try {
   assert.match(rewardedMarkup, /data-step="reward" data-state="complete"/);
   assert.match(rewardedMarkup, /data-step="aquarium" data-state="active"/);
   assert.match(rewardedMarkup, /data-step="fishdex" data-state="pending"/);
-  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="수조 재화"[\s\S]*뽑기권 <b>확인 필요<\/b>/);
+  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="뽑기권"[\s\S]*뽑기권 <b>확인 필요<\/b>/);
   assert.match(rewardedMarkup, /class="sc-empty is-offline aquarium-offline-state"/);
   assert.match(rewardedMarkup, /data-action="retryGameResources"[^>]*>연결 후 다시 불러오기<\/button>/);
 

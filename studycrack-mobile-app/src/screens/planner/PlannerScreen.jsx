@@ -14,7 +14,7 @@ import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotic
 import { eventCoversDate, eventMarksDateInGrid } from '../../constants/admission-calendar.js';
 
 function PlannerItemCard({ item }) {
-  const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
+  const timeLabel = item.accountDurationState === 'unknown' ? '시간 확인 필요' : item.accountDurationState === 'confirmed' ? `${item.minutes}분` : item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
     ? `${item.start} - ${item.end}`
     : item.minutes ? `${item.minutes}분` : '시간 미설정';
   const titleId = `planner-title-${encodeURIComponent(item.id)}`;

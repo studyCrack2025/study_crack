@@ -93,6 +93,14 @@ assert.deepEqual(terminal.state.studyRecovery.pending.map(row => row.sessionId),
 assert.equal(terminal.state.activeStudySession.sessionId, session.sessionId);
 assert.equal(terminal.state.timerPhase, 'running');
 
+const unknownTime = fixture({ claimCompletedStudyReward: async () => ({ ok: false, status: 409, code: 'STUDY_SESSION_TIME_UNCONFIRMED' }) });
+await unknownTime.handlers.stopStudyTimer();
+assert.equal(unknownTime.state.lastCompletedSession.durationSeconds, 1800);
+assert.equal(unknownTime.state.studyRecovery.pending[0].status, 'pending', 'Unconfirmed legacy completion time must remain recoverable, not dismissed as terminal.');
+unknownTime.state.claimCompletedStudyReward = async id => ({ ok: true, data: { sessionId: id, profile: { ticketBalance: 1 } } });
+await unknownTime.handlers.retryStudyReward();
+assert.equal(unknownTime.state.studyRecovery.pending.length, 0);
+
 const previousBrowser = globalThis.window;
 globalThis.window = { boundedClientRequest: async () => { throw new Error('module deadline'); } };
 try {

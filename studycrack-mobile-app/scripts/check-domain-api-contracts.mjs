@@ -119,6 +119,7 @@ const apiModules = [
   'src/features/gamification/api.js',
   'src/features/notifications/api.js',
   'src/features/planner/api.js',
+  'src/features/planner/transport.js',
   'src/features/reports/api.js',
   'src/features/session/api.js',
   'src/features/study/api.js',

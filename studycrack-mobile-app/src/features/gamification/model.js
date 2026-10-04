@@ -12,10 +12,13 @@ export function validateFish(value) {
 }
 
 export function validateGameProfile(value) {
-  const ticketValid = value?.ticketPolicyVersion === undefined || (value.ticketPolicyVersion === 'study-ticket-v1'
+  const plan = value?.ticketPolicyVersion === 'planner-ticket-v1';
+  const ticketValid = value?.ticketPolicyVersion === undefined || ((plan || value.ticketPolicyVersion === 'study-ticket-v1')
     && Number.isSafeInteger(value.ticketBalance) && value.ticketBalance >= 0
     && Number.isSafeInteger(value.ticketProgressSeconds) && value.ticketProgressSeconds >= 0 && value.ticketProgressSeconds < 18000
-    && value.ticketIntervalSeconds === 18000);
+    && (plan ? value.ticketIntervalSeconds === null && Number.isSafeInteger(value.legacyTicketBalance) && value.legacyTicketBalance >= 0
+      && isRecord(value.planTicketCounts) && ['base', 'h2', 'h4'].every(key => Number.isSafeInteger(value.planTicketCounts[key]) && value.planTicketCounts[key] >= 0)
+      && value.ticketBalance === value.legacyTicketBalance + value.planTicketCounts.base + value.planTicketCounts.h2 + value.planTicketCounts.h4 : value.ticketIntervalSeconds === 18000));
   const valid = isRecord(value)
     && ticketValid
     && Number.isFinite(Number(value.shellBalance))
@@ -36,8 +39,7 @@ function validateGameRules(value) {
   const drawPolicyValid = value?.drawPolicy === undefined || (
     isRecord(value.drawPolicy)
       && typeof value.drawPolicy.version === 'string'
-      && isRecord(value.drawPolicy.oddsBasisPoints)
-      && isRecord(value.drawPolicy.pityLimits)
+      && (value.drawPolicy.randomSelection === true || (isRecord(value.drawPolicy.oddsBasisPoints) && isRecord(value.drawPolicy.pityLimits)))
   );
   return isRecord(value) && isRecord(value.dailyCaps) && Array.isArray(value.rewardTiers) && Array.isArray(value.habitatStages)
     && isRecord(value.fishCare) && Number.isFinite(Number(value.drawCostShells)) && drawPolicyValid;

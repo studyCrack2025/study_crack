@@ -30,7 +30,8 @@ function AquariumGrowthSummary({ fishCount }) {
 }
 
 function AquariumWallet({ profile }) {
-  return <div className="aquarium-wallet" role="group" aria-label="수조 재화"><span>뽑기권 <b>{profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b></span><span>{profile?.ticketPolicyVersion === 'study-ticket-v1' ? `다음 뽑기권까지 ${Math.ceil((profile.ticketIntervalSeconds - profile.ticketProgressSeconds) / 60)}분` : '뽑기권 정보 준비 중'}</span><progress aria-label="다음 뽑기권 진행" max={profile?.ticketIntervalSeconds || 18000} value={profile?.ticketProgressSeconds || 0} /></div>;
+  const plan = profile?.ticketPolicyVersion === 'planner-ticket-v1';
+  return <div className="aquarium-wallet" role="group" aria-label="뽑기권"><span>뽑기권 <b>{plan || profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b></span><span>{plan ? '30분 이상 계정 계획 · 첫 완료마다 1장' : profile?.ticketPolicyVersion === 'study-ticket-v1' ? `다음 뽑기권까지 ${Math.ceil((profile.ticketIntervalSeconds - profile.ticketProgressSeconds) / 60)}분` : '뽑기권 정보 준비 중'}</span>{plan ? <small>2시간·4시간 계획은 상위 등급 기회가 높아요.</small> : <progress aria-label="다음 뽑기권 진행" max={profile?.ticketIntervalSeconds || 18000} value={profile?.ticketProgressSeconds || 0} />}</div>;
 }
 
 function AquariumOfflineState() {
@@ -150,10 +151,10 @@ function AquariumWorkspace(ctx) {
           <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canUsePersonalPlanner={ctx.canUsePersonalPlanner} />
           <div className="aquarium-scene-wrap" onClick={event => { if (event.target.closest('[data-action="selectAquariumFish"]:not(:disabled)')) setManagementOpen(true); }}><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={aquariumSelectedFishId} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           <section className="aquarium-discovery-card sc-card" aria-label="물고기 만나기">
-          <div className="aquarium-section-head"><h2>물고기 만나기</h2><small>공부 5시간마다 뽑기권 1장</small></div>
+          <div className="aquarium-section-head"><h2>물고기 만나기</h2><small>{gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? '30분 이상 계획 · 첫 완료 보상' : '공부 5시간마다 뽑기권 1장'}</small></div>
           <AquariumWallet profile={gameProfile} />
           {gameProfileStatus === 'ready' && gameProfile && gameProfile.starterState !== 'claimed' ? <AquariumJourney fishCount={fishCount} profile={gameProfile} /> : null}
-          {gameProfile?.starterState === 'selectable' ? <StarterPanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} selectedSpeciesId={aquariumStarterSpeciesId} /> : gameProfile?.starterState === 'locked' ? <LockedStarterPanel /> : <button type="button" className="btn btn-primary" data-action={pendingDraw || gameProfile?.ticketBalance > 0 || gameProfile?.ticketPolicyVersion !== 'study-ticket-v1' ? 'openAquariumDraw' : 'goto'} data-target="timer" disabled={careBusy}>{pendingDraw ? '뽑기 결과 확인' : gameProfile?.ticketPolicyVersion !== 'study-ticket-v1' ? '뽑기권 상태 확인' : gameProfile.ticketBalance > 0 ? '새 물고기 만나기' : '공부해서 뽑기권 받기'}</button>}
+          {gameProfile?.starterState === 'selectable' ? <StarterPanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} selectedSpeciesId={aquariumStarterSpeciesId} /> : gameProfile?.starterState === 'locked' ? <LockedStarterPanel /> : <button type="button" className="btn btn-primary" data-action={pendingDraw || gameProfile?.ticketBalance > 0 || !['study-ticket-v1', 'planner-ticket-v1'].includes(gameProfile?.ticketPolicyVersion) ? 'openAquariumDraw' : 'goto'} data-target={gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? 'planner' : 'timer'} disabled={careBusy}>{pendingDraw ? '뽑기 결과 확인' : !['study-ticket-v1', 'planner-ticket-v1'].includes(gameProfile?.ticketPolicyVersion) ? '뽑기권 상태 확인' : gameProfile.ticketBalance > 0 ? '새 물고기 만나기' : gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? '계획 완료하고 뽑기권 받기' : '공부해서 뽑기권 받기'}</button>}
           </section>
           <section className="aquarium-care-area sc-card" aria-label="내 수조 관리">
           <div className="aquarium-section-head"><h2>내 수조 관리</h2><button type="button" className="btn btn-secondary" data-action="openAquariumShare" disabled={careBusy || !fishInventory.length}>공유</button></div>
