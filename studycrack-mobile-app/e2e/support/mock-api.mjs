@@ -58,8 +58,8 @@ function encodeToken(payload) {
   return `e2e.${encoded}.signature`;
 }
 
-export async function installAuthenticatedSession(page, { restoreOnNavigation = true } = {}) {
-  const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(Date.now() / 1000) + 3600 });
+export async function installAuthenticatedSession(page, { restoreOnNavigation = true, now = Date.now() } = {}) {
+  const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(now / 1000) + 3600 });
   await page.addInitScript(({ accessToken, restoreOnNavigation }) => {
     const storageInitializedKey = '__studycrackE2eSessionInitialized';
     if (localStorage.getItem(storageInitializedKey) !== 'true') {

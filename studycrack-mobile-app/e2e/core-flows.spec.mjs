@@ -379,7 +379,7 @@ test('타이머 프로필 서랍은 공부·수조 요약과 기존 마이 기�
   await expectNoHorizontalOverflow(page);
 });
 
-test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한다', async ({ page }, testInfo) => {
+test('플래너 상단에서 주·월 일정과 인라인 입력을 탐색한다', async ({ page }, testInfo) => {
   await installAuthenticatedSession(page);
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
@@ -388,10 +388,10 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   const plannerContent = page.locator('.app-content');
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
-  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
-  await expect(plannerContent).toHaveClass(/modal-lock/);
-  expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('hidden');
-  await page.locator('.calendar-sheet-overlay').getByRole('button', { name: '닫기' }).click();
+  await page.getByRole('button', { name: '+ 내 일정 추가', exact: true }).click();
+  await expect(page.getByRole('region', { name: '내 일정 추가', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: '일정 입력 접기' }).click();
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
@@ -404,11 +404,11 @@ test('플래너는 오늘 할 일 뒤에서 기존 주·월 일정을 탐색한�
   expect(tasksBox).not.toBeNull();
   expect(calendarBox).not.toBeNull();
   expect(tasksBox.y).toBeGreaterThan(progressBox.y);
-  expect(calendarBox.y).toBeGreaterThan(tasksBox.y);
+  expect(calendarBox.y).toBeLessThan(progressBox.y);
   await page.getByRole('button', { name: '계획 완료' }).click();
   await expect(page.locator('.planner-progress-head')).toContainText('1/1 완료');
   await page.getByRole('button', { name: '월', exact: true }).click();
-  await expect(page.locator('.planner-calendar-month-panel')).toBeVisible();
+  expect(await page.locator('.calendar-grid .calendar-cell').count()).toBeGreaterThanOrEqual(28);
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
     await expectNoHorizontalOverflow(page);
@@ -475,14 +475,13 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await editedRow.getByRole('button', { name: '계획 삭제' }).click();
   await expect(editedRow).toHaveCount(0);
 
-  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
-  const calendar = page.locator('.calendar-sheet-overlay');
-  await expect(calendar.getByRole('alert')).toContainText('내 일정을 불러오지 못했습니다.');
+  const calendar = page.getByRole('region', { name: '일정 달력', exact: true });
+  await expect(calendar.getByRole('alert')).toContainText('내 일정을 불러오지 못했어요.');
   await calendar.getByRole('button', { name: '다시 불러오기' }).click();
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_admission_calendar').length).toBe(2);
   await expect(calendar.getByRole('alert')).toHaveCount(0);
-  await expect(calendar.getByText('이 날짜에 등록된 일정이 없어요.')).toBeVisible();
-  await calendar.getByRole('button', { name: '닫기' }).click();
+  await expect(calendar.getByText('등록된 일정이 없어요')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await expect(page.locator('.sc-network-status')).toHaveText('오프라인 상태예요. 표시 중인 정보는 최신 상태가 아닐 수 있어요.');

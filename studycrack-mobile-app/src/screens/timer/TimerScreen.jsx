@@ -4,7 +4,6 @@ import { defaultFormatHms } from './presentation.js';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { Sheet } from '../../components/Sheet.jsx';
 import { StudyWeekSummary } from './StudyGamificationPanels.jsx';
-import { AdmissionCalendarSheet } from '../planner/AdmissionCalendarSheet.jsx';
 
 const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session'];
 
@@ -82,7 +81,7 @@ export function TimerScreen(ctx) {
   </Sheet> : null;
 
   return (
-    <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlayOpen={Boolean(overlays || ctx.calendarSheetOpen || ctx.calendarEventFormOpen)} overlays={<>{overlays}{ctx.calendarSheetOpen || ctx.calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</>}>
+    <AppScreenShell screen="timer" tab={tab} dimmed={dimmed} overlayOpen={Boolean(overlays)} overlays={overlays}>
       <HomeDashboard {...ctx} user={user} canAccessBasic={canAccessBasic} activeStudySession={activeStudySession} completionError={completionError} lastCompletedSession={lastCompletedSession} rewardPendingSessionId={rewardPendingSessionId} rewardResult={rewardResult} normalizedTargetMajor={normalizedTargetMajor} calendarNearestDdayLabel={calendarNearestDdayLabel} calendarNearestEvent={calendarNearestEvent} analysisScoreView={analysisScoreView} studySummary={studySummary} studySummaryStatus={studySummaryStatus} studySessionDetailsOpen={studySessionDetailsOpen} studyTimerRunning={studyTimerRunning} timerPhase={timerPhase} todayPlannerItems={todayPlannerItems} confirmedLabel={confirmedLabel} summaryReady={hasServerSummary} displayedTodaySeconds={displayedTodaySeconds} formatHms={formatHms} liveSeconds={liveSeconds} studyStartBlocked={studyStartBlocked} studyStartBlockReason={studyStartBlockReason} />
     </AppScreenShell>
   );

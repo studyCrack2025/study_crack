@@ -8,6 +8,15 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    personalEvents: [],
+    calendarSupportsIdempotency: false,
+    calendarSyncStatus: 'idle',
+    calendarEventDraft: null,
+    calendarEventEditId: null,
+    calendarEventFormOpen: false,
+    calendarSaving: false,
+    calendarMutationError: '',
+    calendarMutationRecovery: null,
     myReturn: null,
     drawerOpen: false,
     streakSummary: { open: false, returnTarget: '' },

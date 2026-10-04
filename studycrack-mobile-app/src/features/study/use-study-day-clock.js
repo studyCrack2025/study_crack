@@ -8,8 +8,6 @@ export function studyDayPatch(state, now = new Date()) {
   if (state.todayDate === todayDate && state.studyKoreaDate === studyKoreaDate) return null;
   const patch = { todayDate, studyKoreaDate };
   if (!state.selectedDate || state.selectedDate === state.todayDate) patch.selectedDate = todayDate;
-  if (!state.calendarSelectedDate || state.calendarSelectedDate === state.todayDate) patch.calendarSelectedDate = todayDate;
-  if (!state.calendarMonthAnchor || ((!state.calendarSelectedDate || state.calendarSelectedDate === state.todayDate) && state.calendarMonthAnchor === `${state.todayDate?.slice(0, 7)}-01`)) patch.calendarMonthAnchor = `${todayDate.slice(0, 7)}-01`;
   return patch;
 }
 

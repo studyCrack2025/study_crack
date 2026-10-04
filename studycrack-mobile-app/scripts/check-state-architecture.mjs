@@ -21,6 +21,8 @@ assert.deepEqual(Object.keys(SCREEN_CONTEXT_KEYS).sort(), registeredScreens, '�
 assert.equal(Object.keys(createInitialAppState()).length, 12, 'root state는 12개 feature slice를 유지해야 합니다.');
 assert.equal(Object.keys(APP_STATE_FIELD_OWNERS).length, 254, 'state field 분류 누락 또는 무단 추가를 확인하세요.');
 assert.equal(Object.keys(APP_STATE_FIELD_KINDS).length, 254, 'state field 종류 분류 누락 또는 무단 추가를 확인하세요.');
+for (const retired of ['calendarSheetOpen', 'calendarSelectedDate', 'calendarMonthAnchor']) assert.equal(APP_STATE_FIELD_OWNERS[retired], undefined);
+for (const field of ['calendarMutationError', 'calendarMutationRecovery']) assert.equal(APP_STATE_FIELD_OWNERS[field], 'account');
 for (const [field, kind] of [['studyRecovery', 'localDraft'], ['rewardRecoveryError', 'ephemeralUi'], ['rewardClaimingSessionId', 'ephemeralUi']]) {
   assert.equal(APP_STATE_FIELD_OWNERS[field], 'study');
   assert.equal(APP_STATE_FIELD_KINDS[field], kind);

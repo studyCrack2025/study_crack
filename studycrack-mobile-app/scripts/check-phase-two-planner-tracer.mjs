@@ -27,6 +27,7 @@ assert.equal(
 assert.equal(APP_STATE_FIELD_KINDS.calendarRefreshTick, undefined, 'calendar retry must not add persisted or server state');
 
 const persistenceSource = await readFile(new URL('../src/app/use-planner-storage.js', import.meta.url), 'utf8');
+const calendarScreenSource = await readFile(new URL('../src/screens/planner/AdmissionCalendar.jsx', import.meta.url), 'utf8');
 const plannerScreenSource = await readFile(new URL('../src/screens/planner/PlannerScreen.jsx', import.meta.url), 'utf8');
 const [plannerCss, plannerAddCss, plannerCalendarCss, sheetsCss] = await Promise.all([
   readFile(new URL('../src/styles/screens/planner.css', import.meta.url), 'utf8'),
@@ -40,7 +41,7 @@ assert.match(
   'planner persistence must read the local-draft partition'
 );
 assert.match(
-  plannerScreenSource,
+  calendarScreenSource,
   /const currentMode = event\.target\.getAttribute\('data-planner-calendar-mode'\) \|\| activeMode;\s+const nextMode = nextPlannerCalendarMode\(currentMode, event\.key\);\s+if \(nextMode === currentMode\) return;/,
   'planner tab keyboard navigation must move from the focused tab, not the previously selected tab'
 );
@@ -50,9 +51,8 @@ assert.match(plannerCss, /\.planner-item-remove\{[^}]*width:var\(--sc-touch-targ
 assert.match(plannerCss, /\.planner-item-done i\{[^}]*width:28px;[^}]*height:28px;/, 'completion artwork stays 28px within its hitbox');
 assert.match(plannerAddCss, /\.planner-choice-chip span\{[^}]*min-height:var\(--sc-touch-target\)/, 'planner choice chips must have 44px targets');
 assert.match(plannerCalendarCss, /\.planner-inline-segment button\{[^}]*height:var\(--sc-touch-target\)/, 'planner tabs must have 44px targets');
-assert.match(plannerCalendarCss, /\.calendar-sheet-head \.qna-modal-close,\.calendar-form-head \.qna-modal-close\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner calendar close controls must have 44px targets');
 assert.match(plannerCalendarCss, /\.calendar-nav-btn\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner calendar navigation must have 44px targets');
-assert.match(plannerCalendarCss, /\.calendar-selected-head \.btn\{[^}]*min-height:var\(--sc-touch-target\)/, 'planner calendar add must have a 44px target');
+assert.match(plannerCalendarCss, /\.calendar-heading \.planner-admission-trigger\{[^}]*min-height:var\(--sc-touch-target\)/, 'planner calendar add must have a 44px target');
 assert.match(sheetsCss, /\.planner-sheet-close\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner edit close must have a 44px target');
 
 const plannerItem = {
@@ -72,8 +72,8 @@ const vite = await createServer({
   server: { middlewareMode: true }
 });
 try {
-  const [{ AdmissionCalendarSheet }, { PlannerScreen }, { TimerScreen }] = await Promise.all([
-    vite.ssrLoadModule('/src/screens/planner/AdmissionCalendarSheet.jsx'),
+  const [{ AdmissionCalendar }, { PlannerScreen }, { TimerScreen }] = await Promise.all([
+    vite.ssrLoadModule('/src/screens/planner/AdmissionCalendar.jsx'),
     vite.ssrLoadModule('/src/screens/planner/PlannerScreen.jsx'),
     vite.ssrLoadModule('/src/screens/timer/TimerScreen.jsx')
   ]);
@@ -95,7 +95,8 @@ try {
   assert.match(plannerMarkup, /data-action="openPlannerEdit"/, 'planner rows must keep edit entry');
   assert.match(plannerMarkup, /data-action="togglePlannerDone"/, 'planner rows must keep local completion');
   assert.match(plannerMarkup, /data-action="removePlannerItem"/, 'planner rows must keep delete');
-  assert.match(plannerMarkup, /data-action="openCalendarSheet"/, 'planner must keep calendar entry');
+    assert.match(plannerMarkup, /data-action="openCalendarEventForm"/);
+  assert.doesNotMatch(plannerMarkup, /role="dialog"/);
   assert.match(plannerMarkup, /role="group" aria-label="달력 보기 방식"/, 'week/month mode must expose a labelled button group');
   assert.match(plannerMarkup, /<button(?=[^>]*data-planner-calendar-mode="week")(?=[^>]*aria-pressed="true")[^>]*>주</, 'active calendar mode must expose pressed state');
   assert.doesNotMatch(plannerMarkup, /role="(?:tablist|tab)"/, 'week/month buttons must not expose an incomplete tabs pattern');
@@ -115,18 +116,16 @@ try {
   const plannerEmptyMarkup = renderToStaticMarkup(PlannerScreen({ plannerEditIndex: null, tab: 'planner' }));
   assert.match(plannerEmptyMarkup, /아직 등록한 계획이 없어요/, 'an empty local planner must remain distinct from a load failure');
 
-  const calendarLoadingMarkup = renderToStaticMarkup(AdmissionCalendarSheet({
-    calendarSheetOpen: true,
+  const calendarLoadingMarkup = renderToStaticMarkup(AdmissionCalendar({
     calendarSyncStatus: 'loading'
   }));
-  assert.match(calendarLoadingMarkup, /role="dialog"/, 'calendar loading must remain in the accessible sheet');
+  assert.doesNotMatch(calendarLoadingMarkup, /role="dialog"/, 'calendar loading remains inline');
   assert.match(calendarLoadingMarkup, /내 일정을 동기화하고 있어요\./, 'calendar loading must be explicit');
 
-  const calendarErrorMarkup = renderToStaticMarkup(AdmissionCalendarSheet({
-    calendarSheetOpen: true,
+  const calendarErrorMarkup = renderToStaticMarkup(AdmissionCalendar({
     calendarSyncStatus: 'error'
   }));
-  assert.match(calendarErrorMarkup, /data-action="openCalendarSheet"[^>]*data-calendar-retry="true"[^>]*>다시 불러오기</, 'calendar errors must expose a retry-specific control');
+  assert.match(calendarErrorMarkup, /data-action="retryCalendar"[^>]*>다시 불러오기</, 'calendar errors must expose a retry-specific control');
 } finally {
   await vite.close();
 }
@@ -215,14 +214,10 @@ assert.deepEqual(editedItems, []);
 let calendarStatus = 'error';
 const calendarRetryHandlers = createCalendarHandlers({
   calendarSyncStatus: 'error',
-  setCalendarSheetOpen() {},
+
   setCalendarSyncStatus(value) { calendarStatus = value; }
 });
-assert.equal(calendarRetryHandlers.openCalendarSheet(), true);
-assert.equal(calendarStatus, 'error', 'opening the calendar must preserve a visible load error');
-assert.equal(calendarRetryHandlers.openCalendarSheet({
-  actionEl: { getAttribute: (name) => name === 'data-calendar-retry' ? 'true' : null }
-}), true);
+assert.equal(calendarRetryHandlers.retryCalendar(), true);
 assert.equal(calendarStatus, 'idle', 'calendar retry must re-enable the existing resource without changing data');
 
 const calendarFields = new Map([
@@ -238,6 +233,7 @@ const failedCalendarHandlers = createCalendarHandlers({
   calendarEventEditId: null,
   calendarSaving: false,
   calendarSyncStatus: 'ready',
+  calendarSupportsIdempotency: true,
   confirm: () => true,
   document: { querySelector: (selector) => calendarFields.get(selector.match(/data-calendar-field="([^"]+)"/)?.[1]) || null },
   hasClientSession: () => true,
@@ -246,7 +242,10 @@ const failedCalendarHandlers = createCalendarHandlers({
   setCalendarEventEditId() {},
   setCalendarEventFormOpen() {},
   setCalendarSaving() {},
-  setCalendarSelectedDate() {},
+  setSelectedDate() {},
+  setCalendarMutationError() {},
+  setCalendarMutationRecovery() {},
+  calendarEventDraft: { title: '시험', date: '2026-09-05', category: 'personal' },
   setPersonalEvents() { calendarRollbackMutations += 1; },
   userApiUrl: '/api/user'
 });

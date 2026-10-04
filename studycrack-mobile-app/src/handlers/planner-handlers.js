@@ -115,7 +115,6 @@ function shiftPlannerDate(date, delta, mode) {
 
 export function createPlannerHandlers(ctx) {
   const {
-    centerPlannerDate = noop,
     goto,
     plannerCalendarMode = 'week',
     plannerContentRef,
@@ -125,7 +124,6 @@ export function createPlannerHandlers(ctx) {
     plannerEditItem = null,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
@@ -191,7 +189,6 @@ export function createPlannerHandlers(ctx) {
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;
     },

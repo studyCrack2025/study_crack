@@ -10,7 +10,7 @@ import { mobileInteractions } from '../shared/browser/mobile-interactions.js';
 import { attachVisualViewportMetrics } from '../shared/browser/visual-viewport.js';
 import { hasSeenIntro } from '../features/session/intro-storage.js';
 
-const { useCallback, useEffect, useLayoutEffect, useRef, useState } = React;
+const { useCallback, useEffect, useRef, useState } = React;
 
 export function useDeferredScreenRegistry(screen) {
   const [registry, setRegistry] = useState(null);
@@ -46,9 +46,8 @@ export function useDeferredScreenRegistry(screen) {
 }
 
 export function useMobileAppEffects({ events, nav, setState, state } = {}) {
-  const plannerCenteredRef = useRef(false);
   const eventsRef = useRef(events);
-  const { scrollOps, timerOps } = mobileInteractions;
+  const { timerOps } = mobileInteractions;
   eventsRef.current = events;
 
   useEffect(() => attachVisualViewportMetrics(), []);
@@ -56,13 +55,6 @@ export function useMobileAppEffects({ events, nav, setState, state } = {}) {
   useEffect(() => {
     markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
   }, []);
-
-  useLayoutEffect(() => {
-    if (state.screen !== 'planner') return;
-    const behavior = plannerCenteredRef.current ? 'smooth' : 'auto';
-    scrollOps.centerPlannerDate(state.selectedDate, behavior);
-    plannerCenteredRef.current = true;
-  }, [scrollOps, state.screen, state.selectedDate]);
 
   useEffect(() => {
     if (state.screen === 'home' || state.homeDragOffset === 0) return;

@@ -129,7 +129,6 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     afterSafariViewportStable: scrollOps.afterSafariViewportStable,
     restoreIfUnexpectedTopJump: scrollOps.restoreIfUnexpectedTopJump,
     markStableScrollPosition: scrollOps.markStableScrollPosition,
-    centerPlannerDate: scrollOps.centerPlannerDate,
     studyTimerSecondsRef: timerOps.studyTimerSecondsRef,
     startLiveStudyTimer: timerOps.startLiveStudyTimer,
     stopLiveStudyTimer: timerOps.stopLiveStudyTimer,

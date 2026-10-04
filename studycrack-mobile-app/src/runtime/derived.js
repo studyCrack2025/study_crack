@@ -623,15 +623,13 @@ export function buildCalendarDerived(state = {}) {
   const calendarNearestDdayLabel = nearestEvent ? formatDdayLabel(nearestEvent.date, today) : '';
   const calendarNearestDday = nearestEvent ? computeDday(nearestEvent.date, today) : null;
 
-  const anchor = /^\d{4}-\d{2}-\d{2}$/.test(state.calendarMonthAnchor || '')
-    ? state.calendarMonthAnchor
-    : `${today.slice(0, 7)}-01`;
+  const selected = toDateKey(parsePlannerDate(state.selectedDate || today));
+  const anchor = `${selected.slice(0, 7)}-01`;
   const year = Number(anchor.slice(0, 4));
   const month = Number(anchor.slice(5, 7)); // 1-12
   const calendarMonthLabel = `${year}년 ${month}월`;
   const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0=일
   const daysInMonth = new Date(year, month, 0).getDate();
-  const selected = state.calendarSelectedDate || today;
 
   const calendarMonthCells = [];
   for (let i = 0; i < firstWeekday; i += 1) calendarMonthCells.push({ blank: true, key: `b${i}` });
@@ -646,6 +644,7 @@ export function buildCalendarDerived(state = {}) {
       isToday: ymd === today,
       isSelected: ymd === selected,
       hasEvents: dayMarks.length > 0,
+      eventCount: dayMarks.length,
       eventDots: dayMarks.slice(0, 3).map((e) => ({ category: e.category, source: e.source }))
     });
   }

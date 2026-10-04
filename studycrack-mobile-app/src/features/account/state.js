@@ -1,4 +1,3 @@
-import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { createFeatureSlice } from '../../state/create-feature-slice.js';
 
 export function createAccountInitialState() {
@@ -7,6 +6,7 @@ export function createAccountInitialState() {
       productGuide: null,
       selectedPlan: '',
       personalEvents: [],
+      calendarSupportsIdempotency: false,
       calendarSyncStatus: 'idle'
     },
     localDraft: {
@@ -18,12 +18,11 @@ export function createAccountInitialState() {
       withdrawPassword: ''
     },
     ephemeralUi: {
-      calendarSheetOpen: false,
-      calendarSelectedDate: getTodayDateKey(),
-      calendarMonthAnchor: `${getTodayDateKey().slice(0, 7)}-01`,
       calendarEventFormOpen: false,
       calendarEventEditId: null,
       calendarSaving: false,
+      calendarMutationError: '',
+      calendarMutationRecovery: null,
       logoutModalOpen: false,
       withdrawModalOpen: false,
       withdrawSubmitting: false,

@@ -11,8 +11,8 @@ const ANALYSIS_CONTEXT_KEYS = [
 const CALENDAR_CONTEXT_KEYS = [
   'todayDate',
   'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel',
-  'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving', 'calendarSelectedDate', 'calendarSelectedEvents',
-  'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays'
+  'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving', 'calendarSelectedEvents',
+  'calendarMutationError', 'calendarMutationRecovery', 'calendarSyncStatus', 'calendarWeekdays'
 ];
 
 export const SCREEN_CONTEXT_KEYS = Object.freeze({
@@ -138,6 +138,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
 });
 
 const SCREEN_ACTION_KEYS = Object.freeze({
+  planner: Object.freeze({ group: 'calendar', keys: ['setCalendarEventDraft'] }),
   authSignup: Object.freeze({ group: 'auth', keys: ['setSignupError', 'setSignupTerms'] })
 });
 

@@ -60,8 +60,8 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'universityRecommendationRetryTick', 'universitySelectedName'
   ]),
   calendar: Object.freeze([
-    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthAnchor',
-    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'calendarSyncStatus', 'personalEvents'
+    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMutationError',
+    'calendarMutationRecovery', 'calendarSaving', 'calendarSyncStatus', 'personalEvents', 'selectedDate'
   ]),
   form: Object.freeze([
     'analysisSearchTerm', 'coachingAnswers', 'coachingExamFiles', 'coachingExamScores',

@@ -9,58 +9,36 @@ async function setup(page) {
   await installApiMock(page, { tier: 'pro' });
 }
 
-test('일정 수정은 키보드로 열고 앱 뒤로가기 계약은 중첩 창부터 닫는다', async ({ page }) => {
+test('일정 입력은 키보드로 열고 접어도 초안을 보존한다', async ({ page }) => {
   await setup(page);
-  await page.route('**/api/**', route => {
-    if (route.request().postDataJSON()?.type !== 'get_admission_calendar') return route.fallback();
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ events: [{ id: 'event-1', title: '수정할 일정', date: '2026-09-07', category: 'personal', source: 'personal', note: '남겨둔 메모' }] }) });
-  });
   await page.goto('/studycrack-mobile.html?screen=planner');
-  const trigger = page.getByRole('button', { name: '일정 더보기', exact: true });
-  await trigger.click();
-  const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
-  const edit = calendar.getByRole('button', { name: /수정할 일정/ });
-  await edit.focus();
+  const add = page.getByRole('button', { name: '+ 내 일정 추가', exact: true });
+  await add.focus();
   await page.keyboard.press('Enter');
-  const form = page.getByRole('dialog', { name: '내 일정 수정', exact: true });
-  await checkCycle(page, form, '저장');
-  await expect(form.getByLabel('메모', { exact: true })).toHaveValue('남겨둔 메모');
-  // Inject only a test action probe; use the application's existing delegated back handler.
-  await form.evaluate(element => {
-    const probe = document.createElement('button');
-    probe.dataset.action = 'back';
-    element.append(probe);
-    probe.click();
-    probe.remove();
-  });
-  await expect(form).toHaveCount(0);
-  await expect(edit).toBeFocused();
-  await expect(calendar).toBeVisible();
-  await expect(page.locator('[data-screen="planner"]')).toHaveCount(1);
-  await page.keyboard.press('Space');
+  const form = page.getByRole('region', { name: '내 일정 추가', exact: true });
   await expect(form).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(edit).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(trigger).toBeFocused();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const title = form.getByLabel('일정 제목', { exact: true });
+  await title.fill('키보드로 작성한 일정');
+  await title.press('Escape');
+  await expect(form).toBeVisible();
+  await page.getByRole('button', { name: '일정 입력 접기' }).click();
+  await expect(form).toHaveCount(0);
+  await page.getByRole('button', { name: '작성하던 일정 이어쓰기' }).click();
+  await expect(title).toHaveValue('키보드로 작성한 일정');
+  await expect(page.locator('.app-content')).not.toHaveClass(/modal-lock/);
 });
 
-test('일정 수정창 초기 키보드 포커스는 다음 프레임을 기다리지 않는다', async ({ page }) => {
+test('일정 입력은 기존 추가 버튼의 포커스를 가로채지 않는다', async ({ page, browserName }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
-  await page.getByRole('button', { name: '일정 더보기', exact: true }).click();
-  const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
-  const add = calendar.getByRole('button', { name: '+ 내 일정 추가' });
+  const add = page.getByRole('button', { name: '+ 내 일정 추가', exact: true });
   await add.focus();
-  // Hold animation callbacks to exercise input before the next animation frame.
-  await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
   await page.keyboard.press('Enter');
-  const form = page.getByRole('dialog', { name: '내 일정 추가', exact: true });
-  await expect(form).toBeVisible();
-  await expect(form.getByRole('button', { name: '닫기', exact: true })).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(form).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '내 일정 추가', exact: true })).toBeVisible();
   await expect(add).toBeFocused();
+  await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+  await expect(page.getByRole('button', { name: '주', exact: true })).toBeFocused();
 });
 
 test('코칭 제출 실패 후 입력과 포커스를 유지하고 재시도한다', async ({ page }) => {
@@ -124,52 +102,42 @@ async function checkKeyboardHeight(page, dialog, info, name) {
 }
 
 for (const width of [320, 360, 390, 430]) {
-  test(`캘린더 중첩 포커스·저장 실패 초안·키보드 높이를 보존한다 (${width}px)`, async ({ page }, info) => {
+  test(`인라인 일정의 실패 초안과 좁은 화면을 보존한다 (${width}px)`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     await setup(page);
     let saves = 0;
-    page.on('dialog', dialog => dialog.accept());
-    await page.route('**/api/**', async route => {
+    let events = [];
+    await page.route('**/api/user', async route => {
       const body = route.request().postDataJSON();
-      if (body?.type !== 'upsert_admission_calendar_event') return route.fallback();
+      if (body.type === 'get_admission_calendar') return route.fulfill({ json: { events, supportsClientRequestId: true } });
+      if (body.type !== 'upsert_admission_calendar_event') return route.fallback();
       saves++;
-      return route.fulfill({ status: saves === 1 ? 409 : 200, contentType: 'application/json', body: JSON.stringify(saves === 1 ? { error: '저장 충돌 테스트' } : { events: [] }) });
+      if (saves === 1) return route.fulfill({ status: 400, json: { error: '검증 실패' } });
+      const event = { ...body.data, id: body.data.clientRequestId };
+      events = [event];
+      return route.fulfill({ json: { events, event } });
     });
     await page.goto('/studycrack-mobile.html?screen=planner');
-    const trigger = page.getByRole('button', { name: '일정 더보기', exact: true });
-    await trigger.click();
-    const calendar = page.getByRole('dialog', { name: '수험 일정', exact: true });
-    await checkCycle(page, calendar, '+ 내 일정 추가');
-    await checkKeyboardHeight(page, calendar, info, `calendar-${width}`);
-    const add = calendar.getByRole('button', { name: '+ 내 일정 추가', exact: true });
-    await add.click();
-    const form = page.getByRole('dialog', { name: '내 일정 추가', exact: true });
-    await checkCycle(page, form, '저장');
-    await expect(page.locator('.calendar-sheet-overlay')).toHaveAttribute('inert', '');
-    await expect(page.locator('.calendar-sheet-overlay')).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.getByRole('dialog')).toHaveCount(1);
-    const layers = await page.evaluate(() => ['.calendar-sheet-overlay', '.calendar-event-overlay'].map(selector => Number(getComputedStyle(document.querySelector(selector)).zIndex)));
-    expect(layers[1]).toBeGreaterThan(layers[0]);
+    await page.getByRole('button', { name: '+ 내 일정 추가', exact: true }).click();
+    const form = page.getByRole('region', { name: '내 일정 추가', exact: true });
     const title = form.getByLabel('일정 제목', { exact: true });
     await title.fill('한글 조합과 실패 초안');
     await title.dispatchEvent('keydown', { key: 'Escape', code: 'Escape', isComposing: true, bubbles: true });
-    await expect(form).toBeVisible();
+    await form.locator('summary').click();
     await form.getByLabel('메모', { exact: true }).fill('첫째 줄\n둘째 줄');
-    await checkKeyboardHeight(page, form, info, `calendar-form-${width}`);
     await form.getByRole('button', { name: '저장', exact: true }).click();
     await expect.poll(() => saves).toBe(1);
+    await expect(form.getByRole('alert')).toBeVisible();
     await expect(title).toHaveValue('한글 조합과 실패 초안');
     await expect(form.getByLabel('메모', { exact: true })).toHaveValue('첫째 줄\n둘째 줄');
-    await expect(form.getByRole('button', { name: '저장', exact: true })).toBeEnabled();
-    await expect.poll(() => form.evaluate(element => element.contains(document.activeElement))).toBe(true);
+    await page.setViewportSize({ width, height: 400 });
+    await form.getByRole('button', { name: '저장', exact: true }).scrollIntoViewIfNeeded();
+    await expect(form.getByRole('button', { name: '저장', exact: true })).toBeInViewport();
+    await expect(page.locator('.app-content')).not.toHaveClass(/modal-lock/);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.screenshot({ path: info.outputPath(`calendar-draft-${width}.png`), animations: 'disabled' });
     await form.getByRole('button', { name: '저장', exact: true }).click();
     await expect(form).toHaveCount(0);
-    await expect(add).toBeFocused();
-    await expect(page.locator('.calendar-sheet-overlay')).not.toHaveAttribute('inert', '');
-    await page.keyboard.press('Escape');
-    await expect(trigger).toBeFocused();
-    await expect(page.locator('.app-content')).not.toHaveAttribute('inert', '');
     expect(saves).toBe(2);
     await expectNoHorizontalOverflow(page);
   });
