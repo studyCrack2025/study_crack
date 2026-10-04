@@ -24,7 +24,7 @@ export function PlannerAccountPanel() {
   const candidates = view.verified ? controller.getItems().filter(item => !item.done && !(Number(item.doneMinutes) > 0) && !snapshot?.imports?.some(row => row.sourceId === item.id)) : [];
   const items = view.verified ? (snapshot?.items || []).filter(item => !item.deleted) : [];
   return <details className="card planner-account-panel">
-    <summary>계정에 저장한 계획</summary>
+    <summary>계획 저장 관리</summary>
     <div className="planner-account-body" aria-busy={view.busy}>
       <p>{snapshot?.version === 2 ? '계획과 시간은 계정에 저장돼요. 메모는 이 기기에만 보관해요.' : '기기 원본은 유지돼요. 선택한 미완료 계획만 계정에 가져올 수 있어요.'}</p>
       <div className="planner-account-actions">

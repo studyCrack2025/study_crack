@@ -3,6 +3,7 @@ import './check-planner-storage.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement } from 'react';
 import { createServer } from 'vite';
 import { APP_STATE_FIELD_KINDS } from '../src/runtime/app-state.js';
 import { createCalendarHandlers } from '../src/handlers/calendar-handlers.js';
@@ -72,6 +73,21 @@ const vite = await createServer({
   server: { middlewareMode: true }
 });
 try {
+  const { PlannerAccountNotice } = await vite.ssrLoadModule('/src/features/planner/PlannerAccountNotice.jsx');
+  const { PlannerStorageContext } = await vite.ssrLoadModule('/src/features/planner/PlannerStorageContext.js');
+  const renderStorage = view => renderToStaticMarkup(createElement(PlannerStorageContext.Provider, { value: { controller: { account: { getView: () => view } } } }, createElement(PlannerAccountNotice)));
+  const storedView = { mode: 'account', verified: true, busy: false, snapshot: { version: 2, queue: [] }, result: { ok: true } };
+  assert.match(renderStorage(storedView), /저장된 계획/);
+  assert.match(renderStorage(storedView), /<details><summary>저장 안내<\/summary>/);
+  assert.match(renderStorage({ ...storedView, busy: true }), /저장 중/);
+  assert.match(renderStorage({ ...storedView, verified: false, result: null }), /계정 연결 확인 필요/);
+  assert.match(renderStorage({ ...storedView, mode: 'device' }), /이 기기에 보관 중/);
+  assert.match(renderStorage({ ...storedView, result: { ok: false, status: 409 } }), /다른 기기의 변경이 있어요/);
+  assert.match(renderStorage({ ...storedView, result: { ok: false, status: 503 } }), /저장을 다시 확인해요/);
+  assert.match(renderStorage({ ...storedView, snapshot: { queue: [{}] }, result: { ok: false, error: 'network' } }), /서버 반영 대기 1건/);
+  const restored = renderStorage({ ...storedView, result: { ok: true, completionStatus: 'issued', replayed: true } });
+  assert.match(restored, /추가 지급은 아니에요/);
+  assert.doesNotMatch(restored, /1장이 지급됐어요/);
   const [{ AdmissionCalendar }, { PlannerScreen }, { TimerScreen }] = await Promise.all([
     vite.ssrLoadModule('/src/screens/planner/AdmissionCalendar.jsx'),
     vite.ssrLoadModule('/src/screens/planner/PlannerScreen.jsx'),
@@ -88,8 +104,8 @@ try {
   assert.doesNotMatch(plannerMarkup, /app-content modal-lock/, 'planner defaults must remain interactive when no overlay is open');
   assert.match(
     plannerMarkup,
-    /계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요\./,
-    'planner must explain local plan storage separately from confirmed study records'
+    /이 기기에 보관 중/,
+    'planner must identify local-only storage without claiming a confirmed study record'
   );
   assert.match(plannerMarkup, /data-action="openPlannerAddPage"/, 'planner must keep the add route');
   assert.match(plannerMarkup, /data-action="openPlannerEdit"/, 'planner rows must keep edit entry');

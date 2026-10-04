@@ -429,7 +429,7 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await expect(preview).toContainText('독서');
   await preview.getByRole('button', { name: /전체 보기/ }).click();
   await expect(page.locator('[data-screen="planner"]')).toBeVisible();
-  await expect(page.getByText('계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.')).toBeVisible();
+  await expect(page.getByText('이 기기에 보관 중', { exact: true })).toBeVisible();
   const calendarModes = page.getByRole('group', { name: '달력 보기 방식' });
   await expect(calendarModes.getByRole('button', { name: '주', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await calendarModes.getByRole('button', { name: '월', exact: true }).press('ArrowLeft');
