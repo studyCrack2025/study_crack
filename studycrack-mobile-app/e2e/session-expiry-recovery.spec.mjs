@@ -63,6 +63,11 @@ test('유효한 갱신 후 서비스 권한 거절은 세션을 삭제하지 않
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBe('owner');
 });
 
+test('결제 내역 읽기만 재전송하고 결제 상태 확인·생성은 재전송하지 않는다', async ({ page }) => {
+  await setup(page);
+  expect(await page.evaluate(() => ['list_payment_history', 'get_payment_status', 'create_payment_intent'].map(type => canReplaySharedRequest({ method: 'POST', body: JSON.stringify({ type, data: { cursor: null } }) })))).toEqual([true, false, false]);
+});
+
 test('세션 정리 뒤 늦은 갱신은 토큰을 복원하지 않고 초안은 보존한다', async ({ page }) => {
   await setup(page);
   await page.evaluate(() => {

@@ -85,7 +85,7 @@ for (const rate of [1, 4]) {
     }
   });
 
-  test(`account switch before pageshow reloads into the new owner without old bank details (${rate}x CPU)`, async ({ page, context }) => {
+  test(`account switch before pageshow preserves manual recovery and rejects old bank details (${rate}x CPU)`, async ({ page, context }) => {
     const api = await setup(page);
     const imageArrived = deferred(), imageRelease = deferred();
     await page.route('**/__payment-load-gate.png', async route => {
@@ -109,16 +109,19 @@ for (const rate of [1, 4]) {
       expect(await page.evaluate(() => window.__paymentPageShown)).toBe(false);
       await switchAccount(page);
       await expect(page.locator('#successTitle')).toHaveText('결제 상태를 다시 확인해주세요');
-      const reloaded = page.waitForEvent('request', request => request.isNavigationRequest() && request.frame() === page.mainFrame());
       imageRelease.resolve();
-      await reloaded;
+      await expect.poll(() => page.evaluate(() => window.__paymentPageShown)).toBe(true);
+      await expectNoBank(page);
+      expect(api.calls).toEqual([owner]);
+      expect(api.navigations).toHaveLength(1);
+      await page.locator('#statusRetry').click();
       await expect.poll(() => api.calls).toEqual([owner, other]);
       await expect(page.locator('#successTitle')).toHaveText('이 계정에서 결제 정보를 확인할 수 없어요');
       api.response.resolve();
       await api.settled.promise;
       await page.evaluate(() => new Promise(requestAnimationFrame));
       await expectNoBank(page);
-      expect(api.navigations).toHaveLength(2);
+      expect(api.navigations).toHaveLength(1);
       expect(await page.evaluate(() => localStorage.getItem('userId'))).toBe(other);
     } finally {
       imageRelease.resolve();

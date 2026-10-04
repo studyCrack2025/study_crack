@@ -48,7 +48,12 @@ for (const viewport of viewports) {
     expect(idleStyle.width).toBe('48px');
     expect(idleStyle.height).toBe('48px');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(99, 112, 131)');
-    await expect(nav).toHaveCSS('height', '72px');
+    await expect(nav).toHaveCSS('min-height', '72px');
+    await expect.poll(() => nav.evaluate(element => {
+      const height = element.getBoundingClientRect().height;
+      const content = document.querySelector('.app-content');
+      return height >= 72 && content && parseFloat(getComputedStyle(content).paddingBottom) >= height;
+    })).toBe(true);
     await expect(icon).toHaveCSS('border-top-width', '2px');
     await expect(icon).toHaveCSS('border-radius', '16px');
     await expect(icon).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
