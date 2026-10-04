@@ -11,16 +11,18 @@ export function buildTimerJourneyPresentation({
   completionError = '',
   lastCompletedSession = null,
   rewardPendingSessionId = '',
+  rewardClaimingSessionId = '',
+  rewardRecoveryError = '',
   rewardResult = null,
   timerPhase = 'idle'
 } = {}) {
-  const completionConfirmed = timerPhase === 'claiming-reward' || timerPhase === 'rewarded'
-    || Boolean(lastCompletedSession) || Boolean(rewardPendingSessionId) || Boolean(rewardResult);
+  const completionConfirmed = !activeStudySession && (timerPhase === 'claiming-reward' || timerPhase === 'rewarded'
+    || Boolean(lastCompletedSession) || Boolean(rewardPendingSessionId) || Boolean(rewardResult));
   const session = lastCompletedSession || activeStudySession || null;
   const startingFailed = timerPhase === 'recoverable-error' && activeStudySession?.status === 'starting';
   const completionFailed = timerPhase === 'recoverable-error' && activeStudySession?.status === 'running';
   const terminalRewardFailure = timerPhase === 'terminal-reward-error' && Boolean(rewardPendingSessionId);
-  const rewardFailed = (timerPhase === 'recoverable-error' || terminalRewardFailure) && Boolean(rewardPendingSessionId);
+  const rewardFailed = !activeStudySession && (rewardRecoveryError || timerPhase === 'recoverable-error' || terminalRewardFailure) && Boolean(rewardPendingSessionId);
   const sessionState = completionConfirmed
     ? 'complete'
     : activeStudySession?.status === 'running'
@@ -37,7 +39,7 @@ export function buildTimerJourneyPresentation({
         : 'pending';
   const rewardState = rewardResult
     ? 'complete'
-    : timerPhase === 'claiming-reward'
+    : timerPhase === 'claiming-reward' || Boolean(rewardClaimingSessionId)
       ? 'active'
       : rewardFailed
         ? 'error'
@@ -63,7 +65,7 @@ export function buildTimerJourneyPresentation({
     retryLabel = '완료 다시 확인';
   } else if (rewardFailed) {
     title = lastCompletedSession ? `${studyLabel}를 완료했어요` : '공부 기록은 안전하게 저장됐어요';
-    detail = completionError || activity;
+    detail = rewardRecoveryError || completionError || activity;
     if (!terminalRewardFailure) {
       retryAction = 'retryStudyReward';
       retryLabel = '보상 다시 확인';

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { filterTabItemsForTier } from '../app/access-policy.js';
 
 const NAV_ICON_PATHS = {
@@ -17,9 +18,21 @@ export const TAB_ITEMS = [
 ];
 
 export function TabBar({ activeTab = 'timer', dimmed = false, inactive = false }) {
+  const navRef = useRef(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    const frame = nav?.parentElement;
+    if (!frame) return undefined;
+    const reserveSpace = () => frame.style.setProperty('--sc-tabbar-reserved-height', `${nav.offsetHeight}px`);
+    reserveSpace();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(reserveSpace) : null;
+    observer?.observe(nav);
+    return () => { observer?.disconnect(); frame.style.removeProperty('--sc-tabbar-reserved-height'); };
+  }, []);
   const items = filterTabItemsForTier(TAB_ITEMS);
   return (
     <nav
+      ref={navRef}
       className={`tabbar bottom-tab ${dimmed ? 'is-muted' : ''}`}
       aria-label="주요 메뉴"
       inert={inactive ? '' : undefined}

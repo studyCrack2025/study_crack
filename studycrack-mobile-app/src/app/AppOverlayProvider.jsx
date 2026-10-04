@@ -1,16 +1,29 @@
 import { AppOverlayContext } from '../components/AppOverlayContext.js';
 import { useProductGuide } from '../features/product-guide/use-product-guide.js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AquariumGrowthProvider } from '../features/gamification/AquariumGrowthProvider.jsx';
 import { useAppOverlayBridge } from './use-app-overlay-bridge.js';
 import { cancelMyExits, captureMyDismiss } from './my-exit-motion.js';
 import { MySummarySheet } from '../screens/mypage/MySummarySheet.jsx';
 import { useMyBrowserBack } from './use-my-browser-back.js';
+import { useStudyDayClock } from '../features/study/use-study-day-clock.js';
+import { useStudySummaryResource } from '../features/study/use-study-summary-resource.js';
+import { hydrateStudyRecovery } from '../features/study/recovery-storage.js';
 
 export function AppOverlayProvider({ value: input, guide, children }) {
   const value = useAppOverlayBridge(input);
   const guideUi = useProductGuide(guide);
   const { state, setState } = guide;
+  const recoveredOwner = useRef('');
+  const owner = state.user?.sub || state.user?.email || '';
+  useLayoutEffect(() => {
+    if (state.userLoadStatus !== 'ready' || !owner || recoveredOwner.current === owner) return;
+    recoveredOwner.current = owner;
+    setState(hydrateStudyRecovery(state));
+  }, [owner, state.userLoadStatus, setState]);
+  useStudyDayClock(state, setState);
+  useStudySummaryResource({ enabled: state.userLoadStatus === 'ready' && guide.api.hasClientSession(), dayKey: state.studyKoreaDate,
+    owner: state.user?.sub || state.user?.email, getApiBinding: guide.api.getUserApiBinding, refreshTick: state.studySummaryRefreshTick, setState });
   useMyBrowserBack(state.userLoadStatus === 'ready' && Boolean(state.drawerOpen || state.myReturn), guide.nav.back);
   const [myExiting, setMyExiting] = useState(false);
   const [saveNotice, setSaveNotice] = useState(false);

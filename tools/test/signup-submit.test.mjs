@@ -85,6 +85,8 @@ test('web signup connects existing-account reauthentication before auto-login an
     const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
     const context = {
         AUTH_URL: options.url, console,
+        captureClientSession: () => 1,
+        isClientSessionCurrent: scope => scope === 1,
         userPool: { signUp: (_e, _p, _a, _n, cb) => cb({ code: 'UsernameExistsException' }) },
         AmazonCognitoIdentity: { AuthenticationDetails: class {}, CognitoUser: class {
             authenticateUser(_details, callbacks) { calls.push('reauth'); callbacks.onSuccess({ getAccessToken: () => ({ getJwtToken: () => 'proof' }), getIdToken: () => ({ payload: { sub: 'actual-user' } }) }); }
@@ -95,6 +97,29 @@ test('web signup connects existing-account reauthentication before auto-login an
     const complete = vm.runInNewContext(body + '\ncompleteSignUp', context);
     complete({ email: 'a@example.invalid', password: 'secret', attributeList: [], profileData: options.profile, onError: rejectDone });
     await done; assert.deepEqual(calls, ['reauth', 'submit', 'login']);
+});
+
+for (const boundary of ['before-callback', 'after-profile']) test(`late signup cannot replace a newer login: ${boundary}`, async () => {
+    const web = await readFile(new URL('../../js/auth.js', import.meta.url), 'utf8');
+    const body = web.slice(web.indexOf('function completeSignUp('), web.indexOf('async function handleFinalSubmit('))
+        .replace("await import('./shared/signup-submit.js')", 'await loadSignupModule()');
+    let generation = 0, callbackPromise;
+    const calls = [];
+    const context = {
+        AUTH_URL: options.url, console,
+        captureClientSession: () => generation,
+        isClientSessionCurrent: scope => scope === generation,
+        userPool: { signUp: (_e, _p, _a, _n, callback) => {
+            if (boundary === 'before-callback') generation++;
+            callbackPromise = callback(null, { userSub: 'old-signup' });
+        } },
+        loadSignupModule: async () => ({ submitSignupProfile: async () => { calls.push('profile'); generation++; } }),
+        autoLoginAfterSignup: () => assert.fail('a newer login must not be replaced')
+    };
+    const complete = vm.runInNewContext(body + '\ncompleteSignUp', context);
+    complete({ email: 'old@example.invalid', password: 'synthetic', attributeList: [], profileData: {} });
+    await callbackPromise;
+    assert.deepEqual(calls, boundary === 'before-callback' ? [] : ['profile']);
 });
 
 for (const mode of ['confirmed', 'cancel', 'invalid', 'resendDenied', 'confirmationDenied', 'stillUnconfirmed', 'wrongPassword']) test(`unconfirmed signup ${mode} never bypasses confirmation and password proof`, async () => {

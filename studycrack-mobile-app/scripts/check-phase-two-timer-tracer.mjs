@@ -29,6 +29,9 @@ function createProductionApiFetch(fetch) {
     IS_LOCAL: true,
     console: { error() {}, warn() {} },
     fetch,
+    AbortController,
+    setTimeout,
+    clearTimeout,
     localStorage: createStorage(),
     sessionStorage: createStorage(),
     window: {
@@ -85,7 +88,7 @@ const claimingBeforePipelineReturn = buildTimerJourneyPresentation({
   activeStudySession: { ...completedSession, status: 'running' },
   timerPhase: 'claiming-reward'
 });
-assert.equal(claimingBeforePipelineReturn.completionState, 'complete', 'Reward claim phase starts only after the server confirms completion.');
+assert.equal(claimingBeforePipelineReturn.completionState, 'pending', 'An earlier reward must not complete a newly running session.');
 assert.equal(claimingBeforePipelineReturn.rewardState, 'active');
 
 const rewardPending = buildTimerJourneyPresentation({
@@ -135,8 +138,7 @@ const pendingRewardHandlers = createTimerHandlers({
   studyStartDraft: { subject: '영어', activity: '새 공부', plannerItemId: '' },
   timerPhase: 'recoverable-error'
 });
-assert.equal(await pendingRewardHandlers.confirmStudyStart(), false);
-assert.equal(replacementStartCalls, 0, 'Pending reward recovery must finish before another session can replace its key.');
+// Pending-only starts and queue preservation are exercised with the complete fixture below.
 
 let runningReplacementStartCalls = 0;
 const runningSessionHandlers = createTimerHandlers({
@@ -234,6 +236,7 @@ for (const failure of rewardFailureCases) {
     document: { querySelector: () => ({ value: '새 공부' }) },
     lastCompletedSession: completedSession,
     operationLocksRef: { current: new Set() },
+    studyStorage: createStorage(),
     rewardPendingSessionId: completedSession.sessionId,
     rewardResult: null,
     setActivePlannerItemId() {},
@@ -242,6 +245,9 @@ for (const failure of rewardFailureCases) {
     setCompletionError(value) { this.completionError = value; },
     setLastCompletedSession(value) { this.lastCompletedSession = value; },
     setRewardPendingSessionId(value) { this.rewardPendingSessionId = value; },
+    setStudyRecovery(value) { this.studyRecovery = value; },
+    setRewardRecoveryError(value) { this.rewardRecoveryError = value; },
+    setRewardClaimingSessionId(value) { this.rewardClaimingSessionId = value; },
     setRewardResult(value) { this.rewardResult = value; },
     setStudyStartDraft() {},
     setStudySubjectSheetOnlyPlanned() {},
@@ -266,7 +272,7 @@ for (const failure of rewardFailureCases) {
   if (!failure.terminal) {
     assert.equal(context.rewardPendingSessionId, completedSession.sessionId, `${failure.label} dismissal attempts must retain the recovery key.`);
     assert.equal(context.lastCompletedSession, completedSession, `${failure.label} dismissal attempts must retain the completed-session summary.`);
-    assert.equal(context.completionError, context.apiResult.error, `${failure.label} dismissal attempts must retain the recovery explanation.`);
+    assert.equal(context.rewardRecoveryError, context.apiResult.error, `${failure.label} dismissal attempts must retain the recovery explanation independently of timer errors.`);
   }
 }
 
@@ -289,6 +295,8 @@ const claimingRewardContext = {
   setLastCompletedSession() {},
   setRewardResult() {},
   setTimerPhase(value) { this.timerPhase = value; },
+  setStudyPanelMode() {},
+  setStudySubjectSheetOpen() {},
   startStudySession: async () => {
     claimingRewardStartCalls += 1;
     return { ok: false, error: 'This API call must be blocked.' };
@@ -296,8 +304,8 @@ const claimingRewardContext = {
   studyStartDraft: { subject: '영어', activity: '새 공부', plannerItemId: '' },
   timerPhase: 'claiming-reward'
 };
-assert.equal(await createTimerHandlers(claimingRewardContext).confirmStudyStart(), false, 'Claiming a reward must block direct handler-level study starts even without pending pointers.');
-assert.equal(claimingRewardStartCalls, 0, 'A blocked claiming-reward start must not call the start-session API.');
+assert.equal(await createTimerHandlers(claimingRewardContext).confirmStudyStart(), true, 'An earlier reward request must not block a new study.');
+assert.equal(claimingRewardStartCalls, 1);
 
 const plannedItem = { id: 'plan-current-math', subject: '수학', content: '미적분 기출 20문제', done: false };
 function plannedAction(id, attributes = {}) {
@@ -312,6 +320,7 @@ function createPlannedStudyFixture(overrides = {}) {
     canUsePersonalPlanner: true,
     document: { querySelector: () => ({ value: '추가한 학습 내용' }) },
     operationLocksRef: { current: new Set() },
+    studyStorage: createStorage(),
     plannerItems: [plannedItem],
     rewardPendingSessionId: '',
     studyRecords: [],
@@ -324,17 +333,13 @@ function createPlannedStudyFixture(overrides = {}) {
       return { ok: true, data: { sessionId: candidate.sessionId, startedAt: '2026-09-07T03:00:00Z' } };
     },
     startLiveStudyTimer: (...args) => calls.live.push(args),
-    completeStudySession: async (sessionId, phase) => {
+    completeStudySession: async (sessionId) => {
       calls.complete.push(sessionId);
-      phase('settling-session');
-      phase('claiming-reward');
-      return {
-        completion: { ok: true, data: { sessionId, durationSeconds: 1500, endedAt: '2026-09-07T03:25:00Z' } },
-        reward: { ok: true, data: { sessionId, durationSeconds: 1500, reward: { tickets: 0, creditedSeconds: 1500, ticketPolicyVersion: 'study-ticket-v1' }, profile: { ticketBalance: 0 } } }
-      };
-    }
+      return { ok: true, data: { sessionId, durationSeconds: 1500, endedAt: '2026-09-07T03:25:00Z' } };
+    },
+    claimCompletedStudyReward: async sessionId => ({ ok: true, data: { sessionId, durationSeconds: 1500, reward: { tickets: 0, creditedSeconds: 1500, ticketPolicyVersion: 'study-ticket-v1' }, profile: { ticketBalance: 0 } } })
   };
-  for (const field of ['activeStudySession', 'activeStudySubject', 'activePlannerItemId', 'completionError', 'gameProfile', 'gameProfileStatus', 'gameProfileError', 'gameRefreshTick', 'lastCompletedSession', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyPanelMode', 'studyRecords', 'studyStartDraft', 'studySubjectRecords', 'studySubjectSheetOpen', 'studySubjectSheetOnlyPlanned', 'studySummaryRefreshTick', 'studyTimerRunning', 'studyTimerTick', 'timerPhase']) {
+  for (const field of ['activeStudySession', 'activeStudySubject', 'activePlannerItemId', 'completionError', 'gameProfile', 'gameProfileStatus', 'gameProfileError', 'gameRefreshTick', 'lastCompletedSession', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecovery', 'rewardRecoveryError', 'rewardClaimingSessionId', 'studyPanelMode', 'studyRecords', 'studyStartDraft', 'studySubjectRecords', 'studySubjectSheetOpen', 'studySubjectSheetOnlyPlanned', 'studySummaryRefreshTick', 'studyTimerRunning', 'studyTimerTick', 'timerPhase']) {
     ctx[`set${field[0].toUpperCase()}${field.slice(1)}`] = value => { ctx[field] = typeof value === 'function' ? value(ctx[field]) : value; };
   }
   Object.assign(ctx, overrides);
@@ -374,15 +379,19 @@ for (const [label, overrides, id = plannedItem.id] of [
   ['already complete', { todayPlannerItems: [{ ...plannedItem, done: true }] }],
   ['unavailable planner', { canUsePersonalPlanner: false }],
   ['active session', { activeStudySession: { sessionId: 'session-existing', status: 'running' } }],
-  ['pending reward', { rewardPendingSessionId: 'session-pending' }],
   ['starting phase', { timerPhase: 'starting-session' }],
-  ['completion phase', { timerPhase: 'settling-session' }],
-  ['reward phase', { timerPhase: 'claiming-reward' }]
+  ['completion phase', { timerPhase: 'settling-session' }]
 ]) {
   const fixture = createPlannedStudyFixture(overrides);
   assert.equal(await fixture.handlers.startPlannedStudy(plannedAction(id)), false, `${label} must block the shortcut.`);
   assert.equal(fixture.calls.start.length, 0, `${label} must not call the study API.`);
   assert.equal(fixture.ctx.studySubjectSheetOpen, undefined, `${label} must not open a replacement input form.`);
+}
+
+for (const overrides of [{ rewardPendingSessionId: 'session-pending' }, { timerPhase: 'claiming-reward' }]) {
+  const fixture = createPlannedStudyFixture(overrides);
+  assert.equal(await fixture.handlers.startPlannedStudy(plannedAction(plannedItem.id)), true);
+  assert.equal(fixture.ctx.rewardPendingSessionId, overrides.rewardPendingSessionId || '');
 }
 
 const emptyPlanned = createPlannedStudyFixture({ todayPlannerItems: [{ ...plannedItem, content: '   ' }] });
@@ -461,10 +470,8 @@ try {
 
   const startBlockingCases = [
     ['active session', { activeStudySession: { ...completedSession, status: 'running' }, timerPhase: 'running' }],
-    ['pending reward', { rewardPendingSessionId: completedSession.sessionId, timerPhase: 'recoverable-error' }],
     ['starting phase', { timerPhase: 'starting-session' }],
-    ['completion phase', { timerPhase: 'settling-session' }],
-    ['reward phase', { timerPhase: 'claiming-reward' }]
+    ['completion phase', { timerPhase: 'settling-session' }]
   ];
   for (const [label, blockedState] of startBlockingCases) {
     const timerMarkup = renderToStaticMarkup(TimerScreen({
@@ -530,8 +537,8 @@ assert.match(panels, /공부 기록 · \{journeyStateLabel\(journey\.completionS
 assert.match(panels, /성장 보상 · \{journeyStateLabel\(journey\.rewardState\)\}/, 'The reward step must expose its current state in its accessible name.');
 assert.match(screenContext, /'lastCompletedSession'/, 'Timer screen context must expose its completed session.');
 assert.match(timerHandlers, /setLastCompletedSession\(null\)/, 'Dismissing a reward must also dismiss its completed-session summary.');
-assert.match(timerHandlers, /setRewardPendingSessionId\(''\)/, 'Dismissing failed reward recovery must release its pending key.');
-assert.match(timerHandlers, /ctx\.rewardPendingSessionId/, 'An unresolved reward must block a new session from replacing its recovery key.');
+assert.match(timerHandlers, /saveStudyRecovery/, 'Recovery changes must be durable before releasing a pointer.');
+assert.match(timerHandlers, /pending\.filter/, 'Dismissing one terminal recovery must preserve other sessions.');
 assert.match(timerStyles, /\.timer-journey-panel\{/, 'The timer journey must have one screen-owned visual rule.');
 assert.match(timerStyles, /\.timer-journey-steps\{/, 'The completion and reward stages must be visibly distinct.');
 

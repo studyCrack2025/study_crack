@@ -47,15 +47,23 @@ await check('monotonic snapshot ignores stale reads and rejects conflict', () =>
 });
 await check('owner swap and late response cannot restore previous background', async () => {
   const { resource, browser, respond, listeners } = setup(); await resource.refresh(); let release;
-  respond(() => new Promise(resolve => { release = resolve; })); const pending = resource.refresh();
+  let started; const sent = new Promise(resolve => { started = resolve; });
+  respond(() => new Promise(resolve => { release = resolve; started(); })); const pending = resource.refresh();
+  await sent;
   browser.localStorage.setItem('userId', 'student-b'); listeners.get('focus')();
   release({ ok: true, json: async () => ({ success: true, plannerOwner: 'student-a', plannerProtocol: 1, data: { growth: growth(100) } }) });
   await pending; assert.equal(resource.getView().growth, null); assert.equal(resource.getView().backgroundKey, 'day1'); resource.dispose(); assert.equal(listeners.size, 0);
 });
 await check('duplicate refresh shares one in-flight request and dispose cancels', async () => {
-  const { resource, respond, requests } = setup(); respond(() => new Promise(() => {}));
-  const pending = resource.refresh(); assert.equal(await resource.refresh(), false); assert.equal(requests.length, 1);
+  const { resource, respond, requests } = setup(); let started; const sent = new Promise(resolve => { started = resolve; });
+  respond(() => { started(); return new Promise(() => {}); });
+  const pending = resource.refresh(); assert.equal(await resource.refresh(), false); await sent; assert.equal(requests.length, 1);
   resource.dispose(); await pending; assert.equal(resource.getView().growth, null);
+});
+await check('identity change before deferred transport resolves prevents sending', async () => {
+  const { resource, browser, requests, listeners } = setup();
+  const pending = resource.refresh(); browser.localStorage.setItem('userId', 'student-b'); listeners.get('focus')();
+  assert.equal(await pending, false); assert.equal(requests.length, 0); resource.dispose();
 });
 await check('unbound legacy response cannot supply growth', async () => {
   const { resource, respond } = setup(); respond(() => ({ ok: true, json: async () => ({ success: true, data: { growth: growth(100) } }) }));

@@ -8,8 +8,13 @@ for (const [status, copy] of [[403, '권한이 없어요'], [404, '정보를 찾
   test(`목록 ${status} 오류는 빈 목록·로그아웃으로 바뀌지 않고 명시적 재시도로 복구한다`, async ({ page }) => {
     await installAuthenticatedSession(page);
     await installApiMock(page);
+    if (status === 403) await page.addInitScript(() => localStorage.setItem('refreshToken', 'e2e-refresh'));
     let fail = true;
     await page.route('**/api/**', async (route) => {
+      if (status === 403 && route.request().postDataJSON()?.type === 'refresh_token') {
+        const accessToken = await page.evaluate(() => sessionStorage.getItem('accessToken'));
+        return route.fulfill({ status: 200, json: { success: true, userId: 'e2e-student', accessToken, idToken: accessToken } });
+      }
       if (route.request().postDataJSON()?.type !== 'student_get_notifications' || !fail) return route.fallback();
       await route.fulfill({ status, json: { error: 'internal-private-detail' } });
     });
@@ -23,6 +28,24 @@ for (const [status, copy] of [[403, '권한이 없어요'], [404, '정보를 찾
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 }
+
+test('목록 403 이후 세션 갱신이 만료된 계정은 재설치 없이 로그인으로 돌아간다', async ({ page }) => {
+  await installAuthenticatedSession(page, { restoreOnNavigation: false });
+  await installApiMock(page);
+  await page.addInitScript(() => {
+    if (localStorage.getItem('userId')) localStorage.setItem('refreshToken', 'e2e-refresh');
+  });
+  await page.route('**/api/**', async route => {
+    const type = route.request().postDataJSON()?.type;
+    if (type === 'refresh_token') return route.fulfill({ status: 401, json: { code: 'AUTH_SESSION_EXPIRED' } });
+    if (type === 'student_get_notifications') return route.fulfill({ status: 403, json: { error: 'Forbidden' } });
+    return route.fallback();
+  });
+  await page.goto(at('notificationList'));
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+});
 
 test('리포트·주간·문의 재시도는 현재 화면에서 실패한 읽기를 복구한다', async ({ page }) => {
   await installAuthenticatedSession(page);
@@ -132,9 +155,9 @@ test('만료된 세션은 개인정보를 정리하고 로그인 화면으로 �
     return route.fallback();
   });
   await page.goto(at('timer'));
+  await page.waitForURL(url => url.pathname === '/login' || url.searchParams.get('screen') === 'authLogin');
   await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
-  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+  expect(await page.evaluate(() => ({ userId: localStorage.getItem('userId'), token: sessionStorage.getItem('accessToken') }))).toEqual({ userId: null, token: null });
   await expect(page.getByText('테스트학생')).toHaveCount(0);
 });
 
@@ -183,7 +206,7 @@ test('화면 파일 실패는 재시도와 명시적 새로고침을 제공한�
   await installAuthenticatedSession(page);
   await installApiMock(page);
   let fail = true;
-  await page.route('**/chunks/screen-registry-app-*.js', (route) => fail ? route.abort() : route.continue());
+  await page.route('**/chunks/screen-registry-app-*.js', (route) => fail ? route.fulfill({ status: 503, headers: { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' }, body: '' }) : route.continue());
   await page.goto(at('timer'));
   await expect(page.getByRole('alert')).toContainText('화면 파일을 불러오지 못했어요');
   await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toBeVisible();

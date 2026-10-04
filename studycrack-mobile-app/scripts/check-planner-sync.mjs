@@ -1,8 +1,9 @@
 import test from 'node:test';
+import './check-planner-duration-contract.mjs';
 import assert from 'node:assert/strict';
 import { createPlannerStorageController } from '../src/features/planner/storage-controller.js';
 import { createPlannerSyncModel } from '../src/features/planner/sync-model.js';
-import { createPlannerTransport } from '../src/features/planner/api.js';
+import { createPlannerTransport } from '../src/features/planner/transport.js';
 import { createPlannerAccountConnection } from '../src/features/planner/account-connection.js';
 import { createPlannerAccountWorkspace } from '../src/features/planner/account-workspace.js';
 

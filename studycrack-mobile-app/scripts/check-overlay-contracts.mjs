@@ -146,21 +146,17 @@ try {
     assert.match(markup, /data-action="runUniversitySearch"/);
     assert.equal(render(AnalysisSearchSheet), '');
   });
-  const { AdmissionCalendarSheet } = await vite.ssrLoadModule('/src/screens/planner/AdmissionCalendarSheet.jsx');
+  const { AdmissionCalendar } = await vite.ssrLoadModule('/src/screens/planner/AdmissionCalendar.jsx');
   const { CoachingScreen } = await vite.ssrLoadModule('/src/screens/coaching/CoachingScreen.jsx');
   const { ScoreEditModal } = await vite.ssrLoadModule('/src/screens/profile/ScoreEditModal.jsx');
   const { TimerScreen } = await vite.ssrLoadModule('/src/screens/timer/TimerScreen.jsx');
-  check('calendar supports closed, standalone and nested forms', () => {
-    assert.equal(render(AdmissionCalendarSheet), '');
-    for (const calendarSheetOpen of [false, true]) {
+  check('calendar and event form remain inline without dialog locks', () => {
       for (const calendarEventEditId of [null, 'event-1']) {
-        const markup = render(AdmissionCalendarSheet, { calendarSheetOpen, calendarEventFormOpen: true, calendarEventEditId });
+        const markup = render(AdmissionCalendar, { calendarEventFormOpen: true, calendarEventEditId });
         assert.match(markup, new RegExp(`aria-label="내 일정 ${calendarEventEditId ? '수정' : '추가'}"`));
-        assert.equal([...markup.matchAll(/role="dialog"/g)].length, calendarSheetOpen ? 2 : 1);
-        assert.equal([...markup.matchAll(/tabindex="-1"/g)].length, calendarSheetOpen ? 2 : 1);
-        if (calendarSheetOpen) assert.ok(markup.indexOf('aria-label="수험 일정"') < markup.indexOf('aria-label="내 일정'));
+        assert.doesNotMatch(markup, /role="dialog"|aria-modal="true"|tabindex="-1"|sc-overlay/);
+        assert.match(markup, /data-action="saveCalendarEvent"/);
       }
-    }
   });
   check('coaching, score and game rules have specific dialog names', () => {
     assert.match(render(CoachingScreen, { coachingSheetOpen: true }), /role="dialog" aria-modal="true" aria-label="주간 학습 점검" tabindex="-1"/);

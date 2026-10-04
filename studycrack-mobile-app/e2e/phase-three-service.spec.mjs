@@ -64,7 +64,7 @@ test('웹 결제 이관은 서버 결제 의도를 만들고 콜백에 불투명
     });
   });
   await page.route('**/checkout', async (route) => {
-    await route.fulfill({ status: 302, headers: { location: '/checkout.html' } });
+    await route.continue({ url: new URL('/checkout.html', route.request().url()).href });
   });
   await page.goto('/payment.html?plan=standard', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#checkoutPlanName')).toHaveText('STANDARD');
@@ -79,7 +79,7 @@ test('웹 결제 이관은 서버 결제 의도를 만들고 콜백에 불투명
   await expect.poll(() => alerts.length).toBe(1);
   await expect(page.locator('#submitBtn')).toBeEnabled();
   await page.locator('#submitBtn').click();
-  await expect(page).toHaveURL(/\/checkout\.html$/);
+  await expect(page).toHaveURL(/\/checkout(?:\.html)?$/);
   const intentRequests = api.requests.filter(({ payload }) => payload.type === 'create_payment_intent');
   expect(intentRequests).toHaveLength(2);
   expect(intentRequests[0].payload.data.idempotencyKey).toBe(intentRequests[1].payload.data.idempotencyKey);

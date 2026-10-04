@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { buildPlannerOverview, buildStudyOverview } from '../src/features/study/overview-presentation.js';
 import { buildAppPresentations } from '../src/app/presentation-context.js';
-import { TODAY_DATE } from '../src/constants/runtime-defaults.js';
+import { getTodayDateKey } from '../src/constants/runtime-defaults.js';
 
 const plans = Object.freeze([{ date: '2026-09-07', minutes: 30, done: true }, { date: '2026-09-07', minutes: 90, done: false }]);
 const summary = Object.freeze({ available: true, today: { date: '2026-09-07', totalSeconds: 3600 }, week: { startDate: '2026-09-07', endDate: '2026-09-13', totalSeconds: 7200 } });
@@ -48,7 +48,7 @@ assert.equal(buildStudyOverview({ ...input, studyTimerRunning: false }).live.sec
 assert.equal(buildStudyOverview({ ...input, activeStudySession: null }).live.status, 'idle');
 const context = buildAppPresentations({ state: input, derived: { todayPlannerItems: plans }, liveSeconds: 120 });
 assert.equal(context.studyOverview.planner, context.aquariumPresentation.planner);
-assert.equal(context.studyOverview.planner.date, TODAY_DATE);
+assert.equal(context.studyOverview.planner.date, getTodayDateKey());
 assert.equal(buildAppPresentations({ state: {}, derived: {} }).studyOverview.planner.total, null);
 
 const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });

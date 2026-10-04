@@ -2,6 +2,15 @@ function getBrowser() {
   return typeof window === 'undefined' ? null : window;
 }
 
+export function loadMobileModule(load) {
+  const browser = getBrowser();
+  return browser?.boundedClientRequest ? browser.boundedClientRequest(load) : load();
+}
+
+export function getMobileAccountStorage(storage = globalThis.localStorage) {
+  return storage === globalThis.localStorage ? getBrowser()?.getClientAccountStorage?.() || storage : storage;
+}
+
 export function getMobileApiBinding(endpoint, urlProperty) {
   const browser = getBrowser();
   return {
@@ -70,7 +79,19 @@ export function replaceMobileLocation(path) {
 }
 
 export function reloadMobileLocation() {
-  getBrowser()?.location?.reload?.();
+  const location = getBrowser()?.location;
+  if (!location?.href) { location?.reload?.(); return; }
+  const url = new URL(location.href);
+  url.searchParams.set('_reload', `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  location.replace(url.href);
+}
+
+export function prepareMobileRecovery() {
+  const browser = getBrowser();
+  if (!browser?.location?.href) return;
+  const url = new URL(browser.location.href);
+  url.searchParams.set('_reload', `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  browser.history.replaceState(browser.history.state, '', url.href);
 }
 
 export function replaceMobileScreenParam(screen) {

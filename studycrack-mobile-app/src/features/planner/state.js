@@ -1,4 +1,4 @@
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { createFeatureSlice } from '../../state/create-feature-slice.js';
 
 export function createPlannerInitialState() {
@@ -16,7 +16,7 @@ export function createPlannerInitialState() {
     },
     ephemeralUi: {
       rankingPeriod: 'daily',
-      selectedDate: TODAY_DATE,
+      selectedDate: getTodayDateKey(),
       plannerCalendarMode: 'week',
       plannerEditIndex: null,
       showStudyBreakdown: false,

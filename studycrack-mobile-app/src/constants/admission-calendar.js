@@ -5,10 +5,10 @@
 
 // 카테고리 표시 규칙. 공식/개인 공용.
 export const CALENDAR_CATEGORIES = {
-  exam: { label: '시험', color: '#4c79ee', official: true },
-  application: { label: '원서접수', color: '#E8590C', official: true },
-  school: { label: '학력평가', color: '#2F9E44', official: true },
-  personal: { label: '내 일정', color: '#7048E8', official: false }
+  exam: { label: '시험', color: 'var(--sc-info-blue)', official: true },
+  application: { label: '원서접수', color: 'var(--sc-action-urgent)', official: true },
+  school: { label: '학력평가', color: 'var(--sc-action-positive-strong)', official: true },
+  personal: { label: '내 일정', color: 'var(--sc-state-rare)', official: false }
 };
 
 export const PERSONAL_CALENDAR_CATEGORIES = ['exam', 'application', 'school', 'personal'];

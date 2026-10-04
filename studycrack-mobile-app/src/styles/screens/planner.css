@@ -1,5 +1,11 @@
 .planner-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .planner-account-panel{padding:var(--sc-space-16);color:var(--sc-ink);}
+.planner-storage-notice{display:grid;gap:var(--sc-space-8);min-width:0;padding:var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.6;overflow-wrap:anywhere;}
+.planner-storage-status{display:flex;align-items:center;gap:var(--sc-space-8);color:var(--sc-action-positive-strong);font-weight:800;}
+.planner-storage-status .icon{width:20px;height:20px;flex:none;stroke:currentColor;}
+.planner-storage-notice p{margin:0;min-width:0;}
+.planner-storage-notice summary{min-height:var(--sc-touch-target);align-content:center;cursor:pointer;font-weight:700;}
+.planner-storage-warning{color:var(--sc-ink);}
 .planner-account-panel summary{min-height:var(--sc-touch-target);align-content:center;cursor:pointer;font-weight:800;}
 .planner-account-body{display:grid;gap:12px;min-width:0;}
 .planner-account-body p{margin:0;font-size:var(--sc-type-caption);color:var(--sc-ink-muted);line-height:1.6;overflow-wrap:anywhere;}
@@ -28,7 +34,7 @@
 .planner-progress-caption b.waiting{color:var(--sc-ink-muted);}
 .planner-progress-caption span{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:700;line-height:1.5;overflow-wrap:anywhere;}
 .planner-tasks-section{display:grid;gap:10px;}
-.planner-calendar-section{display:grid;gap:10px;}
+.planner-calendar-section{display:grid;gap:10px;min-width:0;}
 .planner-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px;}
 .planner-section-head span{display:block;color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
 .planner-section-head h4{margin:2px 0 0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:900;line-height:1.3;}

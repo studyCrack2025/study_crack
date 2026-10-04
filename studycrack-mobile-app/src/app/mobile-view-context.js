@@ -83,6 +83,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     initializeApp: retryUserLoad,
     isCurrentScreen: (screen, user) => stateRef.current.screen === screen && stateRef.current.user?.email === user?.email,
     isCurrentProfile: () => stateRef.current.user === state.user && stateRef.current.userLoadStatus === 'ready' && api.hasClientSession(),
+    getStudyState: () => stateRef.current,
     applySavedProfileTarget: (target) => {
       if (stateRef.current.user !== state.user || stateRef.current.userLoadStatus !== 'ready' || !api.hasClientSession()) return false;
       setState({ user: { ...state.user, targetUniversity: target || '' } });
@@ -128,7 +129,6 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     afterSafariViewportStable: scrollOps.afterSafariViewportStable,
     restoreIfUnexpectedTopJump: scrollOps.restoreIfUnexpectedTopJump,
     markStableScrollPosition: scrollOps.markStableScrollPosition,
-    centerPlannerDate: scrollOps.centerPlannerDate,
     studyTimerSecondsRef: timerOps.studyTimerSecondsRef,
     startLiveStudyTimer: timerOps.startLiveStudyTimer,
     stopLiveStudyTimer: timerOps.stopLiveStudyTimer,

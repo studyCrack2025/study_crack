@@ -1,20 +1,19 @@
-import { buildPlannerPresentation, nextPlannerCalendarMode } from './presentation.js';
+import { buildPlannerPresentation } from './presentation.js';
 import { PlannerEditSheet } from './PlannerEditSheet.jsx';
-import { AdmissionCalendarSheet } from './AdmissionCalendarSheet.jsx';
+import { AdmissionCalendar } from './AdmissionCalendar.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { PlannerStudyStatus } from './PlannerStudyStatus.jsx';
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
 import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.jsx';
 import { useContext } from 'react';
 import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
 import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
-import { eventCoversDate, eventMarksDateInGrid } from '../../constants/admission-calendar.js';
 
 function PlannerItemCard({ item }) {
-  const timeLabel = item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
+  const timeLabel = item.accountDurationState === 'unknown' ? '시간 확인 필요' : item.accountDurationState === 'confirmed' ? `${item.minutes}분` : item.start && item.end && item.start !== '--:--' && item.end !== '--:--'
     ? `${item.start} - ${item.end}`
     : item.minutes ? `${item.minutes}분` : '시간 미설정';
   const titleId = `planner-title-${encodeURIComponent(item.id)}`;
@@ -35,84 +34,13 @@ function PlannerItemCard({ item }) {
   );
 }
 
-function PlannerCalendarSegment({ activeMode = 'week' }) {
-  const handleKeyDown = (event) => {
-    const currentMode = event.target.getAttribute('data-planner-calendar-mode') || activeMode;
-    const nextMode = nextPlannerCalendarMode(currentMode, event.key);
-    if (nextMode === currentMode) return;
-    event.preventDefault();
-    const target = event.currentTarget.querySelector(`[data-planner-calendar-mode="${nextMode}"]`);
-    target?.focus();
-    target?.click();
-  };
-  return (
-    <div className="planner-calendar-segment planner-inline-segment" role="group" aria-label="달력 보기 방식" onKeyDown={handleKeyDown}>
-      <button type="button" aria-pressed={activeMode === 'week'} className={activeMode === 'week' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="week">주</button>
-      <button type="button" aria-pressed={activeMode === 'month'} className={activeMode === 'month' ? 'active' : ''} data-action="setPlannerCalendarMode" data-planner-calendar-mode="month">월</button>
-    </div>
-  );
-}
-
-function PlannerDateStrip({ plannerWeekDates = [], selectedPlannerDateKey = '', calendarEvents = [] }) {
-  return (
-    <div className="planner-days planner-date-strip">
-      {plannerWeekDates.map(({ date, day, weekday, empty }, idx) => (
-        <button
-          key={date || `empty-${idx}`}
-          type="button"
-          className={`planner-date-item ${empty ? 'is-empty' : ''} ${selectedPlannerDateKey === date ? 'active' : ''}`}
-          data-action="selectPlannerDate"
-          data-planner-date={date || ''}
-          aria-pressed={selectedPlannerDateKey === date}
-          aria-label={`${date} ${weekday}요일 · 일정 ${calendarEvents.filter(event => eventMarksDateInGrid(event, date)).length}개`}
-          disabled={empty}
-        >
-          <small>{weekday}</small>
-          <strong>{day}</strong>
-          <span className="planner-date-events" aria-hidden="true">{calendarEvents.some(event => eventMarksDateInGrid(event, date)) ? '●' : ''}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function PlannerMonthGrid({ plannerCalendarMonthCells = [] }) {
-  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  return (
-    <div className="planner-calendar-month-panel planner-inline-month-panel">
-      <div className="planner-calendar-weekdays">
-        {weekdays.map((day) => <span key={day}>{day}</span>)}
-      </div>
-      <div className="planner-calendar-month-grid">
-        {plannerCalendarMonthCells.map((cell, idx) => (
-          cell.blank ? (
-            <span key={cell.key || `blank-${idx}`} className="planner-calendar-month-day is-blank" />
-          ) : (
-            <button
-              key={cell.key || cell.date}
-              type="button"
-              className={`planner-calendar-month-day ${cell.isSelected ? 'active' : ''} ${cell.isToday ? 'is-today' : ''}`}
-              data-action="selectPlannerDate"
-              data-planner-date={cell.date}
-              aria-pressed={cell.isSelected}
-            >
-              <b>{cell.day}</b>
-              {cell.count ? <span>{cell.count}</span> : null}
-            </button>
-          )
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PlannerProgress({ presentation, isToday, accountMode }) {
+function PlannerProgress({ presentation, isToday }) {
   const progressTone = presentation.remainingCount ? 'pending' : presentation.totalCount ? 'complete' : 'waiting';
   return (
     <section className="card planner-progress-card">
       <div className="planner-progress-head"><div><span>{isToday ? '오늘의 계획 진행률' : '선택한 날의 계획 진행률'}</span><h4 className="sc-metric">{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`} aria-hidden="true"><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
       <div className="progress planner-progress-track" role="progressbar" aria-label="플래너 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow={presentation.progress}><i style={{ width: `${presentation.progress}%` }} /></div>
-      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '선택한 날의 계획을 모두 완료했어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span><span>{accountMode ? '계정 계획을 보고 있어요. 완료와 성장은 서버 확인 뒤 반영돼요.' : '계획은 이 기기에 저장되고, 공부 기록은 완료 확인 뒤 반영돼요.'}</span></div>
+      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '선택한 날의 계획을 모두 완료했어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span></div>
     </section>
   );
 }
@@ -134,36 +62,28 @@ function PlannerWorkspaceScreen(ctx) {
   const accountMode = account?.getView().mode === 'account';
   if (accountMode) {
     const items = account.getItems();
-    ctx = { ...ctx, plannerViewItems: items.filter(item => item.date === ctx.selectedPlannerDateKey), plannerEditItem: items.find(item => item.id === ctx.plannerEditIndex),
-      plannerCalendarMonthCells: ctx.plannerCalendarMonthCells?.map(cell => ({ ...cell, count: items.filter(item => item.date === cell.date).length })) };
+    ctx = { ...ctx, plannerViewItems: items.filter(item => item.date === ctx.selectedPlannerDateKey), plannerEditItem: items.find(item => item.id === ctx.plannerEditIndex) };
   }
   const {
-    calendarEventFormOpen = false,
-    calendarSheetOpen = false,
     dimmed = false,
     tab = 'planner',
-    plannerCalendarMode,
-    plannerCalendarMonthCells,
     plannerEditIndex = null,
     plannerEditItem,
     plannerFeedback = {},
     canAccessStandard = false,
     plannerMonthLabel = '',
     plannerViewItems = [],
-    plannerWeekDates = [],
     normalizedTargetMajor = '',
     calendarNearestDdayLabel = '',
-    calendarEvents = [],
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
     selectedPlannerWeekday = ''
   } = ctx;
 
-  const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
   const presentation = buildPlannerPresentation(plannerViewItems);
-  const isToday = selectedPlannerDateKey === TODAY_DATE;
+  const isToday = selectedPlannerDateKey === (ctx.todayDate || getTodayDateKey());
   const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
-  const plannerOverlayOpen = plannerEditIndex !== null || calendarSheetOpen || calendarEventFormOpen;
+  const plannerOverlayOpen = plannerEditIndex !== null;
 
   return (
     <AppScreenShell
@@ -171,13 +91,15 @@ function PlannerWorkspaceScreen(ctx) {
       tab={tab}
       dimmed={dimmed}
       overlayOpen={plannerOverlayOpen}
-      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{calendarSheetOpen || calendarEventFormOpen ? <AdmissionCalendarSheet {...ctx} /> : null}</> : null}
+      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="Planner of Today" />
-            <PlannerProgress presentation={presentation} isToday={isToday} accountMode={accountMode} />
+            <AdmissionCalendar {...ctx} />
+            <PlannerProgress presentation={presentation} isToday={isToday} />
             <PlannerStudyStatus overview={ctx.studyOverview} isToday={isToday} />
-            {accountMode ? <><PlannerAccountNotice /><button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button></> : null}
+            <PlannerAccountNotice />
+            {accountMode ? <button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button> : null}
 
             <section className="planner-tasks-section">
               <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" className="planner-add-icon" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
@@ -194,31 +116,6 @@ function PlannerWorkspaceScreen(ctx) {
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} canAccessStandard={canAccessStandard} />
             <PlannerAccountPanel />
 
-            <section className="planner-calendar-section">
-              <div className="planner-section-head"><div><span>시험·입시·내 일정</span><h4>주간 일정</h4></div><button type="button" className="planner-admission-trigger" data-action="openCalendarSheet" data-date={selectedPlannerDateKey}>일정 더보기</button></div>
-              <div className="card planner-calendar-card">
-                <div className="planner-inline-calendar-toolbar">
-                  <PlannerCalendarSegment activeMode={calendarMode} />
-                  <div className="planner-inline-calendar-nav">
-                    <button type="button" data-action="plannerCalendarPrevWeek" aria-label={calendarMode === 'month' ? '이전 달' : '이전 주'}>‹</button>
-                    <button type="button" data-action="plannerCalendarToday">오늘</button>
-                    <button type="button" data-action="plannerCalendarNextWeek" aria-label={calendarMode === 'month' ? '다음 달' : '다음 주'}>›</button>
-                  </div>
-                </div>
-                {calendarMode === 'month' ? (
-                  <PlannerMonthGrid plannerCalendarMonthCells={plannerCalendarMonthCells} />
-                ) : (
-                  <PlannerDateStrip plannerWeekDates={plannerWeekDates} selectedPlannerDateKey={selectedPlannerDateKey} calendarEvents={calendarEvents} />
-                )}
-                <div className="planner-day-events" aria-label="선택한 날의 일정">
-                  <b>{selectedPlannerDate}일 일정</b>
-                  {calendarEvents.some(event => eventCoversDate(event, selectedPlannerDateKey))
-                    ? calendarEvents.filter(event => eventCoversDate(event, selectedPlannerDateKey)).slice(0, 3).map(event => <button type="button" key={event.id} data-action="openCalendarSheet" data-date={selectedPlannerDateKey}><span>{event.title}</span><small>{event.source === 'personal' ? '내 일정' : '공식 일정'} ›</small></button>)
-                    : <p>등록된 일정이 없어요. 일정 더보기에서 추가해보세요.</p>}
-                  {calendarEvents.filter(event => eventCoversDate(event, selectedPlannerDateKey)).length > 3 ? <button type="button" data-action="openCalendarSheet" data-date={selectedPlannerDateKey}>이 날짜의 일정 모두 보기 ›</button> : null}
-                </div>
-              </div>
-            </section>
 
           </main>
     </AppScreenShell>

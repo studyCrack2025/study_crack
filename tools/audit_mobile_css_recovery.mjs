@@ -22,7 +22,7 @@ const CONTRACTS = [
   { file: 'components/secondary.css', selector: '.sc-secondary-page', properties: ['width', 'min-width', 'display', 'gap', 'box-sizing', 'padding'], values: { display: ['grid'] } },
   { file: 'components/modals.css', selector: '.sc-overlay', properties: ['position', 'width', 'height', 'display', 'overflow', 'background'], values: { position: ['absolute'], display: ['flex'] }, allowedFiles: ['components/modals.css', 'foundation/motion.css'] },
   { file: 'components/modals.css', selector: '.sc-modal', properties: ['position', 'width', 'max-width', 'max-height', 'display', 'box-sizing', 'overflow'], values: { position: ['relative'], display: ['flex'] }, allowedFiles: ['components/modals.css', 'foundation/motion.css'] },
-  { file: 'components/navigation.css', selector: '.tabbar', properties: ['position', 'height', 'display', 'grid-template-columns', 'padding', 'z-index'], values: { position: ['absolute'], display: ['grid'] } },
+  { file: 'components/navigation.css', selector: '.tabbar', properties: ['position', 'min-height', 'display', 'grid-template-columns', 'padding', 'z-index'], values: { position: ['absolute'], display: ['grid'] } },
   { file: 'screens/auth.css', selector: '.auth-unified-card', properties: ['width', 'max-width', 'min-width', 'display', 'gap', 'padding'], values: { display: ['grid'] } },
   { file: 'screens/auth.css', selector: '.auth-sso-btn', properties: ['width', 'min-width', 'min-height', 'display', 'grid-template-columns', 'align-items', 'padding'], values: { display: ['grid'] } },
   { file: 'screens/auth-recovery.css', selector: '.find-email-modal.auth-recovery-modal', properties: ['width', 'max-height', 'display', 'grid-template-rows', 'box-sizing', 'overflow'], values: { display: ['grid'] } },

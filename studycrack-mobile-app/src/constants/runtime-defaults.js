@@ -13,4 +13,6 @@ export function getTodayDateKey(now = new Date()) {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export const TODAY_DATE = getTodayDateKey();
+export function getKoreaDateKey(now = new Date()) {
+  return new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+}

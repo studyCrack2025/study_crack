@@ -6,6 +6,8 @@
     const USER_API_URL = CONFIG.api.user;
     const statusMsg = document.getElementById('statusMsg');
     let pendingSocialSignup = null;
+    let loginScope = null;
+    let loginReturnUrl = '';
     // legal-content:start
     const SOCIAL_TERM_DETAILS = {
   "standard": {
@@ -143,11 +145,7 @@
             return;
         }
 
-        if (typeof clearClientSession === 'function') {
-            clearClientSession();
-        } else if (typeof clearSharedClientSession === 'function') {
-            clearSharedClientSession();
-        }
+        if (!isClientSessionCurrent(loginScope, { login: true })) return;
         if (result.accessToken && typeof setAccessToken === 'function') {
             setAccessToken(result.accessToken);
         } else if (result.accessToken) {
@@ -163,14 +161,16 @@
                 await registerRefreshCookie(result.refreshToken, {
                     accessToken: result.accessToken,
                     idToken: result.idToken,
-                    replaceExisting: true
+                    replaceExisting: true,
+                    sessionScope: loginScope
                 });
             } catch (_) {
+                if (!isClientSessionCurrent(loginScope, { login: true })) return;
                 clearClientSession();
                 showError('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
                 return;
             }
-        }
+        } else completeClientLogin(result, loginScope);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userRole', 'student');
 
@@ -179,7 +179,7 @@
 
         statusMsg.textContent = isLinkMode ? '연동 완료! 마이페이지로 이동 중...' : '로그인 완료! 이동 중입니다...';
 
-        const userRes = await fetch(USER_API_URL, {
+        const userRes = await apiFetch(USER_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -195,7 +195,7 @@
             if (userData.computedTier) localStorage.setItem('userTier', userData.computedTier);
         }
 
-        const socialReturnUrl = getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
+        const socialReturnUrl = loginReturnUrl || getSafeSocialReturnUrl() || (startedFromMobile ? '/studycrack-mobile.html' : '');
         clearSocialReturnState();
 
         if (isLinkMode) {
@@ -228,19 +228,13 @@
         statusMsg.textContent = '회원가입을 완료하고 있습니다...';
 
         try {
-            const completeRes = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
+            const { response: completeRes, data: completeResult } = await fetchSharedAuthJson({
                     type: 'social_complete_signup',
                     pendingSignupToken: pendingSocialSignup.pendingSignupToken,
                     termsAgreed: true,
                     signupConsent: { schema: 1, age14Confirmed: document.getElementById('socialSignupAge14')?.checked === true, documents: Object.fromEntries(Object.entries(SOCIAL_TERM_DETAILS).map(([id, doc]) => [id, { revision: doc.revision, accepted: id === 'marketing' ? marketingEl?.checked === true : true }])) },
                     marketingAgreed: marketingEl && marketingEl.checked === true
-                })
-            });
-            const completeResult = await completeRes.json().catch(() => ({}));
+            }, { sessionScope: loginScope });
             if (!completeRes.ok) {
                 showError(completeResult.error || `회원가입 처리에 실패했습니다. (HTTP ${completeRes.status})`);
                 return;
@@ -305,32 +299,21 @@
         return;
     }
     const callbackUrl = CONFIG.social.callbackUrl;
+    loginReturnUrl = getSafeSocialReturnUrl() || '';
+    loginScope = statePurpose === 'delete_reauth' ? captureClientSession() : beginClientLogin();
 
     // 3. 서버에 인증 code 전달.
     try {
         statusMsg.textContent = statePurpose === 'delete_reauth' ? '본인 확인 중입니다...' : '계정 정보를 확인하고 있습니다...';
 
-        const res = await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
+        const { response: res, data: result } = await fetchSharedAuthJson({
                 type: 'social_callback',
                 provider,
                 code,
                 redirectUri: callbackUrl,
                 ...(statePurpose === 'delete_reauth' && { purpose: statePurpose })
-            })
-        });
-
-        let result;
-        try {
-            result = await res.json();
-        } catch (jsonErr) {
-            console.error('[SocialCallback] JSON parse error:', jsonErr, 'HTTP status:', res.status);
-            showError(`인증 처리 중 오류가 발생했습니다. (응답 파싱 실패, HTTP ${res.status})`);
-            return;
-        }
+        }, { sessionScope: loginScope });
+        if (!isClientSessionCurrent(loginScope, { login: true })) return;
 
         if (res.ok && result.requiresTerms && result.pendingSignupToken) {
             pendingSocialSignup = { pendingSignupToken: result.pendingSignupToken };

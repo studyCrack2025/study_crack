@@ -29,8 +29,8 @@ export function StudyWeekSummary({ overview, summary = null, status = 'idle', co
   if (!summary?.week?.days?.length || overview?.week.seconds == null) {
     return (
       <div className="timer-week-empty">
-        <span>{status === 'error' ? '공부 요약을 잠시 불러오지 못했어요.' : summary?.available === false ? '주간 기록을 아직 제공할 수 없어요.' : '공부를 완료하면 주간 흐름이 이곳에 쌓여요.'}</span>
-        {status === 'error' ? <button type="button" data-action="retryStudySummary">다시 불러오기</button> : null}
+        <span>{status === 'error' ? '공부 요약을 잠시 불러오지 못했어요.' : status === 'unavailable' || summary?.available === false ? '주간 기록을 아직 제공할 수 없어요.' : '공부를 완료하면 주간 흐름이 이곳에 쌓여요.'}</span>
+        {['error', 'unavailable'].includes(status) ? <button type="button" data-action="retryStudySummary">다시 불러오기</button> : null}
       </div>
     );
   }
@@ -61,12 +61,14 @@ export function StudyWeekSummary({ overview, summary = null, status = 'idle', co
         <div>{selectedSubjects.length ? selectedSubjects.map((row) => <span data-subject-tone={subjectTone(row.subject)} key={row.subject}><i /><b>{row.subject}</b><small>{exactDurationLabel(row.seconds)}</small></span>) : <p>선택한 날짜에는 아직 완료한 공부가 없어요.</p>}</div>
       </div>
       {compact && expanded ? <button type="button" className="btn btn-secondary" data-action="openGameRules">수조 성장 규칙 보기</button> : null}
+      {!compact || expanded ? <button type="button" className="btn btn-secondary" data-action="retryStudySummary" disabled={status === 'loading'}>기록 새로고침</button> : null}
     </div>
   );
 }
 
-export function StudyJourneyPanel({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult, timerPhase }) {
-  const journey = buildTimerJourneyPresentation({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult, timerPhase });
+export function StudyJourneyPanel({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult: receivedReward, rewardClaimingSessionId, rewardRecoveryError, timerPhase, hideRewardRetry = false }) {
+  const rewardResult = activeStudySession ? null : receivedReward;
+  const journey = buildTimerJourneyPresentation({ activeStudySession, completionError, lastCompletedSession, rewardPendingSessionId, rewardResult, rewardClaimingSessionId, rewardRecoveryError, timerPhase });
   if (!journey.visible) return null;
   const hasError = journey.completionState === 'error' || journey.rewardState === 'error' || journey.sessionState === 'error';
   const eyebrow = journey.sessionState === 'running'
@@ -83,8 +85,8 @@ export function StudyJourneyPanel({ activeStudySession, completionError, lastCom
       <div className="timer-journey-copy"><span>{eyebrow}</span><b>{journey.title}</b>{journey.detail ? <p>{journey.detail}</p> : null}</div>
       {journey.hasCompletedSummary ? <dl className="timer-journey-summary"><div><dt>과목</dt><dd>{journey.session.subject || '기타'}</dd></div><div><dt>집중 시간</dt><dd>{journey.durationLabel}</dd></div></dl> : null}
       {journey.rewardState === 'active' ? <div className="timer-journey-pending"><i aria-hidden="true" /><span>오늘의 성장 보상을 확인하고 있어요.</span></div> : null}
-      {rewardResult ? <><div className="timer-reward-copy"><span>보상 확인</span><b>{journey.rewardTitle}</b></div><div className="timer-reward-values"><span>뽑기권 <b>+{Number(rewardResult.tickets) || 0}장</b></span><span>{rewardResult.ticketPolicyVersion === 'study-ticket-v1' ? `공부 ${exactDurationLabel(rewardResult.creditedSeconds)} 반영 · 남은 시간은 이월돼요` : '이전 보상 기록 확인 · 새 뽑기권 지급 내역은 없어요'}</span></div></> : null}
-      {journey.retryAction === 'retryStudyReward' ? <button type="button" className="btn btn-secondary" data-action="retryStudyReward">보상 다시 확인</button> : null}
+      {rewardResult ? <><div className="timer-reward-copy"><span>보상 확인</span><b>{journey.rewardTitle}</b></div><div className="timer-reward-values"><span>뽑기권 <b>+{Number(rewardResult.tickets) || 0}장</b></span><span>{rewardResult.ticketPolicyVersion === 'study-ticket-v1' ? `공부 ${exactDurationLabel(rewardResult.creditedSeconds)} 반영 · 남은 시간은 이월돼요` : rewardResult.ticketPolicyVersion === 'planner-ticket-v1' ? '공부 기록 저장 완료 · 뽑기권은 30분 이상 계정 계획 첫 완료 시 지급돼요' : '이전 보상 기록 확인 · 새 뽑기권 지급 내역은 없어요'}</span></div></> : null}
+      {!hideRewardRetry && journey.retryAction === 'retryStudyReward' ? <button type="button" className="btn btn-secondary" data-action="retryStudyReward">보상 다시 확인</button> : null}
       {journey.retryAction === 'retryStudyStart' ? <button type="button" className="btn btn-secondary" data-action="retryStudyStart">공부 시작 다시 연결</button> : null}
       {journey.retryAction === 'stopStudyTimer' ? <button type="button" className="btn btn-secondary" data-action="stopStudyTimer">완료 다시 확인</button> : null}
       {journey.recoveryDismissible ? <><p className="timer-recovery-dismiss-warning" id="timer-reward-dismiss-warning">서버에서 복구할 수 없는 보상입니다. 종료하면 이 보상 복구는 다시 시도할 수 없어요.</p><button type="button" className="btn btn-secondary" data-action="dismissRewardResult" aria-describedby="timer-reward-dismiss-warning">보상 복구 종료</button></> : null}

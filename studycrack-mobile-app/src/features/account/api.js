@@ -37,7 +37,7 @@ export async function fetchMobileAdmissionCalendar({ apiFetch, signal, userApiUr
   if (!result.ok) return result;
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((event) => normalizePersonalEvent(event)).filter(Boolean);
-  return apiSuccess(events, { status: result.status });
+  return apiSuccess(events, { status: result.status, code: result.data.supportsClientRequestId === true ? 'CALENDAR_IDEMPOTENT' : '' });
 }
 
 export async function upsertMobileAdmissionEvent({ apiFetch, event, userApiUrl } = {}) {
@@ -46,6 +46,7 @@ export async function upsertMobileAdmissionEvent({ apiFetch, event, userApiUrl }
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '저장된 수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean);
   const savedEvent = result.data?.event ? normalizePersonalEvent(result.data.event) : null;
+  if (!savedEvent || !events.some(item => item.id === savedEvent.id) || (event?.clientRequestId && savedEvent.id !== event.clientRequestId) || (event?.id && savedEvent.id !== event.id)) return apiInvalidResponse(result, '일정 저장 결과를 확인하지 못했습니다.');
   return apiSuccess({ events, event: savedEvent }, { status: result.status });
 }
 
@@ -54,5 +55,6 @@ export async function deleteMobileAdmissionEvent({ apiFetch, eventId, userApiUrl
   if (!result.ok) return result;
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '삭제 후 수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean);
+  if (events.some(event => event.id === eventId)) return apiInvalidResponse(result, '일정 삭제 결과를 확인하지 못했습니다.');
   return apiSuccess({ events }, { status: result.status });
 }

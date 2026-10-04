@@ -50,6 +50,8 @@ export async function requestJson({ apiFetch, fallbackError = '요청을 처리�
     return notifyAuthExpired(apiFailure(description.message, { code: description.code, status: Number(error.status || 0) }));
   };
   if (globalThis.navigator?.onLine === false) return failure({ code: 'OFFLINE' });
+  const browser = globalThis.window;
+  const scope = browser?.captureClientSession?.();
   const controller = new AbortController();
   const cancel = () => controller.abort();
   options.signal?.addEventListener('abort', cancel, { once: true });
@@ -69,6 +71,7 @@ export async function requestJson({ apiFetch, fallbackError = '요청을 처리�
       if (controller.signal.aborted) return failure({ code: 'REQUEST_ABORTED' });
       const response = await apiFetch(url, { ...options, signal: controller.signal });
       const body = await readResponseBody(response);
+      if (scope && !browser.isClientSessionCurrent(scope)) return failure({ code: 'REQUEST_ABORTED' });
       if (controller.signal.aborted) return failure({ code: 'REQUEST_ABORTED' });
       if (!response?.ok) return failure({ code: body?.code || '', status: response?.status || 0 });
       return apiSuccess(body, { status: response?.status || 200 });

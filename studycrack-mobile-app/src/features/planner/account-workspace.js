@@ -6,11 +6,11 @@ const detailsFor = item => ({ minutes: Number(item.minutes || 0), start: item.st
 export function createPlannerAccountWorkspace(controller, notify, connect = createPlannerAccountConnection) {
   let connection = null, operation = null;
   let generation = 0;
-  let view = { mode: 'device', scope: generation, busy: false, verified: false, snapshot: null, result: null };
+  let view = { mode: 'device', scope: generation, busy: false, verified: false, supportsV2: false, snapshot: null, result: null };
   const publish = values => { view = { ...view, ...values }; notify(); };
   function invalidated() {
     connection?.dispose(); connection = null; operation = null;
-    publish({ scope: ++generation, busy: false, verified: false, snapshot: null, result: { ok: false, error: 'session' } });
+    publish({ scope: ++generation, busy: false, verified: false, supportsV2: false, snapshot: null, result: { ok: false, error: 'session' } });
   }
   async function run(kind, input) {
     if (operation) return { ok: false, error: 'pending' };
@@ -22,12 +22,13 @@ export function createPlannerAccountWorkspace(controller, notify, connect = crea
       if (!connection?.active()) {
         if (kind !== 'check') { invalidated(); return { ok: false, error: 'session' }; }
         connection?.dispose();
-        publish({ scope: ++generation, snapshot: null, verified: false });
+        publish({ scope: ++generation, snapshot: null, verified: false, supportsV2: false });
         connection = connect(controller, invalidated);
       }
       current = connection;
       let result;
       if (kind === 'check') result = await current.sync.refresh();
+      else if (kind === 'upgrade') result = await current.sync.upgrade();
       else if (kind === 'retry') {
         result = await current.sync.flushOne();
         if (result.ok && !current.sync.getSnapshot().queue.length) result = await current.sync.refresh();
@@ -49,7 +50,7 @@ export function createPlannerAccountWorkspace(controller, notify, connect = crea
         return { ok: false, error: 'session' };
       }
       const snapshot = current.sync.getSnapshot();
-      publish({ busy: false, verified: snapshot.available && (result.ok || (wasVerified && ['invalid', 'storage', 'pending'].includes(result.error))), snapshot: [401, 403].includes(result.status) ? null : snapshot, result });
+      publish({ busy: false, supportsV2: result.supportsV2 === true || view.supportsV2, verified: snapshot.available && (result.ok || (wasVerified && ['invalid', 'storage', 'pending'].includes(result.error))), snapshot: [401, 403].includes(result.status) ? null : snapshot, result });
       return result;
     } catch {
       if (!current || connection === current) invalidated();
@@ -64,7 +65,7 @@ export function createPlannerAccountWorkspace(controller, notify, connect = crea
     if (!snapshot?.available) return [];
     const rows = [...snapshot.items.filter(item => !item.deleted)];
     for (const request of snapshot.queue) if (!rows.some(item => item.id === request.data.id) && request.type === 'save_server_planner') rows.push({ ...request.data, completed: false });
-    return rows.map(item => ({ ...detailsFor(snapshot.details?.find(row => row.id === item.id) || {}), id: item.id, date: item.date, subject: item.subject,
+    return rows.map(item => ({ ...detailsFor(snapshot.details?.find(row => row.id === item.id) || {}), ...(snapshot.version === 2 && Number.isSafeInteger(item.plannedMinutes) ? { minutes: item.plannedMinutes } : {}), accountDurationState: snapshot.version === 2 ? item.plannedMinutes == null ? 'unknown' : 'confirmed' : 'device', accountPlannedMinutes: item.plannedMinutes ?? null, id: item.id, date: item.date, subject: item.subject,
       content: item.title, done: item.completed, accountRevision: item.revision, accountPending: snapshot.queue.some(row => row.data.id === item.id), accountStored: true }));
   }
   const workspace = {
@@ -82,10 +83,10 @@ export function createPlannerAccountWorkspace(controller, notify, connect = crea
       if (kind === 'add' && current?.accountRevision > 0 && !current.accountPending && ['date', 'subject', 'content'].every(key => current[key] === item[key])
         && JSON.stringify(detailsFor(current)) === JSON.stringify(detailsFor(item))) return true;
       const save = ['add', 'edit', 'cancel'].includes(kind);
-      const result = await run('write', { kind: save ? 'save' : kind, id: item.id, ...(save ? { date: item.date, subject: item.subject, title: item.content, details: detailsFor(item) } : {}) });
+      const result = await run('write', { kind: save ? 'save' : kind, id: item.id, ...(save ? { date: item.date, subject: item.subject, title: item.content, plannedMinutes: kind === 'cancel' ? item.accountPlannedMinutes : item.minutes, details: detailsFor(item) } : {}) });
       return result.ok;
     },
-    dispose() { connection?.dispose(); connection = null; operation = null; view = { mode: 'device', scope: ++generation, busy: false, verified: false, snapshot: null, result: null }; }
+    dispose() { connection?.dispose(); connection = null; operation = null; view = { mode: 'device', scope: ++generation, busy: false, verified: false, supportsV2: false, snapshot: null, result: null }; }
   };
   return workspace;
 }

@@ -58,8 +58,8 @@ function encodeToken(payload) {
   return `e2e.${encoded}.signature`;
 }
 
-export async function installAuthenticatedSession(page, { restoreOnNavigation = true } = {}) {
-  const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(Date.now() / 1000) + 3600 });
+export async function installAuthenticatedSession(page, { restoreOnNavigation = true, now = Date.now() } = {}) {
+  const token = encodeToken({ sub: 'e2e-student', exp: Math.floor(now / 1000) + 3600 });
   await page.addInitScript(({ accessToken, restoreOnNavigation }) => {
     const storageInitializedKey = '__studycrackE2eSessionInitialized';
     if (localStorage.getItem(storageInitializedKey) !== 'true') {
@@ -101,14 +101,14 @@ function targetResult(target, index, examMode) {
 }
 
 function studySummary(state) {
-  const now = new Date();
+  const now = new Date((state.studyNow ?? Date.now()) + 9 * 3600000);
   const monday = new Date(now);
-  monday.setDate(now.getDate() + (now.getDay() === 0 ? -6 : 1 - now.getDay()));
-  const dateKey = (value) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  monday.setUTCDate(now.getUTCDate() + (now.getUTCDay() === 0 ? -6 : 1 - now.getUTCDay()));
+  const dateKey = value => value.toISOString().slice(0, 10);
   const todayDate = dateKey(now);
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
+    date.setUTCDate(monday.getUTCDate() + index);
     const isToday = dateKey(date) === todayDate;
     return {
       date: dateKey(date),
@@ -223,14 +223,14 @@ function responseFor(payload, state) {
         subject: payload.data?.subject,
         plannerItemId: payload.data?.plannerItemId || '',
         status: 'running',
-        startedAt: new Date(Date.now() - 2000).toISOString()
+        startedAt: new Date((state.studyNow ?? Date.now()) - 2000).toISOString()
       };
       return state.activeStudySession;
     case 'complete_study_session': {
       const id = payload.data?.sessionId;
       if (state.completedStudySessions.has(id)) return state.completedStudySessions.get(id);
-      state.studySeconds = state.studyDurationSeconds;
-      const completed = { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
+      state.studySeconds += state.studyDurationSeconds;
+      const completed = { ...state.activeStudySession, status: 'completed', endedAt: new Date(state.studyNow ?? Date.now()).toISOString(), durationSeconds: state.studyDurationSeconds };
       state.completedStudySessions.set(id, completed);
       return completed;
     }
@@ -239,7 +239,7 @@ function responseFor(payload, state) {
         profile: state.gameProfile,
         activeFish: state.activeFish,
         fishCount: state.fishInventory.length,
-        rules: { ticketPolicy: { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 }, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 }
+        rules: { ticketPolicy: state.gameProfile.ticketPolicyVersion === 'planner-ticket-v1' ? { version: 'planner-ticket-v1', minimumPlanMinutes: 30, boostPlanMinutes: [120, 240], drawCost: 1, completionMode: 'server_check', grantPerPlan: 1 } : { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 }, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 }
       };
     case 'get_fish_catalog':
       return {
@@ -292,7 +292,11 @@ function responseFor(payload, state) {
       const fish = { fishId: 'fish_draw_e2e', speciesId: 'butterflyfish', speciesName: '나비고기', rarity: 'rare', name: '나비', customName: '', level: 1, exp: 0, currentLevelExp: 0, nextLevelExp: 30, progressPct: 0, growthStage: 'young', source: 'draw' };
       const result = { requestId, speciesId: fish.speciesId, rarity: fish.rarity, duplicate: false, protectedDraw: true, expGranted: 0, shellsRefunded: 0, ticketsRefunded: 0, costUnit: 'ticket', cost: 1, levelBefore: 0, levelAfter: 1, createdAt: new Date().toISOString() };
       state.fishInventory = [...state.fishInventory, fish];
-      state.gameProfile = { ...state.gameProfile, ticketBalance: state.gameProfile.ticketBalance - 1, activeDrawRequestId: requestId, drawPity: { rareIn: 9, epicIn: 29 } };
+      state.gameProfile = { ...state.gameProfile, ticketBalance: state.gameProfile.ticketBalance - 1, activeDrawRequestId: requestId };
+      if (state.gameProfile.ticketPolicyVersion === 'planner-ticket-v1') {
+        if (state.gameProfile.legacyTicketBalance > 0) state.gameProfile.legacyTicketBalance--;
+        else { const ticket = state.planTickets.shift(); state.gameProfile.planTicketCounts[ticket.band]--; }
+      }
       state.pendingDraw = { result, fish };
       return { result, profile: state.gameProfile, fish, alreadyDrawn: false };
     }
@@ -303,11 +307,13 @@ function responseFor(payload, state) {
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
     case 'claim_study_reward': {
-      const seconds = state.studySeconds;
+      const sessionId = payload.data?.sessionId;
+      const seconds = state.completedStudySessions.get(sessionId)?.durationSeconds ?? state.studyDurationSeconds;
+      const receipt = state.studyRewardReceipts.get(sessionId);
       const progress = state.gameProfile.ticketProgressSeconds + seconds;
-      const tickets = state.studyRewardClaimed ? state.studyRewardReceipt.tickets : Math.floor(progress / 18000);
-      state.studyRewardReceipt ||= { tickets, creditedSeconds: seconds };
-      if (!state.studyRewardClaimed) {
+      const tickets = receipt?.tickets ?? Math.floor(progress / 18000);
+      if (!receipt) {
+        state.studyRewardReceipts.set(sessionId, { tickets, creditedSeconds: seconds });
         state.gameProfile = {
           ...state.gameProfile,
           ticketBalance: state.gameProfile.ticketBalance + tickets,
@@ -316,12 +322,10 @@ function responseFor(payload, state) {
           starterState: state.gameProfile.starterState === 'locked' && seconds >= 600 ? 'selectable' : state.gameProfile.starterState
         };
       }
-      const alreadyClaimed = state.studyRewardClaimed;
-      state.studyRewardClaimed = true;
       return {
-        alreadyClaimed,
-        sessionId: payload.data?.sessionId,
-        durationSeconds: state.studySeconds,
+        alreadyClaimed: Boolean(receipt),
+        sessionId,
+        durationSeconds: seconds,
         reward: { shells: 0, food: 0, tickets, creditedSeconds: seconds, ticketPolicyVersion: 'study-ticket-v1' },
         profile: state.gameProfile
       };
@@ -362,11 +366,11 @@ export async function installApiMock(page, {
     activeFish: [],
     fishCatalog,
     fishInventory: [],
-    gameProfile: { ticketPolicyVersion: 'study-ticket-v1', ticketBalance: 2, ticketProgressSeconds: 0, ticketIntervalSeconds: 18000, shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, drawPity: { rareIn: 10, epicIn: 30 }, dailyReward: {}, ...initialGameProfile },
+    gameProfile: { ticketPolicyVersion: 'study-ticket-v1', ticketBalance: 2, ticketProgressSeconds: 0, ticketIntervalSeconds: 18000, shellBalance: 62, foodBalance: 3, starterFishUnlocked: true, starterState: 'selectable', selectedFishId: null, activeFishIds: [null, null, null], activeDrawRequestId: null, dailyReward: {}, ...initialGameProfile },
     pendingDraw: null,
     studyDurationSeconds,
     studyReward,
-    studyRewardClaimed: false,
+    studyRewardReceipts: new Map(),
     studySeconds: 0,
     userTier: tier,
     userOverrides
@@ -389,6 +393,14 @@ export async function installApiMock(page, {
       ? Math.max(0, Number(analysisDelayByExam[payload.examMode] || 0))
       : 0;
     if (analysisDelay) await new Promise((resolve) => setTimeout(resolve, analysisDelay));
+    if (['get_study_summary', 'start_study_session', 'complete_study_session'].includes(payload.type)) {
+      try { state.studyNow = await page.evaluate(() => Date.now()); }
+      catch (error) {
+        if (!page.isClosed() && !/Execution context was destroyed/.test(error.message)) throw error;
+        await route.abort().catch(() => {});
+        return;
+      }
+    }
     const body = payload.type === 'request_account_deletion' ? deletionResponse : responseFor(payload, state);
     if (loseResponseOnceTypes.includes(payload.type) && !failedOnce.has(payload.type)) {
       failedOnce.add(payload.type);

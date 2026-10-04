@@ -76,7 +76,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     expect(api.requests.filter(({ payload }) => /study_session|claim_study_reward|feed_fish/.test(payload.type))).toHaveLength(0);
     const feedback = await page.locator('.planner-feedback-card').evaluate(el => el.offsetTop);
     const calendar = await page.locator('.planner-calendar-section').evaluate(el => el.offsetTop);
-    expect(calendar).toBeGreaterThan(feedback);
+    expect(calendar).toBeLessThan(feedback);
     await expectNoHorizontalOverflow(page);
   });
 }
@@ -84,7 +84,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
 test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록만 표시한다', async ({ page }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
-  await page.locator('.planner-date-strip [data-planner-date="2026-09-08"]').click();
+  await page.locator('.calendar-grid [data-planner-date="2026-09-08"]').click();
   await expect(page.getByRole('heading', { name: 'Planner of Today', exact: true })).toBeVisible();
   await expect(page.locator('.planner-progress-head')).toContainText('선택한 날의 계획 진행률');
   await expect(page.locator('article.planner-item')).toHaveCount(1);

@@ -4,14 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { buildRulesGrowthPresentation, buildRulesGuidePresentation } from '../src/features/gamification/rules-guide-presentation.js';
+import { buildRulesGrowthPresentation, buildRulesGuidePresentation, buildRulesGuideSteps } from '../src/features/gamification/rules-guide-presentation.js';
 
 const rules = {
   ticketPolicy: { version: 'study-ticket-v1', intervalSeconds: 18000, drawCost: 1 },
   starterPolicy: { version: 'starter-study-v1', minimumSessionSeconds: 600, choiceCount: 3 },
   drawPolicy: {
-    version: 'draw-ticket-v1', oddsBasisPoints: { common: 7000, rare: 2500, epic: 400, legendary: 100 },
-    pityLimits: { rare: 10, epic: 30, legendary: 100 }, duplicateExp: { common: 30, rare: 80, epic: 180, legendary: 400 },
+    version: 'draw-ticket-v1', randomSelection: true, duplicateEffect: 'growth', duplicateExp: { common: 30, rare: 80, epic: 180, legendary: 400 },
     protectedDrawCount: 3, maxLevelRefund: { tickets: 1 }, specialAcquisition: 'achievement_or_event'
   },
   habitatStages: [{ minimumMinutes: 180, label: '풍성한 서식지' }]
@@ -22,9 +21,9 @@ assert.equal(buildRulesGuidePresentation(rules).ready, true);
 for (const value of [null, {}, { ...rules, ticketPolicy: { ...rules.ticketPolicy, version: 'future' } }, { ...rules, ticketPolicy: { ...rules.ticketPolicy, intervalSeconds: 0 } }]) {
   assert.equal(buildRulesGuidePresentation(value).ready, false);
 }
-for (const status of ['idle', 'loading', 'error', 'unavailable']) assert.equal(buildRulesGuidePresentation(rules, status).ready, false);
+for (const status of ['idle', 'loading', 'error', 'unavailable', 'off', 'future']) assert.equal(buildRulesGuidePresentation(rules, status).ready, false);
 assert.equal(buildRulesGuidePresentation({ ...rules, starterPolicy: undefined }).starter, null);
-assert.equal(buildRulesGuidePresentation({ ...rules, drawPolicy: { ...rules.drawPolicy, oddsBasisPoints: { common: 9000, rare: 2500, epic: 400, legendary: 100 } } }).draw, null);
+assert.equal(buildRulesGuidePresentation({ ...rules, drawPolicy: { ...rules.drawPolicy, randomSelection: false } }).draw, null);
 assert.deepEqual(buildRulesGrowthPresentation({ status: 'ready', growth }), { growth, current: 7, next: 15 });
 for (const status of ['stale', 'error', 'unavailable', 'account-changed', 'loading']) assert.equal(buildRulesGrowthPresentation({ status, growth }), null);
 for (const corrupt of [{ policyVersion: 'future' }, { highestUnlockedStage: 'day100' }, { nextStageDays: 1 }, { validDayCount: -1 }, { revision: 0 }]) {
@@ -39,21 +38,40 @@ try {
   const { AquariumGrowthContext } = await vite.ssrLoadModule('/src/features/gamification/AquariumGrowthContext.js');
   const render = (props = {}, view = { status: 'ready', growth }) => renderToStaticMarkup(createElement(AquariumGrowthContext.Provider, { value: view }, createElement(GameRulesGuide, { open: true, gameRules: rules, gameProfileStatus: 'ready', ...props })));
   const markup = render();
-  assert.match(markup, /10분 이상 공부 완료/);
   assert.match(markup, /확정 공부 5시간마다 1장/);
-  assert.match(markup, /뽑기권 1장으로 만나기/);
-  assert.match(markup, /하루 최대 1일/);
-  assert.match(markup, /성장 인정 <b>12일<\/b> · 다음 배경까지 3일/);
-  assert.match(markup, /DAY 7 수조 배경/);
-  assert.match(markup, /DAY 15 수조 배경/);
-  assert.match(markup, /해당 등급 이상을 확정/);
-  assert.match(markup, /첫 3회는 뽑힌 등급/);
-  assert.match(markup, /뽑기권 1장을 돌려받아요/);
-  assert.doesNotMatch(markup, /풍성한 서식지|180분|플랑크톤|조개/);
+  assert.match(markup, /1\/4/);
+  assert.equal((markup.match(/class="game-rules-step"/g) || []).length, 1);
+  assert.match(markup, /role="img" aria-label="확인된 공부 기록과 뽑기권 한 장"/);
+  assert.doesNotMatch(markup, /하루 최대 1일|DAY 7|첫 3회|Lv.10/);
+  const legacySteps = buildRulesGuideSteps(buildRulesGuidePresentation(rules));
+  assert.equal(legacySteps.length, 4);
+  assert.match(legacySteps[2].title, /뽑기권 1장/);
+  assert.match(legacySteps[3].body, /성장 경험치/);
+  const planRules = { ...rules, ticketPolicy: { version: 'planner-ticket-v1', minimumPlanMinutes: 30, boostPlanMinutes: [120, 240], drawCost: 1, completionMode: 'server_check', grantPerPlan: 1 },
+    drawPolicy: { version: 'draw-plan-v1', randomSelection: true, duplicateEffect: 'none', specialAcquisition: 'achievement_or_event' } };
+  const planMarkup = render({ gameRules: planRules });
+  const planSteps = buildRulesGuideSteps(buildRulesGuidePresentation(planRules));
+  assert.equal(planSteps.length, 4);
+  assert.match(planMarkup, /30분 이상 계획을 세워요/);
+  assert.match(planSteps[1].body, /완료 취소·재완료로는 다시 지급되지/);
+  assert.match(planSteps[3].body, /경험치·배치는 그대로/);
+  assert.doesNotMatch(JSON.stringify(planSteps), /확정 공부 5시간|돌려받아요|성장 경험치/);
+  assert.doesNotMatch(planMarkup, /\d+%|풍성한 서식지|180분|플랑크톤|조개/);
+  for (const status of ['idle', 'loading', 'error', 'unavailable', 'off', 'ready']) {
+    const unknown = render({ gameRules: null, gameProfileStatus: status });
+    assert.doesNotMatch(unknown, /30분 이상|5시간|10분 이상|경험치|무작위|game-rules-step"/);
+    assert.equal(buildRulesGuideSteps(buildRulesGuidePresentation(null, status)).length, 0);
+  }
   assert.match(render({ gameRules: null }), /공부 보상 규칙 확인 필요/);
-  assert.doesNotMatch(render({ gameRules: null }), /확정 공부 5시간|10분 이상|70%/);
-  assert.doesNotMatch(render({}, { status: 'stale', growth }), /성장 인정|DAY 7 수조 배경/);
-  assert.match(render({}, { status: 'stale', growth }), /성장 기록 확인 필요/);
+  assert.match(render({ gameProfileStatus: 'loading' }), /규칙을 불러오는 중/);
+  assert.match(render({ gameProfileStatus: 'unavailable' }), /수조 기능을 준비/);
+  const partial = buildRulesGuidePresentation({ ...planRules, drawPolicy: rules.drawPolicy });
+  assert.equal(partial.draw, null);
+  assert.match(buildRulesGuideSteps(partial)[2].title, /확인/);
+  assert.doesNotMatch(buildRulesGuideSteps(partial)[3].body, /그대로|경험치/);
+  for (const ticketPolicy of [{ ...planRules.ticketPolicy, boostPlanMinutes: [120] }, { ...planRules.ticketPolicy, grantPerPlan: 2 }, { ...planRules.ticketPolicy, completionMode: 'timer' }]) {
+    assert.equal(buildRulesGuidePresentation({ ...planRules, ticketPolicy }).ready, false);
+  }
   assert.equal(render({ open: false }), '');
 } finally { await vite.close(); }
 const source = await readFile(new URL('../src/components/aquarium/GameRulesGuide.jsx', import.meta.url), 'utf8');

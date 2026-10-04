@@ -1,7 +1,7 @@
 import { Icon } from '../../components/Icon.jsx';
 import { StudyJourneyPanel } from './StudyGamificationPanels.jsx';
 
-const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session', 'claiming-reward'];
+const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session'];
 
 function sessionTimeLabel(value) {
   const date = new Date(value);

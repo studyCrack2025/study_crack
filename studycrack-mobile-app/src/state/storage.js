@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   selectedUniversity: 'selectedUniversity',
   activeStudySession: 'activeStudySession',
   rewardPendingSessionId: 'studyRewardPendingSessionId',
+  studyRecovery: 'studyRecovery_v2',
   studyRecords: 'studyRecords',
   studySubjectRecords: 'studySubjectRecords',
   user: 'user'

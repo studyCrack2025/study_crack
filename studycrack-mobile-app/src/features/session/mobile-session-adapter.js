@@ -1,5 +1,4 @@
 import { clearMobileAuthArtifacts } from './auth-service.js';
-import { AUTH_REQUEST_TYPES } from '../../shared/api/request-types.js';
 import {
   getMobileBrowserServices,
   getMobileLocation,
@@ -15,13 +14,12 @@ function getRoleLoginPath(role) {
 export async function blockNonStudentMobileSession(role) {
   const runtime = getMobileBrowserServices();
   try {
-    await runtime.apiFetch?.(runtime.api.auth, {
-      method: 'POST',
-      body: JSON.stringify({ type: AUTH_REQUEST_TYPES.LOGOUT })
-    });
+    clearMobileAuthArtifacts(runtime.browser);
   } catch (_error) {}
   try {
-    clearMobileAuthArtifacts(runtime.browser);
+    if (typeof runtime.browser?.clearServerSessionCookies === 'function') {
+      await runtime.browser.clearServerSessionCookies({ includeLocal: true });
+    }
   } catch (_error) {}
   runtime.alert(role === 'tutor'
     ? '튜터 계정은 튜터 전용 페이지를 이용해주세요.'

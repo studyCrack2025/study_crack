@@ -1,8 +1,15 @@
 import { createPlannerSyncModel } from './sync-model.js';
 
 export function createAccountPlannerSync({ owner, storage, getSession, locks = globalThis.navigator?.locks, uuid = () => globalThis.crypto.randomUUID(), timeoutMs = 15000 } = {}) {
-  const model = createPlannerSyncModel();
-  const key = typeof owner === 'string' && /^[A-Za-z0-9_@.+:-]{1,128}$/.test(owner) ? `studycrackPlannerAccount_v1:${encodeURIComponent(owner)}` : null;
+  const baseKey = typeof owner === 'string' && /^[A-Za-z0-9_@.+:-]{1,128}$/.test(owner) ? `studycrackPlannerAccount_v1:${encodeURIComponent(owner)}` : null;
+  const nextKey = baseKey?.replace('_v1:', '_v2:');
+  let protocol = 1;
+  try {
+    const legacy = baseKey && storage.getItem(baseKey);
+    if (nextKey && storage.getItem(nextKey) !== null && (legacy === null || (legacy.length <= 4_000_000 && createPlannerSyncModel().validDocument(JSON.parse(legacy), owner) && !JSON.parse(legacy).queue.length))) protocol = 2;
+  } catch { /* Keep the original when storage is unavailable. */ }
+  let model = createPlannerSyncModel({ protocol });
+  let key = protocol === 2 ? nextKey : baseKey;
   const sessionNow = () => { try { return getSession?.(); } catch { return null; } };
   const initial = sessionNow();
   const initialSession = initial ? { owner: initial.owner, epoch: initial.epoch, send: initial.send } : null;
@@ -16,7 +23,7 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
   function read() {
     const raw = storage.getItem(key);
     if (raw !== null && raw.length > 4_000_000) throw new Error('storage');
-    const doc = raw === null ? { version: 1, owner, items: [], growth: null, queue: [], imports: [] } : JSON.parse(raw);
+    const doc = raw === null ? { version: protocol, owner, items: [], growth: null, queue: [], imports: [] } : JSON.parse(raw);
     if (!model.validDocument(doc, owner)) throw new Error('storage');
     return doc;
   }
@@ -31,8 +38,10 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
     try {
       if (!active()) throw new Error('session');
       if (typeof locks?.request !== 'function') throw new Error('locking');
-      return await locks.request(key, { mode: 'exclusive' }, async () => {
+      const lockedKey = key;
+      return await locks.request(lockedKey, { mode: 'exclusive' }, async () => {
         if (!active()) throw new Error('session');
+        if (key !== lockedKey) throw new Error('pending');
         const result = await work(read()); error = result?.error || ''; return { ok: true, ...result };
       });
     } catch (cause) {
@@ -40,18 +49,18 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
       return { ok: false, error };
     }
   }
-  function requestFor(doc, { kind, id, date, subject, title }) {
+  function requestFor(doc, { kind, id, date, subject, title, plannedMinutes }) {
     if (doc.queue.some(request => request.data.id === id)) throw new Error('pending');
     const item = doc.items.find(value => value.id === id);
     if (item?.deleted || (!item && kind !== 'save')) throw new Error('conflict');
     const type = { save: 'save_server_planner', complete: 'complete_server_planner', delete: 'delete_server_planner' }[kind];
-    const data = { id, requestId: uuid(), revision: item?.revision || 0, ...(kind === 'save' ? { date, subject, title, completed: false } : {}) };
+    const data = { id, requestId: uuid(), revision: item?.revision || 0, ...(kind === 'save' ? { date, subject, title, completed: false, ...(protocol === 2 ? { plannedMinutes } : {}) } : {}) };
     const request = { type, data };
     if (!model.validRequest(request)) throw new Error('invalid');
     return request;
   }
   const withDetails = (doc, id, details) => details ? { ...doc, details: [...(doc.details || []).filter(row => row.id !== id), { ...details, id }] } : doc;
-  async function send(request) {
+  async function send(request, requestedProtocol = protocol) {
     if (typeof initialSession.send !== 'function') throw new Error('unsupported');
     let response, timer;
     const controller = new AbortController();
@@ -61,26 +70,26 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
         controller.signal.addEventListener('abort', () => reject(new Error('remote')), { once: true });
         timer = setTimeout(() => controller.abort(), Math.min(30000, Math.max(1, Number(timeoutMs) || 15000)));
       });
-      response = await Promise.race([initialSession.send(structuredClone(request), { signal: controller.signal }), interrupted]);
+      response = await Promise.race([initialSession.send(structuredClone(request), { signal: controller.signal, protocol: requestedProtocol }), interrupted]);
     } catch { throw new Error('remote'); }
     finally { clearTimeout(timer); inFlight = null; }
     if (!active()) throw new Error('session');
     return response;
   }
-  async function readRemote(doc) {
+  async function readRemote(doc, requestedProtocol = protocol, requestedModel = model) {
     let next = doc, cursor = null, revision = null;
     const cursors = new Set(), ids = new Set();
     for (let pageNumber = 0; pageNumber < 100; pageNumber++) {
-      const response = await send({ type: 'get_server_planner', data: cursor ? { cursor } : {} });
+      const response = await send({ type: 'get_server_planner', data: cursor ? { cursor } : {} }, requestedProtocol);
       if (!response?.ok) return { ok: false, error: 'remote', status: response?.status || 0 };
       const payload = response.data;
       if (payload?.success !== true) throw new Error('response');
       const page = payload.data;
-      next = model.acceptPage(next, page);
+      next = requestedModel.acceptPage(next, page);
       if (revision !== null && revision !== page.growth.revision) throw new Error('conflict');
       revision = page.growth.revision;
       for (const item of page.items) { if (ids.has(item.id)) throw new Error('response'); ids.add(item.id); }
-      if (page.cursor === null) return { ok: true, next, ids, confirmedGrowth: page.growth };
+      if (page.cursor === null) return { ok: true, next, ids, confirmedGrowth: page.growth, supportsV2: page.capabilities?.protocols?.includes(2) === true };
       if (cursors.has(page.cursor)) throw new Error('response');
       cursors.add(page.cursor); cursor = page.cursor;
     }
@@ -98,7 +107,36 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
         if (doc.queue.length) throw new Error('pending');
         const result = await readRemote(doc);
         if (!result.ok) return result;
-        write(result.next); return { refreshed: true, confirmedGrowth: result.confirmedGrowth };
+        write(result.next); return { refreshed: true, confirmedGrowth: result.confirmedGrowth, supportsV2: result.supportsV2 };
+      });
+    },
+    upgrade() {
+      return exclusive(async doc => {
+        if (protocol === 2) return { upgraded: true };
+        if (doc.queue.length) throw new Error('pending');
+        return locks.request(nextKey, { mode: 'exclusive' }, async () => {
+          if (!active()) throw new Error('session');
+          const nextModel = createPlannerSyncModel({ protocol: 2 });
+          const raw = storage.getItem(nextKey);
+          let next = raw === null ? { version: 2, owner, items: [], growth: doc.growth, queue: [], imports: [], details: doc.details || [] } : JSON.parse(raw);
+          if (!nextModel.validDocument(next, owner)) throw new Error('storage');
+          if (next.queue.length) { protocol = 2; model = nextModel; key = nextKey; return { upgraded: true }; }
+          const remote = await readRemote(next, 2, nextModel);
+          if (!remote.ok || !remote.supportsV2) return { ok: false, error: 'unsupported' };
+          const imports = [...next.imports];
+          for (const row of doc.imports.filter(row => remote.ids.has(row.id))) {
+            const match = imports.find(value => value.id === row.id || value.sourceId === row.sourceId);
+            if (match && (match.id !== row.id || match.sourceId !== row.sourceId)) throw new Error('conflict');
+            if (!match) imports.push(row);
+          }
+          next = { ...remote.next, imports };
+          if (!active() || !nextModel.validDocument(next, owner)) throw new Error('storage');
+          const encoded = JSON.stringify(next);
+          if (encoded.length > 4_000_000) throw new Error('storage');
+          storage.setItem(nextKey, encoded);
+          protocol = 2; model = nextModel; key = nextKey;
+          return { upgraded: true, confirmedGrowth: remote.confirmedGrowth };
+        });
       });
     },
     acceptRemote(requestId) {
@@ -126,7 +164,7 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
         if (typeof item?.id !== 'string' || !item.id.trim()) throw new Error('invalid');
         if (doc.imports.some(row => row.sourceId === item.id)) throw new Error('already-imported');
         const id = uuid();
-        const request = requestFor(doc, { kind: 'save', id, date: item.date, subject: item.subject, title: item.content });
+        const request = requestFor(doc, { kind: 'save', id, date: item.date, subject: item.subject, title: item.content, plannedMinutes: item.minutes });
         write({ ...withDetails(doc, id, details), imports: [...doc.imports, { sourceId: item.id, id }], queue: [...doc.queue, request] });
         return { id };
       });
@@ -140,12 +178,13 @@ export function createAccountPlannerSync({ owner, storage, getSession, locks = g
         const payload = response.data;
         const item = payload?.data?.item;
         if (payload?.success !== true || item?.id !== request.data.id || item?.revision !== request.data.revision + 1
-          || (request.type === 'save_server_planner' && (item.completed || item.deleted || item.date !== request.data.date || item.subject !== request.data.subject.trim() || item.title !== request.data.title.trim()))
+          || (request.type === 'save_server_planner' && (item.completed || item.deleted || item.date !== request.data.date || item.subject !== request.data.subject.trim() || item.title !== request.data.title.trim() || (protocol === 2 && item.plannedMinutes !== request.data.plannedMinutes)))
           || (request.type === 'complete_server_planner' && (!item.completed || item.deleted))
           || (request.type === 'delete_server_planner' && !item.deleted)) throw new Error('response');
         const next = model.accept(doc, payload.data.item, payload.data.growth);
         write({ ...next, queue: doc.queue.slice(1) });
-        return { requestId: request.data.requestId, replayed: payload.data.replayed === true, confirmedGrowth: payload.data.growth };
+        return { requestId: request.data.requestId, replayed: payload.data.replayed === true, confirmedGrowth: payload.data.growth,
+          completionStatus: request.type === 'complete_server_planner' ? payload.data.rewardStatus || null : null };
       });
     },
     dispose() { disposed = true; inFlight?.abort(); }

@@ -55,7 +55,7 @@ test('헤더 성장 일수와 배경 단계를 구분하고 출처는 펼쳐서 
   await expect(caption.getByRole('button', { name: '성장 기록 다시 확인' })).not.toBeVisible();
   await caption.locator('summary').click();
   await expect(caption.getByRole('button', { name: '성장 기록 다시 확인' })).toBeVisible();
-  await expect(page.getByRole('region', { name: '물고기 만나기' }).getByRole('group', { name: '수조 재화' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '물고기 만나기' }).getByRole('group', { name: '뽑기권' })).toBeVisible();
 });
 
 for (const width of [320, 360, 430]) test(`홈·사용법도 같은 성장 배경 (${width}px)`, async ({ page }, info) => {

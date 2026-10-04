@@ -1,4 +1,6 @@
 export function describeFailure({ status = 0, code = '', name = '' } = {}, fallback = '요청을 처리하지 못했습니다.') {
+  if (code === 'AUTH_SESSION_CHANGED') return { code: 'REQUEST_ABORTED', message: '계정이 변경되어 요청을 취소했어요.' };
+  if (code === 'AUTH_RETRY_REQUIRED') return { code, message: '연결이 복구됐어요. 처리 결과를 확인한 뒤 다시 시도해주세요.' };
   if (code === 'REQUEST_ABORTED' || name === 'AbortError') return { code: 'REQUEST_ABORTED', message: '요청이 취소됐어요.' };
   if (code === 'AUTH_EXPIRED' || status === 401) return { code: 'AUTH_EXPIRED', message: '로그인이 만료됐어요. 다시 로그인해주세요.' };
   if (code === 'OFFLINE') return { code, message: '오프라인 상태예요. 연결 후 다시 시도해주세요.' };

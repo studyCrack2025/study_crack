@@ -76,10 +76,36 @@ test('expired login preserves the existing protected-page login redirect', async
   await expect(page.locator('#historyList li')).toHaveCount(0);
 });
 test('forbidden account clears records and offers login plus manual retry', async ({ page }) => {
-  await setup(page, [{ items: [item], cursor: id }, { error: 403 }]);
+  const calls = await setup(page, [{ items: [item], cursor: id }, { error: 403 }, { error: 403 }, { items: [], cursor: null }]);
+  await page.route('**/auth', async route => route.fulfill({ json: { success: true, userId: 'e2e-student', accessToken: await page.evaluate(() => sessionStorage.getItem('accessToken')) } }));
   await page.goto('/payment-history.html');
+  await page.evaluate(() => localStorage.setItem('refreshToken', 'synthetic-refresh'));
   await page.locator('#historyMore').click();
   await expect(page.locator('#historyLogin')).toBeVisible();
+  await expect(page.locator('#historyList li')).toHaveCount(0);
+  expect(calls.map(call => call.data.cursor)).toEqual([null, id, id]);
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBe('e2e-student');
+  await page.locator('#historyRefresh').click();
+  await expect(page.locator('#historyMessage')).toContainText('표시할 결제 기록이 없습니다');
+  await expect(page.locator('#historyLogin')).toBeHidden();
+});
+test('history read resumes the same cursor once after a valid refresh', async ({ page }) => {
+  const calls = await setup(page, [{ items: [item], cursor: id }, { error: 403 }, { items: [{ ...item, orderId: 'OLD_1', paymentIntentId: null }], cursor: null }]);
+  await page.route('**/auth', async route => route.fulfill({ json: { success: true, userId: 'e2e-student', accessToken: await page.evaluate(() => sessionStorage.getItem('accessToken')) } }));
+  await page.goto('/payment-history.html');
+  await page.evaluate(() => localStorage.setItem('refreshToken', 'synthetic-refresh'));
+  await page.locator('#historyMore').click();
+  await expect(page.locator('#historyList li')).toHaveCount(2);
+  await expect(page.locator('#historyMore')).toBeHidden();
+  expect(calls.map(call => call.data.cursor)).toEqual([null, id, id]);
+});
+test('history 403 with an explicitly expired refresh returns to login', async ({ page }) => {
+  await setup(page, [{ items: [item], cursor: id }, { error: 403 }]);
+  await page.route('**/auth', route => route.fulfill({ status: 401, json: { code: 'AUTH_SESSION_EXPIRED' } }));
+  await page.goto('/payment-history.html');
+  await page.evaluate(() => localStorage.setItem('refreshToken', 'synthetic-refresh'));
+  await page.locator('#historyMore').click();
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator('#historyList li')).toHaveCount(0);
 });
 test('changed account invalidates a delayed response and blocks duplicate clicks', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { TODAY_DATE } from '../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../constants/runtime-defaults.js';
 import {
   computeDday,
   eventCoversDate,
@@ -24,11 +24,11 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = TODAY_DATE) {
+function parsePlannerDate(value = getTodayDateKey()) {
   const raw = String(value || '').trim();
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
-    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(TODAY_DATE.split('-')[2]) || 1))).padStart(2, '0')}`;
+    : `${LEGACY_PLANNER_YEAR_MONTH}-${String(Math.max(1, Math.min(31, Number(raw) || Number(getTodayDateKey().split('-')[2]) || 1))).padStart(2, '0')}`;
   const [year, month, day] = source.split('-').map(Number);
   return new Date(year, month - 1, day);
 }
@@ -37,7 +37,7 @@ function addPlannerDays(date, days) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-function normalizePlannerDateKey(value = TODAY_DATE) {
+function normalizePlannerDateKey(value = getTodayDateKey()) {
   return toDateKey(parsePlannerDate(value));
 }
 
@@ -100,7 +100,7 @@ function computeLiveCurrentScore(scores = {}) {
 
 // 플래너 화면 derived.
 export function buildPlannerDerived(state = {}) {
-  const { plannerItems = [], selectedDate = TODAY_DATE, plannerEditIndex = null } = state;
+  const { plannerItems = [], selectedDate = state.todayDate || getTodayDateKey(), plannerEditIndex = null } = state;
 
   const selectedDateObject = parsePlannerDate(selectedDate);
   const selectedPlannerDateKey = toDateKey(selectedDateObject);
@@ -143,7 +143,7 @@ export function buildPlannerDerived(state = {}) {
         date: dateKey,
         blank: false,
         isSelected: selectedPlannerDateKey === dateKey,
-        isToday: TODAY_DATE === dateKey,
+        isToday: (state.todayDate || getTodayDateKey()) === dateKey,
         count: items.length,
         minutes: items.reduce((sum, item) => sum + (Number(item.minutes) || 0), 0)
       };
@@ -344,7 +344,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
 
   // 오늘 플래너 요약
   const byDate = groupPlannerByDate(plannerItems);
-  const todayDateKey = TODAY_DATE;
+  const todayDateKey = state.todayDate || getTodayDateKey();
   const todayPlannerItems = byDate[todayDateKey] || [];
   const todayPlannerTotalMinutes = todayPlannerItems.reduce((acc, item) => acc + (item.minutes || 0), 0);
   const todayPlannerSubjectSummary = Object.entries(
@@ -362,7 +362,7 @@ export function buildHomeDerived(state = {}, liveStudySeconds = 0) {
   // 원본 todayStudySeconds = (todayRecord?.studyTime||0) + liveStudySeconds(타이머 ref).
   // derived는 순수 함수라 라이브 ref가 없어 정지 상태(liveStudySeconds=0)와 동일하게 누적 기록만 반영.
   // 라이브 타이머 가산은 후속 effect 단계에서 연결한다.
-  const todayKey = TODAY_DATE;
+  const todayKey = todayDateKey;
   const todayRecord = studyRecords.find((item) => item.date === todayKey) || null;
   const todayStudySeconds = (todayRecord?.studyTime || 0) + live;
   const todayPlannerTotalSeconds = todayPlannerTotalMinutes * 60;
@@ -613,7 +613,7 @@ function pad2(n) {
 
 // 수험 일정 캘린더 파생: 병합 일정, 최근접 일정/D-day, 월간 그리드, 선택일 일정.
 export function buildCalendarDerived(state = {}) {
-  const today = TODAY_DATE;
+  const today = state.todayDate || getTodayDateKey();
   const personalEvents = Array.isArray(state.personalEvents) ? state.personalEvents : [];
   const todayYear = Number(today.slice(0, 4));
   const officialEvents = getOfficialAdmissionEvents(todayYear);
@@ -623,15 +623,13 @@ export function buildCalendarDerived(state = {}) {
   const calendarNearestDdayLabel = nearestEvent ? formatDdayLabel(nearestEvent.date, today) : '';
   const calendarNearestDday = nearestEvent ? computeDday(nearestEvent.date, today) : null;
 
-  const anchor = /^\d{4}-\d{2}-\d{2}$/.test(state.calendarMonthAnchor || '')
-    ? state.calendarMonthAnchor
-    : `${today.slice(0, 7)}-01`;
+  const selected = toDateKey(parsePlannerDate(state.selectedDate || today));
+  const anchor = `${selected.slice(0, 7)}-01`;
   const year = Number(anchor.slice(0, 4));
   const month = Number(anchor.slice(5, 7)); // 1-12
   const calendarMonthLabel = `${year}년 ${month}월`;
   const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0=일
   const daysInMonth = new Date(year, month, 0).getDate();
-  const selected = state.calendarSelectedDate || today;
 
   const calendarMonthCells = [];
   for (let i = 0; i < firstWeekday; i += 1) calendarMonthCells.push({ blank: true, key: `b${i}` });
@@ -646,6 +644,7 @@ export function buildCalendarDerived(state = {}) {
       isToday: ymd === today,
       isSelected: ymd === selected,
       hasEvents: dayMarks.length > 0,
+      eventCount: dayMarks.length,
       eventDots: dayMarks.slice(0, 3).map((e) => ({ category: e.category, source: e.source }))
     });
   }

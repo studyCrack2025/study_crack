@@ -15,6 +15,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRefreshTick', 'lastCompletedSession',
     'gameRulesOpen', 'notifModalOpen', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecords',
     'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectRecords', 'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummaryRefreshTick',
+    'studyRecovery', 'rewardClaimingSessionId', 'rewardRecoveryError',
     'studyTimerRunning', 'studyTimerTick', 'timerPhase'
   ]),
   gamification: Object.freeze([
@@ -59,8 +60,8 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'universityRecommendationRetryTick', 'universitySelectedName'
   ]),
   calendar: Object.freeze([
-    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthAnchor',
-    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'calendarSyncStatus', 'personalEvents'
+    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMutationError',
+    'calendarMutationRecovery', 'calendarSaving', 'calendarSyncStatus', 'personalEvents', 'selectedDate'
   ]),
   form: Object.freeze([
     'analysisSearchTerm', 'coachingAnswers', 'coachingExamFiles', 'coachingExamScores',

@@ -40,6 +40,7 @@ const timerContext = {
   activeStudySubject: '국어',
   gameRefreshTick: 0,
   operationLocksRef: { current: new Set() },
+  studyStorage: { getItem: () => null, setItem() {} },
   plannerItems: [],
   rewardPendingSessionId: '',
   studyRecords: [],
@@ -47,13 +48,13 @@ const timerContext = {
   studySummaryRefreshTick: 0,
   studyTimerSecondsRef: { current: 1500 },
   timerPhase: 'running',
-  async completeStudySession(sessionId, setPhase) {
-    setPhase('settling-session');
-    return {
-      completion: { ok: true, data: { ...this.activeStudySession, sessionId, status: 'completed', endedAt: '2026-09-04T01:25:00.000Z', durationSeconds: 1500 } },
-      reward: { ok: true, data: { sessionId, durationSeconds: 1500, reward: { shells: 2, food: 2 }, profile: terminalProfile } }
-    };
+  async completeStudySession(sessionId) {
+    return { ok: true, data: { ...this.activeStudySession, sessionId, status: 'completed', endedAt: '2026-09-04T01:25:00.000Z', durationSeconds: 1500 } };
   },
+  async claimCompletedStudyReward(sessionId) { return { ok: true, data: { sessionId, durationSeconds: 1500, reward: { shells: 2, food: 2 }, profile: terminalProfile } }; },
+  setStudyRecovery(value) { this.studyRecovery = value; },
+  setRewardRecoveryError(value) { this.rewardRecoveryError = value; },
+  setRewardClaimingSessionId(value) { this.rewardClaimingSessionId = value; },
   setActivePlannerItemId(value) { this.activePlannerItemId = value; },
   setActiveStudySession(value) { this.activeStudySession = value; },
   setActiveStudySubject(value) { this.activeStudySubject = value; },
@@ -66,8 +67,8 @@ const timerContext = {
   setPlannerItems(updater) { this.plannerItems = updater(this.plannerItems); },
   setRewardPendingSessionId(value) { this.rewardPendingSessionId = value; },
   setRewardResult(value) { this.rewardResult = value; },
-  setStudyRecords(updater) { this.studyRecords = updater(this.studyRecords); },
-  setStudySubjectRecords(updater) { this.studySubjectRecords = updater(this.studySubjectRecords); },
+  setStudyRecords(value) { this.studyRecords = typeof value === 'function' ? value(this.studyRecords) : value; },
+  setStudySubjectRecords(value) { this.studySubjectRecords = typeof value === 'function' ? value(this.studySubjectRecords) : value; },
   setStudySummaryRefreshTick(updater) { this.studySummaryRefreshTick = updater(this.studySummaryRefreshTick); },
   setStudyTimerRunning(value) { this.studyTimerRunning = value; },
   setStudyTimerTick(value) { this.studyTimerTick = value; },
@@ -140,7 +141,7 @@ try {
   assert.match(rewardedMarkup, /data-step="reward" data-state="complete"/);
   assert.match(rewardedMarkup, /data-step="aquarium" data-state="active"/);
   assert.match(rewardedMarkup, /data-step="fishdex" data-state="pending"/);
-  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="수조 재화"[\s\S]*뽑기권 <b>확인 필요<\/b>/);
+  assert.match(rewardedMarkup, /class="aquarium-wallet" role="group" aria-label="뽑기권"[\s\S]*뽑기권 <b>확인 필요<\/b>/);
   assert.match(rewardedMarkup, /class="sc-empty is-offline aquarium-offline-state"/);
   assert.match(rewardedMarkup, /data-action="retryGameResources"[^>]*>연결 후 다시 불러오기<\/button>/);
 

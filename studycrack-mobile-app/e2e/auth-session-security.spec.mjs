@@ -6,7 +6,8 @@ const profileSources = {
   student: await readFile(new URL('../../js/mypage.js', import.meta.url), 'utf8'),
   tutor: await readFile(new URL('../../js/mypage_tutor.js', import.meta.url), 'utf8')
 };
-const mobileSource = (await readFile(new URL('../src/features/session/auth-service.js', import.meta.url), 'utf8')).replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+const passwordSource = (await readFile(new URL('../src/features/session/password-login.js', import.meta.url), 'utf8')).replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+const mobileSource = passwordSource + '\n' + (await readFile(new URL('../src/features/session/auth-service.js', import.meta.url), 'utf8')).replace(/^import .*;\n/gm, '').replace(/^export /gm, '').replace(/const \{ performPassword\w+ \} = await (?:browser\.boundedClientRequest\(\(\) => )?import\('\.\/password-login\.js'\)\)?;/g, '');
 
 async function setup(page, { local = false, success = true, malformed = false } = {}) {
   await page.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><input id="email" value="user@example.invalid"><input id="password" value="Synthetic1!">' }));
@@ -97,6 +98,28 @@ test('로컬 점검용 로그인은 유지하고 재인증 SDK 저장소는 현�
   expect(await page.evaluate(() => window.__users[0].storage === window.__users[1].storage)).toBe(false);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith('CognitoIdentityServiceProvider.')))).toEqual([]);
 });
+
+test('로그인 응답이 없으면 종료하고 늦게 온 이전 로그인은 새 계정에 적용하지 않는다', async ({ page }) => {
+  await setup(page);
+  await page.clock.install();
+  await page.addScriptTag({ content: mobileSource });
+  await page.evaluate(() => {
+    CognitoUser.prototype.authenticateUser = function(_details, callbacks) { window.__oldLogin = callbacks; };
+    window.__pendingLogin = loginWithPassword({ email: 'old@example.invalid', password: 'Synthetic1!' });
+  });
+  await expect.poll(() => page.evaluate(() => Boolean(window.__oldLogin))).toBe(true);
+  await page.clock.fastForward(30000);
+  expect((await page.evaluate(() => window.__pendingLogin)).ok).toBe(false);
+  await page.evaluate(async () => {
+    const scope = beginClientLogin();
+    localStorage.setItem('userId', 'new-owner');
+    completeClientLogin({ accessToken: 'new-token', idToken: 'new-id' }, scope);
+    await window.__oldLogin.onSuccess(window.__session);
+  });
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBe('new-owner');
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBe('new-token');
+  expect(await page.evaluate(() => window.__requests.length)).toBe(0);
+});
 test('쿠키 등록 실패는 신원 조회와 성공 이동보다 먼저 처리한다', async ({ page }) => {
   await setup(page, { success: false });
   await page.addScriptTag({ content: webSource });
@@ -110,6 +133,24 @@ test('쿠키 등록 실패는 신원 조회와 성공 이동보다 먼저 처리
   expect(await page.evaluate(() => window.__handled)).toBe(false);
   expect(await page.evaluate(() => window.__requests.length)).toBe(0);
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+});
+for (const mobile of [false, true]) test(`${mobile ? '모바일' : '웹'} 로그인 등록 응답 정지는 12초에 실패로 끝난다`, async ({ page }) => {
+  await setup(page);
+  await page.clock.install();
+  await page.addScriptTag({ content: mobile ? mobileSource : webSource });
+  await page.evaluate(mobile => {
+    window.fetch = () => new Promise(() => {});
+    window.__loginPending = mobile
+      ? loginWithPassword({ email: 'user@example.invalid', password: 'Synthetic1!' })
+      : registerRefreshCookie('synthetic-refresh', {
+        accessToken: window.__session.getAccessToken().getJwtToken(),
+        idToken: window.__session.getIdToken().getJwtToken()
+      }).then(ok => ({ ok }), () => ({ ok: false }));
+  }, mobile);
+  await page.clock.fastForward(12000);
+  expect((await page.evaluate(() => window.__loginPending)).ok).toBe(false);
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
 });
 test('튜터 로그인도 세션 등록 실패 시 신원을 조회하지 않고 SDK와 클라이언트를 정리한다', async ({ page }) => {
   await setup(page, { success: false });

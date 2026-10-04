@@ -193,7 +193,7 @@ test('로그아웃 후 도착한 조회 응답은 안내나 저장을 시작하�
   await expect.poll(() => guide.requests.length).toBe(1);
   await page.evaluate(() => window.clearClientSession());
   release();
-  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
   await expect(guideDialog(page)).toHaveCount(0);
   expect(guide.requests.some(item => item.type === 'save_product_guide')).toBe(false);
 });
