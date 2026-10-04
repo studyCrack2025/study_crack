@@ -15,6 +15,7 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRefreshTick', 'lastCompletedSession',
     'gameRulesOpen', 'notifModalOpen', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecords',
     'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectRecords', 'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummaryRefreshTick',
+    'studyRecovery', 'rewardClaimingSessionId', 'rewardRecoveryError',
     'studyTimerRunning', 'studyTimerTick', 'timerPhase'
   ]),
   gamification: Object.freeze([

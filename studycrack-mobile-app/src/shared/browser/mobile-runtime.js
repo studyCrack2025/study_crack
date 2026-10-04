@@ -2,6 +2,11 @@ function getBrowser() {
   return typeof window === 'undefined' ? null : window;
 }
 
+export function loadMobileModule(load) {
+  const browser = getBrowser();
+  return browser?.boundedClientRequest ? browser.boundedClientRequest(load) : load();
+}
+
 export function getMobileAccountStorage(storage = globalThis.localStorage) {
   return storage === globalThis.localStorage ? getBrowser()?.getClientAccountStorage?.() || storage : storage;
 }

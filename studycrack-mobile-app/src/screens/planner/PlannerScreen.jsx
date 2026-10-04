@@ -5,7 +5,7 @@ import { EmptyState } from '../../components/EmptyState.jsx';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { PlannerStudyStatus } from './PlannerStudyStatus.jsx';
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
 import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.jsx';
 import { useContext } from 'react';
@@ -161,7 +161,7 @@ function PlannerWorkspaceScreen(ctx) {
 
   const calendarMode = ['week', 'month'].includes(plannerCalendarMode) ? plannerCalendarMode : 'week';
   const presentation = buildPlannerPresentation(plannerViewItems);
-  const isToday = selectedPlannerDateKey === TODAY_DATE;
+  const isToday = selectedPlannerDateKey === (ctx.todayDate || getTodayDateKey());
   const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
   const plannerOverlayOpen = plannerEditIndex !== null || calendarSheetOpen || calendarEventFormOpen;
 

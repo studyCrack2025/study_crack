@@ -101,14 +101,14 @@ function targetResult(target, index, examMode) {
 }
 
 function studySummary(state) {
-  const now = new Date();
+  const now = new Date((state.studyNow ?? Date.now()) + 9 * 3600000);
   const monday = new Date(now);
-  monday.setDate(now.getDate() + (now.getDay() === 0 ? -6 : 1 - now.getDay()));
-  const dateKey = (value) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  monday.setUTCDate(now.getUTCDate() + (now.getUTCDay() === 0 ? -6 : 1 - now.getUTCDay()));
+  const dateKey = value => value.toISOString().slice(0, 10);
   const todayDate = dateKey(now);
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
+    date.setUTCDate(monday.getUTCDate() + index);
     const isToday = dateKey(date) === todayDate;
     return {
       date: dateKey(date),
@@ -223,14 +223,14 @@ function responseFor(payload, state) {
         subject: payload.data?.subject,
         plannerItemId: payload.data?.plannerItemId || '',
         status: 'running',
-        startedAt: new Date(Date.now() - 2000).toISOString()
+        startedAt: new Date((state.studyNow ?? Date.now()) - 2000).toISOString()
       };
       return state.activeStudySession;
     case 'complete_study_session': {
       const id = payload.data?.sessionId;
       if (state.completedStudySessions.has(id)) return state.completedStudySessions.get(id);
-      state.studySeconds = state.studyDurationSeconds;
-      const completed = { ...state.activeStudySession, status: 'completed', endedAt: new Date().toISOString(), durationSeconds: state.studySeconds };
+      state.studySeconds += state.studyDurationSeconds;
+      const completed = { ...state.activeStudySession, status: 'completed', endedAt: new Date(state.studyNow ?? Date.now()).toISOString(), durationSeconds: state.studyDurationSeconds };
       state.completedStudySessions.set(id, completed);
       return completed;
     }
@@ -303,11 +303,13 @@ function responseFor(payload, state) {
     case 'get_study_habitat':
       return { days: [], streakDays: 0 };
     case 'claim_study_reward': {
-      const seconds = state.studySeconds;
+      const sessionId = payload.data?.sessionId;
+      const seconds = state.completedStudySessions.get(sessionId)?.durationSeconds ?? state.studyDurationSeconds;
+      const receipt = state.studyRewardReceipts.get(sessionId);
       const progress = state.gameProfile.ticketProgressSeconds + seconds;
-      const tickets = state.studyRewardClaimed ? state.studyRewardReceipt.tickets : Math.floor(progress / 18000);
-      state.studyRewardReceipt ||= { tickets, creditedSeconds: seconds };
-      if (!state.studyRewardClaimed) {
+      const tickets = receipt?.tickets ?? Math.floor(progress / 18000);
+      if (!receipt) {
+        state.studyRewardReceipts.set(sessionId, { tickets, creditedSeconds: seconds });
         state.gameProfile = {
           ...state.gameProfile,
           ticketBalance: state.gameProfile.ticketBalance + tickets,
@@ -316,12 +318,10 @@ function responseFor(payload, state) {
           starterState: state.gameProfile.starterState === 'locked' && seconds >= 600 ? 'selectable' : state.gameProfile.starterState
         };
       }
-      const alreadyClaimed = state.studyRewardClaimed;
-      state.studyRewardClaimed = true;
       return {
-        alreadyClaimed,
-        sessionId: payload.data?.sessionId,
-        durationSeconds: state.studySeconds,
+        alreadyClaimed: Boolean(receipt),
+        sessionId,
+        durationSeconds: seconds,
         reward: { shells: 0, food: 0, tickets, creditedSeconds: seconds, ticketPolicyVersion: 'study-ticket-v1' },
         profile: state.gameProfile
       };
@@ -366,7 +366,7 @@ export async function installApiMock(page, {
     pendingDraw: null,
     studyDurationSeconds,
     studyReward,
-    studyRewardClaimed: false,
+    studyRewardReceipts: new Map(),
     studySeconds: 0,
     userTier: tier,
     userOverrides
@@ -389,6 +389,14 @@ export async function installApiMock(page, {
       ? Math.max(0, Number(analysisDelayByExam[payload.examMode] || 0))
       : 0;
     if (analysisDelay) await new Promise((resolve) => setTimeout(resolve, analysisDelay));
+    if (['get_study_summary', 'start_study_session', 'complete_study_session'].includes(payload.type)) {
+      try { state.studyNow = await page.evaluate(() => Date.now()); }
+      catch (error) {
+        if (!page.isClosed() && !/Execution context was destroyed/.test(error.message)) throw error;
+        await route.abort().catch(() => {});
+        return;
+      }
+    }
     const body = payload.type === 'request_account_deletion' ? deletionResponse : responseFor(payload, state);
     if (loseResponseOnceTypes.includes(payload.type) && !failedOnce.has(payload.type)) {
       failedOnce.add(payload.type);

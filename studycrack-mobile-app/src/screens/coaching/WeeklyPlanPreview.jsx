@@ -1,8 +1,8 @@
 import { buildCoachingWeek } from './presentation.js';
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 
 export function WeeklyPlanPreview({ plannerItems = [], detailed = false, locked = false }) {
-  const week = buildCoachingWeek(plannerItems, TODAY_DATE);
+  const week = buildCoachingWeek(plannerItems, getTodayDateKey());
   return <section className="coaching-week-preview" aria-label="이번 주 기기 플래너">
     <header><div><span>MY WEEK</span><h3>이번 주 플래너</h3></div>{!locked ? <button type="button" data-action="goto" data-target="planner">플래너 열기 →</button> : null}</header>
     <p>{locked ? '미리보기 · 구독 후 실제 기록을 확인하세요' : `${week.start} – ${week.end} · 이 기기에 저장된 계획`}</p>

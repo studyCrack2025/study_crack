@@ -13,10 +13,8 @@ export function hydrateStudyStorage(storage = getMobileAccountStorage()) {
     activeStudySession,
     rewardPendingSessionId,
     studyTimerRunning: activeStudySession?.status === 'running',
-    timerPhase: activeStudySession?.status === 'running' ? 'running' : (activeStudySession || rewardPendingSessionId) ? 'recoverable-error' : 'idle',
-    completionError: rewardPendingSessionId
-      ? '저장된 공부 보상을 다시 확인해주세요.'
-      : activeStudySession?.status === 'starting'
+    timerPhase: activeStudySession?.status === 'running' ? 'running' : activeStudySession ? 'recoverable-error' : 'idle',
+    completionError: activeStudySession?.status === 'starting'
         ? '공부 시작 연결을 다시 확인해주세요.'
         : '',
     ...(activeStudySession ? {

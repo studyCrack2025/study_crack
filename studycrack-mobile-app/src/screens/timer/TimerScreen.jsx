@@ -6,7 +6,7 @@ import { Sheet } from '../../components/Sheet.jsx';
 import { StudyWeekSummary } from './StudyGamificationPanels.jsx';
 import { AdmissionCalendarSheet } from '../planner/AdmissionCalendarSheet.jsx';
 
-const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session', 'claiming-reward'];
+const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session'];
 
 function TimerLoadingScreen({ tab = 'timer' }) {
   return (
@@ -72,10 +72,9 @@ export function TimerScreen(ctx) {
   const displayedTodaySeconds = ctx.studyOverview?.confirmed.seconds;
   const confirmedLabel = ctx.studyOverview?.timeGoal.datesMatch ? '오늘 확정 공부' : `${ctx.studyOverview?.confirmed.date || '날짜 확인 필요'} 확정 공부`;
   const studyStartBusy = STUDY_START_BUSY_PHASES.includes(timerPhase);
-  const studyStartBlocked = Boolean(activeStudySession) || Boolean(rewardPendingSessionId) || studyStartBusy;
-  const studyStartBlockReason = rewardPendingSessionId
-    ? '저장된 공부 보상 확인을 마친 뒤 새 공부를 시작할 수 있어요.'
-    : activeStudySession
+  const recoveryBlocked = (ctx.studyRecovery?.pending?.length || 0) >= 100 || ctx.rewardRecoveryError?.startsWith('복구 기록');
+  const studyStartBlocked = Boolean(activeStudySession) || recoveryBlocked || studyStartBusy;
+  const studyStartBlockReason = recoveryBlocked ? '복구 기록을 먼저 확인해주세요.' : activeStudySession
       ? '진행 중인 공부를 완료한 뒤 새 공부를 시작할 수 있어요.'
       : '공부 기록 처리가 끝난 뒤 새 공부를 시작할 수 있어요.';
   const overlays = gameRulesOpen ? <GameRulesGuide gameRules={gameRules} gameProfileStatus={ctx.gameProfileStatus} open /> : ctx.studyPanelMode === 'records' ? <Sheet dismissAction="closeStudyPanel" ariaLabel={ctx.studyPanelMode === 'records' ? '공부 기록' : '공부 타이머'} panelClass="study-record-sheet">

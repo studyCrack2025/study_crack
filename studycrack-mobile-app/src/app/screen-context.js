@@ -9,6 +9,7 @@ const ANALYSIS_CONTEXT_KEYS = [
 ];
 
 const CALENDAR_CONTEXT_KEYS = [
+  'todayDate',
   'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthCells', 'calendarMonthLabel',
   'calendarNearestDdayLabel', 'calendarNearestEvent', 'calendarSaving', 'calendarSelectedDate', 'calendarSelectedEvents',
   'calendarSheetOpen', 'calendarSyncStatus', 'calendarWeekdays'
@@ -124,7 +125,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'studyOverview', 'aquariumPresentation',
     'activeStudySession', 'analysisScoreView', 'canAccessBasic', 'canUsePersonalPlanner', 'completionError', 'dimmed', 'fishCount', 'formatHms',
     'gameProfile', 'gameProfileStatus', 'gameRules', 'gameRulesOpen', 'hasClientSession', 'lastCompletedSession',
-    'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
+    'normalizedTargetMajor', 'plannedScheduleOptions', 'rewardPendingSessionId', 'rewardResult', 'studyRecovery', 'rewardRecoveryError', 'rewardClaimingSessionId', 'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectSheetOnlyPlanned',
     'studySubjectSheetOpen', 'studySummary', 'studySummaryStatus', 'studyTimerRunning',
     'studyTimerTick', 'tab', 'timerPhase', 'todayPlannerItems', 'todayPlannerProgress',
     'todayPlannerTotalMinutes', 'todayStudySeconds', 'user', 'userLoadError', 'userLoadStatus'

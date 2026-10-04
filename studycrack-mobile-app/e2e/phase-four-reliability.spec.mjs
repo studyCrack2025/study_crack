@@ -155,9 +155,9 @@ test('만료된 세션은 개인정보를 정리하고 로그인 화면으로 �
     return route.fallback();
   });
   await page.goto(at('timer'));
+  await page.waitForURL(url => url.pathname === '/login' || url.searchParams.get('screen') === 'authLogin');
   await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
-  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+  expect(await page.evaluate(() => ({ userId: localStorage.getItem('userId'), token: sessionStorage.getItem('accessToken') }))).toEqual({ userId: null, token: null });
   await expect(page.getByText('테스트학생')).toHaveCount(0);
 });
 

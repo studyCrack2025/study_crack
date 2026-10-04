@@ -10,7 +10,6 @@ import { useSession } from '../features/session/use-session.js';
 import { createUserDataResetPatch, mapUserToStatePatch } from '../features/session/user-state.js';
 import { blockNonStudentMobileSession } from '../features/session/mobile-session-adapter.js';
 import { useSupportResource } from '../features/support/use-support-resource.js';
-import { useStudySummaryResource } from '../features/study/use-study-summary-resource.js';
 import { persistMobileUserRole } from '../shared/browser/mobile-runtime.js';
 
 const { useCallback, useRef } = React;
@@ -61,12 +60,6 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
     getApiBinding: api.getGameApiBinding,
     includeCatalog: state.screen === 'aquarium',
     refreshTick: state.gameRefreshTick,
-    setState
-  });
-  useStudySummaryResource({
-    enabled: resourceSessionReady && ['timer', 'aquarium', 'strategy', 'planner', 'my'].includes(state.screen),
-    getApiBinding: api.getUserApiBinding,
-    refreshTick: state.studySummaryRefreshTick,
     setState
   });
   useAdmissionCalendarResource({

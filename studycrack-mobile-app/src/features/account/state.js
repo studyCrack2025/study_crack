@@ -1,4 +1,4 @@
-import { TODAY_DATE } from '../../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { createFeatureSlice } from '../../state/create-feature-slice.js';
 
 export function createAccountInitialState() {
@@ -19,8 +19,8 @@ export function createAccountInitialState() {
     },
     ephemeralUi: {
       calendarSheetOpen: false,
-      calendarSelectedDate: TODAY_DATE,
-      calendarMonthAnchor: `${TODAY_DATE.slice(0, 7)}-01`,
+      calendarSelectedDate: getTodayDateKey(),
+      calendarMonthAnchor: `${getTodayDateKey().slice(0, 7)}-01`,
       calendarEventFormOpen: false,
       calendarEventEditId: null,
       calendarSaving: false,

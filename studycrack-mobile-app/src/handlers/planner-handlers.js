@@ -1,4 +1,4 @@
-import { TODAY_DATE } from '../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
@@ -97,8 +97,8 @@ function toPlannerDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
-  const raw = String(value || fallback || TODAY_DATE).trim();
+function parsePlannerDate(value = getTodayDateKey(), fallback = getTodayDateKey()) {
+  const raw = String(value || fallback || getTodayDateKey()).trim();
   const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
     ? raw
     : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || 1))).padStart(2, '0')}`;
@@ -136,7 +136,7 @@ export function createPlannerHandlers(ctx) {
     setPlannerItems,
     setSelectedDate,
     setShowStudyBreakdown,
-    todayDate = TODAY_DATE
+    todayDate = getTodayDateKey()
   } = ctx;
 
   function shiftPlannerCalendar(delta) {

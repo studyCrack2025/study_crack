@@ -1,7 +1,8 @@
 import { getTodayDateKey } from '../constants/runtime-defaults.js';
-import { createStudySessionCandidate } from '../features/study/session-model.js';
+import { currentRecovery, currentStudy, MAX_PENDING_REWARDS, saveStudyRecovery } from '../features/study/recovery.js';
 import { withOperationLock } from '../shared/async/operation-lock.js';
 import { getData } from './action-utils.js';
+import { loadMobileModule } from '../shared/browser/mobile-runtime.js';
 
 const RECOVERABLE_ERROR = 'recoverable-error';
 const TERMINAL_REWARD_ERROR = 'terminal-reward-error';
@@ -40,8 +41,24 @@ function createSessionId() {
 
 function applyRewardFailure(ctx, result) {
   const terminal = /^STUDY_SESSION_NOT_(FOUND|REWARDABLE)$/.test(result?.code);
-  ctx.setTimerPhase(terminal ? TERMINAL_REWARD_ERROR : RECOVERABLE_ERROR);
-  ctx.setCompletionError(result?.error || '보상을 확인하지 못했습니다.');
+  if (!currentStudy(ctx).activeStudySession) ctx.setTimerPhase(terminal ? TERMINAL_REWARD_ERROR : RECOVERABLE_ERROR);
+  ctx.setRewardRecoveryError(result?.error || '보상을 확인하지 못했습니다. 새 공부는 시작할 수 있어요.');
+}
+
+function scoped(ctx) { return !ctx.isCurrentProfile || ctx.isCurrentProfile(); }
+
+function settleReward(ctx, sessionId, result) {
+  if (!scoped(ctx)) return;
+  if (result?.code === 'REWARD_BUSY') return;
+  if (result?.ok && result.data?.sessionId !== sessionId) result = { ok: false };
+  ctx.setRewardClaimingSessionId('');
+  const recovery = currentRecovery(ctx);
+  const pending = result?.ok ? recovery.pending.filter(row => row.sessionId !== sessionId)
+    : recovery.pending.map(row => row.sessionId === sessionId ? { ...row, status: /^STUDY_SESSION_NOT_(FOUND|REWARDABLE)$/.test(result?.code) ? 'terminal' : 'pending' } : row);
+  if (!saveStudyRecovery(ctx, { ...recovery, pending })) return;
+  if (!result?.ok) { applyRewardFailure(ctx, result); return; }
+  applyRewardState(ctx, result.data);
+  if (!currentStudy(ctx).activeStudySession) ctx.setTimerPhase('rewarded');
 }
 
 function applyRewardState(ctx, rewardData) {
@@ -49,7 +66,9 @@ function applyRewardState(ctx, rewardData) {
   ctx.setGameProfile(rewardData.profile);
   ctx.setGameProfileStatus('ready');
   ctx.setGameProfileError('');
-  ctx.setRewardResult({
+  const study = currentStudy(ctx);
+  const shownSession = study.activeStudySession || study.lastCompletedSession;
+  if (!shownSession || shownSession.sessionId === rewardData.sessionId) ctx.setRewardResult({
     sessionId: rewardData.sessionId,
     durationSeconds: numeric(rewardData.durationSeconds),
     shells: numeric(rewardData.reward?.shells),
@@ -60,15 +79,30 @@ function applyRewardState(ctx, rewardData) {
   ctx.setGameRefreshTick((value) => numeric(value) + 1);
 }
 
-function applyCompletedSession(ctx, completion) {
+function applyCompletedSession(ctx, completion, sourceSession = ctx.activeStudySession) {
+  if (!scoped(ctx)) return false;
+  ctx.setStudySummaryRefreshTick((value) => numeric(value) + 1);
+  ctx.refreshStudyRanking?.();
+  const state = currentStudy(ctx);
+  const recovery = currentRecovery(ctx);
+  const applied = recovery.applied.includes(completion.sessionId);
+  const pending = recovery.pending.some(row => row.sessionId === completion.sessionId) || applied
+    ? recovery.pending : [...recovery.pending, { sessionId: completion.sessionId, status: 'pending' }];
+  if (pending.length > MAX_PENDING_REWARDS || state.rewardRecoveryError?.startsWith('복구 기록을 읽지')) {
+    ctx.setRewardRecoveryError('보상 복구 목록을 먼저 확인해주세요. 완료 기록은 서버에 저장되어 있어요.');
+    return false;
+  }
   const duration = Math.max(1, numeric(completion.durationSeconds) || 1);
-  const subject = ctx.activeStudySubject || ctx.activeStudySession?.subject || '기타';
-  const plannerItemId = ctx.activePlannerItemId || ctx.activeStudySession?.plannerItemId || '';
-  const activity = completion.activity || ctx.activeStudySession?.activity || `${subject} 학습`;
+  const subject = completion.subject || sourceSession?.subject || '기타';
+  const plannerItemId = completion.plannerItemId || sourceSession?.plannerItemId || '';
+  const activity = completion.activity || sourceSession?.activity || `${subject} 학습`;
   const date = getTodayDateKey(new Date(completion.endedAt || Date.now()));
-  ctx.setStudyRecords((records) => mutateStudyRecord(records, date, duration));
-  ctx.setStudySubjectRecords((records) => mutateSubjectRecord(records, date, subject, duration));
-  if (plannerItemId) {
+  const records = applied ? recovery.records || state.studyRecords || [] : mutateStudyRecord(recovery.records || state.studyRecords, date, duration);
+  const subjects = applied ? recovery.subjects || state.studySubjectRecords || [] : mutateSubjectRecord(recovery.subjects || state.studySubjectRecords, date, subject, duration);
+  if (!saveStudyRecovery(ctx, { pending, applied: applied ? recovery.applied : [...recovery.applied, completion.sessionId].slice(-128), records, subjects })) return false;
+  ctx.setStudyRecords(records);
+  ctx.setStudySubjectRecords(subjects);
+  if (plannerItemId && !applied) {
     ctx.setPlannerItems((items) => items.map((item) => (
       item.id === plannerItemId ? { ...item, doneMinutes: numeric(item.doneMinutes) + Math.round(duration / 60) } : item
     )));
@@ -80,14 +114,19 @@ function applyCompletedSession(ctx, completion) {
   setRefValue(ctx.studyTimerSecondsRef, 0);
   ctx.setStudyTimerTick(0);
   ctx.syncLiveStudyTimerUi?.(0);
-  ctx.refreshStudyRanking?.();
-  ctx.setStudySummaryRefreshTick((value) => numeric(value) + 1);
+  ctx.setTimerPhase('idle');
+  return true;
 }
 
 async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCandidate = null) {
-  if (!subject || ctx.rewardPendingSessionId || (!storedCandidate && ctx.activeStudySession) || /(-session|claiming-reward)$/.test(ctx.timerPhase)) return false;
+  const recovery = currentRecovery(ctx);
+  if (!subject || (!storedCandidate && ctx.activeStudySession) || /-session$/.test(ctx.timerPhase)) return false;
+  if (recovery.pending.length >= MAX_PENDING_REWARDS || ctx.rewardRecoveryError?.startsWith('복구 기록')) {
+    ctx.setRewardRecoveryError('복구 기록을 먼저 확인해주세요. 저장 공간 또는 보상 복구 목록이 가득 찼어요.');
+    return false;
+  }
   return withOperationLock(ctx.operationLocksRef, 'study-start', async () => {
-    const candidate = storedCandidate || createStudySessionCandidate({ sessionId: createSessionId(), subject, activity, plannerItemId });
+    const candidate = storedCandidate || { sessionId: createSessionId(), subject, activity, plannerItemId, status: 'starting' };
     ctx.setTimerPhase('starting-session');
     ctx.setStudyPanelMode('timer');
     ctx.setStudySubjectSheetOpen(false);
@@ -96,9 +135,14 @@ async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCand
     ctx.setLastCompletedSession(null);
     ctx.setActiveStudySession(candidate);
     const response = await ctx.startStudySession(candidate);
+    if (!scoped(ctx)) return true;
     if (!response?.ok) {
       ctx.setTimerPhase(RECOVERABLE_ERROR);
       ctx.setCompletionError(response?.error || '공부 시작을 기록하지 못했습니다. 다시 시도해주세요.');
+      return true;
+    }
+    if (response.data?.status === 'completed') {
+      if (!applyCompletedSession(ctx, response.data, candidate)) ctx.setTimerPhase(RECOVERABLE_ERROR);
       return true;
     }
     const session = { ...candidate, ...response.data, subject, activity, plannerItemId, status: 'running' };
@@ -164,7 +208,7 @@ export function createTimerHandlers(ctx) {
     startPlannedStudy({ actionEl }) {
       const id = getData(actionEl, 'study-item-id');
       const item = (ctx.todayPlannerItems || []).find((row) => row.id === id && !row.done);
-      if (!ctx.canUsePersonalPlanner || !item || ctx.activeStudySession || ctx.rewardPendingSessionId || /(-session|claiming-reward)$/.test(ctx.timerPhase)) return false;
+      if (!ctx.canUsePersonalPlanner || !item || ctx.activeStudySession || /-session$/.test(ctx.timerPhase)) return false;
       const subject = String(item.subject || '기타').trim().slice(0, 30);
       const activity = String(item.content || '').trim().slice(0, 80);
       if (!activity) {
@@ -193,7 +237,23 @@ export function createTimerHandlers(ctx) {
         ctx.setStudyTimerRunning(false);
         ctx.stopLiveStudyTimer?.();
         ctx.setCompletionError('');
-        const result = await ctx.completeStudySession(session.sessionId, (phase) => ctx.setTimerPhase(phase));
+        ctx.setTimerPhase('settling-session');
+        const pipeline = await loadMobileModule(() => import('../features/study/reward-pipeline.js')).catch(() => null);
+        if (!scoped(ctx)) return false;
+        const result = pipeline ? await pipeline.completeStudyRewardPipeline({
+          sessionId: session.sessionId,
+          completeSession: id => ctx.completeStudySession(id),
+          onCompleted: completion => {
+            if (!applyCompletedSession(ctx, completion, session)) return false;
+            return true;
+          },
+          claimReward: async id => {
+            if (!scoped(ctx) || currentStudy(ctx).rewardClaimingSessionId || ctx.operationLocksRef?.current?.has('study-reward')) return { ok: false, code: 'REWARD_BUSY' };
+            ctx.setRewardClaimingSessionId(id);
+            return withOperationLock(ctx.operationLocksRef, 'study-reward', () => ctx.claimCompletedStudyReward(id));
+          }
+        }) : { completion: { ok: false } };
+        if (!scoped(ctx)) return true;
         if (!result.completion?.ok) {
           ctx.setStudyTimerRunning(true);
           ctx.startLiveStudyTimer?.(session.startedAt, (seconds) => ctx.setStudyTimerTick(seconds));
@@ -201,42 +261,44 @@ export function createTimerHandlers(ctx) {
           ctx.setCompletionError(result.completion?.error || '공부 완료를 확인하지 못했습니다. 기록은 유지됩니다.');
           return true;
         }
-        applyCompletedSession(ctx, result.completion.data);
-        if (!result.reward?.ok) {
-          ctx.setRewardPendingSessionId(session.sessionId);
-          applyRewardFailure(ctx, result.reward);
+        if (result.stage === 'recovery-storage') {
+          ctx.setTimerPhase(RECOVERABLE_ERROR);
+          ctx.setCompletionError('완료는 저장됐지만 기기 복구 기록을 저장하지 못했어요. 같은 기록으로 다시 확인해주세요.');
           return true;
         }
-        ctx.setRewardPendingSessionId('');
-        applyRewardState(ctx, result.reward.data);
-        ctx.setTimerPhase('rewarded');
+        settleReward(ctx, session.sessionId, result.reward);
         return true;
       });
     },
     async retryStudyReward() {
-      const sessionId = ctx.rewardPendingSessionId;
-      if (!sessionId || ctx.timerPhase === 'claiming-reward') return false;
-      return withOperationLock(ctx.operationLocksRef, `study-reward:${sessionId}`, async () => {
-        ctx.setTimerPhase('claiming-reward');
-        ctx.setCompletionError('');
-        const result = await ctx.claimCompletedStudyReward(sessionId);
-        if (!result?.ok) {
-          applyRewardFailure(ctx, result);
-          return true;
-        }
-        ctx.setRewardPendingSessionId('');
-        applyRewardState(ctx, result.data);
-        ctx.setTimerPhase('rewarded');
+      const sessionId = currentRecovery(ctx).pending.find(row => row.status !== 'terminal')?.sessionId;
+      if (!sessionId || currentStudy(ctx).rewardClaimingSessionId) return false;
+      return withOperationLock(ctx.operationLocksRef, 'study-reward', async () => {
+        ctx.setRewardClaimingSessionId(sessionId);
+        let result;
+        try { result = await ctx.claimCompletedStudyReward(sessionId); }
+        catch { result = { ok: false, error: '보상 연결을 다시 확인해주세요.' }; }
+        settleReward(ctx, sessionId, result);
         return true;
       });
     },
-    dismissRewardResult() {
+    dismissRewardResult({ actionEl } = {}) {
+      if (getData(actionEl, 'dismiss-terminal') === 'true') {
+        const recovery = currentRecovery(ctx);
+        const terminal = recovery.pending.find(row => row.status === 'terminal');
+        if (!terminal) return false;
+        saveStudyRecovery(ctx, { ...recovery, pending: recovery.pending.filter(row => row.sessionId !== terminal.sessionId) });
+        return true;
+      }
       if (!(ctx.rewardResult || (ctx.timerPhase === TERMINAL_REWARD_ERROR && ctx.rewardPendingSessionId))) return false;
       ctx.setRewardResult(null);
-      ctx.setRewardPendingSessionId('');
+      const recovery = currentRecovery(ctx);
+      if (ctx.timerPhase === TERMINAL_REWARD_ERROR) {
+        if (!saveStudyRecovery(ctx, { ...recovery, pending: recovery.pending.filter(row => row.sessionId !== ctx.rewardPendingSessionId) })) return true;
+      }
       ctx.setLastCompletedSession(null);
       ctx.setCompletionError('');
-      ctx.setTimerPhase('idle');
+      if (!currentStudy(ctx).activeStudySession) ctx.setTimerPhase('idle');
       ctx.setStudyPanelMode('');
       return true;
     },

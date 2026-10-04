@@ -28,7 +28,7 @@ export function buildPlannerOverview(items, date = null) {
 
 export function buildStudyOverview({ plannerItems, localDate, studySummary, studySummaryStatus = 'idle', activeStudySession, studyTimerRunning = false, liveSeconds } = {}) {
   const planner = buildPlannerOverview(plannerItems, localDate || '');
-  const available = studySummary?.available === true && !['idle', 'unavailable'].includes(studySummaryStatus);
+  const available = studySummary?.available === true && studySummaryStatus !== 'idle';
   const serverDate = dateKey(studySummary?.today?.date);
   const seconds = available && serverDate ? count(studySummary.today.totalSeconds) : null;
   const fresh = studySummaryStatus === 'ready' && seconds !== null;
