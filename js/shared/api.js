@@ -4,6 +4,9 @@ function createCognitoMemoryStorage() {
     return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key), clear: () => values.clear() };
 }
 
+let _clientSessionGeneration = 0;
+let _sharedRefreshController = null;
+
 // 장기 인증 정보가 브라우저 저장소에 남지 않도록 정리한다.
 if (typeof IS_LOCAL !== 'undefined' && !IS_LOCAL) {
     try {
@@ -77,12 +80,17 @@ function enforceClientSessionOnPageShow(event) {
 // 세션 정리. 결제 진행 데이터처럼 세션 외 localStorage 값은 보존한다.
 const SESSION_KEYS_LOCAL = [
     'refreshToken', 'userId', 'userEmail', 'userRole', 'userName', 'userTier',
-    'authProvider', 'accessToken', 'token',
+    'authProvider', 'accessToken', 'idToken', 'token',
     // 잔존 시 다른 사용자 로그인 혼선 가능.
     'tutorialStatus', 'pending_tutorial', 'tutorial_completed', 'tutorNameAlias'
 ];
 
 function clearClientSession() {
+    _clientSessionGeneration += 1;
+    const refreshController = _sharedRefreshController;
+    _sharedRefreshController = null;
+    _sharedRefreshPromise = null;
+    refreshController?.abort();
     SESSION_KEYS_LOCAL.forEach((k) => localStorage.removeItem(k));
     // SDK 잔여 세션 키까지 정리해 계정 전환 혼선을 막는다.
     try {
@@ -135,6 +143,7 @@ function getSharedBearerToken() {
 
 function syncTokensFromAuthResponse(data, options = {}) {
     if (!data || typeof data !== 'object') return false;
+    if (options.expectedGeneration !== undefined && options.expectedGeneration !== _clientSessionGeneration) return false;
 
     const idPayload = data.idToken ? getSharedPayloadFromToken(data.idToken) : {};
     const userId = data.userId || idPayload.sub;
@@ -186,24 +195,65 @@ function createSharedAuthExpiredError(status = 401) {
     return error;
 }
 
-async function clearServerSessionCookies() {
-    if (IS_LOCAL) return;
+function createSharedSessionChangedError() {
+    return Object.assign(new Error('계정이 변경되었습니다. 다시 확인해주세요.'), { code: 'AUTH_SESSION_CHANGED', status: 409 });
+}
+
+function assertSharedSessionCurrent(generation, owner) {
+    if (generation !== _clientSessionGeneration || (owner && owner !== (localStorage.getItem('userId') || ''))) throw createSharedSessionChangedError();
+}
+
+function fetchSharedAuthJson(payload, { timeoutMs = 12000, signal } = {}) {
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let timer;
+        const finish = (callback, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', onAbort);
+            callback(value);
+        };
+        const onAbort = () => {
+            finish(reject, Object.assign(new Error('Request cancelled'), { name: 'AbortError' }));
+            controller?.abort();
+        };
+        if (signal?.aborted) { onAbort(); return; }
+        signal?.addEventListener('abort', onAbort, { once: true });
+        timer = setTimeout(() => {
+            finish(reject, Object.assign(new Error('연결을 다시 확인해주세요.'), { code: 'AUTH_CONNECTION_TIMEOUT' }));
+            controller?.abort();
+        }, timeoutMs);
+        Promise.resolve().then(async () => {
+            const response = await fetch(CONFIG.api.auth, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                body: JSON.stringify(payload), ...(controller ? { signal: controller.signal } : {})
+            });
+            let data;
+            try { data = await response.json(); }
+            catch (_) { throw Object.assign(new Error('연결을 다시 확인해주세요.'), { code: 'AUTH_RESPONSE_INVALID', status: response.status }); }
+            return { response, data };
+        }).then(value => finish(resolve, value), error => finish(reject, error));
+    });
+}
+
+async function clearServerSessionCookies({ includeLocal = false } = {}) {
+    if (IS_LOCAL && !includeLocal) return true;
     try {
-        await fetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'logout' })
-        });
+        const { response, data } = await fetchSharedAuthJson({ type: 'logout' }, { timeoutMs: 5000 });
+        return response.ok && data?.success === true;
     } catch (_) {
         // 클라이언트 세션 정리는 계속 진행한다.
+        return false;
     }
 }
 
 async function performClientLogout(redirectPath) {
-    await clearServerSessionCookies();
+    const path = redirectPath || getRoleLoginPath();
     clearClientSession();
-    window.location.replace(redirectPath || getRoleLoginPath());
+    await clearServerSessionCookies();
+    window.location.replace(path);
 }
 
 // Refresh request single-flight guard.
@@ -212,58 +262,44 @@ let _sharedRefreshPromise = null;
 function tryRefreshToken({ preserveTransientErrors = false } = {}) {
     const result = (promise) => preserveTransientErrors ? promise : promise.catch(() => false);
     if (_sharedRefreshPromise) return result(_sharedRefreshPromise);
-    const refreshFetch = async (...args) => {
-        const response = await fetch(...args);
-        if (!response.ok && ![400, 401, 403].includes(response.status)) {
-            const error = new Error('인증 연결을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
-            error.status = response.status;
-            throw error;
-        }
-        return response;
-    };
-
+    const generation = _clientSessionGeneration;
+    const owner = localStorage.getItem('userId') || '';
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    _sharedRefreshController = controller;
     const p = (async () => {
-        if (IS_LOCAL) {
-            const rt = localStorage.getItem('refreshToken');
-            if (!rt) return false;
-            const res = await refreshFetch(CONFIG.api.auth, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'refresh_token', refreshToken: rt })
-            });
-            if (!res.ok) return false;
-            const data = await res.json().catch(() => ({}));
-            return syncTokensFromAuthResponse(data);
+        const rt = IS_LOCAL ? localStorage.getItem('refreshToken') : null;
+        if (IS_LOCAL && !rt) return false;
+        const { response, data } = await fetchSharedAuthJson(IS_LOCAL ? { type: 'refresh_token', refreshToken: rt } : { type: 'silent_refresh' }, { signal: controller?.signal });
+        assertSharedSessionCurrent(generation, owner);
+        if (!response.ok) {
+            if (response.status === 401 || ["AUTH_SESSION_EXPIRED", "AUTH_ACCOUNT_UNAVAILABLE"].includes(data?.code)) return false;
+            throw Object.assign(new Error('인증 연결을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.'), { status: response.status, code: 'AUTH_CONNECTION_FAILED' });
         }
-
-        const callSilentRefresh = () => refreshFetch(CONFIG.api.auth, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'silent_refresh' })
-        });
-
-        const res = await callSilentRefresh();
-        if (res.ok) {
-            const data = await res.json().catch(() => ({}));
-            return syncTokensFromAuthResponse(data);
+        if (!data || Array.isArray(data) || (data.success !== true && (!data.accessToken || !data.idToken))) {
+            throw Object.assign(new Error('연결을 다시 확인해주세요.'), { code: 'AUTH_RESPONSE_INVALID' });
         }
-
-        return false;
+        if (!syncTokensFromAuthResponse(data, { expectedUserId: owner, expectedGeneration: generation })) throw createSharedSessionChangedError();
+        return true;
     })();
 
-    _sharedRefreshPromise = p.then((refreshed) => {
+    const tracked = p.then((refreshed) => {
         if (!refreshed) reportSharedDiagnostic('auth_refresh_failure', 'auth');
         return refreshed;
     }, (error) => {
         if (error?.name !== 'AbortError') reportSharedDiagnostic('auth_refresh_failure', 'auth', error?.status);
         throw error;
-    }).finally(() => { _sharedRefreshPromise = null; });
+    }).finally(() => {
+        if (_sharedRefreshController === controller) _sharedRefreshController = null;
+        if (_sharedRefreshPromise === tracked) _sharedRefreshPromise = null;
+    });
+    _sharedRefreshPromise = tracked;
     return result(_sharedRefreshPromise);
 }
 
 // Shared API wrapper.
 async function apiFetch(url, options = {}) {
+    const generation = _clientSessionGeneration;
+    const owner = localStorage.getItem('userId') || '';
     const defaultHeaders = { 'Content-Type': 'application/json' };
     options.headers = { ...defaultHeaders, ...(options.headers || {}) };
 
@@ -287,11 +323,13 @@ async function apiFetch(url, options = {}) {
 
     try {
         let response = await fetch(url, options);
+        assertSharedSessionCurrent(generation, owner);
 
         if (response.ok) return response;
 
         if (response.status === 401 || response.status === 403) {
             const refreshed = await tryRefreshToken({ preserveTransientErrors: true });
+            assertSharedSessionCurrent(generation, owner);
             if (refreshed) {
                 const refreshedBearerToken = getSharedBearerToken();
                 if (refreshedBearerToken) {
@@ -300,9 +338,10 @@ async function apiFetch(url, options = {}) {
                     delete options.headers.Authorization;
                 }
                 response = await fetch(url, options);
+                assertSharedSessionCurrent(generation, owner);
                 if (response.ok) return response;
             }
-            if (response.status === 401) {
+            if (!refreshed || response.status === 401) {
                 const expiredError = createSharedAuthExpiredError(response.status);
                 if (!isPublicRoute(window.location.pathname)) redirectToLogin('expired');
                 throw expiredError;

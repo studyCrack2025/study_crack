@@ -78,26 +78,30 @@ async function postJson({ apiFetch, url, payload }) {
 }
 
 async function clearMobileAuthSession(ctx, authApiUrl) {
+  const win = getWindow(ctx);
+  try { clearMobileAuthArtifacts(win); } catch (_error) {}
+  if (typeof win.clearServerSessionCookies === 'function') {
+    await win.clearServerSessionCookies({ includeLocal: true });
+    return;
+  }
+  const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
+  let timeout;
   if (authApiUrl) {
     try {
-      if (typeof ctx.apiFetch === 'function') {
-        await ctx.apiFetch(authApiUrl, {
-          method: 'POST',
-          body: JSON.stringify({ type: 'logout' })
-        });
-      } else {
-        await getWindow(ctx).fetch?.(authApiUrl, {
+      const request = typeof win.fetch === 'function' ? win.fetch.bind(win) : ctx.apiFetch;
+      await Promise.race([
+        Promise.resolve().then(() => request?.(authApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ type: 'logout' })
-        });
-      }
+          body: JSON.stringify({ type: 'logout' }),
+          signal: controller?.signal
+        })),
+        new Promise(resolve => { timeout = globalThis.setTimeout(() => { controller?.abort(); resolve(); }, 5000); })
+      ]);
     } catch (_error) {}
+    finally { globalThis.clearTimeout(timeout); }
   }
-  try {
-    clearMobileAuthArtifacts(getWindow(ctx));
-  } catch (_error) {}
 }
 
 function buildSocialAuthUrl(ctx, provider, purpose = 'mobile') {
@@ -752,7 +756,8 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    openLogoutModal() {
+    openLogoutModal({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       setLogoutModalOpen(true);
       return true;
     },

@@ -55,3 +55,31 @@ for (const screen of ['timer', 'my', 'settingsMain']) {
     expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
   });
 }
+
+test('서버 로그아웃 무응답이어도 모바일 로그인 화면으로 빠져나온다', async ({ page }) => {
+  await installAuthenticatedSession(page, { restoreOnNavigation: false });
+  await installApiMock(page, { tier: 'standard' });
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (url, options = {}) => {
+      let body;
+      try { body = JSON.parse(options.body || '{}'); } catch (_) {}
+      if (body?.type === 'logout') {
+        window.__logoutSignal = options.signal;
+        options.signal?.addEventListener('abort', () => sessionStorage.setItem('__logoutAborted', 'true'));
+        return new Promise(() => {});
+      }
+      return originalFetch(url, options);
+    };
+  });
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await page.locator('[data-action="openLogoutModal"]').click();
+  await page.clock.install();
+  await page.getByRole('dialog', { name: '로그아웃 확인', exact: true }).getByRole('button', { name: '로그아웃', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__logoutSignal))).toBe(true);
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+  await page.clock.fastForward(5000);
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('__logoutAborted'))).toBe('true');
+});

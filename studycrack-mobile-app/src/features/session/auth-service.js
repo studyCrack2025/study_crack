@@ -35,14 +35,8 @@ async function registerLoginCookies({ accessToken, idToken, refreshToken }) {
   const authUrl = getConfig().api && getConfig().api.auth;
   if (!authUrl || !accessToken || !idToken || !refreshToken) throw new Error('로그인 세션을 등록하지 못했습니다.');
   try {
-    const res = await browser?.fetch?.(authUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ type: AUTH_REQUEST_TYPES.REGISTER_LOGIN_COOKIES, accessToken, idToken, refreshToken })
-    });
+    const { response: res, data } = await browser.fetchSharedAuthJson({ type: AUTH_REQUEST_TYPES.REGISTER_LOGIN_COOKIES, accessToken, idToken, refreshToken });
     if (res.ok) {
-      const data = await res.json().catch(() => ({}));
       if (data.success !== true || data.accessToken !== accessToken || data.idToken !== idToken) throw new Error('INVALID_SESSION_RESPONSE');
       if (browser?.syncTokensFromAuthResponse && !browser.syncTokensFromAuthResponse(data)) throw new Error('INVALID_SESSION_RESPONSE');
       try { storage?.removeItem?.('refreshToken'); } catch (_) {}

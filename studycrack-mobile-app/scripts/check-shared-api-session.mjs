@@ -30,7 +30,7 @@ function response(body, status = 200) {
   };
 }
 
-function createRuntime({ localValues, sessionValues, fetch, isLocal = true, diagnostics }) {
+function createRuntime({ localValues, sessionValues, fetch, isLocal = true, diagnostics, timers = { setTimeout, clearTimeout } }) {
   const localStorage = createStorage(localValues);
   const sessionStorage = createStorage(sessionValues);
   const window = {
@@ -44,11 +44,14 @@ function createRuntime({ localValues, sessionValues, fetch, isLocal = true, diag
     IS_LOCAL: isLocal,
     console: { ...console, error() {} },
     fetch,
+    AbortController,
+    setTimeout: timers.setTimeout,
+    clearTimeout: timers.clearTimeout,
     localStorage,
     sessionStorage,
     window
   });
-  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession, tryRefreshToken, createCognitoMemoryStorage };`, context);
+  vm.runInContext(`${sharedApiSource}\nglobalThis.__sharedApi = { apiFetch, hasClientSession, tryRefreshToken, createCognitoMemoryStorage, clearClientSession, clearServerSessionCookies, fetchSharedAuthJson };`, context);
   return { api: context.__sharedApi, localStorage, sessionStorage };
 }
 
@@ -145,7 +148,7 @@ for (const isLocal of [true, false]) {
   const forbidden = createRuntime({ isLocal, localValues: { userId: 'student-1' }, sessionValues: { accessToken: freshAccessToken },
     fetch: async (url) => response({}, url === '/auth' ? 401 : 403)
   });
-  await assert.rejects(forbidden.api.apiFetch('/user'), (error) => error.status === 403 && error.code !== 'AUTH_EXPIRED');
+  await assert.rejects(forbidden.api.apiFetch('/user'), (error) => error.status === 403 && error.code === 'AUTH_EXPIRED', 'explicit refresh rejection also ends an authorizer 403 session');
 }
 let cookieRequests = 0;
 const cookieOnly = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async (url, options) => {
@@ -157,4 +160,47 @@ const cookieOnly = createRuntime({ isLocal: false, localValues: { userId: 'stude
 } });
 assert.equal((await cookieOnly.api.apiFetch('/user')).ok, true);
 assert.equal(cookieRequests, 2);
-console.log('shared API session contracts passed: refresh single-flight, local/cookie transport failures and retry status preservation');
+
+const shortTimers = { setTimeout: callback => setTimeout(callback, 5), clearTimeout };
+for (const hang of ['headers', 'body']) {
+  let attempts = 0;
+  let signal;
+  const hanging = createRuntime({ isLocal: false, timers: shortTimers, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async (_url, options) => {
+    signal = options.signal;
+    attempts++;
+    return hang === 'headers' ? new Promise(() => {}) : { ok: true, status: 200, json: () => new Promise(() => {}) };
+  } });
+  const results = await Promise.allSettled([hanging.api.tryRefreshToken({ preserveTransientErrors: true }), hanging.api.tryRefreshToken({ preserveTransientErrors: true })]);
+  assert.equal(attempts, 1);
+  assert.ok(results.every(result => result.status === 'rejected' && result.reason.code === 'AUTH_CONNECTION_TIMEOUT'));
+  assert.equal(signal.aborted, true);
+  assert.equal(hanging.localStorage.getItem('userId'), 'student-1');
+  await assert.rejects(hanging.api.tryRefreshToken({ preserveTransientErrors: true }), error => error.code === 'AUTH_CONNECTION_TIMEOUT');
+  assert.equal(attempts, 2, 'timeout releases single-flight for an explicit retry');
+}
+
+for (const status of [400, 403]) {
+  const malformed = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async () => response({ error: 'invalid request' }, status) });
+  await assert.rejects(malformed.api.tryRefreshToken({ preserveTransientErrors: true }), error => error.status === status && error.code !== 'AUTH_EXPIRED');
+  assert.equal(malformed.localStorage.getItem('userId'), 'student-1');
+}
+const unavailableAccount = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async () => response({ code: 'AUTH_ACCOUNT_UNAVAILABLE' }, 403) });
+assert.equal(await unavailableAccount.api.tryRefreshToken({ preserveTransientErrors: true }), false);
+const malformedSuccess = createRuntime({ isLocal: false, localValues: { userId: 'student-1' }, sessionValues: {}, fetch: async () => response({}, 200) });
+await assert.rejects(malformedSuccess.api.tryRefreshToken({ preserveTransientErrors: true }), error => error.code === 'AUTH_RESPONSE_INVALID');
+
+let finishRefresh;
+const late = createRuntime({ isLocal: false, localValues: { userId: 'student-1', plannerDraft: 'keep-draft' }, sessionValues: {}, fetch: () => new Promise(resolve => { finishRefresh = resolve; }) });
+const refreshBeforeLogout = late.api.tryRefreshToken({ preserveTransientErrors: true });
+await new Promise(resolve => setImmediate(resolve));
+late.api.clearClientSession();
+await assert.rejects(refreshBeforeLogout, error => error.name === 'AbortError');
+finishRefresh(response({ accessToken: freshAccessToken, idToken: freshIdToken }));
+await new Promise(resolve => setImmediate(resolve));
+assert.equal(late.localStorage.getItem('userId'), null);
+assert.equal(late.sessionStorage.getItem('accessToken'), null);
+assert.equal(late.localStorage.getItem('plannerDraft'), 'keep-draft');
+
+const logoutHang = createRuntime({ isLocal: false, timers: shortTimers, localValues: {}, sessionValues: {}, fetch: () => new Promise(() => {}) });
+assert.equal(await logoutHang.api.clearServerSessionCookies(), false, 'cookie cleanup is bounded even when fetch ignores abort');
+console.log('shared API session contracts passed: bounded refresh/logout, explicit rejection, transient preservation, single-flight and stale-response isolation');

@@ -98,13 +98,7 @@ async function registerRefreshCookie(refreshToken, options = {}) {
     const idToken = options.idToken || getIdToken();
     if (accessToken && idToken && refreshToken) {
         try {
-            const response = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'register_login_cookies', accessToken, idToken, refreshToken })
-            });
-            const data = await response.json();
+            const { response, data } = await fetchSharedAuthJson({ type: 'register_login_cookies', accessToken, idToken, refreshToken });
             if (response.ok && data.success === true && data.accessToken === accessToken && data.idToken === idToken && syncTokensFromAuthResponse(data)) {
                 localStorage.removeItem('refreshToken');
                 return true;
@@ -928,21 +922,10 @@ async function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 서버 세션 종료 완료 후 클라이언트 상태를 정리한다.
+    clearClientSession();
     if (typeof clearServerSessionCookies === 'function') {
         await clearServerSessionCookies();
-    } else {
-        try {
-            await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'logout' })
-            });
-        } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
     }
-
-    clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
     window.location.replace(redirectPath);

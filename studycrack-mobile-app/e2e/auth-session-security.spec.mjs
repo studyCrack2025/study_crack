@@ -111,6 +111,24 @@ test('쿠키 등록 실패는 신원 조회와 성공 이동보다 먼저 처리
   expect(await page.evaluate(() => window.__requests.length)).toBe(0);
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
 });
+for (const mobile of [false, true]) test(`${mobile ? '모바일' : '웹'} 로그인 등록 응답 정지는 12초에 실패로 끝난다`, async ({ page }) => {
+  await setup(page);
+  await page.clock.install();
+  await page.addScriptTag({ content: mobile ? mobileSource : webSource });
+  await page.evaluate(mobile => {
+    window.fetch = () => new Promise(() => {});
+    window.__loginPending = mobile
+      ? loginWithPassword({ email: 'user@example.invalid', password: 'Synthetic1!' })
+      : registerRefreshCookie('synthetic-refresh', {
+        accessToken: window.__session.getAccessToken().getJwtToken(),
+        idToken: window.__session.getIdToken().getJwtToken()
+      }).then(ok => ({ ok }), () => ({ ok: false }));
+  }, mobile);
+  await page.clock.fastForward(12000);
+  expect((await page.evaluate(() => window.__loginPending)).ok).toBe(false);
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+});
 test('튜터 로그인도 세션 등록 실패 시 신원을 조회하지 않고 SDK와 클라이언트를 정리한다', async ({ page }) => {
   await setup(page, { success: false });
   const errors = [];
