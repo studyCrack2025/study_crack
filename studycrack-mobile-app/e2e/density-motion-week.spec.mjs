@@ -1,24 +1,31 @@
 import { test, expect } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
-test('홈 주간 상세는 모달 없이 펼쳐지고 플래너의 큰 상세는 제거된다', async ({ page }) => {
-  await installAuthenticatedSession(page);
-  await installApiMock(page);
-  await page.goto('/studycrack-mobile.html?screen=timer');
-  const week = page.locator('.home-week-flow');
-  const toggle = week.getByRole('button', { name: /이번 주 공부 흐름/ });
-  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(week.locator('.timer-day-subjects')).toBeHidden();
-  await toggle.click();
-  await expect(week.locator('.timer-day-subjects')).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await toggle.click();
-  await week.locator('.timer-week-day').first().click();
-  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await page.locator('.tabbar [data-tab="planner"]').click();
-  await expect(page.locator('.sc-study-details')).toHaveCount(0);
-  await expect(page.locator('.planner-study-status')).toContainText('오늘 실제 공부');
-  await expectNoHorizontalOverflow(page);
+for (const timezoneId of ['Asia/Seoul', 'UTC']) test.describe(`주간 상세 ${timezoneId}`, () => {
+  test.use({ timezoneId });
+  test('홈 주간 상세는 모달 없이 펼쳐지고 플래너의 큰 상세는 제거된다', async ({ page }) => {
+    const now = new Date('2026-10-04T16:30:00Z');
+    await page.clock.install({ time: now });
+    await installAuthenticatedSession(page);
+    const api = await installApiMock(page);
+    api.state.studyNow = now.getTime();
+    api.state.studySeconds = 3600;
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    const week = page.locator('.home-week-flow');
+    const toggle = week.getByRole('button', { name: /이번 주 공부 흐름/ });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(week.locator('.timer-day-subjects')).toBeHidden();
+    await toggle.click();
+    await expect(week.locator('.timer-day-subjects')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await toggle.click();
+    await week.locator('.timer-week-day').first().click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('.tabbar [data-tab="planner"]').click();
+    await expect(page.locator('.sc-study-details')).toHaveCount(0);
+    await expect(page.locator('.planner-study-status')).toContainText(`${timezoneId === 'Asia/Seoul' ? '오늘' : '2026-10-05'} 실제 공부 01:00:00`);
+    await expectNoHorizontalOverflow(page);
+  });
 });
 
 test('MY 패널과 하위 페이지는 오른쪽 퇴장 후 한 번만 복귀한다', async ({ page }) => {
