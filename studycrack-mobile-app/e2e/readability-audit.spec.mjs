@@ -64,7 +64,7 @@ async function setup(page, state) {
   await installApiMock(page, { tier: 'pro', userOverrides: state === 'empty' ? { targetUnivs: [], quantitative: {} } : state === 'long' ? { name: longText, targetUnivs: [{ univ: longText, major: `${longText}융합학부` }] } : {} });
 }
 
-async function audit(memberPage, testInfo, entries, viewport, state, zoom = false) {
+async function audit(memberPage, testInfo, entries, viewport, state, zoom = false, fallbackFont = false) {
   const rows = [];
   const publicPage = await memberPage.context().newPage();
   await installApiMock(publicPage);
@@ -76,12 +76,13 @@ async function audit(memberPage, testInfo, entries, viewport, state, zoom = fals
     const root = page.locator(screen === 'splash' ? '.splash-v2' : `[data-screen="${screen}"]`);
     await expect(root).toBeVisible();
     await page.waitForTimeout(200);
+    if (fallbackFont) await page.addStyleTag({ content: 'body { font-family: Arial, sans-serif; letter-spacing: .035em; }' });
     if (zoom) await enlargeText(page);
     const result = await inspect(page);
     if (zoom && await page.locator('.tabbar').count()) {
       await expect.poll(() => page.locator('.app-content').evaluate(el => parseFloat(getComputedStyle(el).paddingBottom))).toBeGreaterThan(await page.locator('.tabbar').evaluate(el => el.offsetHeight));
     }
-    rows.push({ screen, state: publicScreens.has(screen) ? 'public' : state, viewport, syntheticFont200: zoom, ...result });
+    rows.push({ screen, state: publicScreens.has(screen) ? 'public' : state, viewport, syntheticFont200: zoom, fallbackFont, ...result });
     await page.screenshot({ path: testInfo.outputPath(`${screen}-${viewport.width}-${state}${zoom ? '-font200' : ''}.png`) });
   }
   await publicPage.close();
@@ -109,6 +110,16 @@ test('priority synthetic font 200 percent', async ({ page }, testInfo) => {
   test.setTimeout(120_000);
   await setup(page, 'normal');
   await audit(page, testInfo, priority, { width: 320, height: 568 }, 'normal', true);
+});
+
+test('analysis fallback font 200 percent remains within the card', async ({ page }, testInfo) => {
+  await setup(page, 'normal');
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/studycrack-mobile.html?screen=analysis');
+  const columns = () => page.locator('.analysis-sim-table').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  await expect.poll(columns).toBe(2);
+  await audit(page, testInfo, ['analysis'], { width: 320, height: 568 }, 'normal', true, true);
+  await expect.poll(columns).toBe(1);
 });
 
 test('public input and legal pages support synthetic font 200 percent', async ({ page }, testInfo) => {

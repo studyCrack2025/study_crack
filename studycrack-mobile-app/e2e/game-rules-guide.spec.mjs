@@ -35,9 +35,10 @@ async function setup(page, { missingRules = false, failGrowth = false, planPolic
   return { api, state };
 }
 
-for (const width of [320, 390]) test(`계획 달성형 안내는 시간형 지급과 중복 성장을 표시하지 않는다 (${width}px)`, async ({ page }, info) => {
+for (const { width, fallbackFont } of [{ width: 320 }, { width: 390 }, { width: 320, fallbackFont: true }]) test(`계획 달성형 안내는 시간형 지급과 중복 성장을 표시하지 않는다 (${width}px${fallbackFont ? ', 대체 글꼴' : ''})`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 844 }); await setup(page, { planPolicy: true });
   await page.goto('/studycrack-mobile.html?screen=aquarium');
+  if (fallbackFont) await page.addStyleTag({ content: 'body { font-family: Arial, sans-serif; letter-spacing: .035em; }' });
   await page.getByRole('button', { name: '수조 이용법', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '수조 성장 규칙' });
   await expect(dialog).toContainText('30분 이상 계획을 세워요');

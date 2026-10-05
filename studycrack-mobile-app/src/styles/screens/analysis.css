@@ -22,7 +22,7 @@
 .analysis-main-gauge-scale .safe{color:var(--sc-ink-muted);transform:translateX(-50%);}
 .analysis-main-gauge-scale .max{right:0;}
 .analysis-main-gauge-caption{margin:0;padding-top:2px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:650;line-height:1.6;text-align:center;word-break:keep-all;}
-.analysis-sim-table{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none;}
+.analysis-sim-table{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(6em,45%)),1fr));gap:8px;margin:0;padding:0;list-style:none;}
 .analysis-sim-table > li{min-width:0;display:flex;}
 .analysis-sim-row{width:100%;min-width:0;min-height:80px;display:flex;flex-direction:column;gap:8px;align-items:stretch;padding:12px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:linear-gradient(150deg,var(--sc-surface),var(--sc-surface-subtle));color:var(--sc-ink);font-family:inherit;text-align:left;transition:transform var(--sc-motion-control) ease,border-color var(--sc-motion-control) ease,background var(--sc-motion-control) ease;}
 .analysis-sim-row.active{border-color:var(--sc-action-positive);background:var(--sc-surface-positive);box-shadow:0 0 0 3px color-mix(in srgb,var(--sc-action-positive) 12%,transparent);}
@@ -32,7 +32,7 @@
 .analysis-sim-subject{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:5px;}
 .analysis-sim-subject b{min-width:0;color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:850;line-height:1.3;overflow-wrap:anywhere;}
 .analysis-sim-subject em{width:max-content;max-width:100%;padding:3px 6px;border-radius:var(--sc-radius-pill);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-style:normal;font-weight:800;white-space:nowrap;}
-.analysis-sim-effect{color:var(--sc-brand-navy);font-size:20px;font-weight:900;white-space:nowrap;}
+.analysis-sim-effect{min-width:0;max-width:100%;color:var(--sc-brand-navy);font-size:20px;font-weight:900;white-space:normal;overflow-wrap:anywhere;}
 .analysis-sim-row.best .analysis-sim-effect{color:var(--sc-action-positive-strong);}
 .analysis-sim-row.is-flat .analysis-sim-effect{color:var(--sc-ink-subtle);}
 .analysis-sim-status{min-width:0;display:grid;gap:3px;}
