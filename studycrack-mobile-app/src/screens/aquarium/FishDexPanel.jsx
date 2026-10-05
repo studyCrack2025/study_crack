@@ -60,7 +60,7 @@ export function FishDexPanel({ selection, setSelection, catalog = [], error = ''
     {filter !== 'all' || category !== 'all' || selectedRarity !== 'all' ? <button type="button" className="aquarium-dex-reset" onClick={() => setSelection(current => ({ ...current, filter: 'all', category: 'all', rarity: 'all', page: 1 }))}>조건 초기화</button> : null}
     <div ref={resultRef} tabIndex={-1} className="aquarium-catalog-selection"><span>{CATEGORY_LABELS[category] || '모든 생태'} · {selectedRarity === 'all' ? '모든 등급' : RARITY_LABELS[selectedRarity]}</span><b>{visibleCatalog.length}종</b></div>
 
-    {filter !== 'owned' && visibleCatalog.length ? <p className="aquarium-dex-note">미획득 친구는 아직 비밀이에요. 공부로 받은 뽑기권으로 새로운 친구를 만나보세요.</p> : null}
+
     <div className="aquarium-catalog-groups">{RARITY_ORDER.map((rarity) => {
       const rarityCatalog = categoryCatalog.filter((fish) => fish.rarity === rarity);
       const rows = pageCatalog.filter(fish => fish.rarity === rarity);

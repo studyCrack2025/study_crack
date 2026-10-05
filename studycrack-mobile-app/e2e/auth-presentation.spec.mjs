@@ -7,7 +7,8 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 640 }
     const api = await installApiMock(page);
     page.on('dialog', (dialog) => dialog.accept());
     await page.goto('/studycrack-mobile.html?screen=authLogin');
-    await expect(page.getByRole('region', { name: '서비스 안내' })).toContainText('내 기록을 바탕으로');
+    await expect(page.getByRole('region', { name: '서비스 안내' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible();
     await expect(page.getByText('55.5%')).toHaveCount(0);
     const brand = await page.locator('.auth-brand-centered').boundingBox();
     const logo = await page.locator('.auth-brand-centered .auth-logo-wrap').boundingBox();

@@ -154,6 +154,6 @@ test('계정 변경 후 서버 지표·권한을 새 계정으로 읽고 기기 
   await page.locator('.tabbar [data-tab="planner"]').click();
   await expect(page.locator('[data-screen="planner"]')).toBeVisible();
   await expect(page.locator('.planner-feedback-card')).toContainText('개인 플래너는 무료로 이용해요');
-  await expect(page.locator('.planner-feedback-card')).toContainText('이용권에 따라 제공됩니다');
+  await expect(page.locator('.planner-feedback-card')).toContainText('선택형 유료 코칭');
   await expect(page.locator('.planner-feedback-card [data-target="weekly"]')).toHaveCount(0);
 });

@@ -79,7 +79,7 @@ for (const [tier, count] of [['free', 4], ['trial', 4], ['basic', 0], ['standard
     await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(Math.min(2, Math.max(0, count - 1)));
     await expect(page.locator('.timer-v2-plan')).not.toContainText('Basic 이상');
     if (count === 0) await expect(page.locator('.timer-v2-plan')).toContainText('아직 등록한 계획이 없어요');
-    if (count === 1) await expect(page.locator('.timer-v2-plan')).toContainText('오늘 계획을 모두 완료했어요');
+    if (count === 1) await expect(page.locator('.timer-v2-plan')).toContainText('오늘 계획 완료');
     await page.locator('.timer-v2-plan [data-target="planner"]').first().click();
     await expect(page.locator('[data-screen="planner"]')).toBeVisible();
     await expect(page.locator('.locked-feature-screen')).toHaveCount(0);

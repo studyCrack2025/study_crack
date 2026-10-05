@@ -39,3 +39,5 @@
 .analysis-sim-status b{min-width:0;color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:800;line-height:1.4;overflow-wrap:anywhere;}
 .analysis-sim-status small{min-width:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:650;line-height:1.4;overflow-wrap:anywhere;}
 .analysis-simulation-note{margin:0;padding:12px;border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.65;word-break:keep-all;}
+.analysis-simulation-note summary{cursor:pointer;min-height:var(--sc-touch-target);align-content:center;color:var(--sc-brand-navy);font-weight:800;}
+.analysis-simulation-note p{margin:8px 0 0;}

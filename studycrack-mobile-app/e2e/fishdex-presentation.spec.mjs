@@ -85,7 +85,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     expect(box.height).toBeGreaterThanOrEqual(136);
     await expect(card.locator('.aquarium-catalog-sprite')).toHaveCSS('width', '60px');
     await expect(card.locator('.aquarium-catalog-card-meta')).toContainText('일반');
-    await expect(page.locator('.aquarium-dex-note')).toContainText('공부로 받은 뽑기권');
+    await expect(page.locator('.aquarium-catalog-view')).not.toContainText('미획득 친구는 아직 비밀');
     await page.screenshot({ path: testInfo.outputPath(`fishdex-${width}.png`), animations: 'disabled' });
     await card.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath(`fishdex-cards-${width}.png`), animations: 'disabled' });

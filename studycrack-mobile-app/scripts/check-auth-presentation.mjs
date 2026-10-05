@@ -44,7 +44,7 @@ assert.doesNotMatch(authSource, /auth-brand-eyebrow|auth-wordmark|auth-title/);
 assert.match(authSource, /className="signup-progress" aria-label="회원가입 진행 단계"/);
 assert.match(authSource, /aria-current=\{step === index \+ 1 \? 'step' : undefined\}/);
 assert.match(authSource, /auth-brand-centered/);
-assert.match(authSource, /auth-service-note/);
+assert.doesNotMatch(authSource, /성적 분석부터 오늘의 계획까지/, '로그인에서 반복 홍보 안내를 표시하지 않습니다.');
 assert.doesNotMatch(authSource, /55\.5|오늘 첫 과제 \+0\.1|prototype-session/);
 assert.match(signupCss, /\.signup-stage\{/);
 assert.match(signupCss, /\.signup-topbar\{/);

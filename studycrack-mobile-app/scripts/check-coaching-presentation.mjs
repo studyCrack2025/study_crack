@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
 import { buildCoachingPresentation, buildCoachingWeek, COACHING_PROCESS_STEPS, formatCoachingWeekLabel } from '../src/screens/coaching/presentation.js';
 
 const presentation = buildCoachingPresentation([
@@ -45,3 +49,23 @@ const css = await readFile(new URL('../src/styles/screens/coaching.css', import.
 assert.match(css, /\.coaching-process-step small\{[^}]*font-size:var\(--sc-type-caption\)/);
 assert.match(css, /\.coaching-process-list\{[^}]*grid-template-columns:minmax\(0,1fr\)/, '모바일의 진행 단계는 세로로 읽을 수 있어야 합니다.');
 console.log('coaching-presentation contracts passed');
+
+const vite = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
+try {
+  const { WeeklyPlanPreview } = await vite.ssrLoadModule('/src/screens/coaching/WeeklyPlanPreview.jsx');
+  const { PlannerStorageContext } = await vite.ssrLoadModule('/src/features/planner/PlannerStorageContext.js');
+  const render = (view, items = []) => renderToStaticMarkup(createElement(PlannerStorageContext.Provider, { value: { controller: { account: { getView: () => view, getItems: () => items } } } }, createElement(WeeklyPlanPreview, { detailed: true, plannerItems: [] })));
+  const missing = render({ mode: 'account', verified: false, snapshot: null });
+  assert.match(missing, /계정 계획 확인 필요/);
+  assert.doesNotMatch(missing, /등록 0개|계획 0분|등록한 계획 없음/);
+  const confirmed = render({ mode: 'account', verified: true, snapshot: { available: true } });
+  assert.match(confirmed, /계정 계획/);
+  assert.match(confirmed, /등록 0개 · 계획 0분/);
+  assert.doesNotMatch(confirmed, /최신 확인 필요/);
+  const device = render({ mode: 'device' });
+  assert.match(device, /기기 계획/);
+  assert.match(device, /등록 0개 · 계획 0분/);
+  const stale = render({ mode: 'account', verified: false, snapshot: { available: true } });
+  assert.match(stale, /최신 확인 필요/);
+  console.log('weekly preview source and unavailable-state contracts passed');
+} finally { await vite.close(); }

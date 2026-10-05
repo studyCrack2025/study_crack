@@ -149,7 +149,7 @@ function MobileAppSession() {
     onBlur
   };
   const OverlayProvider = deferredScreens.registry?.AppOverlayProvider || AppOverlayContext.Provider;
-  const renderWithOverlays = (content) => React.createElement(PlannerStorageContext.Provider, { value: plannerStorage ? { ...plannerStorage.getStatus(), retry: plannerStorage.retry, controller: plannerStorage } : null }, React.createElement(OverlayProvider, { value: appOverlay, ...(deferredScreens.registry?.AppOverlayProvider ? { guide: { api, state, setState, nav, actionsRef: productGuideActionsRef, presentation: { profile: viewContext.myPresentation?.profile, aquarium: viewContext.aquariumPresentation, tasks: viewContext.todayPlannerItems, catalog: state.fishCatalog, streak: viewContext.streakPresentation } } } : {}) }, React.createElement('div', wrapperProps, content)));
+  const renderWithOverlays = (content) => React.createElement(PlannerStorageContext.Provider, { value: plannerStorage ? { ...plannerStorage.getStatus(), retry: plannerStorage.retry, controller: plannerStorage } : null }, React.createElement(OverlayProvider, { value: appOverlay, ...(deferredScreens.registry?.AppOverlayProvider ? { guide: { api, state, setState, nav, actionsRef: productGuideActionsRef, presentation: { profile: viewContext.myPresentation?.profile, aquarium: viewContext.aquariumPresentation, tasks: viewContext.todayPlannerItems, catalog: state.fishCatalog, rules: state.gameRules, rulesStatus: state.gameProfileStatus, streak: viewContext.streakPresentation } } } : {}) }, React.createElement('div', wrapperProps, content)));
 
   if (isDeferredAppScreen(state.screen) && !deferredScreens.registry) {
     return renderWithOverlays(

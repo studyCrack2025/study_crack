@@ -106,7 +106,7 @@ test('week swipes, cancellation and month clamp preserve the selected date', asy
   const calendar = page.getByRole('region', { name: '일정 달력', exact: true });
   const selected = () => calendar.locator('.calendar-cell[aria-pressed="true"]');
   await expect(selected()).toHaveAttribute('data-planner-date', '2028-01-31');
-  const hint = calendar.locator('.calendar-swipe-hint');
+  const hint = calendar.locator('.calendar-weekdays');
   const box = await hint.boundingBox();
   await page.mouse.move(box.x + box.width - 10, box.y + box.height / 2);
   await page.mouse.down();

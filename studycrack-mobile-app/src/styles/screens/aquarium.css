@@ -136,7 +136,6 @@
 .aquarium-dex-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
 .aquarium-dex-pagination button,.aquarium-dex-reset{min-height:44px;padding:8px 12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-body);font-weight:800;}
 .aquarium-dex-pagination button:disabled{opacity:.45;}
-.aquarium-dex-note{margin-block:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.5;}
 .aquarium-catalog-view > :not(.aquarium-catalog-hero){margin-inline:var(--mobile-page-gutter);}
 .aquarium-catalog-card-meta{position:relative;display:flex;align-items:center;justify-content:space-between;gap:6px;}
 .aquarium-catalog-card-meta > span:first-child{padding:4px 6px;border-radius:6px;background:color-mix(in srgb,var(--fishdex-accent) 10%,var(--sc-surface-card));color:var(--sc-ink-strong);font-size:var(--sc-type-caption);font-weight:800;}
