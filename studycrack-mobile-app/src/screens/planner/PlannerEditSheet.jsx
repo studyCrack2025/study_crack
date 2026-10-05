@@ -1,5 +1,6 @@
 import { Sheet } from '../../components/Sheet.jsx';
 import { PlannerStorageNotice } from '../../features/planner/PlannerStorageNotice.jsx';
+import { PlannerStorageDestination } from '../../features/planner/PlannerStorageDestination.jsx';
 import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
 
 function fieldValue(value) {
@@ -21,8 +22,8 @@ export function PlannerEditSheet({ plannerEditIndex = null, plannerEditItem = nu
       <div className="planner-sheet-block"><label htmlFor="planner-edit-detail">세부 과목</label><input id="planner-edit-detail" className="planner-input" data-field="plannerEditDetailSubject" defaultValue={plannerEditItem?.detailSubject || ''} /></div>
       <div className="planner-sheet-block"><label htmlFor="planner-edit-activity">학습 유형</label><input id="planner-edit-activity" className="planner-input" data-field="plannerEditActivityType" defaultValue={plannerEditItem?.activityType || ''} /></div>
       <div className="planner-sheet-block"><label htmlFor="planner-edit-content">세부 내용</label><textarea id="planner-edit-content" className="planner-input planner-edit-text" data-field="plannerEditContent" rows="3" defaultValue={plannerEditItem?.content || ''} /></div>
-      <div className="planner-sheet-block"><label htmlFor="planner-edit-memo">메모</label><textarea id="planner-edit-memo" className="planner-input planner-edit-text" data-field="plannerEditMemo" rows="2" defaultValue={plannerEditItem?.memo || ''} /></div>
-      <div className="planner-edit-footer"><PlannerStorageNotice /><button type="button" className="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div>
+      <div className="planner-sheet-block"><label htmlFor="planner-edit-memo">메모</label><p className="planner-storage-memo-note">메모는 이 기기에만 저장돼요.</p><textarea id="planner-edit-memo" className="planner-input planner-edit-text" data-field="plannerEditMemo" rows="2" defaultValue={plannerEditItem?.memo || ''} /></div>
+      <div className="planner-edit-footer"><PlannerStorageDestination /><PlannerStorageNotice /><button type="button" className="btn btn-primary" data-action="savePlannerEdit">수정 저장</button></div>
     </Sheet>
   );
 }

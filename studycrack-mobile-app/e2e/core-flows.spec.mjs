@@ -431,7 +431,7 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await expect(preview).toContainText('독서');
   await preview.getByRole('button', { name: /전체 보기/ }).click();
   await expect(page.locator('[data-screen="planner"]')).toBeVisible();
-  await expect(page.getByText('이 기기에 보관 중', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0);
   await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
   const more = page.getByLabel('달력 더보기', { exact: true });
   await more.press('Enter');

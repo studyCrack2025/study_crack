@@ -9,6 +9,7 @@ function classes(...values) {
 export function Modal({
   children,
   dismissAction = '',
+  onDismiss,
   open = true,
   overlayClass = '',
   panelClass = '',
@@ -16,10 +17,10 @@ export function Modal({
 }) {
   const bridge = useContext(AppOverlayContext);
   const side = bridge?.myFlow && !/로그아웃|탈퇴|삭제/.test(ariaLabel);
-  const { onKeyDown, overlayRef, panelRef } = useOverlayDialog({ dismissAction, open });
+  const { onKeyDown, overlayRef, panelRef } = useOverlayDialog({ dismissAction, onDismiss, open });
   if (!open) return null;
   return (
-    <div ref={overlayRef} className={classes('sc-overlay sc-overlay--modal sc-modal-padded-overlay', overlayClass, side && 'sc-overlay--drawer')} data-action={dismissAction}>
+    <div ref={overlayRef} className={classes('sc-overlay sc-overlay--modal sc-modal-padded-overlay', overlayClass, side && 'sc-overlay--drawer')} data-action={dismissAction} onClick={onDismiss ? event => { if (event.target === event.currentTarget) { event.stopPropagation(); onDismiss(); } } : undefined}>
       <div ref={panelRef} className={classes('sc-modal sc-modal-padded', panelClass, side && 'sc-side-panel')} data-action="noopModal" role="dialog" aria-modal="true" aria-label={ariaLabel} tabIndex={-1} onKeyDown={onKeyDown}>
         {children}
       </div>

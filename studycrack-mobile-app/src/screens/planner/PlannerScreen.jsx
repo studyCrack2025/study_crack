@@ -8,7 +8,8 @@ import { PlannerStudyStatus } from './PlannerStudyStatus.jsx';
 import { getTodayDateKey } from '../../constants/runtime-defaults.js';
 import { FishArtwork } from '../aquarium/FishArtwork.jsx';
 import { PlannerAccountPanel } from '../../features/planner/PlannerAccountPanel.jsx';
-import { useContext } from 'react';
+import { useCallback, useContext, useState } from 'react';
+import { Modal } from '../../components/Modal.jsx';
 import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
 import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
 
@@ -58,6 +59,8 @@ function PlannerFeedback({ plannerFeedback = {}, hasItems = false, canAccessStan
 }
 
 function PlannerWorkspaceScreen(ctx) {
+  const [storageOpen, setStorageOpen] = useState(false);
+  const closeStorage = useCallback(() => setStorageOpen(false), []);
   const account = useContext(PlannerStorageContext)?.controller?.account;
   const accountMode = account?.getView().mode === 'account';
   if (accountMode) {
@@ -83,7 +86,7 @@ function PlannerWorkspaceScreen(ctx) {
   const presentation = buildPlannerPresentation(plannerViewItems);
   const isToday = selectedPlannerDateKey === (ctx.todayDate || getTodayDateKey());
   const planHeading = isToday ? '오늘 할 일' : `${selectedPlannerDate}일 할 일`;
-  const plannerOverlayOpen = plannerEditIndex !== null;
+  const plannerOverlayOpen = plannerEditIndex !== null || storageOpen;
 
   return (
     <AppScreenShell
@@ -91,15 +94,14 @@ function PlannerWorkspaceScreen(ctx) {
       tab={tab}
       dimmed={dimmed}
       overlayOpen={plannerOverlayOpen}
-      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}</> : null}
+      overlays={plannerOverlayOpen ? <>{plannerEditIndex !== null ? <PlannerEditSheet key={`${account?.getView().scope || 0}:${plannerEditIndex}`} plannerEditIndex={plannerEditIndex} plannerEditItem={plannerEditItem} /> : null}{storageOpen ? <Modal onDismiss={closeStorage} ariaLabel="계획 보관 설정" panelClass="planner-storage-modal"><div className="sc-modal-head"><h3>계획 보관 설정</h3><button type="button" className="sc-overlay-close" aria-label="닫기" onClick={event => { event.stopPropagation(); closeStorage(); }}>×</button></div><div className="sc-modal-body"><PlannerAccountPanel /></div></Modal> : null}</> : null}
     >
           <main className={`planner-screen ${plannerViewItems.length ? '' : 'planner-empty-state-screen'}`}>
             <PrimaryScreenHeader className="planner-context-head" eyebrow={[normalizedTargetMajor || '목표 대학 설정', calendarNearestDdayLabel].filter(Boolean).join(' · ')} title="Planner of Today" />
-            <AdmissionCalendar {...ctx} />
+            <AdmissionCalendar {...ctx} onOpenStorage={() => setStorageOpen(true)} />
             <PlannerProgress presentation={presentation} isToday={isToday} />
             <PlannerStudyStatus overview={ctx.studyOverview} isToday={isToday} />
-            <PlannerAccountNotice />
-            {accountMode ? <button type="button" className="btn" disabled={account.getView().busy} onClick={() => account.setMode('device')}>기기 계획 보기</button> : null}
+            <PlannerAccountNotice onManage={() => setStorageOpen(true)} />
 
             <section className="planner-tasks-section">
               <div className="planner-section-head"><div><span>{plannerMonthLabel} {selectedPlannerDate}일 · {selectedPlannerWeekday}요일</span><h4>{planHeading}</h4></div><button type="button" className="planner-add-icon" data-action="openPlannerAddPage" aria-label="계획 추가">+</button></div>
@@ -114,7 +116,7 @@ function PlannerWorkspaceScreen(ctx) {
             </section>
 
             <PlannerFeedback plannerFeedback={plannerFeedback} hasItems={Boolean(plannerViewItems.length)} canAccessStandard={canAccessStandard} />
-            <PlannerAccountPanel />
+
 
 
           </main>

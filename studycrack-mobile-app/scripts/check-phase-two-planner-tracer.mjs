@@ -80,15 +80,14 @@ try {
   const { PlannerStorageContext } = await vite.ssrLoadModule('/src/features/planner/PlannerStorageContext.js');
   const renderStorage = view => renderToStaticMarkup(createElement(PlannerStorageContext.Provider, { value: { controller: { account: { getView: () => view } } } }, createElement(PlannerAccountNotice)));
   const storedView = { mode: 'account', verified: true, busy: false, snapshot: { version: 2, queue: [] }, result: { ok: true } };
-  assert.match(renderStorage(storedView), /저장된 계획/);
-  assert.match(renderStorage(storedView), /<details><summary>저장 안내<\/summary>/);
+  assert.equal(renderStorage(storedView), '', 'healthy account state must not fill the default planner');
   assert.match(renderStorage({ ...storedView, busy: true }), /저장 중/);
   assert.match(renderStorage({ ...storedView, verified: false, result: null }), /계정 연결 확인 필요/);
-  assert.match(renderStorage({ ...storedView, mode: 'device' }), /이 기기에 보관 중/);
+  assert.equal(renderStorage({ ...storedView, mode: 'device' }), '', 'healthy device state must not show storage instructions');
   assert.match(renderStorage({ ...storedView, result: { ok: false, status: 409 } }), /다른 기기의 변경이 있어요/);
   assert.match(renderStorage({ ...storedView, result: { ok: false, status: 503 } }), /저장을 다시 확인해요/);
   assert.match(renderStorage({ ...storedView, snapshot: { queue: [{}] }, result: { ok: false, error: 'network' } }), /서버 반영 대기 1건/);
-  const restored = renderStorage({ ...storedView, result: { ok: true, completionStatus: 'issued', replayed: true } });
+  const restored = renderStorage({ ...storedView, resultAt: Date.now(), result: { ok: true, completionStatus: 'issued', replayed: true } });
   assert.match(restored, /추가 지급은 아니에요/);
   assert.doesNotMatch(restored, /1장이 지급됐어요/);
   const [{ AdmissionCalendar }, { PlannerScreen }, { TimerScreen }] = await Promise.all([
@@ -105,11 +104,8 @@ try {
     tab: 'planner'
   }));
   assert.doesNotMatch(plannerMarkup, /app-content modal-lock/, 'planner defaults must remain interactive when no overlay is open');
-  assert.match(
-    plannerMarkup,
-    /이 기기에 보관 중/,
-    'planner must identify local-only storage without claiming a confirmed study record'
-  );
+  assert.doesNotMatch(plannerMarkup, /이 기기에 보관 중|계획 저장 관리|planner-account-panel/, 'storage management must leave the default planner');
+  assert.match(plannerMarkup, /계획 보관 설정/, 'storage settings must remain reachable from calendar options');
   assert.match(plannerMarkup, /data-action="openPlannerAddPage"/, 'planner must keep the add route');
   assert.match(plannerMarkup, /data-action="openPlannerEdit"/, 'planner rows must keep edit entry');
   assert.match(plannerMarkup, /data-action="togglePlannerDone"/, 'planner rows must keep local completion');

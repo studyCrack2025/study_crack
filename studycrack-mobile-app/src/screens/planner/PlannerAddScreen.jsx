@@ -1,6 +1,7 @@
 import { formatPlannerMinutes, PLANNER_ACTIVITY_OPTIONS, PLANNER_CATEGORY_OPTIONS } from './planner-options.js';
 import { AppContent, AppFrame, SecondaryScreenHeader } from '../../components/AppFrame.js';
 import { PlannerStorageNotice } from '../../features/planner/PlannerStorageNotice.jsx';
+import { PlannerStorageDestination } from '../../features/planner/PlannerStorageDestination.jsx';
 import { PlannerAccountNotice } from '../../features/planner/PlannerAccountNotice.jsx';
 import { useContext } from 'react';
 import { PlannerStorageContext } from '../../features/planner/PlannerStorageContext.js';
@@ -150,9 +151,11 @@ function PlannerDraftScreen(ctx) {
               <label className="planner-add-field-label" htmlFor="planner-add-content">계획 제목</label>
               <textarea id="planner-add-content" className="planner-input planner-memo-input" data-field="plannerContent" placeholder="예: 영어 인강 시청" rows="3" />
               <label className="planner-add-field-label" htmlFor="planner-add-memo">메모 (선택)</label>
+              <p className="planner-storage-memo-note">메모는 이 기기에만 저장돼요.</p>
               <textarea id="planner-add-memo" className="planner-input planner-memo-input" data-field="plannerMemo" placeholder="메모 선택 입력" rows="3" />
             </section>
 
+            <PlannerStorageDestination />
             <PlannerStorageNotice />
             <div className="planner-add-footer">
               <button className="btn btn-secondary planner-step-prev" data-action="plannerAddPrevStep" data-planner-step-prev disabled>
