@@ -12,12 +12,11 @@
 .game-rules-copy{display:grid;gap:var(--sc-space-8);}
 .game-rules-body h3{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-section);line-height:1.4;overflow-wrap:anywhere;}
 .game-rules-body p{margin:0;color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.6;overflow-wrap:anywhere;}
-.game-rules-illustration{min-width:0;height:clamp(80px,12dvh,96px);display:grid;place-items:center;border-radius:var(--sc-radius-card);background:linear-gradient(135deg,var(--sc-surface-positive),var(--sc-surface-subtle));color:var(--sc-brand-navy);}
-.game-rules-illustration > div{display:flex;align-items:center;justify-content:center;gap:var(--sc-space-12);max-width:100%;}
-.game-rules-illustration .icon{width:56px;height:56px;stroke:currentColor;}
-.game-rules-illustration .icon:nth-child(2){width:24px;height:24px;}
-.game-rules-illustration .aquarium-fish-artwork{width:80px;height:80px;}
-.game-rules-ticket{width:72px;height:72px;fill:var(--sc-surface-card);stroke:var(--sc-action-positive-strong);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.game-rules-example{min-width:0;display:grid;gap:var(--sc-space-8);margin:0;}
+.game-rules-example-frame{min-width:0;height:clamp(96px,15dvh,128px);display:grid;place-items:center;padding:var(--sc-space-8);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);overflow:hidden;}
+.game-rules-example-frame img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;}
+.game-rules-example-frame > span{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;overflow-wrap:anywhere;}
+.game-rules-example figcaption{min-width:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;overflow-wrap:anywhere;}
 .game-rules-details{min-width:0;border-top:1px solid var(--sc-line-subtle);}
 .game-rules-details > summary{min-height:48px;align-content:center;padding:var(--sc-space-12) 0;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;cursor:pointer;overflow-wrap:anywhere;}
 .game-rules-details > :not(summary){margin-top:var(--sc-space-12);}

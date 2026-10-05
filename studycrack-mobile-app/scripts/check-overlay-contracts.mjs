@@ -131,13 +131,19 @@ try {
     assert.match(markup, /data-action="savePlannerEdit"/);
     assert.equal(render(PlannerEditSheet), '');
   });
-  check('study selection is inline and preserves confirmation action', () => {
+  check('study selection uses the common dialog and preserves confirmation action', () => {
     const markup = render(StudySubjectSheet, { studySubjectSheetOpen: true, studyStartDraft: { subject: '국어', activity: '독서 지문 분석' } });
     assert.match(markup, /home-study-form/);
-    assert.doesNotMatch(markup, /role="dialog"|sc-overlay/);
+    assert.match(markup, /role="dialog" aria-modal="true" aria-label="공부 시작"/);
+    assert.match(markup, /sc-modal-body/);
+    assert.match(markup, /sc-modal-footer/);
     assert.match(markup, /data-field="studyStartActivity"/);
     assert.match(markup, /data-action="confirmStudyStart"/);
-    assert.match(render(StudySubjectSheet), /hidden=""/);
+    assert.equal(render(StudySubjectSheet), '');
+    const pending = render(StudySubjectSheet, { studySubjectSheetOpen: true, activeStudySession: { status: 'starting', subject: '국어', activity: '독서 지문 분석' }, timerPhase: 'starting-session' });
+    assert.match(pending, /시작 확인 중/);
+    assert.doesNotMatch(pending, /data-field="studyStartActivity"/);
+    assert.match(pending, /data-action="closeStudySubjectSheet" aria-label="닫기" disabled=""/);
   });
   check('analysis search preserves its explicit compatibility composition', () => {
     const markup = render(AnalysisSearchSheet, { analysisSearchOpen: true, analysisSearchTerm: '대학' });

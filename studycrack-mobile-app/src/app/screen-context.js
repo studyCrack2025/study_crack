@@ -84,6 +84,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   on3: Object.freeze([]),
   planner: Object.freeze([
     'canAccessStandard',
+    'preserveY',
     'calendarEvents',
     'studyOverview', 'analysisScoreView',
     'dimmed', 'plannerCalendarMode', 'plannerCalendarMonthCells', 'plannerEditIndex', 'plannerEditItem',
@@ -138,7 +139,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
 });
 
 const SCREEN_ACTION_KEYS = Object.freeze({
-  planner: Object.freeze({ group: 'calendar', keys: ['setCalendarEventDraft'] }),
+  planner: Object.freeze({ group: 'calendar', keys: ['setCalendarEventDraft', 'setSelectedDate'] }),
   authSignup: Object.freeze({ group: 'auth', keys: ['setSignupError', 'setSignupTerms'] })
 });
 

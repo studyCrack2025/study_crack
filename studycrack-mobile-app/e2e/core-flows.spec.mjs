@@ -43,7 +43,8 @@ test('로그인 입력과 계정 복구 모달이 모바일 화면에서 동작�
   await expect(email).toHaveValue('student@example.com');
 
   const findEmailButton = page.getByRole('button', { name: '이메일 찾기' });
-  await findEmailButton.click();
+  await findEmailButton.focus();
+  await findEmailButton.press('Enter');
   const findDialog = page.getByRole('dialog', { name: '이메일 찾기' });
   await expect(findDialog).toBeVisible();
   await expect(findDialog.getByRole('button', { name: '닫기' })).toBeFocused();
@@ -407,7 +408,8 @@ test('플래너 상단에서 주·월 일정과 인라인 입력을 탐색한다
   expect(calendarBox.y).toBeLessThan(progressBox.y);
   await page.getByRole('button', { name: '계획 완료' }).click();
   await expect(page.locator('.planner-progress-head')).toContainText('1/1 완료');
-  await page.getByRole('button', { name: '월', exact: true }).click();
+  await page.getByLabel('달력 더보기', { exact: true }).click();
+  await page.getByRole('button', { name: '월 달력 보기', exact: true }).click();
   expect(await page.locator('.calendar-grid .calendar-cell').count()).toBeGreaterThanOrEqual(28);
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
@@ -429,11 +431,14 @@ test('타이머 미리보기에서 로컬 플래너 CRUD와 캘린더 재시도�
   await expect(preview).toContainText('독서');
   await preview.getByRole('button', { name: /전체 보기/ }).click();
   await expect(page.locator('[data-screen="planner"]')).toBeVisible();
-  await expect(page.getByText('이 기기에 보관 중', { exact: true })).toBeVisible();
-  const calendarModes = page.getByRole('group', { name: '달력 보기 방식' });
-  await expect(calendarModes.getByRole('button', { name: '주', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await calendarModes.getByRole('button', { name: '월', exact: true }).press('ArrowLeft');
-  await expect(calendarModes.getByRole('button', { name: '주', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0);
+  await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
+  const more = page.getByLabel('달력 더보기', { exact: true });
+  await more.press('Enter');
+  await page.getByRole('button', { name: '월 달력 보기', exact: true }).press('Enter');
+  await more.press('Enter');
+  await page.getByRole('button', { name: '주간으로', exact: true }).press('Enter');
+  await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
 
   await page.getByRole('button', { name: '계획 추가', exact: true }).click();
   await expect(page.locator('[data-screen="plannerAdd"]')).toBeVisible();

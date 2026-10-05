@@ -38,7 +38,7 @@ test('일정 입력은 기존 추가 버튼의 포커스를 가로채지 않는�
   await expect(page.getByRole('region', { name: '내 일정 추가', exact: true })).toBeVisible();
   await expect(add).toBeFocused();
   await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
-  await expect(page.getByRole('button', { name: '주', exact: true })).toBeFocused();
+  await expect(page.getByLabel('달력 더보기', { exact: true })).toBeFocused();
 });
 
 test('코칭 제출 실패 후 입력과 포커스를 유지하고 재시도한다', async ({ page }) => {

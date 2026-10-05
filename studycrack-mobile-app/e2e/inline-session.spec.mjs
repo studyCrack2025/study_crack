@@ -1,21 +1,21 @@
 import { test, expect } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
-test('공부 입력과 진행 타이머는 홈 카드 안에서 펼쳐지고 접어도 유지된다', async ({ page }, info) => {
+test('공부 입력은 팝업으로 열고 진행 타이머만 홈 카드 안에서 펼쳐지고 접어도 유지된다', async ({ page }, info) => {
   await page.setViewportSize({ width: 320, height: 700 });
   await installAuthenticatedSession(page); const api = await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.home-active-study').click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator('.home-study-highlight .home-study-form')).toHaveCount(1);
+  await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toBeVisible();
+  await expect(page.locator('.home-study-highlight .home-study-form')).toHaveCount(0);
+  await expect(page.locator('.app-screen-overlays .home-study-form')).toHaveCount(1);
   await expect(page.locator('.timer-v2-plan .home-study-form')).toHaveCount(0);
   await page.locator('.home-study-form [data-study-subject="국어"]').last().click();
   await page.locator('[data-field="studyStartActivity"]').fill('인라인 공부');
-  await page.locator('.home-active-study').click();
-  await page.locator('.home-active-study').click();
+  await expect(page.locator('.app-content')).toHaveAttribute('inert', '');
   await expect(page.locator('[data-field="studyStartActivity"]')).toHaveValue('인라인 공부');
   await page.locator('.study-start-confirm').scrollIntoViewIfNeeded();
-  await page.screenshot({ path: info.outputPath('inline-study-form-320.png') });
+  await page.screenshot({ path: info.outputPath('study-start-dialog-320.png'), animations: 'disabled' });
   await page.locator('.study-start-confirm').click();
   await expect(page.locator('.home-study-body .timer-v2-clock')).toBeVisible();
   await expect(page.locator('.home-study-highlight .home-study-complete')).toBeEnabled();

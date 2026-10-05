@@ -203,7 +203,7 @@ test('기록 조회가 늦어도 시작한 공부 위에 안내가 열리지 않
   await page.locator('[data-action="openStudySubjectSheet"]').first().click();
   release();
   await expect(page.locator('.home-study-form')).toBeVisible();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toBeVisible();
   await expect(guideDialog(page)).toHaveCount(0);
 });
 

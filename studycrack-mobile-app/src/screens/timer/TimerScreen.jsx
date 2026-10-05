@@ -4,6 +4,7 @@ import { defaultFormatHms } from './presentation.js';
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { Sheet } from '../../components/Sheet.jsx';
 import { StudyWeekSummary } from './StudyGamificationPanels.jsx';
+import { StudySubjectSheet } from './TimerOverlays.jsx';
 
 const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session'];
 
@@ -76,7 +77,7 @@ export function TimerScreen(ctx) {
   const studyStartBlockReason = recoveryBlocked ? '복구 기록을 먼저 확인해주세요.' : activeStudySession
       ? '진행 중인 공부를 완료한 뒤 새 공부를 시작할 수 있어요.'
       : '공부 기록 처리가 끝난 뒤 새 공부를 시작할 수 있어요.';
-  const overlays = gameRulesOpen ? <GameRulesGuide gameRules={gameRules} gameProfileStatus={ctx.gameProfileStatus} open /> : ctx.studyPanelMode === 'records' ? <Sheet dismissAction="closeStudyPanel" ariaLabel={ctx.studyPanelMode === 'records' ? '공부 기록' : '공부 타이머'} panelClass="study-record-sheet">
+  const overlays = studySubjectSheetOpen ? <StudySubjectSheet {...ctx} /> : gameRulesOpen ? <GameRulesGuide gameRules={gameRules} gameProfileStatus={ctx.gameProfileStatus} open /> : ctx.studyPanelMode === 'records' ? <Sheet dismissAction="closeStudyPanel" ariaLabel={ctx.studyPanelMode === 'records' ? '공부 기록' : '공부 타이머'} panelClass="study-record-sheet">
     {ctx.studyPanelMode === 'records' ? <section className="timer-v2-week"><header className="timer-session-head"><h2>공부 기록</h2><button type="button" data-action="closeStudyPanel">닫기</button></header><div className="timer-section-head"><h2>이번 주 흐름</h2><button type="button" data-action="openGameRules" aria-label="수조 성장 규칙 보기">규칙 보기</button></div><StudyWeekSummary overview={ctx.studyOverview} summary={studySummary} status={studySummaryStatus} /><button type="button" className="btn btn-secondary" data-action="openStudyPanel">타이머 열기</button></section> : null}
   </Sheet> : null;
 

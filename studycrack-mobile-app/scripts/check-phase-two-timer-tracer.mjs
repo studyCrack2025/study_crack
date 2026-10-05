@@ -408,6 +408,38 @@ await boundedPlanned.handlers.startPlannedStudy(plannedAction(plannedItem.id));
 assert.equal(boundedPlanned.calls.start[0].subject, '가'.repeat(30));
 assert.equal(boundedPlanned.calls.start[0].activity, '나'.repeat(80));
 
+let releaseUncertainStart;
+const waitingStart = createPlannedStudyFixture({
+  studySubjectSheetOpen: true,
+  startStudySession: candidate => new Promise(resolve => { releaseUncertainStart = () => resolve({ ok: false }); })
+});
+const waiting = waitingStart.handlers.startPlannedStudy(plannedAction(plannedItem.id));
+assert.equal(waitingStart.ctx.studySubjectSheetOpen, true, 'Start input must remain open until the response is confirmed.');
+const waitingId = waitingStart.ctx.activeStudySession.sessionId;
+assert.equal(waitingStart.handlers.closeStudySubjectSheet({}), false, 'In-flight start must not be dismissed.');
+assert.equal(waitingStart.handlers.selectStudySubject(plannedAction(plannedItem.id, { 'data-study-subject': '영어' })), false);
+assert.equal(await waitingStart.handlers.retryStudyStart(), false, 'In-flight start must not fan out.');
+releaseUncertainStart(); await waiting;
+assert.equal(waitingStart.ctx.timerPhase, 'recoverable-error');
+assert.equal(waitingStart.ctx.studySubjectSheetOpen, true);
+assert.equal(waitingStart.handlers.closeStudySubjectSheet({}), true);
+assert.equal(waitingStart.ctx.activeStudySession.sessionId, waitingId, 'Closing uncertain input must retain the same candidate.');
+assert.equal(waitingStart.handlers.openStudySubjectSheet(), true);
+assert.equal(waitingStart.ctx.activeStudySession.sessionId, waitingId);
+waitingStart.ctx.startStudySession = async candidate => ({ ok: true, data: { sessionId: candidate.sessionId, status: 'completed', startedAt: '2026-09-07T03:00:00Z', endedAt: '2026-09-07T03:25:00Z', durationSeconds: 1500 } });
+assert.equal(await waitingStart.handlers.retryStudyStart(), true);
+assert.equal(waitingStart.ctx.activeStudySession, null, 'A restored completion must not start a fake running timer.');
+assert.equal(waitingStart.ctx.lastCompletedSession.sessionId, waitingId);
+assert.equal(waitingStart.ctx.studySubjectSheetOpen, false);
+assert.equal(waitingStart.calls.live.length, 0);
+assert.equal(waitingStart.ctx.studyRecovery.pending[0].sessionId, waitingId);
+
+const thrownStart = createPlannedStudyFixture({ startStudySession: async () => { throw new Error('offline'); } });
+assert.equal(await thrownStart.handlers.startPlannedStudy(plannedAction(plannedItem.id)), true);
+assert.equal(thrownStart.ctx.timerPhase, 'recoverable-error');
+assert.equal(thrownStart.ctx.activeStudySession.status, 'starting');
+assert.equal(thrownStart.ctx.studySubjectSheetOpen, true);
+
 const retryPlanned = createPlannedStudyFixture();
 retryPlanned.ctx.startStudySession = async candidate => {
   retryPlanned.calls.start.push({ ...candidate });

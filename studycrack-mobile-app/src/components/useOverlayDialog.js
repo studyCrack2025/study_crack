@@ -12,14 +12,14 @@ import {
 
 const useDialogLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
-export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
+export function useOverlayDialog({ dismissAction = '', onDismiss, open = true } = {}) {
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
 
   useDialogLayoutEffect(() => {
     if (!open) return undefined;
     const previousFocus = captureOverlayFocus();
-    const unregister = registerOverlay(panelRef.current, { root: overlayRef.current, dismiss: dismissAction ? () => overlayRef.current?.click() : undefined });
+    const unregister = registerOverlay(panelRef.current, { root: overlayRef.current, dismiss: onDismiss || (dismissAction ? () => overlayRef.current?.click() : undefined) });
     // Keyboard input must land inside the dialog before the next paint.
     focusOverlay(panelRef.current);
 
@@ -27,7 +27,7 @@ export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
       unregister();
       restoreOverlayFocus(previousFocus);
     };
-  }, [dismissAction, open]);
+  }, [dismissAction, onDismiss, open]);
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -39,9 +39,10 @@ export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
 
   const onKeyDown = (event) => {
     if (!isTopOverlay(panelRef.current) || event.isComposing || event.nativeEvent?.isComposing) return;
-    if (event.key === 'Escape' && dismissAction) {
+    if (event.key === 'Escape' && (dismissAction || onDismiss)) {
       event.preventDefault();
-      overlayRef.current?.click();
+      if (onDismiss) onDismiss();
+      else overlayRef.current?.click();
       return;
     }
     if (event.key !== 'Tab') return;

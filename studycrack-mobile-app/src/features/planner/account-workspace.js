@@ -7,7 +7,7 @@ export function createPlannerAccountWorkspace(controller, notify, connect = crea
   let connection = null, operation = null;
   let generation = 0;
   let view = { mode: 'device', scope: generation, busy: false, verified: false, supportsV2: false, snapshot: null, result: null };
-  const publish = values => { view = { ...view, ...values }; notify(); };
+  const publish = values => { view = { ...view, ...values, ...('result' in values ? { resultAt: Date.now() } : {}) }; notify(); };
   function invalidated() {
     connection?.dispose(); connection = null; operation = null;
     publish({ scope: ++generation, busy: false, verified: false, supportsV2: false, snapshot: null, result: { ok: false, error: 'session' } });

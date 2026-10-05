@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { PlannerStorageContext } from './PlannerStorageContext.js';
+import { PlannerStorageDestination } from './PlannerStorageDestination.jsx';
 
 export function plannerAccountMessage(result) {
   if (!result) return '';
@@ -23,27 +24,25 @@ export function PlannerAccountPanel() {
   const snapshot = view.snapshot, pending = snapshot?.queue?.length || 0;
   const candidates = view.verified ? controller.getItems().filter(item => !item.done && !(Number(item.doneMinutes) > 0) && !snapshot?.imports?.some(row => row.sourceId === item.id)) : [];
   const items = view.verified ? (snapshot?.items || []).filter(item => !item.deleted) : [];
-  return <details className="card planner-account-panel">
-    <summary>계획 저장 관리</summary>
-    <div className="planner-account-body" aria-busy={view.busy}>
-      <p>{snapshot?.version === 2 ? '계획과 시간은 계정에 저장돼요. 메모는 이 기기에만 보관해요.' : '기기 원본은 유지돼요. 선택한 미완료 계획만 계정에 가져올 수 있어요.'}</p>
-      <div className="planner-account-actions">
-        <button type="button" className="btn" disabled={view.busy} onClick={() => run('check')}>계정 기록 확인</button>
-        {view.verified && view.supportsV2 && snapshot?.version === 1 ? <button type="button" className="btn" disabled={view.busy || pending > 0} onClick={() => run('upgrade')}>계획 시간도 계정에 저장</button> : null}
-        {pending > 0 ? <button type="button" className="btn" disabled={view.busy} onClick={() => run('retry')}>대기 기록 1건 전송</button> : null}
-        {view.verified ? <button type="button" className="btn" disabled={view.busy} onClick={() => workspace.setMode(view.mode === 'account' ? 'device' : 'account')}>{view.mode === 'account' ? '기기 계획으로 전환' : '계정 계획으로 전환'}</button> : null}
-      </div>
+  return <div className="planner-account-panel planner-account-body" aria-busy={view.busy}>
+    <section className="planner-account-group" aria-label="보관 위치">
+      <h4>보관 위치</h4><PlannerStorageDestination />
+      <p>{snapshot?.version === 2 ? '계정 모드에서는 계획과 시간은 계정에 저장돼요. 메모는 이 기기에만 보관해요.' : '계정 모드에서는 계획은 계정에, 시간과 메모는 이 기기에 저장돼요.'}</p>
+      {view.verified ? <button type="button" className="btn" disabled={view.busy} onClick={() => workspace.setMode(view.mode === 'account' ? 'device' : 'account')}>{view.mode === 'account' ? '기기 계획으로 전환' : '계정 계획으로 전환'}</button> : null}
+      {view.verified && view.supportsV2 && snapshot?.version === 1 ? <button type="button" className="btn" disabled={view.busy || pending > 0} onClick={() => run('upgrade')}>계획 시간도 계정에 저장</button> : null}
+    </section>
+    <section className="planner-account-group" aria-label="연결·복구">
+      <h4>연결·복구</h4>
+      <div className="planner-account-actions"><button type="button" className="btn" disabled={view.busy} onClick={() => run('check')}>계정 기록 확인</button>{pending > 0 ? <button type="button" className="btn" disabled={view.busy} onClick={() => run('retry')}>대기 기록 1건 전송</button> : null}</div>
       <p role="status">{view.busy ? '계정 기록을 확인하고 있어요…' : plannerAccountMessage(view.result)}{pending > 0 ? ` 전송 대기 ${pending}건` : ''}</p>
-      {view.result?.status === 409 && pending === 1 ? <div><p>서버에 더 최신인 원본이 있을 때만 그 기록을 사용해요. 대기 변경 내용은 보관되며 자동으로 덮어쓰지 않아요.</p><button type="button" className="btn" disabled={view.busy} onClick={() => run('resolve', snapshot.queue[0].data.requestId)}>서버 기록 사용 · 대기 변경 보관</button></div> : null}
+      {view.result?.status === 409 && pending === 1 ? <div><p>대기 변경을 보관하고 서버의 최신 기록을 사용해요. 자동으로 덮어쓰지 않아요.</p><button type="button" className="btn" disabled={view.busy} onClick={() => run('resolve', snapshot.queue[0].data.requestId)}>서버 기록 사용 · 대기 변경 보관</button></div> : null}
       {snapshot?.resolved?.length ? <details><summary>보관한 대기 변경 {snapshot.resolved.length}건</summary>{snapshot.resolved.map(row => <p key={row.data.requestId}>{row.data.title || (row.type === 'complete_server_planner' ? '완료 요청' : '삭제 요청')} · {row.data.date || '기존 계획'} · 서버에는 다시 보내지 않아요.</p>)}</details> : null}
-      {view.verified ? <>
-        <p>마지막 서버 확인 기준 · 성장 인정 {snapshot?.growth?.validDayCount ?? 0}일</p>
-        <p>{snapshot?.growth?.countingSince}부터 집계 · 이전 성장 이력은 확인되지 않았어요.</p>
-        {items.length ? <ul className="planner-account-list">{items.map(item => <li key={item.id}><small>{item.date} · {item.subject} · {item.completed ? '완료' : '미완료'}</small><b>{item.title}</b></li>)}</ul> : <p>계정에 저장된 계획이 없어요.</p>}
-        <h4>기기 계획 선택해서 가져오기</h4>
-        <p>완료·공부 기록은 가져오지 않아요. 가져오기만으로 성장 일수가 늘어나지는 않아요.</p>
-        {candidates.length ? <ul className="planner-account-list">{candidates.map(item => <li key={item.id}><small>{item.date} · {item.subject}</small><b>{item.content}</b><button type="button" className="btn" disabled={view.busy || pending > 0} onClick={() => run('copy', item.id)} aria-label={`${item.content} 계정으로 가져오기`}>계정으로 가져오기</button></li>)}</ul> : <p>가져올 미완료 기기 계획이 없어요.</p>}
-      </> : null}
-    </div>
-  </details>;
+      {view.verified ? <details><summary>계정 계획 {items.length}건</summary>{items.length ? <ul className="planner-account-list">{items.map(item => <li key={item.id}><small>{item.date} · {item.subject} · {item.completed ? '완료' : '미완료'}</small><b>{item.title}</b></li>)}</ul> : <p>계정에 저장된 계획이 없어요.</p>}</details> : null}
+    </section>
+    {view.verified ? <section className="planner-account-group" aria-label="기존 계획 가져오기">
+      <h4>기존 계획 가져오기</h4><p>이 기기의 미완료 계획만 계정에 가져와요. 원본은 유지하며 완료·공부 기록은 제외해요.</p>
+      <p>가져올 위치: 계정{snapshot?.version === 2 ? ' · 계획과 시간' : ' · 계획 (시간은 이 기기)'} · 메모는 이 기기</p>
+      {candidates.length ? <ul className="planner-account-list">{candidates.map(item => <li key={item.id}><small>{item.date} · {item.subject}</small><b>{item.content}</b><button type="button" className="btn" disabled={view.busy || pending > 0} onClick={() => run('copy', item.id)} aria-label={`${item.content} 계정으로 가져오기`}>계정으로 가져오기</button></li>)}</ul> : <p>가져올 미완료 기기 계획이 없어요.</p>}
+    </section> : null}
+  </div>;
 }

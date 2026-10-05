@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCalendarCategoryMeta, PERSONAL_CALENDAR_CATEGORIES, eventMarksDateInGrid } from '../../constants/admission-calendar.js';
-import { nextPlannerCalendarMode } from './presentation.js';
 import { calendarSwipeDirection } from './calendar-gesture.js';
+import { plannerCalendarPeriod, shiftedPlannerDate } from './calendar-navigation.js';
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const dateLabel = date => date ? `${Number(date.slice(5, 7))}월 ${Number(date.slice(8, 10))}일` : '선택한 날';
@@ -62,37 +62,38 @@ function AdmissionCalendarView(ctx) {
   const events = ctx.calendarSelectedEvents || [];
   const gesture = useRef(null);
   const formOrigin = useRef(null);
+  const options = useRef(null);
+  useEffect(() => {
+    const closeOutside = event => { if (options.current?.open && !options.current.contains(event.target)) options.current.open = false; };
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, []);
   const suppressClickUntil = useRef(0);
   const cells = activeMode === 'month' ? ctx.calendarMonthCells || [] : (ctx.plannerWeekDates || []).map(row => {
     const events = (ctx.calendarEvents || []).filter(event => eventMarksDateInGrid(event, row.date));
     return { ymd: row.date, day: row.day, isToday: row.date === ctx.todayDate, isSelected: row.date === selected, eventCount: events.length, eventDots: events.slice(0, 3) };
   });
-  const onKeyDown = event => {
-    const currentMode = event.target.getAttribute('data-planner-calendar-mode') || activeMode;
-    const nextMode = nextPlannerCalendarMode(currentMode, event.key);
-    if (nextMode === currentMode) return;
-    event.preventDefault();
-    const target = event.currentTarget.querySelector(`[data-planner-calendar-mode="${nextMode}"]`);
-    target?.focus(); target?.click();
-  };
+  const closeOptions = () => { if (options.current) { options.current.open = false; options.current.querySelector('summary')?.focus({ preventScroll: true }); } };
   const onPointerDown = event => {
-    if (!event.isPrimary || activeMode !== 'week' || event.target.closest('button,input,select,textarea,a,summary') || (event.pointerType === 'mouse' && event.button !== 0)) { gesture.current = null; return; }
+    if (!event.isPrimary || activeMode !== 'week' || (event.pointerType === 'mouse' && event.button !== 0)) { gesture.current = null; return; }
+    suppressClickUntil.current = 0;
     gesture.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const onPointerMove = event => {
+    if (calendarSwipeDirection(gesture.current, { x: event.clientX, y: event.clientY, pointerId: event.pointerId })) event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const onPointerUp = event => {
     const direction = calendarSwipeDirection(gesture.current, { x: event.clientX, y: event.clientY, pointerId: event.pointerId });
     gesture.current = null;
     if (!direction || activeMode !== 'week') return;
     suppressClickUntil.current = performance.now() + 400;
-    event.currentTarget.closest('.planner-calendar-card')?.querySelector(`[data-action="${direction > 0 ? 'plannerCalendarNextWeek' : 'plannerCalendarPrevWeek'}"]`)?.click();
+    const move = () => ctx.setSelectedDate?.(shiftedPlannerDate(selected, direction, 'week', ctx.todayDate));
+    (ctx.preserveY || (task => task()))(move);
   };
   return <section className="planner-calendar-section" aria-label="일정 달력" onClickCapture={event => { const origin = event.target.closest('[data-action="openCalendarEventForm"]'); if (origin) formOrigin.current = origin; }}>
     <div className="card planner-calendar-card">
-      <div className="calendar-heading"><h4>나의 일정</h4><button type="button" className="btn planner-admission-trigger" data-action="openCalendarEventForm" disabled={ctx.calendarSaving} aria-controls="calendar-event-form" aria-expanded={Boolean(ctx.calendarEventFormOpen)}>+ 내 일정 추가</button></div>
-      <div className="planner-inline-calendar-toolbar"><div className="planner-inline-segment" data-mode={activeMode} role="group" aria-label="달력 보기 방식" onKeyDown={onKeyDown}><i aria-hidden="true" />{['week', 'month'].map(mode => <button key={mode} type="button" data-action="setPlannerCalendarMode" data-planner-calendar-mode={mode} aria-pressed={activeMode === mode}>{mode === 'week' ? '주' : '월'}</button>)}</div><div className="planner-inline-calendar-nav"><button type="button" className="calendar-nav-btn" data-action="plannerCalendarPrevWeek" aria-label={activeMode === 'month' ? '이전 달' : '이전 주'}>‹</button><button type="button" className="calendar-nav-btn" data-action="plannerCalendarToday">오늘</button><button type="button" className="calendar-nav-btn" data-action="plannerCalendarNextWeek" aria-label={activeMode === 'month' ? '다음 달' : '다음 주'}>›</button></div></div>
-      <b className="calendar-period" aria-live="polite">{activeMode === 'month' ? ctx.calendarMonthLabel : `${dateLabel(ctx.plannerWeekDates?.[0]?.date)} — ${dateLabel(ctx.plannerWeekDates?.[6]?.date)}`}</b>
-      <div className="calendar-swipe-area" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { gesture.current = null; }} onClickCapture={event => { if (performance.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); } }}>
+      <div className="calendar-heading"><b className="calendar-period" aria-live="polite">{activeMode === 'month' ? ctx.calendarMonthLabel : plannerCalendarPeriod(ctx.plannerWeekDates)}</b><button type="button" className="btn planner-admission-trigger" data-action="openCalendarEventForm" disabled={ctx.calendarSaving} aria-label="+ 내 일정 추가" aria-controls="calendar-event-form" aria-expanded={Boolean(ctx.calendarEventFormOpen)}>＋ 일정</button><details ref={options} className="calendar-options" onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); closeOptions(); } }}><summary aria-label="달력 더보기">···</summary><div className="calendar-options-body" role="group" aria-label="달력 추가 옵션" onClick={event => { if (event.target.closest('button')) closeOptions(); }}><button type="button" data-action="setPlannerCalendarMode" data-planner-calendar-mode={activeMode === 'week' ? 'month' : 'week'}>{activeMode === 'week' ? '월 달력 보기' : '주간으로'}</button><button type="button" data-action="plannerCalendarToday">오늘로</button><button type="button" data-action="plannerCalendarPrevWeek">{activeMode === 'month' ? '이전 달' : '이전 주'}</button><button type="button" data-action="plannerCalendarNextWeek">{activeMode === 'month' ? '다음 달' : '다음 주'}</button>{ctx.onOpenStorage ? <button type="button" onClick={ctx.onOpenStorage}>계획 보관 설정</button> : null}</div></details></div>
+      <div className="calendar-swipe-area" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={() => { gesture.current = null; }} onLostPointerCapture={() => { gesture.current = null; }} onClickCapture={event => { if (performance.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); } }}>
         <div className="calendar-weekdays">{WEEKDAYS.map(day => <span key={day}>{day}</span>)}</div><div className="calendar-grid">{cells.map(cell => <CalendarCell key={cell.key || cell.ymd} cell={cell} />)}</div>
       </div>
       {ctx.calendarSyncStatus === 'loading' ? <p className="calendar-sync-note" role="status">내 일정을 동기화하고 있어요.</p> : null}
