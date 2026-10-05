@@ -60,20 +60,20 @@
         let value = '';
         let entry = '';
         try {
-            value = sessionStorage.getItem('socialReturnUrl') || localStorage.getItem('socialReturnUrl') || '';
-            entry = sessionStorage.getItem('socialEntry') || localStorage.getItem('socialEntry') || '';
+            value = loginReturnUrl || readSocialLoginAttempt()?.returnUrl || sessionStorage.getItem('socialReturnUrl') || localStorage.getItem('socialReturnUrl') || '';
+            entry = value && isSafeSocialReturnPath(value) ? 'mobile' : '';
         } catch (_) {
             value = '';
             entry = '';
         }
         if (entry !== 'mobile') return '';
-        if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '';
-        if (value.startsWith('/social-callback')) return '';
+        if (!value || !isSafeSocialReturnPath(value)) return '';
         return value;
     }
 
     function clearSocialReturnState() {
         try {
+            discardSocialLoginAttempt();
             sessionStorage.removeItem('socialReturnUrl');
             sessionStorage.removeItem('socialEntry');
             localStorage.removeItem('socialReturnUrl');
@@ -256,51 +256,38 @@
     // 1. 오류 파라미터 확인
     if (errorParam) {
         showError('소셜 로그인이 취소되었습니다.');
-        sessionStorage.removeItem('socialState');
         clearSocialReturnState();
         return;
     }
 
     if (!code || !returnedState) {
         showError('인증 처리 중 오류가 발생했습니다. (파라미터 누락)');
+        clearSocialReturnState();
         return;
     }
 
-    // 2. CSRF state 검증
-    const savedState = sessionStorage.getItem('socialState');
-    const isLinkMode = sessionStorage.getItem('socialLinkMode') === 'true';
-    sessionStorage.removeItem('socialState');
-    sessionStorage.removeItem('socialLinkMode');
+    // 지원하지 않는 연결 요청은 현재 계정을 바꾸지 않는다.
+    if (sessionStorage.getItem('socialLinkMode') === 'true' || returnedState.split('|')[2] === 'link_account') {
+        showError('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요. 현재 계정은 유지됩니다.');
+        clearSocialReturnState();
+        return;
+    }
 
-    if (!savedState || savedState !== returnedState) {
+    // CSRF 검증은 유효한 일회성 요청과 정확히 일치해야 통과한다.
+    const attempt = consumeSocialLoginAttempt(returnedState);
+    if (!attempt) {
         showError('보안 검증에 실패했습니다. 다시 시도해 주세요.');
         clearSocialReturnState();
         return;
     }
 
-    // state 형식: {nonce}|{provider}[|{purpose}]
-    // purpose를 state에 인코딩해 OAuth 리다이렉트 후에도 의도 보존
-    const stateParts = savedState.split('|');
-    if (stateParts.length < 2) {
-        showError('인증 처리 중 오류가 발생했습니다. (state 오류)');
-        return;
-    }
-    const provider = stateParts[1];
-    const statePurpose = stateParts[2] || '';
+    const provider = attempt.provider;
+    const statePurpose = attempt.purpose;
     const startedFromMobile = statePurpose === 'mobile';
-
-    if (!['google', 'naver'].includes(provider)) {
-        showError('지원하지 않는 로그인 방식입니다.');
-        return;
-    }
-    if (isLinkMode || statePurpose === 'link_account') {
-        showError('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요. 현재 계정은 유지됩니다.');
-        clearSocialReturnState();
-        return;
-    }
+    const isLinkMode = false;
     const callbackUrl = CONFIG.social.callbackUrl;
-    loginReturnUrl = getSafeSocialReturnUrl() || '';
-    loginScope = statePurpose === 'delete_reauth' ? captureClientSession() : beginClientLogin();
+    loginReturnUrl = attempt.returnUrl;
+    loginScope = captureClientSession();
 
     // 3. 서버에 인증 code 전달.
     try {
@@ -335,7 +322,7 @@
         // 3-a. 탈퇴 재인증 응답 처리 (full login 없이 deleteConfirmToken만 발급)
         if (result.deleteReauthVerified && result.deleteConfirmToken) {
             sessionStorage.setItem('deleteConfirmToken', result.deleteConfirmToken);
-            window.location.href = getSafeSocialReturnUrl() || '/mypage?reauth=success&purpose=delete_account';
+            window.location.href = loginReturnUrl || '/mypage?reauth=success&purpose=delete_account';
             return;
         }
 

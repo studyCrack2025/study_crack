@@ -25,7 +25,7 @@ function clearPreviousSession() {
 }
 
 function clearMobileSocialArtifacts(win = getMobileBrowserServices().browser) {
-  const keys = ['socialReturnUrl', 'socialEntry', 'socialState', 'socialLinkMode'];
+  const keys = ['socialReturnUrl', 'socialEntry', 'socialState', 'socialLinkMode', 'sc_social_attempt_v1'];
   try {
     const storage = win?.localStorage || globalThis.localStorage;
     keys.forEach((key) => storage?.removeItem?.(key));

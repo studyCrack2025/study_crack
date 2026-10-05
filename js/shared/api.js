@@ -9,7 +9,87 @@ let _sharedRefreshController = null;
 const _sessionRequests = new Set();
 const SESSION_EPOCH_KEY = 'sc_session_epoch';
 const SESSION_ENDED_KEY = 'sc_session_ended';
+const SOCIAL_ATTEMPT_KEY = 'sc_social_attempt_v1';
+const SOCIAL_ATTEMPT_TTL_MS = 10 * 60 * 1000;
 let _observedSessionEpoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
+
+function isSafeSocialReturnPath(value) {
+    return ['', '/studycrack-mobile', '/studycrack-mobile/', '/studycrack-mobile.html',
+        '/studycrack-mobile?screen=accountInfo', '/studycrack-mobile/?screen=accountInfo', '/studycrack-mobile.html?screen=accountInfo'].includes(value);
+}
+
+function readSocialLoginAttempt() {
+    try {
+        const attempt = JSON.parse(sessionStorage.getItem(SOCIAL_ATTEMPT_KEY) || 'null');
+        if (!attempt || Object.keys(attempt).some(key => !['version', 'state', 'provider', 'purpose', 'epoch', 'owner', 'callback', 'createdAt', 'returnUrl'].includes(key))
+            || attempt.version !== 1 || !['google', 'naver'].includes(attempt.provider)
+            || !['', 'mobile', 'delete_reauth', 'link_account'].includes(attempt.purpose)
+            || typeof attempt.state !== 'string' || !/^[a-f0-9]{32}\|(google|naver)(\|(mobile|delete_reauth|link_account))?$/.test(attempt.state)
+            || attempt.state !== `${attempt.state.split('|')[0]}|${attempt.provider}${attempt.purpose ? `|${attempt.purpose}` : ''}`
+            || attempt.epoch !== (localStorage.getItem(SESSION_EPOCH_KEY) || '')
+            || attempt.owner !== (localStorage.getItem('userId') || '')
+            || attempt.callback !== CONFIG.social?.callbackUrl
+            || !Number.isSafeInteger(attempt.createdAt) || attempt.createdAt > Date.now()
+            || Date.now() - attempt.createdAt >= SOCIAL_ATTEMPT_TTL_MS
+            || !isSafeSocialReturnPath(attempt.returnUrl)) return null;
+        return attempt;
+    } catch (_) { return null; }
+}
+
+function discardSocialLoginAttempt() {
+    try {
+        [SOCIAL_ATTEMPT_KEY, 'socialState', 'socialLinkMode'].forEach(key => sessionStorage.removeItem(key));
+        return true;
+    } catch (_) { return false; }
+}
+
+function consumeSocialLoginAttempt(returnedState) {
+    const attempt = readSocialLoginAttempt();
+    const consumed = discardSocialLoginAttempt();
+    return consumed && attempt && attempt.state === returnedState ? attempt : null;
+}
+
+function createSocialLoginUrl({ provider, purpose = '', returnUrl = '' } = {}) {
+    const social = CONFIG.social;
+    if (!['google', 'naver'].includes(provider) || !['', 'mobile', 'delete_reauth', 'link_account'].includes(purpose)
+        || !social?.[provider]?.clientId || !social.callbackUrl
+        || !isSafeSocialReturnPath(returnUrl)) throw new Error('SOCIAL_START_UNAVAILABLE');
+    const random = window.crypto;
+    if (typeof random?.getRandomValues !== 'function') throw new Error('SOCIAL_START_UNAVAILABLE');
+    const nonce = Array.from(random.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
+    // 새 로그인 시도가 이전 계정의 인증 결과를 되살리지 않도록 한다.
+    if (purpose === '' || purpose === 'mobile') beginClientLogin();
+    else if (!hasClientSession()) throw new Error('SOCIAL_START_UNAVAILABLE');
+    const attempt = { version: 1, state: `${nonce}|${provider}${purpose ? `|${purpose}` : ''}`, provider, purpose,
+        epoch: localStorage.getItem(SESSION_EPOCH_KEY) || '', owner: localStorage.getItem('userId') || '',
+        callback: social.callbackUrl, createdAt: Date.now(), returnUrl };
+    if (!discardSocialLoginAttempt()) throw new Error('SOCIAL_START_UNAVAILABLE');
+    sessionStorage.setItem(SOCIAL_ATTEMPT_KEY, JSON.stringify(attempt));
+    sessionStorage.setItem(SESSION_EPOCH_KEY, attempt.epoch);
+    if (returnUrl) {
+        sessionStorage.setItem('socialReturnUrl', returnUrl);
+        sessionStorage.setItem('socialEntry', 'mobile');
+    } else {
+        sessionStorage.removeItem('socialReturnUrl');
+        sessionStorage.removeItem('socialEntry');
+    }
+    const query = new URLSearchParams({ client_id: social[provider].clientId, redirect_uri: attempt.callback, response_type: 'code', state: attempt.state });
+    if (provider === 'google') {
+        query.set('scope', 'openid email profile');
+        query.set('access_type', 'offline');
+        query.set('prompt', 'select_account');
+    } else query.set('auth_type', 'reauthenticate');
+    return `${provider === 'google' ? 'https://accounts.google.com/o/oauth2/v2/auth' : 'https://nid.naver.com/oauth2.0/authorize'}?${query}`;
+}
+
+function navigateSocialLogin(url) {
+    const target = new URL(url);
+    if (!['https://accounts.google.com/o/oauth2/v2/auth', 'https://nid.naver.com/oauth2.0/authorize'].includes(target.origin + target.pathname)) throw new Error('SOCIAL_START_UNAVAILABLE');
+    const standalone = window.navigator?.standalone === true || window.matchMedia?.('(display-mode: standalone)')?.matches === true;
+    if (standalone) {
+        if (typeof window.open !== 'function' || !window.open(url, '_self')) throw new Error('SOCIAL_START_UNAVAILABLE');
+    } else window.location.href = url;
+}
 
 function isClientSessionEnded() {
     return localStorage.getItem(SESSION_ENDED_KEY) === '1';
@@ -57,7 +137,12 @@ function completeClientLogin(data, scope) {
 }
 
 // 다른 탭에서 복제된 오래된 인증 정보를 재사용하지 않는다.
-if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sessionStorage.getItem(SESSION_EPOCH_KEY) !== _observedSessionEpoch)) sessionStorage.clear();
+if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sessionStorage.getItem(SESSION_EPOCH_KEY) !== _observedSessionEpoch)) {
+    // 유효한 새 로그인 요청만 남기고 이전 인증 정보는 모두 제거한다.
+    const attempt = sessionStorage.getItem(SESSION_EPOCH_KEY) === _observedSessionEpoch ? readSocialLoginAttempt() : null;
+    sessionStorage.clear();
+    if (attempt) sessionStorage.setItem(SOCIAL_ATTEMPT_KEY, JSON.stringify(attempt));
+}
 sessionStorage.setItem(SESSION_EPOCH_KEY, _observedSessionEpoch);
 if (!isClientSessionEnded() && localStorage.getItem('userId') && !localStorage.getItem('sc_legacy_data_owner')) localStorage.setItem('sc_legacy_data_owner', localStorage.getItem('userId'));
 

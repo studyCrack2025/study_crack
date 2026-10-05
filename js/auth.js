@@ -1150,32 +1150,13 @@ window.handleSocialLogin = function(provider) {
         return;
     }
 
-    // CSRF state: randomHex|provider
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    const state = `${stateNonce}|${provider}`;
-    sessionStorage.setItem('socialState', state);
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state,
-            auth_type: 'reauthenticate'
-        });
-    } else {
+    try {
+        navigateSocialLogin(createSocialLoginUrl({ provider }));
+    } catch (_) {
+        discardSocialLoginAttempt();
         buttons.forEach(btn => { btn.disabled = false; });
-        alert("지원하지 않는 로그인 방식입니다.");
-        return;
+        alert('소셜 로그인을 시작하지 못했습니다. 다시 시도해주세요.');
     }
-
-    window.location.href = authUrl;
 };
 
 window.openAuthModal = function(modalId) {
