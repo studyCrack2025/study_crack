@@ -61,8 +61,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.getByRole('dialog', { name: '공부 기록', exact: true })).toHaveCount(0);
     await page.locator('.home-active-study').click();
     await expect(page.locator('.home-study-form')).toBeVisible();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await page.locator('[data-action="closeStudySubjectSheet"]').click();
+    await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toBeVisible();
+    await page.getByRole('dialog', { name: '공부 시작', exact: true }).getByRole('button', { name: '닫기', exact: true }).click();
     await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
     await expect(page.locator('#home-timer-detail')).toHaveCount(0);
     expect(api.requests.filter(({ payload }) => payload.type === 'get_game_profile')).toHaveLength(1);
@@ -140,19 +140,18 @@ test('타이머를 접어도 공부가 유지되고 새로고침·보상 오류�
   await expect(page.locator('.home-active-study')).toBeEnabled();
 });
 
-test('공부 시작 실패는 홈 인라인 영역에서 동일 세션으로 재시도한다', async ({ page }) => {
+test('공부 시작 실패는 팝업에서 동일 세션으로 재시도하고 닫아도 복구를 유지한다', async ({ page }) => {
   const api = await setup(page, { failOnceTypes: ['start_study_session'] });
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.locator('.timer-v2-plan-list > button').first().click();
   await page.locator('.study-start-confirm').click();
-  const dialog = page.locator('.home-study-body');
+  const dialog = page.getByRole('dialog', { name: '공부 시작', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(page.getByRole('dialog', { name: '공부 시작', exact: true })).toHaveCount(0);
   await expect(dialog.locator('[data-action="retryStudyStart"]')).toBeVisible();
-  await page.getByRole('button', { name: '공부 영역 접기' }).click();
+  await dialog.getByRole('button', { name: '나중에 확인', exact: true }).click();
   await expect(page.locator('main.timer-screen-v2 > :last-child')).toHaveClass(/home-week-flow/);
-  await page.locator('.home-active-study').click();
-  await dialog.locator('[data-action="retryStudyStart"]').click();
+  await page.locator('.home-study-body [data-action="retryStudyStart"]').click();
+  await expect(dialog).toBeHidden();
   await expect(page.locator('.home-study-highlight .home-study-complete')).toBeEnabled();
   const requests = api.requests.filter(({ payload }) => payload.type === 'start_study_session');
   expect(requests).toHaveLength(2);

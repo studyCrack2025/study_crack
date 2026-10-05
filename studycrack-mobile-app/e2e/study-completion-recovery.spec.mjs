@@ -172,6 +172,7 @@ test('한국시간 자정 복귀는 집계를 갱신하고 사용자가 고른 �
   await expect(page.locator('.sc-study-headline b')).toHaveText('00:30:00');
   await page.locator('.tabbar [data-tab="planner"]').click();
   await expect(page.locator('[data-screen="planner"]')).toBeVisible();
+  await page.getByLabel('달력 더보기', { exact: true }).click();
   await page.locator('[data-planner-calendar-mode="month"]').click();
   const selected = '2026-10-10';
   const tomorrow = page.locator(`[data-action="selectPlannerDate"][data-planner-date="${selected}"]`);

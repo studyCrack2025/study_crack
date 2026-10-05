@@ -129,20 +129,30 @@ async function beginStudy(ctx, subject, activity, plannerItemId = '', storedCand
     const candidate = storedCandidate || { sessionId: createSessionId(), subject, activity, plannerItemId, status: 'starting' };
     ctx.setTimerPhase('starting-session');
     ctx.setStudyPanelMode('timer');
-    ctx.setStudySubjectSheetOpen(false);
     ctx.setCompletionError('');
     ctx.setRewardResult(null);
     ctx.setLastCompletedSession(null);
     ctx.setActiveStudySession(candidate);
-    const response = await ctx.startStudySession(candidate);
+    let response;
+    try { response = await ctx.startStudySession(candidate); }
+    catch { response = { ok: false }; }
     if (!scoped(ctx)) return true;
     if (!response?.ok) {
       ctx.setTimerPhase(RECOVERABLE_ERROR);
       ctx.setCompletionError(response?.error || '공부 시작을 기록하지 못했습니다. 다시 시도해주세요.');
+      ctx.setStudySubjectSheetOpen(true);
       return true;
     }
     if (response.data?.status === 'completed') {
-      if (!applyCompletedSession(ctx, response.data, candidate)) ctx.setTimerPhase(RECOVERABLE_ERROR);
+      if (!applyCompletedSession(ctx, response.data, candidate)) {
+        ctx.setTimerPhase(RECOVERABLE_ERROR);
+        ctx.setCompletionError('완료 기록을 기기에 보관하지 못했어요. 같은 공부로 다시 확인해주세요.');
+        ctx.setStudySubjectSheetOpen(true);
+      } else {
+        ctx.setStudySubjectSheetOpen(false);
+        ctx.setStudySubjectSheetOnlyPlanned(false);
+        ctx.setStudyStartDraft({ subject: '', activity: '', plannerItemId: '' });
+      }
       return true;
     }
     const session = { ...candidate, ...response.data, subject, activity, plannerItemId, status: 'running' };
@@ -180,6 +190,13 @@ export function createTimerHandlers(ctx) {
       return true;
     },
     openStudySubjectSheet() {
+      const study = currentStudy(ctx);
+      if (/-session$/.test(study.timerPhase)) return false;
+      if (study.activeStudySession) {
+        if (study.activeStudySession.status !== 'starting') return false;
+        ctx.setStudySubjectSheetOpen(true);
+        return true;
+      }
       preserveScrollAfterStateChange(() => {
         ctx.setNotifModalOpen(false);
         ctx.setCompletionError('');
@@ -190,7 +207,8 @@ export function createTimerHandlers(ctx) {
       return true;
     },
     closeStudySubjectSheet({ actionEl, isOverlaySelfClick }) {
-      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('planner-sheet-overlay')) return false;
+      if (/-session$/.test(currentStudy(ctx).timerPhase)) return false;
+      if (!isOverlaySelfClick && actionEl?.classList?.contains?.('sc-overlay')) return false;
       preserveScrollAfterStateChange(() => {
         ctx.setStudySubjectSheetOnlyPlanned(false);
         ctx.setStudySubjectSheetOpen(false);
@@ -199,6 +217,8 @@ export function createTimerHandlers(ctx) {
       return true;
     },
     selectStudySubject({ actionEl }) {
+      const study = currentStudy(ctx);
+      if (study.activeStudySession || /-session$/.test(study.timerPhase)) return false;
       const subject = getData(actionEl, 'study-subject');
       if (!subject) return false;
       ctx.setStudyStartDraft({ subject, activity: getData(actionEl, 'study-activity'), plannerItemId: getData(actionEl, 'study-item-id') });
@@ -220,14 +240,15 @@ export function createTimerHandlers(ctx) {
     },
     confirmStudyStart() {
       const draft = ctx.studyStartDraft || {};
-      const subject = String(draft.subject === '기타' ? inputValue(ctx, '[data-field="studyStartCustomSubject"]') : draft.subject || '').trim().slice(0, 30);
+      const subject = String(draft.subject === '기타' && !draft.plannerItemId ? inputValue(ctx, '[data-field="studyStartCustomSubject"]') : draft.subject || '').trim().slice(0, 30);
       const activity = inputValue(ctx, '[data-field="studyStartActivity"]').trim().slice(0, 80);
       if (!subject || !activity) return false;
       return beginStudy(ctx, subject, activity, String(draft.plannerItemId || ''));
     },
     retryStudyStart() {
       const session = ctx.activeStudySession;
-      if (!session || session.status !== 'starting') return false;
+      if (!session || session.status !== 'starting' || /-session$/.test(currentStudy(ctx).timerPhase)) return false;
+      ctx.setStudySubjectSheetOpen(true);
       return beginStudy(ctx, session.subject, session.activity || '학습 기록', session.plannerItemId || '', session);
     },
     async stopStudyTimer() {
