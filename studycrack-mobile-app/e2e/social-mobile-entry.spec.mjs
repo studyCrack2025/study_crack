@@ -3,6 +3,9 @@ import { installApiMock } from './support/mock-api.mjs';
 
 for (const provider of ['google', 'naver']) test(`built mobile ${provider} button resumes an ended session through the real callback page`, async ({ page, baseURL }) => {
   await installApiMock(page);
+  // OAuth navigation must not depend on a live font provider's response time.
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ contentType: 'text/css', body: '' }));
+  await page.route('https://fonts.gstatic.com/**', route => route.abort());
   const authRequests = [];
   const token = `fixture.${Buffer.from(JSON.stringify({ sub: 'e2e-student', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url')}.signature`;
   await page.addInitScript(() => {
