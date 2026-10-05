@@ -2,6 +2,7 @@ import { getTodayDateKey } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
+import { shiftedPlannerDate } from '../screens/planner/calendar-navigation.js';
 
 function noop() {}
 
@@ -90,29 +91,6 @@ function dotForSubject(subject = '') {
   return 'sci';
 }
 
-function toPlannerDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function parsePlannerDate(value = getTodayDateKey(), fallback = getTodayDateKey()) {
-  const raw = String(value || fallback || getTodayDateKey()).trim();
-  const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
-    ? raw
-    : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || 1))).padStart(2, '0')}`;
-  const [year, month, day] = source.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function shiftPlannerDate(date, delta, mode) {
-  if (mode !== 'month') return new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta * 7);
-  const target = new Date(date.getFullYear(), date.getMonth() + delta, 1);
-  const maxDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-  return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
-}
-
 export function createPlannerHandlers(ctx) {
   const {
     goto,
@@ -138,9 +116,7 @@ export function createPlannerHandlers(ctx) {
   } = ctx;
 
   function shiftPlannerCalendar(delta) {
-    const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
-    const next = shiftPlannerDate(current, delta, plannerCalendarMode);
-    preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+    preserveY(() => setSelectedDate(shiftedPlannerDate(selectedPlannerDateKey || selectedPlannerDate, delta, plannerCalendarMode, todayDate)));
   }
 
   const handlers = {

@@ -9,17 +9,20 @@ import { APP_STATE_FIELD_KINDS } from '../src/runtime/app-state.js';
 import { createCalendarHandlers } from '../src/handlers/calendar-handlers.js';
 import { createFormHandlers } from '../src/handlers/form-handlers.js';
 import { createPlannerHandlers } from '../src/handlers/planner-handlers.js';
-import { nextPlannerCalendarMode } from '../src/screens/planner/presentation.js';
+import { plannerCalendarPeriod, shiftedPlannerDate } from '../src/screens/planner/calendar-navigation.js';
 
 assert.equal(
   APP_STATE_FIELD_KINDS.plannerItems,
   'localDraft',
   'device-only planner items must remain local drafts, not server resources'
 );
-assert.equal(nextPlannerCalendarMode('week', 'ArrowRight'), 'month');
-assert.equal(nextPlannerCalendarMode('month', 'ArrowLeft'), 'week');
-assert.equal(nextPlannerCalendarMode('week', 'End'), 'month');
-assert.equal(nextPlannerCalendarMode('month', 'Home'), 'week');
+assert.equal(shiftedPlannerDate('2028-01-31', 1, 'month'), '2028-02-29');
+assert.equal(shiftedPlannerDate('2027-01-31', 1, 'month'), '2027-02-28');
+assert.equal(shiftedPlannerDate('2026-12-31', 1), '2027-01-07');
+assert.equal(shiftedPlannerDate('2027-01-07', -1), '2026-12-31');
+assert.equal(plannerCalendarPeriod([{ date: '2026-12-27' }, {}, {}, {}, {}, {}, { date: '2027-01-02' }]), '2026.12.27 — 2027.01.02');
+assert.equal(plannerCalendarPeriod([{ date: '2026-10-01' }, {}, {}, {}, {}, {}, { date: '2026-10-07' }]), '2026.10.01 — 10.07');
+assert.equal(plannerCalendarPeriod([]), '');
 assert.equal(
   APP_STATE_FIELD_KINDS.activeStudySession,
   'localDraft',
@@ -41,17 +44,17 @@ assert.match(
   /plannerSlice\.selectors\.localDraft\(rootState\)/,
   'planner persistence must read the local-draft partition'
 );
-assert.match(
-  calendarScreenSource,
-  /const currentMode = event\.target\.getAttribute\('data-planner-calendar-mode'\) \|\| activeMode;\s+const nextMode = nextPlannerCalendarMode\(currentMode, event\.key\);\s+if \(nextMode === currentMode\) return;/,
-  'planner tab keyboard navigation must move from the focused tab, not the previously selected tab'
-);
+assert.match(calendarScreenSource, /ctx\.setSelectedDate\?\.\(shiftedPlannerDate\(selected, direction/, 'swipes must share date navigation without clicking a removed DOM control');
+assert.doesNotMatch(calendarScreenSource, /planner-inline-segment|closest\('\.planner-calendar-card'\)/, 'the retired mode strip and DOM button swipe dependency must not return');
+assert.match(calendarScreenSource, /aria-label="달력 더보기"/, 'calendar options must have an accessible entry');
+assert.match(calendarScreenSource, /event\.key === 'Escape'/, 'calendar options must close with Escape');
 assert.match(plannerCss, /\.planner-add-icon\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner add must have a 44px target');
 assert.match(plannerCss, /\.planner-item-done\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner completion must have a 44px target');
 assert.match(plannerCss, /\.planner-item-remove\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner deletion must have a 44px target');
 assert.match(plannerCss, /\.planner-item-done i\{[^}]*width:28px;[^}]*height:28px;/, 'completion artwork stays 28px within its hitbox');
 assert.match(plannerAddCss, /\.planner-choice-chip span\{[^}]*min-height:var\(--sc-touch-target\)/, 'planner choice chips must have 44px targets');
-assert.match(plannerCalendarCss, /\.planner-inline-segment button\{[^}]*height:var\(--sc-touch-target\)/, 'planner tabs must have 44px targets');
+assert.match(plannerCalendarCss, /\.calendar-options summary\{[^}]*width:var\(--sc-touch-target\);height:var\(--sc-touch-target\)/, 'calendar options entry must have a 44px target');
+assert.match(plannerCalendarCss, /\.calendar-options-body button\{[^}]*min-height:var\(--sc-touch-target\)/, 'calendar option actions must have 44px targets');
 assert.match(plannerCalendarCss, /\.calendar-nav-btn\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner calendar navigation must have 44px targets');
 assert.match(plannerCalendarCss, /\.calendar-heading \.planner-admission-trigger\{[^}]*min-height:var\(--sc-touch-target\)/, 'planner calendar add must have a 44px target');
 assert.match(sheetsCss, /\.planner-sheet-close\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/, 'planner edit close must have a 44px target');
@@ -113,8 +116,9 @@ try {
   assert.match(plannerMarkup, /data-action="removePlannerItem"/, 'planner rows must keep delete');
     assert.match(plannerMarkup, /data-action="openCalendarEventForm"/);
   assert.doesNotMatch(plannerMarkup, /role="dialog"/);
-  assert.match(plannerMarkup, /role="group" aria-label="달력 보기 방식"/, 'week/month mode must expose a labelled button group');
-  assert.match(plannerMarkup, /<button(?=[^>]*data-planner-calendar-mode="week")(?=[^>]*aria-pressed="true")[^>]*>주</, 'active calendar mode must expose pressed state');
+  assert.match(plannerMarkup, /role="group" aria-label="달력 추가 옵션"/, 'calendar options must expose a labelled action group');
+  assert.match(plannerMarkup, /<button[^>]*data-planner-calendar-mode="month"[^>]*>월 달력 보기</, 'weekly defaults must offer month mode in the options');
+  assert.match(plannerMarkup, /<summary aria-label="달력 더보기">/, 'calendar options must retain native keyboard disclosure');
   assert.doesNotMatch(plannerMarkup, /role="(?:tablist|tab)"/, 'week/month buttons must not expose an incomplete tabs pattern');
   assert.match(plannerMarkup, /data-planner-date="2026-09-04"[^>]*aria-pressed="true"/, 'selected planner date must expose selection');
 

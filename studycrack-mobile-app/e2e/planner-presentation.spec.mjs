@@ -81,7 +81,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
   });
 }
 
-test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록만 표시한다', async ({ page }) => {
+test('날짜 이동과 더보기 키보드 전환은 선택한 날짜의 기록만 표시한다', async ({ page }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
   await page.locator('.calendar-grid [data-planner-date="2026-09-08"]').click();
@@ -91,10 +91,12 @@ test('날짜 이동과 주·월 키보드 전환은 선택한 날짜의 기록�
   await expect(page.locator('article.planner-item')).toContainText('다른 날짜의 계획');
   await page.getByRole('button', { name: '계획 완료', exact: true }).click();
   await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '100');
-  const mode = page.getByRole('group', { name: '달력 보기 방식' });
-  await mode.getByRole('button', { name: '주', exact: true }).press('ArrowRight');
-  await expect(mode.getByRole('button', { name: '월', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: '오늘', exact: true }).click();
+  const more = page.getByLabel('달력 더보기', { exact: true });
+  await more.press('Enter');
+  await page.getByRole('button', { name: '월 달력 보기', exact: true }).press('Enter');
+  expect(await page.locator('.calendar-grid .calendar-cell').count()).toBeGreaterThanOrEqual(28);
+  await more.click();
+  await page.getByRole('button', { name: '오늘로', exact: true }).click();
   await expect(page.locator('article.planner-item')).toHaveCount(2);
   await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
   await page.locator('.tabbar [data-tab="timer"]').click();
