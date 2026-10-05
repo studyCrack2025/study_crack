@@ -36,6 +36,28 @@ async function setup(page, { saved, tier = 'basic', supported = true } = {}) {
   return { api, guide };
 }
 
+for (const policy of ['plan', 'study', 'unknown']) test(`제품 안내는 확인된 수조 규칙을 표시한다 (${policy})`, async ({ page }) => {
+  const { api } = await setup(page);
+  const ticketPolicy = policy === 'plan' ? { version: 'planner-ticket-v1', minimumPlanMinutes: 30, boostPlanMinutes: [120, 240], drawCost: 1, completionMode: 'server_check', grantPerPlan: 1 } : { version: 'study-ticket-v1', intervalSeconds: 7200, drawCost: 1 };
+  const rules = { ticketPolicy, dailyCaps: {}, rewardTiers: [], habitatStages: [], fishCare: { enabled: false }, drawCostShells: 0 };
+  await page.route('**/api/**', route => route.request().postDataJSON()?.type === 'get_game_profile' ? route.fulfill({ json: { profile: api.state.gameProfile, activeFish: api.state.activeFish, fishCount: api.state.fishInventory.length, rules: policy === 'unknown' ? null : rules } }) : route.fallback());
+  await page.goto('/studycrack-mobile.html');
+  await next(page); await next(page);
+  const dialog = guideDialog(page);
+  await expect(dialog.locator('.product-guide-progress')).toHaveAttribute('aria-label', '3 / 5단계');
+  if (policy === 'plan') {
+    await expect(dialog).toContainText('30분 이상 계정 계획을 첫 완료');
+    await expect(dialog).toContainText('2시간·4시간 계획');
+    await expect(dialog).not.toContainText('확정 공부 5시간');
+  } else if (policy === 'study') await expect(dialog).toContainText('확정 공부 2시간마다');
+  else {
+    await expect(dialog).toContainText('보상 규칙 확인이 필요');
+    await expect(dialog).not.toContainText('30분 이상');
+    await expect(dialog).not.toContainText('5시간마다');
+  }
+  expect(api.requests.some(({ payload }) => /draw_fish|claim_study_reward/.test(payload.type))).toBe(false);
+});
+
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
   test(`root 첫 안내 5단계·실제 데이터·키보드·완료 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });

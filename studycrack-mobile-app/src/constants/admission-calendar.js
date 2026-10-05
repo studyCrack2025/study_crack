@@ -23,13 +23,13 @@ export function getCalendarCategoryMeta(category) {
 // 카테고리: exam=평가원 모평·수능, school=교육청 학력평가, application=대입 수시/정시 일정.
 export const OFFICIAL_ADMISSION_EVENTS_BY_YEAR = {
   2026: [
-    { id: 'official-2026-mock-03', title: '3월 학력평가 (서울교육청)', date: '2026-03-24', category: 'school' },
-    { id: 'official-2026-mock-05', title: '5월 학력평가 (경기교육청)', date: '2026-05-07', category: 'school' },
-    { id: 'official-2026-mopyeong-06', title: '6월 모의평가 (평가원)', date: '2026-06-04', category: 'exam' },
-    { id: 'official-2026-mock-07', title: '7월 학력평가 (인천교육청)', date: '2026-07-08', category: 'school' },
-    { id: 'official-2026-mopyeong-09', title: '9월 모의평가 (평가원)', date: '2026-09-02', category: 'exam' },
-    { id: 'official-2026-mock-10', title: '10월 학력평가 (서울교육청)', date: '2026-10-20', category: 'school' },
-    { id: 'official-2026-suneung', title: '2027학년도 대학수학능력시험', date: '2026-11-19', category: 'exam' },
+    { id: 'official-2026-mock-03', title: '3월 학력평가 (서울교육청)', shortTitle: '3월 학력평가', date: '2026-03-24', category: 'school' },
+    { id: 'official-2026-mock-05', title: '5월 학력평가 (경기교육청)', shortTitle: '5월 학력평가', date: '2026-05-07', category: 'school' },
+    { id: 'official-2026-mopyeong-06', title: '6월 모의평가 (평가원)', shortTitle: '6월 모의평가', date: '2026-06-04', category: 'exam' },
+    { id: 'official-2026-mock-07', title: '7월 학력평가 (인천교육청)', shortTitle: '7월 학력평가', date: '2026-07-08', category: 'school' },
+    { id: 'official-2026-mopyeong-09', title: '9월 모의평가 (평가원)', shortTitle: '9월 모의평가', date: '2026-09-02', category: 'exam' },
+    { id: 'official-2026-mock-10', title: '10월 학력평가 (서울교육청)', shortTitle: '10월 학력평가', date: '2026-10-20', category: 'school' },
+    { id: 'official-2026-suneung', title: '2027학년도 대학수학능력시험', shortTitle: '대학수학능력시험', date: '2026-11-19', category: 'exam' },
     { id: 'official-2026-susi-apply', title: '수시 원서 접수', date: '2026-09-07', endDate: '2026-09-11', category: 'application' },
     { id: 'official-2026-susi-eval', title: '수시 전형 기간', date: '2026-09-12', endDate: '2026-12-17', category: 'application' },
     { id: 'official-2026-susi-result', title: '수시 합격자 발표', date: '2026-12-18', category: 'application' },

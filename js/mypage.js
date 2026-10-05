@@ -742,70 +742,16 @@ async function unlinkSocial(provider) {
 }
 
 function linkSocial(provider) {
-    const social = CONFIG && CONFIG.social;
-    const clientId = social && social[provider] && social[provider].clientId;
-    const callbackUrl = social && social.callbackUrl;
-
-    if (!clientId || !callbackUrl) {
-        alert('소셜 연동 설정이 완료되지 않았습니다. 관리자에게 문의해주세요.');
-        return;
-    }
-
-    // auth.js와 동일한 state 형식: {nonce}|{provider}
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    const state = `${stateNonce}|${provider}`;
-    sessionStorage.setItem('socialState', state);
-    sessionStorage.setItem('socialLinkMode', 'true'); // 연동 모드 플래그
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
-        });
-    }
-
-    if (authUrl) window.location.href = authUrl;
+    alert('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요.');
 }
 
 function startDeleteReauth(provider) {
-    const social = CONFIG && CONFIG.social;
-    const clientId = social && social[provider] && social[provider].clientId;
-    const callbackUrl = social && social.callbackUrl;
-
-    if (!clientId || !callbackUrl) {
-        alert('소셜 인증 설정을 불러올 수 없습니다. 관리자에게 문의해주세요.');
-        return;
+    try {
+        navigateSocialLogin(createSocialLoginUrl({ provider, purpose: 'delete_reauth' }));
+    } catch (_) {
+        discardSocialLoginAttempt();
+        alert('소셜 인증을 시작하지 못했습니다. 다시 시도해주세요.');
     }
-
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    // purpose를 state에 인코딩 → OAuth 리다이렉트 후에도 sessionStorage 소실 없이 서버가 목적 확인 가능
-    const state = `${stateNonce}|${provider}|delete_reauth`;
-    sessionStorage.setItem('socialState', state);
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
-        });
-    }
-
-    if (authUrl) window.location.href = authUrl;
 }
 
 async function handleSignOut() {

@@ -31,7 +31,9 @@ assert.match(secondaryScreens, /ResourceFeedback status=\{qnaStatus\}/);
 assert.match(secondaryScreens, /ResourceFeedback status=\{notiStatus\}/);
 assert.match(await readFile(new URL('../src/components/ResourceFeedback.jsx', import.meta.url), 'utf8'), /\['idle', 'loading', 'error'\]/);
 assert.doesNotMatch(secondaryScreens, /최근 3개년|높은 정확도|결과가 크게 갈립니다/);
-assert.match(socialCallback, /getSafeSocialReturnUrl\(\) \|\| '\/mypage\?reauth=success&purpose=delete_account'/);
+assert.match(socialCallback, /loginReturnUrl \|\| '\/mypage\?reauth=success&purpose=delete_account'/);
+assert.match(socialCallback, /loginReturnUrl = attempt\.returnUrl/);
+assert.match(socialCallback, /consumeSocialLoginAttempt\(returnedState\)/);
 assert.match(packageSource, /check-phase-three-service-tracer\.mjs && node scripts\/check-phase-three-operation-tracer\.mjs && node scripts\/check-phase-three-screen-coverage\.mjs/);
 
 function createStorage(entries = []) {

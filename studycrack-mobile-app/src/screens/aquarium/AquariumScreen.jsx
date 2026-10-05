@@ -2,6 +2,7 @@ import { useContext, useLayoutEffect, useRef, useState } from 'react';
 import { AquariumGrowthContext } from '../../features/gamification/AquariumGrowthContext.js';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { catalogMeta } from './aquarium-panel-shared.jsx';
+import { buildRulesGuidePresentation } from '../../features/gamification/rules-guide-presentation.js';
 import { FishCarePanel } from './FishCarePanel.jsx';
 import { FishInventoryPanel } from './FishInventoryPanel.jsx';
 import { FishDexPanel } from './FishDexPanel.jsx';
@@ -26,12 +27,12 @@ function AquariumHabitatHeader() {
 function AquariumGrowthSummary({ fishCount }) {
   const view = useContext(AquariumGrowthContext);
   const growth = view?.growth;
-  return <section className="sc-study-banner" aria-label="수조 성장 요약"><div className="sc-study-headline"><small>{view?.status === 'ready' ? '함께 키운 수조' : '성장 기록 · 최신 확인 필요'}</small><b>{growth ? `DAY ${growth.validDayCount}` : '확인 중'}</b><small>{growth ? growth.nextStageDays === null ? '마지막 수조까지 성장했어요' : `다음 수조까지 ${growth.nextStageDays}일` : '성장 기록을 확인해주세요'}</small></div><div className="sc-study-headline"><small>함께하는 친구</small><b>{fishCount === null ? '확인 필요' : `${fishCount}마리`}</b><small>물고기와 함께 성장해요</small></div></section>;
+  return <section className="sc-study-banner" aria-label="수조 성장 요약"><div className="sc-study-headline"><small>{view?.status === 'ready' ? '함께 키운 수조' : '성장 기록 · 최신 확인 필요'}</small><b>{growth ? `DAY ${growth.validDayCount}` : '확인 중'}</b><small>{growth ? growth.nextStageDays === null ? '마지막 수조까지 성장했어요' : `다음 수조까지 ${growth.nextStageDays}일` : '성장 기록을 확인해주세요'}</small></div><div className="sc-study-headline"><small>함께하는 친구</small><b>{fishCount === null ? '확인 필요' : `${fishCount}마리`}</b></div></section>;
 }
 
 function AquariumWallet({ profile }) {
   const plan = profile?.ticketPolicyVersion === 'planner-ticket-v1';
-  return <div className="aquarium-wallet" role="group" aria-label="뽑기권"><span>뽑기권 <b>{plan || profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b></span><span>{plan ? '30분 이상 계정 계획 · 첫 완료마다 1장' : profile?.ticketPolicyVersion === 'study-ticket-v1' ? `다음 뽑기권까지 ${Math.ceil((profile.ticketIntervalSeconds - profile.ticketProgressSeconds) / 60)}분` : '뽑기권 정보 준비 중'}</span>{plan ? <small>2시간·4시간 계획은 상위 등급 기회가 높아요.</small> : <progress aria-label="다음 뽑기권 진행" max={profile?.ticketIntervalSeconds || 18000} value={profile?.ticketProgressSeconds || 0} />}</div>;
+  return <div className="aquarium-wallet" role="group" aria-label="뽑기권"><span>뽑기권 <b>{plan || profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b></span><span>{plan ? '30분 이상 계정 계획 · 첫 완료마다 1장' : profile?.ticketPolicyVersion === 'study-ticket-v1' ? `다음 뽑기권까지 ${Math.ceil((profile.ticketIntervalSeconds - profile.ticketProgressSeconds) / 60)}분` : '뽑기권 정보 준비 중'}</span>{profile?.ticketPolicyVersion === 'study-ticket-v1' ? <progress aria-label="다음 뽑기권 진행" max={profile?.ticketIntervalSeconds || 18000} value={profile?.ticketProgressSeconds || 0} /> : null}</div>;
 }
 
 function AquariumOfflineState() {
@@ -52,7 +53,7 @@ function StarterPanel({ actionError = '', actionStatus = 'idle', catalog = [], s
   const starters = catalog.filter((item) => item.starter).slice(0, 3);
   return (
     <section className="aquarium-starter sc-card">
-      <div className="aquarium-section-head"><div><span>첫 번째 친구</span><h2>함께 성장할 물고기를 골라주세요</h2><p>선택한 물고기는 수조 가운데에서 공부 보상을 기다려요.</p></div></div>
+      <div className="aquarium-section-head"><div><span>첫 번째 친구</span><h2>함께 성장할 물고기를 골라주세요</h2></div></div>
       <div className="aquarium-starter-grid">{starters.map((fish) => <button type="button" className={selectedSpeciesId === fish.speciesId ? 'is-selected' : ''} data-action="selectStarterCandidate" data-species-id={fish.speciesId} key={fish.speciesId}><FishArtwork assetKey={fish.assetKey} colors={fish.colors} speciesId={fish.speciesId} variant="grid" /><b>{fish.displayName}</b><small>{fish.defaultName}</small></button>)}</div>
       {actionError ? <p className="aquarium-action-error" role="alert">{actionError}</p> : null}
       <button type="button" className="btn btn-primary" data-action="claimStarterFish" disabled={!selectedSpeciesId || actionStatus === 'claiming-starter'}>{actionStatus === 'claiming-starter' ? '수조에 데려오는 중...' : '이 물고기와 시작하기'}</button>
@@ -151,7 +152,7 @@ function AquariumWorkspace(ctx) {
           <AquariumNextStudy items={todayPlannerItems} planner={ctx.studyOverview?.planner} canUsePersonalPlanner={ctx.canUsePersonalPlanner} />
           <div className="aquarium-scene-wrap" onClick={event => { if (event.target.closest('[data-action="selectAquariumFish"]:not(:disabled)')) setManagementOpen(true); }}><AquariumScene backgroundKey={snapshot.backgroundKey} slots={snapshot.slots} catalog={fishCatalog} stats={snapshot} selectedFishId={aquariumSelectedFishId} careEffect={careEffect} controlsDisabled={careBusy} /></div>
           <section className="aquarium-discovery-card sc-card" aria-label="물고기 만나기">
-          <div className="aquarium-section-head"><h2>물고기 만나기</h2><small>{gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? '30분 이상 계획 · 첫 완료 보상' : '공부 5시간마다 뽑기권 1장'}</small></div>
+          <div className="aquarium-section-head"><h2>물고기 만나기</h2></div>
           <AquariumWallet profile={gameProfile} />
           {gameProfileStatus === 'ready' && gameProfile && gameProfile.starterState !== 'claimed' ? <AquariumJourney fishCount={fishCount} profile={gameProfile} /> : null}
           {gameProfile?.starterState === 'selectable' ? <StarterPanel actionError={aquariumActionError} actionStatus={aquariumActionStatus} catalog={fishCatalog} selectedSpeciesId={aquariumStarterSpeciesId} /> : gameProfile?.starterState === 'locked' ? <LockedStarterPanel /> : <button type="button" className="btn btn-primary" data-action={pendingDraw || gameProfile?.ticketBalance > 0 || !['study-ticket-v1', 'planner-ticket-v1'].includes(gameProfile?.ticketPolicyVersion) ? 'openAquariumDraw' : 'goto'} data-target={gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? 'planner' : 'timer'} disabled={careBusy}>{pendingDraw ? '뽑기 결과 확인' : !['study-ticket-v1', 'planner-ticket-v1'].includes(gameProfile?.ticketPolicyVersion) ? '뽑기권 상태 확인' : gameProfile.ticketBalance > 0 ? '새 물고기 만나기' : gameProfile?.ticketPolicyVersion === 'planner-ticket-v1' ? '계획 완료하고 뽑기권 받기' : '공부해서 뽑기권 받기'}</button>}
@@ -161,7 +162,7 @@ function AquariumWorkspace(ctx) {
           <section className="aquarium-next-actions"><button type="button" data-action="openAquariumCatalog" disabled={careBusy}><Icon name="report" /><span><b>물고기 도감</b><small>{aquariumCollectionLabel(snapshot)}</small></span><i aria-hidden="true">›</i></button></section>
           {careUncertain ? <section className="aquarium-care-recovery" role="status"><b>처리 결과 확인이 필요해요</b><p>{aquariumActionError}</p><button type="button" className="btn btn-secondary" data-action="retryGameResources" disabled={aquariumActionStatus === 'checking-care'}>{aquariumActionStatus === 'checking-care' ? '상태 확인 중...' : '현재 상태 확인'}</button><small>이 버튼은 뽑기권을 사용하거나 배치를 변경하지 않아요.</small></section> : aquariumResult?.type === 'care-checked' ? <section className="aquarium-care-recovery" role="status"><b>현재 물고기 상태를 불러왔어요</b><p>이전 요청의 성공 여부를 확정한 것은 아니에요. 표시된 상태를 확인한 뒤 다음 동작을 선택해주세요.</p><button type="button" className="btn btn-secondary" data-action="dismissAquariumResult">확인</button></section> : null}
           {resourceWarnings.length ? <div className="aquarium-resource-notice" role="status"><span><b>일부 정보를 불러오지 못했어요</b><small>{resourceWarnings[0]}</small></span><button type="button" data-action="retryGameResources">다시 시도</button></div> : null}
-          {gameProfile?.starterState === 'claimed' ? <details className="aquarium-management" open={managementOpen} onToggle={event => setManagementOpen(event.currentTarget.open)}><summary>이름·배치 관리 <span>{managementOpen ? '접기' : '펼치기'}</span></summary><FishCarePanel actionError={careUncertain ? '' : aquariumActionError} actionStatus={aquariumActionStatus} activeSlot={activeSlot} fish={selectedFish} meta={selectedMeta} result={aquariumResult} /><FishInventoryPanel actionStatus={aquariumActionStatus} activeFish={activeFish} catalog={fishCatalog} inventory={fishInventory} result={aquariumResult} selectedFish={selectedFish} nameDraft={nameDrafts[selectedFish?.fishId]} onNameChange={(fishId, value) => setNameDrafts(drafts => ({ ...drafts, [fishId]: value }))} /></details> : null}
+          {gameProfile?.starterState === 'claimed' ? <details className="aquarium-management" open={managementOpen} onToggle={event => setManagementOpen(event.currentTarget.open)}><summary>이름·배치 관리 <span>{managementOpen ? '접기' : '펼치기'}</span></summary><FishCarePanel duplicateEffect={buildRulesGuidePresentation(ctx.gameRules, gameProfileStatus).draw?.duplicateEffect} actionError={careUncertain ? '' : aquariumActionError} actionStatus={aquariumActionStatus} activeSlot={activeSlot} fish={selectedFish} meta={selectedMeta} result={aquariumResult} /><FishInventoryPanel actionStatus={aquariumActionStatus} activeFish={activeFish} catalog={fishCatalog} inventory={fishInventory} result={aquariumResult} selectedFish={selectedFish} nameDraft={nameDrafts[selectedFish?.fishId]} onNameChange={(fishId, value) => setNameDrafts(drafts => ({ ...drafts, [fishId]: value }))} /></details> : null}
           </section>
         </>}
       </main>

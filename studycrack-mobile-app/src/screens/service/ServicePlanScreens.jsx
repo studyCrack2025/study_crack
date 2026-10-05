@@ -93,7 +93,7 @@ export function LockedFeatureScreen(ctx) {
 export function ProIntroScreen(ctx) {
   const { checkoutPlan = 'Standard' } = ctx;
   const membership = buildMembershipSummary(ctx);
-  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" description="플랜을 선택해 아래에서 가격과 포함 기능을 확인하세요." /><section className="plan-membership-summary" aria-label="현재 멤버십"><div><span>현재 멤버십</span><strong>{membership.label}</strong></div><p>{membership.detail}</p></section><PlanSelector checkoutPlan={checkoutPlan} /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
+  return <SecondaryScreenShell screen="proIntro" title="플랜 선택"><section className="sc-secondary-page plan-console-page"><SecondaryIntro eyebrow="MEMBERSHIP" title="나에게 맞는 플랜" /><section className="plan-membership-summary" aria-label="현재 멤버십"><div><span>현재 멤버십</span><strong>{membership.label}</strong></div><p>{membership.detail}</p></section><PlanSelector checkoutPlan={checkoutPlan} /><SelectedPlanDetail checkoutPlan={checkoutPlan} /></section></SecondaryScreenShell>;
 }
 
 export function PaymentScreen({ checkoutPlan = 'Standard' }) {

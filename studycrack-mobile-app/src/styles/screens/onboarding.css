@@ -43,7 +43,7 @@
 .ob-cracky{width:44px;height:44px;flex:0 0 44px;object-fit:contain;}
 .ob1-survey-card,.ob1-score-wrap{display:grid;gap:var(--sc-space-16);box-sizing:border-box;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .ob1-survey-card h3,.ob1-score-wrap h3{margin:0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.35;letter-spacing:0;}
-.ob1-subtitle,.score-subtitle{margin:-8px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
+.ob1-subtitle{margin:-8px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
 .ob-required-copy,.ob-required{color:var(--sc-coral);font-weight:800;}
 .ob1-field-stack{display:grid;gap:var(--sc-space-16);margin:0;}
 .ob1-field{display:grid;gap:var(--sc-space-8);}

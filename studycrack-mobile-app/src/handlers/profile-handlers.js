@@ -108,46 +108,9 @@ async function clearMobileAuthSession(ctx, authApiUrl) {
 
 function buildSocialAuthUrl(ctx, provider, purpose = 'mobile') {
   const win = getWindow(ctx);
-  const social = win.CONFIG?.social;
-  const clientId = social?.[provider]?.clientId;
-  const callbackUrl = social?.callbackUrl;
-  if (!clientId || !callbackUrl) return '';
-  const bytes = new Uint8Array(16);
-  const cryptoObj = win.crypto || globalThis.crypto;
-  cryptoObj?.getRandomValues?.(bytes);
-  const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  const state = `${nonce}|${provider}|${purpose}`;
-  getSessionStorage(ctx)?.setItem?.('socialState', state);
-  if (purpose === 'mobile') getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
-  else getSessionStorage(ctx)?.removeItem?.('socialLinkMode');
-  const returnUrl = getMobileReturnPath(ctx);
-  getSessionStorage(ctx)?.setItem?.('socialReturnUrl', returnUrl);
-  getSessionStorage(ctx)?.setItem?.('socialEntry', 'mobile');
   try {
-    getWindow(ctx).localStorage?.setItem?.('socialReturnUrl', returnUrl);
-    getWindow(ctx).localStorage?.setItem?.('socialEntry', 'mobile');
-  } catch (_) {}
-  if (provider === 'google') {
-    return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      response_type: 'code',
-      scope: 'openid email profile',
-      state,
-      access_type: 'offline',
-      prompt: 'select_account'
-    })}`;
-  }
-  if (provider === 'naver') {
-    return `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
-      response_type: 'code',
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      state,
-      auth_type: 'reauthenticate'
-    })}`;
-  }
-  return '';
+    return win.createSocialLoginUrl({ provider, purpose, returnUrl: getMobileReturnPath(ctx) });
+  } catch (_) { return ''; }
 }
 
 function isInvalidRequiredSelectValue(value) {
@@ -977,15 +940,9 @@ export function createProfileHandlers(ctx) {
       });
     },
 
-    linkSocial({ actionEl }) {
-      const provider = getData(actionEl, 'provider');
-      const authUrl = buildSocialAuthUrl(ctx, provider);
-      if (!authUrl) {
-        alert('소셜 연동 설정을 불러오지 못했습니다.');
-        return false;
-      }
-      getWindow(ctx).location.href = authUrl;
-      return true;
+    linkSocial() {
+      alert('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요.');
+      return false;
     },
 
     async unlinkSocial({ actionEl }) {
@@ -1027,7 +984,12 @@ export function createProfileHandlers(ctx) {
         alert('소셜 인증 설정을 불러오지 못했습니다.');
         return false;
       }
-      getWindow(ctx).location.href = authUrl;
+      try { getWindow(ctx).navigateSocialLogin(authUrl); }
+      catch (_) {
+        getWindow(ctx).discardSocialLoginAttempt?.();
+        alert('소셜 인증을 시작하지 못했습니다. 다시 시도해주세요.');
+        return false;
+      }
       return true;
     },
 

@@ -40,18 +40,18 @@ function PlannerProgress({ presentation, isToday }) {
     <section className="card planner-progress-card">
       <div className="planner-progress-head"><div><span>{isToday ? '오늘의 계획 진행률' : '선택한 날의 계획 진행률'}</span><h4 className="sc-metric">{presentation.completedCount}/{presentation.totalCount} <small>완료</small></h4></div><span className={`planner-progress-fish ${presentation.progress === 100 ? 'is-complete' : ''}`} aria-hidden="true"><FishArtwork growthStage={presentation.progress === 100 ? 'adult' : 'young'} speciesId="clownfish" variant="grid" /></span></div>
       <div className="progress planner-progress-track" role="progressbar" aria-label="플래너 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow={presentation.progress}><i style={{ width: `${presentation.progress}%` }} /></div>
-      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '선택한 날의 계획을 모두 완료했어요' : '계획을 추가하면 진행률을 확인할 수 있어요'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span></div>
+      <div className="planner-progress-caption"><b className={progressTone}>{presentation.remainingCount ? `계획 ${presentation.remainingCount}개가 남았어요` : presentation.totalCount ? '모두 완료' : '계획 없음'}</b><span>완료 계획 {presentation.completedDurationLabel} / 전체 {presentation.totalDurationLabel}</span></div>
     </section>
   );
 }
 
 function PlannerFeedback({ plannerFeedback = {}, hasItems = false, canAccessStandard = false }) {
   const warning = canAccessStandard && plannerFeedback.tone === 'warn';
-  const title = !canAccessStandard ? '개인 플래너는 무료로 이용해요' : warning ? '과목 균형을 한 번 점검해 보세요' : hasItems ? '이번 주 계획을 함께 점검해요' : '계획을 만들면 피드백을 받을 수 있어요';
-  const description = !canAccessStandard ? 'SKY 튜터의 계획 진단·주간 피드백은 이용권에 따라 제공됩니다.' : plannerFeedback.message || (warning ? '특정 과목에 시간이 몰려 있어 우선순위 조정이 필요해요.' : '주간 계획과 실행 기록을 바탕으로 다음 학습 방향을 정리합니다.');
+  const title = warning ? '과목 균형 점검' : '튜터 피드백';
+  const description = canAccessStandard ? plannerFeedback.message : '';
   return (
     <section className={`card planner-feedback-card ${warning ? 'warn' : ''}`}>
-      <div className="planner-feedback-copy"><span>{canAccessStandard ? 'SKY MENTOR' : '무료 개인 플래너 · 선택형 튜터 코칭'}</span><h4>{title}</h4><p>{description}</p></div>
+      <div className="planner-feedback-copy"><span>{canAccessStandard ? 'SKY MENTOR' : '개인 플래너는 무료로 이용해요'}</span><h4>{title}</h4>{description ? <p>{description}</p> : !canAccessStandard ? <p>선택형 유료 코칭</p> : null}</div>
       <button type="button" data-action="goto" data-target={canAccessStandard ? 'weekly' : 'proIntro'}>{canAccessStandard ? '주간 피드백 보기' : '튜터 코칭 알아보기'} <b aria-hidden="true">›</b></button>
     </section>
   );
@@ -107,7 +107,7 @@ function PlannerWorkspaceScreen(ctx) {
                 {plannerViewItems.length ? (
                   plannerViewItems.map((item) => <PlannerItemCard key={item.id} item={item} />)
                 ) : (
-                  <EmptyState className="planner-empty-day" title="아직 등록한 계획이 없어요" description="실행할 과목과 시간을 추가해 하루 목표를 만들어 보세요." />
+                  <EmptyState className="planner-empty-day" title="아직 등록한 계획이 없어요" />
                 )}
                 <button type="button" className="planner-add-cta" data-action="openPlannerAddPage">{selectedPlannerDate}일 계획 추가</button>
               </div>

@@ -176,7 +176,7 @@ export function AuthLoginScreen(ctx) {
               <p className="auth-brand-tagline">합격 전략을 시작해볼까요?</p>
             </div>
           </header>
-          <section className="auth-service-note" aria-label="서비스 안내"><b>성적 분석부터 오늘의 계획까지</b><p>내 기록을 바탕으로 학습 방향을 확인하세요.</p></section>
+
           <div className="auth-unified-card">
             <div className="auth-form-stack">
               <label className="auth-field sc-field"><span>이메일</span><input id="auth-login-email" className={AUTH_INPUT_CLASS} data-field="loginEmail" data-email-input type="email" inputMode="email" lang="en" autoCapitalize="none" spellCheck="false" autoComplete="username" placeholder="example@studycrack.co.kr" aria-describedby={authError ? 'auth-login-error' : undefined} /></label>
@@ -195,7 +195,7 @@ export function AuthLoginScreen(ctx) {
             </div>
           </div>
           <button className="auth-link-btn auth-signup-link" data-action="goto" data-target="authSignup"><span>아직 계정이 없나요?</span><b>회원가입</b><i aria-hidden="true">›</i></button>
-          <p className="auth-entry-footnote">환산 분석 · 플래너 · 학습 코칭을 한 곳에서</p>
+
           <p className="auth-entry-footnote"><a href="/terms">이용약관</a> · <a href="/privacy">개인정보 처리방침</a> · <a href="/delete-account">계정 삭제 안내</a></p>
           <button type="button" className="auth-link-btn" data-action="goto" data-target="on1">서비스 소개 다시 보기</button>
         </div>

@@ -10,7 +10,7 @@ function RecommendationRow({ analysisTargetList, name, targetPolicy, addingUnive
   const added = analysisTargetList.includes(name);
   return (
     <div className="sc-secondary-row add-univ-card">
-      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b><p>현재 성적 기준 우선 검토 대학</p></div>
+      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b></div>
       <span className="sc-badge">추천</span>
       <AddButton added={added} major={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} />
     </div>
@@ -21,13 +21,13 @@ function SearchResult({ analysisTargetList, name, universitySelectedName, target
   if (!universitySelectedName) {
     return (
       <button type="button" className="sc-secondary-row add-univ-university-row" data-action="selectUniversityForMajor" data-university-name={name}>
-        <span className="add-univ-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8 9-5 9 5H3ZM5 11v7m7-7v7m7-7v7M3 21h18M3 18h18" /></svg></span><span className="sc-secondary-row-main"><b>{name}</b><p>모집 학과 살펴보기</p></span><em aria-hidden="true">→</em>
+        <span className="add-univ-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8 9-5 9 5H3ZM5 11v7m7-7v7m7-7v7M3 21h18M3 18h18" /></svg></span><span className="sc-secondary-row-main"><b>{name}</b></span><em aria-hidden="true">→</em>
       </button>
     );
   }
   return (
     <div className="sc-secondary-row add-univ-row">
-      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b><p>선택한 대학의 모집 학과</p></div>
+      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b></div>
       <AddButton added={analysisTargetList.includes(name)} major={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} />
     </div>
   );
@@ -87,15 +87,15 @@ export function AddUniversityScreen(ctx) {
   return (
     <SecondaryScreenShell screen="addUniversity" title="대학 추가" tab={tab} overlayOpen={analysisSearchOpen} overlays={analysisSearchOpen ? <UniversitySearchSheet {...ctx} /> : null}>
           <div className="sc-secondary-page add-univ-page">
-            <SecondaryIntro eyebrow="TARGET UNIVERSITY" title="희망 대학 추가" description="현재 성적 추천을 확인하거나 대학과 학과를 순서대로 직접 선택하세요." aside={<span className="sc-chip">최대 6개</span>} />
+            <SecondaryIntro eyebrow="TARGET UNIVERSITY" title="희망 대학 추가" aside={<span className="sc-chip">최대 6개</span>} />
             <TargetAllowance policy={targetPolicy} showPlanAction={false} />
             {targetSaveError && !analysisSearchOpen ? <p className="add-univ-save-error" role="alert">{targetSaveError}</p> : null}
             <section className="sc-secondary-section add-univ-section">
-              <div className="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3><p>웹과 동일한 분석 로직으로 계산한 결과입니다.</p></div><button type="button" className="btn btn-secondary mini" data-action="refreshUniversityRecommendations" disabled={universityRecommendationStatus === 'loading'}>{universityRecommendationStatus === 'loading' ? '추천 중' : '새로고침'}</button></div>
+              <div className="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3></div><button type="button" className="btn btn-secondary mini" data-action="refreshUniversityRecommendations" disabled={universityRecommendationStatus === 'loading'}>{universityRecommendationStatus === 'loading' ? '추천 중' : '새로고침'}</button></div>
               <div className="sc-secondary-list add-univ-grid">{recommendationState}</div>
             </section>
             <section className="sc-secondary-section add-univ-section">
-              <div className="sc-secondary-section-head add-univ-head"><div><h3>원하는 대학이 있나요?</h3><p>대학 → 학과 순서로 검색하고 추가하세요.</p></div></div>
+              <div className="sc-secondary-section-head add-univ-head"><div><h3>원하는 대학이 있나요?</h3></div></div>
               <button type="button" className="btn btn-primary" data-action="openUniversitySearch" disabled={targetPolicy?.canAdd === false}>직접 추가하기 →</button>
               {!targetPolicy?.unlimited && targetPolicy?.remaining === 0 ? <button type="button" className="btn btn-secondary" data-action="goto" data-target="proIntro">플랜 선택하기 →</button> : null}
             </section>

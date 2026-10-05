@@ -109,14 +109,6 @@ function isValidSignupPassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(String(password || ''));
 }
 
-function createSocialState(win, provider) {
-  const bytes = new Uint8Array(16);
-  const cryptoObj = win.crypto || globalThis.crypto;
-  cryptoObj?.getRandomValues?.(bytes);
-  const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  return `${nonce}|${provider}|mobile`;
-}
-
 function getMobileReturnPath(win) {
   const location = win.location || {};
   const path = location.pathname || '/studycrack-mobile.html';
@@ -126,39 +118,9 @@ function getMobileReturnPath(win) {
 
 function buildSocialAuthUrl(ctx, provider) {
   const win = getWindow(ctx);
-  const social = win.CONFIG?.social;
-  const clientId = social?.[provider]?.clientId;
-  const callbackUrl = social?.callbackUrl;
-  if (!clientId || !callbackUrl || !['google', 'naver'].includes(provider)) return '';
-  const state = createSocialState(win, provider);
-  const storage = win.sessionStorage || globalThis.sessionStorage;
-  storage?.setItem?.('socialState', state);
-  const returnUrl = getMobileReturnPath(win);
-  storage?.setItem?.('socialReturnUrl', returnUrl);
-  storage?.setItem?.('socialEntry', 'mobile');
   try {
-    win.localStorage?.setItem?.('socialReturnUrl', returnUrl);
-    win.localStorage?.setItem?.('socialEntry', 'mobile');
-  } catch (_) {}
-  storage?.removeItem?.('socialLinkMode');
-  if (provider === 'google') {
-    return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      response_type: 'code',
-      scope: 'openid email profile',
-      state,
-      access_type: 'offline',
-      prompt: 'select_account'
-    })}`;
-  }
-  return `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
-    response_type: 'code',
-    client_id: clientId,
-    redirect_uri: callbackUrl,
-    state,
-    auth_type: 'reauthenticate'
-  })}`;
+    return win.createSocialLoginUrl({ provider, purpose: 'mobile', returnUrl: getMobileReturnPath(win) });
+  } catch (_) { return ''; }
 }
 
 async function defaultFindEmail({ authApiUrl, fetchImpl = globalThis.fetch, name, phone }) {
@@ -618,7 +580,12 @@ export function createAuthHandlers(ctx) {
         alert('소셜 로그인 설정을 불러오지 못했습니다.');
         return false;
       }
-      getWindow(ctx).location.href = authUrl;
+      try { getWindow(ctx).navigateSocialLogin(authUrl); }
+      catch (_) {
+        getWindow(ctx).discardSocialLoginAttempt?.();
+        alert('소셜 로그인을 시작하지 못했습니다. 다시 시도해주세요.');
+        return false;
+      }
       return true;
     }
   };

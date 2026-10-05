@@ -14,5 +14,5 @@ export function catalogMeta(catalog, speciesId) {
 }
 
 export function AquariumModeHeader({ eyebrow, title, description }) {
-  return <header className="aquarium-mode-header"><button type="button" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button><div><span>{eyebrow}</span><h1 tabIndex={-1}>{title}</h1><p>{description}</p></div></header>;
+  return <header className="aquarium-mode-header"><button type="button" data-action="closeAquariumMode" aria-label="수조로 돌아가기">‹</button><div><span>{eyebrow}</span><h1 tabIndex={-1}>{title}</h1>{description ? <p>{description}</p> : null}</div></header>;
 }

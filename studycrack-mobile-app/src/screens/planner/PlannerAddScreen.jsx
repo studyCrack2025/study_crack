@@ -50,7 +50,7 @@ function PlannerDraftScreen(ctx) {
             <section className="planner-add-hero">
               <span>선택 날짜</span>
               <h3>{dateLabel}</h3>
-              <p>하나씩 입력하면 선택한 날짜의 계획에 정리됩니다.</p>
+
             </section>
 
             <div className="planner-step-progress" aria-label="계획 추가 단계">
@@ -66,7 +66,7 @@ function PlannerDraftScreen(ctx) {
               <div className="planner-add-card-head">
                 <div>
                   <b>공부할 시간</b>
-                  <small>계획할 시간 범위를 입력해 주세요. 실제 공부 기록과는 별개예요.</small>
+                  <small>계획 시간 · 실제 기록과 별개</small>
                 </div>
                 <strong data-planner-duration-preview>{defaultMinutes}</strong>
               </div>
@@ -87,7 +87,7 @@ function PlannerDraftScreen(ctx) {
               <div className="planner-add-card-head">
                 <div>
                   <b>과목</b>
-                  <small>대분류와 세부 영역을 선택하세요.</small>
+
                 </div>
               </div>
               <div className="planner-choice-row planner-category-row">
@@ -130,7 +130,6 @@ function PlannerDraftScreen(ctx) {
               <div className="planner-add-card-head">
                 <div>
                   <b>학습 유형</b>
-                  <small>오늘 할 공부의 성격을 골라주세요.</small>
                 </div>
               </div>
               <div className="planner-choice-row">
@@ -146,7 +145,6 @@ function PlannerDraftScreen(ctx) {
               <div className="planner-add-card-head">
                 <div>
                   <b>내용</b>
-                  <small>계획 제목과 메모를 남길 수 있어요.</small>
                 </div>
               </div>
               <label className="planner-add-field-label" htmlFor="planner-add-content">계획 제목</label>

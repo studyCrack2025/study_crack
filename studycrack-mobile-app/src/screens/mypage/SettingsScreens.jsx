@@ -14,7 +14,7 @@ export function SettingsMainScreen() {
   return (
     <SecondaryScreenShell screen="settingsMain" title="설정">
       <div className="sc-secondary-page settings-page">
-        <SecondaryIntro eyebrow="SETTINGS" title="설정" description="계정과 약관, 로그인 상태를 관리합니다." />
+        <SecondaryIntro eyebrow="SETTINGS" title="설정" />
         <div className="my-menu-sections">{SETTINGS_GROUPS.map(group => <section className="my-menu-section" key={group.title}><h2>{group.title}</h2><div className="my-menu-group">{group.rows.map(row => <button type="button" className="my-menu-row" data-action={row.action || 'goto'} data-target={row.target} key={row.title}><span className="my-menu-icon" aria-hidden="true"><Icon name={row.icon} /></span><span className="my-menu-copy"><b>{row.title}</b><small>{row.description}</small></span><span className="my-menu-chevron" aria-hidden="true"><Icon name="chevron" /></span></button>)}</div></section>)}</div>
         <section className="my-menu-section"><h2>로그인 상태</h2><div className="my-menu-group"><button type="button" className="my-menu-row" data-action="openLogoutModal"><span className="my-menu-icon" aria-hidden="true"><Icon name="user" /></span><span className="my-menu-copy"><b>로그아웃</b><small>현재 기기에서 로그인 종료</small></span><span className="my-menu-chevron" aria-hidden="true"><Icon name="chevron" /></span></button></div></section>
       </div>

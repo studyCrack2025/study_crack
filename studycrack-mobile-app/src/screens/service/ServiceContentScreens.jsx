@@ -1,9 +1,9 @@
 import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
-import { CRACKY_SRC } from '../../constants/assets.js';
 import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
 import { WeeklyPlanPreview } from '../coaching/WeeklyPlanPreview.jsx';
 import { formatCoachingWeekLabel } from '../coaching/presentation.js';
+import { WeeklyFeedbackText } from './WeeklyFeedbackText.jsx';
 
 function safeExternalUrl(value) {
   const text = String(value || '').trim();
@@ -23,13 +23,6 @@ function reportStatusLabel(report = {}) {
   if (status === 'tutor_review') return '튜터 검수 중';
   if (status === 'drafting') return '작성 중';
   return '준비 중';
-}
-
-function formatWeekIdLabel(weekId = '') {
-  const value = String(weekId || '').trim();
-  const match = value.match(/^(\d{2})(\d{2})(\d{2})$/);
-  if (!match) return value || '주간 점검';
-  return `20${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}주차`;
 }
 
 function formatQnaDate(value = '') {
@@ -53,7 +46,7 @@ export function ProRequestModal({ open, proRequestSubmitting = false, proRequest
   return (
     <Modal open={open} dismissAction="closeProRequestModal" panelClass="pro-request-modal" ariaLabel="전략 보고서 요청">
       <div className="pro-request-head"><h4>전략 보고서 요청</h4><button type="button" className="pro-request-close" data-action="closeProRequestModal" aria-label="닫기">✕</button></div>
-      <div className="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><p>담당 컨설턴트가 이를 반영하여 <b>최적의 전략</b>을 수립합니다.</p><label htmlFor="pro-request-text">요청 사항 (500자 이내)</label><textarea id="pro-request-text" data-field="proRequestText" defaultValue={proRequestText} maxLength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다." /><div className="pro-request-count">{String(proRequestText).length}/500</div><div className="pro-request-actions"><button type="button" className="cancel" data-action="closeProRequestModal">취소</button><button type="button" className="submit" data-action="submitProRequest" disabled={proRequestSubmitting}>{proRequestSubmitting ? '제출 중' : '요청서 제출하기'}</button></div></div>
+      <div className="pro-request-body"><p>현재 학습 상황이나 고민, 특별히 분석받고 싶은 내용을 적어주세요.</p><label htmlFor="pro-request-text">요청 사항 (500자 이내)</label><textarea id="pro-request-text" data-field="proRequestText" defaultValue={proRequestText} maxLength="500" placeholder="예: 6월 모평 대비 수학 기하 과목 집중 전략이 필요합니다. 최근 실전 문제 풀이에서 시간이 부족해 고민입니다." /><div className="pro-request-count">{String(proRequestText).length}/500</div><div className="pro-request-actions"><button type="button" className="cancel" data-action="closeProRequestModal">취소</button><button type="button" className="submit" data-action="submitProRequest" disabled={proRequestSubmitting}>{proRequestSubmitting ? '제출 중' : '요청서 제출하기'}</button></div></div>
     </Modal>
   );
 }
@@ -70,7 +63,7 @@ export function ProEliteScreen(ctx) {
   });
   return (
     <SecondaryScreenShell screen="proElite" title="PRO EXCLUSIVE" overlays={proRequestModalOpen ? overlays : null}>
-      <div className="pro-elite-page"><div className="pro-elite-hero"><span className="pro-elite-badge">PRO REPORT</span><h3>나의 중장기<br />전략 리포트</h3><p>발행된 프리미엄 전략 리포트를 확인하세요.</p></div><div className="pro-elite-list"><ResourceFeedback status={proReportsStatus} error={proReportsError} hasData={proReports.length > 0} loadingTitle="PRO 리포트를 불러오는 중이에요" errorTitle="PRO 리포트를 불러오지 못했어요" retryAction="retryReportResources" />{reportList}</div><div className="pro-elite-request-bottom"><button type="button" className="pro-request-btn" data-action="openProRequestModal"><CheckIcon /><span>전략 리포트 요청하기</span></button></div></div>
+      <div className="pro-elite-page"><div className="pro-elite-hero"><span className="pro-elite-badge">PRO REPORT</span><h3>나의 중장기<br />전략 리포트</h3></div><div className="pro-elite-list"><ResourceFeedback status={proReportsStatus} error={proReportsError} hasData={proReports.length > 0} loadingTitle="PRO 리포트를 불러오는 중이에요" errorTitle="PRO 리포트를 불러오지 못했어요" retryAction="retryReportResources" />{reportList}</div><div className="pro-elite-request-bottom"><button type="button" className="pro-request-btn" data-action="openProRequestModal"><CheckIcon /><span>전략 리포트 요청하기</span></button></div></div>
     </SecondaryScreenShell>
   );
 }
@@ -95,9 +88,9 @@ export function ReportScreen(ctx) {
   return (
     <SecondaryScreenShell screen="report" title="학습 리포트" overlays={proRequestModalOpen ? overlays : null} tab={tab}>
       <div className="sc-secondary-page report-page">
-        <SecondaryIntro eyebrow="PRO REPORT" title="맞춤 전략 리포트" description="발행된 전략 리포트를 확인하고 새 분석을 요청할 수 있어요." aside={<span className="sc-chip">PRO</span>} />
+        <SecondaryIntro eyebrow="PRO REPORT" title="맞춤 전략 리포트" aside={<span className="sc-chip">PRO</span>} />
         <section className="sc-secondary-section report-summary"><div className="report-summary-main"><span>요청·발행 내역</span><b>{proReports.length || ['ready', 'empty'].includes(proReportsStatus) ? `${proReports.length}개` : '확인 필요'}</b><p>{proReports.length ? '항목별 준비 상태를 확인해보세요.' : ['ready', 'empty'].includes(proReportsStatus) ? '첫 리포트 발행을 기다리고 있어요.' : '발행 내역을 아직 확인하지 못했어요.'}</p></div><button type="button" className="btn btn-primary report-sample" data-action="openProRequestModal">새 리포트 요청</button></section>
-        <section className="sc-secondary-section report-list"><div className="sc-secondary-section-head"><div><h3>리포트 목록</h3><p>다운로드 가능한 PDF만 바로 열립니다.</p></div></div><div className="sc-secondary-list"><ResourceFeedback status={proReportsStatus} error={proReportsError} hasData={proReports.length > 0} loadingTitle="PRO 리포트를 불러오는 중이에요" errorTitle="리포트를 불러오지 못했어요" retryAction="retryReportResources" />{proReports.length || ['ready', 'empty'].includes(proReportsStatus) ? <ReportRows reports={proReports} /> : null}</div></section>
+        <section className="sc-secondary-section report-list"><div className="sc-secondary-section-head"><div><h3>리포트 목록</h3></div></div><div className="sc-secondary-list"><ResourceFeedback status={proReportsStatus} error={proReportsError} hasData={proReports.length > 0} loadingTitle="PRO 리포트를 불러오는 중이에요" errorTitle="리포트를 불러오지 못했어요" retryAction="retryReportResources" />{proReports.length || ['ready', 'empty'].includes(proReportsStatus) ? <ReportRows reports={proReports} /> : null}</div></section>
       </div>
     </SecondaryScreenShell>
   );
@@ -106,7 +99,7 @@ export function ReportScreen(ctx) {
 export function ReportDetailScreen() {
   return (
     <SecondaryScreenShell screen="reportDetail" title="종합 분석 리포트">
-      <div className="sc-secondary-page report-detail-page"><SecondaryIntro eyebrow="REPORT DETAIL" title="리포트 상세" description="실제로 발행된 PDF 리포트만 안전하게 제공합니다." /><section className="sc-secondary-section report-detail-card"><div className="sc-secondary-section-head"><div><h3>발행 리포트 선택</h3><p>리포트 목록에서 다운로드 가능한 항목을 선택해주세요.</p></div></div><SecondaryState title="선택된 리포트가 없어요" description="목록으로 돌아가 확인할 리포트를 선택해주세요." action={<button type="button" className="btn btn-secondary" data-action="goto" data-target="report">리포트 목록 보기</button>} /></section></div>
+      <div className="sc-secondary-page report-detail-page"><SecondaryIntro eyebrow="REPORT DETAIL" title="리포트 상세" /><section className="sc-secondary-section report-detail-card"><div className="sc-secondary-section-head"><div><h3>발행 리포트 선택</h3></div></div><SecondaryState title="선택된 리포트가 없어요" description="목록으로 돌아가 확인할 리포트를 선택해주세요." action={<button type="button" className="btn btn-secondary" data-action="goto" data-target="report">리포트 목록 보기</button>} /></section></div>
     </SecondaryScreenShell>
   );
 }
@@ -136,36 +129,38 @@ export function TutorScreen(ctx) {
   const overlays = <QnaComposerModal open={qnaComposerOpen} qnaDraftContent={qnaDraftContent} qnaDraftTitle={qnaDraftTitle} qnaSubmitting={qnaSubmitting} />;
   return (
     <SecondaryScreenShell screen="tutor" title="SKY튜터 1:1 피드백" overlays={qnaComposerOpen ? overlays : null}>
-      <div className="sc-secondary-page tutor-qna-page"><SecondaryIntro eyebrow="TUTOR Q&A" title="튜터에게 질문하기" description="질문을 펼치면 작성한 내용과 답변 전체를 확인할 수 있어요." /><div className="card qna-intro-card"><h3>학습 고민을 남겨주세요</h3><button type="button" className="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div className="qna-list compact"><TutorQnaList qnaHistory={qnaHistory} qnaStatus={qnaStatus} qnaError={qnaError} /></div></div>
+      <div className="sc-secondary-page tutor-qna-page"><SecondaryIntro eyebrow="TUTOR Q&A" title="튜터에게 질문하기" /><div className="card qna-intro-card"><h3>학습 고민을 남겨주세요</h3><button type="button" className="btn btn-primary" data-action="openQnaComposer">새 질문 작성</button></div><div className="qna-list compact"><TutorQnaList qnaHistory={qnaHistory} qnaStatus={qnaStatus} qnaError={qnaError} /></div></div>
     </SecondaryScreenShell>
   );
 }
 
-function WeeklyFeedbackCard({ report, open, crackySrc }) {
+function WeeklyFeedbackCard({ report, open }) {
   const feedback = report.tutorFeedback || {};
   const done = feedback.submitted === true;
-  const fields = [['이번 주 플래너', 'weeklyPlanner'], ['계획 이유', 'planReason'], ['우선순위 점검', 'priorityCheck'], ['질문 답변', 'questionAnswer'], ['튜터 총평', 'tutorComment'], ['다음 주 TOP3', 'nextWeekTop3'], ['플랜 평가', 'planEvaluation']];
+  const fields = [['튜터 총평', 'tutorComment'], ['이번 주 플래너', 'weeklyPlanner'], ['계획 이유', 'planReason'], ['질문 답변', 'questionAnswer'], ['우선순위 점검', 'priorityCheck'], ['다음 주 TOP3', 'nextWeekTop3'], ['취약 과목', 'weakSubject'], ['플랜 평가', 'planEvaluation'], ['추가 질문', 'extraQuestion']];
   const items = done ? fields.filter(([, key]) => typeof feedback[key] === 'string' && feedback[key].trim()) : [];
+  const attachment = done && safeExternalUrl(feedback.tutorImage).includes('#scFile=') ? feedback.tutorImage : '';
   return <details className="sc-secondary-section weekly-feedback" open={open}>
     <summary><span>{formatCoachingWeekLabel(report.weekId)}</span><b>{done ? '피드백 도착' : '검토 대기'}</b></summary>
-    <div className="weekly-summary"><div><span>점검 주차</span><b>{formatWeekIdLabel(report.weekId)}</b></div><div><span>담당 튜터</span><b>{report.tutorName || '튜터 확인 중'}</b></div></div>
-    <div className="sc-secondary-section-head"><div><h3>주간 요약 피드백</h3><p>{done ? '튜터가 제출한 피드백 · 기기 플래너와 별도 기록' : '튜터가 피드백을 최종 제출하면 표시됩니다.'}</p></div></div>
-    <div className="weekly-feedback-body"><div className="weekly-feedback-list">{items.map(([label, key]) => <div className="feedback-item" key={key}><CheckIcon /><div><b>{label}</b><p>{feedback[key]}</p></div></div>)}{done && !items.length ? <p>제출된 피드백 내용이 비어 있어요.</p> : null}</div><img loading="lazy" decoding="async" src={crackySrc} className="weekly-char crackie" alt="크랙이" /></div>
+    <div className="weekly-summary"><span>담당 튜터</span><b>{report.tutorName || '튜터 확인 중'}</b></div>
+    <div className="sc-secondary-section-head"><div><h3>튜터 피드백</h3>{!done ? <p>튜터 검토 후 표시돼요.</p> : null}</div></div>
+    <div className="weekly-feedback-body"><div className="weekly-feedback-list">{items.map(([label, key]) => <WeeklyFeedbackText label={label} text={feedback[key]} key={key} />)}{done && !items.length ? <p>제출된 피드백 내용이 비어 있어요.</p> : null}</div></div>
+    {attachment ? <button type="button" className="btn btn-secondary" data-action="downloadProReport" data-pdf-path={attachment}>피드백 첨부 보기</button> : null}
   </details>;
 }
 
-export function WeeklyScreen({ crackySrc = CRACKY_SRC, plannerItems = [], tab = 'my', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' }) {
+export function WeeklyScreen({ plannerItems = [], tab = 'my', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' }) {
   const reports = weeklyReports.filter(report => report?.weekId).sort((a, b) => String(b.weekId).localeCompare(String(a.weekId)));
   const isLoading = weeklyReportsStatus === 'idle' || weeklyReportsStatus === 'loading';
   const isError = weeklyReportsStatus === 'error';
   return <SecondaryScreenShell screen="weekly" title="주간 점검" tab={tab}>
     <div className="sc-secondary-page weekly-page mobile-card-stack">
-      <SecondaryIntro eyebrow="WEEKLY COACHING" title="기록에서 다음 계획으로" description="제출 주차별 피드백과 이번 주 기기 플래너를 구분해 확인하세요." aside={<span className="sc-chip">{isLoading ? '불러오는 중' : isError ? '확인 필요' : reports.length ? `${reports.length}개 점검` : '시작 전'}</span>} />
+      <SecondaryIntro eyebrow="WEEKLY COACHING" title="주간 피드백" aside={<span className="sc-chip">{isLoading ? '불러오는 중' : isError ? '확인 필요' : reports.length ? `${reports.length}개 점검` : '시작 전'}</span>} />
       <ResourceFeedback status={weeklyReportsStatus} error={weeklyReportsError} hasData={reports.length > 0} loadingTitle="주간 점검을 불러오는 중이에요" errorTitle="주간 점검을 불러오지 못했어요" retryAction="retryReportResources" />
-      {reports.map((report, index) => <WeeklyFeedbackCard report={report} open={index === 0} crackySrc={crackySrc} key={report.weekId} />)}
+      {reports.map((report, index) => <WeeklyFeedbackCard report={report} open={index === 0} key={report.weekId} />)}
       {!reports.length && !isLoading && !isError ? <SecondaryState title="주간 점검 기록이 없습니다." description="학습 코칭 화면에서 기록을 제출하면 피드백이 연결됩니다." /> : null}
       <WeeklyPlanPreview plannerItems={plannerItems} detailed />
-      <p className="weekly-plan-note">피드백은 플래너에 자동으로 추가되지 않아요. 내용을 참고해 직접 계획을 정리해주세요.</p>
+      <p className="weekly-plan-note">피드백은 내 계획에 자동 반영되지 않아요.</p>
       <button type="button" className="btn btn-primary weekly-next" data-action="goto" data-target={reports.length ? 'planner' : 'strategy'}>{reports.length ? '플래너 열기' : '학습 코칭으로 이동'}</button>
     </div>
   </SecondaryScreenShell>;

@@ -57,7 +57,9 @@ try {
   const render = (overview, variant) => renderToStaticMarkup(createElement(StudyOverviewCard, { overview, variant }));
   for (const variant of ['card', 'inline', 'banner']) {
     const markup = render(view, variant);
-    assert.match(markup, /과제 50% 완료/);
+    assert.match(markup, /aria-valuenow="50"/);
+    assert.match(markup, /<b>1\/2<\/b><small>계획 2시간<\/small>/);
+    assert.doesNotMatch(markup, /과제 50% 완료/);
     assert.match(markup, /01:00:00/);
     assert.match(markup, /00:02:00/);
     assert.match(markup, /진행 중 · 아직 미확정/);

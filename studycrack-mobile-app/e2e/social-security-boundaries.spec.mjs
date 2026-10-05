@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 const callbackSource = await readFile(new URL('../../js/social-callback.js', import.meta.url), 'utf8');
+const sharedSource = await readFile(new URL('../../js/shared/api.js', import.meta.url), 'utf8');
 
 for (const mode of ['legacy-google', 'legacy-naver', 'explicit-link']) test(`계정 연동은 기존 세션을 변경하지 않는다 ${mode}`, async ({ page }) => {
   await page.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><div id="statusMsg"></div>' }));
@@ -17,6 +18,7 @@ for (const mode of ['legacy-google', 'legacy-naver', 'explicit-link']) test(`계
     sessionStorage.setItem('accessToken', 'synthetic-current-token');
     document.cookie = 'synthetic_session=current;path=/';
   }, { state, mode });
+  await page.addScriptTag({ content: sharedSource });
   await page.addScriptTag({ content: callbackSource });
   await expect(page.locator('#statusMsg')).toContainText('현재 계정은 유지됩니다.');
   expect(await page.evaluate(() => window.__requests)).toEqual([]);
