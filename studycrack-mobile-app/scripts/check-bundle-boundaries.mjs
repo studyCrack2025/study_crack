@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
-import { createPublishCommands, IMMUTABLE, NO_CACHE } from '../../tools/site-release.mjs';
+import { cacheControlFor, createPublishCommands, IMMUTABLE, NO_CACHE } from '../../tools/site-release.mjs';
 
 const appRootUrl = new URL('../', import.meta.url);
 const appRoot = fileURLToPath(appRootUrl);
@@ -79,6 +79,12 @@ const aquariumAssets = assets.filter(asset => /^assets\/day-\d+-[\w-]{8}\.png$/.
 assert.equal(aquariumAssets.length, 6, 'exactly six hashed background images must be emitted');
 assert.deepEqual(aquariumAssets.map(asset => Number(asset.fileName.match(/day-(\d+)-/)[1])).sort((a, b) => a - b), [1, 7, 15, 30, 50, 100]);
 for (const asset of aquariumAssets) assert.doesNotMatch(entryChunk.code, new RegExp(asset.fileName), 'background URLs must stay outside the login entry');
+const guideExamples = assets.filter(asset => /^assets\/(?:plan(?:-confirmed)?|study-(?:progress|confirmed)|discovery|duplicate-(?:plan|study))-[\w-]{8}\.webp$/.test(asset.fileName));
+assert.equal(guideExamples.length, 7, 'exactly seven compressed renderer examples must be emitted');
+for (const asset of guideExamples) {
+  assert.doesNotMatch(entryChunk.code, new RegExp(asset.fileName), 'guide image URLs must stay outside the login entry');
+  assert.equal(cacheControlFor(`studycrack-mobile-app/dist/${asset.fileName}`), IMMUTABLE, 'hashed guide images use the existing Actions asset cache policy');
+}
 const deferredCssAsset = assets.find((asset) => /^chunks\/screen-registry-app-[\w-]+\.css$/.test(asset.fileName));
 assert.ok(cssAsset, 'stable mobile CSS asset must be emitted');
 assert.ok(deferredCssAsset, 'signed-in screen CSS must be emitted as a deferred hashed chunk');

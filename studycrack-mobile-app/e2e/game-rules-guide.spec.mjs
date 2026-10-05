@@ -46,7 +46,9 @@ for (const { width, fallbackFont } of [{ width: 320 }, { width: 390 }, { width: 
   for (let index = 1; index <= 4; index++) {
     await expect(dialog.locator('.game-rules-step')).toHaveCount(1);
     await expect(dialog.locator('.game-rules-progress span')).toHaveText(`${index}/4`);
-    await expect(dialog.getByRole('img', { name: /뽑기|완료 체크|같은 종/ })).toBeVisible();
+    await expect(dialog.locator('.game-rules-example-frame img')).toBeVisible();
+    await expect(dialog.locator('.game-rules-example-frame img')).toHaveAttribute('alt', /예시/);
+    await expect(dialog.locator('.game-rules-example figcaption')).toContainText('화면 예시 · 실제 수량·결과와 달라요');
     expect(await dialog.evaluate(el => el.offsetHeight)).toBe(height);
     const body = await dialog.locator('.game-rules-body').evaluate(el => ({ height: el.clientHeight, scroll: el.scrollHeight }));
     expect(body.scroll).toBeLessThanOrEqual(body.height + 1);
@@ -184,9 +186,11 @@ test('비활성·부분 규칙에서는 새 지급이나 중복 효과를 추정
   await expect(dialog).toContainText('30분 이상 계획을 세워요');
   for (let i = 0; i < 2; i++) await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(dialog).toContainText('만남 규칙 확인이 필요');
+  await expect(dialog.locator('.game-rules-example')).toHaveCount(0);
   await expect(dialog).not.toContainText('무작위 친구');
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
   await expect(dialog).toContainText('중복 규칙 확인이 필요');
+  await expect(dialog.locator('.game-rules-example')).toHaveCount(0);
   await expect(dialog).not.toContainText('경험치·배치는 그대로');
   await expect(dialog).not.toContainText('성장 경험치');
 });
@@ -214,4 +218,74 @@ test('단계 이동·이전·키보드와 작은 화면에서도 안내만 동�
   await expect(close).toBeInViewport();
   await close.click();
   expect(api.requests.some(({ payload }) => /^(draw_fish|claim_study_reward|set_active_fish)$/.test(payload.type))).toBe(false);
+});
+
+test('화면 예시는 열 때 현재 단계만 요청하고 지연·실패에도 크기와 조작을 유지한다', async ({ page }, info) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await setup(page, { planPolicy: true });
+  const requested = [];
+  let release;
+  const held = new Promise(resolve => { release = resolve; });
+  await page.route(/\/assets\/(?:plan(?:-confirmed)?|study-(?:progress|confirmed)|discovery|duplicate-(?:plan|study))-[\w-]{8}\.webp$/, async route => {
+    requested.push(new URL(route.request().url()).pathname);
+    if (/\/plan-confirmed-/.test(route.request().url())) return route.abort();
+    if (/\/plan-/.test(route.request().url())) await held;
+    return route.continue();
+  });
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+  expect(requested).toHaveLength(0);
+  await page.getByRole('button', { name: '수조 이용법', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '수조 성장 규칙' });
+  await expect.poll(() => requested.length).toBe(1);
+  const frame = dialog.locator('.game-rules-example-frame');
+  const height = await frame.evaluate(el => el.offsetHeight);
+  const titleY = await dialog.locator('.game-rules-copy').evaluate(el => el.offsetTop);
+  release();
+  await expect.poll(() => frame.locator('img').evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+  expect(await frame.evaluate(el => el.offsetHeight)).toBe(height);
+  expect(await dialog.locator('.game-rules-copy').evaluate(el => el.offsetTop)).toBe(titleY);
+  await dialog.screenshot({ path: info.outputPath('screenshot-example-320.png') });
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(dialog.getByRole('status', { name: /화면 예시를 불러오지 못했어요/ })).toContainText('예시 이미지 없음');
+  await expect(dialog).toContainText('서버에서 첫 완료가 확인되면');
+  expect(await frame.evaluate(el => el.offsetHeight)).toBe(height);
+  const largeFont = await page.addStyleTag({ content: '.game-rules-modal { --sc-type-body:32px; --sc-type-caption:28px; --sc-type-section:40px; --sc-type-title:48px; }' });
+  const fallbackBox = await frame.getByRole('status').boundingBox(), frameBox = await frame.boundingBox();
+  expect(fallbackBox.height).toBeLessThanOrEqual(frameBox.height);
+  await expect(dialog.getByRole('button', { name: '다음', exact: true })).toBeInViewport();
+  await expectNoHorizontalOverflow(page);
+  await largeFont.evaluate(el => el.remove());
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(frame.locator('img')).toHaveAttribute('alt', /무작위.*예시/);
+  await expect.poll(() => frame.locator('img').evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(frame.locator('img')).toHaveAttribute('alt', /유지되는.*예시/);
+  await page.addStyleTag({ content: '.game-rules-modal { --sc-type-body:32px; --sc-type-caption:28px; --sc-type-section:40px; --sc-type-title:48px; }' });
+  await expectNoHorizontalOverflow(page);
+  await expect(dialog.getByRole('button', { name: '완료', exact: true })).toBeInViewport();
+  await dialog.screenshot({ path: info.outputPath('screenshot-example-320-large.png') });
+  await dialog.getByRole('button', { name: '완료', exact: true }).click();
+  await page.getByRole('button', { name: '수조 이용법', exact: true }).click();
+  await expect(dialog.locator('.game-rules-progress span')).toHaveText('1/4');
+  await expect(frame.locator('img')).toHaveAttribute('alt', /완료 체크/);
+});
+
+test('이전 공부 보상의 예시도 정책을 구분하고 실제 지급 간격은 서버 값을 따른다', async ({ page }) => {
+  const { api } = await setup(page);
+  await page.route('**/api/**', async route => {
+    const payload = route.request().postDataJSON();
+    if (payload?.type !== 'get_game_profile') return route.fallback();
+    return route.fulfill({ json: { profile: api.state.gameProfile, activeFish: [], fishCount: 0,
+      rules: { ...rules, ticketPolicy: { ...rules.ticketPolicy, intervalSeconds: 7200 } } } });
+  });
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+  await page.getByRole('button', { name: '수조 이용법', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '수조 성장 규칙' });
+  await expect(dialog).toContainText('확정 공부 2시간마다 1장');
+  await expect(dialog.locator('.game-rules-example img')).toHaveAttribute('alt', /남은 시간 예시/);
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(dialog.locator('.game-rules-example img')).toHaveAttribute('alt', /공부 기록과 성장 보상/);
+  for (let i = 0; i < 2; i++) await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(dialog.locator('.game-rules-example img')).toHaveAttribute('alt', /성장에 반영되는/);
+  await expect(dialog).not.toContainText('확정 공부 5시간');
 });
