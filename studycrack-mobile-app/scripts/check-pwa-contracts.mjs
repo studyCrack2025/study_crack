@@ -21,11 +21,11 @@ assert.equal(manifest.scope, '/studycrack-mobile');
 assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.name, 'StudyCrack');
 assert.equal(manifest.short_name, 'StudyCrack');
-assert.equal(manifest.theme_color, '#0A56B2');
-assert.equal(manifest.background_color, '#F7F9FC');
+assert.equal(manifest.theme_color, '#344E8F');
+assert.equal(manifest.background_color, '#FFFFFF');
 assert.match(html, /<link rel="manifest" href="\.\/studycrack-mobile\.webmanifest" \/>/);
 assert.match(html, /<link rel="icon" href="\.\/favicon\.ico" sizes="any" \/>/);
-assert.match(html, /<meta name="theme-color" content="#0A56B2" \/>/);
+assert.match(html, /<meta name="theme-color" content="#344E8F" \/>/);
 assert.match(html, /<meta name="mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-capable" content="yes" \/>/);
 assert.match(html, /<meta name="apple-mobile-web-app-title" content="StudyCrack" \/>/);
@@ -38,13 +38,13 @@ assert.match(fallbackCss, /\.mobile-boot-shell \{[^}]*min-height:100dvh;[^}]*pla
 assert.doesNotMatch(fallbackCss, /\.(?:app-shell|app-frame|app-screen|tabbar|screen)\b/, 'Fallback must not own runtime screen selectors');
 const tokens = fs.readFileSync(path.join(appRoot, 'src/styles/foundation/tokens.css'), 'utf8');
 const baseCss = fs.readFileSync(path.join(appRoot, 'src/styles/foundation/base.css'), 'utf8');
-for (const [boot, runtime] of Object.entries({ bg: 'surface-canvas', card: 'surface-card', text: 'ink', muted: 'ink-muted', line: 'line-subtle', primary: 'brand-navy', shadow: 'shadow-raised' })) {
+for (const [boot, runtime] of Object.entries({ bg: 'surface-canvas', card: 'surface-card', text: 'ink', muted: 'ink-muted', line: 'line-subtle', primary: 'brand-navy', shadow: 'shadow-normal' })) {
   const fallbackValue = fallbackCss.match(new RegExp(`--mobile-boot-${boot}:([^;]+);`))?.[1];
   const runtimeValue = tokens.match(new RegExp(`--sc-${runtime}:([^;]+);`))?.[1];
   assert.ok(fallbackValue && runtimeValue, `${boot}: missing fallback/runtime token`);
   assert.equal(fallbackValue, runtimeValue, `${boot}: fallback drifted from runtime palette`);
 }
-assert.equal(fallbackCss.match(/font-family:([^;]+);/)[1], baseCss.match(/font-family:([^;]+);/)[1], 'Fallback font stack must match the runtime');
+assert.equal(fallbackCss.match(/body \{[^}]*font-family:([^;]+);/)[1], baseCss.match(/body\{[^}]*font-family:([^;]+);/)[1], 'Fallback font stack must match the runtime');
 assert.equal(fallbackCss.match(/body \{[^}]*font-size:([^;]+);/)[1], tokens.match(/--sc-type-body:([^;]+);/)[1], 'Fallback body size must match the runtime token');
 
 const requiredIcons = [

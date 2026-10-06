@@ -1,6 +1,66 @@
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
+for (const width of [320, 390]) {
+  test(`공통 디자인은 자체 호스팅 폰트와 읽기 가능한 조작 규격을 사용한다 (${width}px)`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
+    await page.goto('/studycrack-mobile.html?screen=planner');
+    await expect(page.locator('.primary-screen-header h1')).toBeVisible();
+    await page.evaluate(async () => {
+      await Promise.all([400, 700, 800].map(weight => document.fonts.load(`${weight} 16px Paperlogy`, '오늘의 계획 STUDY 0123456789')));
+      await document.fonts.ready;
+    });
+    const fonts = await page.evaluate(() => ({
+      family: getComputedStyle(document.body).fontFamily,
+      resources: performance.getEntriesByType('resource').filter(entry => /paperlogy-.*\.woff2/.test(entry.name)).map(entry => entry.name),
+      loaded: [400, 700, 800].every(weight => document.fonts.check(`${weight} 16px Paperlogy`, '오늘의 계획'))
+    }));
+    expect(fonts.family).toContain('Paperlogy');
+    expect(fonts.loaded).toBe(true);
+    expect(fonts.resources.filter(url => /-core-/.test(url)).length).toBe(3);
+    for (const url of fonts.resources) {
+      expect(new URL(url).origin).toBe(new URL(page.url()).origin);
+      expect(new URL(url).pathname).toMatch(/\/dist\/assets\/paperlogy-(400|700|800)-(core|extended)-[\w-]+\.woff2$/);
+    }
+    const token = name => page.evaluate(name => getComputedStyle(document.documentElement).getPropertyValue(name).trim(), name);
+    expect(await token('--sc-brand-navy')).toBe('#344E8F');
+    expect(await token('--sc-radius-card')).toBe('10px');
+    expect(await token('--sc-radius-button')).toBe('4px');
+    expect(await token('--sc-control-height')).toBe('48px');
+    expect(await token('--sc-touch-target')).toBe('44px');
+    await expect(page.locator('.tabbar .is-aquarium .tabbar-icon')).toHaveCSS('box-shadow', 'none');
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: info.outputPath('common-font-loaded.png'), animations: 'disabled' });
+    await page.evaluate(async () => {
+      const glyph = document.createElement('span');
+      glyph.textContent = '갂';
+      glyph.style.font = '800 16px Paperlogy';
+      document.body.append(glyph);
+      glyph.getBoundingClientRect();
+      await document.fonts.ready;
+      glyph.remove();
+    });
+    expect(await page.evaluate(() => performance.getEntriesByType('resource').some(entry => /paperlogy-800-extended-/.test(entry.name)))).toBe(true);
+  });
+
+  test(`폰트 다운로드 실패에도 화면과 공부 시작 조작은 유지된다 (${width}px)`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 844 });
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
+    await page.route('**/*.woff2', route => route.abort());
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    await expect(page.getByRole('button', { name: '프로필 메뉴 열기' })).toBeVisible();
+    await page.locator('.home-active-study').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog').getByRole('button', { name: '국어', exact: true })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.screenshot({ path: info.outputPath('common-font-fallback.png'), animations: 'disabled' });
+  });
+}
+
 for (const width of [320, 360, 390, 430]) {
   test(`브랜드 헤더와 탭별 요약·우측 MY·상품 총액 (${width}px)`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
@@ -23,7 +83,7 @@ for (const width of [320, 360, 390, 430]) {
       const head = page.locator('.primary-screen-header');
       await expect(head.getByRole('heading', { level: 1 })).toHaveText(title);
       await expect(head.getByRole('heading', { level: 1 })).toHaveCSS('font-size', '24px');
-      await expect(head.locator('img')).toHaveCSS('width', '38px');
+      await expect(head.locator('img')).toHaveCSS('width', '36px');
       expect((await head.boundingBox()).height).toBeLessThan(110);
       await expect(page.locator('.sc-study-score')).toHaveCount(0);
       if (tab === 'analysis') await expect(page.getByRole('button', { name: '플랜별 기능 보기 →' })).toHaveCount(1);

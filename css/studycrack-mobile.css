@@ -1,12 +1,12 @@
 /* Bundle loading fallback only. Runtime UI styles are imported explicitly by src/runtime/main.js. */
-:root { --mobile-boot-bg:#F7F9FC; --mobile-boot-card:#FFFFFF; --mobile-boot-text:#263243; --mobile-boot-muted:#637083; --mobile-boot-line:#E1E7EF; --mobile-boot-primary:#0A56B2; --mobile-boot-shadow:0 14px 32px rgba(27,63,99,.12); }
+:root { --mobile-boot-bg:#FFFFFF; --mobile-boot-card:#FFFFFF; --mobile-boot-text:#2C2C2C; --mobile-boot-muted:#5D6D83; --mobile-boot-line:#D8E2F1; --mobile-boot-primary:#344E8F; --mobile-boot-shadow:none; }
 * { box-sizing:border-box; }
 html { min-height:100%; margin:0; background:var(--mobile-boot-bg); }
-body { min-height:100%; margin:0; background:var(--mobile-boot-bg); font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; font-size:16px; line-height:1.55; color:var(--mobile-boot-text); letter-spacing:0; word-break:keep-all; -webkit-font-smoothing:antialiased; }
+body { min-height:100%; margin:0; background:var(--mobile-boot-bg); font-family:"Paperlogy","Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; font-size:16px; line-height:1.55; color:var(--mobile-boot-text); letter-spacing:0; word-break:keep-all; -webkit-font-smoothing:antialiased; }
 #root { width:100%; min-height:100dvh; }
 .mobile-boot-shell { width:100%; min-height:100dvh; display:grid; place-items:center; padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left)); background:var(--mobile-boot-bg); }
-.init-loading { width:min(100%,320px); padding:22px; border:1px solid var(--mobile-boot-line); border-radius:20px; background:var(--mobile-boot-card); box-shadow:var(--mobile-boot-shadow); text-align:center; overflow-wrap:anywhere; }
-.init-loading h3 { margin:0; font-size:20px; line-height:1.25; font-weight:900; color:var(--mobile-boot-primary); }
-.init-loading button { width:100%; min-height:44px; margin-top:16px; padding:10px; border:0; border-radius:12px; background:var(--mobile-boot-primary); color:var(--mobile-boot-card); font:inherit; cursor:pointer; }
+.init-loading { width:min(100%,320px); padding:20px; border:1px solid var(--mobile-boot-line); border-radius:10px; background:var(--mobile-boot-card); box-shadow:var(--mobile-boot-shadow); text-align:center; overflow-wrap:anywhere; }
+.init-loading h3 { margin:0; font-size:20px; line-height:1.25; font-weight:800; color:var(--mobile-boot-primary); }
+.init-loading button { width:100%; min-height:52px; margin-top:16px; padding:10px; border:0; border-radius:4px; background:var(--mobile-boot-primary); color:var(--mobile-boot-card); font:inherit; cursor:pointer; }
 .init-loading button:focus-visible { outline:2px solid var(--mobile-boot-primary); outline-offset:3px; }
 .init-loading p { margin:8px 0 0; font-size:14px; line-height:1.55; font-weight:700; color:var(--mobile-boot-muted); }

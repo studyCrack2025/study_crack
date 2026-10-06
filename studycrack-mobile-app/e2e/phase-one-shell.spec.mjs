@@ -95,7 +95,8 @@ test('secondary heading은 card가 아니고 overlay는 배경과 focus를 격�
   await page.goto('/studycrack-mobile.html?screen=authLogin');
 
   const trigger = page.getByRole('button', { name: '이메일 찾기' });
-  await trigger.click();
+  await trigger.focus();
+  await trigger.press('Enter');
   const dialog = page.getByRole('dialog', { name: '이메일 찾기' });
   const content = page.locator('.app-content');
   await expect(dialog).toBeVisible();

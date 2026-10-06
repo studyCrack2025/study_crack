@@ -113,12 +113,12 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 800 }
     await page.locator('.tabbar [data-tab="planner"]').click();
     const title = page.locator('.primary-screen-header h1');
     await expect(title).toHaveCSS('font-size', '24px');
-    await expect(title).toHaveCSS('font-weight', '900');
+    await expect(title).toHaveCSS('font-weight', '800');
     const titleBounds = await title.boundingBox();
     const contentBounds = await content.boundingBox();
     const logoBounds = await page.locator('.primary-screen-header > img').boundingBox();
     expect(logoBounds.x - contentBounds.x).toBe(gutter + 2);
-    expect(titleBounds.x - logoBounds.x - logoBounds.width).toBe(9);
+    expect(titleBounds.x - logoBounds.x - logoBounds.width).toBe(12);
     await expectNoHorizontalOverflow(page);
     await page.screenshot({ path: testInfo.outputPath('planner-foundation.png'), animations: 'disabled' });
   });

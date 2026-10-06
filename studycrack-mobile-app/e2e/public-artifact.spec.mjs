@@ -21,6 +21,15 @@ test('공개 산출물은 등록한 웹 페이지와 모바일 파일을 검증�
   }
   const manifestResponse = await request.get('/studycrack-mobile.webmanifest');
   expect(manifestResponse.headers()['content-type']).toContain('application/manifest+json');
+  const fonts = manifest.files.filter(entry => /\/paperlogy-.*\.woff2$/.test(entry.path));
+  expect(fonts).toHaveLength(6);
+  for (const entry of fonts) {
+    const response = await request.get(`/${entry.path}`);
+    expect(response.status(), entry.path).toBe(200);
+    expect(response.headers()['content-type']).toContain('font/woff2');
+    expect(response.headers()['cache-control']).toContain('immutable');
+    expect(createHash('sha256').update(await response.body()).digest('hex'), entry.path).toBe(entry.sha256);
+  }
   const preview = await request.get('/basic-preview');
   expect(preview.status()).toBe(200);
   expect(preview.headers()['content-type']).toContain('text/html');
