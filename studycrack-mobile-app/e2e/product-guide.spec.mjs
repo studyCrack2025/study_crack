@@ -66,7 +66,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await page.goto('/studycrack-mobile.html');
     const dialog = guideDialog(page);
     await expect(dialog).toBeVisible();
-    await expect(dialog).toHaveCSS('border-radius', '30px');
+    await expect(dialog).toHaveCSS('border-radius', '10px');
     await expect(dialog).toContainText('연세대학교 정치외교학과');
     await expect(page.locator('[data-screen="timer"]')).toHaveAttribute('inert', '');
     await page.keyboard.press('Shift+Tab');

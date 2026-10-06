@@ -31,6 +31,8 @@ async function openScore(page, my = false) {
   await trigger.press('Enter');
   const dialog = page.getByRole('dialog', { name: '성적 수정', exact: true });
   await expect(dialog).toBeVisible();
+  await expect(dialog.locator('.score-step-save')).toHaveCSS('border-radius', '4px');
+  await expect(dialog.locator('input.planner-input').first()).toHaveCSS('border-radius', '8px');
   return { dialog, trigger };
 }
 

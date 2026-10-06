@@ -45,7 +45,8 @@ test('공개 홈페이지와 분석 소개의 대표자 정보는 승인된 이�
   try {
     const page = await context.newPage();
     await page.route('**/*', route => new URL(route.request().url()).origin === new URL(baseURL).origin ? route.continue() : route.abort());
-    for (const url of ['/', '/analysis.html']) {
+    // The mobile preview serves the app at /; inspect the explicit public document.
+    for (const url of ['/index.html', '/analysis.html']) {
       await page.goto(`${baseURL}${url}`);
       const representative = page.getByText('대표자: 김태윤 | 사업자등록번호: 201-61-00623', { exact: true });
       await representative.scrollIntoViewIfNeeded();

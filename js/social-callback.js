@@ -44,11 +44,11 @@
         clearSocialReturnState();
         statusMsg.textContent = '';
         const span = document.createElement('span');
-        span.style.color = '#dc2626';
+        span.className = 'social-callback-error';
         span.textContent = msg;
         const link = document.createElement('a');
         link.href = returnUrl || '/login';
-        link.style.color = '#2563eb';
+        link.className = 'social-callback-return';
         link.textContent = returnUrl ? '앱으로 돌아가 다시 로그인하기' : '로그인 페이지로 돌아가기';
         statusMsg.appendChild(span);
         statusMsg.appendChild(document.createElement('br'));
