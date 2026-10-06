@@ -13,7 +13,8 @@ async function prepare(page) {
   return api;
 }
 
-for (const rate of [4, 12]) test(`cached fish remain visible after home to aquarium on slow CPU (${rate}x)`, async ({ page, context }) => {
+for (const rate of [4, 12]) test(`cached fish remain visible after home to aquarium on slow CPU (${rate}x)`, async ({ page, context, browserName }) => {
+  test.skip(browserName !== 'chromium', 'CPU throttling requires Chromium CDP; shared image lifecycle cases run in both engines.');
   test.setTimeout(60_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await prepare(page);

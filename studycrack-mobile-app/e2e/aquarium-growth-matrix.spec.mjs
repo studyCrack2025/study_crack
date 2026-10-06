@@ -56,7 +56,7 @@ for (const day of stages) for (const [width, height] of [[320, 700], [360, 800],
       else expect(metrics.height).toBeCloseTo(variant === 'full' ? Math.min(326, Math.max(294, width * .8)) : variant === 'home' ? 96 : 210, 1);
       if (variant === 'full') {
         await expect(scene).toHaveCSS('border-top-width', '1px');
-        await expect(scene).toHaveCSS('border-radius', '24px');
+        await expect(scene).toHaveCSS('border-radius', '12px');
         await expect(scene.locator('.aquarium-scene-depth')).not.toHaveCSS('box-shadow', 'none');
       }
       if (variant !== 'full') await expect(scene.locator('button')).toHaveCount(0);

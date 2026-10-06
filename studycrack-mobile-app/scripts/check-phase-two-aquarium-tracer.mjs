@@ -233,8 +233,8 @@ const packageSource = await readFile(new URL('../package.json', import.meta.url)
 assert.match(aquariumCss, /\.aquarium-offline-state\{[^}]*display:none/);
 assert.match(aquariumCss, /html\[data-network-status="offline"\] \.aquarium-offline-state\{[^}]*display:grid/);
 assert.match(aquariumCss, /\.aquarium-mode-header > button\{[^}]*width:var\(--sc-touch-target\);[^}]*height:var\(--sc-touch-target\)/);
-assert.match(aquariumCss, /\.aquarium-catalog-filter button\{[^}]*min-height:var\(--sc-touch-target\)/);
-assert.match(aquariumCss, /\.aquarium-dex-filters select\{[^}]*min-height:44px/);
+assert.match(aquariumCss, /\.aquarium-catalog-filter button\{[^}]*min-height:var\(--sc-control-height\)/);
+assert.match(aquariumCss, /\.aquarium-dex-filters select\{[^}]*min-height:48px/);
 assert.match(aquariumCss, /\.aquarium-slot-control button\{[^}]*min-height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-care-result button\{[^}]*min-width:var\(--sc-touch-target\);[^}]*min-height:var\(--sc-touch-target\)/);
 assert.match(aquariumCss, /\.aquarium-manage-result button\{[^}]*min-width:var\(--sc-touch-target\);[^}]*min-height:var\(--sc-touch-target\)/);

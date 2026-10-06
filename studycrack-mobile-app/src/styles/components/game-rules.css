@@ -3,10 +3,10 @@
 .game-rules-head > div{min-width:0;display:grid;gap:var(--sc-space-4);}
 .game-rules-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);line-height:1.3;}
 .game-rules-eyebrow{color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
-.game-rules-progress{flex:none;display:flex;align-items:center;gap:var(--sc-space-12);padding:var(--sc-space-12) var(--sc-space-16);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
+.game-rules-progress{flex:none;display:flex;align-items:center;gap:var(--sc-space-12);padding:10px var(--sc-space-16);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
 .game-rules-progress ol{display:flex;flex:1;gap:var(--sc-space-8);margin:0;padding:0;list-style:none;}
 .game-rules-progress li{flex:1;height:4px;border-radius:var(--sc-radius-pill);background:var(--sc-line-subtle);}
-.game-rules-progress .is-current{background:var(--sc-action-positive-strong);}
+.game-rules-progress .is-current{background:var(--sc-brand-navy);}
 .game-rules-body{flex:1;min-height:0;padding:0 var(--sc-space-16) var(--sc-space-16);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .game-rules-step{min-width:0;display:grid;align-content:start;gap:var(--sc-space-8);}
 .game-rules-copy{display:grid;gap:var(--sc-space-8);}
@@ -21,7 +21,7 @@
 .game-rules-details > summary{min-height:48px;align-content:center;padding:var(--sc-space-12) 0;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;cursor:pointer;overflow-wrap:anywhere;}
 .game-rules-details > :not(summary){margin-top:var(--sc-space-12);}
 .game-rules-rarities{display:flex;flex-wrap:wrap;gap:var(--sc-space-8);}
-.game-rules-rarities span{padding:var(--sc-space-8) var(--sc-space-12);border-radius:var(--sc-radius-pill);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
+.game-rules-rarities span{padding:var(--sc-space-8) var(--sc-space-12);border-radius:var(--sc-radius-label);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
 .game-rules-growth{min-width:0;display:grid;gap:var(--sc-space-12);padding-top:var(--sc-space-16);border-top:1px solid var(--sc-line-subtle);}
 .game-rules-body .game-rules-note{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
 .game-rules-body .game-rules-highlight{padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;}
@@ -42,5 +42,5 @@
 .game-rules-status > .icon{width:64px;height:64px;stroke:var(--sc-brand-navy);}
 .game-rules-status b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
 .game-rules-footer{flex:none;display:flex;gap:var(--sc-space-12);padding:var(--sc-space-12) var(--sc-space-16) max(var(--sc-space-12),env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);}
-.game-rules-footer > .btn{flex:1;min-width:0;min-height:48px;font-size:var(--sc-type-body);overflow-wrap:anywhere;}
-.aquarium-rules-button{min-height:48px;padding:var(--sc-space-8) var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-control);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
+.game-rules-footer > .btn{flex:1;min-width:0;min-height:var(--sc-primary-height);font-size:var(--sc-type-body);overflow-wrap:anywhere;}
+.aquarium-rules-button{min-height:48px;padding:var(--sc-space-8) var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-button);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
