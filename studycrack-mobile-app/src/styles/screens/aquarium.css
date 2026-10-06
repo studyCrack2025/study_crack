@@ -1,11 +1,13 @@
 .aquarium-screen{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:var(--sc-card-gap);padding:0 0 var(--sc-space-8);background:transparent;}
 .aquarium-screen > *{min-width:0;max-width:100%;box-sizing:border-box;margin-top:0;}
-.aquarium-wallet{min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0;border:0;border-radius:0;background:transparent;}
-.aquarium-wallet span{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:68px;padding:6px 9px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-label);background:var(--sc-surface-subtle);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:800;}
-.aquarium-wallet b{color:var(--sc-ink-strong);font-size:var(--sc-type-caption);font-variant-numeric:tabular-nums;}
+.aquarium-wallet{min-width:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr));align-items:stretch;gap:8px;padding:0;border:0;border-radius:0;background:transparent;}
+.aquarium-wallet-metric{min-width:0;display:grid;align-content:start;gap:8px;padding:12px;border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-label);background:var(--sc-surface-subtle);}
+.aquarium-wallet-metric small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:750;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere;}
+.aquarium-wallet b{color:var(--sc-ink-strong);font-size:var(--sc-type-section);line-height:1.4;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+.aquarium-wallet-note{grid-column:1/-1;min-width:0;margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.6;word-break:keep-all;overflow-wrap:anywhere;}
 .aquarium-care-area{display:grid;gap:12px;min-width:0;}
 .aquarium-discovery-card{display:grid;gap:12px;}
-.aquarium-wallet progress{width:100%;height:6px;appearance:none;border:0;border-radius:var(--sc-radius-pill);overflow:hidden;background:var(--sc-line-subtle);accent-color:var(--sc-action-positive);}
+.aquarium-wallet progress{grid-column:1/-1;width:100%;height:6px;appearance:none;border:0;border-radius:var(--sc-radius-pill);overflow:hidden;background:var(--sc-line-subtle);accent-color:var(--sc-action-positive);}
 .aquarium-wallet progress::-webkit-progress-bar{background:var(--sc-line-subtle);border-radius:var(--sc-radius-pill);}
 .aquarium-wallet progress::-webkit-progress-value{background:var(--sc-action-positive);border-radius:var(--sc-radius-pill);}
 .aquarium-wallet progress::-moz-progress-bar{background:var(--sc-action-positive);border-radius:var(--sc-radius-pill);}
@@ -269,6 +271,6 @@ html[data-network-status="offline"] .aquarium-offline-state{display:grid;}
 @keyframes aquariumResultFish{0%{opacity:0;transform:scale(.58) rotate(-5deg);}70%{opacity:1;transform:scale(1.06) rotate(1deg);}100%{opacity:1;transform:scale(1) rotate(0);}}
 @keyframes aquariumResultRing{0%{opacity:.75;transform:scale(.72);}70%,100%{opacity:0;transform:scale(1.18);}}
 @keyframes aquariumResultParticle{0%{opacity:0;transform:rotate(var(--particle-angle)) translateY(0) scale(.2);}16%{opacity:1;}75%{opacity:.84;}100%{opacity:0;transform:rotate(var(--particle-angle)) translateY(calc(var(--particle-radius) * -1)) scale(.72);}}
-@media (max-width:360px){.aquarium-wallet span{min-width:0;}.aquarium-starter-grid{gap:5px;}.aquarium-next-actions{grid-template-columns:1fr;}.aquarium-next-actions button{min-height:72px;}.aquarium-draw-ready{min-height:390px;}.aquarium-share-stats{gap:5px;}.aquarium-share-stats > div{padding:10px 4px;}}
+@media (max-width:360px){.aquarium-starter-grid{gap:5px;}.aquarium-next-actions{grid-template-columns:1fr;}.aquarium-next-actions button{min-height:72px;}.aquarium-draw-ready{min-height:390px;}.aquarium-share-stats{gap:5px;}.aquarium-share-stats > div{padding:10px 4px;}}
 /* Keep the reduced-motion preference above species and reward state specificity. */
 @media (prefers-reduced-motion:reduce){.aquarium-screen *,.aquarium-draw-result,.aquarium-draw-result *{animation:none !important;transition:none !important;}.aquarium-result-burst,.aquarium-result-rays{display:none;}}

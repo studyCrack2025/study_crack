@@ -16,7 +16,7 @@ import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { Icon } from '../../components/Icon.jsx';
 import { StatusState } from '../../components/StatusState.js';
 import { FishArtwork } from './FishArtwork.jsx';
-import { buildAquariumJourneyPresentation } from './presentation.js';
+import { buildAquariumJourneyPresentation, buildAquariumWalletPresentation } from './presentation.js';
 import { useCareEffect } from './use-care-effect.js';
 import { AquariumNextStudy } from './AquariumNextStudy.jsx';
 import { GameRulesGuide } from '../../components/aquarium/GameRulesGuide.jsx';
@@ -32,8 +32,8 @@ function AquariumGrowthSummary({ fishCount }) {
 }
 
 function AquariumWallet({ profile }) {
-  const plan = profile?.ticketPolicyVersion === 'planner-ticket-v1';
-  return <div className="aquarium-wallet" role="group" aria-label="뽑기권"><span>뽑기권 <b>{plan || profile?.ticketPolicyVersion === 'study-ticket-v1' ? `${profile.ticketBalance}장` : '확인 필요'}</b></span><span>{plan ? '30분 이상 계정 계획 · 첫 완료마다 1장' : profile?.ticketPolicyVersion === 'study-ticket-v1' ? `다음 뽑기권까지 ${Math.ceil((profile.ticketIntervalSeconds - profile.ticketProgressSeconds) / 60)}분` : '뽑기권 정보 준비 중'}</span>{profile?.ticketPolicyVersion === 'study-ticket-v1' ? <progress aria-label="다음 뽑기권 진행" max={profile?.ticketIntervalSeconds || 18000} value={profile?.ticketProgressSeconds || 0} /> : null}</div>;
+  const wallet = buildAquariumWalletPresentation(profile);
+  return <div className="aquarium-wallet" role="group" aria-label="뽑기권"><div className="aquarium-wallet-metric"><small>뽑기권 </small><b>{wallet.balance}</b></div><div className="aquarium-wallet-metric"><small>{wallet.label}</small><b>{wallet.value}</b></div>{wallet.note ? <p className="aquarium-wallet-note">{wallet.note}</p> : null}{wallet.progress ? <progress aria-label="다음 뽑기권 진행" max={wallet.progress.max} value={wallet.progress.value} /> : null}</div>;
 }
 
 function AquariumOfflineState() {
