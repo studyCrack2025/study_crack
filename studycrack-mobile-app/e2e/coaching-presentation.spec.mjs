@@ -29,6 +29,9 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('background-color', 'rgb(237, 249, 247)');
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('color', 'rgb(15, 127, 117)');
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('font-size', '16px');
+    await expect(page.locator('.coaching-request-cta')).toHaveCSS('border-radius', '4px');
+    await expect(page.locator('.coaching-request-cta')).toHaveCSS('min-height', '52px');
+    await expect(page.locator('.coaching-segment button').first()).toHaveCSS('min-height', '48px');
     await expect(page.getByRole('button', { name: '받은 피드백 확인하기', exact: true })).toBeVisible();
     await expect(page.locator('.coaching-process')).not.toHaveAttribute('open');
     await expect(page.locator('.coaching-process-list')).not.toBeVisible();
@@ -54,6 +57,8 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.weekly-feedback')).toHaveCount(3);
     await expect(page.locator('.weekly-feedback').first()).toContainText('실제 피드백 내용');
     await expect(page.locator('.weekly-feedback').first()).toContainText('우선순위도 확인해요');
+    await expect(page.locator('.weekly-feedback .feedback-item').first()).toHaveCSS('padding-left', '0px');
+    await expect(page.locator('.weekly-feedback .feedback-item').first()).toHaveCSS('border-top-width', '1px');
     await expect(page.getByText('노출하면 안 되는 초안')).toHaveCount(0);
     await page.screenshot({ path: info.outputPath(`coaching-weekly-${width}.png`), animations: 'disabled' });
     await page.locator('.weekly-feedback').last().locator('summary').click();

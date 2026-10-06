@@ -7,7 +7,10 @@ async function setup(page, options = {}) {
 }
 
 async function openMajor(page) {
-  await page.getByRole('button', { name: '직접 추가하기 →' }).click();
+  const opener = page.getByRole('button', { name: '직접 추가하기 →' });
+  await opener.focus();
+  await expect(opener).toBeFocused();
+  await opener.press('Enter');
   const dialog = page.getByRole('dialog', { name: '대학·학과 직접 추가' });
   await dialog.getByRole('textbox', { name: '대학명 검색' }).fill('연세');
   await dialog.getByRole('button', { name: '검색', exact: true }).click();

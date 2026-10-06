@@ -124,7 +124,11 @@ function AquariumWorkspace(ctx) {
     previousMode.current = aquariumMode;
     const remember = () => { positions.current[aquariumMode] = content.scrollTop; };
     content.addEventListener('scroll', remember, { passive: true });
-    return () => content.removeEventListener('scroll', remember);
+    root.addEventListener('click', remember, true);
+    return () => {
+      content.removeEventListener('scroll', remember);
+      root.removeEventListener('click', remember, true);
+    };
   }, [aquariumMode]);
   useLayoutEffect(() => {
     if (aquariumSelectedFishId) setManagementOpen(true);

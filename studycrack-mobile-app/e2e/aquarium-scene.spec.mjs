@@ -22,7 +22,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const scene = page.locator('.aquarium-scene');
     await expect(scene.locator('.aquarium-fish')).toHaveCount(3);
     await expect(scene.locator('.aquarium-fish-artwork')).toHaveClass(/is-loaded/);
-    await expect(scene).toHaveCSS('border-radius', '24px');
+    await expect(scene).toHaveCSS('border-radius', '12px');
     await expect(scene).toHaveCSS('border-top-width', '1px');
     expect((await scene.boundingBox()).height).toBeCloseTo(Math.min(326, Math.max(294, width * .8)), 1);
     await page.evaluate(() => document.fonts.ready);
@@ -37,7 +37,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(scene.locator('.aquarium-scene-hud')).toContainText('12일');
     await expect(scene.locator('.aquarium-scene-hud')).toContainText('0/1');
     await expect(scene.locator('button')).toHaveCount(0);
-    await expect(scene).toHaveCSS('border-radius', '24px');
+    await expect(scene).toHaveCSS('border-radius', '12px');
     await expect(scene.locator('.aquarium-fish-name')).toHaveCount(0);
     await expect(page.locator('.aquarium-share-stats')).toContainText('3 / 12종');
     await expect(scene.locator('.aquarium-fish-artwork')).toHaveClass(/is-loaded/);

@@ -5,6 +5,7 @@ test.use({ deviceScaleFactor: 1 });
 for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
   test(`플랜 확인과 웹 결제 안내는 완료를 만들지 않는다 (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await installAuthenticatedSession(page);
     const api = await installApiMock(page, { tier: 'standard', userOverrides: { pendingSubscription: { tier: 'pro', startDate: '2026-10-10T00:00:00Z' } } });
     const capture = name => page.screenshot({ path: testInfo.outputPath(`${name}-${width}.png`), fullPage: true, animations: 'disabled' });
@@ -12,6 +13,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.getByRole('region', { name: '현재 멤버십', exact: true }).locator('strong')).toHaveText('STANDARD');
     const introChoices = page.getByRole('group', { name: '플랜 선택', exact: true });
     await expect(introChoices.getByRole('button')).toHaveCount(4);
+    await introChoices.evaluate(async el => { await Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {}))); });
     const introCells = await introChoices.getByRole('button').evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { y: r.y, height: r.height }; }));
     expect(introCells[0].y).toBe(introCells[1].y);
     expect(introCells[2].y).toBe(introCells[3].y);

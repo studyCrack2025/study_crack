@@ -16,6 +16,8 @@ for (const tier of ['basic', 'standard', 'free']) {
     for (const [plan, color] of [['Basic', 'rgb(34, 168, 97)'], ['Starter', 'rgb(76, 121, 238)'], ['Standard', 'rgb(113, 65, 217)'], ['Pro', 'rgb(249, 115, 22)']]) {
       const button = choices.locator(`[data-plan="${plan}"]`);
       await expect(button).toHaveCSS('border-top-color', color);
+      await expect(button).toHaveCSS('border-radius', '4px');
+      await expect(button.locator('span')).toHaveCSS('font-weight', '800');
       await button.click();
       await expect(button).toHaveAttribute('aria-pressed', 'true');
       await expect(button).toHaveCSS('border-top-color', color);

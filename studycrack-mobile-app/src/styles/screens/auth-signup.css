@@ -4,14 +4,14 @@
 .signup-topbar > button{width:36px;min-height:44px;border-radius:var(--sc-radius-control);background:var(--sc-surface-muted);color:var(--sc-brand-navy);font-size:28px;}
 .signup-topbar .auth-logo{width:32px;}
 .signup-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;list-style:none;margin:0;padding:0;}
-.signup-progress li{display:grid;justify-items:center;gap:4px;min-width:0;color:var(--sc-ink-muted);text-align:center;font-size:9px;font-weight:750;line-height:1.4;}
-.signup-progress b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:11px;}
-.signup-progress [aria-current="step"]{color:var(--sc-brand-navy);font-weight:900;}
+.signup-progress li{display:grid;justify-items:center;gap:4px;min-width:0;color:var(--sc-ink-muted);text-align:center;font-size:var(--sc-type-micro);font-weight:750;line-height:1.4;}
+.signup-progress b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:var(--sc-type-micro);}
+.signup-progress [aria-current="step"]{color:var(--sc-brand-navy);font-weight:800;}
 .signup-progress [aria-current="step"] b,.signup-progress [data-complete="true"] b{background:var(--sc-brand-navy);color:var(--sc-on-brand);}
 .signup-stage{display:grid;gap:var(--sc-space-16);padding:var(--sc-space-8) 0 0;border:0;border-radius:0;background:transparent;box-shadow:none;animation:signupStageIn var(--sc-motion-screen) var(--ease-enter) both;}
 .signup-stage-head{display:grid;gap:6px;padding:0;}
-.signup-stage-head > span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:900;}
-.signup-stage-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);font-weight:900;line-height:1.35;letter-spacing:0;word-break:keep-all;}
+.signup-stage-head > span{color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);font-weight:800;}
+.signup-stage-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);font-weight:800;line-height:1.35;letter-spacing:0;word-break:keep-all;}
 .signup-stage-head p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;line-height:1.5;}
 .signup-section{display:grid;gap:var(--sc-space-8);margin:0;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .signup-section-head{display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-8);}
@@ -19,22 +19,22 @@
 .signup-verify-status{min-height:24px;display:inline-flex;align-items:center;justify-content:center;padding:0 var(--sc-space-8);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-pill);background:var(--sc-surface-muted);color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;white-space:nowrap;}
 .signup-verify-status.done{border-color:color-mix(in srgb,var(--sc-action-positive) 34%,transparent);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);}
 .signup-code-row{display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:var(--sc-space-8);}
-.signup-code-btn,.signup-inline-btn{height:48px;border-radius:var(--sc-radius-control);font-size:var(--sc-type-caption);}
+.signup-code-btn,.signup-inline-btn{height:48px;border-radius:var(--sc-radius-button);font-size:var(--sc-type-caption);}
 .signup-two-col{display:grid;grid-template-columns:minmax(80px,.7fr) minmax(0,1.3fr);gap:var(--sc-space-8);}
 .auth-terms-preview.native{gap:0;padding:0;overflow:hidden;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
 .auth-terms-check-row{min-height:48px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:var(--sc-space-8);padding:0 var(--sc-space-8) 0 var(--sc-space-12);border-top:1px solid var(--sc-border-subtle);color:var(--sc-ink);font-size:var(--sc-type-caption);font-weight:600;line-height:1.4;word-break:keep-all;}
 .auth-terms-check-row:first-child{border-top:0;}
-.auth-terms-check-row input{width:18px;height:18px;display:grid;place-content:center;margin:0;appearance:none;border:1px solid var(--sc-border-strong);border-radius:5px;background:var(--sc-surface);}
-.auth-terms-check-row input::before{content:"✓";color:var(--sc-on-brand);font-size:12px;font-weight:900;line-height:1;transform:scale(0);transition:transform var(--sc-motion-press) var(--ease-enter);}
+.auth-terms-check-row input{width:18px;height:18px;display:grid;place-content:center;margin:0;appearance:none;border:1px solid var(--sc-border-strong);border-radius:var(--sc-radius-control);background:var(--sc-surface);}
+.auth-terms-check-row input::before{content:"✓";color:var(--sc-on-brand);font-size:12px;font-weight:800;line-height:1;transform:scale(0);transition:transform var(--sc-motion-press) var(--ease-enter);}
 .auth-terms-check-row input:checked{border-color:var(--sc-brand-navy);background:var(--sc-brand-navy);}
 .auth-terms-check-row input:checked::before{transform:scale(1);}
 .auth-terms-check-row span{min-width:0;}
 .auth-terms-check-row.all{min-height:52px;background:var(--sc-surface-muted);font-size:13px;font-weight:800;}
-.auth-terms-view{min-width:58px;height:32px;padding:0 var(--sc-space-8);border:0;border-radius:10px;background:var(--sc-surface-accent);color:var(--sc-navy);font-size:10px;font-weight:800;}
+.auth-terms-view{min-width:58px;height:44px;padding:0 var(--sc-space-8);border:0;border-radius:var(--sc-radius-card);background:var(--sc-surface-accent);color:var(--sc-navy);font-size:var(--sc-type-micro);font-weight:800;}
 .signup-error{padding:10px 12px;}
 .signup-stage-actions{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:1fr;gap:var(--sc-space-8);margin-top:auto;padding-top:var(--sc-space-8);background:var(--sc-canvas);}
 .signup-stage-actions:has(.btn-secondary){grid-template-columns:minmax(88px,.38fr) minmax(0,1fr);}
-.signup-stage-actions .btn,.signup-stage-actions .signup-submit{min-height:48px;border-radius:var(--sc-radius-control);}
+.signup-stage-actions .btn,.signup-stage-actions .signup-submit{min-height:48px;border-radius:var(--sc-radius-button);}
 .signup-login-link{margin:0;text-align:center;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:600;}
 .signup-submit-btn:disabled{opacity:.62;}
 @keyframes signupStageIn{from{opacity:.001;transform:translate3d(8px,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}

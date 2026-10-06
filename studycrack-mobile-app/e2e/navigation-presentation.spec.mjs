@@ -25,7 +25,7 @@ function contrast(foreground, background) {
 async function readIconStyle(icon) {
   return icon.evaluate(element => {
     const style = getComputedStyle(element);
-    return { background: style.backgroundImage, color: style.color, stroke: getComputedStyle(element.querySelector('svg')).stroke, width: style.width, height: style.height };
+    return { background: style.backgroundColor, color: style.color, stroke: getComputedStyle(element.querySelector('svg')).stroke, width: style.width, height: style.height };
   });
 }
 
@@ -43,21 +43,21 @@ for (const viewport of viewports) {
     await expect(home).toHaveAttribute('aria-current', 'page');
     await expect(aquarium).not.toHaveAttribute('aria-current', 'page');
     const idleStyle = await readIconStyle(icon);
-    expect(idleStyle.background).toBe('linear-gradient(135deg, rgb(231, 238, 248), rgb(212, 226, 243))');
-    expect(idleStyle.stroke).toBe('rgb(99, 112, 131)');
-    expect(idleStyle.width).toBe('48px');
-    expect(idleStyle.height).toBe('48px');
-    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(99, 112, 131)');
+    expect(idleStyle.background).toBe('rgb(241, 244, 251)');
+    expect(idleStyle.stroke).toBe('rgb(93, 109, 131)');
+    expect(idleStyle.width).toBe('44px');
+    expect(idleStyle.height).toBe('44px');
+    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(93, 109, 131)');
     await expect(nav).toHaveCSS('min-height', '72px');
     await expect.poll(() => nav.evaluate(element => {
       const height = element.getBoundingClientRect().height;
       const content = document.querySelector('.app-content');
       return height >= 72 && content && parseFloat(getComputedStyle(content).paddingBottom) >= height;
     })).toBe(true);
-    await expect(icon).toHaveCSS('border-top-width', '2px');
-    await expect(icon).toHaveCSS('border-radius', '16px');
-    await expect(icon).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
-    await expect(icon.locator('svg')).toHaveCSS('width', '21px');
+    await expect(icon).toHaveCSS('border-top-width', '1px');
+    await expect(icon).toHaveCSS('border-radius', '8px');
+    await expect(icon).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    await expect(icon.locator('svg')).toHaveCSS('width', '24px');
     await expect(icon.locator('svg')).toHaveCSS('stroke-width', '1.75px');
     await expect(icon.locator('svg path').first()).toHaveAttribute('d', 'M3 20h18M5 20V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12');
     await expect(home.locator('svg')).toHaveCSS('stroke-width', '2.15px');
@@ -66,23 +66,23 @@ for (const viewport of viewports) {
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-size', '12px');
     await expect(nav.getByRole('button', { name: '학습 코칭', exact: true })).toHaveText('코칭');
     for (const endpoint of idleStyle.background.match(/rgb\([^)]+\)/g)) expect(contrast(idleStyle.stroke, endpoint)).toBeGreaterThanOrEqual(3);
-    expect(contrast(idleStyle.color, 'rgb(247, 249, 252)')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(idleStyle.color, 'rgb(255, 255, 255)')).toBeGreaterThanOrEqual(4.5);
     await page.screenshot({ path: testInfo.outputPath('home-navigation.png'), animations: 'disabled' });
     await aquarium.click();
     await expect(aquarium).toHaveAttribute('aria-current', 'page');
     const activeStyle = await readIconStyle(icon);
-    expect(activeStyle.background).toBe('linear-gradient(135deg, rgb(10, 86, 178), rgb(15, 127, 117))');
+    expect(activeStyle.background).toBe('rgb(52, 78, 143)');
     expect(activeStyle.stroke).toBe('rgb(255, 255, 255)');
-    expect(activeStyle.width).toBe('48px');
-    expect(activeStyle.height).toBe('48px');
-    await expect(icon).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
+    expect(activeStyle.width).toBe('44px');
+    expect(activeStyle.height).toBe('44px');
+    await expect(icon).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
     await expect(icon.locator('svg')).toHaveCSS('stroke-width', '2.15px');
     await expect(home.locator('svg')).toHaveCSS('stroke-width', '1.75px');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-weight', '700');
     await expect(aquarium.locator('.tabbar-label')).toHaveCSS('font-size', '12px');
-    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(10, 86, 178)');
+    await expect(aquarium.locator('.tabbar-label')).toHaveCSS('color', 'rgb(52, 78, 143)');
     for (const endpoint of activeStyle.background.match(/rgb\([^)]+\)/g)) expect(contrast(activeStyle.stroke, endpoint)).toBeGreaterThanOrEqual(3);
-    expect(contrast('rgb(10, 86, 178)', 'rgb(247, 249, 252)')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast('rgb(52, 78, 143)', 'rgb(255, 255, 255)')).toBeGreaterThanOrEqual(4.5);
     expect(activeStyle.background).not.toBe(idleStyle.background);
     expect(activeStyle.color).not.toBe(idleStyle.color);
     await expect(home).not.toHaveAttribute('aria-current', 'page');
@@ -96,7 +96,7 @@ for (const viewport of viewports) {
     await page.screenshot({ path: testInfo.outputPath('aquarium-navigation.png'), animations: 'disabled' });
     await home.click();
     await expect(home).toHaveAttribute('aria-current', 'page');
-    await expect.poll(() => icon.evaluate(element => getComputedStyle(element).backgroundImage)).toBe(idleStyle.background);
+    await expect.poll(() => icon.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(idleStyle.background);
     expect(await home.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
 
     const profileTrigger = page.getByRole('button', { name: '프로필 메뉴 열기' });

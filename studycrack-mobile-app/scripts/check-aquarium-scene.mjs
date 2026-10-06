@@ -157,7 +157,7 @@ for (const selector of ['.aquarium-scene{', '.aquarium-fish-path{', '@keyframes 
   assert.ok(sceneCss.includes(selector));
   assert.ok(!screenCss.includes(selector));
 }
-assert.match(tokenCss, /--sc-radius-card:16px;--sc-radius-scene:24px;/);
+assert.match(tokenCss, /--sc-radius-card:10px;--sc-radius-scene:12px;/);
 assert.match(sceneCss, /prefers-reduced-motion:reduce/);
 assert.match(sceneCss, /animation:none !important;transition:none !important/);
 const rgb = token => tokenCss.match(new RegExp(`${token}:#([0-9a-f]{6})`, 'i'))[1].match(/../g).map(value => parseInt(value, 16));

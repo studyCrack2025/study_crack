@@ -396,7 +396,7 @@ test('플래너 상단에서 주·월 일정과 인라인 입력을 탐색한다
   await expect(plannerContent).not.toHaveClass(/modal-lock/);
   expect(await plannerContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
   const progressBox = await page.locator('.planner-progress-card').boundingBox();
-  await expect(page.locator('.planner-progress-track')).toHaveCSS('height', '10px');
+  await expect(page.locator('.planner-progress-track')).toHaveCSS('height', '8px');
   await expect(page.locator('.planner-item-main b').first()).toHaveCSS('font-size', '16px');
   await expect(page.locator('.planner-item-time').first()).toHaveCSS('font-size', '14px');
   const tasksBox = await page.locator('.planner-tasks-section').boundingBox();
@@ -731,7 +731,7 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   const targetSelect = page.locator('[data-field="analysisTargetMajor"]');
   const analysisContent = page.locator('[data-screen="analysis"]');
   await expect(analysisContent).not.toHaveClass(/modal-lock/);
-  expect(await analysisContent.evaluate((element) => getComputedStyle(element).overflowY)).toBe('auto');
+  await expect(analysisContent).toHaveCSS('overflow-y', 'auto');
   await expect(examSelect).toBeVisible();
   await expect(page.locator('.analysis-score-card .analysis-target-select')).toBeVisible();
   await expect(page.locator('.analysis-score-card')).toBeVisible();

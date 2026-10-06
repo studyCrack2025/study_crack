@@ -29,7 +29,9 @@ for (const mode of ['native', 'cancel', 'failure', 'clipboard', 'copy-failure', 
     await page.goto('/studycrack-mobile.html?screen=aquarium');
     await page.locator('[data-action="openAquariumShare"]').click();
     const button = page.getByRole('button', { name: '기록과 링크 공유', exact: true });
-    await button.click();
+    await button.focus();
+    await expect(button).toBeFocused();
+    await button.press('Enter');
     if (mode === 'cancel') {
       await expect(button).toBeEnabled();
       await expect(page.locator('.aquarium-share-result, .aquarium-action-error')).toHaveCount(0);

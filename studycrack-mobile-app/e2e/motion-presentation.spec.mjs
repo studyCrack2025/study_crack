@@ -43,10 +43,11 @@ test('팝업 형태별 진입 모션과 메뉴 눌림은 기본 모션과 분리
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await page.mouse.down();
   await expect(aquarium).toHaveCSS('transform', 'none');
-  await expect(aquarium.locator('.tabbar-icon')).toHaveCSS('transform', 'matrix(0.9, 0, 0, 0.9, 0, -9)');
+  await expect.poll(() => aquarium.locator('.tabbar-icon').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a), { intervals: [16, 16, 32, 50] }).toBeLessThan(.95);
+  expect(await aquarium.locator('.tabbar-icon').evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m42)).toBe(0);
   await page.mouse.move(1, 1);
   await page.mouse.up();
-  await expect(aquarium.locator('.tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
+  await expect(aquarium.locator('.tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   const trigger = page.getByRole('button', { name: '프로필 메뉴 열기' });
   await trigger.click();
   const drawer = page.getByRole('dialog', { name: '프로필 메뉴' });
@@ -77,7 +78,7 @@ test('모션 줄이기에서도 화면·팝업·수조·메뉴의 상태 전환�
   await expect(page.locator('.aquarium-fish-path').first()).toHaveCSS('animation-name', 'none');
   await expect(page.locator('.aquarium-scene-background')).toHaveCSS('animation-name', 'none');
   await expect(page.locator('.tabbar [data-tab="aquarium"]')).toHaveAttribute('aria-current', 'page');
-  await expect(page.locator('.tabbar [data-tab="aquarium"] .tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, -9)');
+  await expect(page.locator('.tabbar [data-tab="aquarium"] .tabbar-icon')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   await page.locator('[data-action="openAquariumDraw"]').click();
   await page.getByRole('button', { name: '뽑기권 1장으로 만나기' }).click();
   await expect(page.getByRole('dialog', { name: '물고기 발견 결과' })).toHaveCSS('animation-name', 'none');

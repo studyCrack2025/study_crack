@@ -84,6 +84,10 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const box = await card.boundingBox();
     expect(box.height).toBeGreaterThanOrEqual(136);
     await expect(card.locator('.aquarium-catalog-sprite')).toHaveCSS('width', '60px');
+    await expect(card.locator(':scope > b')).toHaveCSS('font-size', '16px');
+    await expect(card.locator(':scope > b')).toHaveCSS('font-weight', '700');
+    await expect(page.getByRole('button', { name: '전체', exact: true })).toHaveCSS('min-height', '48px');
+    await expect(page.getByRole('button', { name: '전체', exact: true })).toHaveCSS('border-radius', '4px');
     await expect(card.locator('.aquarium-catalog-card-meta')).toContainText('일반');
     await expect(page.locator('.aquarium-catalog-view')).not.toContainText('미획득 친구는 아직 비밀');
     await page.screenshot({ path: testInfo.outputPath(`fishdex-${width}.png`), animations: 'disabled' });

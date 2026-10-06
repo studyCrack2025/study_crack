@@ -78,6 +78,11 @@ for (const width of [320, 360, 390, 430]) {
     const grid = page.getByRole('list', { name: '과목별 원점수 1점 상승의 환산점수 효과' });
     await expect(grid.getByRole('button')).toHaveCount(4);
     await expect(page.locator('.analysis-score-card strong')).toHaveText('142점');
+    await expect(page.locator('.analysis-score-card strong')).toHaveCSS('font-weight', '800');
+    await expect(page.locator('.analysis-score-card-head')).toHaveCSS('border-top-width', '0px');
+    await expect(page.locator('.analysis-improvement-switch button').first()).toHaveCSS('min-height', '48px');
+    await expect(page.locator('.analysis-improvement-switch button').first()).toHaveCSS('border-radius', '4px');
+    await expect(page.locator('.analysis-preview-values')).toHaveCSS('background-image', 'none');
     await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('6월 평가원');
     await expect(page.locator('.analysis-score-card-head')).toContainText('6월 평가원');
     await expect(page.locator('.analysis-score-card .analysis-main-gauge')).toHaveCount(1);

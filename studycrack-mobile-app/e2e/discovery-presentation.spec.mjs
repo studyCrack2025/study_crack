@@ -40,7 +40,7 @@ for (const [width, height] of [[320, 600], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('.app-content')).toHaveAttribute('inert', '');
     const box = await result.boundingBox();
     expect(Math.round(box.width)).toBe(Math.min(348, width - 40));
-    await expect(result).toHaveCSS('border-radius', '30px');
+    await expect(result).toHaveCSS('border-radius', '10px');
     await expect(result).toHaveCSS('animation-name', 'none');
     await page.screenshot({ path: testInfo.outputPath(`discovery-${width}.png`), animations: 'disabled' });
     const later = result.getByRole('button', { name: '나중에 볼게요', exact: true });

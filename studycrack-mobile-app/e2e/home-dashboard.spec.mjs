@@ -27,6 +27,9 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expect(page.locator('.timer-v2-clock')).not.toBeVisible();
     await expect(page.locator('.home-study-highlight .home-active-study')).toBeEnabled();
     await expect(page.locator('.home-active-study')).toHaveAccessibleName('공부 시작');
+    await expect(page.locator('.home-active-study')).toHaveCSS('border-radius', '4px');
+    await expect(page.locator('.timer-v2-plan')).toHaveCSS('box-shadow', 'none');
+    await expect(page.locator('.timer-v2-plan-list > button').first()).toHaveCSS('border-radius', '4px');
     await expect(page.locator('.home-study-highlight [data-action="startPlannedStudy"]')).toHaveAttribute('data-study-item-id', 'home-plan-1');
     await expect(page.locator('.timer-v2-plan-list > button')).toHaveCount(2);
     await expect(page.locator('.home-plan-more')).toContainText('+2개');

@@ -25,7 +25,8 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     await expectNoHorizontalOverflow(page);
     await capture('my');
     await insight.locator('summary').click();
-    await page.locator('.my-profile-hero').click();
+    await page.locator('.my-profile-hero').focus();
+    await page.locator('.my-profile-hero').press('Enter');
     const profile = page.getByRole('dialog', { name: '계정 및 구독 정보' });
     await expect(profile).toContainText(email);
     await expect(profile.locator('.profile-detail-row strong').filter({ hasText: email })).toHaveCSS('white-space', 'normal');
