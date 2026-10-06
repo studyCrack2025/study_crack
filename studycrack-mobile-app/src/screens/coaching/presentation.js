@@ -16,9 +16,9 @@ export function buildCoachingWeek(items = [], date = '') {
 }
 
 export const COACHING_PROCESS_STEPS = [
-  { number: '01', title: '학습 성향 분석', description: 'MBTI + 기초조사서' },
-  { number: '02', title: '목표 대학 분석', description: '대학별 환산점수' },
-  { number: '03', title: '합격 설계', description: '주간 플래너 + 루틴' }
+  { number: '01', title: '나의 학습 상태 확인', description: '학습 프로필과 기초조사서, 저장한 성적을 함께 확인해요. 성향은 공부 방법을 찾는 참고 자료예요.', example: '평소 공부 습관과 어려운 과목을 남겨주세요.', visual: [{ icon: 'user', label: '학습 프로필' }, { icon: 'report', label: '조사서·성적' }] },
+  { number: '02', title: '목표 대학과 현재 성적 비교', description: '선택한 시험 성적을 대학별 환산점수로 비교해 공부 방향을 살펴봐요. 분석 결과는 합격을 보장하지 않아요.', example: '목표 대학과 분석할 시험을 선택해 주세요.', visual: [{ icon: 'target', label: '목표 대학' }, { icon: 'chart', label: '성적 비교' }] },
+  { number: '03', title: '실행하고 피드백 받기', description: '계획을 세워 공부하고, 주간 점검에 기록과 질문을 남겨요. 튜터 피드백으로 다음 주 계획을 다듬어요.', example: '이번 주 잘된 점과 다음 주 고민을 적어주세요.', visual: [{ icon: 'calendar', label: '계획·실행' }, { icon: 'chat', label: '튜터 피드백' }] }
 ];
 
 export function formatCoachingWeekLabel(weekId = '') {
