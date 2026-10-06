@@ -61,12 +61,16 @@ export function createNavigationOps({ getState, setState, onScreenChange, myNavi
 
   function back(afterMotion = false) {
     const state = getState();
-    if (!afterMotion && myNavigation?.deferBack?.(state, () => back(true))) return true;
-    onScreenChange?.(state.screen, null);
-    if (!state.history.length) return goto('timer', false);
     const clone = [...state.history];
     const prev = clone.pop();
-    const target = prev === 'home' ? 'analysis' : prev;
+    const target = prev === 'home' ? 'analysis' : prev || 'timer';
+    const commit = () => {
+      const current = getState();
+      if (current.screen === state.screen && current.history === state.history && current.myReturn === state.myReturn && current.user?.email === state.user?.email) back(true);
+    };
+    if (!afterMotion && myNavigation?.deferBack?.(state, commit, { target, depth: clone.length })) return true;
+    onScreenChange?.(state.screen, null);
+    if (!state.history.length) return goto('timer', false);
     setState({ history: clone, screen: target, ...myNavigation?.back(state, target, clone.length), ...(state.studyPanelMode ? { studyPanelMode: '' } : {}), ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
     return true;
   }

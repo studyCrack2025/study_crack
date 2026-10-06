@@ -236,6 +236,25 @@ const calendarRetryHandlers = createCalendarHandlers({
 assert.equal(calendarRetryHandlers.retryCalendar(), true);
 assert.equal(calendarStatus, 'idle', 'calendar retry must re-enable the existing resource without changing data');
 
+for (const locked of [{ calendarSaving: true }, { calendarMutationRecovery: { kind: 'save' } }]) {
+  let changes = 0;
+  const handlers = createCalendarHandlers({ ...locked, setCalendarEventFormOpen() { changes++; } });
+  handlers.openCalendarEventForm();
+  handlers.closeCalendarEventForm();
+  assert.equal(changes, 0, 'saving and uncertain writes must block both directions');
+}
+let resumed = false;
+const resumeEdit = createCalendarHandlers({
+  calendarEventEditId: 'event-existing',
+  calendarEventDraft: { title: '수정 중인 일정', date: '2026-10-02' },
+  setCalendarEventFormOpen(value) { resumed = value; },
+  setCalendarEventEditId() { assert.fail('resume must preserve the edit target'); },
+  setCalendarEventDraft() { assert.fail('resume must preserve the draft'); },
+  confirm() { assert.fail('resume must not ask to replace its own draft'); }
+});
+resumeEdit.openCalendarEventForm();
+assert.equal(resumed, true);
+
 const calendarFields = new Map([
   ['title', input('모의고사 준비')],
   ['date', input('2026-09-05')],

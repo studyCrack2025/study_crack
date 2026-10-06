@@ -26,6 +26,44 @@ async function setup(page, now = '2026-10-01T03:00:00Z') {
   return state;
 }
 
+for (const reducedMotion of ['reduce', 'no-preference']) test(`일정 버튼은 초안과 편집을 보존하며 반복 토글한다 (${reducedMotion})`, async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.emulateMedia({ reducedMotion });
+  const api = await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  const toggle = page.locator('.calendar-heading .planner-admission-trigger');
+  const form = page.locator('#calendar-event-form');
+  await expect(toggle).toHaveText('＋ 일정');
+  await toggle.click();
+  await page.getByLabel('일정 제목', { exact: true }).fill('토글 뒤에도 남는 초안');
+  const start = await page.getByLabel('시작일', { exact: true }).inputValue();
+  const width = (await toggle.boundingBox()).width;
+  for (let index = 0; index < 3; index++) {
+    await expect(toggle).toHaveText('－ 일정');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await toggle.click();
+    await expect(form).toHaveAttribute('inert', '');
+    await expect(toggle).toHaveText('＋ 일정');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect((await toggle.boundingBox()).width).toBeCloseTo(width, 0);
+    await toggle.click();
+    await expect(page.getByLabel('일정 제목', { exact: true })).toHaveValue('토글 뒤에도 남는 초안');
+    await expect(page.getByLabel('시작일', { exact: true })).toHaveValue(start);
+  }
+  expect(api.saves).toBe(0);
+  await toggle.click();
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('[data-planner-date="2026-10-02"]').click();
+  await page.getByRole('button', { name: '개인 면접 준비 수정' }).click();
+  await page.getByLabel('일정 제목', { exact: true }).fill('편집 중인 면접');
+  await toggle.click();
+  await toggle.click();
+  await expect(page.getByRole('region', { name: '내 일정 수정', exact: true })).toBeVisible();
+  await expect(page.getByLabel('일정 제목', { exact: true })).toHaveValue('편집 중인 면접');
+  expect(api.saves).toBe(0);
+  await expectNoHorizontalOverflow(page);
+});
+
 async function expectContained(locator) {
   expect(await locator.evaluateAll(inputs => inputs.every(input => {
     const rect = input.getBoundingClientRect();

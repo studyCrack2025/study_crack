@@ -71,6 +71,37 @@ nav.goto('planner');
 assert.equal(state.myReturn, null, 'direct main-tab navigation drops MY context');
 assert.deepEqual(state.history, []);
 
+state = { screen: 'timer', tab: 'timer', history: [], drawerOpen: true, userLoadStatus: 'ready', user: { email: 'owner@example.test' } };
+nav.rememberMy({ scroll: 240, target: 'my' });
+nav.goto('my');
+nav.goto('scoreInfo');
+nav.goto('qualInfo');
+nav.back();
+assert.equal(state.screen, 'scoreInfo');
+assert.equal(state.drawerOpen, false);
+nav.back();
+assert.equal(state.screen, 'my');
+assert.equal(state.drawerOpen, false, 'full-page child back must keep the drawer covered');
+assert.equal(state.myReturn.scroll, 240, 'full MY must retain its original drawer return snapshot');
+nav.back();
+assert.equal(state.screen, 'timer');
+assert.equal(state.drawerOpen, true);
+assert.equal(state.myReturn.target, 'my');
+
+let destination;
+let motionCommit;
+state = { screen: 'scoreInfo', history: ['timer', 'my'] };
+const deferredNav = createNavigationOps({ getState: () => state, setState: patch => { state = { ...state, ...patch }; }, myNavigation: { goto() { return {}; }, deferBack(current, commit, next) { destination = next; motionCommit = commit; return true; } } });
+deferredNav.back();
+assert.deepEqual(destination, { target: 'my', depth: 1 }, 'motion must receive the destination before changing state');
+assert.equal(state.screen, 'scoreInfo');
+assert.deepEqual(state.history, ['timer', 'my']);
+deferredNav.goto('planner');
+const activeHistory = state.history;
+motionCommit();
+assert.equal(state.screen, 'planner', 'a stale exit must not navigate after another screen was opened');
+assert.equal(state.history, activeHistory);
+
 const previousWindow = globalThis.window;
 try {
   const currentHistoryState = { marker: 'preserve' };

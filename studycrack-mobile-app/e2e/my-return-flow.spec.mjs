@@ -54,3 +54,100 @@ test('랭킹 직접 진입의 뒤로는 유령 MY를 만들지 않는다', async
   await expect(page.locator('[data-screen="timer"]')).toBeVisible();
   await expect(page.getByRole('dialog', { name: '프로필 메뉴' })).toHaveCount(0);
 });
+
+for (const target of ['scoreInfo', 'qualInfo', 'accountInfo', 'customerSupport']) {
+  test(`전체 MY → ${target} → 뒤로는 퇴장 중에도 drawer를 노출하지 않는다`, async ({ page }, testInfo) => {
+    await installAuthenticatedSession(page);
+    await installApiMock(page, { tier: 'pro' });
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+    const drawer = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
+    await drawer.getByRole('button', { name: '마이페이지 전체 보기' }).click();
+    const full = page.locator('[data-screen="my"]');
+    await expect(full).toBeVisible();
+    await full.locator(`[data-target="${target}"]`).first().click();
+    await expect(page.locator(`[data-screen="${target}"]`)).toBeVisible();
+    await page.evaluate(() => {
+      window.__myBackFrames = [];
+      window.__myBackCapture = new Promise(resolve => {
+        const start = performance.now();
+        const sample = () => {
+          const exiting = document.querySelector('.app-content[data-my-exit]');
+          const host = document.querySelector('.my-persistent-host');
+          if (exiting) window.__myBackFrames.push({
+            shell: getComputedStyle(exiting.closest('.app-shell')).backgroundColor,
+            frame: getComputedStyle(exiting.closest('.app-frame')).backgroundColor,
+            suspended: host?.querySelector('.sc-overlay')?.hasAttribute('inert'),
+            covered: host?.dataset.covered
+          });
+          if ((!exiting && document.querySelector('[data-screen="my"]')) || performance.now() - start > 2000) resolve(window.__myBackFrames);
+          else requestAnimationFrame(sample);
+        };
+        document.querySelector('[data-action="back"]').click();
+        sample();
+      });
+    });
+    const frames = await page.evaluate(() => window.__myBackCapture);
+    await testInfo.attach('full-my-back-frames', { contentType: 'application/json', body: JSON.stringify(frames) });
+    expect(frames.length).toBeGreaterThan(1);
+    for (const frame of frames) {
+      expect(frame.shell).not.toBe('rgba(0, 0, 0, 0)');
+      expect(frame.frame).not.toBe('rgba(0, 0, 0, 0)');
+      expect(frame.suspended).toBe(true);
+      expect(frame.covered).toBe('true');
+    }
+    await expect(full).toBeVisible();
+    await expect(drawer).toBeHidden();
+    await full.getByRole('button', { name: '뒤로가기', exact: true }).click();
+    await expect(drawer).toBeVisible();
+    await expect(drawer.getByRole('button', { name: '마이페이지 전체 보기' })).toBeFocused();
+  });
+}
+
+test('전체 MY의 브라우저 뒤로는 전체보기, 그 다음은 원래 drawer로 돌아간다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  const drawer = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
+  await drawer.getByRole('button', { name: '마이페이지 전체 보기' }).click();
+  await page.locator('[data-screen="my"] [data-target="scoreInfo"]').click();
+  await page.evaluate(() => history.back());
+  await expect(page.locator('[data-screen="my"]')).toBeVisible();
+  await expect(drawer).toBeHidden();
+  await page.evaluate(() => history.back());
+  await expect(drawer).toBeVisible();
+});
+
+test('직접 연 전체 MY에서 하위 화면 복귀는 drawer를 생성하지 않는다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  await installApiMock(page);
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await page.locator('[data-screen="my"] .my-menu-row[data-target="qualInfo"]').click();
+  await page.getByRole('button', { name: '뒤로가기', exact: true }).click();
+  await expect(page.locator('[data-screen="my"]')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: '프로필 메뉴', exact: true })).toHaveCount(0);
+});
+
+test('전체 MY에서 정성 저장 실패는 입력을 유지하고 성공은 전체보기로 복귀한다', async ({ page }) => {
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page, { failOnceTypes: ['update_qual'], userOverrides: { qualitative: { status: '고3', stream: 'natural' } } });
+  page.on('dialog', dialog => dialog.accept());
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+  const drawer = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
+  await drawer.getByRole('button', { name: '마이페이지 전체 보기' }).click();
+  await page.locator('[data-screen="my"] .my-menu-row[data-target="qualInfo"]').click();
+  await page.locator('[data-ob-grade]').first().click();
+  await page.locator('#qual-school').fill('검수 고등학교');
+  await page.locator('#qual-track').selectOption({ index: 1 });
+  await page.locator('#qual-goal').fill('입력 보존 확인');
+  await page.getByRole('button', { name: '정성조사서 저장', exact: true }).click();
+  await expect.poll(() => api.requests.filter(request => request.payload.type === 'update_qual').length).toBe(1);
+  await expect(page.locator('#qual-goal')).toHaveValue('입력 보존 확인');
+  await expect(page.locator('.qual-save-btn')).toBeEnabled();
+  await page.getByRole('button', { name: '정성조사서 저장', exact: true }).click();
+  await expect(page.locator('[data-screen="my"]')).toBeVisible();
+  await expect(drawer).toBeHidden();
+  await expect(page.locator('.profile-save-notice')).toContainText('저장했어요');
+});

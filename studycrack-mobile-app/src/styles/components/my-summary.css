@@ -9,8 +9,8 @@
 .my-navigation-layer[data-my-covered] .app-shell{z-index:491;}
 .my-persistent-host > .sc-overlay{pointer-events:auto;}
 .my-persistent-host > [inert]{pointer-events:none;}
-.app-shell:has(.app-content[data-my-exit]){background:transparent;}
-.app-frame:has(.app-content[data-my-exit]){background:transparent;}
+.app-shell:has(.app-content[data-my-exit][data-my-return="drawer"]){background:transparent;}
+.app-frame:has(.app-content[data-my-exit][data-my-return="drawer"]){background:transparent;}
 [data-my-exit]{animation:myDrawerOut 320ms var(--ease-exit) both !important;pointer-events:none;}
 @keyframes myDrawerOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(100%);opacity:1;}}
 @keyframes myDrawerIn{from{opacity:.001;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
