@@ -100,7 +100,7 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 360, height: 800 }
     await page.goto('/studycrack-mobile.html?screen=timer');
     const target = page.locator('.timer-v2-target-summary').getByRole('button', { name: /1지망 목표/ }).locator('b');
     await expect(target).toHaveCSS('font-size', '20px');
-    await expect(target).toHaveCSS('font-weight', '900');
+    await expect(target).toHaveCSS('font-weight', '800');
     const content = page.locator('.app-content');
     const gutter = viewport.width <= 360 ? 14 : 16;
     await expect(content).toHaveCSS('padding-left', `${gutter}px`);

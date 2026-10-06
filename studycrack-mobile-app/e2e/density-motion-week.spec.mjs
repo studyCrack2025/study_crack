@@ -74,7 +74,9 @@ test('MY 하위 패널은 Escape 퇴장 중에도 유지되고 종료 후 입력
   await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
   await page.locator('[data-target="accountInfo"]').click();
   const trigger = page.locator('[data-action="openMyProfileEdit"]');
-  await trigger.click();
+  await trigger.focus();
+  await expect(trigger).toBeFocused();
+  await trigger.press('Enter');
   const panel = page.getByRole('dialog', { name: '이름 변경', exact: true });
   await expect(panel).toHaveCSS('animation-duration', '0.38s');
   await page.keyboard.press('Escape');
