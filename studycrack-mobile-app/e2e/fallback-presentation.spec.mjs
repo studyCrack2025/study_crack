@@ -38,7 +38,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
       await expectCentered(page, width, height);
       const retry = page.getByRole('button', { name: '다시 불러오기' });
       expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
-      await expect(retry).toHaveCSS('background-color', 'rgb(10, 86, 178)');
+      await expect(retry).toHaveCSS('background-color', 'rgb(52, 78, 143)');
       await expect(retry).toHaveCSS('font-size', '16px');
       await expect(page.getByRole('alert').locator('h3')).toHaveCSS('font-size', '20px');
       await expect(page.getByRole('alert').locator('p')).toHaveCSS('font-size', '14px');

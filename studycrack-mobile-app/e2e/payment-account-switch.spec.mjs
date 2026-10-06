@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { installAuthenticatedSession, installApiMock } from './support/mock-api.mjs';
 
+test.beforeEach(({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'CPU throttling requires Chromium CDP; shared payment recovery tests run in both engines.');
+});
+
 const id = 'PI_123e4567e89b12d3a456426614174000';
 const owner = 'e2e-student';
 const other = 'other-student';

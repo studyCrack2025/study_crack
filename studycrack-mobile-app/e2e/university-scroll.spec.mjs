@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
+test.beforeEach(({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'Touch injection requires Chromium CDP; shared university search and layout tests run in both engines.');
+});
+
 for (const [width, height] of [[320, 568], [390, 844]]) {
   test(`긴 대학·학과 목록은 모달 본문에서 끝까지 스크롤된다 (${width})`, async ({ page }, info) => {
     await page.setViewportSize({ width, height });
