@@ -92,6 +92,7 @@ for (const width of [320, 390, 430]) {
     await form.getByLabel('시작일', { exact: true }).fill('2026-10-01');
     await form.locator('summary').click();
     await form.getByLabel('메모', { exact: true }).fill('준비물 확인');
+    await expect.poll(() => form.locator('.calendar-form-details').evaluate(el => el.getAnimations().length)).toBe(0);
     await expectContained(form.locator('input[type="date"]'));
     const start = await form.getByLabel('시작일', { exact: true }).boundingBox();
     const end = await form.getByLabel('종료일 (선택)', { exact: true }).boundingBox();

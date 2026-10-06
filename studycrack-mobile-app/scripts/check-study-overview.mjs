@@ -72,7 +72,7 @@ try {
   const empty = buildStudyOverview({ ...input, plannerItems: [] });
   const compactMarkup = overview => renderToStaticMarkup(createElement(StudyOverviewCard, { overview, compact: true }));
   const idle = buildStudyOverview({ ...input, activeStudySession: null, studyTimerRunning: false });
-  assert.match(compactMarkup(idle), /<details class="sc-study-details"><summary>확정 공부 01:00:00 · 상세 기록<\/summary>/);
+  assert.match(compactMarkup(idle), /<details class="sc-study-details"[^>]*><summary[^>]*>확정 공부 01:00:00 · 상세 기록<\/summary>/);
   assert.doesNotMatch(compactMarkup(idle), /<details[^>]*open/);
   assert.ok(compactMarkup(idle).indexOf('role="progressbar"') < compactMarkup(idle).indexOf('<details'));
   for (const attention of [view, error, { ...idle, confirmed: { ...idle.confirmed, fresh: false } }, { ...idle, timeGoal: { ...idle.timeGoal, datesMatch: false } }, { ...idle, planner: { ...idle.planner, status: 'date-mismatch' } }]) {

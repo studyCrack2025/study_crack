@@ -1,3 +1,5 @@
+import { DisclosureRegion } from '../../components/DisclosureRegion.jsx';
+import { AnimatedDetails } from '../../components/AnimatedDetails.jsx';
 import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
 import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
@@ -47,7 +49,7 @@ function QnaHistory({ qnaHistory = [], qnaStatus = 'idle', qnaError = '' }) {
   return <>{feedback}{qnaHistory.map((item, index) => {
     const done = String(item.status || '').toLowerCase() === 'done';
     const created = formatDate(item.createdAt);
-    return <details className="qna-list-row" key={item.qnaId || item.id || `${created}-${index}`}><summary className="qna-thread-summary"><b>{item.title || '제목 없는 문의'}</b><span className="qna-row-side"><em className={done ? 'done' : ''}>{qnaStatusLabel(item.status)}</em>{created ? <span>{created}</span> : null}</span></summary><div className="qna-thread-body"><p>{item.content || '문의 내용 없음'}</p>{done && item.answer ? <small>답변: {item.answer}</small> : null}</div></details>;
+    return <AnimatedDetails className="qna-list-row" key={item.qnaId || item.id || `${created}-${index}`}><summary className="qna-thread-summary"><b>{item.title || '제목 없는 문의'}</b><span className="qna-row-side"><em className={done ? 'done' : ''}>{qnaStatusLabel(item.status)}</em>{created ? <span>{created}</span> : null}</span></summary><div className="qna-thread-body"><p>{item.content || '문의 내용 없음'}</p>{done && item.answer ? <small>답변: {item.answer}</small> : null}</div></AnimatedDetails>;
   })}</>;
 }
 
@@ -103,7 +105,7 @@ export function CustomerSupportScreen(ctx) {
         <section className="sc-secondary-section"><div className="sc-secondary-section-head"><div><h3>학습 코칭 담당 관리</h3><p>담당 튜터를 차단하면 배정이 해제되고 새 담당 배정을 요청합니다. 기존에 받은 자료나 별도 정시 컨설팅에는 적용되지 않아요.</p></div></div><button type="button" className="btn btn-secondary" data-action="blockAssignedTutor">담당 튜터 차단하기</button><p>별도 컨설팅의 담당 변경·연락 중단은 위 신고 또는 고객센터로 요청해주세요.</p></section>
         <section className="sc-secondary-section support-direct-card"><div className="sc-secondary-section-head"><div><h3>1:1 문의</h3><p>현재 상황을 구체적으로 적으면 더 빠르게 확인할 수 있어요.</p></div></div><div className="support-action-grid"><button type="button" className="support-action-card primary" data-action="openQnaComposer"><b>일반 문의</b><span>결제·계정·서비스 이용 질문</span></button><button type="button" className="support-action-card" data-action="openQnaComposer" data-qna-title="[데이터 오류 신고] " data-qna-content="오류가 발생한 화면:\n기준 시험:\n선택한 대학·학과:\n확인한 문제:\n"><b>데이터 오류 신고</b><span>성적·대학·환산 결과 문제</span></button></div><button type="button" className="support-kakao-link" data-action="openKakaoSupport">카카오톡으로 문의하기</button></section>
         <section className="sc-secondary-section support-qna-card"><div className="sc-secondary-section-head support-section-head"><div><h3>내 문의 내역</h3></div>{qnaHistory.length ? <span className="sc-badge">{qnaHistory.length}건</span> : null}</div><div className="sc-secondary-list qna-list compact"><QnaHistory qnaHistory={qnaHistory} qnaStatus={qnaStatus} qnaError={qnaError} /></div></section>
-        <section className="sc-secondary-section faq-card"><div className="sc-secondary-section-head"><div><h3>자주 묻는 질문</h3></div></div><div className="sc-secondary-list">{FAQS.map(([id, question, answer]) => <button type="button" className={`sc-secondary-row faq-row ${openFaq === id ? 'active open' : ''}`} data-action="toggleFaq" data-faq-id={id} aria-expanded={openFaq === id ? 'true' : 'false'} key={id}><div className="sc-secondary-row-main"><b>{question}</b>{openFaq === id ? <p className="faq-answer">{answer}</p> : null}</div><span aria-hidden="true">›</span></button>)}</div></section>
+        <section className="sc-secondary-section faq-card"><div className="sc-secondary-section-head"><div><h3>자주 묻는 질문</h3></div></div><div className="sc-secondary-list">{FAQS.map(([id, question, answer]) => <button type="button" className={`sc-secondary-row faq-row ${openFaq === id ? 'active open' : ''}`} data-action="toggleFaq" data-faq-id={id} aria-expanded={openFaq === id ? 'true' : 'false'} key={id}><div className="sc-secondary-row-main"><b>{question}</b><DisclosureRegion open={openFaq === id}><p className="faq-answer">{answer}</p></DisclosureRegion></div><span aria-hidden="true">›</span></button>)}</div></section>
       </div>
     </SecondaryScreenShell>
   );

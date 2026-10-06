@@ -33,7 +33,7 @@
 .weekly-feedback{display:block;overflow:hidden;}
 .weekly-feedback > summary{cursor:pointer;color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;line-height:1.7;min-height:var(--sc-touch-target);overflow-wrap:anywhere;}
 .weekly-feedback > summary b{display:inline-block;margin-left:8px;color:var(--sc-action-positive-strong);font-size:var(--sc-type-micro);}
-.weekly-feedback-list .feedback-item p{margin:0;white-space:pre-wrap;font-size:var(--sc-type-body);line-height:1.65;}
+.weekly-feedback-list .feedback-item p{margin:0;white-space:pre-wrap;font-size:var(--sc-type-body);line-height:1.65;overflow:hidden;}
 .weekly-feedback-list .feedback-item p[data-expanded="false"]{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;}
 .weekly-feedback-list .feedback-item h4{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.5;border-left:3px solid var(--sc-action-positive-strong);padding-left:10px;}
 .weekly-feedback-list .feedback-item button{justify-self:start;min-height:var(--sc-touch-target);padding:0 8px;border:0;background:transparent;color:var(--sc-brand-navy);font:inherit;font-weight:800;}

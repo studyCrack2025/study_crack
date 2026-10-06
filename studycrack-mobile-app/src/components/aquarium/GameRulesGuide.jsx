@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../AnimatedDetails.jsx';
 import { useContext, useRef, useState } from 'react';
 import { Modal } from '../Modal.jsx';
 import { Icon } from '../Icon.jsx';
@@ -20,8 +21,8 @@ function RulesGrowthGuide({ view }) {
     <h3>수조 배경 성장</h3>
     {presentation ? <>
       <p className="game-rules-growth-state">성장 인정 <b>{presentation.growth.validDayCount}일</b>{presentation.next ? ` · 다음 배경까지 ${presentation.growth.nextStageDays}일` : ' · 마지막 배경 달성'}</p>
-      <details className="game-rules-details"><summary>배경 목표 보기</summary><p className="game-rules-note">당일 계정 계획의 첫 완료가 확인되면 하루 최대 1일 인정돼요.</p><p className="game-rules-note">기기에서만 체크한 계획과 타이머 공부 시간은 배경 성장 일수로 계산하지 않아요.</p><div className="game-rules-background-pair">{presentation.current ? <BackgroundArtwork key={`current-${presentation.current}`} day={presentation.current} label="현재 열린 배경" /> : <div className="game-rules-first-day"><Icon name="calendar" /><b>첫 성장 준비</b><span>성장 1일부터 첫 배경이 열려요.</span></div>}{presentation.next ? <BackgroundArtwork key={`next-${presentation.next}`} day={presentation.next} label="다음 목표" /> : null}</div>
-      <div className="game-rules-background-grid">{AQUARIUM_GUIDE_STAGES.map(day => <BackgroundArtwork key={day} day={day} label={presentation.growth.validDayCount >= day ? '열린 배경' : '앞으로 만날 배경'} />)}</div></details>
+      <AnimatedDetails className="game-rules-details"><summary>배경 목표 보기</summary><p className="game-rules-note">당일 계정 계획의 첫 완료가 확인되면 하루 최대 1일 인정돼요.</p><p className="game-rules-note">기기에서만 체크한 계획과 타이머 공부 시간은 배경 성장 일수로 계산하지 않아요.</p><div className="game-rules-background-pair">{presentation.current ? <BackgroundArtwork key={`current-${presentation.current}`} day={presentation.current} label="현재 열린 배경" /> : <div className="game-rules-first-day"><Icon name="calendar" /><b>첫 성장 준비</b><span>성장 1일부터 첫 배경이 열려요.</span></div>}{presentation.next ? <BackgroundArtwork key={`next-${presentation.next}`} day={presentation.next} label="다음 목표" /> : null}</div>
+      <div className="game-rules-background-grid">{AQUARIUM_GUIDE_STAGES.map(day => <BackgroundArtwork key={day} day={day} label={presentation.growth.validDayCount >= day ? '열린 배경' : '앞으로 만날 배경'} />)}</div></AnimatedDetails>
     </> : <div className="game-rules-status" role="status"><b>성장 기록 확인 필요</b><p>{['idle', 'loading'].includes(view?.status) ? '성장 기록을 불러오는 중이에요.' : '최신 성장 기록을 확인하면 현재 배경과 다음 목표를 보여드려요.'}</p>{view?.refresh ? <button type="button" className="btn btn-secondary" onClick={view.refresh} disabled={view.status === 'loading'}>성장 기록 다시 확인</button> : null}</div>}
   </section>;
 }
@@ -50,10 +51,10 @@ function RulesWizard({ presentation, status }) {
       {step ? <article className="game-rules-step" aria-label={`${index + 1}단계`}>
         <StepExample key={example?.src || 'unavailable'} asset={example} />
         <div className="game-rules-copy" aria-live="polite"><h3>{step.title}</h3><p>{step.body}</p></div>
-        {index === 1 ? <details className="game-rules-details"><summary>첫 물고기는 어떻게 만나나요?</summary><p>{presentation.starter ? `${guideDuration(presentation.starter.minimumSessionSeconds)} 이상 공부 완료 후 보상이 확인되면 ${presentation.starter.choiceCount}종 중 첫 친구를 골라요.` : '첫 친구 조건은 최신 규칙 확인이 필요해요.'} 선택한 친구는 수조 중앙에 배치돼요.</p></details> : null}
+        {index === 1 ? <AnimatedDetails className="game-rules-details"><summary>첫 물고기는 어떻게 만나나요?</summary><p>{presentation.starter ? `${guideDuration(presentation.starter.minimumSessionSeconds)} 이상 공부 완료 후 보상이 확인되면 ${presentation.starter.choiceCount}종 중 첫 친구를 골라요.` : '첫 친구 조건은 최신 규칙 확인이 필요해요.'} 선택한 친구는 수조 중앙에 배치돼요.</p></AnimatedDetails> : null}
         {index === 2 && draw ? <>
           {presentation.plan ? <p className="game-rules-highlight">2시간·4시간 이상 계획은 상위 등급의 기회가 조금 높아요.</p> : null}
-          <details className="game-rules-details"><summary>만날 수 있는 친구</summary><div className="game-rules-rarities">{GUIDE_RARITIES.map(rarity => <span key={rarity}>{RARITY_LABELS[rarity]}</span>)}</div>{positive(draw.protectedDrawCount) ? <p>첫 {draw.protectedDrawCount}회는 뽑힌 등급에 아직 만나지 않은 친구가 있으면 그 친구를 우선해요.</p> : null}{draw.specialAcquisition === 'achievement_or_event' ? <p>Special 친구는 업적과 이벤트 보상으로 만나요.</p> : null}<p className="game-rules-note">뽑기권을 사용해도 실제 공부 기록은 줄어들지 않아요.</p></details>
+          <AnimatedDetails className="game-rules-details"><summary>만날 수 있는 친구</summary><div className="game-rules-rarities">{GUIDE_RARITIES.map(rarity => <span key={rarity}>{RARITY_LABELS[rarity]}</span>)}</div>{positive(draw.protectedDrawCount) ? <p>첫 {draw.protectedDrawCount}회는 뽑힌 등급에 아직 만나지 않은 친구가 있으면 그 친구를 우선해요.</p> : null}{draw.specialAcquisition === 'achievement_or_event' ? <p>Special 친구는 업적과 이벤트 보상으로 만나요.</p> : null}<p className="game-rules-note">뽑기권을 사용해도 실제 공부 기록은 줄어들지 않아요.</p></AnimatedDetails>
         </> : null}
         {index === 3 ? <>{!presentation.plan && positive(draw?.maxLevelRefund?.tickets) ? <p className="game-rules-note">Lv.10 친구를 다시 만나면 뽑기권 {draw.maxLevelRefund.tickets}장을 돌려받아요.</p> : null}<RulesGrowthGuide view={view} /></> : null}
         {!draw && index >= 2 ? <button type="button" className="btn btn-secondary" data-action="retryGameResources">규칙 다시 확인</button> : null}

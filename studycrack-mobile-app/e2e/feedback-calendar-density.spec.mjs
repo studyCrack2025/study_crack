@@ -49,6 +49,7 @@ for (const width of [320, 360, 390, 430]) test(`피드백 전폭·모든 양식�
   const text = card.locator('.feedback-item p').first();
   const previewHeight = await text.evaluate(el => el.getBoundingClientRect().height);
   await card.getByRole('button', { name: '튜터 총평 전체 보기', exact: true }).click();
+  await expect.poll(() => text.evaluate(el => el.getAnimations().length)).toBe(0);
   await expect(text).toHaveText(longText);
   expect(await text.evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(previewHeight * 2);
   await expect(card.locator('img')).toHaveCount(0);

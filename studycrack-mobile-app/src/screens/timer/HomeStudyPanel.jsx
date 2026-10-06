@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { TimerSessionPanel } from './TimerSessionPanel.jsx';
 import { StudyOverviewCard } from '../../components/StudyOverviewCard.jsx';
+import { DisclosureRegion } from '../../components/DisclosureRegion.jsx';
 
 export function HomeStudyPanel(props) {
   const { studySubjectSheetOpen, studyPanelMode, activeStudySession, showStudyPanel, studyTimerRunning, liveSeconds, studyOverview, timerPhase, rewardPendingSessionId, aquariumPresentation, canUsePersonalPlanner } = props;
@@ -28,9 +29,9 @@ export function HomeStudyPanel(props) {
       {!rewardPendingSessionId && !busy ? <button type="button" className="home-study-streak" data-action="openStreakSummary">연속 학습 {aquariumPresentation?.streakDays != null ? `${aquariumPresentation.streakDays}일` : '확인 필요'} ›</button> : null}
     </>} />
     {props.rewardRecoveryError || pending.length ? <section className="timer-resume-note" aria-label="보상 복구" role="status"><div><b>보상 확인 {pending.length}건</b><p>{props.rewardRecoveryError || (props.rewardClaimingSessionId ? '보상을 확인 중이에요. 새 공부도 시작할 수 있어요.' : '공부는 저장됐어요. 남은 보상을 다시 확인해주세요.')}</p>{pending.some(row => row.status !== 'terminal') ? <button type="button" className="btn btn-secondary" data-action="retryStudyReward" disabled={Boolean(props.rewardClaimingSessionId)}>보상 다시 확인</button> : null}{terminal ? <><p>서버에서 복구할 수 없는 1건을 목록에서 지워요. 다른 공부 기록은 유지돼요.</p><button type="button" className="btn btn-secondary" data-action="dismissRewardResult" data-dismiss-terminal="true">복구 불가 기록 정리</button></> : null}</div></section> : null}
-    <div ref={body} id={id} className="home-study-body" hidden={!available || !expanded}>
+    <DisclosureRegion open={available && expanded} triggerRef={trigger}><div ref={body} id={id} className="home-study-body">
       {available ? <TimerSessionPanel {...props} hideControls hideRewardRetry /> : null}
       <button type="button" className="btn btn-secondary" onClick={() => { setExpanded(false); trigger.current?.focus({ preventScroll: true }); }}>공부 영역 접기</button>
-    </div>
+    </div></DisclosureRegion>
   </div>;
 }

@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../../components/AnimatedDetails.jsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCalendarCategoryMeta, PERSONAL_CALENDAR_CATEGORIES, eventMarksDateInGrid } from '../../constants/admission-calendar.js';
 import { calendarSwipeDirection } from './calendar-gesture.js';
@@ -40,12 +41,12 @@ function CalendarEventForm(ctx) {
     <div className="calendar-form-fields">
       <label htmlFor="calendar-event-title">일정 제목</label><input id="calendar-event-title" className="planner-input calendar-form-title" maxLength={60} placeholder="예: 면접 준비" {...field('title')} />
       <label htmlFor="calendar-event-date">시작일</label><input id="calendar-event-date" className="planner-input" type="date" {...field('date')} />
-      <details className="calendar-form-details" open={Boolean(draft.detailsOpen)} onToggle={event => { const open = event.currentTarget.open; if (open !== Boolean(draft.detailsOpen)) ctx.setCalendarEventDraft(prev => ({ ...prev, detailsOpen: open })); }}>
+      <AnimatedDetails className="calendar-form-details" open={Boolean(draft.detailsOpen)} onToggle={event => { const open = event.currentTarget.open; if (open !== Boolean(draft.detailsOpen)) ctx.setCalendarEventDraft(prev => ({ ...prev, detailsOpen: open })); }}>
         <summary>추가 정보 (선택)</summary>
         <div className="calendar-form-fields"><label htmlFor="calendar-event-end">종료일 (선택)</label><input id="calendar-event-end" className="planner-input" type="date" min={draft.date || undefined} {...field('endDate')} />
           <label htmlFor="calendar-event-category">분류</label><select id="calendar-event-category" className="planner-input" {...field('category')}>{PERSONAL_CALENDAR_CATEGORIES.map(key => <option key={key} value={key}>{getCalendarCategoryMeta(key).label}</option>)}</select>
           <label htmlFor="calendar-event-note">메모</label><textarea id="calendar-event-note" className="planner-input calendar-form-note" maxLength={300} placeholder="준비물이나 장소를 적어두세요" {...field('note')} /></div>
-      </details>
+      </AnimatedDetails>
     </div>
     {ctx.calendarMutationError ? <p className="calendar-form-error" role="alert">{ctx.calendarMutationError}</p> : null}
     <div className="calendar-form-actions">

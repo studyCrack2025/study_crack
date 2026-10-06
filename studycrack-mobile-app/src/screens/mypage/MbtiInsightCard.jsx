@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../../components/AnimatedDetails.jsx';
 export function MbtiInsightCard({ mbti }) {
   if (mbti.empty) {
     return (
@@ -14,13 +15,13 @@ export function MbtiInsightCard({ mbti }) {
         <div><small>내 학습 유형</small><h2><span>{mbti.code}</span>{mbti.name}</h2></div>
         <button type="button" data-action="openMbtiModal">다시 검사</button>
       </header>
-      <details className="my-insight-details">
+      <AnimatedDetails className="my-insight-details">
         <summary>학습 성향 자세히 보기</summary>
         <p className="my-insight-desc">{mbti.desc}</p>
         <dl className="my-insight-list">
           {mbti.rows.map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}
         </dl>
-      </details>
+      </AnimatedDetails>
     </section>
   );
 }
