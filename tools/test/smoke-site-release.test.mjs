@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { cacheControlFor } from '../site-release.mjs';
 import { smokeSiteRelease } from '../smoke-site-release.mjs';
+import { PRIVATE_SITE_SMOKE_PATHS } from '../private-site-paths.mjs';
 
 const origin = 'https://dev.studycrack.co.kr';
 const publicFiles = ['index.html', 'studycrack-mobile.html', 'release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/config.js', 'js/shared/api.js', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'studycrack-mobile-app/dist/studycrack-mobile.css', 'studycrack-mobile-app/dist/chunks/app-12345678.js', 'studycrack-mobile-app/dist/chunks/app-12345678.css', 'studycrack-mobile-app/dist/assets/fish-12345678.webp', 'basic-preview'];
@@ -31,6 +32,27 @@ test('deployment smoke verifies public bytes, cache/MIME, clean URL and private-
   assert.ok(paths.some(([file, url]) => file === 'js/config.js' && url.includes('?v=dev-aaaaaaaa')));
   assert.ok(paths.some(([file]) => file === 'studycrack-mobile'));
   assert.ok(paths.some(([file]) => file === 'manifest.json'));
+});
+
+test('parallel smoke bounds read-only requests and cancels every private body without reading it', async () => {
+  let active = 0, peak = 0;
+  const paths = [], cancelled = [];
+  const fetchPublic = mockFetch();
+  const result = await smokeSiteRelease({ origin, manifest, aliases, fetchImpl: async (url, options) => {
+    const target = new URL(url).pathname.slice(1);
+    paths.push(target); active++; peak = Math.max(peak, active);
+    try {
+      await new Promise(resolve => setImmediate(resolve));
+      if (!PRIVATE_SITE_SMOKE_PATHS.includes(target)) return await fetchPublic(url, options);
+      assert.equal(options.method, 'GET'); assert.equal(options.credentials, 'omit');
+      assert.equal(options.redirect, 'error'); assert.ok(options.signal);
+      return { status: 404, body: { cancel: async () => { cancelled.push(target); }, [Symbol.asyncIterator]() { throw new Error('Private body must not be read'); } } };
+    } finally { active--; }
+  } });
+  assert.equal(peak, 4); assert.equal(active, 0);
+  assert.equal(paths.length, result.checked + result.denied);
+  assert.equal(new Set(paths).size, paths.length);
+  assert.deepEqual(cancelled.sort(), [...PRIVATE_SITE_SMOKE_PATHS].sort());
 });
 
 for (const [label, mutate] of [

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PRIVATE_SITE_SMOKE_PATHS } from './private-site-paths.mjs';
+import { runBoundedTasks } from './bounded-tasks.mjs';
 import { cacheControlFor, IMMUTABLE, loadPublicPolicy, verifySiteRelease } from './site-release.mjs';
 
 function contentTypeFor(file) {
@@ -37,7 +38,7 @@ export async function smokeSiteRelease({ origin, manifest, aliases, fetchImpl = 
       return await fetchImpl(`${origin}/${target}${query}`, { method: 'GET', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(15_000) });
     } catch { throw new Error(`Public smoke request failed: /${target}`); }
   };
-  for (const { target, entry } of requests) {
+  await runBoundedTasks(requests, 4, async ({ target, entry }) => {
     const response = await request(target);
     if (response.status !== 200) {
       await response.body?.cancel();
@@ -62,13 +63,13 @@ export async function smokeSiteRelease({ origin, manifest, aliases, fetchImpl = 
     }
     assert.equal(size, entry.bytes, `Wrong public size: /${target}`);
     assert.equal(digest.digest('hex'), entry.sha256, `Stale or changed public bytes: /${target}`);
-  }
-  for (const target of PRIVATE_SITE_SMOKE_PATHS) {
+  });
+  await runBoundedTasks(PRIVATE_SITE_SMOKE_PATHS, 4, async target => {
     const response = await request(target);
     // Do not read or log potentially private response bodies.
     await response.body?.cancel();
     assert.ok([403, 404].includes(response.status), `Private path is not denied: /${target}`);
-  }
+  });
   return { checked: requests.length, denied: PRIVATE_SITE_SMOKE_PATHS.length, release: manifest.release };
 }
 

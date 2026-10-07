@@ -39,14 +39,16 @@ test('dependency diagnostics report every missing reference in one failure', () 
 test('artifact smoke checks run before the full matrix without replacing it', async () => {
   const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
   const smoke = workflow.indexOf('- name: Check public artifact smoke contracts');
-  const full = workflow.indexOf('- name: Test the public artifact');
+  const full = workflow.indexOf('- name: Test the public artifact shard');
   assert.ok(smoke > workflow.indexOf('- name: Install browser runtime') && full > smoke);
   const step = workflow.slice(smoke, full);
   assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
-  assert.ok(step.includes('fish-artwork-lifecycle payment-account-switch public-artifact --workers=1 --retries=0'));
+  assert.ok(step.includes('PLAYWRIGHT_SUITE: smoke'));
+  assert.ok(step.includes('--workers=1 --retries=0'));
   for (const spec of ['fish-artwork-lifecycle', 'payment-account-switch', 'public-artifact']) {
     await readFile(new URL(`../../studycrack-mobile-app/e2e/${spec}.spec.mjs`, import.meta.url));
   }
   assert.doesNotMatch(step, /continue-on-error/);
   assert.ok(workflow.slice(full).includes('run: npm run test:e2e'));
+  assert.ok(workflow.slice(full).includes('PLAYWRIGHT_SUITE: regression'));
 });
