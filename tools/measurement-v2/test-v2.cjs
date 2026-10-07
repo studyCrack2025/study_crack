@@ -17,6 +17,9 @@ function create(storage=new Map(),url='https://studycrack.co.kr/?utm_source=nave
  x.m.event('analysis_view');assert.equal(x.w.dataLayer.at(-1).sc.ecommerce,null);assert.equal(x.w.dataLayer.at(-1).sc.purchase_verified,false);passed.push('Clear ecommerce state after purchase');
  let z=create(x.storage,'https://studycrack.co.kr/?utm_source=google');z.m.ready(null);assert.equal(z.w.dataLayer.at(-1).sc.sc_first_source,'naver');assert.equal(z.w.dataLayer.at(-1).sc.sc_first_medium,'blog');passed.push('Atomic first-touch snapshot retained');
  assert.throws(()=>x.m.event('Payment'));passed.push('Only canonical event names accepted');
+ x.m.event('basic_preview_start',{preview_state:'loading'});assert.equal(x.w.dataLayer.at(-1).sc.event_name,'basic_preview_start');assert.equal(x.w.dataLayer.at(-1).sc.preview_state,'loading');passed.push('Preview start is accepted');
+ x.m.event('basic_preview_state',{preview_state:'needs_scores',email:'must-not-pass'});assert.equal(x.w.dataLayer.at(-1).sc.preview_state,'needs_scores');assert.equal(x.w.dataLayer.at(-1).sc.email,undefined);passed.push('Preview state retains only allowed fields');
+ x.m.event('analysis_view');assert.equal(x.w.dataLayer.at(-1).sc.preview_state,null);passed.push('Preview state does not leak into later events');
  const result={scope:'Local adapter logic only; NOT GTM Preview, network receipt, GA4 DebugView or end-to-end verification',passed};
  console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e);process.exitCode=1});

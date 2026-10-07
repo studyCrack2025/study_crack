@@ -13,7 +13,13 @@ const BASIC_PREVIEW_EXAM_LABELS = { mar: '3월 학력평가', may: '5월 학력�
 let basicPreviewLoading = false;
 
 function trackBasicPreview(eventName, properties = {}) {
-    if (eventName === 'basic_preview_ready') {
+    if (eventName === 'basic_preview_start') {
+        window.SCTrack?.once('basic-preview-start', 'basic_preview_start', { preview_state: 'loading' });
+    } else if (eventName === 'basic_preview_state') {
+        const state = Object.prototype.hasOwnProperty.call(BASIC_PREVIEW_STATE_COPY, properties.preview_state)
+            ? properties.preview_state : 'analysis_failed';
+        window.SCTrack?.event('basic_preview_state', { preview_state: state });
+    } else if (eventName === 'basic_preview_ready') {
         window.SCTrack?.once('basic-analysis', 'analysis_view', { analysis_type: 'basic_preview' });
         window.SCTrack?.once('basic-impact', 'score_impact_view', { analysis_type: 'basic_preview' });
     } else if (eventName === 'basic_unlock_click') {
@@ -177,6 +183,7 @@ async function ensureBasicPreviewSession() {
     if (localStorage.getItem('userId')) return true;
     const refreshed = await tryRefreshToken();
     if (refreshed && localStorage.getItem('userId')) return true;
+    trackBasicPreview('basic_preview_state', { preview_state: 'unauthorized' });
     window.location.replace('/login?returnUrl=%2Fbasic-preview');
     return false;
 }

@@ -8,7 +8,7 @@
   if (root.SCMeasurementV2) return;
   var initialized = false, identity = null, lastPage = null;
   var purchases = Object.create(null), first = null;
-  var allowed = /^(cta_click|sign_up|login|score_input_start|score_input_complete|analysis_view|university_recommendation_view|score_impact_view|learning_profile_start|learning_profile_complete|target_university_set|plan_view|begin_checkout|download_report_click|tutorial_begin|tutorial_complete|tutorial_skip)$/;
+  var allowed = /^(basic_preview_start|basic_preview_state|cta_click|sign_up|login|score_input_start|score_input_complete|analysis_view|university_recommendation_view|score_impact_view|learning_profile_start|learning_profile_complete|target_university_set|plan_view|begin_checkout|download_report_click|tutorial_begin|tutorial_complete|tutorial_skip)$/;
   function cleanId(value) {
     if (value === null || value === undefined) return null;
     if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(value) || /^(undefined|null|guest|anonymous)$/i.test(value)) throw new Error('Expected an opaque internal user ID or null');
@@ -43,7 +43,7 @@
   }
   function envelope(name, extra) {
     var ft = firstTouch();
-    var value = {version:'2',ready:initialized,user_id:identity,event_name:name,entry:null,method:null,plan_type:null,analysis_type:null,
+    var value = {version:'2',ready:initialized,user_id:identity,event_name:name,entry:null,method:null,plan_type:null,analysis_type:null,preview_state:null,
       page_location:safeUrl(root.location.href),page_referrer:safeUrl(root.document.referrer),page_title:root.document.title,
       sc_first_source:ft.source,sc_first_medium:ft.medium,sc_first_campaign:ft.campaign,ecommerce:null,purchase_verified:false};
     Object.keys(extra || {}).forEach(function(k) { value[k] = extra[k]; });
@@ -75,7 +75,7 @@
     requireReady();
     if (!allowed.test(name)) throw new Error('Unsupported event');
     var clean = {}, data = fields || {};
-    ['entry','method','plan_type','analysis_type'].forEach(function(k) { if (data[k] !== undefined) clean[k] = token(data[k]); });
+    ['entry','method','plan_type','analysis_type','preview_state'].forEach(function(k) { if (data[k] !== undefined) clean[k] = token(data[k]); });
     if (name === 'begin_checkout' && data.ecommerce) clean.ecommerce = ecommerce(data.ecommerce, false);
     push('sc_measurement_event',envelope(name,clean));
   }
