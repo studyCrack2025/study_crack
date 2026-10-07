@@ -92,7 +92,8 @@ test('기록 날짜 불일치·조회 실패·재시도를 구분한다', async 
   await expect(card).not.toContainText('기록 날짜가 달라');
 });
 
-test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다', async ({ page }) => {
+for (const motion of ['no-preference', 'reduce']) test(`미확정 타이머를 확정 일간·주간 기록에 더하지 않는다 (${motion})`, async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: motion });
   await installAuthenticatedSession(page);
   const api = await installApiMock(page);
   api.state.studySeconds = 1800;
@@ -100,12 +101,19 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   const card = page.getByRole('region', { name: '학습 현황 요약' });
   await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
   const week = page.locator('.home-week-flow');
+  await page.addStyleTag({ content: '.home-week-flow .sc-disclosure-region { transition-delay: 150ms; }' });
   const openRecords = async () => {
     if (await week.getByRole('button', { name: /이번 주 공부 흐름/ }).getAttribute('aria-expanded') === 'false') await week.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
+    const details = week.locator('.sc-disclosure-region');
+    await expect(details).toHaveAttribute('data-open', 'true');
+    await expect(details).toHaveCSS('visibility', 'visible');
+    await expect(details).toHaveCSS('opacity', '1');
+    await expect.poll(() => details.evaluate(el => el.getAnimations().length)).toBe(0);
+    await expect(details.locator('.timer-day-subjects')).toBeVisible();
   };
   await openRecords();
   await expect(week).toContainText('이번 주 공부 흐름');
-  const before = await week.innerText();
+  const before = await week.textContent();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '공부 시작', exact: true }).click();
   await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
@@ -118,7 +126,7 @@ test('미확정 타이머를 확정 일간·주간 기록에 더하지 않는다
   await expect(card.locator('.sc-study-headline > small').last()).toHaveText('오늘 확정 00:30:00');
   expect(api.state.studySeconds).toBe(1800);
   await openRecords();
-  await expect(week).toHaveText(before, { useInnerText: true });
+  await expect(week).toHaveText(before);
 });
 
 test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page }) => {
