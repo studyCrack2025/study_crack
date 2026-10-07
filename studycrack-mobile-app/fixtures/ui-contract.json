@@ -140,5 +140,11 @@
     "efficiencyUnit": "point",
     "forwardTiers": ["basic", "starter", "standard", "pro"],
     "reverseTiers": ["standard", "pro"]
+  },
+  "consultingV2": {
+    "journeyVersion": "JUNGSI_2027_V2",
+    "progress": ["onboarding", "survey", "materials", "availability", "writtenSession", "report", "finalCall", "completed"],
+    "workflowStates": ["ONBOARDING", "SURVEY_DRAFT", "MATERIAL_REVIEW", "SUPPLEMENT_REQUIRED", "AVAILABILITY_REQUIRED", "SCHEDULING", "WRITTEN_SESSION_BOOKED", "WRITTEN_SESSION_COMPLETED", "REPORT_GENERATING", "REPORT_REVIEW", "REPORT_SCHEDULED", "FINAL_CALL_SCHEDULING", "FINAL_CALL_BOOKED", "SERVICE_COMPLETED"],
+    "requestTypes": ["student_claim_v2_consulting_invite", "student_get_v2_consulting_home", "student_get_v2_survey_schema", "student_get_v2_survey_draft", "student_save_v2_survey_draft", "student_submit_v2_survey", "student_submit_v2_supplement", "student_submit_v2_written_availability", "student_get_v2_written_session", "student_list_v2_written_messages", "student_send_v2_written_message", "student_get_v2_report", "student_list_v2_final_call_slots", "student_submit_v2_final_call_availability", "student_get_v2_final_call_status"]
   }
 }
