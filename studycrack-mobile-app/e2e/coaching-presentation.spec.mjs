@@ -33,8 +33,7 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.coaching-request-cta')).toHaveCSS('min-height', '52px');
     await expect(page.locator('.coaching-segment button').first()).toHaveCSS('min-height', '48px');
     await expect(page.getByRole('button', { name: '받은 피드백 확인하기', exact: true })).toBeVisible();
-    await expect(page.locator('.coaching-process')).not.toHaveAttribute('open');
-    await expect(page.locator('.coaching-process-list')).not.toBeVisible();
+    await expect(page.getByRole('dialog', { name: '코칭 진행 방식' })).toHaveCount(0);
     await expect(page.locator('.coaching-week-preview')).toContainText('등록 1개 · 계획 30분');
     const order = await page.locator('.coach-page').evaluate(el => [...el.children].map(child => child.className));
     for (const [before, after] of [['coaching-hero', 'btn btn-primary coaching-request-cta'], ['btn btn-primary coaching-request-cta', 'coaching-history'], ['coaching-history', 'coaching-week-preview'], ['coaching-week-preview', 'coaching-process']]) {
@@ -42,12 +41,9 @@ for (const width of [320, 360, 390, 430]) {
       expect(order.indexOf(before)).toBeLessThan(order.indexOf(after));
     }
     await page.screenshot({ path: info.outputPath(`coaching-top-${width}.png`), animations: 'disabled' });
-    await page.locator('.coaching-process summary').click();
-    await expect(page.locator('.coaching-process-step small').first()).toHaveCSS('font-size', '14px');
-    const processRows = await page.locator('.coaching-process-step').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().y));
-    expect(processRows[1]).toBeGreaterThan(processRows[0]);
-    expect(processRows[2]).toBeGreaterThan(processRows[1]);
-    await page.locator('.coaching-process summary').click();
+    await page.locator('.coaching-process').click();
+    await expect(page.locator('.coaching-guide-step')).toContainText('나의 학습 상태 확인');
+    await page.getByRole('dialog', { name: '코칭 진행 방식' }).getByRole('button', { name: '닫기' }).click();
     await expect(page.locator('.service-plan-card')).toHaveCount(0);
     await expect(page.locator('.sc-study-overview')).toHaveCount(0);
     await page.getByRole('button', { name: '플랜별 기능 보기 →' }).evaluate(el => el.scrollIntoView({ block: 'center' }));

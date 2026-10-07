@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../../components/AnimatedDetails.jsx';
 import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
 import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell, SecondaryState } from '../../components/SecondaryScreen.jsx';
@@ -120,7 +121,7 @@ function TutorQnaList({ qnaHistory = [], qnaStatus = 'idle', qnaError = '' }) {
   return <>{feedback}{qnaHistory.map((item, index) => {
     const done = String(item.status || '').toLowerCase() === 'done';
     const created = formatQnaDate(item.createdAt);
-    return <details className="qna-list-row" key={item.qnaId || item.id || `${created}-${index}`}><summary className="qna-thread-summary"><b>{item.title || '제목 없는 질문'}</b><span className="qna-row-side"><em className={done ? 'done' : ''}>{qnaStatusLabel(item.status)}</em>{created ? <span>{created}</span> : null}</span></summary><div className="qna-thread-body"><p>{item.content || '질문 내용 없음'}</p>{done && item.answer ? <small>답변: {item.answer}</small> : null}</div></details>;
+    return <AnimatedDetails className="qna-list-row" key={item.qnaId || item.id || `${created}-${index}`}><summary className="qna-thread-summary"><b>{item.title || '제목 없는 질문'}</b><span className="qna-row-side"><em className={done ? 'done' : ''}>{qnaStatusLabel(item.status)}</em>{created ? <span>{created}</span> : null}</span></summary><div className="qna-thread-body"><p>{item.content || '질문 내용 없음'}</p>{done && item.answer ? <small>답변: {item.answer}</small> : null}</div></AnimatedDetails>;
   })}</>;
 }
 
@@ -140,13 +141,13 @@ function WeeklyFeedbackCard({ report, open }) {
   const fields = [['튜터 총평', 'tutorComment'], ['이번 주 플래너', 'weeklyPlanner'], ['계획 이유', 'planReason'], ['질문 답변', 'questionAnswer'], ['우선순위 점검', 'priorityCheck'], ['다음 주 TOP3', 'nextWeekTop3'], ['취약 과목', 'weakSubject'], ['플랜 평가', 'planEvaluation'], ['추가 질문', 'extraQuestion']];
   const items = done ? fields.filter(([, key]) => typeof feedback[key] === 'string' && feedback[key].trim()) : [];
   const attachment = done && safeExternalUrl(feedback.tutorImage).includes('#scFile=') ? feedback.tutorImage : '';
-  return <details className="sc-secondary-section weekly-feedback" open={open}>
+  return <AnimatedDetails className="sc-secondary-section weekly-feedback" open={open}>
     <summary><span>{formatCoachingWeekLabel(report.weekId)}</span><b>{done ? '피드백 도착' : '검토 대기'}</b></summary>
     <div className="weekly-summary"><span>담당 튜터</span><b>{report.tutorName || '튜터 확인 중'}</b></div>
     <div className="sc-secondary-section-head"><div><h3>튜터 피드백</h3>{!done ? <p>튜터 검토 후 표시돼요.</p> : null}</div></div>
     <div className="weekly-feedback-body"><div className="weekly-feedback-list">{items.map(([label, key]) => <WeeklyFeedbackText label={label} text={feedback[key]} key={key} />)}{done && !items.length ? <p>제출된 피드백 내용이 비어 있어요.</p> : null}</div></div>
     {attachment ? <button type="button" className="btn btn-secondary" data-action="downloadProReport" data-pdf-path={attachment}>피드백 첨부 보기</button> : null}
-  </details>;
+  </AnimatedDetails>;
 }
 
 export function WeeklyScreen({ plannerItems = [], tab = 'my', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' }) {

@@ -11,11 +11,11 @@
 .sc-study-banner .sc-study-plan-progress > b{color:var(--sc-study-banner-accent);}
 .sc-study-banner .sc-study-plan-progress > small{color:var(--sc-on-brand-muted);line-height:1.6;}
 .sc-study-overview[data-variant="banner"] > .sc-study-details{padding:0 12px;}
-.sc-study-overview[data-variant="banner"] > .sc-study-details > .sc-study-metrics{padding-top:12px;}
+.sc-study-overview[data-variant="banner"] > .sc-study-details .sc-study-metrics{padding-top:12px;}
 .sc-study-overview[data-variant="banner"] > .sc-study-notice{padding:8px 12px;}
 .sc-study-details{min-width:0;}
 .sc-study-details > summary{min-height:44px;box-sizing:border-box;padding:12px 0;cursor:pointer;color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;line-height:20px;overflow-wrap:anywhere;}
-.sc-study-details > .sc-study-source{margin-top:12px;}
+.sc-study-details .sc-study-source{margin-top:12px;}
 .sc-study-details > summary:focus-visible{outline:2px solid var(--sc-brand-navy);outline-offset:2px;border-radius:4px;}
 .sc-study-overview header span{color:var(--sc-ink-muted);font-size:var(--sc-type-micro);font-weight:800;}
 .sc-study-overview h2{margin:3px 0 0;color:var(--sc-brand-navy);font-size:var(--sc-type-section);font-weight:800;line-height:1.35;}

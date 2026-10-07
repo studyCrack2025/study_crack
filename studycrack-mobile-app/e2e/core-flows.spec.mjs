@@ -196,7 +196,7 @@ test('React 하단 탭은 화면 전환과 잠금 화면에서도 활성 상태�
 
   await page.locator('.tabbar [data-tab="strategy"]').click();
   await expect(page.locator('[data-screen="lockedFeature"]')).toBeVisible();
-  await expect(page.locator('.coach-preview .coaching-process-step')).toHaveCount(3);
+  await expect(page.locator('.locked-coaching-actions .coaching-process')).toBeVisible();
   await expect(page.locator('.tabbar [data-tab="strategy"]')).toHaveAttribute('aria-current', 'page');
 });
 
@@ -879,8 +879,7 @@ test('리포트·튜터 질문·주간 피드백 화면이 React 전환 후 입�
   await page.goto('/studycrack-mobile.html?screen=strategy');
   await expect(page.locator('.coaching-week-status')).toContainText('이번 주 코칭');
   await expect(page.locator('.coaching-hero')).toContainText('새 점검을 시작해 보세요');
-  await expect(page.locator('.coaching-process-step')).toHaveCount(3);
-  await expect(page.locator('.coaching-process-step b')).toHaveText(['학습 성향 분석', '목표 대학 분석', '합격 설계']);
+  await expect(page.getByRole('button', { name: '코칭 진행 방식 보기' })).toBeVisible();
   await expect(page.locator('.coach-step-progress')).toHaveCount(0);
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);

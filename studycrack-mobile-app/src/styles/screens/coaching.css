@@ -6,16 +6,29 @@
 .coaching-mark i:nth-child(1){height:10px;}
 .coaching-mark i:nth-child(2){height:17px;}
 .coaching-mark i:nth-child(3){height:23px;}
-.coaching-process{padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);box-shadow:var(--sc-shadow-normal);}
-.coaching-process-head{min-height:var(--sc-touch-target);cursor:pointer;}
-.coaching-process-head > span{display:block;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;}
-.coaching-process-head h3{margin:4px 0 0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:650;line-height:1.5;word-break:keep-all;}
-.coaching-process-list{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sc-space-12);margin-top:var(--sc-space-12);}
-.coaching-process-step{min-width:0;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-content:start;align-items:start;justify-items:start;padding:12px 0;border-radius:0;background:transparent;text-align:left;}
-.coaching-process-step > strong{color:var(--sc-brand-navy);font-size:var(--sc-type-micro);font-weight:800;}
-.coaching-process-step > span{min-width:0;display:grid;gap:3px;}
-.coaching-process-step b{color:var(--sc-ink);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;word-break:keep-all;}
-.coaching-process-step small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:500;line-height:1.5;word-break:keep-all;}
+.coaching-process{width:100%;min-height:var(--sc-touch-target);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--sc-space-16);border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);color:var(--sc-brand-navy);box-shadow:var(--sc-shadow-normal);font:inherit;font-size:var(--sc-type-body);font-weight:800;text-align:left;cursor:pointer;}
+.coaching-guide{height:min(600px,calc(var(--sc-visual-height) - 32px));padding:0;overflow:hidden;}
+.coaching-guide-layout{height:100%;min-height:0;display:flex;flex-direction:column;}
+.coaching-guide-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:var(--sc-space-16);border-bottom:1px solid var(--sc-line-subtle);}
+.coaching-guide-head h3{min-width:0;margin:0;font-size:var(--sc-type-section);color:var(--sc-ink);overflow-wrap:anywhere;}
+.coaching-guide-progress{flex:0 0 auto;display:grid;gap:8px;padding:12px var(--sc-space-16);color:var(--sc-ink-muted);font-size:var(--sc-type-caption);font-weight:800;}
+.coaching-guide-progress > div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.coaching-guide-progress i{height:4px;background:var(--sc-border-subtle);border-radius:var(--sc-radius-pill);}
+.coaching-guide-progress i[data-active="true"]{background:var(--sc-action-positive);}
+.coaching-guide-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:var(--sc-space-16);overscroll-behavior:contain;touch-action:pan-y;}
+.coaching-guide-step{display:grid;gap:16px;animation:coachingGuideForward 280ms var(--ease-enter) both;}
+.coaching-guide-step[data-direction="-1"]{animation-name:coachingGuideBack;}
+.coaching-guide-art{min-height:140px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:12px;padding:12px;border-radius:var(--sc-radius-card);background:var(--sc-surface-positive);}
+.coaching-guide-art > div{min-width:0;display:grid;justify-items:center;gap:12px;text-align:center;color:var(--sc-action-positive-strong);}
+.coaching-guide-art svg{width:48px;height:48px;}
+.coaching-guide-art b{font-size:var(--sc-type-caption);overflow-wrap:anywhere;}
+.coaching-guide-kicker{color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;}
+.coaching-guide-step h4{margin:6px 0 10px;color:var(--sc-ink);font-size:var(--sc-type-section);line-height:1.4;word-break:keep-all;overflow-wrap:anywhere;}
+.coaching-guide-step p{margin:0;color:var(--sc-ink-muted);font-size:var(--sc-type-body);line-height:1.6;word-break:keep-all;overflow-wrap:anywhere;}
+.coaching-guide-example{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;padding:12px;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-control);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);line-height:1.6;overflow-wrap:anywhere;}
+.coaching-guide-footer{flex:0 0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:8px;padding:var(--sc-space-16);border-top:1px solid var(--sc-line-subtle);background:var(--sc-surface);}
+@keyframes coachingGuideForward{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes coachingGuideBack{from{opacity:0;transform:translateX(-20px);}to{opacity:1;transform:translateX(0);}}
 .coaching-hero{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sc-space-12);align-items:start;padding:var(--sc-space-16);border:1px solid color-mix(in srgb,var(--sc-action-positive) 34%,var(--sc-border-subtle));border-radius:var(--sc-radius-card);background:var(--sc-surface-positive);color:var(--sc-ink);box-shadow:var(--sc-shadow-normal);overflow:hidden;}
 .coaching-hero-copy > span{display:inline-flex;align-items:center;min-height:24px;padding:0 9px;border:1px solid color-mix(in srgb,var(--sc-brand-navy-deep) 24%,transparent);border-radius:4px;background:var(--sc-on-brand-surface-strong);color:var(--sc-brand-navy-deep);font-size:var(--sc-type-micro);font-weight:800;}
 .coaching-hero-copy h3{margin:9px 0 0;color:var(--sc-ink);font-size:var(--sc-type-section);font-weight:800;line-height:1.4;word-break:keep-all;}

@@ -15,7 +15,7 @@
 .aquarium-growth-caption > strong{color:var(--sc-action-positive-strong);font-size:12px;line-height:1.6;}
 .aquarium-growth-details{width:100%;}
 .aquarium-growth-details summary{display:flex;align-items:center;min-height:44px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);cursor:pointer;justify-content:space-between;}
-.aquarium-growth-details > small{display:block;margin-bottom:8px;}
+.aquarium-growth-details small{display:block;margin-bottom:8px;}
 .aquarium-growth-heading{display:flex;align-items:center;gap:12px;min-width:0;}
 .aquarium-growth-heading > i{display:grid;place-items:center;min-width:44px;min-height:44px;padding:4px;border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:18px;font-weight:800;font-style:normal;}
 .aquarium-growth-heading > div{display:grid;gap:4px;min-width:0;}

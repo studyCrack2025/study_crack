@@ -1,11 +1,16 @@
 import { exitMySurface } from './my-exit-motion.js';
 
+function restoresDrawer(state, target, depth) {
+  const origin = state.myReturn;
+  return Boolean(origin && depth <= origin.depth && target === origin.screen && state.userLoadStatus === 'ready' && origin.owner === (state.user?.email || ''));
+}
+
 export function createMyNavigation() {
   let snapshot = {};
   return {
-    deferBack(state, commit) {
+    deferBack(state, commit, { target, depth } = {}) {
       if (!state.myReturn || state.myReturn.restored) return false;
-      return exitMySurface(globalThis.document?.querySelector('.app-content[data-my-flow]'), commit);
+      return exitMySurface(globalThis.document?.querySelector('.app-content[data-my-flow]'), commit, { revealDrawer: restoresDrawer(state, target, depth) });
     },
     remember(value) { snapshot = value || {}; },
     goto(state, target, mainTab) {
@@ -19,7 +24,7 @@ export function createMyNavigation() {
     },
     back(state, target, depth) {
       if (!state.myReturn || depth > state.myReturn.depth) return {};
-      const restore = target === state.myReturn.screen && state.userLoadStatus === 'ready' && state.myReturn.owner === (state.user?.email || '');
+      const restore = restoresDrawer(state, target, depth);
       return { drawerOpen: restore, myReturn: restore ? { ...state.myReturn, restored: true } : null };
     }
   };

@@ -1,6 +1,8 @@
+import { useCallback, useState } from 'react';
 import { useOverlayDialog } from '../../components/useOverlayDialog.js';
+import { CoachingProcessGuide } from './CoachingProcessGuide.jsx';
 import { ResourceFeedback } from '../../components/ResourceFeedback.jsx';
-import { buildCoachingPresentation, COACHING_PROCESS_STEPS } from './presentation.js';
+import { buildCoachingPresentation } from './presentation.js';
 import { AppScreenShell } from '../../components/AppScreenShell.jsx';
 import { PrimaryScreenHeader } from '../../components/PrimaryScreenHeader.jsx';
 import { EmptyState } from '../../components/EmptyState.jsx';
@@ -30,15 +32,8 @@ function CoachingHero({ statusSummary }) {
   );
 }
 
-export function CoachingProcess() {
-  return (
-    <details className="coaching-process">
-      <summary className="coaching-process-head"><span>코칭 진행 방식 보기</span><h3>분석부터 실행까지 이어지는 3단계</h3></summary>
-      <div className="coaching-process-list">
-        {COACHING_PROCESS_STEPS.map((step) => <div className="coaching-process-step" key={step.number}><strong>{step.number}</strong><span><b>{step.title}</b><small>{step.description}</small></span></div>)}
-      </div>
-    </details>
-  );
+export function CoachingProcess({ onOpen }) {
+  return <button type="button" className="coaching-process" disabled={!onOpen} onClick={event => { event.currentTarget.focus(); onOpen?.(); }}><span>코칭 진행 방식 보기</span><span aria-hidden="true">›</span></button>;
 }
 
 function CoachingSegment({ active = 'sessions' }) {
@@ -145,12 +140,14 @@ function CoachingSheet(ctx) {
 }
 
 export function CoachingScreen(ctx) {
+  const [guideOpen, setGuideOpen] = useState(false);
+  const closeGuide = useCallback(() => setGuideOpen(false), []);
   const { coachingSheetOpen = false, coachingView = 'sessions', dimmed = false, tab = 'strategy', weeklyReports = [], weeklyReportsStatus = 'idle', weeklyReportsError = '' } = ctx;
   const presentation = buildCoachingPresentation(weeklyReports, weeklyReportsStatus);
   const activeView = coachingView === 'feedback' ? 'feedback' : 'sessions';
   const rows = activeView === 'feedback' ? presentation.feedback : presentation.sessions;
   return (
-    <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}>
+    <AppScreenShell screen="strategy" tab={tab} dimmed={dimmed} overlays={guideOpen ? <CoachingProcessGuide onDismiss={closeGuide} /> : coachingSheetOpen ? <CoachingSheet {...ctx} /> : null}>
       <main className="coach-page coaching-screen">
         <PrimaryScreenHeader className="coaching-context" eyebrow="SKY 선배 직접 코칭" title="Study Coaching" />
         <CoachingHero statusSummary={presentation.statusSummary} />
@@ -165,7 +162,7 @@ export function CoachingScreen(ctx) {
           </div>
         </section>
         <WeeklyPlanPreview plannerItems={ctx.plannerItems} />
-        <CoachingProcess />
+        <CoachingProcess onOpen={() => setGuideOpen(true)} />
         <PlanComparison />
       </main>
     </AppScreenShell>

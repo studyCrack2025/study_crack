@@ -10,6 +10,7 @@ export function Modal({
   children,
   dismissAction = '',
   onDismiss,
+  onPanelKeyDown,
   open = true,
   overlayClass = '',
   panelClass = '',
@@ -21,7 +22,7 @@ export function Modal({
   if (!open) return null;
   return (
     <div ref={overlayRef} className={classes('sc-overlay sc-overlay--modal sc-modal-padded-overlay', overlayClass, side && 'sc-overlay--drawer')} data-action={dismissAction} onClick={onDismiss ? event => { if (event.target === event.currentTarget) { event.stopPropagation(); onDismiss(); } } : undefined}>
-      <div ref={panelRef} className={classes('sc-modal sc-modal-padded', panelClass, side && 'sc-side-panel')} data-action="noopModal" role="dialog" aria-modal="true" aria-label={ariaLabel} tabIndex={-1} onKeyDown={onKeyDown}>
+      <div ref={panelRef} className={classes('sc-modal sc-modal-padded', panelClass, side && 'sc-side-panel')} data-action="noopModal" role="dialog" aria-modal="true" aria-label={ariaLabel} tabIndex={-1} onKeyDown={event => { onKeyDown(event); if (!event.defaultPrevented) onPanelKeyDown?.(event); }}>
         {children}
       </div>
     </div>

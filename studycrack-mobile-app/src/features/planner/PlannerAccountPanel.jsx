@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../../components/AnimatedDetails.jsx';
 import { useContext } from 'react';
 import { PlannerStorageContext } from './PlannerStorageContext.js';
 import { PlannerStorageDestination } from './PlannerStorageDestination.jsx';
@@ -36,8 +37,8 @@ export function PlannerAccountPanel() {
       <div className="planner-account-actions"><button type="button" className="btn" disabled={view.busy} onClick={() => run('check')}>계정 기록 확인</button>{pending > 0 ? <button type="button" className="btn" disabled={view.busy} onClick={() => run('retry')}>대기 기록 1건 전송</button> : null}</div>
       <p role="status">{view.busy ? '계정 기록을 확인하고 있어요…' : plannerAccountMessage(view.result)}{pending > 0 ? ` 전송 대기 ${pending}건` : ''}</p>
       {view.result?.status === 409 && pending === 1 ? <div><p>대기 변경을 보관하고 서버의 최신 기록을 사용해요. 자동으로 덮어쓰지 않아요.</p><button type="button" className="btn" disabled={view.busy} onClick={() => run('resolve', snapshot.queue[0].data.requestId)}>서버 기록 사용 · 대기 변경 보관</button></div> : null}
-      {snapshot?.resolved?.length ? <details><summary>보관한 대기 변경 {snapshot.resolved.length}건</summary>{snapshot.resolved.map(row => <p key={row.data.requestId}>{row.data.title || (row.type === 'complete_server_planner' ? '완료 요청' : '삭제 요청')} · {row.data.date || '기존 계획'} · 서버에는 다시 보내지 않아요.</p>)}</details> : null}
-      {view.verified ? <details><summary>계정 계획 {items.length}건</summary>{items.length ? <ul className="planner-account-list">{items.map(item => <li key={item.id}><small>{item.date} · {item.subject} · {item.completed ? '완료' : '미완료'}</small><b>{item.title}</b></li>)}</ul> : <p>계정에 저장된 계획이 없어요.</p>}</details> : null}
+      {snapshot?.resolved?.length ? <AnimatedDetails><summary>보관한 대기 변경 {snapshot.resolved.length}건</summary>{snapshot.resolved.map(row => <p key={row.data.requestId}>{row.data.title || (row.type === 'complete_server_planner' ? '완료 요청' : '삭제 요청')} · {row.data.date || '기존 계획'} · 서버에는 다시 보내지 않아요.</p>)}</AnimatedDetails> : null}
+      {view.verified ? <AnimatedDetails><summary>계정 계획 {items.length}건</summary>{items.length ? <ul className="planner-account-list">{items.map(item => <li key={item.id}><small>{item.date} · {item.subject} · {item.completed ? '완료' : '미완료'}</small><b>{item.title}</b></li>)}</ul> : <p>계정에 저장된 계획이 없어요.</p>}</AnimatedDetails> : null}
     </section>
     {view.verified ? <section className="planner-account-group" aria-label="기존 계획 가져오기">
       <h4>기존 계획 가져오기</h4><p>이 기기의 미완료 계획만 계정에 가져와요. 원본은 유지하며 완료·공부 기록은 제외해요.</p>

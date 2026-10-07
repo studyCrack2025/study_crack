@@ -19,7 +19,7 @@
 .game-rules-example figcaption{min-width:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;overflow-wrap:anywhere;}
 .game-rules-details{min-width:0;border-top:1px solid var(--sc-line-subtle);}
 .game-rules-details > summary{min-height:48px;align-content:center;padding:var(--sc-space-12) 0;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;cursor:pointer;overflow-wrap:anywhere;}
-.game-rules-details > :not(summary){margin-top:var(--sc-space-12);}
+.game-rules-details > .sc-disclosure-body > *{margin-top:var(--sc-space-12);}
 .game-rules-rarities{display:flex;flex-wrap:wrap;gap:var(--sc-space-8);}
 .game-rules-rarities span{padding:var(--sc-space-8) var(--sc-space-12);border-radius:var(--sc-radius-label);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
 .game-rules-growth{min-width:0;display:grid;gap:var(--sc-space-12);padding-top:var(--sc-space-16);border-top:1px solid var(--sc-line-subtle);}

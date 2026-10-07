@@ -161,7 +161,8 @@ test('계정 계획 최초 완료의 뽑기권을 표시하고 재완료·탭 �
   expect(state.api.state.gameProfile.ticketBalance).toBe(1); expect(state.items[0].completionSnapshot).toEqual(snapshot);
   await page.locator('.tabbar').getByRole('button', { name: '수조', exact: true }).click();
   await expect(page.locator('.aquarium-wallet')).toContainText('뽑기권 1장');
-  await expect(page.locator('.aquarium-wallet')).toContainText('30분 이상 계정 계획');
+  await expect(page.locator('.aquarium-wallet-metric').last()).toContainText('30분 이상');
+  await expect(page.locator('.aquarium-wallet-note')).toContainText('계정 계획 · 첫 완료마다 1장');
   await expect(page.locator('.aquarium-wallet')).not.toContainText('다음 뽑기권까지');
   await expectNoHorizontalOverflow(page);
   await page.locator('.aquarium-wallet').scrollIntoViewIfNeeded();

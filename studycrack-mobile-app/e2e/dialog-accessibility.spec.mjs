@@ -12,7 +12,8 @@ async function setup(page) {
 test('일정 입력은 키보드로 열고 접어도 초안을 보존한다', async ({ page }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
-  const add = page.getByRole('button', { name: '+ 내 일정 추가', exact: true });
+  const add = page.locator('.planner-admission-trigger');
+  await expect(add).toHaveAccessibleName('+ 내 일정 추가');
   await add.focus();
   await page.keyboard.press('Enter');
   const form = page.getByRole('region', { name: '내 일정 추가', exact: true });
@@ -32,10 +33,12 @@ test('일정 입력은 키보드로 열고 접어도 초안을 보존한다', as
 test('일정 입력은 기존 추가 버튼의 포커스를 가로채지 않는다', async ({ page, browserName }) => {
   await setup(page);
   await page.goto('/studycrack-mobile.html?screen=planner');
-  const add = page.getByRole('button', { name: '+ 내 일정 추가', exact: true });
+  const add = page.locator('.planner-admission-trigger');
+  await expect(add).toHaveAccessibleName('+ 내 일정 추가');
   await add.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('region', { name: '내 일정 추가', exact: true })).toBeVisible();
+  await expect(add).toHaveAccessibleName('- 내 일정 접기');
   await expect(add).toBeFocused();
   await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
   await expect(page.getByLabel('달력 더보기', { exact: true })).toBeFocused();

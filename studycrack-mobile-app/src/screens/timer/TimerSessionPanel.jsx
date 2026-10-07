@@ -1,4 +1,5 @@
 import { Icon } from '../../components/Icon.jsx';
+import { DisclosureRegion } from '../../components/DisclosureRegion.jsx';
 import { StudyJourneyPanel } from './StudyGamificationPanels.jsx';
 
 const STUDY_START_BUSY_PHASES = ['starting-session', 'settling-session'];
@@ -24,7 +25,7 @@ function TimerControlCard({ activeStudySession, confirmedLabel, summaryReady, di
       <button type="button" className="timer-v2-clock-trigger" data-action="toggleStudySessionDetails" aria-expanded={studySessionDetailsOpen}><strong className="timer-v2-clock" data-study-base-seconds={studyTimerRunning ? 0 : undefined}>{studyTimerRunning ? formatHms(liveSeconds) : summaryReady ? formatHms(displayedTodaySeconds) : '확인 필요'}</strong><span>{studySessionDetailsOpen ? '개별 기록 접기' : '개별 기록 보기'} <b aria-hidden="true">⌄</b></span></button>
       <p>{studyTimerRunning ? `${subject || '선택 과목'} 공부가 기록되고 있어요.` : '플래너 일정이나 직접 입력한 공부로 시작할 수 있어요.'}</p>
       {studyTimerRunning ? <div className="timer-resume-note" role="status"><Icon name="timer" /><span>앱을 벗어나도 시작 시각 기준으로 이어 기록돼요.</span></div> : null}
-      {studySessionDetailsOpen ? <StudySessionRows activeStudySession={activeStudySession} formatHms={formatHms} liveSeconds={liveSeconds} sessions={studySummary?.today?.sessions || []} /> : null}
+      <DisclosureRegion open={studySessionDetailsOpen}><StudySessionRows activeStudySession={activeStudySession} formatHms={formatHms} liveSeconds={liveSeconds} sessions={studySummary?.today?.sessions || []} /></DisclosureRegion>
       {!hideControls ? <div className="timer-v2-actions">
         <button type="button" className="btn btn-secondary" data-action="stopStudyTimer" disabled={!canComplete || timerBusy}>{timerPhase === 'recoverable-error' ? '완료 다시 확인' : '공부 완료'}</button>
       </div> : null}

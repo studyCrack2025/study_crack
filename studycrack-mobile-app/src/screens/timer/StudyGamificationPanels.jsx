@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { DisclosureRegion } from '../../components/DisclosureRegion.jsx';
 import { buildTimerJourneyPresentation } from './presentation.js';
 
 const STUDY_WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -56,12 +57,12 @@ export function StudyWeekSummary({ overview, summary = null, status = 'idle', co
         ))}
       </div>
       {compact ? <div className="timer-week-caption" aria-live="polite"><span>{selectedDay.date.slice(5)} · {exactDurationLabel(selectedDay.totalSeconds)}</span><small>{summary.week.startDate.slice(5)} — {summary.week.endDate.slice(5)}</small></div> : null}
-      <div id={detailId} className="timer-day-subjects" hidden={compact && !expanded}>
+      <DisclosureRegion open={!compact || expanded}><div id={detailId} className="timer-day-subjects">
         <div><span>{selectedDay?.date?.slice(5).replace('-', '월 ')}일 과목별 기록</span><b>{exactDurationLabel(selectedDay?.totalSeconds)}</b></div>
         <div>{selectedSubjects.length ? selectedSubjects.map((row) => <span data-subject-tone={subjectTone(row.subject)} key={row.subject}><i /><b>{row.subject}</b><small>{exactDurationLabel(row.seconds)}</small></span>) : <p>선택한 날짜에는 아직 완료한 공부가 없어요.</p>}</div>
       </div>
-      {compact && expanded ? <button type="button" className="btn btn-secondary" data-action="openGameRules">수조 성장 규칙 보기</button> : null}
-      {!compact || expanded ? <button type="button" className="btn btn-secondary" data-action="retryStudySummary" disabled={status === 'loading'}>기록 새로고침</button> : null}
+      {compact ? <button type="button" className="btn btn-secondary" data-action="openGameRules">수조 성장 규칙 보기</button> : null}
+      <button type="button" className="btn btn-secondary" data-action="retryStudySummary" disabled={status === 'loading'}>기록 새로고침</button></DisclosureRegion>
     </div>
   );
 }

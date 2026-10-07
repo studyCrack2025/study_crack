@@ -1,3 +1,4 @@
+import { AnimatedDetails } from '../AnimatedDetails.jsx';
 import { AquariumUnlockNotice } from './AquariumUnlockNotice.jsx';
 
 export function AquariumGrowthCaption({ view, interactive }) {
@@ -5,7 +6,7 @@ export function AquariumGrowthCaption({ view, interactive }) {
   const growth = view.growth;
   const pending = ['idle', 'loading'].includes(view.status);
   const healthy = view.status === 'ready' && Boolean(growth);
-  const Details = healthy ? 'details' : 'div';
+  const Details = healthy ? AnimatedDetails : 'div';
   const label = growth ? `성장 인정 ${growth.validDayCount}일${growth.highestUnlockedStage ? ` · DAY ${growth.highestUnlockedStage.slice(3)}` : ' · 첫 성장 준비'}` : pending ? '성장 기록 확인 중' : '성장 기록 확인 필요';
   return <div className="aquarium-growth-caption" data-growth-status={view.status}>
     {interactive ? <div className="aquarium-growth-heading"><i aria-hidden="true">{growth ? growth.validDayCount : '—'}</i><div><b>수조 성장 기록</b><span>{label}</span></div></div> : <span>{label}</span>}

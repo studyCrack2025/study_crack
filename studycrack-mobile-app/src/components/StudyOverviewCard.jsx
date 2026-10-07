@@ -1,3 +1,4 @@
+import { AnimatedDetails } from './AnimatedDetails.jsx';
 import { defaultFormatMinutesLabel } from '../screens/timer/presentation.js';
 
 function duration(seconds) {
@@ -13,7 +14,7 @@ export function StudyOverviewCard({ overview, variant = 'card', compact = false,
   const hasPlans = planner.status === 'ready' && planner.total > 0;
   const stale = confirmed.seconds !== null && !confirmed.fresh;
   const canCollapse = compact && confirmed.fresh && planner.status === 'ready' && timeGoal.datesMatch && live.status === 'idle';
-  const Details = canCollapse ? 'details' : 'div';
+  const Details = canCollapse ? AnimatedDetails : 'div';
   const banner = variant === 'banner';
   return (
     <section className="sc-study-overview" data-variant={banner ? 'banner' : variant === 'inline' ? 'inline' : 'card'} aria-label="학습 현황 요약">

@@ -9,8 +9,8 @@
 .my-navigation-layer[data-my-covered] .app-shell{z-index:491;}
 .my-persistent-host > .sc-overlay{pointer-events:auto;}
 .my-persistent-host > [inert]{pointer-events:none;}
-.app-shell:has(.app-content[data-my-exit]){background:transparent;}
-.app-frame:has(.app-content[data-my-exit]){background:transparent;}
+.app-shell:has(.app-content[data-my-exit][data-my-return="drawer"]){background:transparent;}
+.app-frame:has(.app-content[data-my-exit][data-my-return="drawer"]){background:transparent;}
 [data-my-exit]{animation:myDrawerOut 320ms var(--ease-exit) both !important;pointer-events:none;}
 @keyframes myDrawerOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(100%);opacity:1;}}
 @keyframes myDrawerIn{from{opacity:.001;transform:translateX(100%);}to{opacity:1;transform:translateX(0);}}
@@ -42,8 +42,8 @@
 .my-summary-checklist summary::after{content:'+';font-size:18px;}
 .my-summary-checklist[open] summary::after{content:'−';}
 .my-summary-checklist summary b{margin-left:auto;font-size:var(--sc-type-micro);}
-.my-summary-checklist > p{margin:0;padding:0 12px 8px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.6;}
-.my-summary-checklist > button{width:100%;min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:8px;padding:10px 12px;border:0;border-top:1px solid var(--sc-border-subtle);background:transparent;color:var(--sc-ink);font-size:var(--sc-type-body);text-align:left;}
-.my-summary-checklist > button b{color:var(--sc-brand-navy);font-size:var(--sc-type-caption);}
+.my-summary-checklist > .sc-disclosure-body > p{margin:0;padding:0 12px 8px;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.6;}
+.my-summary-checklist > .sc-disclosure-body > button{width:100%;min-height:48px;display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:8px;padding:10px 12px;border:0;border-top:1px solid var(--sc-border-subtle);background:transparent;color:var(--sc-ink);font-size:var(--sc-type-body);text-align:left;}
+.my-summary-checklist > .sc-disclosure-body > button b{color:var(--sc-brand-navy);font-size:var(--sc-type-caption);}
 .my-summary-checklist .icon{width:16px;height:16px;}
 .my-summary-full{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:12px 16px;border:0;border-radius:12px;background:var(--sc-brand-navy);color:var(--sc-on-brand);font-size:var(--sc-type-body);font-weight:900;}

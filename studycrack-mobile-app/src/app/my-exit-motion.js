@@ -4,7 +4,7 @@ export function cancelMyExits() {
   for (const cancel of [...pending.values()]) cancel();
 }
 
-export function exitMySurface(panel, commit) {
+export function exitMySurface(panel, commit, { revealDrawer = false } = {}) {
   if (!panel || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
   if (pending.has(panel)) return true;
   let timer;
@@ -13,6 +13,7 @@ export function exitMySurface(panel, commit) {
     clearTimeout(timer);
     panel.removeEventListener('animationend', end);
     panel.removeAttribute('data-my-exit');
+    panel.removeAttribute('data-my-return');
     pending.delete(panel);
     if (panel.matches('.app-content')) document.dispatchEvent(new CustomEvent('sc-my-exit', { detail: false }));
   };
@@ -20,7 +21,10 @@ export function exitMySurface(panel, commit) {
   const end = event => { if (event.target === panel && event.animationName === 'myDrawerOut') finish(); };
   pending.set(panel, cleanup);
   panel.dataset.myExit = 'true';
-  if (panel.matches('.app-content')) document.dispatchEvent(new CustomEvent('sc-my-exit', { detail: true }));
+  if (panel.matches('.app-content')) {
+    panel.setAttribute('data-my-return', revealDrawer ? 'drawer' : 'page');
+    document.dispatchEvent(new CustomEvent('sc-my-exit', { detail: revealDrawer }));
+  }
   panel.addEventListener('animationend', end);
   timer = setTimeout(finish, 380);
   return true;

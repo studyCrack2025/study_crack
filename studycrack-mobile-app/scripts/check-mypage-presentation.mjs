@@ -45,7 +45,7 @@ assert.deepEqual(buildSocialProviders({ authProvider: 'google' }).map(({ isLinke
 assert.deepEqual(buildPlanPresentation({ computedTier: 'basic' }), { key: 'basic', label: 'Basic', periodLabel: '평생 이용' });
 assert.deepEqual(buildPlanPresentation({ currentSubscription: { tier: 'standard', endDate: '2026-08-31T00:00:00.000Z' } }), { key: 'standard', label: 'Standard', periodLabel: '2026.08.31까지 이용' });
 const insight = await readFile(new URL('../src/screens/mypage/MbtiInsightCard.jsx', import.meta.url), 'utf8');
-assert.match(insight, /<details className="my-insight-details">\s*<summary>학습 성향 자세히 보기<\/summary>/, '학습 성향 세부 설명은 필요할 때 펼쳐 봅니다.');
+assert.match(insight, /<AnimatedDetails className="my-insight-details">\s*<summary>학습 성향 자세히 보기<\/summary>/, '학습 성향 세부 설명은 양방향 모션으로 펼쳐 봅니다.');
 const myPage = await readFile(new URL('../src/screens/mypage/MyPageScreen.jsx', import.meta.url), 'utf8');
 assert.ok(myPage.indexOf('<MyMenuList') < myPage.indexOf('<MbtiInsightCard'), '주요 메뉴를 성향 세부보다 먼저 보여야 합니다.');
 const css = await readFile(new URL('../src/styles/screens/mypage.css', import.meta.url), 'utf8');

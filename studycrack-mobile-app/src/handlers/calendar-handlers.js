@@ -30,7 +30,7 @@ export function createCalendarHandlers(ctx = {}) {
       const id = getData(actionEl, 'event-id');
       const existing = (ctx.personalEvents || []).find(event => event.id === id);
       if (id && !existing) return true;
-      if (!id && ctx.calendarEventDraft && !ctx.calendarEventEditId) {
+      if (!id && ctx.calendarEventDraft) {
         ctx.setCalendarEventFormOpen(true);
         return true;
       }
