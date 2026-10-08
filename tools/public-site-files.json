@@ -143,6 +143,9 @@
     "js/social-callback.js",
     "js/survey.js",
     "js/tutorial.js",
+    "jungsi-consulting-start.html",
+    "css/jungsi-consulting-start.css",
+    "js/jungsi-consulting-start.js",
     "login.html",
     "mbti_download.html",
     "mbti_survey.html",
@@ -175,6 +178,7 @@
   ],
   "aliases": {
     "basic-preview": "basic-preview.html",
+    "2027-jungsi-consulting/start": "jungsi-consulting-start.html",
     "terms": "terms.html",
     "privacy": "privacy.html",
     "refund": "refund.html",

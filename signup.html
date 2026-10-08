@@ -162,7 +162,7 @@
         </div>
 
         <div class="auth-links">
-            <a href="/login">이미 계정이 있으신가요? 로그인</a>
+            <a href="/login" id="loginLink">이미 계정이 있으신가요? 로그인</a>
             <p><a href="/terms">이용약관</a> · <a href="/privacy">개인정보 처리방침</a> · <a href="/refund">환불 규정</a></p>
         </div>
     </div>
@@ -399,6 +399,14 @@
     <script src="/js/config.js?v=20260524a"></script>
     <script src="/js/shared/api.js?v=20260602f"></script>
     <script src="/js/auth.js?v=20260602f"></script>
+    <script>
+        (function() {
+            var value = new URLSearchParams(window.location.search).get('returnUrl') || '';
+            if (value !== '/2027-jungsi-consulting/start') return;
+            var link = document.getElementById('loginLink');
+            if (link) link.href = '/login?returnUrl=' + encodeURIComponent(value);
+        })();
+    </script>
     
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

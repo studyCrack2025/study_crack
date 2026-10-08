@@ -15,7 +15,26 @@ let _observedSessionEpoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
 
 function isSafeSocialReturnPath(value) {
     return ['', '/studycrack-mobile', '/studycrack-mobile/', '/studycrack-mobile.html',
-        '/studycrack-mobile?screen=accountInfo', '/studycrack-mobile/?screen=accountInfo', '/studycrack-mobile.html?screen=accountInfo'].includes(value);
+        '/studycrack-mobile?screen=accountInfo', '/studycrack-mobile/?screen=accountInfo', '/studycrack-mobile.html?screen=accountInfo',
+        '/2027-jungsi-consulting/start'].includes(value);
+}
+
+function isSafeAuthReturnPath(value) {
+    if (typeof value !== 'string' || value.length < 1 || value.length > 512
+        || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || /[\r\n\0]/.test(value)) return false;
+    try {
+        const target = new URL(value, window.location.origin);
+        return target.origin === window.location.origin;
+    } catch (_) { return false; }
+}
+
+function readJungsiInviteTransient() {
+    try {
+        const value = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null');
+        if (value?.version === 1 && /^APP_[0-9a-f-]{36}$/i.test(value.applicationId || '')
+            && /^[A-Za-z0-9_-]{43}$/.test(value.token || '')) return value;
+    } catch (_) {}
+    return null;
 }
 
 function readSocialLoginAttempt() {
@@ -125,7 +144,13 @@ function invalidateClientSession() {
 }
 
 function beginClientLogin() {
+    let invite = null;
+    try {
+        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
+        if (returnUrl === '/2027-jungsi-consulting/start') invite = readJungsiInviteTransient();
+    } catch (_) { invite = null; }
     clearClientSession();
+    if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
     return captureClientSession();
 }
 
@@ -140,8 +165,15 @@ function completeClientLogin(data, scope) {
 if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sessionStorage.getItem(SESSION_EPOCH_KEY) !== _observedSessionEpoch)) {
     // 유효한 새 로그인 요청만 남기고 이전 인증 정보는 모두 제거한다.
     const attempt = sessionStorage.getItem(SESSION_EPOCH_KEY) === _observedSessionEpoch ? readSocialLoginAttempt() : null;
+    const pathname = window.location.pathname || '';
+    const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
+    const preserveInvite = pathname === '/2027-jungsi-consulting/start'
+        || ((pathname === '/login' || pathname === '/signup') && returnUrl === '/2027-jungsi-consulting/start')
+        || (pathname === '/social-callback' && attempt?.returnUrl === '/2027-jungsi-consulting/start');
+    const invite = preserveInvite ? readJungsiInviteTransient() : null;
     sessionStorage.clear();
     if (attempt) sessionStorage.setItem(SOCIAL_ATTEMPT_KEY, JSON.stringify(attempt));
+    if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
 }
 sessionStorage.setItem(SESSION_EPOCH_KEY, _observedSessionEpoch);
 if (!isClientSessionEnded() && localStorage.getItem('userId') && !localStorage.getItem('sc_legacy_data_owner')) localStorage.setItem('sc_legacy_data_owner', localStorage.getItem('userId'));
@@ -188,7 +220,7 @@ function reportSharedDiagnostic(kind, route, status = 0) {
     try { window.STUDYCRACK_DIAGNOSTICS?.record(kind, route, Number.isInteger(status) ? status : 0); } catch (_) {}
 }
 
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html', '/2027-jungsi-consulting/start'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {
