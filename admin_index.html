@@ -15,6 +15,7 @@
     <title>관리자 - StudyCrack</title>
     
     <link rel="stylesheet" href="/css/admin_theme.css?v=20260524a">
+    <link rel="stylesheet" href="/css/admin_consulting.css?v=20261008a">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -87,6 +88,10 @@
                         <span id="matchingBadge" style="display:none; background:#ef4444; color:white; border-radius:50%; padding:2px 8px; font-size:0.8rem; font-weight:bold; margin-left:8px;">0</span>
                     </div>
                 </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅</a>
             </li>
 
             <li class="menu-item logout">
@@ -392,6 +397,50 @@
             </div>
         </div>
                 
+        <div id="section-consulting" class="content-section">
+            <div class="consulting-heading-row">
+                <div>
+                    <h1 class="page-title">🎓 정시 컨설팅 입금 검수</h1>
+                    <p class="consulting-caption">입금 정보가 정확히 일치하는 경우에만 승인하세요. 승인 시 초대 링크와 인증코드 발송이 예약됩니다.</p>
+                </div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingPaymentReview()">새로고침</button>
+            </div>
+            <div id="consultingStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div class="consulting-lookup">
+                <label for="consultingApplicationLookup">신청 ID로 상세 조회</label>
+                <div class="consulting-lookup-row">
+                    <input id="consultingApplicationLookup" type="text" autocomplete="off" placeholder="APP_...">
+                    <button type="button" class="consulting-btn consulting-btn-secondary" onclick="lookupConsultingApplication()">조회</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>접수</th><th>학생</th><th>입금자</th><th>금액</th><th>상태</th><th>확인</th></tr></thead>
+                    <tbody id="consultingPaymentReviewBody"><tr><td colspan="6" class="empty-msg">메뉴를 열면 검수 대기 건을 불러옵니다.</td></tr></tbody>
+                </table>
+            </div>
+            <section id="consultingApplicationDetail" class="consulting-detail" hidden aria-labelledby="consultingDetailTitle">
+                <div class="consulting-detail-head">
+                    <h2 id="consultingDetailTitle">신청 상세</h2>
+                    <button type="button" class="consulting-close" onclick="closeConsultingDetail()" aria-label="상세 닫기">×</button>
+                </div>
+                <div id="consultingDetailSummary" class="consulting-detail-grid"></div>
+                <div id="consultingPaymentActions" class="consulting-actions">
+                    <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1"></label>
+                    <label>입금 시각<input id="consultingPaidAt" type="datetime-local"></label>
+                    <label class="consulting-check"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
+                    <button id="consultingApproveBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingPayment()">입금 승인 및 초대 발급</button>
+                    <label>보류 사유<select id="consultingHoldReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="PAYER_NAME_MISMATCH">입금자명 불일치</option><option value="AMOUNT_MISMATCH">금액 불일치</option><option value="DUPLICATE_CANDIDATE">중복 신청 확인</option><option value="OTHER">기타</option></select></label>
+                    <button type="button" class="consulting-btn consulting-btn-warning" onclick="holdConsultingPayment()">보류</button>
+                    <label>거절 사유<select id="consultingRejectReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="DUPLICATE_APPLICATION">중복 신청</option><option value="CUSTOMER_CANCELLED">고객 취소</option><option value="OTHER">기타</option></select></label>
+                    <button type="button" class="consulting-btn consulting-btn-danger" onclick="rejectConsultingApplication()">신청 거절</button>
+                </div>
+                <div id="consultingInviteActions" class="consulting-actions" hidden>
+                    <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
+                </div>
+            </section>
+        </div>
+
         <div id="section-matching" class="content-section">
             <h1 class="page-title">🤝 튜터 매칭 관리</h1>
             
@@ -581,6 +630,8 @@
     <script src="/js/admin/notices.js?v=20260524c"></script>
     <script src="/js/admin/matching.js?v=20260524c"></script>
     <script src="/js/admin/modals.js?v=20260524c"></script>
+    <script src="/js/admin/consulting.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-intake.js?v=20261008a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
