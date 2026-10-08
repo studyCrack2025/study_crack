@@ -15,7 +15,7 @@ assert.equal(groupWrittenSlots(slots).length, 3);
 const session = { startAt: '2026-10-09T01:00:00.000Z', endAt: '2026-10-09T01:30:00.000Z', status: 'booked' };
 assert.ok(formatWrittenSession(session));
 assert.equal(formatWrittenSession({ ...session, status: 'cancelled' }), null);
-assert.equal(actionPathForState('WRITTEN_SESSION_BOOKED'), '/2027-jungsi-consulting/schedule');
+assert.equal(actionPathForState('WRITTEN_SESSION_BOOKED'), '/2027-jungsi-consulting/written-session');
 
 let requestBody;
 const result = await listWrittenSlots({
