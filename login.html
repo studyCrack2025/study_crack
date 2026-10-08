@@ -121,7 +121,7 @@
     <script>
         (function() {
             var value = new URLSearchParams(window.location.search).get('returnUrl') || '';
-            if (value !== '/2027-jungsi-consulting/start') return;
+            if (!['/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'].includes(value)) return;
             var link = document.getElementById('signupLink');
             if (link) link.href = '/signup?returnUrl=' + encodeURIComponent(value);
         })();

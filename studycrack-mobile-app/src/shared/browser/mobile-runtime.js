@@ -64,6 +64,21 @@ export function getMobileRootElement() {
   return browser?.document?.getElementById?.('root') || browser?.document?.body || null;
 }
 
+export function getMobileAppSurface() {
+  return getBrowser()?.document?.body?.dataset?.appSurface || '';
+}
+
+export function getConsultingRuntimeContext() {
+  const browser = getBrowser();
+  return {
+    apiFetch: browser?.apiFetch || null,
+    consultingApiUrl: browser?.CONFIG?.api?.consulting || '',
+    fetchImpl: browser?.fetch?.bind(browser) || globalThis.fetch,
+    hasClientSession: browser?.hasClientSession || (() => false),
+    publicApiUrl: browser?.CONFIG?.api?.consultingPublic || ''
+  };
+}
+
 export function persistMobileUserRole(role) {
   try {
     getBrowser()?.localStorage?.setItem?.('userRole', String(role || ''));

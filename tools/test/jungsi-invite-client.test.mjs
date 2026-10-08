@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const html = await readFile(new URL('../../jungsi-consulting-start.html', import.meta.url), 'utf8');
-const client = await readFile(new URL('../../js/jungsi-consulting-start.js', import.meta.url), 'utf8');
+const html = await readFile(new URL('../../jungsi-consulting-app.html', import.meta.url), 'utf8');
+const client = await readFile(new URL('../../studycrack-mobile-app/src/features/consulting-v2/api.js', import.meta.url), 'utf8');
 const shared = await readFile(new URL('../../js/shared/api.js', import.meta.url), 'utf8');
 const auth = await readFile(new URL('../../js/auth.js', import.meta.url), 'utf8');
 const policy = JSON.parse(await readFile(new URL('../public-site-files.json', import.meta.url), 'utf8'));
@@ -32,6 +32,6 @@ test('login and signup preserve only the allowlisted consulting return path', ()
 });
 
 test('the deployment policy includes the page, assets, and clean URL alias', () => {
-    for (const file of ['jungsi-consulting-start.html', 'css/jungsi-consulting-start.css', 'js/jungsi-consulting-start.js']) assert.ok(policy.files.includes(file));
-    assert.equal(policy.aliases['2027-jungsi-consulting/start'], 'jungsi-consulting-start.html');
+    for (const file of ['jungsi-consulting-2027.html', 'jungsi-consulting-app.html', 'css/jungsi-consulting.css', 'js/jungsi-consulting.js']) assert.ok(policy.files.includes(file));
+    assert.equal(policy.aliases['2027-jungsi-consulting/start'], 'jungsi-consulting-app.html');
 });

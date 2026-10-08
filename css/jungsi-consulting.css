@@ -1,0 +1,45 @@
+:root { color-scheme: light; font-family: "Noto Sans KR", system-ui, sans-serif; background: #f8fafc; color: #172033; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #f8fafc; }
+.jungsi-landing-header { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; width: min(100% - 36px, 1180px); min-height: 78px; margin: 0 auto; }
+.jungsi-landing-header img { display: block; width: 148px; height: auto; }
+.jungsi-landing-login { padding: 11px 16px; border: 1px solid #c8d5e8; border-radius: 999px; color: #264fae; font-size: 0.88rem; font-weight: 750; text-decoration: none; }
+.jungsi-landing-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: center; gap: clamp(36px, 7vw, 90px); min-height: 650px; padding: clamp(58px, 9vw, 108px) max(18px, calc((100vw - 1180px) / 2)); overflow: hidden; background: radial-gradient(circle at 82% 20%, #dfe9ff 0, rgba(223, 233, 255, 0) 35%), linear-gradient(155deg, #f8fbff, #edf3ff); }
+.jungsi-landing-hero-copy { position: relative; z-index: 1; }
+.jungsi-landing-kicker { margin: 0 0 14px; color: #3867d6; font-size: 0.87rem; font-weight: 850; letter-spacing: 0.1em; }
+.jungsi-landing-hero h1 { margin: 0; color: #142442; font-size: clamp(2.6rem, 7vw, 5.25rem); line-height: 1.08; letter-spacing: -0.045em; word-break: keep-all; }
+.jungsi-landing-hero-copy > p:not(.jungsi-landing-kicker):not(.jungsi-landing-price) { max-width: 620px; margin: 26px 0 0; color: #52627a; font-size: clamp(1rem, 2vw, 1.16rem); line-height: 1.8; word-break: keep-all; }
+.jungsi-landing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+.jungsi-landing-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 166px; min-height: 52px; padding: 0 22px; border-radius: 14px; background: #2856c7; color: #fff; font-weight: 800; text-decoration: none; }
+.jungsi-landing-primary[aria-disabled="true"] { background: #77849a; pointer-events: none; }
+.jungsi-landing-secondary { display: inline-flex; align-items: center; justify-content: center; min-width: 166px; min-height: 52px; padding: 0 22px; border: 1px solid #adbfdb; border-radius: 14px; background: rgba(255, 255, 255, 0.8); color: #2856c7; font-weight: 800; text-decoration: none; }
+.jungsi-landing-price { min-height: 24px; margin: 14px 0 0; color: #66758d; font-size: 0.88rem; }
+.jungsi-landing-visual { position: relative; aspect-ratio: 1; width: min(100%, 500px); margin: 0 auto; border: 1px solid rgba(76, 112, 183, 0.18); border-radius: 50%; background: rgba(255, 255, 255, 0.62); box-shadow: 0 30px 80px rgba(48, 81, 150, 0.16); }
+.jungsi-landing-visual span { position: absolute; display: grid; place-items: center; width: clamp(92px, 22vw, 132px); aspect-ratio: 1; border-radius: 50%; background: #fff; color: #365aab; font-size: 0.86rem; font-weight: 800; box-shadow: 0 12px 32px rgba(51, 82, 145, 0.14); }
+.jungsi-landing-visual span:nth-child(1) { top: 6%; left: 12%; }
+.jungsi-landing-visual span:nth-child(2) { top: 16%; right: 4%; }
+.jungsi-landing-visual span:nth-child(3) { right: 10%; bottom: 5%; }
+.jungsi-landing-visual strong { position: absolute; top: 50%; left: 46%; display: grid; place-items: center; width: 42%; aspect-ratio: 1; transform: translate(-50%, -45%); border-radius: 42% 58% 55% 45%; background: linear-gradient(135deg, #2955bd, #5e83dc); color: #fff; font-size: clamp(1.3rem, 4vw, 2rem); line-height: 1.35; text-align: center; box-shadow: 0 22px 50px rgba(40, 86, 199, 0.3); }
+.jungsi-landing-intro { padding: clamp(78px, 11vw, 140px) max(18px, calc((100vw - 900px) / 2)); text-align: center; }
+.jungsi-landing-intro h2 { margin: 0; color: #172640; font-size: clamp(2rem, 6vw, 3.8rem); line-height: 1.2; letter-spacing: -0.035em; word-break: keep-all; }
+.jungsi-landing-intro > p:last-child { max-width: 650px; margin: 24px auto 0; color: #607087; line-height: 1.8; word-break: keep-all; }
+.jungsi-landing-process { padding: clamp(72px, 10vw, 120px) max(18px, calc((100vw - 1180px) / 2)); background: #142442; color: #fff; }
+.jungsi-landing-process h2 { margin: 0 0 42px; font-size: clamp(1.8rem, 5vw, 3rem); }
+.jungsi-landing-process ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.jungsi-landing-process li { min-height: 220px; padding: 26px 22px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 18px; background: rgba(255, 255, 255, 0.06); }
+.jungsi-landing-process span { color: #91adf0; font-size: 0.82rem; font-weight: 850; }
+.jungsi-landing-process h3 { margin: 48px 0 10px; font-size: 1.12rem; }
+.jungsi-landing-process p { margin: 0; color: #c7d2e6; font-size: 0.92rem; line-height: 1.7; word-break: keep-all; }
+.jungsi-landing-principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: clamp(42px, 8vw, 100px); padding: clamp(78px, 11vw, 140px) max(18px, calc((100vw - 1180px) / 2)); }
+.jungsi-landing-principles h2 { margin: 0; color: #172640; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.2; word-break: keep-all; }
+.jungsi-landing-principle-grid { display: grid; gap: 12px; }
+.jungsi-landing-principle-grid article { padding: 24px; border: 1px solid #dce5f1; border-radius: 18px; background: #fff; }
+.jungsi-landing-principle-grid h3 { margin: 0; color: #263650; font-size: 1.05rem; }
+.jungsi-landing-principle-grid p { margin: 10px 0 0; color: #637187; line-height: 1.7; word-break: keep-all; }
+.jungsi-landing-cta { margin: 0 max(18px, calc((100vw - 1180px) / 2)) clamp(60px, 9vw, 110px); padding: clamp(40px, 8vw, 72px) 22px; border-radius: 26px; background: linear-gradient(135deg, #2856c7, #183879); color: #fff; text-align: center; }
+.jungsi-landing-cta h2 { margin: 0; font-size: clamp(1.75rem, 5vw, 2.8rem); }
+.jungsi-landing-cta p { margin: 16px 0 28px; color: #dce7ff; line-height: 1.7; word-break: keep-all; }
+.jungsi-landing-cta a { display: inline-flex; align-items: center; min-height: 50px; padding: 0 22px; border-radius: 13px; background: #fff; color: #244fae; font-weight: 800; text-decoration: none; }
+.jungsi-landing-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 100px; padding: 24px max(18px, calc((100vw - 1180px) / 2)); border-top: 1px solid #dde5f0; color: #758196; font-size: 0.85rem; }
+.jungsi-landing-footer img { width: 132px; height: auto; }

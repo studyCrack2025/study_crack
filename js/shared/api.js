@@ -16,7 +16,9 @@ let _observedSessionEpoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
 function isSafeSocialReturnPath(value) {
     return ['', '/studycrack-mobile', '/studycrack-mobile/', '/studycrack-mobile.html',
         '/studycrack-mobile?screen=accountInfo', '/studycrack-mobile/?screen=accountInfo', '/studycrack-mobile.html?screen=accountInfo',
-        '/2027-jungsi-consulting/start'].includes(value);
+        '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home',
+        '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule',
+        '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'].includes(value);
 }
 
 function isSafeAuthReturnPath(value) {
@@ -220,7 +222,7 @@ function reportSharedDiagnostic(kind, route, status = 0) {
     try { window.STUDYCRACK_DIAGNOSTICS?.record(kind, route, Number.isInteger(status) ? status : 0); } catch (_) {}
 }
 
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html', '/2027-jungsi-consulting/start'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html', '/jungsi-consulting-app.html', '/2027-jungsi-consulting', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {
@@ -642,7 +644,7 @@ function canReplaySharedRequest(options) {
     if (['GET', 'HEAD', 'OPTIONS'].includes(String(options.method || 'GET').toUpperCase())) return true;
     try {
         const payload = JSON.parse(options.body);
-        if (['get_user', 'get_login_profile', 'get_user_analysis', 'get_product_guide', 'get_study_summary', 'get_study_ranking', 'get_admission_calendar', 'get_game_profile', 'get_study_habitat', 'get_fish_catalog', 'get_fish_detail', 'get_pending_draw', 'get_pro_reports', 'get_weekly_reports', 'get_qna_list', 'student_get_notifications', 'analyze_my_targets', 'backtrace_required_raw', 'convert_score', 'get_tutorial_recommendations', 'get_univ_list_only', 'simulate_score_rise', 'get_study_file_download', 'get_planner', 'list_payment_history'].includes(payload.type)) return true;
+        if (['get_user', 'get_login_profile', 'get_user_analysis', 'get_product_guide', 'get_study_summary', 'get_study_ranking', 'get_admission_calendar', 'get_game_profile', 'get_study_habitat', 'get_fish_catalog', 'get_fish_detail', 'get_pending_draw', 'get_pro_reports', 'get_weekly_reports', 'get_qna_list', 'student_get_notifications', 'student_get_v2_consulting_home', 'analyze_my_targets', 'backtrace_required_raw', 'convert_score', 'get_tutorial_recommendations', 'get_univ_list_only', 'simulate_score_rise', 'get_study_file_download', 'get_planner', 'list_payment_history'].includes(payload.type)) return true;
         if (payload.type === 'planner_sync_v1') return payload.operation === 'get_server_planner';
         return ['start_study_session', 'complete_study_session', 'claim_study_reward'].includes(payload.type)
             && typeof payload.data?.sessionId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(payload.data.sessionId);
