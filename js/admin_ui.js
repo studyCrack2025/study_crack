@@ -163,7 +163,10 @@ function showSection(sectionName) {
     } else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications') { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
-    else if (sectionName === 'consulting') loadConsultingPaymentReview();
+    else if (sectionName === 'consulting') {
+        loadConsultingPaymentReview();
+        loadConsultingMaterialReview();
+    }
 }
 
 window.showQnaSection = function(status) {

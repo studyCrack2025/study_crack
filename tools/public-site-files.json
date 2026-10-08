@@ -108,6 +108,7 @@
     "js/admin/detail-core.js",
     "js/admin/consulting.js",
     "js/admin/consulting-intake.js",
+    "js/admin/consulting-materials.js",
     "js/admin/matching.js",
     "js/admin/modals.js",
     "js/admin/notices.js",

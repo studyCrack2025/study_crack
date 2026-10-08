@@ -3,6 +3,9 @@ import './styles/consulting-v2-shell.css';
 import './styles/consulting-v2-home.css';
 import { ConsultingStartScreen } from './screens/ConsultingStartScreen.jsx';
 import { ConsultingHomeScreen } from './screens/ConsultingHomeScreen.jsx';
+import { ConsultingSurveyScreen } from './screens/ConsultingSurveyScreen.jsx';
+import { ConsultingMaterialsScreen } from './screens/ConsultingMaterialsScreen.jsx';
+import './styles/consulting-v2-survey.css';
 import { CONSULTING_ROUTES, navigateConsulting, resolveConsultingRoute } from './route-model.js';
 import { getConsultingRuntimeContext } from '../../shared/browser/mobile-runtime.js';
 
@@ -45,5 +48,7 @@ export default function ConsultingApp() {
   if (route.screen === 'start') return <ConsultingStartScreen binding={binding} hasSession={hasSession} />;
   if (route.screen === 'login' || (route.protected && !hasSession) || route.screen === 'unknown') return <LoginScreen hasSession={hasSession} />;
   if (route.screen === 'home') return <ConsultingHomeScreen binding={binding} />;
+  if (route.screen === 'survey') return <ConsultingSurveyScreen binding={binding} />;
+  if (route.screen === 'materials') return <ConsultingMaterialsScreen binding={binding} />;
   return <PendingScreen label={PENDING_LABELS[route.screen] || '컨설팅'} />;
 }

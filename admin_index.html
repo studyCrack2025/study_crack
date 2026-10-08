@@ -439,6 +439,41 @@
                     <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
                 </div>
             </section>
+            <div class="consulting-heading-row consulting-material-heading">
+                <div>
+                    <h2 class="page-title">📄 정시 컨설팅 자료 검수</h2>
+                    <p class="consulting-caption">학생이 제출한 조사서와 성적표를 대조한 뒤 보완 요청 또는 검수 완료를 처리합니다.</p>
+                </div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingMaterialReview()">자료 새로고침</button>
+            </div>
+            <div id="consultingMaterialStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>최근 변경</th><th>케이스</th><th>단계</th><th>성적 검수</th><th>확인</th></tr></thead>
+                    <tbody id="consultingMaterialReviewBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 자료 검수 대기 건을 불러옵니다.</td></tr></tbody>
+                </table>
+            </div>
+            <section id="consultingMaterialDetail" class="consulting-detail" hidden aria-labelledby="consultingMaterialDetailTitle">
+                <div class="consulting-detail-head">
+                    <h2 id="consultingMaterialDetailTitle">자료 상세</h2>
+                    <button type="button" class="consulting-close" onclick="closeConsultingMaterialDetail()" aria-label="자료 상세 닫기">×</button>
+                </div>
+                <div id="consultingMaterialSummary" class="consulting-detail-grid"></div>
+                <div class="consulting-material-block"><h3>상담 질문과 지원 조건</h3><div id="consultingMaterialSurvey" class="consulting-material-copy"></div></div>
+                <div class="consulting-material-block"><h3>성적표 파일</h3><div id="consultingMaterialFiles" class="consulting-material-files"></div></div>
+                <div class="consulting-material-block"><h3>검수 성적</h3><div id="consultingVerifiedScores" class="consulting-score-editor"></div></div>
+                <div class="consulting-actions consulting-material-actions">
+                    <label>검수 결과<select id="consultingMaterialResult"><option value="matched">입력과 일치</option><option value="corrected">운영자 정정</option></select></label>
+                    <label class="consulting-material-reason">처리 사유<textarea id="consultingMaterialReason" maxlength="500" placeholder="검수 근거를 기록하세요"></textarea></label>
+                    <label class="consulting-material-reason">차이점(한 줄에 하나)<textarea id="consultingMaterialDifferences" maxlength="3000" placeholder="정정한 항목이 있다면 기록하세요"></textarea></label>
+                    <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="verifyConsultingMaterials()">검수 완료</button>
+                </div>
+                <div class="consulting-actions consulting-material-actions">
+                    <label>보완 사유<select id="consultingSupplementReason"><option value="SCORE_DOCUMENT_UNREADABLE">성적표 판독 불가</option><option value="SCORE_INPUT_MISMATCH">입력과 성적표 불일치</option><option value="MISSING_SCORE_PAGE">성적표 페이지 누락</option><option value="OTHER">기타</option></select></label>
+                    <label class="consulting-material-reason">학생 안내<textarea id="consultingSupplementText" maxlength="500" placeholder="학생이 무엇을 보완해야 하는지 구체적으로 입력하세요"></textarea></label>
+                    <button id="consultingSupplementBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="requestConsultingSupplement()">보완 요청</button>
+                </div>
+            </section>
         </div>
 
         <div id="section-matching" class="content-section">
@@ -632,6 +667,7 @@
     <script src="/js/admin/modals.js?v=20260524c"></script>
     <script src="/js/admin/consulting.js?v=20261008a"></script>
     <script src="/js/admin/consulting-intake.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

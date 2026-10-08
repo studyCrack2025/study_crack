@@ -1,0 +1,35 @@
+.consulting-survey { min-height:100vh; padding:clamp(12px,2vw,20px); }
+.consulting-survey > header { width:min(100%,900px); margin:0 auto 14px; display:flex; align-items:center; justify-content:space-between; color:#56647a; font-size:.9rem; font-weight:700; }
+.consulting-survey > header button { border:0; background:transparent; color:#2856c7; font:inherit; cursor:pointer; }
+.consulting-survey-card { width:min(100%,900px); margin:0 auto; padding:clamp(24px,5vw,42px); border:1px solid #dbe4f0; border-radius:clamp(18px,3vw,24px); background:#fff; box-shadow:0 20px 55px rgba(31,55,91,.1); }
+.consulting-survey-card h1 { margin:0 0 18px; color:#16233a; font-size:clamp(1.6rem,5vw,2rem); text-align:center; }
+.consulting-survey-progress { height:7px; margin:0 0 30px; overflow:hidden; border-radius:99px; background:#e8edf5; }
+.consulting-survey-progress span { display:block; height:100%; border-radius:inherit; background:#3867d6; transition:width .2s ease; }
+.consulting-survey-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px; }
+.consulting-survey-grid-single { grid-template-columns:1fr; }
+.consulting-survey-field { display:grid; gap:7px; color:#34435a; font-size:.9rem; font-weight:750; }
+.consulting-survey-field input { width:100%; min-height:46px; padding:11px 12px; border:1px solid #bdc9da; border-radius:10px; background:#fff; color:#172033; font:inherit; }
+.consulting-survey-field select { width:100%; min-height:46px; padding:11px 12px; border:1px solid #bdc9da; border-radius:10px; background:#fff; color:#172033; font:inherit; }
+.consulting-survey-field textarea { width:100%; min-height:110px; padding:11px 12px; border:1px solid #bdc9da; border-radius:10px; background:#fff; color:#172033; font:inherit; resize:vertical; }
+.consulting-survey-field input:focus { border-color:#3867d6; outline:3px solid rgba(56,103,214,.13); }
+.consulting-survey-field select:focus { border-color:#3867d6; outline:3px solid rgba(56,103,214,.13); }
+.consulting-survey-field textarea:focus { border-color:#3867d6; outline:3px solid rgba(56,103,214,.13); }
+.consulting-score-list { display:grid; gap:12px; margin-top:20px; }
+.consulting-score-list fieldset { display:grid; grid-template-columns:repeat(auto-fit,minmax(108px,1fr)); gap:8px; align-items:center; margin:0; padding:14px; border:1px solid #dbe4f0; border-radius:12px; }
+.consulting-score-list legend { padding:0 6px; color:#253653; font-weight:800; }
+.consulting-score-list input { min-width:0; padding:10px; border:1px solid #bdc9da; border-radius:9px; font:inherit; }
+.consulting-survey-check { display:flex; align-items:center; gap:9px; color:#34435a; font-size:.92rem; font-weight:700; }
+.consulting-survey-check input { width:18px; height:18px; accent-color:#2856c7; }
+.consulting-priority-list { display:grid; gap:9px; margin-top:20px; }
+.consulting-priority-list > div { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px; border:1px solid #dbe4f0; border-radius:10px; }
+.consulting-priority-list button { margin-left:6px; padding:7px 10px; border:1px solid #b8c7df; border-radius:8px; background:#fff; color:#2856c7; cursor:pointer; }
+.consulting-file-panel { margin-bottom:22px; padding:18px; border-radius:14px; background:#f3f6fb; }
+.consulting-file-panel h3 { margin:0 0 6px; }
+.consulting-file-panel p { color:#64748b; font-size:.88rem; }
+.consulting-file-panel ul { display:grid; gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+.consulting-file-panel li { display:flex; justify-content:space-between; gap:12px; padding:10px; border-radius:8px; background:#fff; }
+.consulting-file-panel strong[data-status="ready"] { color:#067647; }
+.consulting-file-panel strong[data-status="rejected"] { color:#b42318; }
+.consulting-survey-message { margin:18px 0 0; color:#b42318; font-size:.9rem; font-weight:700; text-align:center; }
+.consulting-survey-card footer { display:flex; justify-content:space-between; gap:10px; margin-top:30px; }
+.consulting-survey-card footer button { min-width:130px; }

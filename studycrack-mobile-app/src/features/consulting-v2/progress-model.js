@@ -27,8 +27,8 @@ export function formatConsultingDueAt(value) {
 }
 
 export function actionPathForState(workflowState) {
-  if (['ONBOARDING', 'SURVEY_DRAFT'].includes(workflowState)) return '/2027-jungsi-consulting/survey';
-  if (['MATERIAL_REVIEW', 'SUPPLEMENT_REQUIRED'].includes(workflowState)) return '/2027-jungsi-consulting/materials';
+  if (['ONBOARDING', 'SURVEY_DRAFT', 'SUPPLEMENT_REQUIRED'].includes(workflowState)) return '/2027-jungsi-consulting/survey';
+  if (workflowState === 'MATERIAL_REVIEW') return '/2027-jungsi-consulting/materials';
   if (['AVAILABILITY_REQUIRED', 'SCHEDULING'].includes(workflowState)) return '/2027-jungsi-consulting/schedule';
   if (workflowState === 'WRITTEN_SESSION_BOOKED') return '/2027-jungsi-consulting/written-session';
   if (['WRITTEN_SESSION_COMPLETED', 'REPORT_GENERATING', 'REPORT_REVIEW', 'REPORT_SCHEDULED'].includes(workflowState)) return '/2027-jungsi-consulting/report';

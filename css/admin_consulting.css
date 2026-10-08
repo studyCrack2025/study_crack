@@ -26,3 +26,16 @@
 .consulting-actions label { display:flex; flex-direction:column; gap:6px; color:#334155; font-weight:700; }
 .consulting-actions input[type="number"], .consulting-actions input[type="datetime-local"], .consulting-actions select { padding:10px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; }
 .consulting-actions .consulting-check { flex-direction:row; align-items:center; padding:10px 0; }
+.consulting-material-heading { margin-top:42px; padding-top:30px; border-top:1px solid #cbd5e1; }
+.consulting-material-block { margin-top:20px; padding:18px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
+.consulting-material-block h3 { margin:0 0 14px; color:#1e293b; }
+.consulting-material-copy { display:grid; gap:10px; color:#334155; line-height:1.6; white-space:pre-wrap; }
+.consulting-material-copy p { margin:0; padding:10px; border-radius:8px; background:#fff; }
+.consulting-material-files { display:flex; flex-wrap:wrap; gap:10px; }
+.consulting-material-files button { padding:9px 12px; border:1px solid #93c5fd; border-radius:8px; background:#eff6ff; color:#1d4ed8; font-weight:700; cursor:pointer; }
+.consulting-score-editor { display:grid; gap:8px; }
+.consulting-score-editor-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); gap:8px; }
+.consulting-score-editor-row input { min-width:0; padding:9px; border:1px solid #cbd5e1; border-radius:8px; }
+.consulting-material-actions { align-items:stretch; }
+.consulting-material-reason { flex:1 1 260px; }
+.consulting-material-reason textarea { min-height:78px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; resize:vertical; }

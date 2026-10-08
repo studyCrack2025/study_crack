@@ -18,3 +18,7 @@ test('completed home permits the backend null next action', () => {
     assert.equal(home.nextAction, null);
     assert.equal(actionPathForState(home.workflowState), '');
 });
+
+test('supplement action returns directly to the editable survey', () => {
+    assert.equal(actionPathForState('SUPPLEMENT_REQUIRED'), '/2027-jungsi-consulting/survey');
+});

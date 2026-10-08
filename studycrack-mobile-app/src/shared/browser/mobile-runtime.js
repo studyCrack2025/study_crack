@@ -73,6 +73,7 @@ export function getConsultingRuntimeContext() {
   return {
     apiFetch: browser?.apiFetch || null,
     consultingApiUrl: browser?.CONFIG?.api?.consulting || '',
+    fileApiUrl: browser?.CONFIG?.api?.file || '',
     fetchImpl: browser?.fetch?.bind(browser) || globalThis.fetch,
     hasClientSession: browser?.hasClientSession || (() => false),
     publicApiUrl: browser?.CONFIG?.api?.consultingPublic || ''
