@@ -116,3 +116,9 @@ async function cancelConsultingWrittenSession() {
         button.disabled = false;
     }
 }
+
+function openConsultingReportReview() {
+    const caseId = document.getElementById('consultingReportCaseId')?.value.trim() || '';
+    if (!/^CASE_[0-9a-f-]{36}$/i.test(caseId)) return setConsultingScheduleStatus('올바른 케이스 ID를 입력해주세요.', 'error');
+    window.location.assign(`/2027-jungsi-consulting/report?caseId=${encodeURIComponent(caseId)}`);
+}

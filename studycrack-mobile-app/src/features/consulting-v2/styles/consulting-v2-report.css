@@ -1,0 +1,32 @@
+.consulting-report{min-height:100vh;background:#f5f7fb;color:#14213d;}
+.consulting-report>header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid #e2e8f0;}
+.consulting-report>header button,.consulting-report>header select{border:0;background:transparent;color:#3156d3;font:inherit;font-weight:800;}
+.consulting-report-document{width:min(920px,calc(100% - 32px));margin:32px auto;padding:clamp(24px,5vw,56px);background:#fff;border:1px solid #e2e8f0;border-radius:24px;box-shadow:0 20px 50px rgba(15,23,42,.07);}
+.consulting-report-workbench{width:min(920px,calc(100% - 32px));margin:32px auto;padding:clamp(24px,5vw,56px);background:#fff;border:1px solid #e2e8f0;border-radius:24px;box-shadow:0 20px 50px rgba(15,23,42,.07);}
+.consulting-report-document>h1{margin:8px 0;font-size:clamp(30px,5vw,48px);line-height:1.12;}
+.consulting-report-document>time{display:block;margin-bottom:40px;color:#64748b;}
+.consulting-report-document>section{margin:36px 0;}
+.consulting-report-document h2{margin:0 0 12px;font-size:22px;}
+.consulting-report-document p{margin:0;white-space:pre-wrap;line-height:1.75;}
+.consulting-report-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.consulting-report-candidates article{padding:20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;}
+.consulting-report-candidates span{color:#3156d3;font-size:12px;font-weight:900;}
+.consulting-report-candidates h3{margin:8px 0;font-size:18px;}
+.consulting-report-candidates small{display:block;margin-top:12px;color:#64748b;}
+.consulting-report-workbench-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;}
+.consulting-report-workbench-head h1{margin:4px 0 0;}
+.consulting-report-workbench-head span{padding:8px 12px;background:#eef2ff;border-radius:999px;color:#3156d3;font-size:13px;font-weight:900;}
+.consulting-report-workbench fieldset{display:grid;gap:20px;padding:0;border:0;}
+.consulting-report-workbench label{display:grid;gap:8px;font-weight:800;}
+.consulting-report-workbench input{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;}
+.consulting-report-workbench textarea{width:100%;min-height:132px;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;resize:vertical;line-height:1.6;}
+.consulting-report-release input{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;}
+.consulting-report-editor-candidates{display:grid;gap:12px;}
+.consulting-report-editor-candidates article{display:grid;gap:10px;padding:16px;background:#f8fafc;border-radius:16px;}
+.consulting-report-editor-candidates article>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;}
+.consulting-report-row-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;}
+.consulting-report-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:24px;}
+.consulting-report-row-actions button{padding:11px 16px;border:1px solid #3156d3;border-radius:12px;background:#fff;color:#3156d3;font:inherit;font-weight:900;}
+.consulting-report-actions button{padding:11px 16px;border:1px solid #3156d3;border-radius:12px;background:#fff;color:#3156d3;font:inherit;font-weight:900;}
+.consulting-report-actions button:last-child{background:#3156d3;color:#fff;}
+.consulting-report-release{display:grid;gap:8px;margin:28px 0;font-weight:900;}
