@@ -1,0 +1,18 @@
+.consulting-schedule { min-height:100vh; padding:clamp(12px,2vw,20px); background:#f6f8fc; }
+.consulting-schedule > header { width:min(100%,900px); margin:0 auto 14px; display:flex; align-items:center; justify-content:space-between; color:#56647a; font-size:.9rem; font-weight:750; }
+.consulting-schedule > header button { border:0; background:transparent; color:#2856c7; font:inherit; cursor:pointer; }
+.consulting-schedule-card { width:min(100%,900px); margin:0 auto; padding:clamp(24px,5vw,42px); border:1px solid #dbe4f0; border-radius:clamp(18px,3vw,24px); background:#fff; box-shadow:0 20px 55px rgba(31,55,91,.1); }
+.consulting-schedule-card h1 { margin:0 0 10px; color:#16233a; font-size:clamp(1.55rem,5vw,2rem); }
+.consulting-schedule-days { display:grid; gap:18px; margin-top:26px; }
+.consulting-schedule-days > section { padding:16px; border:1px solid #dbe4f0; border-radius:14px; }
+.consulting-schedule-days h2 { margin:0 0 12px; color:#253653; font-size:1rem; }
+.consulting-schedule-days section > div { display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:8px; }
+.consulting-schedule-days article { display:grid; gap:5px; padding:6px; border:1px solid #d7e0ed; border-radius:10px; background:#fff; }
+.consulting-schedule-days article.is-selected { border-color:#3867d6; background:#eef3ff; }
+.consulting-schedule-days article button { min-height:42px; border:0; border-radius:8px; background:transparent; color:#263956; font-weight:800; cursor:pointer; }
+.consulting-schedule-days article select { min-height:36px; border:1px solid #bdc9da; border-radius:7px; background:#fff; color:#263956; }
+.consulting-schedule-card footer { margin-top:24px; }
+.consulting-schedule-confirmed { display:grid; gap:8px; margin:24px 0; padding:24px; border-radius:16px; background:#eef4ff; text-align:center; }
+.consulting-schedule-confirmed strong { color:#1e3f8f; font-size:1.25rem; }
+.consulting-schedule-confirmed span { color:#16233a; font-size:1.6rem; font-weight:850; }
+.consulting-schedule-confirmed small { color:#64748b; }

@@ -474,6 +474,39 @@
                     <button id="consultingSupplementBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="requestConsultingSupplement()">보완 요청</button>
                 </div>
             </section>
+            <div class="consulting-heading-row consulting-schedule-heading">
+                <div>
+                    <h2 class="page-title">🗓️ 서면상담 일정 배정</h2>
+                    <p class="consulting-caption">상담사 가능 시간을 생성한 뒤, 학생 후보를 점수 순으로 확인하고 최종 확정합니다.</p>
+                </div>
+            </div>
+            <div id="consultingScheduleStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div class="consulting-schedule-tools">
+                <section>
+                    <h3>상담사 slot 생성</h3>
+                    <div class="consulting-lookup-row">
+                        <input id="consultingScheduleCounselorId" type="text" autocomplete="off" placeholder="상담사 ID">
+                        <button id="consultingGenerateSlotsBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="generateConsultingSlots()">7일 slot 생성</button>
+                    </div>
+                </section>
+                <section>
+                    <h3>케이스 배정 후보</h3>
+                    <div class="consulting-lookup-row">
+                        <input id="consultingScheduleCaseId" type="text" autocomplete="off" placeholder="CASE_...">
+                        <button id="consultingLoadCandidatesBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingScheduleCandidates()">후보 조회</button>
+                    </div>
+                </section>
+            </div>
+            <section id="consultingCurrentSession" class="consulting-current-session" hidden>
+                <div id="consultingCurrentSessionCopy"></div>
+                <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button>
+            </section>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>순위</th><th>일시</th><th>상담사</th><th>학생 우선순위</th><th>점수</th><th>확정</th></tr></thead>
+                    <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="6" class="empty-msg">케이스 ID로 배정 후보를 조회해주세요.</td></tr></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="section-matching" class="content-section">
@@ -668,6 +701,7 @@
     <script src="/js/admin/consulting.js?v=20261008a"></script>
     <script src="/js/admin/consulting-intake.js?v=20261008a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

@@ -39,3 +39,8 @@
 .consulting-material-actions { align-items:stretch; }
 .consulting-material-reason { flex:1 1 260px; }
 .consulting-material-reason textarea { min-height:78px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; resize:vertical; }
+.consulting-schedule-heading { margin-top:42px; padding-top:30px; border-top:1px solid #cbd5e1; }
+.consulting-schedule-tools { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:18px 0; }
+.consulting-schedule-tools section { padding:18px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
+.consulting-schedule-tools h3 { margin:0 0 12px; color:#1e293b; }
+.consulting-current-session { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; padding:16px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; font-weight:700; }

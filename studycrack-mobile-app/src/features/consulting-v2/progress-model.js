@@ -30,7 +30,7 @@ export function actionPathForState(workflowState) {
   if (['ONBOARDING', 'SURVEY_DRAFT', 'SUPPLEMENT_REQUIRED'].includes(workflowState)) return '/2027-jungsi-consulting/survey';
   if (workflowState === 'MATERIAL_REVIEW') return '/2027-jungsi-consulting/materials';
   if (['AVAILABILITY_REQUIRED', 'SCHEDULING'].includes(workflowState)) return '/2027-jungsi-consulting/schedule';
-  if (workflowState === 'WRITTEN_SESSION_BOOKED') return '/2027-jungsi-consulting/written-session';
+  if (workflowState === 'WRITTEN_SESSION_BOOKED') return '/2027-jungsi-consulting/schedule';
   if (['WRITTEN_SESSION_COMPLETED', 'REPORT_GENERATING', 'REPORT_REVIEW', 'REPORT_SCHEDULED'].includes(workflowState)) return '/2027-jungsi-consulting/report';
   if (['FINAL_CALL_SCHEDULING', 'FINAL_CALL_BOOKED'].includes(workflowState)) return '/2027-jungsi-consulting/final-call';
   return '';
