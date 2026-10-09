@@ -107,6 +107,10 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .hero-subtitle strong { font-weight: 700; }
 .hero-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; width: min(100%,352px); padding: 0 20px; border-radius: 4px; background: var(--primary); color: #fff; font-size: 17px; font-weight: 800; transition: background .2s; }
 .hero-cta:hover { transform: translateY(-2px); background: #3d69da; }
+.hero-example-link { display: flex; align-items: center; justify-content: center; width: fit-content; max-width: 100%; min-height: 44px; margin: 14px auto 0; padding: 8px 12px; border-radius: 4px; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.6; text-align: center; text-decoration: underline; text-underline-offset: 5px; }
+.hero-example-link:hover { background: rgba(0,0,0,.18); }
+.hero-example-link:focus-visible { outline: 3px solid #fff; outline-offset: 3px; background: #24365a; }
+#analysis-example { scroll-margin-top: 96px; }
 .hero-note { margin: 18px auto 48px; color: #fff; font-size: 14px; line-height: 1.6; }
 .hero-dots { display: flex; justify-content: center; gap: 8px; }
 .hero-dots button { width: 9px; height: 9px; padding: 0; border-radius: 999px; background: rgba(255,255,255,.5); cursor: pointer; transition: width .3s, background .3s; }
