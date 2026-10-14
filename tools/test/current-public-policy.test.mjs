@@ -44,7 +44,7 @@ test('both verification scopes retain public artifact smoke before deployment', 
   assert.ok(browser > workflow.indexOf('- name: Install browser runtime') && seal > browser);
   const step = workflow.slice(browser, seal);
   assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
-  assert.ok(step.includes('--workers=2 --retries=0'));
+  assert.ok(step.includes('--workers=1 --retries=0'));
   assert.doesNotMatch(step, /continue-on-error/);
   assert.equal(e2eSuiteSelection('all').testMatch, '**/*.spec.mjs');
   assert.ok(e2eSuiteSelection('web-css').testMatch.includes('**/public-artifact.spec.mjs'));

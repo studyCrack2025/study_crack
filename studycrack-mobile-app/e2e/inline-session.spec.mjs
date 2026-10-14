@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { test, expect } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
@@ -89,7 +90,7 @@ for (const failure of [false, true]) test(`정성 저장 ${failure ? '실패는 
   page.on('dialog', dialog => dialog.accept());
   await page.goto('/studycrack-mobile.html?screen=timer');
   await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
-  await page.locator('.my-summary-checklist summary').click();
+  await setDisclosureOpen(page.locator('.my-summary-checklist'));
   await page.locator('.my-summary-sheet [data-target="qualInfo"]').first().click();
   await page.locator('[data-ob-grade]').first().click();
   await page.locator('#qual-school').fill('테스트 고등학교');

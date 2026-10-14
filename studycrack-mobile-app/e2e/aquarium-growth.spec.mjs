@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
@@ -53,7 +54,7 @@ test('헤더 성장 일수와 배경 단계를 구분하고 출처는 펼쳐서 
   const caption = page.locator('.aquarium-growth-caption');
   await expect(caption).toContainText('3일 더 공부하면 다음 수조가 열려요');
   await expect(caption.getByRole('button', { name: '성장 기록 다시 확인' })).not.toBeVisible();
-  await caption.locator('summary').click();
+  await setDisclosureOpen(caption.locator('.aquarium-growth-details'));
   await expect(caption.getByRole('button', { name: '성장 기록 다시 확인' })).toBeVisible();
   await expect(page.getByRole('region', { name: '물고기 만나기' }).getByRole('group', { name: '뽑기권' })).toBeVisible();
 });
@@ -81,12 +82,12 @@ test('성장 조회 실패 유지·다시 확인·비활성 롤백', async ({ pa
   const caption = page.locator('.aquarium-growth-caption'), scene = page.locator('.aquarium-scene');
   await expect(caption).toHaveAttribute('data-growth-status', 'ready');
   await expect(caption.getByRole('button', { name: '성장 기록 다시 확인' })).not.toBeVisible();
-  await caption.locator('summary').click();
+  await setDisclosureOpen(caption.locator('.aquarium-growth-details'));
   state.fail = true; await caption.getByRole('button', { name: '성장 기록 다시 확인' }).click();
   await expect(caption).toHaveAttribute('data-growth-status', 'stale'); await expect(scene).toHaveAttribute('data-background-key', 'day30');
   state.fail = false; state.days = 50; await caption.getByRole('button', { name: '성장 기록 다시 확인' }).click();
   await expect(scene).toHaveAttribute('data-background-key', 'day50');
-  await caption.locator('summary').click();
+  await setDisclosureOpen(caption.locator('.aquarium-growth-details'));
   state.disabled = true; await caption.getByRole('button', { name: '성장 기록 다시 확인' }).click();
   await expect(scene).toHaveAttribute('data-background-key', 'day1'); await expect(caption).not.toContainText('성장 인정');
 });
@@ -131,7 +132,7 @@ test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재�
   await expect(notice).toContainText('DAY 7 배경을 열었어요');
   await expect(notice.locator('button')).not.toBeFocused();
   await notice.getByRole('button', { name: '해금 안내 닫기' }).click();
-  await page.locator('.aquarium-growth-details summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-growth-details'));
   await page.getByRole('button', { name: '성장 기록 다시 확인' }).click(); await showCaption(page);
   await expect(notice).toHaveCount(0);
   await page.locator('[data-action="openAquariumShare"]').click(); await expect(notice).toHaveCount(0);
@@ -140,7 +141,7 @@ test('해금은 수조에서 한 번만 안내하고 재조회·재진입·재�
   await expect(notice).toHaveCount(0);
   await page.goto('/studycrack-mobile.html?screen=aquarium');
   await page.reload(); await showCaption(page); await expect(notice).toHaveCount(0);
-  await page.locator('.aquarium-growth-details summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-growth-details'));
   state.days = 15; await page.getByRole('button', { name: '성장 기록 다시 확인' }).click(); await showCaption(page);
   await expect(notice).toContainText('DAY 15 배경을 열었어요');
   expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBe('day15');

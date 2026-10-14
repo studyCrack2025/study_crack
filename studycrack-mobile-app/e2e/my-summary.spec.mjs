@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
@@ -36,7 +37,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const capture = async name => page.screenshot({ path: process.env.STUDYCRACK_MY_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_MY_CAPTURE_DIR, `${name}-${width}.png`) : testInfo.outputPath(`${name}-${width}.png`), animations: 'disabled' });
     await capture('sheet');
     const before = await summaryStats.innerText();
-    await dialog.locator('.my-summary-checklist summary').click();
+    await setDisclosureOpen(dialog.locator('.my-summary-checklist'));
     await expect(dialog.getByRole('button', { name: /학습유형 MBTI 설정하기/ })).toBeVisible();
     await capture('checklist');
     const last = dialog.getByRole('button', { name: /약관 · 설정/ });
@@ -75,7 +76,7 @@ test('학습 프로필 저장 실패는 체크리스트를 완료시키지 않�
   page.on('dialog', async dialog => { messages.push(dialog.message()); await dialog.accept(); });
   await page.goto('/studycrack-mobile.html?screen=my');
   const checklist = page.locator('.my-summary-checklist');
-  await checklist.locator('summary').click();
+  await setDisclosureOpen(checklist);
   await checklist.getByRole('button', { name: /학년 · 계열 설정하기/ }).click();
   await page.getByRole('button', { name: '고3 재학' }).click();
   await page.locator('[data-field="obSchoolName"]').fill('검수고등학교');
@@ -85,7 +86,7 @@ test('학습 프로필 저장 실패는 체크리스트를 완료시키지 않�
   await expect(page.locator('[data-screen="ob1"]')).toBeVisible();
   await page.locator('[data-action="back"]').first().click();
   await expect(checklist.locator('summary')).toContainText('2/4');
-  await checklist.locator('summary').click();
+  await setDisclosureOpen(checklist);
   await checklist.getByRole('button', { name: /학년 · 계열 설정하기/ }).click();
   await expect(page.locator('[data-field="obSchoolName"]')).toHaveValue('검수고등학교');
   await page.getByRole('button', { name: '저장하고 성적 입력으로' }).click();
@@ -128,8 +129,8 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await page.goto('/studycrack-mobile.html?screen=my');
   const checklist = page.locator('.my-summary-checklist');
   await expect(checklist.locator('summary')).toContainText('1/4');
-  await checklist.locator('summary').click();
-  await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click();
+  await setDisclosureOpen(checklist);
+  await checklist.getByRole('button', { name: /목표 대학 설정하기/ }).click({ delay: 120 });
   await expect(page.locator('[data-screen="addUniversity"]')).toBeVisible();
   await page.getByRole('button', { name: '직접 추가하기 →' }).click();
   await page.locator('[data-field="analysisSearchTerm"]').fill('연세');
@@ -146,7 +147,7 @@ test('목표 대학 설정은 실제 선택 화면으로 연결되고 저장 실
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.locator('[data-action="back"]').first().click();
   await expect(checklist.locator('summary')).toContainText('2/4');
-  await checklist.locator('summary').click();
+  await setDisclosureOpen(checklist);
   await expect(checklist.getByRole('button', { name: /목표 대학 설정됨/ })).toBeVisible();
   expect(api.requests.filter(({ payload }) => payload.type === 'update_target_univs')).toHaveLength(2);
 });
