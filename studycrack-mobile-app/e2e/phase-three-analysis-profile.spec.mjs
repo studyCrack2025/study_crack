@@ -40,10 +40,10 @@ test('랭킹 오류는 같은 기간을 명시적으로 다시 요청해 복구�
   expect(api.requests.filter(({ payload }) => payload.type === 'get_study_ranking')).toHaveLength(2);
 });
 
-test('Phase 3 분석·프로필 입력 화면은 네 viewport에서 경계를 지킨다', async ({ page }, testInfo) => {
-  await installAuthenticatedSession(page);
-  await installApiMock(page);
-  for (const viewport of VIEWPORTS) {
+for (const viewport of VIEWPORTS) {
+  test(`Phase 3 분석·프로필 입력 화면 경계 ${viewport.width}px`, async ({ page }, testInfo) => {
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
     await page.setViewportSize(viewport);
     for (const [name, selector] of SURFACES) {
       const screen = selector.match(/data-screen="([^"]+)/)?.[1];
@@ -59,5 +59,5 @@ test('Phase 3 분석·프로필 입력 화면은 네 viewport에서 경계를 �
       await page.screenshot({ path: screenshotPath, fullPage: true });
       await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
     }
-  }
-});
+  });
+}

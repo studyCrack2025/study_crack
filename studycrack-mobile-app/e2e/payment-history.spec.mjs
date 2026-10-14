@@ -27,6 +27,7 @@ test('account entry opens shared history, then verified pending status, without 
   await expect(page.locator('#historyList li')).toHaveCount(1);
   await expect(page.locator('#historyBack')).toHaveAttribute('href', '/studycrack-mobile?screen=accountInfo');
   await page.locator('#historyList a').click();
+  await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('#successTitle')).toHaveText('결제 완료 · 이용권 반영 대기');
   expect(calls.map(call => call.type)).toEqual(['list_payment_history', 'get_payment_status']);
 });
