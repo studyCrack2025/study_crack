@@ -204,9 +204,9 @@ test('workflow passes the tested artifact and independent digest to a non-buildi
   const verify = workflow.slice(workflow.indexOf('  verify:'), workflow.indexOf('  deploy:'));
   const deploy = workflow.slice(workflow.indexOf('  deploy:'));
   assert.match(workflow, /STUDYCRACK_PREVIEW_ROOT: .*release-artifact\/site/);
-  assert.match(verify, /needs: \[prepare, e2e\]/);
-  assert.ok(verify.indexOf('Require every verification job to pass') < verify.indexOf('Seal verified artifact identity'));
-  assert.match(verify, /test "\$PREPARE_RESULT" = success && test "\$E2E_RESULT" = success/);
+  assert.ok(verify.indexOf('Test required browser coverage') < verify.indexOf('Seal verified artifact identity'));
+  assert.match(verify, /CANDIDATE_DIGEST: .*steps\.candidate\.outputs\.manifest-digest/);
+  assert.doesNotMatch(verify, /continue-on-error/);
   assert.ok(verify.indexOf('Seal verified artifact identity') < verify.indexOf('Upload verified public artifact'));
   assert.match(deploy, /actions\/download-artifact@v4/);
   assert.match(deploy, /needs\.verify\.outputs\.artifact-name/);
