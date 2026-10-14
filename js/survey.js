@@ -37,7 +37,6 @@ function updateExamEstimateNotice(month) {
     const notice = document.getElementById('examEstimateNotice');
     if (!notice) return;
     const messages = {
-        jul: '7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.',
         sep: '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치입니다. 실제 성적표의 표준점수·백분위·등급과 다를 수 있습니다.'
     };
     notice.textContent = messages[month] || '';
@@ -257,7 +256,7 @@ async function requestScoreConversion(type) {
     scoreVal = parseInt(rawEl.value);
 
     if (month === 'jul' && (type === 'inq1' || type === 'inq2') && !isJulyInquiryAvailable(subNameVal)) {
-        alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
+        alert('7월 학평에서 지원하지 않는 탐구 과목입니다.');
         rawEl.value = '';
         return;
     }
@@ -625,7 +624,7 @@ async function saveQuantitative() {
     }
 
     if (month === 'jul' && (!isJulyInquiryAvailable(inq1Name) || !isJulyInquiryAvailable(inq2Name))) {
-        alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
+        alert('7월 학평에서 지원하지 않는 탐구 과목입니다.');
         return;
     }
 
