@@ -114,43 +114,32 @@ test('긴 개인정보 처리방침과 이용약관은 작은 화면에서도 �
   }
 });
 
-test('Phase 3 인증·온보딩·약관 화면은 네 viewport에서 경계를 지킨다', async ({ page }, testInfo) => {
-  await page.addInitScript(() => {
-    const nativeSetTimeout = globalThis.setTimeout.bind(globalThis);
-    globalThis.setTimeout = (callback, delay, ...args) => nativeSetTimeout(callback, delay === 900 ? 60_000 : delay, ...args);
-  });
-  await installApiMock(page);
+for (const [audience, surfaces] of [['공개', PUBLIC_SURFACES], ['회원', MEMBER_SURFACES]]) {
   for (const viewport of VIEWPORTS) {
-    await page.setViewportSize(viewport);
-    for (const [name, selector] of PUBLIC_SURFACES) {
-      const screen = screenFromSelector(selector);
-      await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-      await expect(page.locator(selector)).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
-      const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
-    }
+    test(`Phase 3 ${audience} 인증·온보딩·약관 화면 경계 ${viewport.width}px`, async ({ page }, testInfo) => {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        const nativeSetTimeout = globalThis.setTimeout.bind(globalThis);
+        globalThis.setTimeout = (callback, delay, ...args) => nativeSetTimeout(callback, delay === 900 ? 60_000 : delay, ...args);
+      });
+      if (audience === '회원') await installAuthenticatedSession(page);
+      await installApiMock(page);
+      for (const [name, selector] of surfaces) {
+        await test.step(name, async () => {
+          const screen = screenFromSelector(selector);
+          await page.goto(`/studycrack-mobile.html?screen=${screen}`);
+          await expect(page.locator(selector)).toBeVisible();
+          await expectNoHorizontalOverflow(page);
+          const frame = await page.locator('.app-frame').boundingBox();
+          expect(frame).not.toBeNull();
+          expect(frame.width).toBeLessThanOrEqual(viewport.width);
+          expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
+          const filename = `phase-three-${name}-${viewport.width}x${viewport.height}.png`;
+          const screenshotPath = testInfo.outputPath(filename);
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          await testInfo.attach(filename, { path: screenshotPath, contentType: 'image/png' });
+        });
+      }
+    });
   }
-  await installAuthenticatedSession(page);
-  for (const viewport of VIEWPORTS) {
-    await page.setViewportSize(viewport);
-    for (const [name, selector] of MEMBER_SURFACES) {
-      const screen = screenFromSelector(selector);
-      await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-      await expect(page.locator(selector)).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
-      const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
-    }
-  }
-});
+}

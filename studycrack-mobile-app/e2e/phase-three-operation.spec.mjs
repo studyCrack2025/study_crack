@@ -125,10 +125,10 @@ test('소셜 본인 확인 전에는 탈퇴 성공 버튼을 노출하지 않는
   await expect(dialog.getByRole('button', { name: '탈퇴하기' })).toHaveCount(0);
 });
 
-test('Phase 3 MY·설정·운영 화면은 네 viewport에서 경계를 지킨다', async ({ page }, testInfo) => {
-  await installAuthenticatedSession(page);
-  await installApiMock(page, { tier: 'standard' });
-  for (const viewport of VIEWPORTS) {
+for (const viewport of VIEWPORTS) {
+  test(`Phase 3 MY·설정·운영 화면 경계 ${viewport.width}px`, async ({ page }, testInfo) => {
+    await installAuthenticatedSession(page);
+    await installApiMock(page, { tier: 'standard' });
     await page.setViewportSize(viewport);
     for (const [name, screen] of SURFACES) {
       await page.goto(`/studycrack-mobile.html?screen=${screen}`);
@@ -142,8 +142,8 @@ test('Phase 3 MY·설정·운영 화면은 네 viewport에서 경계를 지킨�
       await page.screenshot({ path: screenshotPath, fullPage: true });
       await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
     }
-  }
-});
+  });
+}
 
 test('작은 화면의 긴 고객센터 내용도 마지막 FAQ까지 도달한다', async ({ page }) => {
   await installAuthenticatedSession(page);
