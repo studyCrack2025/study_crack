@@ -14,30 +14,28 @@ test('smoke and regression partition all files without an opt-out or unknown sui
   assert.throws(() => e2eSuiteSelection('typo'));
 });
 
-test('CI runs every shard against the same candidate and cannot seal before all succeed', async () => {
+test('one PR check preserves security, artifact identity, required coverage and failure propagation', async () => {
   const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-  const prepare = workflow.slice(workflow.indexOf('  prepare:'), workflow.indexOf('  e2e:'));
-  const e2e = workflow.slice(workflow.indexOf('  e2e:'), workflow.indexOf('  verify:'));
   const verify = workflow.slice(workflow.indexOf('  verify:'), workflow.indexOf('  rollback:'));
-  assert.match(prepare, /node scripts\/audit-e2e-partitions.mjs/);
-  assert.match(e2e, /needs: prepare/);
-  assert.match(e2e, /fail-fast: false/);
-  assert.match(e2e, /shard: \[1, 2, 3, 4, 5, 6\]/);
-  assert.match(e2e, /--shard="\$SHARD_INDEX\/6" --workers=1 --retries=0/);
-  assert.match(e2e, /needs\.prepare\.outputs\.artifact-name/);
-  assert.match(e2e, /site-release\.mjs verify .*"\$GITHUB_SHA" "\$CANDIDATE_DIGEST"/);
-  const browserStep = e2e.indexOf('- name: Test the public artifact shard');
-  assert.ok(e2e.indexOf('- name: Verify candidate bytes before browser tests') < browserStep);
-  assert.ok(e2e.indexOf('- name: Verify candidate bytes remained unchanged during browser tests') > browserStep);
-  assert.equal((e2e.match(/run: node .*site-release\.mjs verify/g) || []).length, 2);
-  assert.match(verify, /needs: \[prepare, e2e\]/);
-  assert.match(verify, /test "\$PREPARE_RESULT" = success && test "\$E2E_RESULT" = success/);
+  assert.match(workflow, /pull_request:\n    branches: \[dev, main\]/);
+  assert.doesNotMatch(workflow, /pull_request_target|  prepare:|  e2e:|matrix:|continue-on-error/);
+  assert.match(verify, /github.event_name == 'push' \|\| github.event_name == 'pull_request'/);
+  assert.match(verify, /fetch-depth: 0/);
+  assert.match(verify, /node ..\/tools\/verification-scope.mjs/);
+  assert.match(verify, /PLAYWRIGHT_SUITE: \$\{\{ steps.scope.outputs.suite \}\}/);
+  assert.match(verify, /--workers=2 --retries=0/);
+  for (const required of ['npm audit --omit=dev', 'npm run check', 'node --test ../tools/test/*.test.mjs', 'npm run build']) {
+    assert.ok(verify.includes(required), required);
+  }
+  const browserStep = verify.indexOf('- name: Test required browser coverage');
+  assert.ok(verify.indexOf('- name: Seal candidate bytes before browser tests') < browserStep);
+  assert.ok(verify.indexOf('- name: Seal verified artifact identity') > browserStep);
   assert.match(verify, /site-release\.mjs verify .*"\$GITHUB_SHA" "\$CANDIDATE_DIGEST"/);
-  assert.doesNotMatch(e2e + verify, /npm run build|continue-on-error|configure-aws-credentials|id-token: write/);
+  assert.match(verify, /steps\.candidate\.outputs\.manifest-digest/);
+  assert.doesNotMatch(verify, /configure-aws-credentials|id-token: write/);
   const config = await readFile(new URL('../../studycrack-mobile-app/playwright.config.mjs', import.meta.url), 'utf8');
   assert.match(config, /fullyParallel: Boolean\(process.env.CI\)/);
   assert.match(config, /retries: 0/);
-  assert.match(config, /workers: process.env.CI \? 1/);
 });
 
 test('timing report includes nested cases, retries and failures instead of hiding them', () => {

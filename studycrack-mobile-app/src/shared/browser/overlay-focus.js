@@ -72,7 +72,11 @@ export function focusOverlay(panel) {
 }
 
 export function scheduleOverlayFocus(panel) {
-  return window.requestAnimationFrame(() => focusOverlay(panel));
+  return window.requestAnimationFrame(() => {
+    // Preserve focus moved inside the dialog after this frame was scheduled.
+    if (panel?.contains(document.activeElement)) return;
+    focusOverlay(panel);
+  });
 }
 
 export function cancelOverlayFocus(frame) {

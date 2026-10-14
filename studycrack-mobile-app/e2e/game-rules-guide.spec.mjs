@@ -220,6 +220,52 @@ test('단계 이동·이전·키보드와 작은 화면에서도 안내만 동�
   expect(api.requests.some(({ payload }) => /^(draw_fish|claim_study_reward|set_active_fish)$/.test(payload.type))).toBe(false);
 });
 
+for (const movedFocus of [false, true]) test(`이전 단계의 지연된 초점 복구는 ${movedFocus ? '새 키보드 선택을 보존한다' : '초점이 사라진 경우에만 동작한다'}`, async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await setup(page, { planPolicy: true });
+  await page.goto('/studycrack-mobile.html?screen=aquarium');
+  await page.getByRole('button', { name: '수조 이용법', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '수조 성장 규칙' });
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(dialog.locator('.game-rules-progress span')).toHaveText('2/4');
+
+  await dialog.getByRole('button', { name: '이전', exact: true }).evaluate(button => {
+    const request = window.requestAnimationFrame.bind(window);
+    const cancel = window.cancelAnimationFrame.bind(window);
+    const pending = new Map();
+    let sequence = 0;
+    // Hold the recovery frame so a later keyboard action wins the race deterministically.
+    window.requestAnimationFrame = callback => { const id = --sequence; pending.set(id, callback); return id; };
+    window.cancelAnimationFrame = id => { if (!pending.delete(id)) cancel(id); };
+    window.testFocusFrames = {
+      pending,
+      flush() {
+        window.requestAnimationFrame = request;
+        window.cancelAnimationFrame = cancel;
+        const callbacks = [...pending.values()];
+        pending.clear();
+        callbacks.forEach(callback => callback(performance.now()));
+      }
+    };
+    // Model the lost focus before rendering the step in both browser engines.
+    button.focus();
+    button.blur();
+    button.click();
+  });
+  await expect(dialog.locator('.game-rules-progress span')).toHaveText('1/4');
+  await expect.poll(() => page.evaluate(() => window.testFocusFrames.pending.size)).toBeGreaterThan(0);
+  if (movedFocus) {
+    await dialog.getByRole('button', { name: '수조 이용법 닫기' }).focus();
+    await page.keyboard.press(browserName === 'webkit' ? 'Alt+Shift+Tab' : 'Shift+Tab');
+    await expect(dialog.getByRole('button', { name: '다음', exact: true })).toBeFocused();
+  } else {
+    await expect(page.locator('body')).toBeFocused();
+  }
+  await page.evaluate(() => window.testFocusFrames.flush());
+  await expect(dialog.getByRole('button', { name: movedFocus ? '다음' : '수조 이용법 닫기', exact: true })).toBeFocused();
+});
+
 test('화면 예시는 열 때 현재 단계만 요청하고 지연·실패에도 크기와 조작을 유지한다', async ({ page }, info) => {
   await page.setViewportSize({ width: 320, height: 844 });
   await setup(page, { planPolicy: true });
