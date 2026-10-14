@@ -249,3 +249,5 @@ img, svg { display: block; max-width: 100%; }
 
   .final-cta { padding: 40px 20px; margin-bottom: 56px; }
 }
+
+.score-comparison-guide .process-cta-link { margin: 8px 4px 0; }
