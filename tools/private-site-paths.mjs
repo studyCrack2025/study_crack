@@ -66,7 +66,9 @@ export const PRIVATE_SITE_SMOKE_PATHS = Object.freeze([...new Set([
   '.env',
   '.git/config',
   'docs/exec-plans/current.md',
+  'backend-backup/lambda/StudyCrack_Auth/index.mjs',
   'backend-backup/StudyCrack_Auth/index.mjs',
+  'backend-backup/data/StudyCrack_AdmissionData/cli.mjs',
   'js/dev-mock.local.js',
   ...PRIVATE_SITE_FILES,
   ...PRIVATE_SITE_PREFIX_SAMPLES
