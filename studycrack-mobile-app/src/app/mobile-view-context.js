@@ -3,6 +3,7 @@ import { readExamScoresMap, writeExamScoresMap } from '../state/storage.js';
 import { buildDerivedContext } from '../runtime/derived.js';
 import {
   canAccessTier,
+  canChangeUniversitiesUnlimited,
   canUsePersonalPlanner,
   canUseReverseProjection,
   canUseScoreSimulation
@@ -123,6 +124,7 @@ export function createMobileViewContext({ api, beforeGoto, buildPresentations, n
     canUsePersonalPlanner: canUsePersonalPlanner(state, api.hasClientSession()),
     canUseScoreSimulation: canUseScoreSimulation(state),
     canUseReverseProjection: canUseReverseProjection(state),
+    canChangeUniversitiesUnlimited: canChangeUniversitiesUnlimited(state),
     preserveScroll: (task) => scrollOps.preserveScrollAfterStateChange(task),
     preserveScrollAfterStateChange: scrollOps.preserveScrollAfterStateChange,
     preserveY: scrollOps.preserveY,

@@ -1,9 +1,9 @@
-import { canUseReverseProjection } from '../../app/access-policy.js';
+import { canChangeUniversitiesUnlimited } from '../../app/access-policy.js';
 import { targetSlotsToList } from './target-model.js';
 
 export function buildTargetPolicy(state = {}) {
   const count = targetSlotsToList(state.targetUnivSlots || []).length || (state.analysisTargetList || []).length;
-  const unlimited = canUseReverseProjection(state);
+  const unlimited = canChangeUniversitiesUnlimited(state);
   const value = state.user?.univChangeRemaining;
   const remaining = typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : null;
   const tier = String(state.userTier || state.selectedPlan || 'free').toLowerCase();

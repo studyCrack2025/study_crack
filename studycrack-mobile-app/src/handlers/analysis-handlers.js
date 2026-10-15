@@ -200,7 +200,7 @@ export function createAnalysisHandlers(ctx) {
     },
 
     openUniversitySearch() {
-      if (!ctx.canUseReverseProjection && ctx.user?.univChangeRemaining === 0) {
+      if (!ctx.canChangeUniversitiesUnlimited && ctx.user?.univChangeRemaining === 0) {
         goto('proIntro');
         return true;
       }

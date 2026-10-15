@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import {
   canAccessTier,
+  canChangeUniversitiesUnlimited,
   canUsePersonalPlanner,
   canUseReverseProjection,
   canUseScoreSimulation,
@@ -92,8 +93,16 @@ const expiredStandardState = {
 assert.equal(canAccessTier(freeState, 'basic'), false);
 assert.equal(canAccessTier(basicState, 'basic'), true);
 assert.equal(canUseScoreSimulation(basicState), true);
-assert.equal(canUseReverseProjection(basicState), false);
+assert.equal(canUseReverseProjection(basicState), true);
 assert.equal(canUseReverseProjection(standardState), true);
+for (const tier of ['basic', 'starter', 'test', 'standard', 'pro']) {
+  const state = { user: { currentSubscription: { status: 'active', tier }, univChangeRemaining: 0 } };
+  assert.equal(canUseReverseProjection(state), true, tier);
+  assert.equal(canChangeUniversitiesUnlimited(state), ['standard', 'pro'].includes(tier), tier);
+  assert.equal(canAccessTier({ userTier: tier }, 'standard'), ['standard', 'pro'].includes(tier), tier);
+  assert.equal(canUseReverseProjection({ user: { currentSubscription: { status: 'cancelled', tier } } }), false, tier);
+  assert.equal(canUseReverseProjection({ user: { currentSubscription: { status: 'active', tier, startDate: '2999-01-01' } } }), false, tier);
+}
 assert.equal(canUseReverseProjection(expiredStandardState), false);
 assert.deepEqual(resolveScreenAccess(freeState, 'planner'), {
   allowed: true,

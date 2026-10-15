@@ -43,6 +43,6 @@ try {
   html = render({ analysisPresentation: { ready: true, score: 12.5, currentScores: [['탐구1', 51, '점'], ['영어', 10, '등급'], ['국어', -1, '점']] } });
   assert.doesNotMatch(html, />51점<|>10등급<|>-1점</);
   assert.match(html, /12.5점/);
-  assert.match(render({ canUseReverseProjection: false }), /Standard 이상/);
+  assert.match(render({ canUseReverseProjection: false }), /Basic 이상/);
   console.log('Score journey contracts passed: scoped current values, zero, grade, bounds, stale/unknown target and analysis recovery.');
 } finally { await vite.close(); }

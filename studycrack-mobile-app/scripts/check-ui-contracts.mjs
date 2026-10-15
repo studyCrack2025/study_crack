@@ -73,7 +73,7 @@ const reverseFunction = accessPolicySource.match(/function\s+canUseReverseProjec
 assert.ok(reverseFunction, 'canUseReverseProjection was not found');
 assert.match(reverseFunction, /pickActiveAccessSubscription/, 'Reverse projection must require an active subscription');
 assert.deepEqual(
-  Array.from(reverseFunction.matchAll(/['"](standard|pro)['"]/g), (item) => item[1]),
+  Array.from(reverseFunction.matchAll(/['"](basic|starter|standard|pro)['"]/g), (item) => item[1]),
   contract.analysis.reverseTiers,
   'Reverse projection tiers changed'
 );
