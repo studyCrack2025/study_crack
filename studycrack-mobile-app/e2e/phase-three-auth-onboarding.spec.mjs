@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 const VIEWPORTS = [
@@ -128,12 +129,7 @@ for (const [audience, surfaces] of [['공개', PUBLIC_SURFACES], ['회원', MEMB
         await test.step(name, async () => {
           const screen = screenFromSelector(selector);
           await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-          await expect(page.locator(selector)).toBeVisible();
-          await expectNoHorizontalOverflow(page);
-          const frame = await page.locator('.app-frame').boundingBox();
-          expect(frame).not.toBeNull();
-          expect(frame.width).toBeLessThanOrEqual(viewport.width);
-          expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
+          await expectScreenViewport(page, screen, viewport);
           const filename = `phase-three-${name}-${viewport.width}x${viewport.height}.png`;
           const screenshotPath = testInfo.outputPath(filename);
           await page.screenshot({ path: screenshotPath, fullPage: true });

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 const VIEWPORTS = [
@@ -120,16 +121,13 @@ for (const viewport of VIEWPORTS) {
     await installApiMock(page, { tier: 'pro' });
     await page.setViewportSize(viewport);
     for (const [name, screen] of SURFACES) {
-      await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-      await expect(page.locator(`[data-screen="${screen}"]`)).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
-      const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      await test.step(name, async () => {
+        await page.goto(`/studycrack-mobile.html?screen=${screen}`);
+        await expectScreenViewport(page, screen, viewport);
+        const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      });
     }
   });
 }

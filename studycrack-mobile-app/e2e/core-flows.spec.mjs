@@ -1,4 +1,5 @@
 import { setDisclosureOpen } from './support/disclosure.mjs';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expect, test } from '@playwright/test';
 import fishDexManifest from '../src/assets/fishdex/v2/manifest.generated.json' with { type: 'json' };
 import {
@@ -516,14 +517,10 @@ test('Phase 2 핵심 화면은 네 viewport에서 프레임과 가로 경계를 
     await page.setViewportSize(viewport);
     for (const surface of surfaces) {
       await page.goto(`/studycrack-mobile.html?screen=${surface.screen}`);
+      await expectScreenViewport(page, surface.screen, viewport);
       await expect(page.locator(surface.ready)).toBeVisible();
       await expect(page.locator('.app-screen[data-screen]')).toHaveCSS('opacity', '1');
       await expect(page.locator('.tabbar button')).toHaveCount(surface.tabbar ? 5 : 0);
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
       const screenshotPath = testInfo.outputPath(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true, animations: 'disabled' });
       await testInfo.attach(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
