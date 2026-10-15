@@ -70,9 +70,39 @@ for (const type of ['simulate_score_rise', 'backtrace_required_raw']) {
   });
 }
 
-test('Basic에는 역산 전환을 표시하지 않는다', async ({ page }) => {
-  await setup(page, { tier: 'basic' });
+for (const tier of ['basic', 'starter', 'standard', 'pro']) {
+  test(`${tier}는 모든 목표 대학의 역산을 계산하고 결과를 확인한다`, async ({ page }) => {
+    const api = await setup(page, { tier, userOverrides: { univChangeRemaining: 0 } });
+    await page.goto('/studycrack-mobile.html?screen=analysis');
+    await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+    await expect(page.locator('.analysis-reverse-card')).toContainText('+6점');
+    await expect.poll(() => new Set(api.requests.filter(({ payload }) => payload.type === 'backtrace_required_raw').map(({ payload }) => payload.targetUniv.univ)).size).toBe(2);
+    await page.locator('.analysis-target-select').selectOption('고려대학교 경영학과');
+    await expect(page.locator('.analysis-reverse-card')).toContainText('+6점');
+    await expect(page.locator('.analysis-reverse-card')).not.toContainText('Standard 이상');
+  });
+}
+
+test('Free는 역산을 요청하거나 결과 전환을 표시하지 않는다', async ({ page }) => {
+  const api = await setup(page, { tier: 'free' });
   await page.goto('/studycrack-mobile.html?screen=analysis');
   await expect(page.locator('.analysis-boost-card')).toBeVisible();
   await expect(page.getByRole('group', { name: '계산 결과 선택' })).toHaveCount(0);
+  expect(api.requests.filter(({ payload }) => payload.type === 'backtrace_required_raw')).toHaveLength(0);
 });
+
+for (const scenario of ['already-passing', 'unreachable']) {
+  test(`Basic 역산은 ${scenario} 결과를 구분한다`, async ({ page }) => {
+    await setup(page, { tier: 'basic' });
+    await page.route('**/api/**', route => {
+      const payload = route.request().postDataJSON();
+      if (payload.type !== 'backtrace_required_raw') return route.fallback();
+      return route.fulfill({ json: { result: scenario === 'already-passing'
+        ? { reachable: true, minTotalRaw: 0, bySubject: {}, expected: { uiScore: 150 } }
+        : { reachable: false, reason: 'unreachable_within_limit' } } });
+    });
+    await page.goto('/studycrack-mobile.html?screen=analysis');
+    await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+    await expect(page.locator('.analysis-reverse-card')).toContainText(scenario === 'already-passing' ? '추가 필요 원점수 0점' : '조합을 찾지 못했어요');
+  });
+}

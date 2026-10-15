@@ -8,13 +8,14 @@ import { createAnalysisHandlers } from '../src/handlers/analysis-handlers.js';
 for (const unlimited of [false, true]) {
   let destination = '';
   let opened = false;
-  const handlers = createAnalysisHandlers({ user: { univChangeRemaining: 0 }, canUseReverseProjection: unlimited, goto: value => { destination = value; }, setUniversitySelectedName: () => {}, setAnalysisSearchTerm: () => {}, setAnalysisSearchOpen: value => { opened = value; } });
+  const handlers = createAnalysisHandlers({ user: { univChangeRemaining: 0 }, canUseReverseProjection: true, canChangeUniversitiesUnlimited: unlimited, goto: value => { destination = value; }, setUniversitySelectedName: () => {}, setAnalysisSearchTerm: () => {}, setAnalysisSearchOpen: value => { opened = value; } });
   handlers.openUniversitySearch();
   assert.equal(opened, unlimited);
   assert.equal(destination, unlimited ? '' : 'proIntro');
 }
 
-const basic = { userTier: 'basic', user: { univChangeRemaining: 0 } };
+const basic = { userTier: 'basic', user: { univChangeRemaining: 0, currentSubscription: { status: 'active', tier: 'basic' } } };
+assert.equal(buildTargetPolicy(basic).unlimited, false);
 assert.equal(buildTargetPolicy(basic).canAdd, false);
 assert.equal(buildTargetPolicy({ ...basic, user: { univChangeRemaining: 1 } }).canAdd, true);
 assert.equal(buildTargetPolicy({ user: {} }).remaining, null);
