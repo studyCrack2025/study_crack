@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import fishDexManifest from '../src/assets/fishdex/v2/manifest.generated.json' with { type: 'json' };
 import {
@@ -548,7 +549,7 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
 
-  if (await page.locator('.aquarium-management').getAttribute('open') === null) await page.locator('.aquarium-management > summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-management'));
   await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '먹이 주기' })).toHaveCount(0);
   await expect(page.locator('.aquarium-exp')).toContainText('0 / 30');
@@ -562,7 +563,7 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'rename_fish').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'set_active_fish').length).toBe(1);
   await page.reload();
-  await page.locator('.aquarium-management > summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-management'));
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
   await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-path')).toHaveCSS('animation-name', 'aquariumFishPath');

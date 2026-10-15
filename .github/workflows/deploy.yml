@@ -34,17 +34,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  verify:
+  prepare:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read
     outputs:
-      artifact-name: ${{ steps.release-info.outputs.artifact-name }}
-      manifest-digest: ${{ steps.release-info.outputs.manifest-digest }}
-      source-commit: ${{ github.sha }}
+      suite: ${{ steps.scope.outputs.suite }}
+      artifact-name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      manifest-digest: ${{ steps.candidate.outputs.manifest-digest }}
     env:
       RELEASE_BRANCH: ${{ github.base_ref || github.ref_name }}
     defaults:
@@ -88,32 +88,114 @@ jobs:
         run: |
           ARTIFACT_DIGEST="$(node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA")"
           echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
+      - name: Upload candidate public artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  e2e:
+    needs: prepare
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.prepare.outputs.suite == 'web-css' && '[1]' || '[1,2,3,4,5,6]') }}
+    defaults:
+      run:
+        working-directory: studycrack-mobile-app
+    steps:
+      - name: Checkout test sources
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: studycrack-mobile-app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Download unchanged candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact-name }}
+          path: release-artifact/
+      - name: Verify candidate bytes before browser tests
+        env:
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
+        run: node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST"
       - name: Install browser runtime
         run: npx playwright install --with-deps chromium
       - name: Test required browser coverage
-        id: browser
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
-          PLAYWRIGHT_SUITE: ${{ steps.scope.outputs.suite }}
-        run: npm run test:e2e -- --workers=2 --retries=0
-      - name: Record browser timing and failures
-        if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
-        run: |
-          if test -f test-results/results.json; then
-            node scripts/summarize-e2e-results.mjs test-results/results.json
-          else
-            echo 'Browser verification ended before producing a report.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          PLAYWRIGHT_SUITE: ${{ needs.prepare.outputs.suite }}
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_TOTAL: ${{ needs.prepare.outputs.suite == 'web-css' && '1' || '6' }}
+        run: npm run test:e2e -- --shard="$SHARD_INDEX/$SHARD_TOTAL" --workers=1 --retries=0
+      - name: Verify candidate bytes remained unchanged during browser tests
+        if: ${{ !cancelled() }}
+        env:
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
+        run: node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST"
+      - name: Record shard timing and failures
+        if: ${{ !cancelled() }}
+        run: node scripts/summarize-e2e-results.mjs test-results/results.json
+      - name: Upload shard diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-e2e-${{ matrix.shard }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            studycrack-mobile-app/playwright-report/
+            studycrack-mobile-app/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  verify:
+    needs: [prepare, e2e]
+    if: ${{ always() && !cancelled() && (github.event_name == 'push' || github.event_name == 'pull_request') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      artifact-name: ${{ steps.release-info.outputs.artifact-name }}
+      manifest-digest: ${{ steps.release-info.outputs.manifest-digest }}
+      source-commit: ${{ github.sha }}
+    steps:
+      - name: Require every verification job to pass
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: test "$PREPARE_RESULT" = success && test "$E2E_RESULT" = success
+      - name: Checkout trusted verification tools
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Download tested candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact-name }}
+          path: release-artifact/
       - name: Seal verified artifact identity
         id: release-info
         env:
-          CANDIDATE_DIGEST: ${{ steps.candidate.outputs.manifest-digest }}
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
         run: |
-          ARTIFACT_DIGEST="$(node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST")"
+          ARTIFACT_DIGEST="$(node tools/site-release.mjs verify release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST")"
           echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
           echo "artifact-name=public-site-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
           {
-            echo '### Verified artifact (rollback eligible only after a successful push deployment)'
+            echo '### Verified release (rollback eligible only after the entire run succeeds)'
             echo "Source run: ${GITHUB_RUN_ID} (attempt ${GITHUB_RUN_ATTEMPT})"
             echo "Source commit: ${GITHUB_SHA}"
             echo "Manifest SHA-256: ${ARTIFACT_DIGEST}"
@@ -126,16 +208,6 @@ jobs:
           name: ${{ steps.release-info.outputs.artifact-name }}
           path: release-artifact/
           if-no-files-found: error
-          retention-days: 14
-      - name: Upload verification diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: verification-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            studycrack-mobile-app/playwright-report/
-            studycrack-mobile-app/test-results/
-          if-no-files-found: warn
           retention-days: 14
 
   rollback:
