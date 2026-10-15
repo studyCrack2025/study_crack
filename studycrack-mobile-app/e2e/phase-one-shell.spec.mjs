@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  expectNoHorizontalOverflow,
   installApiMock,
   installAuthenticatedSession
 } from './support/mock-api.mjs';
 import { isPathInsideRoot } from './support/static-route-path.mjs';
+import { expectScreenReady, expectScreenViewport } from './support/screen-ready.mjs';
 
 const VIEWPORTS = [
   { width: 320, height: 700 },
@@ -57,8 +57,7 @@ test('Phase 1 공통 shell은 네 viewport와 44px navigation 계약을 지킨�
   for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);
     await page.goto('/studycrack-mobile.html?screen=timer');
-    await expect(page.locator('[data-screen="timer"]')).toBeVisible();
-    await expectNoHorizontalOverflow(page);
+    await expectScreenViewport(page, 'timer', viewport);
 
     const geometry = await page.locator('.app-frame').evaluate((frame) => {
       const frameBox = frame.getBoundingClientRect();
@@ -93,6 +92,7 @@ test('Phase 1 공통 shell은 네 viewport와 44px navigation 계약을 지킨�
 test('secondary heading은 card가 아니고 overlay는 배경과 focus를 격리한다', async ({ page }) => {
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
+  await expectScreenReady(page, 'authLogin');
 
   const trigger = page.getByRole('button', { name: '이메일 찾기' });
   await trigger.focus();
@@ -115,6 +115,7 @@ test('secondary heading은 card가 아니고 overlay는 배경과 focus를 격�
 
   await installAuthenticatedSession(page);
   await page.goto('/studycrack-mobile.html?screen=addUniversity');
+  await expectScreenReady(page, 'addUniversity');
   const introStyle = await page.locator('.sc-secondary-intro').evaluate((element) => {
     const style = getComputedStyle(element);
     return { backgroundColor: style.backgroundColor, borderTopWidth: style.borderTopWidth, boxShadow: style.boxShadow };
@@ -127,6 +128,7 @@ test('secondary heading은 card가 아니고 overlay는 배경과 focus를 격�
 test('offline과 reconnecting은 사용자 데이터를 캐시하지 않는 전역 상태로 안내된다', async ({ page, context }) => {
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
+  await expectScreenReady(page, 'authLogin');
 
   await context.setOffline(true);
   await expect(page.getByRole('status')).toContainText('오프라인 상태예요');
@@ -139,6 +141,7 @@ test('reduced motion에서는 화면 전환과 skeleton 반복 motion이 제거�
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installApiMock(page);
   await page.goto('/studycrack-mobile.html?screen=authLogin');
+  await expectScreenReady(page, 'authLogin');
   const animation = await page.locator('[data-screen="authLogin"]').evaluate((screen) => {
     const style = getComputedStyle(screen);
     return { duration: style.animationDuration, iterations: style.animationIterationCount };
