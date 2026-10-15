@@ -2,16 +2,31 @@ import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
 async function setup(page, options = {}) {
+  const { baseUiScore = 44.5, ...apiOptions } = options;
   await installAuthenticatedSession(page);
-  const api = await installApiMock(page, { tier: 'standard', ...options });
+  const api = await installApiMock(page, { tier: 'standard', ...apiOptions });
   await page.route('**/api/**', async route => {
     const payload = route.request().postDataJSON();
-    if (payload?.type === 'simulate_score_rise' && !options.failGameTypes?.includes(payload.type)) {
+    if (apiOptions.failGameTypes?.includes(payload?.type)) return route.fallback();
+    if (payload?.type === 'simulate_score_rise') {
       api.requests.push({ payload });
-      return route.fulfill({ json: payload.targetUnivs.map(target => ({ ...target, base_ui_score: 44.5, sim_data: Object.fromEntries(['kor', 'math', 'inq1', 'inq2'].map((key, index) => [key, { name: ['국어', '수학', '탐구1', '탐구2'][index], uiDiff: 2, afterUiScore: 46.5, rawNeeded: 1 }])) })) });
+      return route.fulfill({ json: payload.targetUnivs.map(target => ({ ...target, base_ui_score: baseUiScore, sim_data: Object.fromEntries(['kor', 'math', 'inq1', 'inq2'].map((key, index) => [key, { name: ['국어', '수학', '탐구1', '탐구2'][index], uiDiff: 2, afterUiScore: baseUiScore + 2, rawNeeded: 1 }])) })) });
+    }
+    if (payload?.type === 'backtrace_required_raw') {
+      api.requests.push({ payload });
+      return route.fulfill({ json: { result: {
+        reachable: true,
+        reason: 'min_raw_above_pass_overshoot',
+        minTotalRaw: 6,
+        bySubject: { kor: 3, math: 2, inq1: 1, inq2: 0 },
+        expected: { uiScore: 151.2 },
+        base: { uiScore: baseUiScore },
+        target: { uiMin: 100, uiMax: 150 },
+        maxTotalRaw: 20
+      } } });
     }
     if (payload?.type !== 'analyze_my_targets') return route.fallback();
-    return route.fulfill({ json: payload.targetUnivs.map(target => ({ ...target, converted_score: 44.5, score_available: true, status: '위험' })) });
+    return route.fulfill({ json: payload.targetUnivs.map(target => ({ ...target, converted_score: baseUiScore, score_available: true, status: baseUiScore >= 100 ? '합격권' : '위험' })) });
   });
   return api;
 }
@@ -93,16 +108,18 @@ test('Free는 역산을 요청하거나 결과 전환을 표시하지 않는다'
 
 for (const scenario of ['already-passing', 'unreachable']) {
   test(`Basic 역산은 ${scenario} 결과를 구분한다`, async ({ page }) => {
-    await setup(page, { tier: 'basic' });
+    const baseUiScore = scenario === 'already-passing' ? 150 : 44.5;
+    await setup(page, { tier: 'basic', baseUiScore });
     await page.route('**/api/**', route => {
       const payload = route.request().postDataJSON();
       if (payload.type !== 'backtrace_required_raw') return route.fallback();
       return route.fulfill({ json: { result: scenario === 'already-passing'
-        ? { reachable: true, minTotalRaw: 0, bySubject: {}, expected: { uiScore: 150 } }
-        : { reachable: false, reason: 'unreachable_within_limit' } } });
+        ? { reachable: true, reason: 'already_above_min', minTotalRaw: 0, bySubject: { kor: 0, math: 0, inq1: 0, inq2: 0 }, expected: { uiScore: baseUiScore }, base: { uiScore: baseUiScore }, target: { uiMin: 100, uiMax: 150 }, maxTotalRaw: 20 }
+        : { reachable: false, reason: 'unreachable_within_limit', base: { uiScore: baseUiScore }, target: { uiMin: 100, uiMax: 150 }, maxTotalRaw: 20 } } });
     });
     await page.goto('/studycrack-mobile.html?screen=analysis');
     await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+    await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText(`${baseUiScore}점`);
     await expect(page.locator('.analysis-reverse-card')).toContainText(scenario === 'already-passing' ? '추가 필요 원점수 0점' : '조합을 찾지 못했어요');
   });
 }

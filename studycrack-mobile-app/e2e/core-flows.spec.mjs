@@ -748,7 +748,16 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await examSelect.selectOption({ label: '3월 모의고사' });
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
-  expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
+  for (const examMode of ['jun', 'mar']) {
+    await expect.poll(() => [...new Set(api.requests
+      .filter(({ payload }) => payload.type === 'backtrace_required_raw' && payload.examMode === examMode)
+      .map(({ payload }) => `${payload.targetUniv.univ} ${payload.targetUniv.major}`))].sort())
+      .toEqual(['고려대학교 경영학과', '연세대학교 정치외교학과']);
+  }
+  await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+  await expect(page.locator('.analysis-reverse-card')).toContainText('추가 필요 원점수 0점');
+  await expect(page.locator('.analysis-reverse-card')).toContainText('현재 환산점수 118점');
+  await page.getByRole('button', { name: '과목별 +1점', exact: true }).click();
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
     await expectNoHorizontalOverflow(page);
@@ -768,6 +777,8 @@ test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보�
   await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
   await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
   await expect(page.locator('.analysis-reverse-card')).toContainText('이미 합격 기준에 도달');
+  await expect(page.locator('.analysis-reverse-card')).toContainText('추가 필요 원점수 0점');
+  await expect(page.locator('.analysis-reverse-plan')).toHaveCount(0);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(true);
   await expectNoHorizontalOverflow(page);
 });
