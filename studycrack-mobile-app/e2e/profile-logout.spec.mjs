@@ -74,7 +74,7 @@ for (const screen of ['timer', 'my', 'settingsMain']) {
     await page.locator('[data-action="openLogoutModal"]').click();
     await modal.getByRole('button', { name: '로그아웃', exact: true }).click();
     await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
-    expect(api.requests.filter(r => r.payload.type === 'logout')).toHaveLength(1);
+    await expect.poll(() => api.requests.filter(r => r.payload.type === 'logout')).toHaveLength(1);
     expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
   });
 }
