@@ -211,6 +211,26 @@ async function expectAccountConfirmed(page, row, completed = false) {
   }, accountKey)).toBe(0);
 }
 
+async function retryAccountDraft(page, state) {
+  const notice = page.getByRole('region', { name: '계정 저장 상태', exact: true });
+  const reads = () => state.requests.filter(row => row.operation === 'get_server_planner').length;
+  const before = reads();
+  let release;
+  state.holdType = 'get_server_planner';
+  state.hold = new Promise(resolve => { release = resolve; });
+  try {
+    await page.getByRole('button', { name: '서버 반영 다시 확인' }).click();
+    await expect.poll(reads).toBe(before + 1);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(notice).toHaveAttribute('aria-busy', 'true');
+  } finally {
+    release();
+    state.hold = null;
+    state.holdType = null;
+  }
+  await expect(notice).toHaveCount(0);
+}
+
 test('계획 시간 저장 전환은 명시적으로 수행하고 최초 완료 시간·기기 원본을 보존한다', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
   const state = await setup(page, { durationProtocol: true });
@@ -253,8 +273,7 @@ test('구버전 전송 대기는 동일 요청으로 복구한 다음에만 시�
   await accountMode(page); await addAccountDraft(page, '복구할 구버전 계획');
   await expect(page.getByRole('alert')).toContainText('서버 반영 대기 1건');
   const first = structuredClone(state.requests.find(row => row.operation === 'save_server_planner'));
-  await page.getByRole('button', { name: '서버 반영 다시 확인' }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await retryAccountDraft(page, state);
   await page.getByRole('button', { name: '계획 저장하기' }).click();
   await expect(page.locator('article[data-planner-id]')).toHaveCount(1);
   const legacy = await page.evaluate(key => localStorage.getItem(key), accountKey);
@@ -333,8 +352,7 @@ test('기본 추가의 유실 응답은 초안·식별자를 보존하고 확인
   await expect(page.getByRole('alert')).toContainText('서버 반영 대기 1건');
   await expect(page.getByLabel('계획 제목', { exact: true })).toHaveValue('새 계정 계획');
   await expect(page.getByLabel('메모 (선택)', { exact: true })).toHaveValue('이 계정의 기기 메모');
-  await page.getByRole('button', { name: '서버 반영 다시 확인' }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await retryAccountDraft(page, state);
   await page.getByRole('button', { name: '계획 저장하기' }).click();
   await expect(page.locator('article[data-planner-id]')).toHaveCount(1);
   const sent = state.requests.filter(row => row.operation === 'save_server_planner'); expect(sent).toHaveLength(2); expect(sent[0].data).toEqual(sent[1].data); expect(state.items).toHaveLength(1);

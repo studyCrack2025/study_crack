@@ -178,8 +178,20 @@ function responseFor(payload, state) {
           }
         };
       });
-    case 'backtrace_required_raw':
-      return { result: { reachable: true, minTotalRaw: 6, bySubject: { kor: 3, math: 2, inq1: 1, inq2: 0 }, expected: { uiScore: 151.2 } } };
+    case 'backtrace_required_raw': {
+      const target = payload.targetUniv || payload.targetUnivs?.[0] || {};
+      const baseUiScore = targetResult(target, 0, payload.examMode).converted_score;
+      return { result: {
+        reachable: true,
+        reason: 'already_above_min',
+        minTotalRaw: 0,
+        bySubject: { kor: 0, math: 0, inq1: 0, inq2: 0 },
+        expected: { uiScore: baseUiScore },
+        base: { uiScore: baseUiScore },
+        target: { uiMin: 100, uiMax: 150 },
+        maxTotalRaw: 20
+      } };
+    }
     case 'find_email':
       return { success: true, email: 's***@example.com' };
     case 'send_pw_reset_code':
