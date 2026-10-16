@@ -13,8 +13,33 @@ const BASIC_PREVIEW_EXAM_LABELS = { mar: '3월 학력평가', may: '5월 학력�
 let basicPreviewLoading = false;
 
 function trackBasicPreview(eventName, properties = {}) {
+    const states = {
+        basic_preview_start: 'loading',
+        basic_preview_state: Object.prototype.hasOwnProperty.call(BASIC_PREVIEW_STATE_COPY, properties.preview_state)
+            ? properties.preview_state : 'analysis_failed',
+        basic_preview_ready: 'ready',
+        basic_unlock_click: 'ready'
+    };
+    if (!Object.prototype.hasOwnProperty.call(states, eventName)) return;
+    // dev still uses the original dataLayer contract. Use V2 only when installed.
+    const tracker = window.SCTrack;
+    if (typeof tracker?.event === 'function' && typeof tracker?.once === 'function') {
+        if (eventName === 'basic_preview_start') {
+            tracker.once('basic-preview-start', 'basic_preview_start', { preview_state: 'loading' });
+        } else if (eventName === 'basic_preview_state') {
+            tracker.event('basic_preview_state', { preview_state: states[eventName] });
+        } else if (eventName === 'basic_preview_ready') {
+            tracker.once('basic-analysis', 'analysis_view', { analysis_type: 'basic_preview' });
+            tracker.once('basic-impact', 'score_impact_view', { analysis_type: 'basic_preview' });
+        } else {
+            tracker.event('cta_click', { entry: 'basic_preview_unlock', plan_type: 'basic' });
+        }
+        return;
+    }
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: eventName, ...properties });
+    const payload = { event: eventName, preview_state: states[eventName] };
+    if (eventName === 'basic_unlock_click') payload.tier_state = 'free';
+    window.dataLayer.push(payload);
 }
 
 function setBasicPreviewStatus(title, description, { loading = false, action = null } = {}) {
@@ -173,6 +198,7 @@ async function ensureBasicPreviewSession() {
     if (localStorage.getItem('userId')) return true;
     const refreshed = await tryRefreshToken();
     if (refreshed && localStorage.getItem('userId')) return true;
+    trackBasicPreview('basic_preview_state', { preview_state: 'unauthorized' });
     window.location.replace('/login?returnUrl=%2Fbasic-preview');
     return false;
 }
