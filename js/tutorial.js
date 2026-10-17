@@ -311,11 +311,26 @@ function updateMascot(msg, mascotKey) {
     bubble.parentNode.replaceChild(newBubble, bubble);
 }
 
+function updateTutorialProgress() {
+    const progress = document.getElementById('tutorialProgress');
+    const label = document.getElementById('tutorialProgressLabel');
+    const fill = document.getElementById('tutorialProgressFill');
+    if (!progress || !label || !fill || !Array.isArray(STEPS) || STEPS.length === 0) return;
+
+    const total = STEPS.length;
+    const current = Math.min(Math.max(currentStepIdx + 1, 1), total);
+    progress.setAttribute('aria-valuemax', String(total));
+    progress.setAttribute('aria-valuenow', String(current));
+    label.textContent = `${current} / ${total}단계`;
+    fill.style.width = `${(current / total) * 100}%`;
+}
+
 async function renderStep() {
     localStorage.setItem('tutorialStatus', currentStepIdx);
     apiCall('update_tutorial_status', { step: currentStepIdx });
 
     const step = STEPS[currentStepIdx];
+    updateTutorialProgress();
     updateMascot(step.msg, step.mascot);
 
     const container = document.getElementById('stepContent');
