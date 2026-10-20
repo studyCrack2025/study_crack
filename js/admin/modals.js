@@ -41,7 +41,7 @@ function readPendingGrant(owner) {
     const pending = JSON.parse(raw);
     if (!pending || pending.owner !== owner || typeof pending.requestId !== 'string'
         || !/^[a-f0-9-]{36}$/i.test(pending.requestId) || typeof pending.targetUserId !== 'string'
-        || !['PRO', 'STANDARD', 'BASIC'].includes(pending.productTier) || !Number.isSafeInteger(pending.amount) || pending.amount < 0) {
+        || !['PRO', 'STANDARD', 'STARTER', 'BASIC'].includes(pending.productTier) || !Number.isSafeInteger(pending.amount) || pending.amount < 0) {
         throw new Error('대기 중인 지급 정보를 확인할 수 없습니다. 기록을 삭제하지 말고 확인해주세요.');
     }
     return pending;
@@ -84,7 +84,7 @@ window.executeGrantTier = async function() {
         const productTier = document.getElementById('gtProductTier').value;
         const rawAmount = document.getElementById('gtAmount').value.trim();
         const amount = Number(rawAmount);
-        if (!targetUserId || !['PRO', 'STANDARD', 'BASIC'].includes(productTier) || !rawAmount || !Number.isSafeInteger(amount) || amount < 0) return alert('대상·상품·0 이상의 정수 금액을 확인해주세요.');
+        if (!targetUserId || !['PRO', 'STANDARD', 'STARTER', 'BASIC'].includes(productTier) || !rawAmount || !Number.isSafeInteger(amount) || amount < 0) return alert('대상·상품·0 이상의 정수 금액을 확인해주세요.');
         if (pending && (pending.targetUserId !== targetUserId || pending.productTier !== productTier || pending.amount !== amount)) {
             showPendingGrant(pending);
             return alert('이전 요청의 내용으로 복원했습니다. 처리 결과부터 확인해주세요.');
@@ -115,7 +115,15 @@ window.executeGrantTier = async function() {
         if (['ADMIN_GRANT_CONFLICT', 'ADMIN_GRANT_EXPIRED', 'ADMIN_GRANT_DELETING', 'ADMIN_GRANT_NOT_FOUND'].includes(error?.code)) {
             try { sessionStorage.removeItem(grantPendingKey(owner)); } catch { /* Keep the original request if storage is blocked. */ }
             alert('지급되지 않았습니다. 최신 회원·결제 정보를 확인한 뒤 새 요청을 승인해주세요.');
-        } else alert('결과 확인이 끝나지 않았습니다. 입력을 변경하지 말고 같은 요청으로 다시 확인해주세요.');
+        } else if (['ADMIN_GRANT_INVALID', 'ADMIN_GRANT_REQUEST_REQUIRED'].includes(error?.code)) {
+            try { sessionStorage.removeItem(grantPendingKey(owner)); } catch { /* Keep the original request if storage is blocked. */ }
+            alert('지급 요청이 거절되었습니다. 화면을 새로고침한 뒤 대상·상품·금액을 확인해주세요. (' + error.code + ')');
+        } else {
+            const code = typeof error?.code === 'string' && /^[A-Z_]{1,64}$/.test(error.code) ? error.code : '';
+            const status = Number.isInteger(error?.status) && error.status >= 400 && error.status <= 599 ? 'HTTP ' + error.status : '';
+            const detail = [code, status].filter(Boolean).join(' / ');
+            alert('결과 확인이 끝나지 않았습니다. 입력을 변경하지 말고 같은 요청으로 다시 확인해주세요.' + (detail ? ' (' + detail + ')' : ''));
+        }
     } finally {
         grantTierBusy = false;
         controls.forEach(control => { control.disabled = false; });

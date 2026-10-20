@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
@@ -18,13 +19,13 @@ test('주간 구·신 양식과 제출 빈값을 구분하고 사설 첨부는 �
   const cards = page.locator('.weekly-feedback');
   await expect(cards).toHaveCount(4);
   await expect(cards.nth(0).locator('.feedback-item')).toHaveCount(4);
-  await cards.nth(1).locator('summary').click();
+  await setDisclosureOpen(cards.nth(1));
   await expect(cards.nth(1).locator('.feedback-item')).toHaveCount(5);
   await expect(cards.nth(1)).toContainText('내 취약 과목');
   await expect(cards.nth(1)).toContainText('내 추가 질문');
   await expect(cards.nth(1).getByRole('button', { name: /전체 보기/ })).toHaveCount(0);
   await page.evaluate(() => { window.__feedbackAttachments = []; window.openPrivateAttachment = href => { window.__feedbackAttachments.push(href); return true; }; });
-  await cards.nth(1).getByRole('button', { name: '피드백 첨부 보기' }).click();
+  await cards.nth(1).getByRole('button', { name: '피드백 첨부 보기' }).click({ delay: 120 });
   await expect.poll(() => page.evaluate(() => window.__feedbackAttachments)).toEqual([attachment]);
   await expect(cards.nth(2).locator('.feedback-item')).toHaveCount(0);
   await expect(cards.nth(2)).toContainText('제출된 피드백 내용이 비어 있어요');

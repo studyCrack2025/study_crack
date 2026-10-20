@@ -70,6 +70,12 @@ export function canUseScoreSimulation(state) {
 export function canUseReverseProjection(state) {
   const activeSubscription = pickActiveAccessSubscription(state?.user || {});
   if (!activeSubscription) return false;
+  return ['basic', 'starter', 'standard', 'pro'].includes(normalizeAccessTier(activeSubscription.tier));
+}
+
+export function canChangeUniversitiesUnlimited(state) {
+  const activeSubscription = pickActiveAccessSubscription(state?.user || {});
+  if (!activeSubscription) return false;
   return ['standard', 'pro'].includes(normalizeAccessTier(activeSubscription.tier));
 }
 

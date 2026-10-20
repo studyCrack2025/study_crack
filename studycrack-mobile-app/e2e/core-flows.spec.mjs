@@ -1,3 +1,5 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expect, test } from '@playwright/test';
 import fishDexManifest from '../src/assets/fishdex/v2/manifest.generated.json' with { type: 'json' };
 import {
@@ -515,14 +517,10 @@ test('Phase 2 핵심 화면은 네 viewport에서 프레임과 가로 경계를 
     await page.setViewportSize(viewport);
     for (const surface of surfaces) {
       await page.goto(`/studycrack-mobile.html?screen=${surface.screen}`);
+      await expectScreenViewport(page, surface.screen, viewport);
       await expect(page.locator(surface.ready)).toBeVisible();
       await expect(page.locator('.app-screen[data-screen]')).toHaveCSS('opacity', '1');
       await expect(page.locator('.tabbar button')).toHaveCount(surface.tabbar ? 5 : 0);
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
       const screenshotPath = testInfo.outputPath(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true, animations: 'disabled' });
       await testInfo.attach(`phase-two-${surface.name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
@@ -548,7 +546,7 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await page.locator('[data-action="selectStarterCandidate"][data-species-id="blue_damsel"]').click();
   await page.getByRole('button', { name: '이 물고기와 시작하기' }).click();
 
-  if (await page.locator('.aquarium-management').getAttribute('open') === null) await page.locator('.aquarium-management > summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-management'));
   await expect(page.getByRole('heading', { name: '마루', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '먹이 주기' })).toHaveCount(0);
   await expect(page.locator('.aquarium-exp')).toContainText('0 / 30');
@@ -562,7 +560,7 @@ test('수조에서 첫 물고기의 성장·이름·배치 상태를 관리하�
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'rename_fish').length).toBe(1);
   await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'set_active_fish').length).toBe(1);
   await page.reload();
-  await page.locator('.aquarium-management > summary').click();
+  await setDisclosureOpen(page.locator('.aquarium-management'));
   await expect(page.getByRole('heading', { name: '마루별', exact: true })).toBeVisible();
   await expect(page.locator('.aquarium-fish.slot-left')).toHaveAttribute('aria-label', '마루별 선택');
   await expect(page.locator('.aquarium-fish.slot-left .aquarium-fish-path')).toHaveCSS('animation-name', 'aquariumFishPath');
@@ -750,7 +748,16 @@ test('분석 시험과 대학 선택은 분리된 결과 카드에 즉시 반영
   await examSelect.selectOption({ label: '3월 모의고사' });
   await expect(page.locator('.analysis-score-card-head > div:first-child strong')).toHaveText('118점');
   expect(api.requests.some(({ payload }) => payload.type === 'analyze_my_targets' && payload.examMode === 'mar')).toBe(true);
-  expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(false);
+  for (const examMode of ['jun', 'mar']) {
+    await expect.poll(() => [...new Set(api.requests
+      .filter(({ payload }) => payload.type === 'backtrace_required_raw' && payload.examMode === examMode)
+      .map(({ payload }) => `${payload.targetUniv.univ} ${payload.targetUniv.major}`))].sort())
+      .toEqual(['고려대학교 경영학과', '연세대학교 정치외교학과']);
+  }
+  await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
+  await expect(page.locator('.analysis-reverse-card')).toContainText('추가 필요 원점수 0점');
+  await expect(page.locator('.analysis-reverse-card')).toContainText('현재 환산점수 118점');
+  await page.getByRole('button', { name: '과목별 +1점', exact: true }).click();
   for (const viewport of [{ width: 320, height: 700 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(viewport);
     await expectNoHorizontalOverflow(page);
@@ -770,6 +777,8 @@ test('Standard 분석은 실제 +1 환산 효율과 역산 조합을 함께 보�
   await expect(page.locator('.analysis-sim-row.best')).toContainText('국어');
   await page.getByRole('group', { name: '계산 결과 선택' }).getByRole('button', { name: '합격권 도달 조합' }).click();
   await expect(page.locator('.analysis-reverse-card')).toContainText('이미 합격 기준에 도달');
+  await expect(page.locator('.analysis-reverse-card')).toContainText('추가 필요 원점수 0점');
+  await expect(page.locator('.analysis-reverse-plan')).toHaveCount(0);
   expect(api.requests.some(({ payload }) => payload.type === 'backtrace_required_raw')).toBe(true);
   await expectNoHorizontalOverflow(page);
 });

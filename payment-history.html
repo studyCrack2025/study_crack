@@ -12,21 +12,27 @@
   <script defer src="/js/shared/api.js"></script>
   <script defer src="/js/payment-history.js"></script>
 </head>
-<body>
+<body class="pay-history-body">
   <main class="pay-history-page">
-    <nav class="pay-history-actions" aria-label="계정으로 돌아가기"><a class="pay-history-link" href="/mypage">웹 마이페이지</a><a class="pay-history-link" href="/studycrack-mobile?screen=accountInfo">앱 계정 정보</a></nav>
-    <h1>결제 내역</h1>
-    <p>서버에 저장된 결제 기록입니다. 목록은 주문번호 순이며, 최신 결제순이 아닙니다. 현재 입금·이용권 반영 상태는 각 주문의 ‘상태 확인’에서 확인해 주세요.</p>
-    <p>진행 중인 결제나 기록 저장이 지연된 주문은 보이지 않을 수 있습니다. 이미 결제·입금했다면 다시 결제하지 말고 결제 결과 화면에서 재확인하거나 문의해 주세요.</p>
+    <nav class="pay-history-nav" aria-label="계정으로 돌아가기"><a id="historyBack" class="pay-history-back" href="/mypage">← 마이페이지</a><a class="pay-history-brand" href="/">StudyCrack</a></nav>
+    <div class="pay-history-heading">
+      <h1>결제 내역</h1>
+      <p>구매한 이용권과 결제 정보를 확인하세요.</p>
+    </div>
     <p id="historyMessage" role="status">결제 내역을 확인하고 있어요.</p>
     <noscript>결제 내역 조회에는 JavaScript가 필요합니다. 확인이 어려우면 고객센터에 문의해 주세요.</noscript>
     <ol id="historyList" class="pay-history-list" aria-label="결제 기록"></ol>
     <div class="pay-history-actions">
-      <button id="historyRefresh" type="button" class="pay-history-link">처음부터 다시 조회</button>
-      <button id="historyMore" type="button" class="pay-history-link" hidden>다음 내역</button>
+      <button id="historyRefresh" type="button" class="pay-history-link">새로고침</button>
+      <button id="historyMore" type="button" class="pay-history-link" hidden>내역 더 보기</button>
       <a id="historyLogin" class="pay-history-link" href="/login" target="_blank" rel="noopener noreferrer" hidden>새 탭에서 로그인</a>
       <a class="pay-history-link" href="/qna">문의하기</a>
     </div>
+    <details class="pay-history-help">
+      <summary>결제 내역 안내</summary>
+      <p>내역은 결제일 순으로 표시되지 않을 수 있습니다. 입금·이용권 반영 여부는 각 내역의 ‘결제 상세’에서 확인하세요.</p>
+      <p>진행 중이거나 확인이 늦어진 결제는 목록에 없을 수 있습니다. 이미 결제·입금했다면 다시 결제하지 말고 결제 결과 화면에서 확인하거나 문의해 주세요.</p>
+    </details>
   </main>
 </body>
 </html>

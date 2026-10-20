@@ -11,7 +11,7 @@ export function ScoreJourneyCard({
   scoreDragOffset = 0, scoreSlideMotion = '', title = '최소 노력 대비 합격 도달 성적'
 }) {
   if (!canUseReverseProjection) {
-    return <div className="score-journey-card score-journey-card-empty"><p className="analysis-title">{title}</p><div className="score-journey-empty-panel"><b>최소 노력 대비 도달 성적과 역산 전략은 Standard 이상 플랜에서 확인할 수 있어요.</b><button type="button" className="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button></div></div>;
+    return <div className="score-journey-card score-journey-card-empty"><p className="analysis-title">{title}</p><div className="score-journey-empty-panel"><b>최소 노력 대비 도달 성적과 역산 전략은 Basic 이상 플랜에서 확인할 수 있어요.</b><button type="button" className="btn btn-primary mini" data-action="goto" data-target="proIntro">플랜 보기</button></div></div>;
   }
   const { ready = false, score = null, currentScores = [] } = analysisPresentation;
   const confirmed = ready && typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 250;

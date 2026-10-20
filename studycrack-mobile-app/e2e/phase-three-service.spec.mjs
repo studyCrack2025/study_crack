@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 const VIEWPORTS = [
@@ -114,22 +115,19 @@ test('잠긴 미리보기는 예시 지표나 발행 상태를 제품 데이터�
   }
 });
 
-test('Phase 3 코칭·리포트·결제 화면은 네 viewport에서 경계를 지킨다', async ({ page }, testInfo) => {
-  await installAuthenticatedSession(page);
-  await installApiMock(page, { tier: 'pro' });
-  for (const viewport of VIEWPORTS) {
+for (const viewport of VIEWPORTS) {
+  test(`Phase 3 코칭·리포트·결제 화면 경계 ${viewport.width}px`, async ({ page }, testInfo) => {
+    await installAuthenticatedSession(page);
+    await installApiMock(page, { tier: 'pro' });
     await page.setViewportSize(viewport);
     for (const [name, screen] of SURFACES) {
-      await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-      await expect(page.locator(`[data-screen="${screen}"]`)).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
-      const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      await test.step(name, async () => {
+        await page.goto(`/studycrack-mobile.html?screen=${screen}`);
+        await expectScreenViewport(page, screen, viewport);
+        const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      });
     }
-  }
-});
+  });
+}

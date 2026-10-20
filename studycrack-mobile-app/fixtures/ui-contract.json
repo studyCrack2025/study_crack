@@ -139,7 +139,7 @@
     "primaryMetric": "convertedScore",
     "efficiencyUnit": "point",
     "forwardTiers": ["basic", "starter", "standard", "pro"],
-    "reverseTiers": ["standard", "pro"]
+    "reverseTiers": ["basic", "starter", "standard", "pro"]
   },
   "consultingV2": {
     "journeyVersion": "JUNGSI_2027_V2",

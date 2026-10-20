@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectScreenViewport } from './support/screen-ready.mjs';
 import { expectNoHorizontalOverflow, installApiMock, installAuthenticatedSession } from './support/mock-api.mjs';
 
 const VIEWPORTS = [
@@ -40,24 +41,22 @@ test('랭킹 오류는 같은 기간을 명시적으로 다시 요청해 복구�
   expect(api.requests.filter(({ payload }) => payload.type === 'get_study_ranking')).toHaveLength(2);
 });
 
-test('Phase 3 분석·프로필 입력 화면은 네 viewport에서 경계를 지킨다', async ({ page }, testInfo) => {
-  await installAuthenticatedSession(page);
-  await installApiMock(page);
-  for (const viewport of VIEWPORTS) {
+for (const viewport of VIEWPORTS) {
+  test(`Phase 3 분석·프로필 입력 화면 경계 ${viewport.width}px`, async ({ page }, testInfo) => {
+    await installAuthenticatedSession(page);
+    await installApiMock(page);
     await page.setViewportSize(viewport);
     for (const [name, selector] of SURFACES) {
-      const screen = selector.match(/data-screen="([^"]+)/)?.[1];
-      await page.goto(`/studycrack-mobile.html?screen=${screen}`);
-      await expect(page.locator(selector)).toBeVisible();
-      if (screen === 'addUniversity') await expect(page.getByText('성균관대학교 글로벌경영학과')).toBeVisible();
-      await expectNoHorizontalOverflow(page);
-      const frame = await page.locator('.app-frame').boundingBox();
-      expect(frame).not.toBeNull();
-      expect(frame.width).toBeLessThanOrEqual(viewport.width);
-      expect(Math.abs(frame.height - viewport.height)).toBeLessThanOrEqual(1);
-      const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      await test.step(name, async () => {
+        const screen = selector.match(/data-screen="([^"]+)/)?.[1];
+        await page.goto(`/studycrack-mobile.html?screen=${screen}`);
+        await expectScreenViewport(page, screen, viewport);
+        if (screen === 'addUniversity') await expect(page.getByText('성균관대학교 글로벌경영학과')).toBeVisible();
+        await expectNoHorizontalOverflow(page);
+        const screenshotPath = testInfo.outputPath(`phase-three-${name}-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        await testInfo.attach(`phase-three-${name}-${viewport.width}x${viewport.height}.png`, { path: screenshotPath, contentType: 'image/png' });
+      });
     }
-  }
-});
+  });
+}

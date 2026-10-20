@@ -38,19 +38,19 @@ test('dependency diagnostics report every missing reference in one failure', () 
   });
 });
 
-test('artifact smoke checks run before the full matrix without replacing it', async () => {
+test('both verification scopes retain public artifact smoke before deployment', async () => {
   const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
-  const smoke = workflow.indexOf('- name: Check public artifact smoke contracts');
-  const full = workflow.indexOf('- name: Test the public artifact shard');
-  assert.ok(smoke > workflow.indexOf('- name: Install browser runtime') && full > smoke);
-  const step = workflow.slice(smoke, full);
+  const { e2eSuiteSelection } = await import('../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs');
+  const browser = workflow.indexOf('- name: Test required browser coverage');
+  const seal = workflow.indexOf('- name: Seal verified artifact identity');
+  assert.ok(browser > workflow.indexOf('- name: Install browser runtime') && seal > browser);
+  const step = workflow.slice(browser, seal);
   assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
-  assert.ok(step.includes('PLAYWRIGHT_SUITE: smoke'));
   assert.ok(step.includes('--workers=1 --retries=0'));
+  assert.doesNotMatch(step, /continue-on-error/);
+  assert.equal(e2eSuiteSelection('all').testMatch, '**/*.spec.mjs');
+  assert.ok(e2eSuiteSelection('web-css').testMatch.includes('**/public-artifact.spec.mjs'));
   for (const spec of ['fish-artwork-lifecycle', 'payment-account-switch', 'public-artifact']) {
     await readFile(new URL(`../../studycrack-mobile-app/e2e/${spec}.spec.mjs`, import.meta.url));
   }
-  assert.doesNotMatch(step, /continue-on-error/);
-  assert.ok(workflow.slice(full).includes('run: npm run test:e2e'));
-  assert.ok(workflow.slice(full).includes('PLAYWRIGHT_SUITE: regression'));
 });

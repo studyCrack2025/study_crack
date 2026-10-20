@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
@@ -57,7 +58,7 @@ for (const width of [320, 360, 390, 430]) {
     await expect(page.locator('.weekly-feedback .feedback-item').first()).toHaveCSS('border-top-width', '1px');
     await expect(page.getByText('노출하면 안 되는 초안')).toHaveCount(0);
     await page.screenshot({ path: info.outputPath(`coaching-weekly-${width}.png`), animations: 'disabled' });
-    await page.locator('.weekly-feedback').last().locator('summary').click();
+    await setDisclosureOpen(page.locator('.weekly-feedback').last());
     await expect(page.getByText('지난주 피드백도 확인할 수 있어요.')).toBeVisible();
     await expect(page.locator('.coaching-week-list li')).toHaveCount(7);
     await page.locator('.coaching-week-preview').evaluate(el => el.scrollIntoView({ block: 'center' }));

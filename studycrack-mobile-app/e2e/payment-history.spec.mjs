@@ -22,10 +22,12 @@ async function setup(page, replies) {
 test('account entry opens shared history, then verified pending status, without purchasing', async ({ page }) => {
   const calls = await setup(page, [{ items: [item], cursor: null }]);
   await page.goto('/studycrack-mobile.html?screen=accountInfo');
-  expect((await page.getByRole('link', { name: '결제 내역 · 상태 확인' }).boundingBox()).height).toBeGreaterThanOrEqual(44);
-  await page.getByRole('link', { name: '결제 내역 · 상태 확인' }).click();
+  expect((await page.getByRole('link', { name: '결제 내역' }).boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await page.getByRole('link', { name: '결제 내역' }).click();
   await expect(page.locator('#historyList li')).toHaveCount(1);
+  await expect(page.locator('#historyBack')).toHaveAttribute('href', '/studycrack-mobile?screen=accountInfo');
   await page.locator('#historyList a').click();
+  await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('#successTitle')).toHaveText('결제 완료 · 이용권 반영 대기');
   expect(calls.map(call => call.type)).toEqual(['list_payment_history', 'get_payment_status']);
 });
@@ -37,10 +39,11 @@ test('web MY provides the same history entry', async ({ page }) => {
     return route.fallback();
   });
   await page.goto('/mypage.html');
-  await expect(page.getByRole('link', { name: '결제 내역 · 상태 확인' })).toBeVisible();
-  expect((await page.getByRole('link', { name: '결제 내역 · 상태 확인' }).boundingBox()).height).toBeGreaterThanOrEqual(44);
-  await page.getByRole('link', { name: '결제 내역 · 상태 확인' }).click();
+  await expect(page.getByRole('link', { name: '결제 내역' })).toBeVisible();
+  expect((await page.getByRole('link', { name: '결제 내역' }).boundingBox()).height).toBeGreaterThanOrEqual(44);
+  await page.getByRole('link', { name: '결제 내역' }).click();
   await expect(page.locator('#historyMessage')).toContainText('표시할 결제 기록이 없습니다');
+  await expect(page.locator('#historyBack')).toHaveAttribute('href', '/mypage');
 });
 test('pagination deduplicates records and retries failed next page with the same cursor', async ({ page }) => {
   const calls = await setup(page, [{ items: [item], cursor: id }, { error: 500 }, { items: [item, { ...item, orderId: 'OLD_1', paymentIntentId: null }], cursor: null }]);
@@ -129,7 +132,7 @@ test('malformed response does not partially render records', async ({ page }) =>
   await expect(page.locator('#historyMessage')).toContainText('불러오지 못했습니다');
   await expect(page.locator('#historyList li')).toHaveCount(0);
 });
-for (const width of [320, 375, 390, 430]) {
+for (const width of [320, 375, 390, 430, 1440]) {
   test(`history fits ${width}px and uses 44px controls`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });
     await setup(page, [{ items: [item, { ...item, orderId: 'ORDER_legacy', paymentIntentId: null }], cursor: null }]);

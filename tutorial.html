@@ -54,7 +54,7 @@
 
     <!-- Step 1: 인트로 -->
     <template id="tpl-intro">
-        <div class="step-card">
+        <div class="tut-step-card">
             <div class="intro-badge">⚡ 무료 맞춤 입시 분석</div>
             <h2>3분이면 나만의 합격 전략이 완성돼요</h2>
             <p>성적과 학습 유형을 입력하면, 합격 가능 대학과 최우선 공부 과목을 바로 알려드릴게요.</p>
@@ -90,7 +90,7 @@
 
     <!-- Step 2: 학년/계열 -->
     <template id="tpl-survey-qual">
-        <div class="step-card">
+        <div class="tut-step-card">
             <h3>기본 정보 입력</h3>
             <p class="step-desc">정확한 분석을 위해 현재 상황을 알려주세요.</p>
             <label class="input-label">현재 학년 <span class="tut-req">*</span></label>
@@ -127,7 +127,7 @@
 
     <!-- Step 3: 성적 입력 -->
     <template id="tpl-survey-quan">
-        <div class="step-card">
+        <div class="tut-step-card">
             <h3>성적 입력</h3>
             <p class="step-desc">학력평가·모의평가 원점수를 입력해주세요. 수능 환산 점수로 자동 보정됩니다.</p>
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
@@ -297,7 +297,7 @@
 
     <!-- Step 4: MBTI -->
     <template id="tpl-mbti">
-        <div class="step-card">
+        <div class="tut-step-card">
             <h3>학습 유형 파악</h3>
             <p class="step-desc">학습 성향을 분석하면 과목별 최적 공부법과 시간 배분을 추천해드려요.</p>
             <button class="tut-action-btn" onclick="goToMBTI()">📋 학습 유형 검사 시작하기 (3분)</button>
@@ -342,7 +342,7 @@
 
     <!-- Step 5: 대학 시뮬레이션 -->
     <template id="tpl-univ-rec">
-        <div class="step-card">
+        <div class="tut-step-card">
             <h3>추천 대학 시뮬레이션</h3>
             <p class="step-desc">취약 과목 1점 상승 시 가장 큰 효과를 볼 수 있는 대학이에요. 목표 대학을 선택하면 상세 분석을 확인할 수 있어요.</p>
             <div class="univ-card-list" id="univCardList"></div>
@@ -351,7 +351,7 @@
 
     <!-- Step 6: 개인화 결과 준비 완료 -->
     <template id="tpl-subject-rec">
-        <div class="step-card">
+        <div class="tut-step-card">
             <div class="tutorial-preview-ready-icon" aria-hidden="true">✓</div>
             <h3>개인화 결과를 확인할 준비가 끝났어요</h3>
             <p class="step-desc">입력한 성적과 학습 성향을 목표 대학의 반영 방식과 함께 분석해, 지금 먼저 올릴 과목을 보여드릴게요.</p>

@@ -1,3 +1,4 @@
+import { setDisclosureOpen } from './support/disclosure.mjs';
 import { expect, test } from '@playwright/test';
 import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
 
@@ -12,7 +13,7 @@ async function setup(page, options) {
   return api;
 }
 const requestCount = (api, type) => api.requests.filter(({ payload }) => payload.type === type).length;
-const openManagement = page => page.locator('.aquarium-management > summary').click();
+const openManagement = page => setDisclosureOpen(page.locator('.aquarium-management'));
 const effect = page => page.locator('[data-care-effect]');
 
 for (const width of [320, 360, 390, 430]) {

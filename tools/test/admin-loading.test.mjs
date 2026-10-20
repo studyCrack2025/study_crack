@@ -29,6 +29,23 @@ function setup() {
     for (const file of ['admin_ui.js', 'admin/students.js', 'admin/qna.js']) vm.runInContext(source(file), context);
     return { context, get, run: code => vm.runInContext(code, context) };
 }
+test('Starter student renders its own badge instead of being labeled Basic', () => {
+    const { context } = setup();
+    assert.match(context.getTierBadgeHTML({ currentSubscription: { tier: 'starter', status: 'active' } }), />STARTER<\/span>/);
+    assert.match(context.getTierBadgeHTML({ currentSubscription: { tier: 'BASIC', status: 'active' } }), />BASIC<\/span>/);
+});
+test('Starter filter returns Starter students and excludes Basic students', async () => {
+    const { context, get, run } = setup();
+    get('filterTier').value = 'STARTER';
+    context.apiFetch = async () => ({ json: async () => [
+        { userid: 'starter-student', name: 'Starter', currentSubscription: { tier: 'STARTER', status: 'active' } },
+        { userid: 'basic-student', name: 'Basic', currentSubscription: { tier: 'BASIC', status: 'active' } }
+    ] });
+    await run('searchStudents()');
+    assert.equal(get('studentListBody').children.length, 1);
+    assert.match(get('studentListBody').children[0].innerHTML, /STARTER/);
+    assert.doesNotMatch(get('studentListBody').children[0].innerHTML, /basic-student/);
+});
 test('pending tutor lookup does not block students or question badge; saved tutor survives', async () => {
     const { context, get, run } = setup();
     const calls = [];
