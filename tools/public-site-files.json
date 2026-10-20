@@ -134,6 +134,7 @@
     "js/payment-exit-guard.js",
     "js/payment.js",
     "js/payment-status.js",
+    "js/measurement-v2.js",
     "js/qna.js",
     "js/script.js",
     "js/service.js",

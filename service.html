@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <script src="/js/measurement-v2.js?v=20260930-v2"></script>
+
   <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -14,13 +16,13 @@
   <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
   <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
 
-  <meta name="description" content="SKY 멘토가 당신 전용 공부 전략을 직접 설계합니다. 학습 성향 분석, 목표 대학 분석, 합격 플래너 설계까지 — 스터디크랙 서비스 소개" />
+  <meta name="description" content="StudyCrack Basic으로 목표 대학별 환산 점수와 과목별 목표 점수를 살펴보고, 다음 학습 우선순위를 정리해 보세요." />
   <meta property="og:title" content="서비스 소개 | 스터디크랙" />
   <meta property="og:description" content="SKY 멘토가 당신 전용 합격 전략을 직접 설계합니다. 3단계로 완성되는 나만의 합격 전략." />
   <meta property="og:image" content="https://studycrack.co.kr/og-image.jpg" />
   <meta property="og:url" content="https://studycrack.co.kr/service" />
   <meta property="og:type" content="website" />
-  <title>스터디크랙 - 서비스 소개</title>
+  <title>내 성적으로 목표 대학 분석 | 스터디크랙 서비스</title>
   <link rel="canonical" href="https://studycrack.co.kr/service" />
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -78,7 +80,7 @@
     <section class="hero-section">
       <div class="hero-copy">
         <p class="eyebrow">합격 가능성을 분석하고,</p>
-        <h1><strong>SKY 멘토가</strong><br>당신 전용 공부 전략을<br>직접 설계합니다</h1>
+        <h1>내 성적으로 목표 대학과 과목별 목표 점수를 살펴보세요</h1>
         <p class="hero-desc">성적·학습성향·목표대학을 기반으로<br>가장 현실적이고 효율적인 합격 루트를 설계합니다.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="/survey">내 합격 가능성 확인하기 <span class="btn-arrow">→</span></a>
@@ -282,6 +284,19 @@
       <p class="formula-desc">스터디크랙은 이 모든 데이터를 기반으로,<br>당신만의 합격 루트를 설계합니다.</p>
     </section>
 
+    <section class="section score-comparison-guide" id="score-comparison-guide" aria-labelledby="score-comparison-guide-title">
+      <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">내 성적 기준 대학 비교</p>
+          <h2 id="score-comparison-guide-title">내 성적으로 갈 수 있는 대학은 어떻게 비교하나요?</h2>
+          <p>대학·모집단위·학년도에 따라 과목 반영 방식이 달라질 수 있어, 총점 하나만으로 지원 가능 여부를 확정하기는 어렵습니다. 목표 대학의 최신 모집요강을 확인하고 해당 기준에 맞춰 성적을 비교하는 것이 출발점입니다.</p>
+          <p>StudyCrack Basic은 입력한 성적과 목표 대학·학과를 바탕으로 대학별 환산 점수와 과목별 점수 변화의 영향을 비교해 학습 우선순위를 정리하도록 돕습니다. 분석 결과는 참고 자료이며 합격을 보장하지 않습니다.</p>
+          <a class="process-cta-link" href="/survey">내 성적 기준으로 분석 시작하기 <span aria-hidden="true">→</span></a>
+          <a class="process-cta-link" href="https://www.adiga.kr/man/inf/mainView.do?menuId=PCMANINF1000" target="_blank" rel="noopener noreferrer">대입정보포털 어디가에서 대학별 모집요강 확인</a>
+        </div>
+      </div>
+    </section>
+
     <!-- Plans -->
     <section class="plan-section" id="plans">
       <p class="section-label">플랜 안내</p>
@@ -360,7 +375,7 @@
   </main>
 
   <script src="/js/config.js?v=20260524a"></script>
-  <script src="/js/shared/api.js?v=20260602f"></script>
+  <script src="/js/shared/api.js?v=20260930-v2"></script>
   <script src="/js/service.js?v=20260602a"></script>
   <script src="/js/shared/hamburger.js?v=20260602f"></script>
 </body>

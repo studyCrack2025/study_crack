@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta name="referrer" content="no-referrer">
-  <script>try{const p=new URLSearchParams(location.search);const id=p.get('paymentIntentId')||p.get('orderId')||'';history.replaceState({},'',location.pathname+(/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(id)?'?paymentIntentId='+encodeURIComponent(id):''));}catch(_){}</script>
+  <script>try{const p=new URLSearchParams(location.search);const retired=p.get('status')==='promo'&&(p.get('source')||'').toLowerCase()==='kcc01';const id=p.get('paymentIntentId')||p.get('orderId')||'';history.replaceState({},'',location.pathname+(retired?'?status=promo&source=kcc01':/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(id)?'?paymentIntentId='+encodeURIComponent(id):''));}catch(_){}</script>
+  <script src="/js/measurement-v2.js?v=20261021a"></script>
   <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

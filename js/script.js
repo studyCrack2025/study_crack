@@ -332,8 +332,7 @@ function initBasicPreviewEntryTracking() {
         if (!entryLink) return;
         const entry = entryLink.dataset.entry;
         if (!allowedEntries.has(entry)) return;
-        window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'basic_landing_cta_click', entry });
+        window.SCTrack?.event('cta_click', { entry });
     });
 }
 

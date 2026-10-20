@@ -192,4 +192,11 @@ const publishCommands = createPublishCommands('/artifact/site', 'example.test', 
 assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
 assert.ok(publishCommands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')), 'preview clean URL must use an HTML content type');
 
+assert.doesNotMatch(sharedApi, /['"]\/promotion(?:\/kcc01|_kcc01(?:\.html)?)['"]/, 'retired promotion routes must not be public session routes');
+const successController = await read('js/payment-status.js');
+assert.match(successPage, /js\/payment-status\.js/, 'success page must load the verified payment controller');
+assert.match(successController, /종료된 프로모션입니다/, 'legacy KCC success URLs must show the retired state');
+assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
+assert.match(successController, /if \(retiredPromo\) \{[\s\S]*?replaceState\(\{\}, '', location\.pathname\);[\s\S]*?return;/, 'retired promotion must clear payment-looking query and stop before API lookup');
+
 console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);
