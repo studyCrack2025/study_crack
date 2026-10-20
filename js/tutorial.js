@@ -192,7 +192,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
         if (localStorage.getItem('userId')) {
-            apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
+            apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
+                if (result.success === true) window.SCTrack?.once('profile-saved', 'learning_profile_complete');
+            }).catch(() => {});
         }
         // 추천 대학 목록 복원
         const savedUnivs = localStorage.getItem('tut_selectedUnivs');
@@ -230,6 +232,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function bindEvents() {
+    window.SCTrack?.once('tutorial-start', 'tutorial_begin');
+    document.addEventListener('input', (event) => {
+        if (/^tut(Kor|Math|Inq|Eng|Hist)/i.test(event.target.id || '')) {
+            window.SCTrack?.once('tutorial-score-input', 'score_input_start');
+        }
+    });
     document.getElementById('tutPrevBtn').addEventListener('click', prevStep);
     document.getElementById('tutNextBtn').addEventListener('click', nextStep);
 
@@ -302,11 +310,26 @@ function updateMascot(msg, mascotKey) {
     bubble.parentNode.replaceChild(newBubble, bubble);
 }
 
+function updateTutorialProgress() {
+    const progress = document.getElementById('tutorialProgress');
+    const label = document.getElementById('tutorialProgressLabel');
+    const fill = document.getElementById('tutorialProgressFill');
+    if (!progress || !label || !fill || !Array.isArray(STEPS) || STEPS.length === 0) return;
+
+    const total = STEPS.length;
+    const current = Math.min(Math.max(currentStepIdx + 1, 1), total);
+    progress.setAttribute('aria-valuemax', String(total));
+    progress.setAttribute('aria-valuenow', String(current));
+    label.textContent = `${current} / ${total}단계`;
+    fill.style.width = `${(current / total) * 100}%`;
+}
+
 async function renderStep() {
     localStorage.setItem('tutorialStatus', currentStepIdx);
     apiCall('update_tutorial_status', { step: currentStepIdx });
 
     const step = STEPS[currentStepIdx];
+    updateTutorialProgress();
     updateMascot(step.msg, step.mascot);
 
     const container = document.getElementById('stepContent');
@@ -322,6 +345,7 @@ async function renderStep() {
     prevBtn.style.display = (currentStepIdx === 0 || currentStepIdx >= 4) ? 'none' : 'block';
 
     if (step.id === 'mbti') {
+        window.SCTrack?.once('tutorial-profile-start', 'learning_profile_start');
         mbtiDimSelections = [null, null, null, null];
         nextBtn.style.display = 'none';
     } else if (step.id === 'subject-rec') {
@@ -528,7 +552,8 @@ async function _nextStepCore() {
                 foreign: { name: '', grd: '' }
             }
         };
-        await apiCall('update_quan', tutorialData.quan);
+        const scoreSaveResult = await apiCall('update_quan', tutorialData.quan);
+        if (scoreSaveResult.success === true) window.SCTrack?.event('score_input_complete');
 
         // 보정 표준점수 단순합 계산 후 백그라운드로 학교 선정
         tutorialData.totalStdScore = [korConv.std, mathConv.std, inq1Conv.std, inq2Conv.std]
@@ -631,7 +656,9 @@ function confirmMBTIDims() {
     }
     tutorialData.mbti = mbtiDimSelections.join('');
     // MBTI 결과를 DB에 저장 (재진입 시 복원용)
-    apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).catch(() => {});
+    apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
+        if (result.success === true) window.SCTrack?.once('profile-saved', 'learning_profile_complete');
+    }).catch(() => {});
     simulateMbtiAnalysis();
 }
 
@@ -1814,6 +1841,7 @@ async function _completeTutorial(redirectUrl) {
     tutorialCompleted = true;
     localStorage.removeItem('tutorialStatus');
     localStorage.setItem('tutorial_completed', 'true');
+    window.SCTrack?.once('tutorial-completed', 'tutorial_complete');
     window.location.href = redirectUrl;
 }
 

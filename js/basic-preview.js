@@ -1,7 +1,7 @@
 const BASIC_PREVIEW_STATE_COPY = {
     needs_scores: { title: '성적 입력이 먼저 필요해요', description: '분석할 시험 성적을 입력하면 나에게 가치 있는 다음 1점을 찾을 수 있어요.', action: '성적 입력 계속하기', href: '/tutorial' },
     needs_target: { title: '목표 대학을 선택해주세요', description: '한 곳을 먼저 선택하면 대학별 반영 방식에 맞춰 과목의 효과를 비교해드려요.', action: '목표 대학 선택하기', href: '/tutorial' },
-    needs_profile: { title: '학습 성향 입력을 마쳐주세요', description: '성적 상승 가능성을 함께 보기 위해 남은 학습 성향 입력이 필요해요.', action: '입력 계속하기', href: '/tutorial' },
+    needs_profile: { title: '학습 성향 입력을 마쳐주세요', description: '성적 상승 가능성을 함께 보기 위해 남은 학습 성향 입력이 필요해요.', action: '학습 성향 수정하기', href: '/mypage' },
     analysis_failed: { title: '이번 결과를 완성하지 못했어요', description: '입력한 성적과 목표 대학을 다시 확인한 뒤 재시도해주세요.', action: '다시 시도하기', retry: true },
     temporarily_unavailable: { title: '분석 데이터를 준비하고 있어요', description: '현재 시험 데이터가 준비되는 중입니다. 잠시 후 다시 확인해주세요.', action: '다시 시도하기', retry: true },
     already_unlocked: { title: 'Basic 전체 분석을 이용할 수 있어요', description: '이미 잠금이 해제된 계정입니다. 전체 대학과 과목별 전략을 확인하세요.', action: '전체 분석 보기', href: '/analysis' },
@@ -13,8 +13,12 @@ const BASIC_PREVIEW_EXAM_LABELS = { mar: '3월 학력평가', may: '5월 학력�
 let basicPreviewLoading = false;
 
 function trackBasicPreview(eventName, properties = {}) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: eventName, ...properties });
+    if (eventName === 'basic_preview_ready') {
+        window.SCTrack?.once('basic-analysis', 'analysis_view', { analysis_type: 'basic_preview' });
+        window.SCTrack?.once('basic-impact', 'score_impact_view', { analysis_type: 'basic_preview' });
+    } else if (eventName === 'basic_unlock_click') {
+        window.SCTrack?.event('cta_click', { entry: 'basic_preview_unlock', plan_type: 'basic' });
+    }
 }
 
 function setBasicPreviewStatus(title, description, { loading = false, action = null } = {}) {

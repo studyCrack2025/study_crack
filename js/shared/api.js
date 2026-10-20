@@ -222,7 +222,7 @@ function reportSharedDiagnostic(kind, route, status = 0) {
     try { window.STUDYCRACK_DIAGNOSTICS?.record(kind, route, Number.isInteger(status) ? status : 0); } catch (_) {}
 }
 
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/promotion/kcc01', '/promotion_kcc01', '/promotion_kcc01.html', '/jungsi-consulting-app.html', '/2027-jungsi-consulting', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/jungsi-consulting-app.html', '/2027-jungsi-consulting', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {
@@ -298,6 +298,7 @@ const SESSION_KEYS_LOCAL = [
 ];
 
 function clearClientSession() {
+    window.SCTrack?.identify(null);
     localStorage.setItem(SESSION_ENDED_KEY, '1');
     _observedSessionEpoch = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     localStorage.setItem(SESSION_EPOCH_KEY, _observedSessionEpoch);
@@ -656,6 +657,24 @@ const ADMIN_API_URL = CONFIG.api.admin;
 const REPORT_API_URL = CONFIG.api.report;
 const FILE_API_URL = CONFIG.api.file;
 const PAYMENT_API_URL = CONFIG.api.payment || CONFIG.api.admin;
+
+async function resolveMeasurementIdentity() {
+    const scope = captureClientSession();
+    const expectedId = localStorage.getItem('userId');
+    if (!expectedId) return null;
+    try {
+        const response = await apiFetch(CONFIG.api.user, {
+            method: 'POST', body: JSON.stringify({ type: 'get_login_profile' })
+        });
+        if (!response.ok) return null;
+        const profile = await response.json();
+        if (!isClientSessionCurrent(scope) || localStorage.getItem('userId') !== expectedId) return null;
+        if (!profile || profile.success === false || !profile.role) return null;
+        const token = getSharedBearerToken();
+        const verifiedId = profile.userId || profile.userid || profile.sub || (token && getSharedPayloadFromToken(token).sub) || expectedId;
+        return verifiedId === expectedId ? verifiedId : null;
+    } catch (_) { return null; }
+}
 
 // 첨부 권한을 재확인하며, 실패한 경우 오래된 주소로 우회하지 않는다.
 async function resolvePrivateAttachment(value) {
