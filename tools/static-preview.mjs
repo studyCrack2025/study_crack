@@ -3,11 +3,12 @@ import { createServer } from 'node:http';
 import { readFile, realpath } from 'node:fs/promises';
 import { extname, dirname, resolve, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cacheControlFor } from './site-release.mjs';
+import { cacheControlFor, loadPublicPolicy } from './site-release.mjs';
 
 // 검증 산출물을 지정하지 않으면 실행 cwd와 무관하게 저장소 루트를 사용한다.
 const ROOT = await realpath(process.env.STUDYCRACK_PREVIEW_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '..'));
 const PORT = Number(process.env.PORT) || 3000;
+const { aliases = {} } = await loadPublicPolicy();
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -36,6 +37,7 @@ createServer(async (req, res) => {
       res.writeHead(403).end('Forbidden');
       return;
     }
+    if (Object.hasOwn(aliases, path.slice(1))) path = `/${aliases[path.slice(1)]}`;
     const requested = resolve(ROOT, `.${path}`);
     let filePath;
     try { filePath = await realpath(requested); }

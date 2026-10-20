@@ -15,7 +15,7 @@
     <title>관리자 - StudyCrack</title>
     
     <link rel="stylesheet" href="/css/admin_theme.css?v=20260524a">
-    <link rel="stylesheet" href="/css/admin_consulting.css?v=20261008a">
+    <link rel="stylesheet" href="/css/admin_consulting.css?v=20261020a">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -411,24 +411,27 @@
         </div>
                 
         <div id="section-consulting" class="content-section">
+            <section id="consultingIntakePanel" aria-labelledby="consultingIntakeTitle" aria-busy="false">
             <div class="consulting-heading-row">
                 <div>
-                    <h1 class="page-title">🎓 정시 컨설팅 입금 검수</h1>
+                    <h1 id="consultingIntakeTitle" class="page-title">🎓 정시 컨설팅 접수·입금 관리</h1>
                     <p class="consulting-caption">입금 정보가 정확히 일치하는 경우에만 승인하세요. 승인 시 초대 링크와 인증코드 발송이 예약됩니다.</p>
                 </div>
                 <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingPaymentReview()">새로고침</button>
             </div>
             <div id="consultingStatus" class="consulting-status" role="status" aria-live="polite"></div>
-            <div class="consulting-lookup">
+            <div id="consultingActionStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <p class="consulting-caption">목록에는 입금 확인 대기·보류 건을 최대 100건 표시합니다. 승인·거절한 건은 신청 ID로 다시 조회하세요. 초대 발급과 실제 발송 성공은 별개입니다.</p>
+            <form class="consulting-lookup" onsubmit="event.preventDefault(); lookupConsultingApplication();">
                 <label for="consultingApplicationLookup">신청 ID로 상세 조회</label>
                 <div class="consulting-lookup-row">
-                    <input id="consultingApplicationLookup" type="text" autocomplete="off" placeholder="APP_...">
-                    <button type="button" class="consulting-btn consulting-btn-secondary" onclick="lookupConsultingApplication()">조회</button>
+                    <input id="consultingApplicationLookup" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="APP_..." required>
+                    <button type="submit" class="consulting-btn consulting-btn-secondary">조회</button>
                 </div>
-            </div>
+            </form>
             <div class="table-responsive">
                 <table class="student-table consulting-table">
-                    <thead><tr><th>접수</th><th>학생</th><th>입금자</th><th>금액</th><th>상태</th><th>확인</th></tr></thead>
+                    <thead><tr><th>접수</th><th>학생</th><th>입금자</th><th>예정 금액</th><th>상태</th><th>확인</th></tr></thead>
                     <tbody id="consultingPaymentReviewBody"><tr><td colspan="6" class="empty-msg">메뉴를 열면 검수 대기 건을 불러옵니다.</td></tr></tbody>
                 </table>
             </div>
@@ -438,9 +441,10 @@
                     <button type="button" class="consulting-close" onclick="closeConsultingDetail()" aria-label="상세 닫기">×</button>
                 </div>
                 <div id="consultingDetailSummary" class="consulting-detail-grid"></div>
-                <div id="consultingPaymentActions" class="consulting-actions">
-                    <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1"></label>
-                    <label>입금 시각<input id="consultingPaidAt" type="datetime-local"></label>
+                <p class="consulting-caption">전화번호와 이메일의 수신 대상을 확인하세요. 실제 계좌 내역의 입금액·시각을 직접 입력한 뒤 승인해야 합니다.</p>
+                <div id="consultingPaymentActions" class="consulting-actions" hidden>
+                    <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액"></label>
+                    <label>입금 시각 (기기 현지 시각)<input id="consultingPaidAt" type="datetime-local" autocomplete="off"></label>
                     <label class="consulting-check"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
                     <button id="consultingApproveBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingPayment()">입금 승인 및 초대 발급</button>
                     <label>보류 사유<select id="consultingHoldReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="PAYER_NAME_MISMATCH">입금자명 불일치</option><option value="AMOUNT_MISMATCH">금액 불일치</option><option value="DUPLICATE_CANDIDATE">중복 신청 확인</option><option value="OTHER">기타</option></select></label>
@@ -451,6 +455,7 @@
                 <div id="consultingInviteActions" class="consulting-actions" hidden>
                     <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
                 </div>
+            </section>
             </section>
             <div class="consulting-heading-row consulting-material-heading">
                 <div>
@@ -703,7 +708,7 @@
     <script src="/js/shared/api.js?v=20260602f"></script>
     <script src="/js/shared/store.js?v=20260524c"></script>
     <script src="/js/auth.js?v=20260602f"></script>
-    <script src="/js/admin_ui.js?v=20260524c"></script>
+    <script src="/js/admin_ui.js?v=20261020a"></script>
     <script src="/js/admin/stats.js?v=20260526a"></script>
     <script src="/js/admin/students.js?v=20260527d"></script>
     <script src="/js/admin/qna.js?v=20260524c"></script>
@@ -712,7 +717,7 @@
     <script src="/js/admin/matching.js?v=20260524c"></script>
     <script src="/js/admin/modals.js?v=20260524c"></script>
     <script src="/js/admin/consulting.js?v=20261008a"></script>
-    <script src="/js/admin/consulting-intake.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
 

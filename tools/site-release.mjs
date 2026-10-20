@@ -14,6 +14,11 @@ const FIXED_ENTRIES = [`${DIST}/studycrack-mobile.bundle.js`, `${DIST}/studycrac
 const GENERATED_FILES = ['release.json', 'js/release.js'];
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
+function directoryAliases(aliases = {}) {
+  const names = Object.keys(aliases);
+  return new Set(names.filter(alias => names.some(other => other.startsWith(`${alias}/`))));
+}
+
 export function assertSafePath(relative) {
   assert.ok(typeof relative === 'string' && /^[a-zA-Z0-9_./-]+$/.test(relative), 'Invalid release path');
   assert.ok(!relative.split('/').some((part) => !part || part.startsWith('.')), `Unsafe release path: ${relative}`);
@@ -149,7 +154,9 @@ export async function buildSiteRelease({ root = repositoryRoot, output, commit, 
   }
   for (const [file, content] of Object.entries(releaseFiles(commit, release))) await writeFile(path.join(site, file), content, { flag: 'wx' });
   execFileSync('bash', [path.join(root, 'tools/bump_asset_version.sh'), release], { cwd: site, stdio: 'pipe' });
+  const virtualAliases = directoryAliases(policy.aliases);
   for (const [alias, source] of Object.entries(policy.aliases || {})) {
+    if (virtualAliases.has(alias)) continue;
     await mkdir(path.dirname(path.join(site, alias)), { recursive: true });
     await writeFile(path.join(site, alias), await readSafeFile(site, source), { flag: 'wx' });
   }
@@ -158,6 +165,12 @@ export async function buildSiteRelease({ root = repositoryRoot, output, commit, 
     const bytes = await readSafeFile(site, file);
     files.push({ path: file, bytes: bytes.length, sha256: hash(bytes) });
   }
+  // Parent clean URLs share verified canonical bytes; a local path cannot be both file and directory.
+  for (const alias of virtualAliases) {
+    const bytes = await readSafeFile(site, policy.aliases[alias]);
+    files.push({ path: alias, bytes: bytes.length, sha256: hash(bytes) });
+  }
+  files.sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
   const manifest = { schema: 2, commit, release, files };
   await writeFile(path.join(output, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' });
   return verifySiteRelease({ root, output, commit });
@@ -181,19 +194,20 @@ export async function verifySiteRelease({ root = repositoryRoot, output, commit,
   assert.equal(new Set(names).size, names.length, 'Duplicate manifest entries');
   assert.deepEqual(names, [...names].sort(), 'Manifest order is not deterministic');
   for (const required of [...allowed, ...FIXED_ENTRIES]) assert.ok(names.includes(required), `Missing public file: ${required}`);
-  assert.deepEqual(await listFiles(output), ['manifest.json', ...names.map((name) => `site/${name}`)].sort(), 'Unlisted, missing or extra artifact file');
+  const virtualAliases = directoryAliases(policy.aliases);
+  assert.deepEqual(await listFiles(output), ['manifest.json', ...names.filter(name => !virtualAliases.has(name)).map((name) => `site/${name}`)].sort(), 'Unlisted, missing or extra artifact file');
   const site = path.join(output, 'site');
   const contents = new Map();
   for (const entry of manifest.files) {
     assertSafePath(entry.path);
     assert.ok(allowed.has(entry.path) || isBuildPath(entry.path), `Non-public artifact file: ${entry.path}`);
-    const bytes = await readSafeFile(site, entry.path);
+    const bytes = await readSafeFile(site, virtualAliases.has(entry.path) ? policy.aliases[entry.path] : entry.path);
     assert.equal(bytes.length, entry.bytes, `Artifact size mismatch: ${entry.path}`);
     assert.equal(hash(bytes), entry.sha256, `Artifact checksum mismatch: ${entry.path}`);
     contents.set(entry.path, bytes);
   }
   for (const [alias, source] of Object.entries(policy.aliases || {})) {
-    assert.ok((await readSafeFile(site, alias)).equals(await readSafeFile(site, source)), `Clean URL differs from its source: ${alias}`);
+    assert.ok(contents.get(alias).equals(contents.get(source)), `Clean URL differs from its source: ${alias}`);
   }
   for (const [file, expected] of Object.entries(releaseFiles(commit, manifest.release))) {
     assert.equal(contents.get(file).toString('utf8'), expected, `Public release identity mismatch: ${file}`);
@@ -220,6 +234,7 @@ export function createPublishCommands(site, bucket, aliases) {
     ...FIXED_ENTRIES.map((entry) => copy(entry, NO_CACHE)),
     ['s3', 'sync', site, destination, '--exclude', 'assets/*', '--exclude', 'js/*', '--exclude', 'css/*', '--exclude', 'studycrack-mobile-app/*', '--exclude', 'release.json', '--cache-control', NO_CACHE, '--only-show-errors'],
     ['s3', 'cp', site, destination, '--recursive', '--exclude', '*', '--include', '*.html', ...Object.keys(aliases).flatMap((alias) => ['--include', alias]), '--content-type', 'text/html; charset=utf-8', '--cache-control', NO_CACHE, '--only-show-errors'],
+    ...[...directoryAliases(aliases)].map(alias => ['s3', 'cp', path.join(site, aliases[alias]), `${destination}/${alias}`, '--content-type', 'text/html; charset=utf-8', '--cache-control', NO_CACHE, '--only-show-errors']),
     copy('studycrack-mobile.webmanifest', NO_CACHE, ['--content-type', 'application/manifest+json; charset=utf-8']),
     copy('release.json', NO_CACHE, ['--content-type', 'application/json; charset=utf-8'])
   ];
