@@ -40,6 +40,14 @@ const mainTabs = extractTabKeys(tabBarSource);
 assert.equal(new Set(screens).size, screens.length, 'Screen registry contains duplicate names');
 assert.deepEqual(screens, contract.screens, 'Screen registry does not match the 40-screen UI contract');
 assert.deepEqual(mainTabs, contract.mainTabs, 'Bottom navigation does not match the five-tab UI contract');
+assert.equal(contract.consultingV2.journeyVersion, 'JUNGSI_2027_V2', 'Consulting v2 journey identity changed');
+assert.deepEqual(
+  contract.consultingV2.progress,
+  ['onboarding', 'survey', 'materials', 'availability', 'writtenSession', 'report', 'finalCall', 'completed'],
+  'Consulting v2 progress must move directly from report to final call and completion'
+);
+assert.equal(contract.consultingV2.workflowStates.includes('FEEDBACK_REQUIRED'), false, 'Consulting v2 must not restore a feedback stage');
+assert.equal(contract.consultingV2.workflowStates.some((state) => state.startsWith('FINAL_RESULT')), false, 'Consulting v2 must not add a post-call final-result stage');
 assert.match(tabBarSource, /\{ key: 'timer', label: '홈', icon: 'home' \}/, 'The timer route must be presented as the Home tab');
 assert.match(tabBarSource, /className="tabbar-icon"/, 'Bottom navigation icons need a stable visual wrapper');
 assert.match(tabBarSource, /item\.key === 'aquarium'/, 'The center aquarium action must remain visually distinct');
@@ -78,4 +86,4 @@ assert.deepEqual(
   'Reverse projection tiers changed'
 );
 
-console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo and plan tiers.`);
+console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo, plan tiers and consulting v2 sequence.`);

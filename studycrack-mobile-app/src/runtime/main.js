@@ -16,10 +16,19 @@ import '../styles/screens/onboarding.css';
 import '../styles/screens/locked-splash.css';
 import MobileApp from '../app/MobileApp.js';
 import { CRACKY_SRC, ONBOARDING_LOGO_SRC } from '../constants/assets.js';
-import { getMobileRootElement, markMobileAppBooted } from '../shared/browser/mobile-runtime.js';
-
-markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
-import('../shared/browser/network-status.js').then(({ attachNetworkStatus }) => attachNetworkStatus());
+import { getMobileAppSurface, getMobileRootElement, markMobileAppBooted } from '../shared/browser/mobile-runtime.js';
 
 const rootElement = getMobileRootElement();
-if (rootElement) createRoot(rootElement).render(React.createElement(MobileApp));
+const appSurface = getMobileAppSurface();
+
+if (rootElement && appSurface === 'consulting-2027') {
+  import('../features/consulting-v2/ConsultingApp.jsx')
+    .then(({ default: ConsultingApp }) => createRoot(rootElement).render(React.createElement(ConsultingApp)))
+    .catch(() => {
+      rootElement.textContent = '화면을 준비하지 못했습니다. 잠시 후 다시 시도해주세요.';
+    });
+} else {
+  markMobileAppBooted({ crackySrc: CRACKY_SRC, onboardingLogoSrc: ONBOARDING_LOGO_SRC });
+  import('../shared/browser/network-status.js').then(({ attachNetworkStatus }) => attachNetworkStatus());
+  if (rootElement) createRoot(rootElement).render(React.createElement(MobileApp));
+}

@@ -15,6 +15,7 @@
     <title>관리자 - StudyCrack</title>
     
     <link rel="stylesheet" href="/css/admin_theme.css?v=20260524a">
+    <link rel="stylesheet" href="/css/admin_consulting.css?v=20261020a">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -87,6 +88,10 @@
                         <span id="matchingBadge" style="display:none; background:#ef4444; color:white; border-radius:50%; padding:2px 8px; font-size:0.8rem; font-weight:bold; margin-left:8px;">0</span>
                     </div>
                 </a>
+            </li>
+
+            <li class="menu-item">
+                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅</a>
             </li>
 
             <li class="menu-item logout">
@@ -167,6 +172,19 @@
                         <tr><td colspan="5" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="consulting-heading-row consulting-schedule-heading">
+                <div>
+                    <h2 class="page-title">📄 보고서 검수·승인</h2>
+                    <p class="consulting-caption">검수 요청된 케이스를 전용 보고서 화면에서 확인하고 공개 시각을 예약합니다.</p>
+                </div>
+            </div>
+            <div class="consulting-lookup">
+                <label for="consultingReportCaseId">검수할 케이스 ID</label>
+                <div class="consulting-lookup-row">
+                    <input id="consultingReportCaseId" type="text" autocomplete="off" placeholder="CASE_...">
+                    <button type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingReportReview()">보고서 검수 열기</button>
+                </div>
             </div>
         </div>
 
@@ -393,6 +411,123 @@
             </div>
         </div>
                 
+        <div id="section-consulting" class="content-section">
+            <section id="consultingIntakePanel" aria-labelledby="consultingIntakeTitle" aria-busy="false">
+            <div class="consulting-heading-row">
+                <div>
+                    <h1 id="consultingIntakeTitle" class="page-title">🎓 정시 컨설팅 접수·입금 관리</h1>
+                    <p class="consulting-caption">입금 정보가 정확히 일치하는 경우에만 승인하세요. 승인 시 초대 링크와 인증코드 발송이 예약됩니다.</p>
+                </div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingPaymentReview()">새로고침</button>
+            </div>
+            <div id="consultingStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div id="consultingActionStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <p class="consulting-caption">목록에는 입금 확인 대기·보류 건을 최대 100건 표시합니다. 승인·거절한 건은 신청 ID로 다시 조회하세요. 초대 발급과 실제 발송 성공은 별개입니다.</p>
+            <form class="consulting-lookup" onsubmit="event.preventDefault(); lookupConsultingApplication();">
+                <label for="consultingApplicationLookup">신청 ID로 상세 조회</label>
+                <div class="consulting-lookup-row">
+                    <input id="consultingApplicationLookup" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="APP_..." required>
+                    <button type="submit" class="consulting-btn consulting-btn-secondary">조회</button>
+                </div>
+            </form>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>접수</th><th>학생</th><th>입금자</th><th>예정 금액</th><th>상태</th><th>확인</th></tr></thead>
+                    <tbody id="consultingPaymentReviewBody"><tr><td colspan="6" class="empty-msg">메뉴를 열면 검수 대기 건을 불러옵니다.</td></tr></tbody>
+                </table>
+            </div>
+            <section id="consultingApplicationDetail" class="consulting-detail" hidden aria-labelledby="consultingDetailTitle">
+                <div class="consulting-detail-head">
+                    <h2 id="consultingDetailTitle">신청 상세</h2>
+                    <button type="button" class="consulting-close" onclick="closeConsultingDetail()" aria-label="상세 닫기">×</button>
+                </div>
+                <div id="consultingDetailSummary" class="consulting-detail-grid"></div>
+                <p class="consulting-caption">전화번호와 이메일의 수신 대상을 확인하세요. 실제 계좌 내역의 입금액·시각을 직접 입력한 뒤 승인해야 합니다.</p>
+                <div id="consultingPaymentActions" class="consulting-actions" hidden>
+                    <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액"></label>
+                    <label>입금 시각 (기기 현지 시각)<input id="consultingPaidAt" type="datetime-local" autocomplete="off"></label>
+                    <label class="consulting-check"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
+                    <button id="consultingApproveBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingPayment()">입금 승인 및 초대 발급</button>
+                    <label>보류 사유<select id="consultingHoldReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="PAYER_NAME_MISMATCH">입금자명 불일치</option><option value="AMOUNT_MISMATCH">금액 불일치</option><option value="DUPLICATE_CANDIDATE">중복 신청 확인</option><option value="OTHER">기타</option></select></label>
+                    <button type="button" class="consulting-btn consulting-btn-warning" onclick="holdConsultingPayment()">보류</button>
+                    <label>거절 사유<select id="consultingRejectReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="DUPLICATE_APPLICATION">중복 신청</option><option value="CUSTOMER_CANCELLED">고객 취소</option><option value="OTHER">기타</option></select></label>
+                    <button type="button" class="consulting-btn consulting-btn-danger" onclick="rejectConsultingApplication()">신청 거절</button>
+                </div>
+                <div id="consultingInviteActions" class="consulting-actions" hidden>
+                    <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
+                </div>
+            </section>
+            </section>
+            <div class="consulting-heading-row consulting-material-heading">
+                <div>
+                    <h2 class="page-title">📄 정시 컨설팅 자료 검수</h2>
+                    <p class="consulting-caption">학생이 제출한 조사서와 성적표를 대조한 뒤 보완 요청 또는 검수 완료를 처리합니다.</p>
+                </div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingMaterialReview()">자료 새로고침</button>
+            </div>
+            <div id="consultingMaterialStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>최근 변경</th><th>케이스</th><th>단계</th><th>성적 검수</th><th>확인</th></tr></thead>
+                    <tbody id="consultingMaterialReviewBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 자료 검수 대기 건을 불러옵니다.</td></tr></tbody>
+                </table>
+            </div>
+            <section id="consultingMaterialDetail" class="consulting-detail" hidden aria-labelledby="consultingMaterialDetailTitle">
+                <div class="consulting-detail-head">
+                    <h2 id="consultingMaterialDetailTitle">자료 상세</h2>
+                    <button type="button" class="consulting-close" onclick="closeConsultingMaterialDetail()" aria-label="자료 상세 닫기">×</button>
+                </div>
+                <div id="consultingMaterialSummary" class="consulting-detail-grid"></div>
+                <div class="consulting-material-block"><h3>상담 질문과 지원 조건</h3><div id="consultingMaterialSurvey" class="consulting-material-copy"></div></div>
+                <div class="consulting-material-block"><h3>성적표 파일</h3><div id="consultingMaterialFiles" class="consulting-material-files"></div></div>
+                <div class="consulting-material-block"><h3>검수 성적</h3><div id="consultingVerifiedScores" class="consulting-score-editor"></div></div>
+                <div class="consulting-actions consulting-material-actions">
+                    <label>검수 결과<select id="consultingMaterialResult"><option value="matched">입력과 일치</option><option value="corrected">운영자 정정</option></select></label>
+                    <label class="consulting-material-reason">처리 사유<textarea id="consultingMaterialReason" maxlength="500" placeholder="검수 근거를 기록하세요"></textarea></label>
+                    <label class="consulting-material-reason">차이점(한 줄에 하나)<textarea id="consultingMaterialDifferences" maxlength="3000" placeholder="정정한 항목이 있다면 기록하세요"></textarea></label>
+                    <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="verifyConsultingMaterials()">검수 완료</button>
+                </div>
+                <div class="consulting-actions consulting-material-actions">
+                    <label>보완 사유<select id="consultingSupplementReason"><option value="SCORE_DOCUMENT_UNREADABLE">성적표 판독 불가</option><option value="SCORE_INPUT_MISMATCH">입력과 성적표 불일치</option><option value="MISSING_SCORE_PAGE">성적표 페이지 누락</option><option value="OTHER">기타</option></select></label>
+                    <label class="consulting-material-reason">학생 안내<textarea id="consultingSupplementText" maxlength="500" placeholder="학생이 무엇을 보완해야 하는지 구체적으로 입력하세요"></textarea></label>
+                    <button id="consultingSupplementBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="requestConsultingSupplement()">보완 요청</button>
+                </div>
+            </section>
+            <div class="consulting-heading-row consulting-schedule-heading">
+                <div>
+                    <h2 class="page-title">🗓️ 서면상담 일정 배정</h2>
+                    <p class="consulting-caption">상담사 가능 시간을 생성한 뒤, 학생 후보를 점수 순으로 확인하고 최종 확정합니다.</p>
+                </div>
+            </div>
+            <div id="consultingScheduleStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <div class="consulting-schedule-tools">
+                <section>
+                    <h3>상담사 slot 생성</h3>
+                    <div class="consulting-lookup-row">
+                        <input id="consultingScheduleCounselorId" type="text" autocomplete="off" placeholder="상담사 ID">
+                        <button id="consultingGenerateSlotsBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="generateConsultingSlots()">7일 slot 생성</button>
+                    </div>
+                </section>
+                <section>
+                    <h3>케이스 배정 후보</h3>
+                    <div class="consulting-lookup-row">
+                        <input id="consultingScheduleCaseId" type="text" autocomplete="off" placeholder="CASE_...">
+                        <button id="consultingLoadCandidatesBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingScheduleCandidates()">후보 조회</button>
+                    </div>
+                </section>
+            </div>
+            <section id="consultingCurrentSession" class="consulting-current-session" hidden>
+                <div id="consultingCurrentSessionCopy"></div>
+                <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button>
+            </section>
+            <div class="table-responsive">
+                <table class="student-table consulting-table">
+                    <thead><tr><th>순위</th><th>일시</th><th>상담사</th><th>학생 우선순위</th><th>점수</th><th>확정</th></tr></thead>
+                    <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="6" class="empty-msg">케이스 ID로 배정 후보를 조회해주세요.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="section-matching" class="content-section">
             <h1 class="page-title">🤝 튜터 매칭 관리</h1>
             
@@ -575,7 +710,7 @@
     <script src="/js/shared/api.js?v=20260602f"></script>
     <script src="/js/shared/store.js?v=20260524c"></script>
     <script src="/js/auth.js?v=20260602f"></script>
-    <script src="/js/admin_ui.js?v=20260524c"></script>
+    <script src="/js/admin_ui.js?v=20261020a"></script>
     <script src="/js/admin/stats.js?v=20260526a"></script>
     <script src="/js/admin/students.js?v=20260527d"></script>
     <script src="/js/admin/qna.js?v=20260524c"></script>
@@ -583,6 +718,10 @@
     <script src="/js/admin/notices.js?v=20260524c"></script>
     <script src="/js/admin/matching.js?v=20260524c"></script>
     <script src="/js/admin/modals.js?v=20260524c"></script>
+    <script src="/js/admin/consulting.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
+    <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

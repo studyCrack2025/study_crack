@@ -127,6 +127,7 @@ function toggleSubmenu(id) {
 }
 
 function showSection(sectionName) {
+    if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.menu-item > a').forEach(el => { el.style.backgroundColor = ''; el.style.color = '#cbd5e1'; });
     document.querySelectorAll('.submenu li a').forEach(el => { el.style.color = '#94a3b8'; });
@@ -147,7 +148,8 @@ function showSection(sectionName) {
 
     const secMap = {
         'students': 'section-students', 'dashboard': 'section-dashboard', 'advanced-stats': 'section-advanced-stats',
-        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching'
+        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching',
+        'consulting': 'section-consulting'
     };
 
     if (secMap[sectionName]) {
@@ -162,6 +164,10 @@ function showSection(sectionName) {
     } else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications') { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
+    else if (sectionName === 'consulting') {
+        loadConsultingPaymentReview();
+        loadConsultingMaterialReview();
+    }
 }
 
 window.showQnaSection = function(status) {

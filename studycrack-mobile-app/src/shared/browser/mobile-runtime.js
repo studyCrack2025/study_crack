@@ -64,6 +64,26 @@ export function getMobileRootElement() {
   return browser?.document?.getElementById?.('root') || browser?.document?.body || null;
 }
 
+export function getMobileAppSurface() {
+  return getBrowser()?.document?.body?.dataset?.appSurface || '';
+}
+
+export function getConsultingRuntimeContext() {
+  const browser = getBrowser();
+  let userRole = '';
+  try { userRole = browser?.localStorage?.getItem?.('userRole') || ''; } catch (_error) {}
+  return {
+    apiFetch: browser?.apiFetch || null,
+    consultingApiUrl: browser?.CONFIG?.api?.consulting || '',
+    pdfApiUrl: browser?.CONFIG?.api?.pdf || '',
+    fileApiUrl: browser?.CONFIG?.api?.file || '',
+    fetchImpl: browser?.fetch?.bind(browser) || globalThis.fetch,
+    hasClientSession: browser?.hasClientSession || (() => false),
+    publicApiUrl: browser?.CONFIG?.api?.consultingPublic || '',
+    userRole
+  };
+}
+
 export function persistMobileUserRole(role) {
   try {
     getBrowser()?.localStorage?.setItem?.('userRole', String(role || ''));

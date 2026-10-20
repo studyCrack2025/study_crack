@@ -175,7 +175,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                     localStorage.setItem('tutorial_completed', 'true');
                 } else {
                     localStorage.removeItem('tutorial_completed');
-                    const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
+                    const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success', '/2027-jungsi-consulting/start'];
                     const currentPath = window.location.pathname;
                     if (!exemptPaths.some(p => currentPath.startsWith(p))) {
                         alert('튜토리얼이 완료되지 않아 튜토리얼 페이지로 이동합니다.');
@@ -250,10 +250,18 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
 
     localStorage.setItem('userRole', role);
 
+    let authReturnUrl = null;
+    try {
+        const value = new URLSearchParams(window.location.search).get('returnUrl') || '';
+        if (isSafeAuthReturnPath(value)) authReturnUrl = value || null;
+    } catch (_) { authReturnUrl = null; }
+
     if (eventType === 'signup') {
         if (role === 'tutor') {
             alert(`${userName} 선생님, 가입이 완료되었습니다!`);
             window.location.href = '/mypage/tutor'; // 튜터는 가입 후 튜터 전용 페이지로
+        } else if (authReturnUrl) {
+            window.location.replace(authReturnUrl);
         } else {
             // 학생은 웰컴 페이지로, 프로모 코드가 있다면 쿼리 파라미터 포함
             if (promoCode) {
@@ -268,12 +276,7 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     if (eventType === 'login') {
         // 모바일 앱 등에서 ?returnUrl=로 복귀 지점 전달 시 우선 이동.
         // open-redirect 방지: 동일 출처 절대경로(/...)만 허용한다.
-        let returnUrl = null;
-        try {
-            const raw = new URLSearchParams(window.location.search).get('returnUrl');
-            const decoded = raw ? decodeURIComponent(raw) : '';
-            if (decoded && decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) returnUrl = decoded;
-        } catch (_) { /* 파싱 실패 시 기본 라우팅 */ }
+        const returnUrl = authReturnUrl;
 
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
@@ -934,10 +937,9 @@ function handleSignIn() {
     // 관리자 로그인과 같은 방식으로 계정 정보를 확인한다.
     const prevCognitoUser = userPool.getCurrentUser();
     if (prevCognitoUser) prevCognitoUser.signOut();
-    clearClientSession();
+    const scope = beginClientLogin();
 
     const authData = { Username: email, Password: password };
-    const scope = captureClientSession();
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
     const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
@@ -1151,7 +1153,8 @@ window.handleSocialLogin = function(provider) {
     }
 
     try {
-        navigateSocialLogin(createSocialLoginUrl({ provider }));
+        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
+        navigateSocialLogin(createSocialLoginUrl({ provider, returnUrl: isSafeSocialReturnPath(returnUrl) ? returnUrl : '' }));
     } catch (_) {
         discardSocialLoginAttempt();
         buttons.forEach(btn => { btn.disabled = false; });

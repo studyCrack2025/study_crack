@@ -143,6 +143,12 @@ const requestTypeGroups = [
 ];
 const requestTypeValues = requestTypeGroups.flatMap((group) => Object.values(group));
 assert.equal(new Set(requestTypeValues).size, requestTypeValues.length, 'Request type values must have one owner.');
+const uiContract = JSON.parse(await readFile(new URL('../fixtures/ui-contract.json', import.meta.url), 'utf8'));
+const consultingV2RequestTypes = uiContract.consultingV2.requestTypes;
+assert.equal(new Set(consultingV2RequestTypes).size, consultingV2RequestTypes.length, 'Consulting v2 request types must be unique.');
+assert.equal(consultingV2RequestTypes.every((value) => value.includes('_v2_')), true, 'Consulting v2 request types must be explicitly versioned.');
+assert.equal(consultingV2RequestTypes.some((value) => /feedback|final_result/.test(value)), false, 'Removed consulting feedback/final-result requests must stay absent.');
+assert.equal(consultingV2RequestTypes.some((value) => requestTypeValues.includes(value)), false, 'Consulting v2 contract must not collide with an existing request owner before implementation.');
 const requestConsumers = [
   ...apiModules,
   'src/features/session/auth-service.js',

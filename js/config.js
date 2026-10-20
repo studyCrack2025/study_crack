@@ -23,6 +23,8 @@ const CONFIG = {
         report:         `${API_BASE}/api/report`,
         game:           `${API_BASE}/api/game`,
         analysis:       `${API_BASE}/api/analysis`,
+        consulting:     `${API_BASE}/api/consulting`,
+        consultingPublic: `${API_BASE}/api/consulting-public`,
         payment:        `${API_BASE}/api/payment`,
         auth:           `${API_BASE}/api/auth`,
         payment_return: `${API_BASE}/api/payment-return`,

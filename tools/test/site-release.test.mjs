@@ -56,6 +56,30 @@ test('identical inputs produce identical manifest identities', async (t) => {
   assert.equal(first.digest, second.digest);
 });
 
+test('nested clean URLs preserve both parent and child bytes without a file-directory collision', async (t) => {
+  const ctx = await fixture(t);
+  const aliases = { ...policy.aliases, '2027-jungsi-consulting': 'index.html', '2027-jungsi-consulting/start': 'studycrack-mobile.html', '2027-jungsi-consulting/start/help': 'index.html' };
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ ...policy, aliases }));
+  const { digest, manifest } = await buildSiteRelease({ ...ctx, commit, release });
+  const entries = new Map(manifest.files.map(entry => [entry.path, entry]));
+  for (const [alias, source] of Object.entries(aliases)) {
+    assert.equal(entries.get(alias).sha256, entries.get(source).sha256);
+    assert.equal(entries.get(alias).bytes, entries.get(source).bytes);
+  }
+  assert.equal((await verifySiteRelease({ ...ctx, commit, expectedDigest: digest })).digest, digest);
+  const commands = createPublishCommands(path.join(ctx.output, 'site'), 'test.example', aliases);
+  for (const alias of ['2027-jungsi-consulting', '2027-jungsi-consulting/start']) {
+    const command = commands.find(args => args[3] === `s3://test.example/${alias}`);
+    assert.equal(command[2], path.join(ctx.output, 'site', aliases[alias]));
+    assert.ok(command.includes('text/html; charset=utf-8'));
+    assert.ok(command.includes(NO_CACHE));
+  }
+  assert.ok(commands.at(-1)[2].endsWith('/release.json'));
+  const broken = { ...manifest, files: manifest.files.map(entry => entry.path === '2027-jungsi-consulting' ? { ...entry, sha256: '0'.repeat(64) } : entry) };
+  await writeFile(path.join(ctx.output, 'manifest.json'), JSON.stringify(broken));
+  await assert.rejects(verifySiteRelease({ ...ctx, commit }), /Artifact checksum mismatch/);
+});
+
 test('public release identity is generated consistently without exposing the file manifest', async (t) => {
   const ctx = await fixture(t);
   await buildSiteRelease({ ...ctx, commit, release });

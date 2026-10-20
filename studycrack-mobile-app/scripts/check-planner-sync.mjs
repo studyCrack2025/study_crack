@@ -36,7 +36,7 @@ function createFixtureHandlers({ plannerRepository: repo, now }) {
 }
 const emptyGrowth = () => ({ supported: true, policyVersion: 'planner-days-v1', countingSince: '2026-09-12', revision: 0, asOf: '2026-09-12T03:00:00.000Z', historyStatus: 'not_available', validDayCount: 0, highestUnlockedStage: null, nextStageDays: 1 });
 const createPlannerHandlers = process.env.STUDYCRACK_PLANNER_BACKEND_CONTRACT === '1'
-  ? (await import('../../backend-backup/StudyCrack_Gamification/src/handlers/planner-handlers.mjs')).createPlannerHandlers : createFixtureHandlers;
+  ? (await import('../../backend-backup/lambda/StudyCrack_Gamification/src/handlers/planner-handlers.mjs')).createPlannerHandlers : createFixtureHandlers;
 
 const draft = { kind: 'save', id: 'task_1', date: '2026-09-12', subject: '국어', title: '독서' };
 function fixture() {
