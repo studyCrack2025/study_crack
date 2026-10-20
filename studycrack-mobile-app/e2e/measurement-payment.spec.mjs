@@ -54,3 +54,23 @@ test('retired promotion stops before payment lookup even when the URL contains a
   expect(await purchases(page)).toHaveLength(0);
   expect(new URL(page.url()).search).toBe('');
 });
+
+test('slow identity measurement does not disable confirmed status recovery', async ({ page }) => {
+  await setup(page);
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  await page.route('**/api/user', async route => {
+    await gate;
+    await route.fulfill({ json: { role: 'student', userId: 'e2e-student' } });
+  });
+  try {
+    await page.goto(`/success.html?paymentIntentId=${id}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#successTitle')).toHaveText('결제와 이용권 반영이 완료되었습니다');
+    await expect(page.locator('#statusRetry')).toBeEnabled();
+    expect(await purchases(page)).toHaveLength(0);
+    await page.locator('#statusRetry').click();
+    await expect(page.locator('#statusRetry')).toBeEnabled();
+    release();
+    await expect.poll(async () => (await purchases(page)).length).toBe(1);
+  } finally { release(); }
+});

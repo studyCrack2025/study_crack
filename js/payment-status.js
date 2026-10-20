@@ -45,6 +45,18 @@
             if (event.key === null || ['userId', 'accessToken', 'token', 'refreshToken'].includes(event.key)) invalidate();
         });
 
+        async function measurePaid(data, ticket, startedAccount) {
+            if (data.tier === 'TEST') return;
+            try {
+                const verifiedId = await resolveMeasurementIdentity();
+                if (verifiedId && ticket === generation && startedAccount === account()) {
+                    window.SCTrack?.identify(verifiedId);
+                    await window.SCMeasurementV2?.purchase({ status: 'paid', transaction_id: id,
+                        value: data.amount, currency: 'KRW', plan_type: data.tier.toLowerCase() });
+                }
+            } catch (_) {}
+        }
+
         async function refresh() {
             if (inFlight || !validId) return;
             inFlight = true;
@@ -86,16 +98,7 @@
                     } else if (['pending', 'processing'].includes(data.fulfillmentStatus)) {
                         show('결제 완료 · 이용권 반영 대기', '결제 승인은 확인되었습니다. 다시 결제하지 마세요. 잠시 후 상태를 다시 확인하고, 계속 지연되면 문의해주세요.');
                     } else throw new Error('unknown fulfillment');
-                    if (data.tier !== 'TEST') {
-                        try {
-                            const verifiedId = await resolveMeasurementIdentity();
-                            if (verifiedId && ticket === generation && startedAccount === account()) {
-                                window.SCTrack?.identify(verifiedId);
-                                await window.SCMeasurementV2?.purchase({ status: 'paid', transaction_id: id,
-                                    value: data.amount, currency: 'KRW', plan_type: data.tier.toLowerCase() });
-                            }
-                        } catch (_) {}
-                    }
+                    void measurePaid(data, ticket, startedAccount);
                 } else if (data.status === 'vbank_ready') {
                     show('입금을 기다리고 있어요', '서버에서 확인한 입금 계좌입니다. 이미 입금했다면 추가로 입금하지 말고 상태를 다시 확인해주세요.');
                     const details = data.vbank;

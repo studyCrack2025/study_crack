@@ -6,7 +6,7 @@
 (function (root) {
   'use strict';
   if (root.SCMeasurementV2) return;
-  var initialized = false, identity = null, lastPage = null;
+  var initialized = false, identity = null, identityRevision = 0, lastPage = null;
   var purchases = Object.create(null), first = null;
   var allowed = /^(cta_click|sign_up|login|score_input_start|score_input_complete|analysis_view|university_recommendation_view|score_impact_view|learning_profile_start|learning_profile_complete|target_university_set|plan_view|begin_checkout|download_report_click|tutorial_begin|tutorial_complete|tutorial_skip)$/;
   function cleanId(value) {
@@ -60,7 +60,7 @@
   function setIdentity(userId) {
     requireReady(); var next = cleanId(userId);
     if (next === identity) return;
-    identity = next;
+    identity = next; identityRevision++;
     push('sc_identity_changed',envelope(null));
   }
   function pageView() {
@@ -88,9 +88,9 @@
   async function purchase(serverVerifiedOrder) {
     requireReady();
     if (!serverVerifiedOrder || serverVerifiedOrder.status !== 'paid') throw new Error('A server-confirmed paid order is required');
-    var ec = ecommerce(serverVerifiedOrder, true), key = 'sc_purchase_v2:' + ec.transaction_id, expectedIdentity = identity;
+    var ec = ecommerce(serverVerifiedOrder, true), key = 'sc_purchase_v2:' + ec.transaction_id, expectedIdentityRevision = identityRevision;
     function dispatch() {
-      if (identity !== expectedIdentity) return false;
+      if (identityRevision !== expectedIdentityRevision) return false;
       if (purchases[key] || read(key)) return false;
       // At-most-once browser dispatch; this is not an acknowledgement from GA4.
       purchases[key] = true; write(key,'dispatched');
