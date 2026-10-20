@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { fetchUniversityCatalog, fetchUniversityRecommendations } from './api.js';
 
-export function useUniversityResources({ examData, examMode, excludeTargets, getApiBinding, retryTick = 0, savedStream = '', screen, setState, userReady } = {}) {
+export function useUniversityResources({ examData, examMode, excludeTargets, getApiBinding, recommendationRetryTick = 0, retryTick = 0, savedStream = '', screen, setState, userReady } = {}) {
   const catalogRequestRef = useRef(0);
   const recommendationRequestRef = useRef(0);
 
   useEffect(() => {
-    if (screen !== 'addUniversity') return undefined;
+    if (screen !== 'addUniversity' || !userReady) return undefined;
     const requestKey = catalogRequestRef.current + 1;
     catalogRequestRef.current = requestKey;
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
@@ -21,10 +21,10 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       controller?.abort();
       if (catalogRequestRef.current === requestKey) catalogRequestRef.current += 1;
     };
-  }, [getApiBinding, retryTick, screen, setState]);
+  }, [getApiBinding, retryTick, screen, setState, userReady]);
 
   useEffect(() => {
-    if (screen !== 'addUniversity' || !userReady) return undefined;
+    if (!['addUniversity', 'ob4'].includes(screen) || !userReady) return undefined;
     const requestKey = recommendationRequestRef.current + 1;
     recommendationRequestRef.current = requestKey;
     const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
@@ -41,7 +41,7 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       const recommendations = result.data || [];
       setState({
         universityRecommendations: recommendations,
-        universityRecommendationStatus: result.ok && recommendations.length ? 'ready' : 'empty',
+        universityRecommendationStatus: !result.ok ? 'error' : recommendations.length ? 'ready' : 'empty',
         universityRecommendationError: result.error || ''
       });
     });
@@ -49,5 +49,5 @@ export function useUniversityResources({ examData, examMode, excludeTargets, get
       controller?.abort();
       if (recommendationRequestRef.current === requestKey) recommendationRequestRef.current += 1;
     };
-  }, [examData, examMode, excludeTargets, getApiBinding, savedStream, screen, setState, userReady]);
+  }, [examData, examMode, excludeTargets, getApiBinding, recommendationRetryTick, savedStream, screen, setState, userReady]);
 }

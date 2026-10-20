@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createPublishCommands, loadPublicPolicy } from './site-release.mjs';
 
 const repoRoot = new URL('../', import.meta.url);
 const expectedSitemapUrls = [
@@ -170,38 +171,32 @@ assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages mus
 
 const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
-assert.equal(targetImage[0].alt, '', 'the decorative classroom background must have empty alt text');
-assert.doesNotMatch(home, /href=["']\/promotion\/kcc01["']/, 'the homepage must not link to the retired KCC promotion');
-assert.doesNotMatch(home, /kccEventBanner-modal/, 'the homepage must not render the retired KCC promotion modal');
-const septemberUpdateModal = startTags(home, 'div').filter((tag) => tag.id === 'septemberUpdateBanner-modal');
-const septemberUpdateCta = startTags(home, 'a').filter((tag) => tag.id === 'septemberUpdateCta');
-assert.equal(septemberUpdateModal.length, 1, 'the homepage must render exactly one September mock-exam update modal');
-assert.equal(septemberUpdateCta.length, 1, 'the September update modal must have exactly one score-entry CTA');
-assert.equal(septemberUpdateCta[0].href, '/survey?exam=sep', 'the September update CTA must select the September score form');
-assert.match(home, /성적표 발표 전 임시 추정 데이터입니다/, 'the September update modal must disclose that score conversions are provisional');
-assert.match(homeScript, /initSeptemberUpdateBanner\(\)/, 'the homepage must initialize the September update modal');
-assert.match(homeScript, /septemberMockUpdateHideUntil/, 'the September update modal must use its own dismissal key');
-assert.match(surveyScript, /requestedExam !== 'sep'/, 'the survey must accept only the approved September deep-link exam value');
+assert.equal(targetImage[0].alt, '', 'the decorative classroom background must use an empty alt attribute');
+assert.ok(String(targetImage[0].class || '').split(/\s+/).includes('bg-img'), 'the classroom image must remain a decorative background');
+for (const src of ['/assets/basic-v2/result-position.png', '/assets/basic-v2/result-effects.png', '/assets/basic-v2/result-priority.png']) {
+  const images = startTags(home, 'img').filter(tag => tag.src === src);
+  assert.equal(images.length, 1, `homepage result image must appear exactly once: ${src}`);
+  assert.ok(String(images[0].alt || '').trim(), `informative result image must have descriptive alt text: ${src}`);
+}
 
-const notFoundHead = headSource(notFound);
-const notFoundRobots = findMeta(notFoundHead, 'robots');
-assert.ok(elementText(notFoundHead, 'title'), '404.html must have a non-empty title');
-assert.equal(notFoundRobots.length, 1, '404.html must have exactly one robots meta tag');
-assert.equal(String(notFoundRobots[0].content || '').toLowerCase().replace(/\s+/g, ''), 'noindex,follow', '404.html must use noindex,follow');
-assert.equal(findCanonical(notFoundHead).length, 0, '404.html must not declare a canonical URL');
-assert.equal(findPropertyMeta(notFoundHead, 'og:url').length, 0, '404.html must not declare an og:url');
-assert.ok(elementText(notFound, 'h1'), '404.html must have a visible primary heading');
-assert.ok(startTags(notFound, 'a').some((tag) => tag.href === '/'), '404.html must offer a route back home');
+const publicPolicy = await loadPublicPolicy();
+assert.equal(publicPolicy.aliases['promotion/kcc01'], undefined, 'retired promotion must not be published');
+for (const file of ['promotion_kcc01.html', 'css/promotion-kcc01.css', 'js/promotion-kcc01.js']) {
+  assert.ok(!publicPolicy.files.includes(file), `retired promotion must stay outside the artifact: ${file}`);
+}
+assert.doesNotMatch(home + homeScript, /\/promotion\/kcc01|StudyCrack\s*X\s*KCC/, 'home must not restore the retired promotion');
+assert.ok(publicPolicy.files.includes('404.html') && publicPolicy.files.includes('css/not-found.css'), 'not-found page must be published');
+assert.equal(findMeta(headSource(notFound), 'robots')[0]?.content, 'noindex,follow', 'not-found page must remain noindex');
+assert.equal(publicPolicy.aliases['basic-preview'], 'basic-preview.html', 'preview clean URL must be published');
+const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
+assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
+assert.ok(publishCommands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')), 'preview clean URL must use an HTML content type');
 
-assert.ok(workflow.includes('--exclude "promotion_kcc01.html"'), 'deploy workflow must exclude the retained promotion source');
-assert.doesNotMatch(workflow, /aws s3 cp promotion_kcc01\.html/, 'deploy workflow must not publish the retained promotion source');
-assert.ok(workflow.includes('--key "promotion/kcc01"'), 'deploy workflow must delete the retired clean URL object');
-assert.ok(workflow.includes('--key "promotion_kcc01.html"'), 'deploy workflow must delete the retired legacy object');
 assert.doesNotMatch(sharedApi, /['"]\/promotion(?:\/kcc01|_kcc01(?:\.html)?)['"]/, 'retired promotion routes must not be public session routes');
-const successController = await read('js/payment-success-v2.js');
-assert.match(successPage, /js\/payment-success-v2\.js/, 'success page must load the verified payment controller');
+const successController = await read('js/payment-status.js');
+assert.match(successPage, /js\/payment-status\.js/, 'success page must load the verified payment controller');
 assert.match(successController, /종료된 프로모션입니다/, 'legacy KCC success URLs must show the retired state');
 assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
-assert.match(successController, /if \(isRetiredKccPromo\) \{[\s\S]*?replaceState\(\{\}, root\.document\.title, root\.location\.pathname\);[\s\S]*?return;/, 'retired promotion must clear payment-looking query and stop before API lookup');
+assert.match(successController, /if \(retiredPromo\) \{[\s\S]*?replaceState\(\{\}, '', location\.pathname\);[\s\S]*?return;/, 'retired promotion must clear payment-looking query and stop before API lookup');
 
-console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 3 noindex pages.`);
+console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);

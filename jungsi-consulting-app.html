@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fb">
+  <meta name="robots" content="noindex,nofollow">
+  <script>
+    (function() {
+      try {
+        var params = new URLSearchParams(window.location.hash.slice(1));
+        var applicationId = params.get('app') || '';
+        var token = params.get('invite') || '';
+        if (/^APP_[0-9a-f-]{36}$/i.test(applicationId) && /^[A-Za-z0-9_-]{43}$/.test(token) && crypto && typeof crypto.randomUUID === 'function') {
+          var previous = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null');
+          sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify({ version: 1, applicationId: applicationId, token: token, idempotencyKey: previous && previous.applicationId === applicationId && previous.idempotencyKey ? previous.idempotencyKey : 'claim_' + crypto.randomUUID(), capturedAt: Date.now() }));
+        }
+      } catch (_) {}
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    })();
+  </script>
+  <title>StudyCrack 2027 정시 컨설팅</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/css/jungsi-consulting-app-shell.css">
+  <link rel="stylesheet" href="/studycrack-mobile-app/dist/studycrack-mobile.css">
+</head>
+<body class="jungsi-app-document" data-app-surface="consulting-2027">
+  <div id="root"><main class="jungsi-app-boot"><p role="status">컨설팅 화면을 준비하고 있습니다.</p></main></div>
+  <script src="/js/config.js"></script>
+  <script src="/js/shared/api.js"></script>
+  <script type="module" src="/studycrack-mobile-app/dist/studycrack-mobile.bundle.js"></script>
+</body>
+</html>

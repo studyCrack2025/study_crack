@@ -1,3 +1,5 @@
+import { setScoreCardDom as updateScoreCard } from './score-card-view.js';
+
 function noop() {}
 
 function getDocument(ctx) {
@@ -48,6 +50,9 @@ function findNearestHomeCard(ctx, slider) {
 }
 
 function resetGestureState(ctx, previousTarget = '') {
+  if (previousTarget === 'score') {
+    updateScoreCard(getRefValue(ctx.touchCardRef));
+  }
   setRefValue(ctx.touchStartXRef, null);
   setRefValue(ctx.touchStartYRef, null);
   setRefValue(ctx.touchLastXRef, null);
@@ -75,7 +80,7 @@ export function createGestureHandlers(ctx) {
     setHomeSlideDom = noop,
     setHomeSlideIndex,
     setHomeSlideMotion,
-    setScoreCardDom = noop,
+    setScoreCardDom = updateScoreCard,
     setScoreDragOffset,
     setScoreSlideMotion,
     suppressClickUntilRef,
@@ -189,7 +194,7 @@ export function createGestureHandlers(ctx) {
       return true;
     }
     if (Math.abs(delta) < swipeThreshold) {
-      setRefValue(ctx.touchTargetRef, '');
+      resetGestureState(ctx, touchTarget);
       return true;
     }
 
@@ -217,6 +222,8 @@ export function createGestureHandlers(ctx) {
           if (delta < -threshold) nextView = 'target';
           if (delta > threshold) nextView = 'current';
           setScoreCardDom(card, nextView);
+          setActiveScoreView(nextView);
+          setScoreDragOffset(0);
           clearCardGesture(card);
         }
       } else {

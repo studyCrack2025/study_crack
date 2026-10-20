@@ -1,11 +1,13 @@
-import { clearMobileAuthArtifacts } from '../features/session/auth-service.js';
+import { clearMobileAuthArtifacts, verifyPassword } from '../features/session/auth-service.js';
 import { convertExamScores } from '../features/analysis/api.js';
 import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
+import { getScoreStepErrors } from '../features/analysis/score-edit-validation.js';
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
+import { withOperationLock } from '../shared/async/operation-lock.js';
 
 const MBTI_QUESTION_COUNT = MBTI_QUESTIONS.length;
-const KAKAO_SUPPORT_URL = 'http://pf.kakao.com/_wxjxcgn';
+const KAKAO_SUPPORT_URL = 'https://pf.kakao.com/_wxjxcgn';
 
 function noop() {}
 
@@ -76,69 +78,39 @@ async function postJson({ apiFetch, url, payload }) {
 }
 
 async function clearMobileAuthSession(ctx, authApiUrl) {
+  const win = getWindow(ctx);
+  try { clearMobileAuthArtifacts(win); } catch (_error) {}
+  const scope = win.captureClientSession?.();
+  if (typeof win.clearServerSessionCookies === 'function') {
+    await win.clearServerSessionCookies({ includeLocal: true });
+    return scope;
+  }
+  const controller = typeof globalThis.AbortController === 'function' ? new globalThis.AbortController() : null;
+  let timeout;
   if (authApiUrl) {
     try {
-      if (typeof ctx.apiFetch === 'function') {
-        await ctx.apiFetch(authApiUrl, {
-          method: 'POST',
-          body: JSON.stringify({ type: 'logout' })
-        });
-      } else {
-        await getWindow(ctx).fetch?.(authApiUrl, {
+      const request = typeof win.fetch === 'function' ? win.fetch.bind(win) : ctx.apiFetch;
+      await Promise.race([
+        Promise.resolve().then(() => request?.(authApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ type: 'logout' })
-        });
-      }
+          body: JSON.stringify({ type: 'logout' }),
+          signal: controller?.signal
+        })),
+        new Promise(resolve => { timeout = globalThis.setTimeout(() => { controller?.abort(); resolve(); }, 5000); })
+      ]);
     } catch (_error) {}
+    finally { globalThis.clearTimeout(timeout); }
   }
-  try {
-    clearMobileAuthArtifacts(getWindow(ctx));
-  } catch (_error) {}
+  return scope;
 }
 
-function buildSocialAuthUrl(ctx, provider) {
+function buildSocialAuthUrl(ctx, provider, purpose = 'mobile') {
   const win = getWindow(ctx);
-  const social = win.CONFIG?.social;
-  const clientId = social?.[provider]?.clientId;
-  const callbackUrl = social?.callbackUrl;
-  if (!clientId || !callbackUrl) return '';
-  const bytes = new Uint8Array(16);
-  const cryptoObj = win.crypto || globalThis.crypto;
-  cryptoObj?.getRandomValues?.(bytes);
-  const nonce = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('') || String(Date.now());
-  const state = `${nonce}|${provider}|mobile`;
-  getSessionStorage(ctx)?.setItem?.('socialState', state);
-  getSessionStorage(ctx)?.setItem?.('socialLinkMode', 'true');
-  const returnUrl = getMobileReturnPath(ctx);
-  getSessionStorage(ctx)?.setItem?.('socialReturnUrl', returnUrl);
-  getSessionStorage(ctx)?.setItem?.('socialEntry', 'mobile');
   try {
-    getWindow(ctx).localStorage?.setItem?.('socialReturnUrl', returnUrl);
-    getWindow(ctx).localStorage?.setItem?.('socialEntry', 'mobile');
-  } catch (_) {}
-  if (provider === 'google') {
-    return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      response_type: 'code',
-      scope: 'openid email profile',
-      state,
-      access_type: 'offline',
-      prompt: 'select_account'
-    })}`;
-  }
-  if (provider === 'naver') {
-    return `https://nid.naver.com/oauth2.0/authorize?${new URLSearchParams({
-      response_type: 'code',
-      client_id: clientId,
-      redirect_uri: callbackUrl,
-      state,
-      auth_type: 'reauthenticate'
-    })}`;
-  }
-  return '';
+    return win.createSocialLoginUrl({ provider, purpose, returnUrl: getMobileReturnPath(ctx) });
+  } catch (_) { return ''; }
 }
 
 function isInvalidRequiredSelectValue(value) {
@@ -184,17 +156,17 @@ function readScoreEditValues(ctx) {
   const state = ctx.scoreEditState || {};
   return {
     koreanType: getInputValue(ctx, 'v2e-korean-type', state.korean?.type || ''),
-    koreanCommon: getInputValue(ctx, 'v2e-korean-common', state.korean?.common || ''),
-    koreanElective: getInputValue(ctx, 'v2e-korean-elective', state.korean?.elective || ''),
+    koreanCommon: getInputValue(ctx, 'v2e-korean-common', state.korean?.common ?? ''),
+    koreanElective: getInputValue(ctx, 'v2e-korean-elective', state.korean?.elective ?? ''),
     mathType: getInputValue(ctx, 'v2e-math-type', state.math?.type || ''),
-    mathCommon: getInputValue(ctx, 'v2e-math-common', state.math?.common || ''),
-    mathElective: getInputValue(ctx, 'v2e-math-elective', state.math?.elective || ''),
+    mathCommon: getInputValue(ctx, 'v2e-math-common', state.math?.common ?? ''),
+    mathElective: getInputValue(ctx, 'v2e-math-elective', state.math?.elective ?? ''),
     english: getInputValue(ctx, 'v2e-english', state.english || ''),
     history: getInputValue(ctx, 'v2e-history', state.history || ''),
     inquiry1Subject: getInputValue(ctx, 'v2e-inq1-subject', state.inquiry1?.subject || ''),
     inquiry2Subject: getInputValue(ctx, 'v2e-inq2-subject', state.inquiry2?.subject || ''),
-    inquiry1Score: getInputValue(ctx, 'v2e-inq1-score', state.inquiry1?.score || ''),
-    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score || '')
+    inquiry1Score: getInputValue(ctx, 'v2e-inq1-score', state.inquiry1?.score ?? ''),
+    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score ?? '')
   };
 }
 
@@ -321,38 +293,20 @@ function persistUser(ctx, patch) {
   return user;
 }
 
-// 현재 과목만 검증. 통과 시 '' 반환, 실패 시 안내 문구.
 function validateScoreSubject(step, values) {
-  if (step === 1) {
-    if (!String(values.koreanCommon).trim() || !String(values.koreanElective).trim()) return '국어 공통/선택 원점수를 모두 입력해주세요.';
-    if (!isValidRawScore(values.koreanCommon, 76) || !isValidRawScore(values.koreanElective, 24)) return '국어 점수를 정확히 입력해주세요.';
-  }
-  if (step === 2) {
-    if (!String(values.mathCommon).trim() || !String(values.mathElective).trim()) return '수학 공통/선택 원점수를 모두 입력해주세요.';
-    if (!isValidRawScore(values.mathCommon, 74) || !isValidRawScore(values.mathElective, 26)) return '수학 점수를 정확히 입력해주세요.';
-  }
-  if (step === 3 && !Number(values.english || 0)) return '영어 등급을 선택해주세요.';
-  if (step === 4 && !Number(values.history || 0)) return '한국사 등급을 선택해주세요.';
-  if (step === 5) {
-    if (isInvalidRequiredSelectValue(values.inquiry1Subject) || !String(values.inquiry1Score).trim()) return '탐구 1 과목과 원점수를 입력해주세요.';
-    if (!isValidRawScore(values.inquiry1Score, 50)) return '탐구 1 원점수를 정확히 입력해주세요.';
-  }
-  if (step === 6) {
-    if (isInvalidRequiredSelectValue(values.inquiry2Subject) || !String(values.inquiry2Score).trim()) return '탐구 2 과목과 원점수를 입력해주세요.';
-    if (!isValidRawScore(values.inquiry2Score, 50)) return '탐구 2 원점수를 정확히 입력해주세요.';
-  }
-  return '';
+  return Object.values(getScoreStepErrors(step, values))[0] || '';
 }
 
-// 모달 진입 시 저장된 quantitative[examKey]로 입력 초안을 채운다(재진입 시 기존 값 보임).
+// 저장된 입력값으로 초안을 채운다.
 function seedScoreEditFromQuant(quant) {
   const q = quant || {};
+  const history = q.hist || q.history || {};
   const numStr = (v) => (v === 0 || v === '0' ? '0' : (Number(v) ? String(Number(v)) : ''));
   return {
     korean: { type: q.kor?.opt || '', common: numStr(q.kor?.common), elective: numStr(q.kor?.elective) },
     math: { type: q.math?.opt || '', common: numStr(q.math?.common), elective: numStr(q.math?.elective) },
-    english: q.eng?.grd ? String(q.eng.grd) : '',
-    history: q.hist?.grd ? String(q.hist.grd) : '',
+    english: numStr(q.eng?.grd ?? q.eng?.grade),
+    history: numStr(history.grd ?? history.grade),
     inquiry1: { subject: q.inq1?.name || '', score: numStr(q.inq1?.raw) },
     inquiry2: { subject: q.inq2?.name || '', score: numStr(q.inq2?.raw) }
   };
@@ -413,6 +367,8 @@ export function createProfileHandlers(ctx) {
     setScoreEditOpen,
     setScoreEditState,
     setScoreEditStep,
+    setScoreEditErrors,
+    setScoreEditSaveError,
     setScoreSubjectSaving,
     setScoreExamKey,
     setRankingPeriod,
@@ -420,6 +376,7 @@ export function createProfileHandlers(ctx) {
     setTargetMajor,
     setUser,
     setWithdrawModalOpen,
+    setWithdrawSubmitting,
     persistQualitative = noop,
     persistQuantitative = noop,
     persistNotificationPreferences = noop,
@@ -439,6 +396,22 @@ export function createProfileHandlers(ctx) {
     return result;
   }
 
+  async function saveConfirmedQualitative(qualitative, onSaved) {
+    return withOperationLock(ctx.operationLocksRef, 'profile-qualitative', async () => {
+      let result;
+      try { result = await persistQualitative(qualitative); } catch { result = { ok: false }; }
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+      if (result?.ok !== true) {
+        alert('학습 정보를 저장하지 못했어요. 입력은 유지되니 다시 시도해주세요.');
+        return false;
+      }
+      setUser(prev => ({ ...prev, qualitative }));
+      persistUser({ ...ctx, localStorage: storage }, { qualitative });
+      onSaved?.();
+      return true;
+    });
+  }
+
   return {
     setRankingPeriod({ actionEl }) {
       const period = getData(actionEl, 'ranking-period');
@@ -446,10 +419,16 @@ export function createProfileHandlers(ctx) {
       setRankingPeriod(period);
       return true;
     },
+    retryRanking() {
+      ctx.refreshStudyRanking?.();
+      return true;
+    },
     openScoreEdit() {
       const examKey = scoreExamTypeToKey(ctx.scoreExamType);
       const quant = ctx.user?.quantitative?.[examKey];
       if (quant) setScoreEditState(() => seedScoreEditFromQuant(quant));
+      setScoreEditErrors({});
+      setScoreEditSaveError('');
       setScoreEditOpen(true);
       setScoreEditStep(1);
       return true;
@@ -460,6 +439,7 @@ export function createProfileHandlers(ctx) {
       const next = Number(getData(actionEl, 'step') || 1);
       if (!(next >= 1 && next <= 6)) return false;
       patchCurrentScoreStep(ctx);
+      setScoreEditErrors({});
       setScoreEditStep(Math.min(6, Math.max(1, next)));
       return true;
     },
@@ -469,9 +449,10 @@ export function createProfileHandlers(ctx) {
       const step = Number(ctx.scoreEditStep || 1);
       patchCurrentScoreStep(ctx);
       const values = readScoreEditValues(ctx);
-      const error = validateScoreSubject(step, values);
-      if (error) {
-        alert(error);
+      const errors = getScoreStepErrors(step, values);
+      setScoreEditSaveError('');
+      setScoreEditErrors(errors);
+      if (Object.keys(errors).length) {
         return false;
       }
       if (step < 6) {
@@ -479,85 +460,103 @@ export function createProfileHandlers(ctx) {
         return true;
       }
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
-        alert('시험을 먼저 선택해주세요.');
+        setScoreEditSaveError('시험을 먼저 선택해 주세요.');
         return false;
       }
       for (let subjectStep = 1; subjectStep <= 6; subjectStep += 1) {
-        const subjectError = validateScoreSubject(subjectStep, values);
-        if (subjectError) {
-          alert(subjectError);
+        const subjectErrors = getScoreStepErrors(subjectStep, values);
+        if (Object.keys(subjectErrors).length) {
+          setScoreEditErrors(subjectErrors);
           setScoreEditStep(subjectStep);
           return false;
         }
       }
 
-      setScoreSubjectSaving(true);
-      try {
-        const examKey = scoreExamTypeToKey(ctx.scoreExamType);
-        const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
-        const converted = await convertExamScores({
-          apiFetch: ctx.apiFetch,
-          analysisApiUrl,
-          examMode: examKey,
-          examData: quantitativePatch[examKey]
-        });
-        if (!converted.ok) {
-          alert(converted.error || '성적 환산에 실패했습니다.');
-          return false;
-        }
-        const nextQuantitative = {
-          ...(ctx.user?.quantitative || {}),
-          [examKey]: converted.data
-        };
-        const result = await persistQuantitative(nextQuantitative);
-        if (result && result.ok === false) {
-          alert(result.error || '성적 저장에 실패했습니다.');
-          return false;
-        }
+      return withOperationLock(ctx.operationLocksRef, 'profile-score', async () => {
+        setScoreSubjectSaving(true);
+        try {
+          const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+          const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+          const converted = await convertExamScores({
+            apiFetch: ctx.apiFetch,
+            analysisApiUrl,
+            examMode: examKey,
+            examData: quantitativePatch[examKey]
+          });
+          if (!converted.ok) {
+            if (ctx.isCurrentProfile?.() !== false) setScoreEditSaveError(converted.error || '성적 환산에 실패했어요. 입력은 유지되니 다시 시도해 주세요.');
+            return false;
+          }
+          const nextQuantitative = {
+            ...(ctx.user?.quantitative || {}),
+            [examKey]: converted.data
+          };
+          if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+          const result = await persistQuantitative(nextQuantitative);
+          if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+          if (result?.ok !== true) {
+            setScoreEditSaveError(result?.error || '성적을 저장하지 못했어요. 입력은 유지되니 다시 시도해 주세요.');
+            return false;
+          }
 
-        const nextKo = converted.data.kor.raw;
-        const nextMa = converted.data.math.raw;
-        const nextEnGrade = Number(values.english || 0);
-        const nextEnScore = englishGradeToScore(nextEnGrade);
-        const nextIq1 = converted.data.inq1.raw;
-        const nextIq2 = converted.data.inq2.raw;
-        setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
-        const map = getExamScoresMap();
-        map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
-        saveExamScoresMap(map);
-        setScoreExamKey(examKey);
-        setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
-        persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
-        setScoreEditOpen(false);
-        setScoreEditStep(1);
-        return true;
-      } finally {
-        setScoreSubjectSaving(false);
-      }
+          const nextKo = converted.data.kor.raw;
+          const nextMa = converted.data.math.raw;
+          const nextEnGrade = Number(values.english || 0);
+          const nextEnScore = englishGradeToScore(nextEnGrade);
+          const nextIq1 = converted.data.inq1.raw;
+          const nextIq2 = converted.data.inq2.raw;
+          setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
+          const map = getExamScoresMap();
+          map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
+          saveExamScoresMap(map);
+          setScoreExamKey(examKey);
+          setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
+          persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
+          setScoreEditOpen(false);
+          setScoreEditStep(1);
+          return true;
+        } catch (_error) {
+          if (ctx.isCurrentProfile?.() !== false) setScoreEditSaveError('성적을 저장하지 못했어요. 입력은 유지되니 다시 시도해 주세요.');
+          return false;
+        } finally {
+          setScoreSubjectSaving(false);
+        }
+      });
     },
 
     closeScoreEdit() {
+      setScoreEditErrors({});
+      setScoreEditSaveError('');
       setScoreEditOpen(false);
       setScoreEditStep(1);
       return true;
     },
 
     async saveQualInfo() {
+      const originScreen = ctx.screen;
+      const originButton = globalThis.document?.querySelector('.qual-save-btn');
+      const originUser = ctx.user;
       const values = readQualValues(ctx);
       if (isQualInfoMissing(values)) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return false;
       }
       if (shouldReadOb1FromDom(ctx)) syncIOSSafariQualDomState(ctx, values);
-      const qualitative = buildQualitative(values);
-      setUser((prev) => ({ ...prev, qualitative }));
-      persistUser({ ...ctx, localStorage: storage }, { qualitative });
-      const result = await persistQualitative(qualitative);
-      if (result && result.ok === false) {
-        alert(result.error || '정성조사서 저장에 실패했습니다.');
-        return false;
+      const qualitative = { ...(ctx.user?.qualitative || {}), ...buildQualitative(values) };
+      if (originButton?.disabled) return false;
+      if (originButton) originButton.disabled = true;
+      let saved;
+      try { saved = await saveConfirmedQualitative(qualitative); }
+      finally { if (originButton?.isConnected) originButton.disabled = false; }
+      if (!saved) return false;
+      if (ctx.screen === 'ob1') {
+        goto?.('ob2');
+        return true;
       }
-      alert('정성조사서가 저장되었습니다.');
+      if ((!originButton || originButton.isConnected) && ctx.isCurrentScreen?.(originScreen, originUser) !== false) {
+        globalThis.document?.dispatchEvent(new CustomEvent('sc-profile-saved'));
+        ctx.back?.();
+      }
       return true;
     },
 
@@ -575,6 +574,7 @@ export function createProfileHandlers(ctx) {
 
     scoreStepPrev() {
       patchCurrentScoreStep(ctx);
+      setScoreEditErrors({});
       setScoreEditStep((value) => Math.max(1, value - 1));
       return true;
     },
@@ -591,6 +591,7 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveScoreEdit() {
+      if (ctx.scoreSubjectSaving) return false;
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
         alert('필수 항목을 모두 선택해주세요');
         return false;
@@ -601,48 +602,55 @@ export function createProfileHandlers(ctx) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return false;
       }
-      const nextKo = Number(values.koreanCommon || 0) + Number(values.koreanElective || 0);
-      const nextMa = Number(values.mathCommon || 0) + Number(values.mathElective || 0);
-      const nextEnGrade = Number(values.english || 0);
-      const nextEnScore = englishGradeToScore(nextEnGrade);
-      const nextIq1 = Number(values.inquiry1Score || 0);
-      const nextIq2 = Number(values.inquiry2Score || 0);
-      setScores((prev) => ({
-        ...prev,
-        korean: nextKo || prev.korean,
-        math: nextMa || prev.math,
-        english: nextEnScore || prev.english,
-        inquiry1: nextIq1 || prev.inquiry1,
-        inquiry2: nextIq2 || prev.inquiry2
-      }));
-      const map = getExamScoresMap();
-      map[ctx.scoreExamType] = {
-        korean: nextKo,
-        math: nextMa,
-        englishGrade: nextEnGrade,
-        english: nextEnScore,
-        inquiry1: nextIq1,
-        inquiry2: nextIq2
-      };
-      saveExamScoresMap(map);
-      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
-      const nextQuantitative = {
-        ...(ctx.user?.quantitative || {}),
-        ...quantitativePatch
-      };
-      setScoreExamKey(scoreExamTypeToKey(ctx.scoreExamType));
-      setUser((prevUser) => ({
-        ...prevUser,
-        quantitative: nextQuantitative
-      }));
-      const result = await persistQuantitative(nextQuantitative);
-      if (result && result.ok === false) {
-        alert(result.error || '성적 저장에 실패했습니다.');
-        return false;
+      for (let step = 1; step <= 6; step += 1) {
+        const subjectError = validateScoreSubject(step, values);
+        if (subjectError) {
+          alert(subjectError);
+          return false;
+        }
       }
-      setScoreEditOpen(false);
-      setScoreEditStep(1);
-      return true;
+      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+      setScoreSubjectSaving(true);
+      try {
+        const converted = await convertExamScores({
+          apiFetch: ctx.apiFetch,
+          analysisApiUrl,
+          examMode: examKey,
+          examData: quantitativePatch[examKey]
+        });
+        if (!converted.ok) {
+          alert(converted.error || '성적 환산에 실패했습니다.');
+          return false;
+        }
+        const nextQuantitative = { ...(ctx.user?.quantitative || {}), [examKey]: converted.data };
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        const result = await persistQuantitative(nextQuantitative);
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (result?.ok !== true) {
+          alert(result?.error || '성적 저장에 실패했습니다.');
+          return false;
+        }
+        const nextKo = converted.data.kor.raw;
+        const nextMa = converted.data.math.raw;
+        const nextEnGrade = Number(values.english || 0);
+        const nextEnScore = englishGradeToScore(nextEnGrade);
+        const nextIq1 = converted.data.inq1.raw;
+        const nextIq2 = converted.data.inq2.raw;
+        setScores((prev) => ({ ...prev, korean: nextKo, math: nextMa, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 }));
+        const map = getExamScoresMap();
+        map[ctx.scoreExamType] = { korean: nextKo, math: nextMa, englishGrade: nextEnGrade, english: nextEnScore, inquiry1: nextIq1, inquiry2: nextIq2 };
+        saveExamScoresMap(map);
+        setScoreExamKey(examKey);
+        setUser((prevUser) => ({ ...prevUser, quantitative: nextQuantitative }));
+        persistUser({ ...ctx, localStorage: storage }, { quantitative: nextQuantitative });
+        setScoreEditOpen(false);
+        setScoreEditStep(1);
+        if (ctx.screen === 'ob2') goto?.('ob3');
+        return true;
+      } finally {
+        setScoreSubjectSaving(false);
+      }
     },
 
     applyScoreExam() {
@@ -713,7 +721,8 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    openLogoutModal() {
+    openLogoutModal({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       setLogoutModalOpen(true);
       return true;
     },
@@ -907,34 +916,33 @@ export function createProfileHandlers(ctx) {
     },
 
     async saveMarketingConsent({ actionEl, isAgreed } = {}) {
-      const fromAttr = getData(actionEl, 'marketing-agreed', '');
-      const nextValue = isAgreed === undefined
-        ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
-        : isAgreed === true;
-      setUser((prev) => ({
-        ...(prev || {}),
-        marketingAgreed: nextValue,
-        marketingAgreedAt: nextValue ? new Date().toISOString() : null
-      }));
-      const result = await updateMemberInfo({ marketingAgreed: nextValue });
-      if (!result.ok) {
-        setUser((prev) => ({ ...(prev || {}), marketingAgreed: !nextValue }));
-        alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
-        return false;
-      }
-      alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
-      return true;
+      return withOperationLock(ctx.operationLocksRef, 'marketing-consent', async () => {
+        const fromAttr = getData(actionEl, 'marketing-agreed', '');
+        const nextValue = isAgreed === undefined
+          ? (fromAttr ? fromAttr === 'true' : !(ctx.user?.marketingAgreed === true))
+          : isAgreed === true;
+        const result = await updateMemberInfo({ marketingAgreed: nextValue });
+        if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+        if (!result.ok) {
+          alert(result.error || '마케팅 수신 동의 저장에 실패했습니다.');
+          return false;
+        }
+        const consent = result.data?.consent;
+        const patch = { marketingAgreed: nextValue };
+        if (consent?.marketingAgreed === nextValue) {
+          for (const field of ['marketingAgreedAt', 'marketingRevokedAt', 'marketingConsentUpdatedAt']) {
+            if (consent[field] === null || (typeof consent[field] === 'string' && Number.isFinite(Date.parse(consent[field])))) patch[field] = consent[field];
+          }
+        }
+        setUser(prev => ({ ...(prev || {}), ...patch }));
+        alert(nextValue ? '마케팅 정보 수신에 동의했습니다.' : '마케팅 정보 수신 동의를 철회했습니다.');
+        return true;
+      });
     },
 
-    linkSocial({ actionEl }) {
-      const provider = getData(actionEl, 'provider');
-      const authUrl = buildSocialAuthUrl(ctx, provider);
-      if (!authUrl) {
-        alert('소셜 연동 설정을 불러오지 못했습니다.');
-        return false;
-      }
-      getWindow(ctx).location.href = authUrl;
-      return true;
+    linkSocial() {
+      alert('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요.');
+      return false;
     },
 
     async unlinkSocial({ actionEl }) {
@@ -963,8 +971,25 @@ export function createProfileHandlers(ctx) {
     },
 
     closeWithdrawModal() {
+      if (ctx.withdrawSubmitting) return false;
       setWithdrawModalOpen(false);
       setWithdrawPassword('');
+      return true;
+    },
+
+    startWithdrawSocialReauth({ actionEl }) {
+      const provider = getData(actionEl, 'provider') || String(ctx.user?.authProvider || '').toLowerCase();
+      const authUrl = buildSocialAuthUrl(ctx, provider, 'delete_reauth');
+      if (!authUrl) {
+        alert('소셜 인증 설정을 불러오지 못했습니다.');
+        return false;
+      }
+      try { getWindow(ctx).navigateSocialLogin(authUrl); }
+      catch (_) {
+        getWindow(ctx).discardSocialLoginAttempt?.();
+        alert('소셜 인증을 시작하지 못했습니다. 다시 시도해주세요.');
+        return false;
+      }
       return true;
     },
 
@@ -1010,7 +1035,7 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    mbtiNext() {
+    async mbtiNext() {
       const step = Number(ctx.mbtiStep);
       const answers = Array.isArray(ctx.mbtiAnswers) ? ctx.mbtiAnswers : [];
       if (!answers[step]) return false;
@@ -1018,22 +1043,20 @@ export function createProfileHandlers(ctx) {
         setMbtiStep(step + 1);
         return true;
       }
-      // 마지막 문항 → 코드 산출·저장·결과 표시.
       const code = computeMbtiCode(answers);
-      setMbtiResult(code);
-      setMbtiStep('result');
       const nextQualitative = { ...(ctx.user?.qualitative || {}), mbti: code };
-      setUser((prevUser) => ({ ...prevUser, qualitative: nextQualitative }));
-      persistUser({ ...ctx, localStorage: storage }, { qualitative: nextQualitative });
-      Promise.resolve()
-        .then(() => persistQualitative(nextQualitative))
-        .catch(() => {});
-      return true;
+      return saveConfirmedQualitative(nextQualitative, () => {
+        setMbtiResult(code);
+        setMbtiStep('result');
+      });
     },
 
     async confirmLogout() {
       setLogoutModalOpen(false);
-      await clearMobileAuthSession(ctx, authApiUrl);
+      const scope = await clearMobileAuthSession(ctx, authApiUrl);
+      const win = getWindow(ctx);
+      if (scope && !win.isClientSessionCurrent(scope, { login: true })) return true;
+      if (win.document?.querySelector('[data-screen="authLogin"]')) return true;
       setLoggedIn(false);
       setHistory([]);
       if (typeof getWindow(ctx).location?.replace === 'function') {
@@ -1045,18 +1068,16 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    confirmWithdraw() {
-      if (!String(ctx.withdrawPassword || '').trim()) {
-        alert('현재 비밀번호를 입력해주세요.');
-        return false;
-      }
-      setWithdrawModalOpen(false);
-      setWithdrawPassword('');
-      setLoggedIn(false);
-      setHistory([]);
-      goto?.('authLogin', false);
-      alert('회원탈퇴가 완료되었습니다.');
-      return true;
+    async confirmWithdraw() {
+      if (ctx.withdrawSubmitting) return false;
+      return withOperationLock(ctx.operationLocksRef, 'account-deletion', async () => {
+        try {
+          const { confirmDeletionRequest } = await import('../features/account/deletion-request.js');
+          return confirmDeletionRequest(ctx, { alert, storage: getSessionStorage(ctx), postJson, verifyPassword, userApiUrl,
+            clearSession: () => clearMobileAuthSession(ctx, authApiUrl),
+            setWithdrawSubmitting, setWithdrawPassword, setWithdrawModalOpen, setLoggedIn, setHistory, goto });
+        } catch { alert('삭제 안내를 불러오지 못했습니다. 다시 시도해주세요.'); return false; }
+      });
     },
 
     setObGradeStatus({ actionEl }) {

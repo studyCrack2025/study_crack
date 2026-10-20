@@ -1,3 +1,6 @@
+import { AppScreenShell } from './AppScreenShell.jsx';
+import { StatusState } from './StatusState.js';
+
 export function SecondaryIntro({ aside = null, description = '', eyebrow = '', title = '' }) {
   return (
     <header className="sc-secondary-intro">
@@ -11,12 +14,10 @@ export function SecondaryIntro({ aside = null, description = '', eyebrow = '', t
   );
 }
 
-export function SecondaryState({ description = '', kind = 'empty', title }) {
-  const mark = kind === 'loading' ? <i /> : kind === 'error' ? '!' : '—';
-  return <div className={`sc-secondary-state is-${kind}`} role="status"><span aria-hidden="true">{mark}</span><div><b>{title}</b>{description ? <p>{description}</p> : null}</div></div>;
+export function SecondaryState({ action = null, description = '', kind = 'empty', title }) {
+  return <StatusState action={action} description={description} kind={kind} title={title} />;
 }
 
 export function SecondaryScreenShell(props) {
   return <AppScreenShell {...props} />;
 }
-import { AppScreenShell } from './AppScreenShell.jsx';

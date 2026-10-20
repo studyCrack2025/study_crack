@@ -1,0 +1,476 @@
+import { expect, test } from '@playwright/test';
+import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
+
+const original = [
+  { id: 'pending-local', date: '2026-09-12', subject: '국어', content: '보존할 독서 계획', minutes: 30 },
+  { id: 'done-local', date: '2026-09-12', subject: '수학', content: '이미 완료한 계획', done: true, minutes: 30 },
+  { id: 'studied-local', date: '2026-09-12', subject: '영어', content: '공부 시간이 있는 계획', doneMinutes: 10, minutes: 30 }
+];
+const accountKey = 'studycrackPlannerAccount_v1:e2e-student';
+async function setup(page, { disabled = false, loseOnce = false, oldProtocol = false, durationProtocol = false, planRewards = false } = {}) {
+  await page.clock.setFixedTime(new Date('2026-09-12T03:00:00.000Z'));
+  await installAuthenticatedSession(page);
+  await page.addInitScript(original => {
+    if (!sessionStorage.getItem('__accountPlannerSeed')) {
+      localStorage.setItem('plannerItems', JSON.stringify(original));
+      sessionStorage.setItem('__accountPlannerSeed', '1');
+    }
+  }, original);
+  const api = await installApiMock(page, { tier: 'pro' });
+  if (planRewards) api.state.gameProfile = { ...api.state.gameProfile, ticketPolicyVersion: 'planner-ticket-v1', ticketBalance: 0, legacyTicketBalance: 0, planTicketCounts: { base: 0, h2: 0, h4: 0 }, ticketIntervalSeconds: null, planTicketStartedAt: '2026-09-12T00:00:00.000Z', starterState: 'claimed' };
+  const state = { requests: [], items: [], receipts: new Map(), growth: { supported: true, policyVersion: 'planner-days-v1', countingSince: '2026-09-12', revision: 0,
+    asOf: '2026-09-12T03:00:00.000Z', historyStatus: 'not_available', validDayCount: 0, highestUnlockedStage: null, nextStageDays: 1 }, lost: false, hold: null, api };
+  await page.route('**/api/**', async route => {
+    const payload = route.request().postDataJSON();
+    if (payload?.type !== 'planner_sync_v1' && !(durationProtocol && payload?.type === 'planner_sync_v2')) return route.fallback();
+    const protocol = payload.type === 'planner_sync_v2' ? 2 : 1;
+    const project = item => {
+      const { plannedMinutes, completionSnapshot, ...legacy } = item;
+      return protocol === 2 ? { ...legacy, plannedMinutes: plannedMinutes ?? null, completionSnapshot: completionSnapshot ?? null } : legacy;
+    };
+    state.requests.push(payload);
+    if (state.hold && (!state.holdType || state.holdType === payload.operation)) await state.hold;
+    if (disabled) return route.fulfill({ status: 503, json: { code: 'PLANNER_DISABLED' } });
+    expect(payload.owner).toBe('e2e-student');
+    let data;
+    if (payload.operation === 'get_server_planner') data = { items: state.items.map(project), cursor: null, growth: state.growth };
+    else {
+      expect(['save_server_planner', 'complete_server_planner', 'delete_server_planner']).toContain(payload.operation);
+      const draft = payload.data;
+      data = state.receipts.get(draft.requestId);
+      if (!data) {
+        const previous = state.items.find(item => item.id === draft.id);
+        if ((previous?.revision || 0) !== draft.revision || previous?.deleted) return route.fulfill({ status: 409, json: { code: 'PLANNER_REVISION_CONFLICT' } });
+        const item = { id: draft.id, date: draft.date, subject: draft.subject, title: draft.title, completed: false, deleted: false, firstCompletedAt: null, growthDate: null, ...previous, revision: draft.revision + 1, updatedAt: state.growth.asOf };
+        if (payload.operation === 'save_server_planner') { expect(draft.completed).toBe(false); Object.assign(item, { date: draft.date, subject: draft.subject, title: draft.title, completed: false }); }
+        if (protocol === 2 && payload.operation === 'save_server_planner') item.plannedMinutes = draft.plannedMinutes;
+        if (payload.operation === 'delete_server_planner') item.deleted = true;
+        let days = state.growth.validDayCount, rewardStatus = null;
+        if (payload.operation === 'complete_server_planner') {
+          item.completed = true;
+          if (!item.firstCompletedAt) {
+            item.firstCompletedAt = state.growth.asOf; item.growthDate = item.date; days = 1;
+            if (protocol === 2 && item.plannedMinutes != null) item.completionSnapshot = { date: item.date, subject: item.subject, plannedMinutes: item.plannedMinutes,
+              revision: draft.revision, completedAt: item.firstCompletedAt, policyVersion: null, status: 'not_active' };
+            if (planRewards && item.completionSnapshot) {
+              rewardStatus = item.plannedMinutes >= 30 ? 'issued' : 'ineligible';
+              Object.assign(item.completionSnapshot, { policyVersion: 'planner-ticket-v1', status: rewardStatus });
+              if (rewardStatus === 'issued') {
+                const band = item.plannedMinutes >= 240 ? 'h4' : item.plannedMinutes >= 120 ? 'h2' : 'base';
+                api.state.gameProfile = { ...api.state.gameProfile, ticketBalance: api.state.gameProfile.ticketBalance + 1, planTicketCounts: { ...api.state.gameProfile.planTicketCounts, [band]: api.state.gameProfile.planTicketCounts[band] + 1 } };
+                api.state.planTickets = [...(api.state.planTickets || []), { band, planId: item.id }];
+              }
+            }
+          }
+        }
+        state.items = [...state.items.filter(row => row.id !== item.id), item];
+        state.growth = { ...state.growth, revision: state.growth.revision + 1, validDayCount: days, highestUnlockedStage: days ? 'day1' : null, nextStageDays: days ? 6 : 1 };
+        data = { item: project(item), growth: state.growth, rewardStatus, replayed: false }; state.receipts.set(draft.requestId, data);
+      } else data = { ...data, replayed: true };
+      if (loseOnce && !state.lost) { state.lost = true; return route.abort('failed'); }
+    }
+    if (durationProtocol) data = { ...data, capabilities: { protocols: [1, 2], rewardPolicy: planRewards ? 'planner-ticket-v1' : null } };
+    return route.fulfill({ json: { success: true, data, ...(!oldProtocol ? { plannerOwner: 'e2e-student', plannerProtocol: protocol } : {}) } });
+  });
+  return state;
+}
+async function openSettings(page) {
+  const dialog = page.getByRole('dialog', { name: '계획 보관 설정', exact: true });
+  if (!(await dialog.isVisible())) {
+    await page.getByLabel('달력 더보기', { exact: true }).press('Enter');
+    await page.getByRole('region', { name: '일정 달력', exact: true }).getByRole('button', { name: '계획 보관 설정', exact: true }).press('Enter');
+  }
+  await expect(dialog).toBeVisible();
+  return dialog.locator('.planner-account-panel');
+}
+async function closeSettings(page) {
+  const dialog = page.getByRole('dialog', { name: '계획 보관 설정', exact: true });
+  if (await dialog.isVisible()) await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+async function open(page) {
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  return openSettings(page);
+}
+const stored = page => page.evaluate(() => localStorage.getItem('plannerItems'));
+
+test('평상시 저장 관리는 숨기고 설정은 읽기 없이 열며 닫기·초점·확대 경계를 지킨다', async ({ page }, info) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const state = await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  const before = await stored(page);
+  await expect(page.locator('.planner-account-panel')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0);
+  await expect(page.getByText('저장 안내', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '기기 계획 보기', exact: true })).toHaveCount(0);
+  const more = page.getByLabel('달력 더보기', { exact: true });
+  let panel = await openSettings(page);
+  const dialog = page.getByRole('dialog', { name: '계획 보관 설정', exact: true });
+  await expect(dialog.getByRole('button', { name: '닫기', exact: true })).toBeFocused();
+  await expect(page.locator('.app-content')).toHaveAttribute('inert', '');
+  await expect(page.locator('.tabbar')).toHaveAttribute('inert', '');
+  await expect(panel.getByLabel('계획 저장 위치')).toHaveText('이 기기에 저장');
+  expect(state.requests).toHaveLength(0);
+  await dialog.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(more).toBeFocused();
+  await openSettings(page);
+  await page.locator('.sc-overlay--modal').click({ position: { x: 2, y: 2 } });
+  await expect(dialog).toBeHidden();
+  await expect(more).toBeFocused();
+  panel = await openSettings(page);
+  await dialog.getByRole('button', { name: '닫기', exact: true }).press('Shift+Tab');
+  await expect(panel.getByRole('button', { name: '계정 기록 확인', exact: true })).toBeFocused();
+  await dialog.evaluate(element => {
+    const back = document.createElement('button');
+    back.type = 'button'; back.dataset.action = 'back'; back.textContent = '검사 뒤로가기';
+    element.append(back);
+  });
+  await dialog.getByRole('button', { name: '검사 뒤로가기', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('[data-screen="planner"]')).toBeVisible();
+  await openSettings(page);
+  await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: info.outputPath('planner-storage-settings-320-expanded.png'), animations: 'disabled' });
+  await closeSettings(page);
+  expect(state.requests).toHaveLength(0); expect(await stored(page)).toBe(before);
+  await page.getByRole('button', { name: '계획 추가', exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '다음', exact: true }).click();
+  await expect(page.getByLabel('계획 저장 위치')).toHaveText('이 기기에 저장');
+  await expect(page.getByText('메모는 이 기기에만 저장돼요.', { exact: true })).toBeVisible();
+  expect(state.requests).toHaveLength(0);
+});
+
+test('계정 계획 최초 완료의 뽑기권을 표시하고 재완료·탭 복귀·새로고침에서도 추가 지급하지 않는다', async ({ page }, info) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const state = await setup(page, { durationProtocol: true, planRewards: true });
+  await accountMode(page);
+  await openSettings(page);
+  await page.getByRole('button', { name: '계획 시간도 계정에 저장', exact: true }).click();
+  await addAccountDraft(page, '뽑기권을 받을 계획');
+  const row = page.locator('article[data-planner-id]'); await expectAccountConfirmed(page, row);
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toContainText('뽑기권 1장이 지급됐어요');
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0, { timeout: 6500 });
+  expect(state.api.state.gameProfile.ticketBalance).toBe(1);
+  const snapshot = structuredClone(state.items[0].completionSnapshot);
+  await row.getByRole('button', { name: '완료 취소', exact: true }).click(); await expectAccountConfirmed(page, row);
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click(); await expectAccountConfirmed(page, row, true);
+  expect(state.api.state.gameProfile.ticketBalance).toBe(1); expect(state.items[0].completionSnapshot).toEqual(snapshot);
+  await page.locator('.tabbar').getByRole('button', { name: '수조', exact: true }).click();
+  await expect(page.locator('.aquarium-wallet')).toContainText('뽑기권 1장');
+  await expect(page.locator('.aquarium-wallet-metric').last()).toContainText('30분 이상');
+  await expect(page.locator('.aquarium-wallet-note')).toContainText('계정 계획 · 첫 완료마다 1장');
+  await expect(page.locator('.aquarium-wallet')).not.toContainText('다음 뽑기권까지');
+  await expectNoHorizontalOverflow(page);
+  await page.locator('.aquarium-wallet').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('plan-reward-aquarium-320.png') });
+  await page.getByRole('button', { name: '새 물고기 만나기', exact: true }).click();
+  await page.getByRole('button', { name: '뽑기권 1장으로 만나기', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '물고기 발견 결과' })).toBeVisible();
+  expect(state.api.requests.find(row => row.payload.type === 'draw_fish').payload.data.ticketPolicyVersion).toBe('planner-ticket-v1');
+  expect(state.api.state.gameProfile.ticketBalance).toBe(0);
+  await page.reload();
+  expect(state.api.state.gameProfile.ticketBalance).toBe(0); expect(state.items[0].completionSnapshot).toEqual(snapshot);
+});
+
+test('계정 확인 전에는 자동 전송하지 않고 준비 중 서버에서도 기기 계획을 보존한다', async ({ page }) => {
+  const state = await setup(page, { disabled: true }); const panel = await open(page); const before = await stored(page);
+  expect(state.requests).toHaveLength(0);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel.getByRole('status')).toContainText('준비하고 있어요');
+  await expect(panel.getByRole('button', { name: /계정으로 가져오기/ })).toHaveCount(0);
+  expect(await stored(page)).toBe(before); expect(state.items).toHaveLength(0);
+});
+
+async function accountMode(page) {
+  const panel = await open(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await panel.getByRole('button', { name: '계정 계획으로 전환' }).click();
+  await closeSettings(page);
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0);
+}
+async function addAccountDraft(page, title = '새 계정 계획') {
+  await closeSettings(page);
+  await page.getByRole('button', { name: '계획 추가', exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '다음', exact: true }).click();
+  await page.getByLabel('계획 제목', { exact: true }).fill(title);
+  await page.getByLabel('메모 (선택)', { exact: true }).fill('이 계정의 기기 메모');
+  await page.getByRole('button', { name: '계획 저장하기' }).click();
+}
+async function expectAccountConfirmed(page, row, completed = false) {
+  await expect(row.locator('.planner-item-done')).toBeEnabled();
+  await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', String(completed));
+  await expect(row.locator('.planner-item-detail')).toHaveCount(0);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(key => {
+    const snapshot = JSON.parse(localStorage.getItem(key.replace('_v1:', '_v2:')) || localStorage.getItem(key) || '{}');
+    return snapshot.queue?.length;
+  }, accountKey)).toBe(0);
+}
+
+async function retryAccountDraft(page, state) {
+  const notice = page.getByRole('region', { name: '계정 저장 상태', exact: true });
+  const reads = () => state.requests.filter(row => row.operation === 'get_server_planner').length;
+  const before = reads();
+  let release;
+  state.holdType = 'get_server_planner';
+  state.hold = new Promise(resolve => { release = resolve; });
+  try {
+    await page.getByRole('button', { name: '서버 반영 다시 확인' }).click();
+    await expect.poll(reads).toBe(before + 1);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(notice).toHaveAttribute('aria-busy', 'true');
+  } finally {
+    release();
+    state.hold = null;
+    state.holdType = null;
+  }
+  await expect(notice).toHaveCount(0);
+}
+
+test('계획 시간 저장 전환은 명시적으로 수행하고 최초 완료 시간·기기 원본을 보존한다', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const state = await setup(page, { durationProtocol: true });
+  await accountMode(page);
+  const before = await stored(page);
+  const legacy = await page.evaluate(key => localStorage.getItem(key), accountKey);
+  expect(state.requests.every(row => row.type === 'planner_sync_v1')).toBe(true);
+  await openSettings(page);
+  await page.getByRole('button', { name: '계획 시간도 계정에 저장', exact: true }).click();
+  await expect(page.locator('.planner-account-panel')).toContainText('계획과 시간은 계정에 저장돼요');
+  expect(await page.evaluate(key => localStorage.getItem(key), accountKey)).toBe(legacy);
+  expect(state.requests.filter(row => row.type === 'planner_sync_v2').map(row => row.operation)).toEqual(['get_server_planner']);
+  await addAccountDraft(page, '시간까지 저장한 계획');
+  const row = page.locator('article[data-planner-id]');
+  await expectAccountConfirmed(page, row);
+  const saved = state.requests.find(row => row.type === 'planner_sync_v2' && row.operation === 'save_server_planner');
+  expect(saved.data.plannedMinutes).toBe(60); expect(saved.data.memo).toBeUndefined();
+  expect(state.items[0].plannedMinutes).toBe(60);
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expectAccountConfirmed(page, row, true);
+  const snapshot = structuredClone(state.items[0].completionSnapshot);
+  expect(snapshot).toMatchObject({ plannedMinutes: 60, policyVersion: null, status: 'not_active' });
+  await row.getByRole('button', { name: '완료 취소', exact: true }).click();
+  await expectAccountConfirmed(page, row);
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expectAccountConfirmed(page, row, true);
+  expect(state.items[0].completionSnapshot).toEqual(snapshot);
+  expect(await stored(page)).toBe(before);
+  await expectNoHorizontalOverflow(page);
+  await page.reload();
+  const panel = await openSettings(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel).toContainText('계획과 시간은 계정에 저장돼요');
+  expect(state.requests.at(-1).type).toBe('planner_sync_v2');
+  expect(state.items[0].completionSnapshot).toEqual(snapshot);
+});
+
+test('구버전 전송 대기는 동일 요청으로 복구한 다음에만 시간 저장 전환을 허용한다', async ({ page }) => {
+  const state = await setup(page, { durationProtocol: true, loseOnce: true });
+  await accountMode(page); await addAccountDraft(page, '복구할 구버전 계획');
+  await expect(page.getByRole('alert')).toContainText('서버 반영 대기 1건');
+  const first = structuredClone(state.requests.find(row => row.operation === 'save_server_planner'));
+  await retryAccountDraft(page, state);
+  await page.getByRole('button', { name: '계획 저장하기' }).click();
+  await expect(page.locator('article[data-planner-id]')).toHaveCount(1);
+  const legacy = await page.evaluate(key => localStorage.getItem(key), accountKey);
+  await openSettings(page);
+  await page.getByRole('button', { name: '계획 시간도 계정에 저장', exact: true }).click();
+  await expect(page.locator('.planner-account-panel')).toContainText('계획과 시간은 계정에 저장돼요');
+  expect(state.requests.filter(row => row.operation === 'save_server_planner')).toEqual([first, first]);
+  expect(await page.evaluate(key => localStorage.getItem(key), accountKey)).toBe(legacy);
+  expect(state.items[0].plannedMinutes).toBeUndefined();
+  await closeSettings(page);
+  await expect(page.locator('article[data-planner-id] .planner-item-time')).toHaveText('시간 확인 필요');
+  const next = await page.evaluate(key => JSON.parse(localStorage.getItem(key.replace('_v1:', '_v2:'))), accountKey);
+  expect(next.items[0].plannedMinutes).toBeNull(); expect(next.items[0].completionSnapshot).toBeNull();
+});
+
+test('기본 버튼으로 계정 계획 추가·완료·취소·편집·삭제하고 기기 원본은 그대로 보존한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const state = await setup(page); await accountMode(page); const before = await stored(page);
+  await addAccountDraft(page);
+  const row = page.locator('article[data-planner-id]');
+  await expect(row).toHaveCount(1); await expectAccountConfirmed(page, row);
+  expect(state.items).toHaveLength(1); expect(state.items[0]).toMatchObject({ title: '새 계정 계획', completed: false, revision: 1 });
+  expect(state.requests.at(-1).data.memo).toBeUndefined();
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expectAccountConfirmed(page, row, true);
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf }); expect(state.growth.validDayCount).toBe(1);
+  await row.getByRole('button', { name: '완료 취소', exact: true }).click();
+  await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', 'false');
+  await row.getByRole('button', { name: '계획 편집', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: '플래너 항목 수정' });
+  await expect(sheet.getByRole('region', { name: '계정 저장 상태', exact: true })).toHaveCount(0);
+  await expect(sheet.getByLabel('계획 저장 위치')).toContainText('계정에 계획 저장');
+  await expect(sheet.getByLabel('메모', { exact: true })).toHaveValue('이 계정의 기기 메모');
+  await sheet.getByLabel('세부 내용', { exact: true }).fill('수정한 계정 계획');
+  await sheet.getByRole('button', { name: '수정 저장' }).click();
+  await expect(sheet).toHaveCount(0); await expect(row).toContainText('수정한 계정 계획');
+  await expectNoHorizontalOverflow(page); await page.screenshot({ path: testInfo.outputPath('account-primary-320.png') });
+  await row.getByRole('button', { name: '계획 삭제', exact: true }).click();
+  await expect(row).toHaveCount(0); expect(state.growth.validDayCount).toBe(1); expect(await stored(page)).toBe(before);
+  await openSettings(page);
+  await page.getByRole('button', { name: '기기 계획으로 전환', exact: true }).click();
+  await closeSettings(page);
+  await expect(page.locator('article[data-planner-id]')).toHaveCount(3);
+});
+
+test('서버 완료 확정 성장값은 추가 조회 없이 홈과 수조에 전달한다', async ({ page }) => {
+  const state = await setup(page); await accountMode(page); await addAccountDraft(page);
+  const row = page.locator('article[data-planner-id]');
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expectAccountConfirmed(page, row, true);
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf });
+  await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
+  await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
+  await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 1일');
+  expect(state.requests.some(row => row.operation === 'get_aquarium_growth')).toBe(false);
+});
+
+test('기기에 변조된 성장 캐시가 있어도 배경은 실제 조회 응답만 사용한다', async ({ page }) => {
+  await setup(page);
+  await page.addInitScript(key => localStorage.setItem(key, JSON.stringify({ version: 1, owner: 'e2e-student', items: [], queue: [], imports: [], growth: {
+    supported: true, policyVersion: 'planner-days-v1', countingSince: '2026-09-12', revision: 999, asOf: '2026-09-12T03:00:00.000Z', historyStatus: 'not_available', validDayCount: 100, highestUnlockedStage: 'day100', nextStageDays: null
+  } })), accountKey);
+  await accountMode(page);
+  await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click();
+  await expect(page.locator('.home-aquarium-preview .aquarium-growth-caption')).toHaveCount(0);
+  await expect(page.locator('.home-aquarium-preview')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="aquarium"]').click();
+  await expect(page.locator('.aquarium-growth-caption')).toContainText('성장 인정 0일');
+  await expect(page.locator('.aquarium-scene')).toHaveAttribute('data-background-key', 'day1');
+});
+
+test('기본 추가의 유실 응답은 초안·식별자를 보존하고 확인 뒤 다시 저장해도 중복되지 않는다', async ({ page }) => {
+  const state = await setup(page, { loseOnce: true }); await accountMode(page); await addAccountDraft(page);
+  await expect(page.getByRole('alert')).toContainText('서버 반영 대기 1건');
+  await expect(page.getByLabel('계획 제목', { exact: true })).toHaveValue('새 계정 계획');
+  await expect(page.getByLabel('메모 (선택)', { exact: true })).toHaveValue('이 계정의 기기 메모');
+  await retryAccountDraft(page, state);
+  await page.getByRole('button', { name: '계획 저장하기' }).click();
+  await expect(page.locator('article[data-planner-id]')).toHaveCount(1);
+  const sent = state.requests.filter(row => row.operation === 'save_server_planner'); expect(sent).toHaveLength(2); expect(sent[0].data).toEqual(sent[1].data); expect(state.items).toHaveLength(1);
+});
+
+test('완료 응답 대기 중에는 완료율·성장이 선반영되지 않고 중복 완료를 막는다', async ({ page }) => {
+  const state = await setup(page); await accountMode(page); await addAccountDraft(page);
+  const row = page.locator('article[data-planner-id]'); await expect(row).toHaveCount(1);
+  let release; state.holdType = 'complete_server_planner'; state.hold = new Promise(resolve => { release = resolve; });
+  await row.getByRole('button', { name: '계획 완료', exact: true }).click();
+  await expect(row).toContainText('서버 반영 대기');
+  await expect(row.locator('.planner-item-done')).toBeDisabled(); await expect(row.locator('.planner-item-done')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '0');
+  expect(state.growth.validDayCount).toBe(0); release();
+  await expectAccountConfirmed(page, row, true);
+  await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '100');
+  expect(state.items[0]).toMatchObject({ completed: true, revision: 2, firstCompletedAt: state.growth.asOf }); expect(state.growth.validDayCount).toBe(1);
+});
+
+test('다른 기기와 충돌한 편집은 초안을 남기고 명시적으로 서버 기록을 선택할 수 있다', async ({ page }) => {
+  const state = await setup(page); await accountMode(page); await addAccountDraft(page);
+  const row = page.locator('article[data-planner-id]'); await expect(row).toHaveCount(1);
+  state.items[0] = { ...state.items[0], title: '다른 기기의 최신 내용', revision: 2 }; state.growth = { ...state.growth, revision: 2 };
+  await row.getByRole('button', { name: '계획 편집', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: '플래너 항목 수정' });
+  await sheet.getByLabel('세부 내용', { exact: true }).fill('보존할 충돌 초안'); await sheet.getByRole('button', { name: '수정 저장' }).click();
+  await expect(sheet.getByRole('alert')).toContainText('다른 기기의 변경이 있어요'); await expect(sheet.getByLabel('세부 내용', { exact: true })).toHaveValue('보존할 충돌 초안');
+  await sheet.getByRole('button', { name: '닫기', exact: true }).click();
+  const panel = await openSettings(page);
+  await panel.getByRole('button', { name: '서버 기록 사용 · 대기 변경 보관' }).click();
+  await closeSettings(page);
+  await expect(row).toContainText('다른 기기의 최신 내용');
+  await openSettings(page);
+  await panel.getByText('보관한 대기 변경 1건', { exact: true }).click();
+  await expect(panel).toContainText('보존할 충돌 초안');
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).queue.length, accountKey)).toBe(0);
+});
+
+test('선택한 미완료 계획만 가져오고 원본·성장값을 보존하며 재접속은 확인 후 표시한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  const state = await setup(page); let panel = await open(page); const before = await stored(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel.getByRole('button', { name: /계정으로 가져오기/ })).toHaveCount(1);
+  await panel.getByRole('button', { name: '보존할 독서 계획 계정으로 가져오기' }).click();
+  await expect(panel.getByText('가져올 미완료 기기 계획이 없어요.')).toBeVisible();
+  expect(state.growth.validDayCount).toBe(0);
+  await expect(panel.getByText(/마지막 서버 확인 기준 · 성장 인정/)).toHaveCount(0);
+  expect(await stored(page)).toBe(before); expect(state.items).toHaveLength(1);
+  await expectNoHorizontalOverflow(page);
+  await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath('planner-account-320.png'), animations: 'disabled' });
+  await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath('planner-account-320-expanded.png'), animations: 'disabled' });
+  await page.reload(); panel = await openSettings(page);
+  await expect(panel.locator('.planner-account-list')).toHaveCount(0);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await panel.getByText('계정 계획 1건', { exact: true }).click();
+  await expect(panel.getByText('보존할 독서 계획', { exact: true })).toBeVisible();
+  expect(state.requests.filter(request => request.operation === 'save_server_planner')).toHaveLength(1);
+});
+
+test('응답 유실 뒤 재접속해도 대기 요청 한 건을 동일 식별자로 복구한다', async ({ page }) => {
+  const state = await setup(page, { loseOnce: true }); let panel = await open(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await panel.getByRole('button', { name: '보존할 독서 계획 계정으로 가져오기' }).click();
+  await expect(panel.getByRole('status')).toContainText('전송 대기 1건');
+  const pending = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).queue[0], accountKey);
+  await page.reload(); panel = await openSettings(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel.getByRole('status')).toContainText('전송 대기 1건');
+  await panel.getByRole('button', { name: '대기 기록 1건 전송' }).click();
+  await expect(panel.getByRole('status')).toHaveText('계정 기록을 확인했어요.');
+  const sent = state.requests.filter(request => request.operation === 'save_server_planner');
+  expect(sent).toHaveLength(2); expect(sent[0].data).toEqual(sent[1].data); expect(sent[1].data).toEqual(pending.data); expect(state.items).toHaveLength(1);
+});
+
+test('다른 탭 계정 전환은 기존 계정 화면을 숨기고 늦은 응답을 저장하지 않는다', async ({ page }) => {
+  const state = await setup(page); const panel = await open(page);
+  let release; state.hold = new Promise(resolve => { release = resolve; });
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect.poll(() => state.requests.length).toBe(1);
+  await page.evaluate(() => {
+    localStorage.setItem('userId', 'new-account');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'userId', oldValue: 'e2e-student', newValue: 'new-account' }));
+  });
+  release();
+  await expect(panel.getByRole('status')).toContainText('로그인 계정이 바뀌었어요');
+  await expect(panel.locator('.planner-account-list')).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), accountKey)).toBeNull();
+});
+
+test('소유 계정 확인이 없는 응답은 성공 화면으로 표시하지 않는다', async ({ page }) => {
+  await setup(page, { oldProtocol: true }); const panel = await open(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel.getByRole('status')).toContainText('다시 시도');
+  await expect(panel.locator('.planner-account-list')).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), accountKey)).toBeNull();
+});
+test('같은 탭에서 세션이 바뀐 뒤 이전 가져오기 버튼으로 새 계정에 저장하지 않는다', async ({ page }) => {
+  const state = await setup(page); const panel = await open(page);
+  await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
+  await expect(panel.getByRole('button', { name: '보존할 독서 계획 계정으로 가져오기' })).toBeVisible();
+  await page.evaluate(() => { localStorage.setItem('userId', 'new-account'); });
+  await panel.getByRole('button', { name: '보존할 독서 계획 계정으로 가져오기' }).click();
+  await expect(panel.getByRole('status')).toContainText('로그인 계정이 바뀌었어요');
+  await expect(panel.locator('.planner-account-list')).toHaveCount(0);
+  expect(state.requests.map(request => request.operation)).toEqual(['get_server_planner']);
+});
+test('계정 전환은 열린 계정 입력창의 이전 초안과 요청 식별자를 다음 계정에 넘기지 않는다', async ({ page }) => {
+  const state = await setup(page); await accountMode(page);
+  await page.getByRole('button', { name: '계획 추가', exact: true }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '다음', exact: true }).click();
+  await page.getByLabel('계획 제목', { exact: true }).fill('이전 계정의 비공개 초안');
+  await page.evaluate(() => {
+    localStorage.setItem('userId', 'new-account');
+    dispatchEvent(new StorageEvent('storage', { key: 'userId', oldValue: 'e2e-student', newValue: 'new-account' }));
+  });
+  await expect(page.getByRole('region', { name: '계정 저장 상태', exact: true })).toContainText('로그인 계정이 바뀌었어요');
+  await expect(page.locator('[data-field="plannerContent"]')).toHaveValue('');
+  expect(state.requests.map(row => row.operation)).toEqual(['get_server_planner']);
+});

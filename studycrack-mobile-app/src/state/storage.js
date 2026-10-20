@@ -1,4 +1,5 @@
 export const STORAGE_KEYS = {
+  introSeen: 'studycrackIntroSeen_v1',
   activeTab: 'activeTab',
   admissionCalendar: 'admissionCalendar',
   examScoresByType: 'examScoresByType',
@@ -9,6 +10,7 @@ export const STORAGE_KEYS = {
   selectedUniversity: 'selectedUniversity',
   activeStudySession: 'activeStudySession',
   rewardPendingSessionId: 'studyRewardPendingSessionId',
+  studyRecovery: 'studyRecovery_v2',
   studyRecords: 'studyRecords',
   studySubjectRecords: 'studySubjectRecords',
   user: 'user'

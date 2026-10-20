@@ -9,11 +9,13 @@ import { createNavigationHandlers } from './navigation-handlers.js';
 import { createPlannerHandlers } from './planner-handlers.js';
 import { createTimerHandlers } from './timer-handlers.js';
 import { createProfileHandlers } from './profile-handlers.js';
+import { createProductGuideHandlers } from './product-guide-handlers.js';
 import { createServiceHandlers } from './service-handlers.js';
 import { requireHandlerStateActions } from '../state/handler-state-actions.js';
 
 export const MOBILE_ACTION_HANDLER_ORDER = [
   'navigation',
+  'productGuide',
   'auth',
   'timer',
   'gamification',
@@ -31,6 +33,7 @@ function withStateActions(ctx, actionGroups, group) {
 export function createMobileActionHandlerGroups(ctx = {}, stateActions = {}) {
   return {
     navigation: createNavigationHandlers(withStateActions(ctx, stateActions, 'navigation')),
+    productGuide: createProductGuideHandlers(withStateActions(ctx, stateActions, 'productGuide')),
     auth: createAuthHandlers(withStateActions(ctx, stateActions, 'auth')),
     timer: createTimerHandlers(withStateActions(ctx, stateActions, 'timer')),
     gamification: createGamificationHandlers(withStateActions(ctx, stateActions, 'gamification')),

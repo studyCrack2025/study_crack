@@ -2,6 +2,8 @@ export const USER_REQUEST_TYPES = Object.freeze({
   DELETE_ADMISSION_EVENT: 'delete_admission_calendar_event',
   GET_ADMISSION_CALENDAR: 'get_admission_calendar',
   GET_CURRENT_USER: 'get_user_analysis',
+  GET_PRODUCT_GUIDE: 'get_product_guide',
+  SAVE_PRODUCT_GUIDE: 'save_product_guide',
   GET_STUDY_RANKING: 'get_study_ranking',
   GET_STUDY_SUMMARY: 'get_study_summary',
   START_STUDY_SESSION: 'start_study_session',

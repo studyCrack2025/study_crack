@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0A56B2" />
+  <meta name="theme-color" content="#344E8F" />
   <meta name="application-name" content="StudyCrack" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,16 +17,8 @@
   <link rel="stylesheet" href="./studycrack-mobile-app/dist/studycrack-mobile.css" />
 </head>
 <body>
-  <div id="root">StudyCrack 앱을 불러오는 중입니다...</div>
-  <script>
-    window.__studycrackAppBooted = false;
-    setTimeout(function () {
-      if (window.__studycrackAppBooted) return;
-      var root = document.getElementById('root');
-      if (!root) return;
-      root.innerHTML = '<div class="app-shell"><div class="app-frame"><div class="screen app-screen app-content"><div class="center init-loading"><h3>앱을 불러오지 못했습니다</h3><p class="sub">잠시 후 페이지를 새로고침해 주세요.</p></div></div></div></div>';
-    }, 12000);
-  </script>
+  <div id="root"><div class="mobile-boot-shell"><div class="init-loading" role="status"><h3>앱 화면을 준비하고 있어요</h3><p>잠시만 기다려 주세요.</p></div></div></div>
+  <script src="./js/mobile-boot.js"></script>
   <script src="./js/config.js"></script>
   <script src="./js/shared/api.js"></script>
   <script type="module" src="./studycrack-mobile-app/dist/studycrack-mobile.bundle.js"></script>

@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initTutorCognito() {
     const poolData = { 
         UserPoolId: CONFIG.cognito.userPoolId, 
-        ClientId: CONFIG.cognito.clientId 
+        ClientId: CONFIG.cognito.clientId,
+        Storage: createCognitoMemoryStorage()
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
     
@@ -161,7 +162,8 @@ function initTutorCognito() {
         if (userEmail) {
             tutorCognitoUser = new AmazonCognitoIdentity.CognitoUser({
                 Username: userEmail,
-                Pool: userPool
+                Pool: userPool,
+                Storage: userPool.storage
             });
         }
     }
@@ -560,6 +562,7 @@ window.loadMyStudents = async function() {
         students.forEach(s => {
             // 💡 [수정] 백엔드에서 주는 최신 계산식 티어를 받아서 렌더링
             let tier = (s.tier || 'FREE').toUpperCase();
+            if (!['FREE', 'BASIC', 'STARTER', 'STANDARD', 'PRO', 'TRIAL'].includes(tier)) tier = 'FREE';
             let tierClass = 'tier-free';
              
             if (tier === 'PRO') tierClass = 'tier-pro';
@@ -571,7 +574,7 @@ window.loadMyStudents = async function() {
             const needsAliasSync = (!canonicalNickname && !!matchedAlias) || (!!canonicalNickname && !!matchedAlias && canonicalNickname !== matchedAlias);
             const manageButtons = needsAliasSync
                 ? `<span style="font-size:0.78rem; color:#b45309; font-weight:700;">튜터명 동기화 필요</span>`
-                : `<button class="manage-btn" onclick="goToStudentDetail('${studentId}')">상세관리</button><button class="manage-btn" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;" onclick="openUrgentModal('${studentId}', '${escapeHtml(s.name)}')">긴급</button>`;
+                : `<button class="manage-btn" data-action="detail">상세관리</button><button class="manage-btn" data-action="urgent" style="color:#ef4444; border-color:#fca5a5; margin-left:5px; background:#fef2f2;">긴급</button>`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -581,6 +584,8 @@ window.loadMyStudents = async function() {
                 <td data-label="유료 등급"><span class="tier-badge ${tierClass}">${tier}</span></td>
                 <td data-label="관리">${manageButtons}</td>
             `;
+            tr.querySelector('[data-action="detail"]')?.addEventListener('click', () => goToStudentDetail(studentId));
+            tr.querySelector('[data-action="urgent"]')?.addEventListener('click', () => openUrgentModal(studentId, s.name));
             tbody.appendChild(tr);
         });
 
@@ -598,7 +603,7 @@ window.loadMyStudents = async function() {
 
 window.goToStudentDetail = function(studentId) { 
     if (!studentId) return alert("학생 식별자 정보가 없습니다.");
-    window.location.href = `/admin/detail?uid=${studentId}`; 
+    window.location.href = `/admin/detail?uid=${encodeURIComponent(studentId)}`;
 }
 
 // ==========================================
@@ -968,26 +973,34 @@ window.executeTutorWithdrawal = function() {
     if (!tutorCognitoUser) { alert("세션이 만료되었습니다. 다시 로그인해주세요."); handleSignOut(); return; }
 
     const btn = document.querySelector('#withdrawalFinalForm .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`; btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 삭제 요청 중...`; btn.disabled = true;
 
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: password });
 
     tutorCognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
             try {
-                await apiFetch(CONFIG.api.user, {
-                    method: 'POST', body: JSON.stringify({ type: 'delete_user' })
+                const response = await apiFetch(CONFIG.api.user, {
+                    method: 'POST', body: JSON.stringify({ type: 'request_account_deletion', reauthAccessToken: result.getAccessToken().getJwtToken() })
                 });
+                const deletion = await response.json();
+                if (deletion?.success !== true || deletion?.completed !== true || deletion?.status !== 'complete') {
+                    alert(deletion?.success === true && deletion?.completed === false && deletion?.status === 'review_required'
+                        ? '삭제 요청이 접수되었습니다. 담당자 확인 후 처리되며 아직 탈퇴 완료는 아닙니다. 문의: contact@studycrack.co.kr'
+                        : '삭제 완료 여부를 확인하지 못했습니다. 고객센터에 문의해주세요.');
+                    btn.innerText = '삭제 요청하기'; btn.disabled = false;
+                    return;
+                }
                 alert("튜터 파트너십 해지 및 탈퇴가 완료되었습니다. 그동안 함께해주셔서 감사합니다.");
                 handleSignOut();
             } catch (e) {
                 if (e.message !== "Auth expired") alert("탈퇴 처리 중 오류가 발생했습니다.");
-                btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다"; btn.disabled = false;
+                btn.innerText = "자료 삭제 요청하기"; btn.disabled = false;
             }
         },
         onFailure: function(err) {
             alert("비밀번호가 일치하지 않습니다.");
-            btn.innerText = "네, 모든 데이터를 삭제하고 탈퇴합니다"; btn.disabled = false;
+            btn.innerText = "자료 삭제 요청하기"; btn.disabled = false;
         }
     });
 };
@@ -1201,7 +1214,30 @@ window.requestEmailChange = function() {
     startTutorTimer(300, 'emailTimer');
 }
 window.verifyEmailChange = function() { alert("이메일이 변경되었습니다."); closeModal('emailModal'); }
-window.changePassword = function() { alert("비밀번호가 변경되었습니다."); closeModal('passwordModal'); }
+window.changePassword = function() {
+    const oldPw = document.getElementById('currentPassword').value;
+    const newPw = document.getElementById('newChangePassword').value;
+    const confirmPw = document.getElementById('newChangePasswordConfirm').value;
+    if (!oldPw || !newPw || newPw !== confirmPw) return alert('비밀번호 입력을 확인해주세요.');
+    if (!tutorCognitoUser) return alert('현재 로그인한 계정을 확인해주세요.');
+    const details = new AmazonCognitoIdentity.AuthenticationDetails({ Username: tutorCognitoUser.getUsername(), Password: oldPw });
+    tutorCognitoUser.authenticateUser(details, {
+        onFailure: () => alert('현재 비밀번호를 확인해주세요.'),
+        newPasswordRequired: () => alert('비밀번호 찾기로 다시 설정해주세요.'),
+        onSuccess: session => {
+            if (session.getIdToken().payload.sub !== localStorage.getItem('userId')) {
+                tutorCognitoUser.signOut();
+                alert('현재 로그인한 계정을 확인해주세요.');
+                return;
+            }
+            tutorCognitoUser.changePassword(oldPw, newPw, error => {
+                if (error) return alert('새 비밀번호 조건을 확인해주세요.');
+                alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+                handleSignOut();
+            });
+        }
+    });
+};
 
 // 알림 타입에 따른 액션 처리 (공지사항 모달 등)
 function handleTutorNotiAction(noti) {

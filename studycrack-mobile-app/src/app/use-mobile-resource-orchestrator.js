@@ -10,7 +10,6 @@ import { useSession } from '../features/session/use-session.js';
 import { createUserDataResetPatch, mapUserToStatePatch } from '../features/session/user-state.js';
 import { blockNonStudentMobileSession } from '../features/session/mobile-session-adapter.js';
 import { useSupportResource } from '../features/support/use-support-resource.js';
-import { useStudySummaryResource } from '../features/study/use-study-summary-resource.js';
 import { persistMobileUserRole } from '../shared/browser/mobile-runtime.js';
 
 const { useCallback, useRef } = React;
@@ -57,29 +56,24 @@ export function useMobileResourceOrchestrator({ api, setState, state, stateRef }
     setState
   });
   useGameProfileResource({
-    enabled: resourceSessionReady && ['timer', 'aquarium'].includes(state.screen),
+    enabled: resourceSessionReady && ['timer', 'aquarium', 'my'].includes(state.screen),
     getApiBinding: api.getGameApiBinding,
     includeCatalog: state.screen === 'aquarium',
     refreshTick: state.gameRefreshTick,
     setState
   });
-  useStudySummaryResource({
-    enabled: resourceSessionReady && ['timer'].includes(state.screen),
-    getApiBinding: api.getUserApiBinding,
-    refreshTick: state.studySummaryRefreshTick,
-    setState
-  });
   useAdmissionCalendarResource({
-    enabled: state.userLoadStatus === 'ready' && state.screen === 'planner',
+    enabled: state.userLoadStatus === 'ready' && ['timer', 'planner'].includes(state.screen) && !state.calendarSaving && state.calendarSyncStatus !== 'error',
     getApiBinding: api.getUserApiBinding,
     hasSession: api.hasClientSession,
     setState
   });
-  useReportResources({ enabled: resourceSessionReady, getApiBinding: api.getReportApiBinding, screen: state.screen, setState });
-  useSupportResource({ enabled: resourceSessionReady && ['customerSupport', 'tutor'].includes(state.screen), getApiBinding: api.getQnaApiBinding, setState });
+  useReportResources({ enabled: resourceSessionReady, getApiBinding: api.getReportApiBinding, screen: state.screen, refreshTick: state.reportsRefreshTick, setState });
+  useSupportResource({ enabled: resourceSessionReady && ['customerSupport', 'tutor'].includes(state.screen), getApiBinding: api.getQnaApiBinding, refreshTick: state.qnaRefreshTick, setState });
   useNotificationResource({
     enabled: resourceSessionReady && (state.screen === 'notificationList' || state.notifModalOpen),
     getApiBinding: api.getNotiApiBinding,
+    refreshTick: state.notiRefreshTick,
     setState
   });
   useAnalysisResources({

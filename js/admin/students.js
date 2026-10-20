@@ -5,12 +5,19 @@
 
 async function populateTutorFilter() {
     try {
-        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_stats' }) });
+        const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_tutor_list' }) });
         const data = await response.json();
         const filterEl = document.getElementById('filterTutor');
-        if(filterEl && data.tutors) {
+        if (!Array.isArray(data?.tutors)) throw new Error('Invalid tutor list');
+        if(filterEl) {
+            const known = new Set(Array.from(filterEl.options, option => option.value));
             data.tutors.forEach(t => {
-                filterEl.innerHTML += `<option value="${escapeHtml(t.nickname)}">${escapeHtml(t.nickname)} 선생님</option>`;
+                if (typeof t?.nickname !== 'string' || !t.nickname || known.has(t.nickname)) return;
+                const option = document.createElement('option');
+                option.value = t.nickname;
+                option.textContent = `${t.nickname} 선생님`;
+                filterEl.appendChild(option);
+                known.add(t.nickname);
             });
         }
     } catch(e) { console.error("Tutor filter load failed", e); }
@@ -71,7 +78,10 @@ function updateStudentResultSummary(state, count = 0) {
     else summaryEl.textContent = `검색 결과 총 ${Number(count).toLocaleString('ko-KR')}명`;
 }
 
+let studentSearchSequence = 0;
+
 async function searchStudents() {
+    const sequence = ++studentSearchSequence;
     const adminId = localStorage.getItem('userId');
     const type = document.getElementById('searchType').value;
     const keyword = document.getElementById('searchInput').value || "";
@@ -101,7 +111,11 @@ async function searchStudents() {
         });
 
         const rawData = await response.json();
-        let students = Array.isArray(rawData) ? rawData : (rawData.students || []);
+        if (sequence !== studentSearchSequence || localStorage.getItem('userId') !== adminId) return;
+        let students = Array.isArray(rawData) ? rawData : rawData?.students;
+        if (!Array.isArray(students) || students.some(s => !s || typeof s.userid !== 'string')) {
+            throw new Error('Invalid student list');
+        }
 
         // 유령 계정 및 관리자 제외
         students = students.filter(s => {
@@ -158,7 +172,7 @@ async function searchStudents() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="selection-col" data-label="선택">
-                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" onchange="handleStudentCheck(this)" ${isChecked}>
+                    <input type="checkbox" class="student-checkbox" value="${escapeHtml(s.userid)}" data-name="${escapeHtml(s.name)}" ${isChecked}>
                 </td>
                 <td data-label="학생 정보">
                     <div class="student-info-cell">
@@ -172,24 +186,31 @@ async function searchStudents() {
                 <td data-label="최근 활동"><span class="student-meta-text">결제: ${lastActive}</span></td>
                 <td data-label="관리 액션">
                     <div class="action-buttons">
-                        <button class="btn-detail" onclick="goToStudentDetail('${escapeHtml(s.userid)}')"><i class="fas fa-user-cog"></i> 상세관리</button>
-                        <button class="btn-up" onclick="openGrantTierModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">등급UP</button>
-                        <button class="btn-del" onclick="openForceDeleteModal('${escapeHtml(s.userid)}', '${escapeHtml(s.name)}')">탈퇴</button>
+                        <button class="btn-detail"><i class="fas fa-user-cog"></i> 상세관리</button>
+                        <button class="btn-up">등급UP</button>
+                        <button class="btn-del">탈퇴</button>
                     </div>
                 </td>
             `;
+            // 사용자 문자열은 실행 코드가 아니라 이벤트의 데이터로만 전달한다.
+            tr.querySelector('.student-checkbox').addEventListener('change', event => handleStudentCheck(event.currentTarget));
+            tr.querySelector('.btn-detail').addEventListener('click', () => goToStudentDetail(s.userid));
+            tr.querySelector('.btn-up').addEventListener('click', () => openGrantTierModal(s.userid, s.name));
+            tr.querySelector('.btn-del').addEventListener('click', () => openForceDeleteModal(s.userid, s.name));
             tbody.appendChild(tr);
         });
 
     } catch (error) {
+        if (sequence !== studentSearchSequence || localStorage.getItem('userId') !== adminId) return;
         currentStudentList = [];
         updateStudentResultSummary('error');
-        if (error.message !== "Auth expired") tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>데이터를 불러오는 중 오류가 발생했습니다.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' class='empty-msg'>학생 정보를 불러오지 못했습니다. <button type='button' onclick='searchStudents()'>다시 시도</button></td></tr>";
     }
 }
 
 function goToStudentDetail(targetUserId) {
-    window.location.href = `/admin/detail?uid=${targetUserId}`;
+    if (typeof targetUserId !== 'string' || !targetUserId) return;
+    window.location.href = `/admin/detail?uid=${encodeURIComponent(targetUserId)}`;
 }
 
 // 학생 등급을 텍스트로 반환 (CSV용)
@@ -443,6 +464,7 @@ function getTierBadgeHTML(studentItem) {
     if (tier.includes('BLACK')) return '<span style="color:#FFD700; background:#171717; padding:4px 8px; border-radius:12px; font-size:0.8rem; border:1px solid #333; font-weight:bold;">BLACK</span>';
     else if (tier.includes('PRO')) return '<span style="color:#92400e; background:#fef3c7; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">PRO</span>';
     else if (tier.includes('STANDARD')) return '<span style="color:#334155; background:#e2e8f0; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STANDARD</span>';
+    else if (tier === 'STARTER') return '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">STARTER</span>';
     else return '<span style="color:#1e40af; background:#dbeafe; padding:4px 8px; border-radius:12px; font-size:0.8rem; font-weight:bold;">BASIC</span>';
 }
 

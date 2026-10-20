@@ -1,0 +1,151 @@
+import { expect, test } from '@playwright/test';
+import { resolve } from 'node:path';
+import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
+
+test.use({ deviceScaleFactor: 1 });
+
+function summary(date = '2026-09-07') {
+  const days = Array.from({ length: 7 }, (_, index) => ({ date: `2026-09-${String(7 + index).padStart(2, '0')}`, totalSeconds: index ? 0 : 1800, sessionCount: index ? 0 : 1, subjects: index ? [] : [{ subject: '국어', seconds: 1800 }] }));
+  return { available: true, today: { ...days[0], date }, week: { startDate: days[0].date, endDate: days[6].date, totalSeconds: 1800, sessionCount: 1, subjects: days[0].subjects, days } };
+}
+
+async function setup(page, options = {}) {
+  await page.clock.setFixedTime(new Date('2026-09-07T03:00:00Z'));
+  await installAuthenticatedSession(page);
+  await page.addInitScript(() => localStorage.setItem('plannerItems', JSON.stringify([
+    { id: 'overview-done', date: '2026-09-07', subject: '국어', category: '국어', content: '독서', minutes: 30, done: true, start: '09:00', end: '09:30' },
+    { id: 'overview-next', date: '2026-09-07', subject: '수학', category: '수학', content: '기출', minutes: 90, done: false, start: '10:00', end: '11:30' }
+  ])));
+  const api = await installApiMock(page, { tier: 'standard', ...options });
+  api.state.studySummaryOverride = summary();
+  return api;
+}
+
+for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) {
+  test(`홈·플래너만 확정 기록을 표시하고 수조·코칭은 고유 요약을 표시한다 (${width}px)`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const api = await setup(page);
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    const card = page.getByRole('region', { name: '학습 현황 요약' });
+    const summaryRequests = () => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length;
+    for (const screen of ['timer', 'aquarium', 'planner', 'strategy']) {
+      if (screen !== 'timer') await page.locator(`.tabbar [data-tab="${screen}"]`).click();
+      if (screen === 'aquarium' || screen === 'strategy') {
+        await expect(card).toHaveCount(0);
+        await expect(page.locator('.sc-study-details')).toHaveCount(0);
+        await expect(screen === 'aquarium' ? page.getByRole('region', { name: '수조 성장 요약' }) : page.locator('.coaching-hero')).toBeVisible();
+        await expectNoHorizontalOverflow(page);
+        continue;
+      }
+      if (screen === 'planner') {
+        await expect(card).toHaveCount(0);
+        await expect(page.locator('.planner-study-status')).toContainText('오늘 실제 공부 00:30:00');
+        await expect(page.locator('.sc-study-details')).toHaveCount(0);
+        await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
+      } else {
+        await expect(card).toBeVisible();
+        await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+        await expect(card.locator('.sc-study-details')).toHaveCount(0);
+        await expect(page.locator('.home-week-flow .timer-week-day')).toHaveCount(7);
+      }
+      await page.evaluate(() => document.fonts.ready);
+      const file = `${screen}-${width}.png`;
+      await (screen === 'planner' ? page.locator('.planner-study-status') : card).screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, file) : testInfo.outputPath(file), animations: 'disabled' });
+      const fullFile = `${screen}-${width}-page.png`;
+      await page.screenshot({ path: process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR ? resolve(process.env.STUDYCRACK_OVERVIEW_CAPTURE_DIR, fullFile) : testInfo.outputPath(fullFile), fullPage: true, animations: 'disabled' });
+      await expectNoHorizontalOverflow(page);
+    }
+    await expect.poll(summaryRequests).toBe(1);
+    await page.locator('.tabbar [data-tab="planner"]').click();
+    await expect(page.getByRole('progressbar', { name: '플래너 완료율' })).toHaveAttribute('aria-valuenow', '50');
+  });
+}
+
+test('기록 날짜 불일치·조회 실패·재시도를 구분한다', async ({ page }) => {
+  const failures = [];
+  const api = await setup(page, { failGameTypes: failures });
+  api.state.studySummaryOverride = summary('2026-09-08');
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const card = page.getByRole('region', { name: '학습 현황 요약' });
+  await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
+  await expect(card.locator('.sc-study-headline')).toContainText('기록 확인 필요');
+  api.state.studySummaryOverride = summary();
+  await card.getByRole('button', { name: '다시 확인' }).click();
+  await expect(card.locator('.sc-study-headline')).toContainText('00:30:00');
+  await expect(card.locator('details')).toHaveCount(0);
+  await expect(card.locator('.sc-study-metrics')).toHaveCount(0);
+  failures.push('get_study_summary');
+  await page.locator('.home-week-flow').getByRole('button', { name: /이번 주 공부 흐름/ }).click();
+  await page.locator('.home-week-flow').getByRole('button', { name: '기록 새로고침' }).click();
+  await page.locator('.tabbar [data-tab="analysis"]').click();
+  await page.locator('.tabbar [data-tab="timer"]').click();
+  await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
+  await expect(card).toContainText('마지막 확인 기록');
+  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
+  await expect(page.locator('.home-week-flow')).toContainText('마지막 확인 기록');
+  failures.length = 0;
+  api.state.studySummaryOverride = summary();
+  await card.getByRole('button', { name: '다시 확인' }).click();
+  await expect(card.locator('.sc-study-headline')).toContainText('00:30:00');
+  await expect(card).not.toContainText('마지막 확인 기록');
+  await expect(card).not.toContainText('기록 날짜가 달라');
+});
+
+for (const motion of ['no-preference', 'reduce']) test(`미확정 타이머를 확정 일간·주간 기록에 더하지 않는다 (${motion})`, async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: motion });
+  await installAuthenticatedSession(page);
+  const api = await installApiMock(page);
+  api.state.studySeconds = 1800;
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const card = page.getByRole('region', { name: '학습 현황 요약' });
+  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
+  const week = page.locator('.home-week-flow');
+  await page.addStyleTag({ content: '.home-week-flow .sc-disclosure-region { transition-delay: 150ms; }' });
+  const openRecords = async () => {
+    if (await week.getByRole('button', { name: /이번 주 공부 흐름/ }).getAttribute('aria-expanded') === 'false') await week.getByRole('button', { name: /이번 주 공부 흐름/ }).click();
+    const details = week.locator('.sc-disclosure-region');
+    await expect(details).toHaveAttribute('data-open', 'true');
+    await expect(details).toHaveCSS('visibility', 'visible');
+    await expect(details).toHaveCSS('opacity', '1');
+    await expect.poll(() => details.evaluate(el => el.getAnimations().length)).toBe(0);
+    await expect(details.locator('.timer-day-subjects')).toBeVisible();
+  };
+  await openRecords();
+  await expect(week).toContainText('이번 주 공부 흐름');
+  const before = await week.textContent();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '공부 시작', exact: true }).click();
+  await page.locator('.study-plan-options button').filter({ hasText: '독서' }).click();
+  await page.locator('.study-start-confirm').click();
+  await page.getByRole('button', { name: '공부 영역 접기' }).click();
+  await expect(card).toContainText('국어 · 현재 집중 시간');
+  await expect(card.locator('details')).toHaveCount(0);
+  await expect(card.locator('[data-study-base-seconds]')).toHaveAttribute('data-study-base-seconds', '0');
+  await expect(card.locator('[data-study-base-seconds]')).not.toHaveText('00:00:00');
+  await expect(card.locator('.sc-study-headline > small').last()).toHaveText('오늘 확정 00:30:00');
+  expect(api.state.studySeconds).toBe(1800);
+  await openRecords();
+  await expect(week).toHaveText(before);
+});
+
+test('첫 조회 실패는 공부 0분으로 꾸미지 않는다', async ({ page }) => {
+  await setup(page, { failGameTypes: ['get_study_summary'] });
+  await page.goto('/studycrack-mobile.html?screen=timer');
+  const card = page.getByRole('region', { name: '학습 현황 요약' });
+  await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
+  await expect(card.locator('.sc-study-headline b')).toHaveText('기록 확인 필요');
+  await expect(card).not.toContainText('00:00:00');
+  await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+});
+
+test('플래너 직접 진입도 학습 기록을 조회하고 분석은 탭으로 연다', async ({ page }) => {
+  const api = await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  const card = page.getByRole('region', { name: '학습 현황 요약' });
+  await expect(page.locator('.planner-study-status')).toContainText('00:30:00');
+  await expect.poll(() => api.requests.filter(({ payload }) => payload.type === 'get_study_summary').length).toBe(1);
+  await expect(card.locator('.sc-study-score')).toHaveCount(0);
+  await page.locator('.tabbar [data-tab="analysis"]').click();
+  await expect(page.locator('[data-screen="analysis"]')).toBeVisible();
+});

@@ -93,7 +93,9 @@ await postJson({
   payload: { type: 'test' },
   signal: controller.signal
 });
-assert.equal(forwardedSignal, controller.signal);
+assert.equal(forwardedSignal.aborted, false);
+controller.abort();
+assert.equal(forwardedSignal.aborted, false, 'completed requests must detach their cancellation listener');
 
 let expiredResult = null;
 const releaseAuthExpiredHandler = setApiAuthExpiredHandler((result) => {
@@ -112,10 +114,12 @@ releaseAuthExpiredHandler();
 
 const apiModules = [
   'src/features/account/api.js',
+  'src/features/account/target-api.js',
   'src/features/analysis/api.js',
   'src/features/gamification/api.js',
   'src/features/notifications/api.js',
   'src/features/planner/api.js',
+  'src/features/planner/transport.js',
   'src/features/reports/api.js',
   'src/features/session/api.js',
   'src/features/study/api.js',
@@ -139,6 +143,12 @@ const requestTypeGroups = [
 ];
 const requestTypeValues = requestTypeGroups.flatMap((group) => Object.values(group));
 assert.equal(new Set(requestTypeValues).size, requestTypeValues.length, 'Request type values must have one owner.');
+const uiContract = JSON.parse(await readFile(new URL('../fixtures/ui-contract.json', import.meta.url), 'utf8'));
+const consultingV2RequestTypes = uiContract.consultingV2.requestTypes;
+assert.equal(new Set(consultingV2RequestTypes).size, consultingV2RequestTypes.length, 'Consulting v2 request types must be unique.');
+assert.equal(consultingV2RequestTypes.every((value) => value.includes('_v2_')), true, 'Consulting v2 request types must be explicitly versioned.');
+assert.equal(consultingV2RequestTypes.some((value) => /feedback|final_result/.test(value)), false, 'Removed consulting feedback/final-result requests must stay absent.');
+assert.equal(consultingV2RequestTypes.some((value) => requestTypeValues.includes(value)), false, 'Consulting v2 contract must not collide with an existing request owner before implementation.');
 const requestConsumers = [
   ...apiModules,
   'src/features/session/auth-service.js',
@@ -186,8 +196,9 @@ const cancellableResourceHooks = [
 ];
 for (const path of cancellableResourceHooks) {
   const source = await readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-  assert.match(source, /AbortController/, `${path} must cancel obsolete requests.`);
-  assert.match(source, /RequestRef|requestKeyRef|requestKey/, `${path} must reject stale responses.`);
+  const owner = source.includes('useListResource') ? await readFile(new URL('../src/shared/api/use-list-resource.js', import.meta.url), 'utf8') : source.includes('createAnalysisSession') ? await readFile(new URL('../src/features/analysis/analysis-session.js', import.meta.url), 'utf8') : source;
+  assert.match(owner, /AbortController/, `${path} must cancel obsolete requests.`);
+  assert.match(owner, /RequestRef|requestKeyRef|requestKey|if \(!active\) return|entries\.get\(exam\) === entry/, `${path} must reject stale responses.`);
 }
 
 console.log('domain API envelope and ownership contracts passed');

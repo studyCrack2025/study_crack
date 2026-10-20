@@ -4,13 +4,15 @@ export function createSupportInitialState() {
   return {
     serverResource: {
       qnaHistory: [],
-      qnaStatus: 'idle'
+      qnaStatus: 'idle',
+      qnaError: ''
     },
     localDraft: {
       qnaDraftTitle: '',
       qnaDraftContent: ''
     },
     ephemeralUi: {
+      qnaRefreshTick: 0,
       openFaq: '',
       qnaComposerOpen: false,
       qnaSubmitting: false

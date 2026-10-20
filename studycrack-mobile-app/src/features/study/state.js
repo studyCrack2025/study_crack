@@ -14,16 +14,20 @@ export function createStudyInitialState() {
     localDraft: {
       activeStudySession: null,
       rewardPendingSessionId: '',
+      studyRecovery: { pending: [], applied: [], records: null, subjects: null },
       studyStartDraft: { subject: '', activity: '', plannerItemId: '' }
     },
     ephemeralUi: {
       activePlannerItemId: '',
       activeStudySubject: '',
       completionError: '',
+      rewardClaimingSessionId: '',
+      rewardRecoveryError: '',
       rewardResult: null,
       studySubjectSheetOnlyPlanned: false,
       studySubjectSheetOpen: false,
       studySessionDetailsOpen: false,
+      studyPanelMode: '',
       studyTimerRunning: false,
       studyTimerTick: 0,
       timerPhase: 'idle'

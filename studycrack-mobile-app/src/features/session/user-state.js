@@ -8,6 +8,23 @@ import { normalizeTargetUnivSlots, targetSlotsToList } from '../analysis/target-
 
 export function createUserDataResetPatch() {
   return {
+    personalEvents: [],
+    calendarSupportsIdempotency: false,
+    calendarSyncStatus: 'idle',
+    calendarEventDraft: null,
+    calendarEventEditId: null,
+    calendarEventFormOpen: false,
+    calendarSaving: false,
+    calendarMutationError: '',
+    calendarMutationRecovery: null,
+    myReturn: null,
+    drawerOpen: false,
+    streakSummary: { open: false, returnTarget: '' },
+    gameProfile: null,
+    gameProfileStatus: 'idle',
+    habitatDays: [],
+    habitatStatus: 'idle',
+    habitatError: '',
     user: { ...EMPTY_USER },
     userTier: '',
     selectedPlan: '',
@@ -23,6 +40,7 @@ export function createUserDataResetPatch() {
     scoreEditState: createBlankScoreState(),
     analysisResults: [],
     analysisSimulations: [],
+    analysisSimulationStatus: 'idle',
     analysisResultExamMode: '',
     analysisResultSignature: '',
     analysisCalculationRequested: false,
@@ -94,6 +112,7 @@ function mapTargetUnivs(targetUnivs = []) {
 export function mapUserToStatePatch(userData, base = {}) {
   if (!userData || typeof userData !== 'object') return {};
   const patch = {
+    analysisSimulationStatus: 'idle',
     userTier: '',
     selectedPlan: '',
     scores: {},
@@ -107,7 +126,7 @@ export function mapUserToStatePatch(userData, base = {}) {
   const userPatch = { ...EMPTY_USER };
   if (userData.role) userPatch.role = userData.role;
   if (userData.name) userPatch.name = userData.name;
-  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName'].forEach((key) => {
+  ['email', 'socialEmail', 'phone', 'school', 'mbti', 'authProvider', 'marketingAgreedAt', 'profileImage', 'tutorName', 'signupConsent', 'termsAgreed', 'termsAgreedAt', 'marketingRevokedAt', 'marketingConsentUpdatedAt'].forEach((key) => {
     if (userData[key] !== undefined && userData[key] !== null) userPatch[key] = userData[key];
   });
   if (userData.tutorInfo && typeof userData.tutorInfo === 'object') userPatch.tutorInfo = userData.tutorInfo;

@@ -1,36 +1,80 @@
-name: Deploy to S3 and CloudFront (Secure OIDC)
+name: Verify and Deploy
 
 on:
+  pull_request:
+    branches: [dev, main]
   push:
     branches:
       - main
       - dev
+  workflow_dispatch:
+    inputs:
+      rollback_run_id:
+        description: Successful push run ID to restore (same dev/main branch)
+        type: string
+        required: true
+      rollback_commit:
+        description: Full source commit from that run's release summary
+        type: string
+        required: true
+      rollback_digest:
+        description: Manifest SHA-256 from that run's release summary
+        type: string
+        required: true
+      confirmation:
+        description: Type rollback-dev or rollback-main to match the selected branch
+        type: string
+        required: true
 
 permissions:
-  id-token: write
   contents: read
 
+concurrency:
+  group: static-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  verify:
+  prepare:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      suite: ${{ steps.scope.outputs.suite }}
+      artifact-name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      manifest-digest: ${{ steps.candidate.outputs.manifest-digest }}
+    env:
+      RELEASE_BRANCH: ${{ github.base_ref || github.ref_name }}
     defaults:
       run:
         working-directory: studycrack-mobile-app
     steps:
-      - name: Checkout code
+      - name: Checkout code and deployment history
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: studycrack-mobile-app/package-lock.json
+      - name: Select required browser coverage
+        id: scope
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node ../tools/verification-scope.mjs
       - name: Install dependencies
         run: npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev
       - name: Check source contracts
         run: npm run check
+      - name: Check deployment and verification boundaries
+        run: node --test ../tools/test/*.test.mjs
       - name: Check web SEO contracts
         run: node ../tools/check_seo_contract.mjs
       - name: Check Basic v2 frontend contracts
@@ -39,48 +83,216 @@ jobs:
         run: node ../tools/check_measurement_v2.cjs
       - name: Build mobile app bundle
         run: npm run build
-      - name: Record architecture baseline
-        run: node scripts/report-architecture-baseline.mjs > architecture-baseline.json
+      - name: Build versioned public artifact
+        run: node ../tools/site-release.mjs build ../release-artifact "$GITHUB_SHA" "${RELEASE_BRANCH}-${GITHUB_SHA::8}"
+      - name: Seal candidate bytes before browser tests
+        id: candidate
+        run: |
+          ARTIFACT_DIGEST="$(node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA")"
+          echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
+      - name: Upload candidate public artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  e2e:
+    needs: prepare
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.prepare.outputs.suite == 'web-css' && '[1]' || '[1,2,3,4,5,6]') }}
+    defaults:
+      run:
+        working-directory: studycrack-mobile-app
+    steps:
+      - name: Checkout test sources
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: studycrack-mobile-app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Download unchanged candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact-name }}
+          path: release-artifact/
+      - name: Verify candidate bytes before browser tests
+        env:
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
+        run: node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST"
       - name: Install browser runtime
         run: npx playwright install --with-deps chromium
-      - name: Run mobile browser smoke tests
-        run: npm run test:e2e
-      - name: Upload verification artifacts
+      - name: Test required browser coverage
+        env:
+          STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
+          PLAYWRIGHT_SUITE: ${{ needs.prepare.outputs.suite }}
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_TOTAL: ${{ needs.prepare.outputs.suite == 'web-css' && '1' || '6' }}
+        run: npm run test:e2e -- --shard="$SHARD_INDEX/$SHARD_TOTAL" --workers=1 --retries=0
+      - name: Verify candidate bytes remained unchanged during browser tests
+        if: ${{ !cancelled() }}
+        env:
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
+        run: node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST"
+      - name: Record shard timing and failures
+        if: ${{ !cancelled() }}
+        run: node scripts/summarize-e2e-results.mjs test-results/results.json
+      - name: Upload shard diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-verification-${{ github.sha }}
+          name: mobile-e2e-${{ matrix.shard }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            studycrack-mobile-app/architecture-baseline.json
             studycrack-mobile-app/playwright-report/
             studycrack-mobile-app/test-results/
           if-no-files-found: warn
           retention-days: 14
 
-  deploy:
-    needs: verify
+  verify:
+    needs: [prepare, e2e]
+    if: ${{ always() && !cancelled() && (github.event_name == 'push' || github.event_name == 'pull_request') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      artifact-name: ${{ steps.release-info.outputs.artifact-name }}
+      manifest-digest: ${{ steps.release-info.outputs.manifest-digest }}
+      source-commit: ${{ github.sha }}
     steps:
-      - name: Checkout code
+      - name: Require every verification job to pass
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: test "$PREPARE_RESULT" = success && test "$E2E_RESULT" = success
+      - name: Checkout trusted verification tools
         uses: actions/checkout@v4
-
-      # 0. 배포 시점에 자산 버전을 자동 갱신 (dev/main 공통)
-      - name: Bump asset query version for this deploy
-        run: |
-          ASSET_VERSION="${GITHUB_REF_NAME}-${GITHUB_SHA::8}"
-          echo "ASSET_VERSION=${ASSET_VERSION}" >> $GITHUB_ENV
-          ./tools/bump_asset_version.sh "${ASSET_VERSION}"
-
-      # 0.5 모바일 앱(Vite) 번들 빌드 — dist/ 산출물을 배포에 포함(소스 커밋만으론 번들이 없음)
+        with:
+          persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Build mobile app bundle
+      - name: Download tested candidate artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare.outputs.artifact-name }}
+          path: release-artifact/
+      - name: Seal verified artifact identity
+        id: release-info
+        env:
+          CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
         run: |
-          cd studycrack-mobile-app
-          npm ci
-          npm run build
+          ARTIFACT_DIGEST="$(node tools/site-release.mjs verify release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST")"
+          echo "manifest-digest=$ARTIFACT_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=public-site-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Verified release (rollback eligible only after the entire run succeeds)'
+            echo "Source run: ${GITHUB_RUN_ID} (attempt ${GITHUB_RUN_ATTEMPT})"
+            echo "Source commit: ${GITHUB_SHA}"
+            echo "Manifest SHA-256: ${ARTIFACT_DIGEST}"
+            echo 'Retention: 14 days; restore only to the same branch.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload verified public artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release-info.outputs.artifact-name }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  rollback:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      artifact-name: rollback-site-${{ github.run_id }}-${{ github.run_attempt }}
+      manifest-digest: ${{ steps.source.outputs.manifestDigest }}
+      source-commit: ${{ steps.source.outputs.sourceCommit }}
+    steps:
+      - name: Checkout current trusted deployment tools
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check deployment and rollback boundaries
+        run: node --test tools/test/*.test.mjs
+      - name: Validate explicit rollback source
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+          ROLLBACK_COMMIT: ${{ inputs.rollback_commit }}
+          ROLLBACK_DIGEST: ${{ inputs.rollback_digest }}
+          ROLLBACK_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node tools/rollback-source.mjs
+      - name: Download eligible immutable artifact by ID
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.source.outputs.artifactId }}
+          run-id: ${{ steps.source.outputs.sourceRunId }}
+          github-token: ${{ github.token }}
+          merge-multiple: true
+          path: release-artifact/
+      - name: Verify retained artifact with current public policy
+        env:
+          RELEASE_COMMIT: ${{ steps.source.outputs.sourceCommit }}
+          VERIFIED_DIGEST: ${{ steps.source.outputs.manifestDigest }}
+        run: node tools/site-release.mjs verify release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
+      - name: Hand off unchanged rollback bytes
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-artifact/
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    needs: [verify, rollback]
+    if: >-
+      ${{ always() && !cancelled() &&
+          ((github.event_name == 'push' && needs.verify.result == 'success') ||
+           (github.event_name == 'workflow_dispatch' && needs.rollback.result == 'success')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_COMMIT: ${{ needs.verify.outputs.source-commit || needs.rollback.outputs.source-commit }}
+      VERIFIED_DIGEST: ${{ needs.verify.outputs.manifest-digest || needs.rollback.outputs.manifest-digest }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout deployment tools
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Download verified public artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.verify.outputs.artifact-name || needs.rollback.outputs.artifact-name }}
+          path: release-artifact/
+      - name: Verify downloaded bytes before obtaining deployment credentials
+        run: node tools/site-release.mjs verify release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
 
       # 1. DEV 환경 변수 설정 (dev 브랜치 푸시 시 실행)
       - name: Set Environment Variables for DEV
@@ -105,52 +317,25 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ap-northeast-2
 
-      # 4. S3 버킷으로 파일 동기화
-      - name: Deploy to S3
-        run: |
-          # node_modules는 배포 제외(빌드 산출물 dist/만 포함)
-          aws s3 sync . s3://${{ env.S3_BUCKET }} --delete \
-            --exclude ".git/*" --exclude ".github/*" \
-            --exclude "studycrack-mobile-app/node_modules/*" \
-            --exclude "promotion_kcc01.html"
+      - name: Publish verified public files
+        run: node tools/site-release.mjs publish release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
 
-          # HTML은 항상 재검증되도록 짧은 캐시
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "*.html" --exclude "promotion_kcc01.html" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          # 종료된 공개 경로의 기존 객체를 제거한다.
-          aws s3api delete-object --bucket "${{ env.S3_BUCKET }}" --key "promotion/kcc01"
-          aws s3api delete-object --bucket "${{ env.S3_BUCKET }}" --key "promotion_kcc01.html"
-
-          # 설치 메타데이터는 갱신 즉시 반영하고 아이콘은 버전 파일명으로 장기 캐시한다.
-          aws s3 cp studycrack-mobile.webmanifest s3://${{ env.S3_BUCKET }}/studycrack-mobile.webmanifest \
-            --content-type "application/manifest+json; charset=utf-8" \
-            --cache-control "no-cache, no-store, must-revalidate"
-          aws s3 cp assets/pwa s3://${{ env.S3_BUCKET }}/assets/pwa --recursive \
-            --cache-control "public, max-age=31536000, immutable"
-
-          # 버전 쿼리 붙는 정적 자산은 장기 캐시
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" --include "js/*" --include "css/*" --include "assets/basic-v2/*" \
-            --cache-control "public, max-age=31536000, immutable"
-
-          # 모바일 entry는 고정 파일명이라 항상 재검증한다.
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" \
-            --include "studycrack-mobile-app/dist/studycrack-mobile.bundle.js" \
-            --include "studycrack-mobile-app/dist/studycrack-mobile.css" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          # 분할 chunk는 content hash 파일명이므로 장기 캐시한다.
-          aws s3 cp . s3://${{ env.S3_BUCKET }} --recursive \
-            --exclude "*" \
-            --include "studycrack-mobile-app/dist/chunks/*" \
-            --include "studycrack-mobile-app/dist/assets/*" \
-            --cache-control "public, max-age=31536000, immutable"
-
-      # 5. CloudFront 캐시 무효화 (CF_DIST_ID가 비어있지 않을 때만 실행)
       - name: CloudFront Invalidation
         if: env.CF_DIST_ID != ''
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ env.CF_DIST_ID }} --paths "/*"
+          INVALIDATION_ID="$(aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths '/*' --query 'Invalidation.Id' --output text)"
+          aws cloudfront wait invalidation-completed --distribution-id "$CF_DIST_ID" --id "$INVALIDATION_ID"
+      - name: Check published release identity, bytes and response contracts
+        run: node tools/smoke-site-release.mjs "https://${S3_BUCKET}" release-artifact "$RELEASE_COMMIT" "$VERIFIED_DIGEST"
+      - name: Report public security header readiness
+        run: node tools/audit-security-headers.mjs "https://${S3_BUCKET}" --report-only
+      - name: Record published release
+        run: |
+          {
+            echo '### Published release smoke passed'
+            echo "Source commit: ${RELEASE_COMMIT}"
+            echo "Manifest SHA-256: ${VERIFIED_DIGEST}"
+            echo "Release identity: https://${S3_BUCKET}/release.json"
+            echo "Mobile smoke URL: https://${S3_BUCKET}/studycrack-mobile"
+            echo 'Real-account authentication and physical-device acceptance remain separate gates.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -2,8 +2,6 @@ const PLAN_RANK = { free: 0, trial: 0, basic: 1, starter: 1, standard: 2, pro: 3
 
 const SCREEN_REQUIREMENTS = {
   strategy: 'standard',
-  planner: 'basic',
-  plannerAdd: 'basic',
   weekly: 'standard',
   report: 'pro',
   reportDetail: 'pro',
@@ -57,6 +55,12 @@ export function canAccessTier(state, requiredTier) {
   return (PLAN_RANK[getEffectiveTier(state)] || 0) >= (PLAN_RANK[requiredTier] || 0);
 }
 
+export function canUsePersonalPlanner(state = {}, hasSession = false) {
+  const user = state.user;
+  return Boolean(hasSession && state.userLoadStatus === 'ready' && user?.role === 'student'
+    && !['deletionState', 'deletedAt', 'redirectTo'].some(field => Object.hasOwn(user, field)));
+}
+
 export function canUseScoreSimulation(state) {
   const activeSubscription = pickActiveAccessSubscription(state?.user || {});
   if (!activeSubscription) return false;
@@ -64,6 +68,12 @@ export function canUseScoreSimulation(state) {
 }
 
 export function canUseReverseProjection(state) {
+  const activeSubscription = pickActiveAccessSubscription(state?.user || {});
+  if (!activeSubscription) return false;
+  return ['basic', 'starter', 'standard', 'pro'].includes(normalizeAccessTier(activeSubscription.tier));
+}
+
+export function canChangeUniversitiesUnlimited(state) {
   const activeSubscription = pickActiveAccessSubscription(state?.user || {});
   if (!activeSubscription) return false;
   return ['standard', 'pro'].includes(normalizeAccessTier(activeSubscription.tier));

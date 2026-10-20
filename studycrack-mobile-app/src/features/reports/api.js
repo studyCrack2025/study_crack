@@ -1,6 +1,7 @@
 import { apiFailure, apiInvalidResponse, apiSuccess, postJson } from '../../shared/api/client.js';
 import { REPORT_REQUEST_TYPES } from '../../shared/api/request-types.js';
 import { isRecord, validateModelList, validateWeeklyReport } from '../../shared/model/contracts.js';
+import { getMobileBrowserServices } from '../../shared/browser/mobile-runtime.js';
 
 function validateProReport(value) {
   return isRecord(value) && typeof value.key === 'string' && Boolean(value.key.trim())
@@ -93,6 +94,8 @@ function fallbackMimeType(fileName = '') {
 }
 
 export async function uploadMobileFile({ apiFetch, fetchImpl = globalThis.fetch, file, fileApiUrl, folder } = {}) {
+  const browser = getMobileBrowserServices().browser;
+  const scope = browser?.captureClientSession?.();
   if (typeof fetchImpl !== 'function' || typeof FormData === 'undefined') return apiFailure('현재 환경에서 파일 업로드를 사용할 수 없습니다.');
   if (!file) return apiSuccess('');
   const fileName = file.name || 'upload.jpg';
@@ -111,7 +114,9 @@ export async function uploadMobileFile({ apiFetch, fetchImpl = globalThis.fetch,
     const formData = new FormData();
     Object.entries(presign.data?.fields || {}).forEach(([key, value]) => formData.append(key, value));
     formData.append('file', file);
-    const uploadResponse = await fetchImpl(presign.data?.uploadUrl, { method: 'POST', body: formData });
+    const upload = signal => fetchImpl(presign.data?.uploadUrl, { method: 'POST', body: formData, signal });
+    const uploadResponse = browser?.boundedClientRequest ? await browser.boundedClientRequest(upload) : await upload();
+    if (scope && !browser.isClientSessionCurrent(scope)) return apiFailure('요청이 취소됐어요.', { code: 'REQUEST_ABORTED' });
     if (!uploadResponse?.ok) return apiFailure('S3 파일 업로드에 실패했습니다.', { status: uploadResponse?.status || 0 });
     return apiSuccess(presign.data?.fileUrl || '', { status: uploadResponse.status || 200 });
   } catch (error) {

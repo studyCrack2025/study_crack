@@ -1,4 +1,5 @@
 import { getData } from './action-utils.js';
+import { setScoreCardDom } from './score-card-view.js';
 import { removeTargetSlot, targetSlotsToList } from '../features/analysis/target-model.js';
 
 function noop() {}
@@ -52,7 +53,6 @@ export function createAnalysisHandlers(ctx) {
     resetAnalysisCalculation = noop,
     restoreIfUnexpectedTopJump = noop,
     setActiveScoreView,
-    setAddingUniversity,
     setAnalysisBarProjectionTarget,
     setAnalysisHighlightedSubject,
     setAnalysisSearchOpen,
@@ -67,35 +67,22 @@ export function createAnalysisHandlers(ctx) {
     setTargetDeleteSaving,
     setTargetUnivSlots,
     setTargetOpen,
-    setUniversityModalOpen,
     setUniversityCatalogError,
     setUniversityCatalogRetryTick,
     setUniversityCatalogStatus,
     setUniversitySelectedName,
     setUniversityRecommendationRetryTick,
     persistTargetUnivs = noop,
-    timeout = setTimeout,
     updatePossibleUnivSlider = noop
   } = ctx;
 
   return {
     setScoreView({ actionEl, event }) {
       const nextView = getData(actionEl, 'score-view', 'current');
-      if (ctx.isIOSSafari?.()) {
-        ctx.setScoreCardDom?.(actionEl, nextView);
-        return true;
-      }
-      if (ctx.screen === 'ob5') {
-        const card = actionEl?.closest?.('.score-journey-card');
-        if (!card) return false;
-        card.querySelectorAll?.('.score-journey-segment button')?.forEach((btn) => {
-          btn.classList?.toggle?.('active', btn.getAttribute?.('data-score-view') === nextView);
-        });
-        const track = card.querySelector?.('.score-journey-track');
-        if (track) {
-          track.style.setProperty('--score-slide-x', nextView === 'target' ? '-50%' : '0%');
-          track.style.setProperty('--score-slide-transition', 'transform .56s cubic-bezier(.22,.61,.36,1)');
-        }
+      if (ctx.screen === 'ob5' || ctx.isIOSSafari?.()) {
+        if (!setScoreCardDom(actionEl, nextView)) return false;
+        setActiveScoreView(nextView);
+        setScoreDragOffset(0);
         return true;
       }
       keepScrollPosition(700);
@@ -212,18 +199,21 @@ export function createAnalysisHandlers(ctx) {
       return true;
     },
 
-    addAnalysisTarget({ actionEl }) {
-      const major = getData(actionEl, 'target-major');
-      if (!major) return false;
-      afterSafariViewportStable(() => setUniversityModalOpen(false));
-      afterSafariViewportStable(() => setAnalysisSearchOpen(false));
+    openUniversitySearch() {
+      if (!ctx.canChangeUniversitiesUnlimited && ctx.user?.univChangeRemaining === 0) {
+        goto('proIntro');
+        return true;
+      }
+      setUniversitySelectedName('');
       setAnalysisSearchTerm('');
-      setAddingUniversity(true);
-      timeout(() => {
-        addMajorToTargets(major);
-        setAddingUniversity(false);
-      }, 500);
+      setAnalysisSearchOpen(true);
       return true;
+    },
+
+    async addAnalysisTarget({ actionEl }) {
+      const major = getData(actionEl, 'target-major');
+      if (!major || ctx.addingUniversity) return false;
+      return await addMajorToTargets(major);
     },
 
     addPossibleUniversity({ actionEl }) {
@@ -257,6 +247,7 @@ export function createAnalysisHandlers(ctx) {
     },
 
     async confirmTargetDelete() {
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
       if (ctx.targetDeleteSaving) return true;
       const major = ctx.targetDeleteCandidate;
       if (!major) return false;
@@ -277,12 +268,14 @@ export function createAnalysisHandlers(ctx) {
       setTargetDeleteSaving(true);
       setTargetDeleteError('');
       const result = await persistTargetUnivs(nextTargets, nextSlots);
-      if (result && result.ok === false) {
+      if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
+      if (result?.ok !== true) {
         setTargetDeleteSaving(false);
-        setTargetDeleteError(result.error || '목표 대학 저장에 실패했습니다.');
+        setTargetDeleteError(result?.error || '목표 대학 저장에 실패했습니다.');
         return false;
       }
       setTargetUnivSlots(nextSlots);
+      if (result?.ok === true) ctx.applySavedProfileTarget?.(nextTargets[0]);
       setAnalysisTargetList(nextAnalysis);
       if (ctx.targetMajor === major) {
         resetAnalysisCalculation();

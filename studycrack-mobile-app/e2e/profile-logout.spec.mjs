@@ -1,0 +1,108 @@
+import { expect, test } from '@playwright/test';
+import { installApiMock, installAuthenticatedSession, expectNoHorizontalOverflow } from './support/mock-api.mjs';
+
+test('세션 종료는 회원 화면을 정리하고 이전 계정 저장소의 늦은 쓰기를 차단한다', async ({ page }) => {
+  await installAuthenticatedSession(page, { restoreOnNavigation: false });
+  await installApiMock(page, { tier: 'standard', userOverrides: { name: '이전계정학생' } });
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await expect(page.getByText(/이전계정학생/).first()).toBeVisible();
+  await page.evaluate(() => {
+    window.__oldStorage = getClientAccountStorage();
+    window.__oldStorage.setItem('scope-test', 'old-value');
+    clearClientSession();
+  });
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+  await expect(page.getByText(/이전계정학생/)).toHaveCount(0);
+  const result = await page.evaluate(() => {
+    const scope = beginClientLogin();
+    localStorage.setItem('userId', 'new-owner');
+    completeClientLogin({ accessToken: 'new-token', idToken: 'new-id' }, scope);
+    let blocked = false;
+    try { window.__oldStorage.setItem('scope-test', 'stale'); } catch (_) { blocked = true; }
+    return { blocked, old: localStorage.getItem('sc_account:e2e-student:scope-test'), next: getClientAccountStorage().getItem('scope-test') };
+  });
+  expect(result).toEqual({ blocked: true, old: 'old-value', next: null });
+});
+
+for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932], [568, 320]]) {
+  test(`프로필 고정 로그아웃과 취소 초점·스크롤 복원 (${width}x${height})`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await installAuthenticatedSession(page);
+    const api = await installApiMock(page, { tier: 'standard', userOverrides: { name: '긴이름을 가진 테스트 학생' } });
+    await page.goto('/studycrack-mobile.html?screen=timer');
+    await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+    const sheet = page.getByRole('dialog', { name: '프로필 메뉴', exact: true });
+    const button = sheet.getByRole('button', { name: '로그아웃', exact: true });
+    await expect(button).toBeVisible();
+    const box = await button.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(height);
+    await sheet.locator('.my-summary-body').evaluate(el => { el.scrollTop = 180; });
+    const scroll = await sheet.locator('.my-summary-body').evaluate(el => el.scrollTop);
+    await page.screenshot({ path: info.outputPath(`profile-footer-${width}.png`), animations: 'disabled' });
+    for (const dismiss of ['cancel', 'escape']) {
+      await button.click();
+      const modal = page.getByRole('dialog', { name: '로그아웃 확인', exact: true });
+      await expect(modal).toBeVisible();
+      await expect(page.getByRole('dialog')).toHaveCount(1);
+      await expect(modal.getByRole('button', { name: '취소' })).toBeFocused();
+      await page.keyboard.press('Shift+Tab');
+      await expect(modal.getByRole('button', { name: '로그아웃', exact: true })).toBeFocused();
+      if (dismiss === 'cancel') await modal.getByRole('button', { name: '취소' }).click();
+      else await page.keyboard.press('Escape');
+      await expect(button).toBeFocused();
+      expect(await sheet.locator('.my-summary-body').evaluate(el => el.scrollTop)).toBe(scroll);
+    }
+    expect(api.requests.filter(r => r.payload.type === 'logout')).toHaveLength(0);
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const screen of ['timer', 'my', 'settingsMain']) {
+  test(`로그아웃 ${screen} 진입은 기존 종료 경로를 한 번 사용한다`, async ({ page }) => {
+    await installAuthenticatedSession(page, { restoreOnNavigation: false });
+    const api = await installApiMock(page, { tier: 'standard' });
+    await page.goto(`/studycrack-mobile.html?screen=${screen}`);
+    if (screen === 'timer') await page.getByRole('button', { name: '프로필 메뉴 열기' }).click();
+    await page.locator('[data-action="openLogoutModal"]').click();
+    const modal = page.getByRole('dialog', { name: '로그아웃 확인', exact: true });
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: '취소' }).click();
+    await expect(page.locator('[data-action="openLogoutModal"]')).toBeFocused();
+    await page.locator('[data-action="openLogoutModal"]').click();
+    await modal.getByRole('button', { name: '로그아웃', exact: true }).click();
+    await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+    await expect.poll(() => api.requests.filter(r => r.payload.type === 'logout')).toHaveLength(1);
+    expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+  });
+}
+
+test('서버 로그아웃 무응답이어도 모바일 로그인 화면으로 빠져나온다', async ({ page }) => {
+  await installAuthenticatedSession(page, { restoreOnNavigation: false });
+  await installApiMock(page, { tier: 'standard' });
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (url, options = {}) => {
+      let body;
+      try { body = JSON.parse(options.body || '{}'); } catch (_) {}
+      if (body?.type === 'logout') {
+        window.__logoutSignal = options.signal;
+        options.signal?.addEventListener('abort', () => sessionStorage.setItem('__logoutAborted', 'true'));
+        return new Promise(() => {});
+      }
+      return originalFetch(url, options);
+    };
+  });
+  await page.goto('/studycrack-mobile.html?screen=my');
+  await page.locator('[data-action="openLogoutModal"]').click();
+  await page.clock.install();
+  await page.getByRole('dialog', { name: '로그아웃 확인', exact: true }).getByRole('button', { name: '로그아웃', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__logoutSignal))).toBe(true);
+  expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
+  expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).toBeNull();
+  await page.clock.fastForward(5000);
+  await expect(page.locator('[data-screen="authLogin"]')).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('__logoutAborted'))).toBe('true');
+});

@@ -1,6 +1,7 @@
 import { apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { USER_REQUEST_TYPES } from '../../shared/api/request-types.js';
-import { validateServerStudySession, validateStudySessionId } from './session-model.js';
+import { validateStudySessionId } from './session-model.js';
+import { validateServerStudySession } from './server-contract.js';
 import { validateStudySummary } from './summary-model.js';
 
 export async function fetchStudySummary({ apiFetch, signal, userApiUrl } = {}) {
@@ -32,7 +33,7 @@ export async function startServerStudySession({ apiFetch, session, userApiUrl } 
   });
   if (!response.ok) return response;
   const contract = validateServerStudySession(response.data);
-  return contract.ok ? response : apiInvalidResponse(response, contract.error);
+  return contract.ok && response.data.sessionId === id.value ? response : apiInvalidResponse(response, contract.error || '공부 세션이 일치하지 않습니다.');
 }
 
 export async function completeServerStudySession({ apiFetch, sessionId, userApiUrl } = {}) {
@@ -46,5 +47,6 @@ export async function completeServerStudySession({ apiFetch, sessionId, userApiU
   });
   if (!response.ok) return response;
   const contract = validateServerStudySession(response.data);
-  return contract.ok ? response : apiInvalidResponse(response, contract.error);
+  return contract.ok && response.data.sessionId === id.value && response.data.status === 'completed'
+    ? response : apiInvalidResponse(response, contract.error || '공부 완료가 확인되지 않았습니다.');
 }

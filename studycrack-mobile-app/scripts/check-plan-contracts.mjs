@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { PLAN_META } from '../src/constants/plans.js';
+import { createServiceHandlers } from '../src/handlers/service-handlers.js';
+import { buildMembershipSummary } from '../src/screens/service/membership-presentation.js';
 
 const [scriptSource, serviceSource, paymentSource] = await Promise.all([
   readFile(new URL('../../js/script.js', import.meta.url), 'utf8'),
@@ -9,8 +11,8 @@ const [scriptSource, serviceSource, paymentSource] = await Promise.all([
 ]);
 
 const expectedPrices = {
-  Basic: ['25,000원 / 4주', '6,250원 / 주'],
-  Starter: ['39,000원 / 1회', '39,000원'],
+  Basic: ['25,000원', ''],
+  Starter: ['39,000원 / 1회', ''],
   Standard: ['49,000원 / 4주', '12,250원 / 주'],
   Pro: ['149,000원 / 4주', '37,250원 / 주']
 };
@@ -26,8 +28,70 @@ for (const token of ['25,000', '39,000', '12,250', '37,250']) {
 }
 for (const token of ['49,000', '149,000']) assert.ok(paymentSource.includes(token), `Web payment total is missing ${token}`);
 
-assert.ok(PLAN_META.Basic.features.includes('전 과목 원점수 +1 환산 효율'), 'Basic must expose every subject efficiency');
-assert.ok(PLAN_META.Standard.features.includes('합격권 최소 원점수 역산'), 'Standard must include reverse projection');
+const text = html => html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+const cards = [...paymentSource.matchAll(/<article class="price-row[^"\n]*" data-tier="([a-z]+)">([\s\S]*?)<\/article>/g)];
+assert.equal(cards.length, 4);
+const totals = { basic: '25,000', starter: '39,000', standard: '49,000', pro: '149,000' };
+for (const [plan, meta] of Object.entries(PLAN_META)) {
+  const tier = plan.toLowerCase();
+  const card = cards.find(row => row[1] === tier)?.[2];
+  assert.ok(card, `${plan} web card exists`);
+  assert.equal(text(card.match(/<h2[^>]*>(.*?)<\/h2>/s)[1]), plan.toUpperCase());
+  assert.equal(meta.desc, text(card.match(/<p>(.*?)<\/p>/s)[1]), `${plan} subtitle`);
+  assert.deepEqual(meta.features, [...card.matchAll(/<li>(.*?)<\/li>/gs)].map(row => text(row[1])), `${plan} exact ordered benefits`);
+  assert.equal(meta.originalPrice, text(card.match(/<span class="price-origin">(.*?)<\/span>/s)?.[1] || ''), `${plan} list price`);
+  assert.equal(meta.discountNote || '', text(card.match(/<span class="price-discount-note">(.*?)<\/span>/s)?.[1] || ''), `${plan} discount and total`);
+  assert.ok(meta.payPrice.startsWith(`${totals[tier]}원`));
+  assert.ok(text(card).includes(totals[tier]));
+  assert.ok(text(card).includes(`${plan.toUpperCase()} 선택하기`));
+  if (['standard', 'pro'].includes(tier)) {
+    assert.equal(meta.payPrice, `${text(card.match(/<strong>(.*?)<\/strong>/s)[1])}원 / 4주`);
+    assert.ok(text(card).includes(`주당 환산 ${meta.weeklyPrice.replace(" / 주", "")}`));
+    assert.equal(meta.payPrice, `${totals[tier]}원 / 4주`);
+  } else {
+    assert.equal(meta.weeklyPrice, '');
+    assert.doesNotMatch(meta.payPrice + meta.billingNote, /4주|28일/);
+  }
+  let destination;
+  const handlers = createServiceHandlers({ checkoutPlan: plan, duration: '12주', document: { body: { dataset: { selectedDuration: '8주' } } }, window: { location: { assign: url => { destination = url; } } } });
+  assert.equal(handlers.selectDuration, undefined);
+  handlers.openWebPayment();
+  const url = new URL(destination, 'https://example.test');
+  assert.equal(url.searchParams.get('plan'), tier);
+  assert.equal(url.searchParams.get('duration'), ['standard', 'pro'].includes(tier) ? '4주' : null, 'stale duration cannot affect checkout');
+}
+assert.match(paymentSource, /모든 플랜은 VAT 포함 단건 결제/);
+assert.match(serviceSource, /합격컷 도달 위한 목표 성적 제시/);
+assert.ok(!PLAN_META.Basic.features.includes('합격컷 도달 위한 목표 성적 제시'), 'Do not silently merge conflicting web benefits');
 assert.doesNotMatch(JSON.stringify(PLAN_META), /합격확률|합격 가능성/, 'Mobile plan copy must describe converted scores, not probability');
+assert.match(PLAN_META.Basic.complete, /무료 개인 플래너/);
+const mobileServiceCss = await readFile(new URL('../src/styles/screens/service.css', import.meta.url), 'utf8');
+assert.match(mobileServiceCss, /\.plan-console-selector b\{font-size:var\(--sc-type-caption\)/, '플랜 선택 가격은 14px 보조 기준을 사용합니다.');
+assert.doesNotMatch(mobileServiceCss, /font-size:(?:10|11|12|13)(?:\.\d+)?px/, '좁은 화면에서 상품명이나 조건을 다시 작게 줄이지 않습니다.');
+assert.match(mobileServiceCss, /\.plan-console-cta\{[^}]*min-height:52px;height:auto;[^}]*white-space:normal/, '긴 결제 문구와 글자 확대에도 버튼 높이가 자연스럽게 늘어나야 합니다.');
+for (const source of [serviceSource, paymentSource]) {
+  assert.match(text(source), /개인 플래너[\s\S]*공부 타이머[\s\S]*무료/);
+  assert.match(text(source), /SKY 튜터[\s\S]*이용권/);
+}
 
-console.log('plan contracts passed: web prices, Basic efficiency and Standard reverse projection.');
+const expired = buildMembershipSummary({ userTier: 'free', checkoutPlan: 'Pro', user: { currentSubscription: { tier: 'pro', endDate: '2020-01-01' } } });
+assert.equal(expired.label, 'FREE');
+assert.match(expired.detail, /유료 이용권이 없어요/);
+assert.equal(buildMembershipSummary({ checkoutPlan: 'Pro' }).label, '확인 중');
+assert.equal(buildMembershipSummary({ userTier: 'basic', targetPolicy: { label: '대학 변경 0회 남음' } }).detail, '대학 변경 0회 남음');
+assert.match(buildMembershipSummary({ userTier: 'starter' }).detail, /확인 필요/);
+assert.match(buildMembershipSummary({ userTier: 'pro', user: { currentSubscription: { tier: 'pro', endDate: '2030-10-01T00:00:00Z' } }, targetPolicy: { label: '대학 변경 무제한' } }).detail, /2030\.10\.01까지 · 대학 변경 무제한/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', startDate: '2030-10-01T00:00:00Z' } } }).detail, /2030\.10\.29까지/);
+assert.match(buildMembershipSummary({ userTier: 'standard', user: { currentSubscription: { tier: 'standard', endDate: 'invalid' } } }).detail, /이용 기한 확인 필요/);
+console.log('plan contracts passed: web purchase cards, prices, membership status and stale-duration handoff.');
+
+const transferSource = await readFile(new URL('../../checkout-transfer.html', import.meta.url), 'utf8');
+const adminSource = await readFile(new URL('../../admin_index.html', import.meta.url), 'utf8');
+for (const [tier, amount] of Object.entries({ BASIC: 25000, STARTER: 39000, STANDARD: 49000, PRO: 149000 })) {
+  assert.match(transferSource, new RegExp("name: '" + tier + "', price: " + amount + "[,\\\\s]"), tier + ' transfer display');
+}
+assert.ok(adminSource.includes('STANDARD 플랜 (4주 49,000원)'));
+assert.ok(adminSource.includes('PRO 플랜 (4주 149,000원)'));
+assert.doesNotMatch(adminSource, /월 (149,000|299,000)원/);
+assert.match(PLAN_META.Standard.originalPrice, /149,000원 \/ 4주/);
+assert.match(PLAN_META.Pro.originalPrice, /299,000원 \/ 4주/);

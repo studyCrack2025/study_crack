@@ -159,6 +159,10 @@ function renderProTab() {
 function createProPeriodBox(title, data, reportKey, userRole) {
     const box = document.createElement('div');
     box.className = 'pro-period-section';
+    if (!isSafeReportDomKey(reportKey)) {
+        box.textContent = '리포트 식별자가 올바르지 않아 표시할 수 없습니다.';
+        return box;
+    }
     box.id = reportKey;
 
     const isTutor = (userRole === 'tutor');
@@ -200,7 +204,7 @@ function createProPeriodBox(title, data, reportKey, userRole) {
 
     box.innerHTML = `
         <div class="pro-period-title">
-            <span>${title}</span>
+            <span>${escapeHtml(title)}</span>
             <span style="font-size:0.85rem; color:#64748b; font-weight:normal;">
                 ${safeData.updatedAt ? '(최근 저장: ' + new Date(safeData.updatedAt).toLocaleString() + ')' : ''}
             </span>
@@ -223,7 +227,7 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
     return `
         <div class="write-item">
             <label class="write-label">${label}</label>
-            <textarea id="${key}_item${idx}" class="write-textarea" ${readOnly} placeholder="최소 ${minLen}자 이상 상세히 입력해주세요." oninput="updateCharCount(this, '${key}_count${idx}', ${minLen})">${val}</textarea>
+            <textarea id="${key}_item${idx}" class="write-textarea" ${readOnly} placeholder="최소 ${minLen}자 이상 상세히 입력해주세요." oninput="updateCharCount(this, '${key}_count${idx}', ${minLen})">${escapeHtml(val)}</textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
                 <div id="${key}_count${idx}" class="char-count ${validClass}">${len} / 최소 ${minLen}자</div>
                 <button id="${key}_btn${idx}" class="temp-save-btn" onclick="tempSaveProItem('${key}', ${idx})" ${btnStyle}>임시저장</button>
@@ -232,11 +236,13 @@ function createTextAreaHtml(key, idx, label, val, readOnly, btnStyle) {
 }
 
 function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, rejectReason = '') {
+    if (!isSafeReportDomKey(key)) return '';
+    reportLink = safeAttachmentUrl(reportLink);
     if (status === 'published' || status === 'sent') {
         return `
             <div class="action-bar">
                 <span style="color:#2563eb; font-weight:bold;"><i class="fas fa-check-circle"></i> 학생에게 리포트 전송 완료</span>
-                ${reportLink ? `<a href="${reportLink}" target="_blank" style="margin-left:10px; text-decoration:underline; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인</a>` : ''}
+                ${reportLink ? `<a href="${escapeHtml(reportLink)}" target="_blank" rel="noopener noreferrer" style="margin-left:10px; text-decoration:underline; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인</a>` : ''}
                 ${isAdmin ? `<button class="edit-report-btn show" onclick="enableProEdit('${key}')" style="margin-left:auto;">수정하기(관리자)</button>` : ''}
             </div>`;
     }
@@ -247,7 +253,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
                 <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="color:#1e3a8a; font-weight:bold; font-size:1.05rem;"><i class="fas fa-search"></i> 관리자가 PDF 첨부를 완료했습니다. 최종 검수를 진행해주세요.</span>
-                        ${reportLink ? `<a href="${reportLink}" target="_blank" style="background:#fff; padding:6px 12px; border-radius:6px; border:1px solid #bfdbfe; text-decoration:none; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인하기</a>` : ''}
+                        ${reportLink ? `<a href="${escapeHtml(reportLink)}" target="_blank" rel="noopener noreferrer" style="background:#fff; padding:6px 12px; border-radius:6px; border:1px solid #bfdbfe; text-decoration:none; color:#2563eb; font-weight:bold;"><i class="fas fa-file-pdf"></i> 첨부된 PDF 확인하기</a>` : ''}
                     </div>
                     <div style="display:flex; gap: 10px; justify-content: flex-end; margin-top:10px;">
                         <button class="edit-report-btn show" style="border-color:#ef4444; color:#ef4444;" onclick="requestAdminRereview('${key}')"><i class="fas fa-undo"></i> 관리자에게 재검토 요청</button>
@@ -262,7 +268,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
     if (status === 'completed' || status === 'admin_review') {
         if (isAdmin) {
             const rejectHtml = rejectReason ? `<div style="background:#fef2f2; color:#b91c1c; padding:10px; border-radius:6px; margin-bottom:15px; font-weight:bold; font-size: 0.95rem;">🚨 [튜터 재검토 요청 사유]<br><span style="font-weight:normal;">${escapeHtml(rejectReason)}</span></div>` : '';
-            const existingPdfHtml = reportLink ? `<div style="margin-bottom: 10px; font-size: 0.9rem; color: #475569;">현재 첨부된 파일: <a href="${reportLink}" target="_blank" style="color:#2563eb; text-decoration:underline;">기존 PDF 확인</a></div>` : '';
+            const existingPdfHtml = reportLink ? `<div style="margin-bottom: 10px; font-size: 0.9rem; color: #475569;">현재 첨부된 파일: <a href="${escapeHtml(reportLink)}" target="_blank" rel="noopener noreferrer" style="color:#2563eb; text-decoration:underline;">기존 PDF 확인</a></div>` : '';
 
             return `
                 <div class="action-bar" style="flex-direction: column; align-items: stretch; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px;">
@@ -291,6 +297,7 @@ function getActionHtml(status, isTutor, isAdmin, reportLink, key, hasContent, re
 }
 
 function requestAdminRereview(key) {
+    if (!isSafeReportDomKey(key)) return;
     const existingModal = document.getElementById('rejectReasonModal');
     if (existingModal) existingModal.remove();
 

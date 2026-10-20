@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { resolveFishArtwork } from '../../features/gamification/fish-artwork.js';
 import { FishSprite } from './FishSprite.jsx';
 
@@ -11,20 +11,23 @@ const VARIANT_SIZES = Object.freeze({
 
 export function FishArtwork({ assetKey = '', colors, fishId = '', growthStage = 'young', priority = false, speciesId = 'clownfish', variant = 'grid' }) {
   const artwork = resolveFishArtwork({ assetKey, speciesId });
-  const identity = artwork?.assetKey || `${assetKey}:${speciesId}`;
+  const safeVariant = Object.hasOwn(VARIANT_SIZES, variant) ? variant : 'grid';
+  if (!artwork) return <FishSprite colors={colors} fishId={fishId} growthStage={growthStage} speciesId={speciesId} />;
+  return <LoadedFishArtwork key={`${artwork.assetKey}:${safeVariant}`} artwork={artwork} colors={colors} fishId={fishId} growthStage={growthStage} priority={priority} speciesId={speciesId} safeVariant={safeVariant} />;
+}
+
+function LoadedFishArtwork({ artwork, colors, fishId, growthStage, priority, speciesId, safeVariant }) {
+  const identity = artwork.assetKey;
   const [failedIdentity, setFailedIdentity] = useState('');
   const [loadedIdentity, setLoadedIdentity] = useState('');
-
-  useEffect(() => {
-    setFailedIdentity('');
-    setLoadedIdentity('');
+  const imageRef = useCallback(node => {
+    if (node?.complete && node.naturalWidth > 0) setLoadedIdentity(identity);
   }, [identity]);
 
-  if (!artwork || failedIdentity === identity) {
+  if (failedIdentity === identity) {
     return <FishSprite colors={colors} fishId={fishId} growthStage={growthStage} speciesId={speciesId} />;
   }
 
-  const safeVariant = Object.hasOwn(VARIANT_SIZES, variant) ? variant : 'grid';
   const primarySrc = artwork[safeVariant];
   const safeId = String(fishId || speciesId).replace(/[^A-Za-z0-9_-]/g, '') || 'unknown';
   const safeSpeciesId = String(speciesId).replace(/[^A-Za-z0-9_-]/g, '') || 'unknown';
@@ -33,6 +36,7 @@ export function FishArtwork({ assetKey = '', colors, fishId = '', growthStage = 
   return (
     <span className={`aquarium-fish-artwork fish-artwork-${safeVariant} fish-species-${safeSpeciesId} fish-id-${safeId} ${loadedIdentity === identity ? 'is-loaded' : 'is-loading'}`} style={{ '--fish-scale': scale }} aria-hidden="true">
       <img
+        ref={imageRef}
         className="aquarium-fish-image"
         src={primarySrc}
         srcSet={safeVariant === 'pixel' ? undefined : `${artwork.grid} 256w, ${artwork.detail} 512w, ${artwork.habitat} 768w`}

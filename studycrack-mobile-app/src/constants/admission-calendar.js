@@ -5,10 +5,10 @@
 
 // 카테고리 표시 규칙. 공식/개인 공용.
 export const CALENDAR_CATEGORIES = {
-  exam: { label: '시험', color: '#4c79ee', official: true },
-  application: { label: '원서접수', color: '#E8590C', official: true },
-  school: { label: '학력평가', color: '#2F9E44', official: true },
-  personal: { label: '내 일정', color: '#7048E8', official: false }
+  exam: { label: '시험', color: 'var(--sc-info-blue)', official: true },
+  application: { label: '원서접수', color: 'var(--sc-action-urgent)', official: true },
+  school: { label: '학력평가', color: 'var(--sc-action-positive-strong)', official: true },
+  personal: { label: '내 일정', color: 'var(--sc-state-rare)', official: false }
 };
 
 export const PERSONAL_CALENDAR_CATEGORIES = ['exam', 'application', 'school', 'personal'];
@@ -23,13 +23,13 @@ export function getCalendarCategoryMeta(category) {
 // 카테고리: exam=평가원 모평·수능, school=교육청 학력평가, application=대입 수시/정시 일정.
 export const OFFICIAL_ADMISSION_EVENTS_BY_YEAR = {
   2026: [
-    { id: 'official-2026-mock-03', title: '3월 학력평가 (서울교육청)', date: '2026-03-24', category: 'school' },
-    { id: 'official-2026-mock-05', title: '5월 학력평가 (경기교육청)', date: '2026-05-07', category: 'school' },
-    { id: 'official-2026-mopyeong-06', title: '6월 모의평가 (평가원)', date: '2026-06-04', category: 'exam' },
-    { id: 'official-2026-mock-07', title: '7월 학력평가 (인천교육청)', date: '2026-07-08', category: 'school' },
-    { id: 'official-2026-mopyeong-09', title: '9월 모의평가 (평가원)', date: '2026-09-02', category: 'exam' },
-    { id: 'official-2026-mock-10', title: '10월 학력평가 (서울교육청)', date: '2026-10-20', category: 'school' },
-    { id: 'official-2026-suneung', title: '2027학년도 대학수학능력시험', date: '2026-11-19', category: 'exam' },
+    { id: 'official-2026-mock-03', title: '3월 학력평가 (서울교육청)', shortTitle: '3월 학력평가', date: '2026-03-24', category: 'school' },
+    { id: 'official-2026-mock-05', title: '5월 학력평가 (경기교육청)', shortTitle: '5월 학력평가', date: '2026-05-07', category: 'school' },
+    { id: 'official-2026-mopyeong-06', title: '6월 모의평가 (평가원)', shortTitle: '6월 모의평가', date: '2026-06-04', category: 'exam' },
+    { id: 'official-2026-mock-07', title: '7월 학력평가 (인천교육청)', shortTitle: '7월 학력평가', date: '2026-07-08', category: 'school' },
+    { id: 'official-2026-mopyeong-09', title: '9월 모의평가 (평가원)', shortTitle: '9월 모의평가', date: '2026-09-02', category: 'exam' },
+    { id: 'official-2026-mock-10', title: '10월 학력평가 (서울교육청)', shortTitle: '10월 학력평가', date: '2026-10-20', category: 'school' },
+    { id: 'official-2026-suneung', title: '2027학년도 대학수학능력시험', shortTitle: '대학수학능력시험', date: '2026-11-19', category: 'exam' },
     { id: 'official-2026-susi-apply', title: '수시 원서 접수', date: '2026-09-07', endDate: '2026-09-11', category: 'application' },
     { id: 'official-2026-susi-eval', title: '수시 전형 기간', date: '2026-09-12', endDate: '2026-12-17', category: 'application' },
     { id: 'official-2026-susi-result', title: '수시 합격자 발표', date: '2026-12-18', category: 'application' },
@@ -81,6 +81,7 @@ export function normalizePersonalEvent(input = {}) {
   const title = String(input.title ?? '').trim().slice(0, PERSONAL_EVENT_LIMITS.titleMaxLength);
   if (!title) return null;
   if (!isValidIsoDate(input.date)) return null;
+  if (input.endDate && (!isValidIsoDate(input.endDate) || input.endDate < input.date)) return null;
   const category = PERSONAL_CALENDAR_CATEGORIES.includes(input.category) ? input.category : 'personal';
   const endDate = isValidIsoDate(input.endDate) && input.endDate >= input.date ? input.endDate : undefined;
   const note = String(input.note ?? '').trim().slice(0, PERSONAL_EVENT_LIMITS.noteMaxLength) || undefined;
@@ -129,11 +130,11 @@ export function mergeCalendarEvents(officialEvents = [], personalEvents = []) {
   return all.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
-// 오늘(todayYmd) 이후 가장 가까운 일정. 진행 중 기간 일정도 포함. 없으면 null.
+// 오늘 또는 앞으로 시작하는 일정만 요약한다. 진행 중/지난 일정은 달력에서 확인한다.
 export function getNearestUpcomingEvent(events = [], todayYmd) {
   if (!Array.isArray(events) || !todayYmd) return null;
   const upcoming = events
-    .filter((e) => e && e.date && (e.endDate || e.date) >= todayYmd)
+    .filter((e) => e && isValidIsoDate(e.date) && e.date >= todayYmd)
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return upcoming[0] || null;
 }

@@ -1,31 +1,48 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   cancelOverlayFocus,
   captureOverlayFocus,
+  focusOverlay,
+  isTopOverlay,
+  registerOverlay,
   restoreOverlayFocus,
   scheduleOverlayFocus,
   trapOverlayFocus
 } from '../shared/browser/overlay-focus.js';
 
-export function useOverlayDialog({ dismissAction = '', open = true } = {}) {
+const useDialogLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+export function useOverlayDialog({ dismissAction = '', onDismiss, open = true } = {}) {
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
 
-  useEffect(() => {
+  useDialogLayoutEffect(() => {
     if (!open) return undefined;
     const previousFocus = captureOverlayFocus();
-    const frame = scheduleOverlayFocus(panelRef.current);
+    const unregister = registerOverlay(panelRef.current, { root: overlayRef.current, dismiss: onDismiss || (dismissAction ? () => overlayRef.current?.click() : undefined) });
+    // Keyboard input must land inside the dialog before the next paint.
+    focusOverlay(panelRef.current);
 
     return () => {
-      cancelOverlayFocus(frame);
+      unregister();
       restoreOverlayFocus(previousFocus);
     };
-  }, [open]);
+  }, [dismissAction, onDismiss, open]);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !isTopOverlay(panel) || document.activeElement !== document.body) return undefined;
+    // A disabled or removed control can drop focus onto the page during an update.
+    const frame = scheduleOverlayFocus(panel);
+    return () => cancelOverlayFocus(frame);
+  });
 
   const onKeyDown = (event) => {
-    if (event.key === 'Escape' && dismissAction) {
+    if (!isTopOverlay(panelRef.current) || event.isComposing || event.nativeEvent?.isComposing) return;
+    if (event.key === 'Escape' && (dismissAction || onDismiss)) {
       event.preventDefault();
-      overlayRef.current?.click();
+      if (onDismiss) onDismiss();
+      else overlayRef.current?.click();
       return;
     }
     if (event.key !== 'Tab') return;

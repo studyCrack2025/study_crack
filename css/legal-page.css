@@ -1,0 +1,21 @@
+.legal-page-body { --legal-bg:#f5f8fc; --legal-surface:#fff; --legal-ink:#182638; --legal-muted:#52647a; --legal-line:#dce5ef; --legal-blue:#0959b6; margin:0; background:var(--legal-bg); color:var(--legal-ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:16px; line-height:1.8; overflow-wrap:anywhere; }
+.legal-page-body * { box-sizing:border-box; }
+.legal-page-body a { color:var(--legal-blue); text-underline-offset:4px; }
+.legal-page-body a:focus-visible { outline:3px solid var(--legal-blue); outline-offset:4px; }
+.legal-page-wrap { width:min(100%,900px); margin:auto; padding:24px clamp(16px,4vw,32px) 48px; }
+.legal-page-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px; }
+.legal-page-brand { display:inline-flex; gap:12px; align-items:center; font-weight:850; text-decoration:none; }
+.legal-page-brand img { object-fit:contain; }
+.legal-page-nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:32px; }
+.legal-page-nav a { padding:8px 14px; border:1px solid var(--legal-line); border-radius:24px; background:var(--legal-surface); text-decoration:none; font-size:14px; font-weight:650; }
+.legal-page-nav a[aria-current="page"] { background:var(--legal-blue); border-color:var(--legal-blue); color:var(--legal-surface); }
+.legal-page-body h1 { font-size:clamp(26px,5vw,36px); line-height:1.4; margin:0 0 12px; }
+.legal-page-intro { color:var(--legal-muted); margin:0 0 24px; }
+.legal-page-card { background:var(--legal-surface); border:1px solid var(--legal-line); border-radius:20px; padding:clamp(20px,4vw,32px); margin:0 0 20px; }
+.legal-page-card h2 { font-size:20px; line-height:1.5; margin:0 0 20px; }
+.legal-page-card ol { padding-left:24px; }
+.legal-page-card li { margin:12px 0; }
+.legal-page-copy { white-space:pre-wrap; }
+.legal-page-footer { display:flex; flex-wrap:wrap; gap:16px 24px; margin-top:28px; font-size:14px; }
+.legal-page-skip { position:fixed; top:8px; left:8px; padding:12px 16px; background:var(--legal-surface); transform:translateY(-200%); z-index:10; }
+.legal-page-skip:focus { transform:translateY(0); }

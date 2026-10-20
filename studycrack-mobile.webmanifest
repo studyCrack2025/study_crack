@@ -7,8 +7,8 @@
   "start_url": "/studycrack-mobile",
   "scope": "/studycrack-mobile",
   "display": "standalone",
-  "background_color": "#F7F9FC",
-  "theme_color": "#0A56B2",
+  "background_color": "#FFFFFF",
+  "theme_color": "#344E8F",
   "icons": [
     {
       "src": "/assets/pwa/studycrack-symbol-v2-192.png",

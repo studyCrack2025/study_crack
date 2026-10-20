@@ -4,7 +4,7 @@
 
 // promoCode(예: 4953-4446-STC)를 MBTI 문자열로 역변환
 function decodePromoCodeToMbti(promoCode) {
-    if (!promoCode || !promoCode.endsWith('-STC')) return null;
+    if (typeof promoCode !== 'string' || !promoCode.endsWith('-STC')) return null;
     const hex = promoCode.replace('-STC', '').replace(/-/g, '');
     if (hex.length !== 8) return null;
     let mbti = '';
@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initAdminPage(userId) {
     // 초기 데이터 로드
     loadAdminStats(userId);
-    await populateTutorFilter();
 
     // 상세 페이지에서 돌아온 경우 이전 검색 상태 복원
     const savedSearch = Store.get('lastSearch');
@@ -74,10 +73,17 @@ async function initAdminPage(userId) {
         if (typeEl)  typeEl.value  = savedSearch.type  || 'name';
         if (inputEl) inputEl.value = savedSearch.keyword || '';
         if (tierEl)  tierEl.value  = savedSearch.filterTier || 'all';
-        if (tutorEl) tutorEl.value = savedSearch.filterTutor || 'all';
+        if (tutorEl && typeof savedSearch.filterTutor === 'string' && savedSearch.filterTutor !== 'all') {
+            const option = document.createElement('option');
+            option.value = savedSearch.filterTutor;
+            option.textContent = savedSearch.filterTutor;
+            tutorEl.appendChild(option);
+            tutorEl.value = savedSearch.filterTutor;
+        }
         if (joinedFromEl) joinedFromEl.value = savedSearch.joinedFrom || '';
         if (joinedToEl) joinedToEl.value = savedSearch.joinedTo || '';
     }
+    populateTutorFilter();
     searchStudents();
     fetchUnreadNotiCount();
 
@@ -121,6 +127,7 @@ function toggleSubmenu(id) {
 }
 
 function showSection(sectionName) {
+    if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.menu-item > a').forEach(el => { el.style.backgroundColor = ''; el.style.color = '#cbd5e1'; });
     document.querySelectorAll('.submenu li a').forEach(el => { el.style.color = '#94a3b8'; });
@@ -141,7 +148,8 @@ function showSection(sectionName) {
 
     const secMap = {
         'students': 'section-students', 'dashboard': 'section-dashboard', 'advanced-stats': 'section-advanced-stats',
-        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching'
+        'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching',
+        'consulting': 'section-consulting'
     };
 
     if (secMap[sectionName]) {
@@ -156,6 +164,10 @@ function showSection(sectionName) {
     } else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications') { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
+    else if (sectionName === 'consulting') {
+        loadConsultingPaymentReview();
+        loadConsultingMaterialReview();
+    }
 }
 
 window.showQnaSection = function(status) {

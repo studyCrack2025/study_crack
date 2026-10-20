@@ -1,4 +1,5 @@
 import { STORAGE_KEYS, safeParse, safeStringifySet } from '../../state/storage.js';
+import { getMobileAccountStorage } from '../../shared/browser/mobile-runtime.js';
 
 const LEGACY_DEMO_SCORES = { korean: 82, math: 68, english: 77, inquiry1: 70, inquiry2: 66 };
 
@@ -9,13 +10,13 @@ function isLegacyDemoScores(value) {
     && Object.keys(value).every((key) => keys.includes(key));
 }
 
-export function hydrateAnalysisStorage(storage = globalThis.localStorage) {
+export function hydrateAnalysisStorage(storage = getMobileAccountStorage()) {
   const scores = safeParse(STORAGE_KEYS.scores, null, storage);
   const valid = scores && typeof scores === 'object' && !Array.isArray(scores) && !isLegacyDemoScores(scores);
   return { scores: valid ? scores : {} };
 }
 
-export function persistAnalysisStorage({ scores, targetMajor } = {}, storage = globalThis.localStorage) {
+export function persistAnalysisStorage({ scores, targetMajor } = {}, storage = getMobileAccountStorage()) {
   safeStringifySet(STORAGE_KEYS.scores, scores || {}, storage);
   try {
     storage?.setItem?.(STORAGE_KEYS.selectedUniversity, String(targetMajor || ''));

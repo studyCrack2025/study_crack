@@ -29,7 +29,7 @@ const [contractSource, assetsSource, registrySource, tabBarSource, accessPolicyS
   read('src/styles/components/navigation.css'),
   read('src/styles/foundation/motion.css'),
   read('src/styles/foundation/shell.css'),
-  read('src/screens/timer/TimerScreen.jsx'),
+  read('src/screens/timer/HomeDashboard.jsx'),
   read('src/styles/screens/timer.css')
 ]);
 
@@ -40,12 +40,20 @@ const mainTabs = extractTabKeys(tabBarSource);
 assert.equal(new Set(screens).size, screens.length, 'Screen registry contains duplicate names');
 assert.deepEqual(screens, contract.screens, 'Screen registry does not match the 40-screen UI contract');
 assert.deepEqual(mainTabs, contract.mainTabs, 'Bottom navigation does not match the five-tab UI contract');
+assert.equal(contract.consultingV2.journeyVersion, 'JUNGSI_2027_V2', 'Consulting v2 journey identity changed');
+assert.deepEqual(
+  contract.consultingV2.progress,
+  ['onboarding', 'survey', 'materials', 'availability', 'writtenSession', 'report', 'finalCall', 'completed'],
+  'Consulting v2 progress must move directly from report to final call and completion'
+);
+assert.equal(contract.consultingV2.workflowStates.includes('FEEDBACK_REQUIRED'), false, 'Consulting v2 must not restore a feedback stage');
+assert.equal(contract.consultingV2.workflowStates.some((state) => state.startsWith('FINAL_RESULT')), false, 'Consulting v2 must not add a post-call final-result stage');
 assert.match(tabBarSource, /\{ key: 'timer', label: '홈', icon: 'home' \}/, 'The timer route must be presented as the Home tab');
 assert.match(tabBarSource, /className="tabbar-icon"/, 'Bottom navigation icons need a stable visual wrapper');
 assert.match(tabBarSource, /item\.key === 'aquarium'/, 'The center aquarium action must remain visually distinct');
 assert.match(navigationStyles, /\.tabbar button\{[^}]*justify-content:center/, 'Normal bottom navigation items must center the icon and label as one group');
 assert.match(navigationStyles, /\.tabbar button\.is-aquarium\{[^}]*justify-content:flex-end/, 'The raised aquarium action must keep its dedicated geometry');
-assert.match(motionStyles, /\.app-screen\[data-screen\]\{animation:mobileScreenEnter/, 'Every registered app screen must share the screen-enter motion');
+assert.match(motionStyles, /\.app-screen\[data-screen\]\{animation:var\(--sc-page-enter,mobileScreenEnter\)/, 'Every registered app screen must share the screen-enter motion');
 assert.match(shellStyles, /\.app-content\{[^}]*overflow-y:auto/, 'The app content element must remain the explicit vertical scroll owner');
 assert.match(timerSource, /user\?\.profileImage/, 'The Home profile shortcut must use the loaded profile image');
 assert.match(timerSource, /onError=\{\(\) => setImageFailed\(true\)\}/, 'The Home profile image must fall back safely when loading fails');
@@ -73,9 +81,9 @@ const reverseFunction = accessPolicySource.match(/function\s+canUseReverseProjec
 assert.ok(reverseFunction, 'canUseReverseProjection was not found');
 assert.match(reverseFunction, /pickActiveAccessSubscription/, 'Reverse projection must require an active subscription');
 assert.deepEqual(
-  Array.from(reverseFunction.matchAll(/['"](standard|pro)['"]/g), (item) => item[1]),
+  Array.from(reverseFunction.matchAll(/['"](basic|starter|standard|pro)['"]/g), (item) => item[1]),
   contract.analysis.reverseTiers,
   'Reverse projection tiers changed'
 );
 
-console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo and plan tiers.`);
+console.log(`UI contract check passed: ${screens.length} screens, ${mainTabs.length} tabs, official logo, plan tiers and consulting v2 sequence.`);

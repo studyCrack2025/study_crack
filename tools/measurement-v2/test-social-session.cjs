@@ -4,7 +4,7 @@ const start=code.indexOf('    async function finishSocialLogin('),end=code.index
 assert(start>=0&&end>start);
 async function run(result,status=200) {
  const store=new Map(),session=new Map(),events=[],errors=[];
- const ctx={IS_LOCAL:true,USER_API_URL:'https://example.invalid/user',statusMsg:{},startedFromMobile:false,localStorage:{setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)||null},sessionStorage:{setItem:(k,v)=>session.set(k,v)},setAccessToken:v=>session.set('accessToken',v),setIdToken(){},getSharedBearerToken:()=>session.get('accessToken'),clearClientSession:()=>{store.clear();session.clear()},registerRefreshCookie:async()=>{},fetch:async()=>({ok:status===200,status,json:async()=>({})}),getSafeSocialReturnUrl:()=>'',clearSocialReturnState(){},showError:s=>errors.push(s),window:{location:{href:''},SCTrack:{identify(){},event:e=>events.push(e)}}};
+ const ctx={IS_LOCAL:true,loginScope:{},loginReturnUrl:'',isClientSessionCurrent:()=>true,completeClientLogin(){},USER_API_URL:'https://example.invalid/user',statusMsg:{},startedFromMobile:false,localStorage:{setItem:(k,v)=>store.set(k,v),getItem:k=>store.get(k)||null},sessionStorage:{setItem:(k,v)=>session.set(k,v)},setAccessToken:v=>session.set('accessToken',v),setIdToken(){},getSharedBearerToken:()=>session.get('accessToken'),clearClientSession:()=>{store.clear();session.clear()},registerRefreshCookie:async()=>{},apiFetch:async()=>({ok:status===200,status,json:async()=>({})}),getSafeSocialReturnUrl:()=>'',clearSocialReturnState(){},showError:s=>errors.push(s),window:{location:{href:''},SCTrack:{identify(){},event:e=>events.push(e)}}};
  vm.createContext(ctx);vm.runInContext(code.slice(start,end),ctx);await ctx.finishSocialLogin(result);return {ctx,events,errors};
 }
 (async()=>{

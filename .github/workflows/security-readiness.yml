@@ -1,0 +1,55 @@
+name: Public release security readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Public environment to inspect without credentials
+        type: choice
+        options: [dev, main]
+        required: true
+      expected_commit:
+        description: Full 40-character published source commit
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  public-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout read-only verification tools
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate selected environment and commit
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          node --input-type=module -e 'import assert from "node:assert/strict"; assert.ok(["dev", "main"].includes(process.env.TARGET_ENVIRONMENT)); assert.match(process.env.EXPECTED_COMMIT, /^[a-f0-9]{40}$/);'
+          if [ "$TARGET_ENVIRONMENT" = dev ]; then
+            echo 'PUBLIC_ORIGIN=https://dev.studycrack.co.kr' >> "$GITHUB_ENV"
+          else
+            echo 'PUBLIC_ORIGIN=https://studycrack.co.kr' >> "$GITHUB_ENV"
+          fi
+      - name: Check verification tool contracts
+        run: node --test tools/test/*.test.mjs
+      - name: Require enforced security headers
+        run: node tools/audit-security-headers.mjs "$PUBLIC_ORIGIN"
+      - name: Require private-path denial and expected release identity
+        if: ${{ !cancelled() && env.PUBLIC_ORIGIN != '' }}
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: node tools/audit-public-boundaries.mjs "$PUBLIC_ORIGIN" "$EXPECTED_COMMIT"
+      - name: Record readiness scope
+        if: ${{ !cancelled() }}
+        run: |
+          echo 'Public response security readiness is separate from deployment-byte smoke. Real-account login, payment, upload and physical-device acceptance are still required.' >> "$GITHUB_STEP_SUMMARY"

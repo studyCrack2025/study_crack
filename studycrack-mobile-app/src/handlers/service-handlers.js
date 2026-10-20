@@ -1,3 +1,4 @@
+import { withOperationLock } from '../shared/async/operation-lock.js';
 import { getData } from './action-utils.js';
 import { markMobileNotificationsRead } from '../features/notifications/api.js';
 import { buildMobileWeeklyCheckPayload } from '../features/reports/api.js';
@@ -38,6 +39,7 @@ function restoreScroll(ctx, y) {
 }
 
 function clickDownload(ctx, href, fileName) {
+  if (href?.includes('#scFile=')) return getWindow(ctx).openPrivateAttachment?.(href) || false;
   const doc = getDocument(ctx);
   if (!href || !doc?.createElement || !doc?.body) return false;
   const anchor = doc.createElement('a');
@@ -88,20 +90,11 @@ function togglePlanDom(ctx, plan) {
   });
 }
 
-function toggleDurationDom(ctx, duration) {
-  const doc = getDocument(ctx);
-  if (doc?.body?.dataset) doc.body.dataset.selectedDuration = duration;
-  queryAll(ctx, '.duration-row button').forEach((btn) => {
-    btn.classList?.toggle?.('active', btn.getAttribute?.('data-duration') === duration);
-  });
-}
-
 export function createServiceHandlers(ctx) {
   const {
     afterSafariViewportStable = (fn) => fn?.(),
     alert = globalThis.alert || noop,
     checkoutPlan = 'Standard',
-    duration = '4주',
     ensureCoachingSubjectRows = noop,
     goto,
     preserveScrollAfterStateChange = (fn) => fn?.(),
@@ -122,7 +115,6 @@ export function createServiceHandlers(ctx) {
     setCoachingTrend,
     setCoachingView,
     setDrawerOpen,
-    setDuration,
     setHistory,
     setNotiDetailId,
     setNotiExpandedId,
@@ -150,7 +142,14 @@ export function createServiceHandlers(ctx) {
   } = ctx;
   const win = window || getWindow(ctx);
 
-  return {
+  const handlers = {
+    async blockAssignedTutor() {
+      try { return await (await import('../features/account/tutor-block.js')).blockAssignedTutor(ctx); }
+      catch { if (ctx.isCurrentProfile?.() !== false) alert('담당 관리 화면을 불러오지 못했어요. 다시 시도해주세요.'); return false; }
+    },
+    retryNotifications() { ctx.setNotiRefreshTick((value) => value + 1); return true; },
+    retryQnaHistory() { ctx.setQnaRefreshTick((value) => value + 1); return true; },
+    retryReportResources() { ctx.setReportsRefreshTick((value) => value + 1); return true; },
     selectPlan({ actionEl }) {
       const plan = getData(actionEl, 'plan');
       if (!plan) return false;
@@ -159,22 +158,12 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    selectDuration({ actionEl }) {
-      const duration = getData(actionEl, 'duration');
-      if (!duration) return false;
-      toggleDurationDom(ctx, duration);
-      setDuration(duration);
-      return true;
-    },
-
     openWebPayment() {
       const params = new URLSearchParams({ source: 'mobile_app' });
       const selectedPlan = getDocument(ctx)?.body?.dataset?.checkoutPlan || checkoutPlan;
-      const selectedDuration = getDocument(ctx)?.body?.dataset?.selectedDuration || duration;
       const tier = String(selectedPlan || '').trim().toLowerCase();
       if (['basic', 'starter', 'standard', 'pro'].includes(tier)) params.set('plan', tier);
-      const effectiveDuration = tier === 'starter' ? '1회' : tier === 'basic' ? '4주' : selectedDuration;
-      if (effectiveDuration) params.set('duration', String(effectiveDuration));
+      if (['standard', 'pro'].includes(tier)) params.set('duration', '4주');
       const target = `/payment?${params.toString()}`;
       if (win?.location?.assign) win.location.assign(target);
       else if (win?.location) win.location.href = target;
@@ -218,17 +207,37 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    openDrawer() {
+    openDrawer({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       preserveScrollAfterStateChange(() => {
         setNotifModalOpen(false);
+        ctx.setStreakSummary({ open: false, returnTarget: '' });
         setDrawerOpen(true);
+      });
+      return true;
+    },
+
+    openStreakSummary({ actionEl } = {}) {
+      if (ctx.userLoadStatus !== 'ready' || !ctx.hasClientSession?.() || !['timer', 'my'].includes(ctx.screen) || ctx.productGuideUi?.open) return false;
+      actionEl?.focus?.({ preventScroll: true });
+      preserveScrollAfterStateChange(() => {
+        ctx.setStreakSummary({ open: true, returnTarget: ctx.drawerOpen ? 'summary' : '', returnSnapshot: ctx.drawerOpen ? { scroll: actionEl?.closest?.('.my-summary-body')?.scrollTop || 0, action: 'openStreakSummary' } : null });
+        setDrawerOpen(false);
+      });
+      return true;
+    },
+
+    closeStreakSummary() {
+      preserveScrollAfterStateChange(() => {
+        ctx.setStreakSummary({ open: false, returnTarget: '', returnSnapshot: ctx.streakSummary?.returnSnapshot });
+        if (ctx.streakSummary?.returnTarget === 'summary' && ctx.screen === 'timer' && ctx.userLoadStatus === 'ready' && ctx.hasClientSession?.()) setDrawerOpen(true);
       });
       return true;
     },
 
     closeDrawer({ actionEl, isOverlaySelfClick }) {
       if (!isOverlaySelfClick && actionEl?.classList?.contains?.('drawer-overlay')) return false;
-      preserveScrollAfterStateChange(() => setDrawerOpen(false));
+      preserveScrollAfterStateChange(() => ctx.closeDrawer?.());
       return true;
     },
 
@@ -283,6 +292,7 @@ export function createServiceHandlers(ctx) {
     openNotiDetail({ actionEl }) {
       const id = getData(actionEl, 'noti-id');
       if (!id) return false;
+      actionEl?.focus?.({ preventScroll: true });
       setNotiDetailId(id);
       setNotiList((ctx.notiList || []).map((n, idx) => (String(n.notiId || n.id || n.notificationId || idx) === String(id) ? { ...n, isRead: true } : n)));
       markMobileNotificationsRead({ apiFetch: ctx.apiFetch, notiApiUrl: ctx.notiApiUrl || ctx.apiBase?.noti || '', notiId: id });
@@ -295,13 +305,8 @@ export function createServiceHandlers(ctx) {
       return true;
     },
 
-    drawerGoto({ actionEl }) {
-      setDrawerOpen(false);
-      goto?.(getData(actionEl, 'target'));
-      return true;
-    },
-
-    openProRequestModal() {
+    openProRequestModal({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       setProRequestModalOpen(true);
       return true;
     },
@@ -338,8 +343,9 @@ export function createServiceHandlers(ctx) {
     },
 
     openQnaComposer({ actionEl } = {}) {
+      actionEl?.focus?.({ preventScroll: true });
       const title = getData(actionEl, 'qna-title');
-      const content = getData(actionEl, 'qna-content');
+      const content = getData(actionEl, 'qna-content').replace(/\\n/g, '\n');
       if (ctx.qnaDraftRef?.current) ctx.qnaDraftRef.current = { title, content };
       setQnaDraftTitle(title);
       setQnaDraftContent(content);
@@ -390,7 +396,9 @@ export function createServiceHandlers(ctx) {
       return clickDownload(ctx, pdfPath, fileName);
     },
 
-    openCoachingSheet() {
+    openCoachingSheet({ actionEl } = {}) {
+      // Pointer activation does not focus buttons in every browser.
+      actionEl?.focus?.({ preventScroll: true });
       ensureCoachingSubjectRows();
       setCoachingStep(1);
       setCoachingSheetOpen(true);
@@ -564,4 +572,9 @@ export function createServiceHandlers(ctx) {
       return true;
     }
   };
+  for (const action of ['submitMobileQna', 'submitProRequest', 'coachingNext', 'blockAssignedTutor']) {
+    const run = handlers[action];
+    handlers[action] = (...args) => withOperationLock(ctx.operationLocksRef, action, () => run(...args));
+  }
+  return handlers;
 }

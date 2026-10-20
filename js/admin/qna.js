@@ -9,7 +9,7 @@ async function fetchQnaBadgeCount() {
             body: JSON.stringify({ type: 'admin_get_all_qna' })
         });
         const data = await response.json();
-        const qnaList = data.qnaList || [];
+        const qnaList = validateAdminQnaList(data);
 
         const waitingCount = qnaList.filter(q => q.status === 'waiting').length;
 
@@ -27,18 +27,34 @@ async function fetchQnaBadgeCount() {
     }
 }
 
+function validateAdminQnaList(data) {
+    if (!Array.isArray(data?.qnaList) || data.qnaList.some(q => !q || typeof q.userid !== 'string' || typeof q.qnaId !== 'string')) {
+        throw new Error('Invalid question list');
+    }
+    return data.qnaList;
+}
+
+let qnaLoadSequence = 0;
+
 async function loadAllQna() {
+    const sequence = ++qnaLoadSequence;
+    const owner = localStorage.getItem('userId');
     const tbody = document.getElementById('qnaListBody');
     if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;">데이터를 불러오는 중...</td></tr>';
 
     try {
         const response = await apiFetch(QNA_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_get_all_qna' }) });
         const data = await response.json();
-        allQnaData = data.qnaList || [];
+        if (sequence !== qnaLoadSequence || localStorage.getItem('userId') !== owner) return;
+        allQnaData = validateAdminQnaList(data);
         renderQnaList();
 
         updateQnaBadgeFromData();
-    } catch (e) { if (e.message !== "Auth expired") alert("질의 목록을 불러오는데 실패했습니다."); }
+    } catch (e) {
+        if (sequence !== qnaLoadSequence || localStorage.getItem('userId') !== owner) return;
+        allQnaData = [];
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">문의 목록을 불러오지 못했습니다. <button type="button" onclick="loadAllQna()">다시 시도</button></td></tr>';
+    }
 }
 
 function updateQnaBadgeFromData() {
@@ -74,29 +90,42 @@ function renderQnaList() {
     filtered.forEach(q => {
         const tr = document.createElement('tr'); const dateStr = new Date(q.createdAt).toLocaleDateString();
         let actionBtn = '';
-        if (q.status === 'waiting') actionBtn = `<button onclick="markAsRead('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
-        else if (q.status === 'read') actionBtn = `<button onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}')" style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
+        if (q.status === 'waiting') actionBtn = `<button type="button" data-qna-action style="background:#f59e0b; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">읽음 처리</button>`;
+        else if (q.status === 'read') actionBtn = `<button type="button" data-qna-action style="background:#3b82f6; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">답변하기</button>`;
         else actionBtn = `<span style="color:#10b981; font-weight:bold;">완료됨</span>`;
 
         let phoneStr = '-';
-        if (q.userPhone && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
+        if (typeof q.userPhone === 'string' && q.userPhone.length >= 4) phoneStr = q.userPhone.slice(-4);
 
         tr.innerHTML = `
             <td data-label="상태">${getQnaStatusBadge(q.status)}</td>
             <td data-label="학생명">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <strong>${escapeHtml(q.userName)}</strong>
-                    <button onclick="goToStudentDetail('${escapeHtml(q.userid)}')(event)" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
+                    <button type="button" data-student-detail style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0; font-size:0.9rem;" title="학생 상세 정보 보기"><i class="fas fa-search-plus"></i></button>
                 </div>
                 <span style="font-size:0.8rem; color:#94a3b8;">(뒷자리: ${escapeHtml(phoneStr)})</span>
             </td>
-            <td data-label="제목" style="cursor:pointer;" onclick="openReplyModal('${escapeHtml(q.userid)}', '${q.qnaId}', true)">
+            <td data-label="제목" data-qna-view style="cursor:pointer;">
                 <strong>${escapeHtml(q.title)}</strong>
                 <div style="font-size:0.85rem; color:#64748b; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; max-width:300px;">${escapeHtml(q.content)}</div>
             </td>
             <td data-label="등록일">${dateStr}</td>
             <td data-label="관리">${actionBtn}</td>
         `;
+        const detailButton = tr.querySelector('[data-student-detail]');
+        detailButton.disabled = !q.userid;
+        detailButton.addEventListener('click', event => {
+            event.stopPropagation();
+            goToStudentDetail(q.userid);
+        });
+        tr.querySelector('[data-qna-view]').addEventListener('click', () => openReplyModal(q.userid, q.qnaId, true));
+        const actionButton = tr.querySelector('[data-qna-action]');
+        if (actionButton) {
+            actionButton.disabled = !q.userid || !q.qnaId;
+            actionButton.addEventListener('click', () => q.status === 'waiting'
+                ? markAsRead(q.userid, q.qnaId) : openReplyModal(q.userid, q.qnaId));
+        }
         tbody.appendChild(tr);
     });
 }
@@ -108,7 +137,7 @@ function getQnaStatusBadge(status) {
 }
 
 function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
-    const item = allQnaData.find(q => q.qnaId === qnaId);
+    const item = allQnaData.find(q => q.qnaId === qnaId && q.userid === targetUserId);
     if (!item) return;
 
     currentReplyTarget = { targetUserId, qnaId };
@@ -119,7 +148,9 @@ function openReplyModal(targetUserId, qnaId, isViewOnly = false) {
     const detailLinkBtn = document.getElementById('replyModalStudentLink');
     if (detailLinkBtn) {
         detailLinkBtn.onclick = function() {
-            window.open(`/admin/detail?uid=${targetUserId}`, '_blank');
+            if (typeof targetUserId === 'string' && targetUserId) {
+                window.open(`/admin/detail?uid=${encodeURIComponent(targetUserId)}`, '_blank', 'noopener,noreferrer');
+            }
         };
     }
 
@@ -180,7 +211,7 @@ function closeReplyModal() { const modal = document.getElementById('reply-modal'
 const QNA_MACROS = {
     'tutor_delay': "안녕하세요, 학생님.\n현재 요청하신 과목과 성향에 가장 적합한 튜터님을 꼼꼼히 매칭하는 중이라 배정이 조금 지연되고 있습니다.\n최대 1~2일 내로 최적의 튜터님을 배정해 드릴 예정이니 조금만 양해 부탁드립니다.",
     'report_guide': "안녕하세요! 주간 보고서 작성법 안내드립니다.\n매주 정해진 요일 자정까지 [마이페이지] > [보고서 작성] 탭에서 이번 주 학습 내용과 튜터님께 바라는 피드백을 50자 이상으로 남겨주시면 됩니다.",
-    'refund': "안녕하세요. 환불 규정에 대해 안내해 드립니다.\n결제 후 7일 이내이며, 실제 서비스(튜터 매칭 및 상담) 이용 이력이 없는 경우에 한해 전액 환불이 가능합니다.\n자세한 사항은 이용약관을 참고해 주시거나 추가 문의 남겨주세요.",
+    'refund': "안녕하세요. 분석 착수 전 요청은 전액 환불됩니다.\n착수 여부는 자료 검토·전략 설계·분석 작업이 실제 시작되었는지로 확인하며, 결제 완료 자체를 착수로 보지 않습니다. 착수 후 또는 자료 전달 후에는 환불 규정의 제한과 예외 사항을 적용합니다. 회사 귀책 사유 및 관계 법령에 따른 환불 권리는 유지됩니다.\n가입 이메일, 구매 상품과 결제일을 알려주시면 확인하겠습니다. 비밀번호, 인증번호, 결제수단의 전체 정보는 보내지 마세요.\n환불 규정 전문: https://studycrack.co.kr/refund",
     'polite_wait': "안녕하세요! 문의하신 내용 확인하였습니다.\n해당 건은 튜터님 및 내부 운영진과 내용 확인 후 정확한 안내를 드리기 위해 시간이 조금 소요될 수 있습니다.\n확인되는 대로 빠르게 다시 답변드리겠습니다."
 };
 

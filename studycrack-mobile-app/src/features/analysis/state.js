@@ -35,6 +35,7 @@ export function createAnalysisInitialState() {
       universityRecommendationRetryTick: 0,
       analysisResults: [],
       analysisSimulations: [],
+      analysisSimulationStatus: 'idle',
       analysisResultExamMode: '',
       analysisResultSignature: '',
       analysisApiStatus: 'idle',
@@ -75,6 +76,7 @@ export function createAnalysisInitialState() {
       universityModalOpen: false,
       analysisSelectedIndex: 0,
       addingUniversity: false,
+      targetSaveError: '',
       homeSlideIndex: 0,
       homeSlideMotion: '',
       scoreSlideMotion: '',
@@ -82,6 +84,8 @@ export function createAnalysisInitialState() {
       scoreDragOffset: 0,
       scoreEditOpen: false,
       scoreEditStep: 1,
+      scoreEditErrors: {},
+      scoreEditSaveError: '',
       scoreSubjectSaving: false
     }
   };

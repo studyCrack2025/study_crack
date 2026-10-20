@@ -1,15 +1,14 @@
 import { normalizePersonalEvent } from '../../constants/admission-calendar.js';
-import { apiInvalidResponse, apiSuccess, postJson, postUserData } from '../../shared/api/client.js';
+import { apiFailure, apiInvalidResponse, apiSuccess, postJson, postUserData } from '../../shared/api/client.js';
 import { USER_REQUEST_TYPES } from '../../shared/api/request-types.js';
-import { buildTargetUnivsPayload } from '../analysis/target-model.js';
 
-export function saveTargetUnivs({ apiFetch, targetList, targetSlots, userApiUrl } = {}) {
-  return postUserData({
-    apiFetch,
-    userApiUrl,
-    type: USER_REQUEST_TYPES.UPDATE_TARGET_UNIVERSITIES,
-    data: buildTargetUnivsPayload(targetList, new Date().toISOString(), targetSlots)
-  });
+export async function saveTargetUnivs(options = {}) {
+  try {
+    const targetApi = await import('./target-api.js');
+    return await targetApi.saveTargetUnivs(options);
+  } catch {
+    return apiFailure('대학 저장을 준비하지 못했어요. 연결을 확인하고 다시 시도해주세요.');
+  }
 }
 
 export function saveQuantitative({ apiFetch, quantitative, userApiUrl } = {}) {
@@ -38,7 +37,7 @@ export async function fetchMobileAdmissionCalendar({ apiFetch, signal, userApiUr
   if (!result.ok) return result;
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((event) => normalizePersonalEvent(event)).filter(Boolean);
-  return apiSuccess(events, { status: result.status });
+  return apiSuccess(events, { status: result.status, code: result.data.supportsClientRequestId === true ? 'CALENDAR_IDEMPOTENT' : '' });
 }
 
 export async function upsertMobileAdmissionEvent({ apiFetch, event, userApiUrl } = {}) {
@@ -47,6 +46,7 @@ export async function upsertMobileAdmissionEvent({ apiFetch, event, userApiUrl }
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '저장된 수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean);
   const savedEvent = result.data?.event ? normalizePersonalEvent(result.data.event) : null;
+  if (!savedEvent || !events.some(item => item.id === savedEvent.id) || (event?.clientRequestId && savedEvent.id !== event.clientRequestId) || (event?.id && savedEvent.id !== event.id)) return apiInvalidResponse(result, '일정 저장 결과를 확인하지 못했습니다.');
   return apiSuccess({ events, event: savedEvent }, { status: result.status });
 }
 
@@ -55,5 +55,6 @@ export async function deleteMobileAdmissionEvent({ apiFetch, eventId, userApiUrl
   if (!result.ok) return result;
   if (!Array.isArray(result.data?.events)) return apiInvalidResponse(result, '삭제 후 수험 일정 응답이 올바르지 않습니다.');
   const events = result.data.events.map((item) => normalizePersonalEvent(item)).filter(Boolean);
+  if (events.some(event => event.id === eventId)) return apiInvalidResponse(result, '일정 삭제 결과를 확인하지 못했습니다.');
   return apiSuccess({ events }, { status: result.status });
 }

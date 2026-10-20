@@ -1,4 +1,3 @@
-import { Modal } from '../../components/Modal.jsx';
 import { SecondaryIntro, SecondaryScreenShell } from '../../components/SecondaryScreen.jsx';
 import { TermsModal } from '../../components/TermsModal.jsx';
 import { TERMS_CONTENT } from '../../constants/terms.js';
@@ -24,34 +23,7 @@ export function SettingsTermsPickerScreen(ctx) {
               <span aria-hidden="true">›</span>
             </button>
           ))}
-        </div>
-      </div>
-    </SecondaryScreenShell>
-  );
-}
-
-function LogoutModal({ open = false }) {
-  return (
-    <Modal open={open} dismissAction="closeLogoutModal">
-      <p className="sc-modal-padded-title">로그아웃하시겠어요?</p>
-      <div className="support-btns">
-        <button type="button" className="btn btn-secondary" data-action="closeLogoutModal">취소</button>
-        <button type="button" className="btn btn-primary" data-action="confirmLogout">로그아웃</button>
-      </div>
-    </Modal>
-  );
-}
-
-export function SettingsMainScreen({ logoutModalOpen = false }) {
-  return (
-    <SecondaryScreenShell screen="settingsMain" title="설정" overlays={logoutModalOpen ? <LogoutModal open /> : null}>
-      <div className="sc-secondary-page settings-page">
-        <SecondaryIntro eyebrow="SETTINGS" title="설정" description="계정과 약관, 로그인 상태를 관리합니다." />
-        <div className="sc-secondary-list settings-list">
-          <button type="button" className="sc-secondary-row" data-action="goto" data-target="accountInfo"><span className="sc-secondary-row-main"><b>계정 정보</b><p>프로필과 로그인 계정 관리</p></span><span aria-hidden="true">›</span></button>
-          <button type="button" className="sc-secondary-row" data-action="goto" data-target="notificationSettings"><span className="sc-secondary-row-main"><b>알림 설정</b><p>플래너와 리포트 안내 관리</p></span><span aria-hidden="true">›</span></button>
-          <button type="button" className="sc-secondary-row" data-action="goto" data-target="settingsTermsPicker"><span className="sc-secondary-row-main"><b>약관 보기</b><p>이용약관과 개인정보 처리방침</p></span><span aria-hidden="true">›</span></button>
-          <button type="button" className="sc-secondary-row" data-action="openLogoutModal"><span className="sc-secondary-row-main"><b>로그아웃</b><p>현재 기기에서 로그인 종료</p></span><span aria-hidden="true">›</span></button>
+          <a className="sc-secondary-row" href="/delete-account"><span className="sc-secondary-row-main"><b>계정 삭제 요청 안내</b><p>앱 없이 요청하는 방법과 처리 범위</p></span><span aria-hidden="true">›</span></a>
         </div>
       </div>
     </SecondaryScreenShell>
@@ -64,6 +36,7 @@ function ReadingScreen({ content, description, eyebrow, screen }) {
       <div className="sc-reading-page">
         <SecondaryIntro eyebrow={eyebrow} title={content.title} description={description} />
         <div className="sc-reading-content">{content.body}</div>
+        <p><a href={screen === 'privacyPolicy' ? '/privacy' : '/terms'}>공개 웹 페이지에서 보기</a></p>
       </div>
     </SecondaryScreenShell>
   );

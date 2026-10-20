@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <script src="/js/measurement-v2.js?v=20260930-v2"></script>
-
+  <meta name="referrer" content="no-referrer">
+  <script>try{const p=new URLSearchParams(location.search);const retired=p.get('status')==='promo'&&(p.get('source')||'').toLowerCase()==='kcc01';const id=p.get('paymentIntentId')||p.get('orderId')||'';history.replaceState({},'',location.pathname+(retired?'?status=promo&source=kcc01':/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(id)?'?paymentIntentId='+encodeURIComponent(id):''));}catch(_){}</script>
+  <script src="/js/measurement-v2.js?v=20261021a"></script>
   <script>if('scrollRestoration'in history)history.scrollRestoration='manual';</script>
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -15,7 +16,7 @@
     <meta name="color-scheme" content="light">
     <meta name="facebook-domain-verification" content="55eup0qlw7p4hdgj5hyv2fsmhksvoj" />
     <meta name="naver-site-verification" content="e70d8cbe6d67167b9f8f6267985c17c42b616684" />
-    <title>결제 완료 - 스터디크랙</title>
+    <title>결제 상태 확인 - 스터디크랙</title>
     
     <link rel="stylesheet" href="/css/style.css?v=20260524a">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -32,18 +33,7 @@
             margin: 0;
         }
 
-        .success-card {
-            background: white;
-            padding: 50px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            max-width: 420px;
-            width: 90%;
-            border: 1px solid #e2e8f0;
-            position: relative;
-            overflow: hidden;
-        }
+        .success-card { background: white; padding: 40px 24px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; position: relative; box-sizing: border-box; overflow-wrap: anywhere; }
 
         /* 카드 상단에 얇은 포인트 컬러 라인 */
         .card-top-line {
@@ -104,19 +94,7 @@
             word-break: keep-all;
         }
 
-        .btn-action {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            background-color: #2563EB;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1.05rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0, 0.1);
-        }
+        .btn-action { display: block; width: 100%; box-sizing: border-box; padding: 16px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; transition: all 0.2s ease; box-shadow: 0 4px 6px rgba(0,0,0, 0.1); }
 
         .btn-action:hover {
             transform: translateY(-2px);
@@ -151,10 +129,10 @@
 
         <div id="tierBadge" class="tier-badge" style="background:#2563eb;">결제 확인</div>
 
-        <h1 id="successTitle" class="success-title">결제 내역을 확인하고 있습니다</h1>
+        <h1 id="successTitle" class="success-title" aria-live="polite">결제 상태를 확인하고 있어요</h1>
 
         <p id="successDesc" class="success-desc">
-            잠시만 기다려 주세요.
+            확인되기 전에는 다시 결제하지 마세요.
         </p>
 
         <div id="vbankBox" style="display:none; margin: 0 0 25px; padding: 18px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; text-align:left;">
@@ -179,19 +157,19 @@
                 <strong id="vbankExpire" style="color:#ef4444; font-size:0.95rem;">-</strong>
             </div>
             <p style="margin:14px 0 0; padding-top:10px; border-top:1px solid #e2e8f0; color:#64748b; font-size:0.82rem; line-height:1.5;">
-                입금이 확인되면 1~3분 내에<br>자동으로 결제가 처리됩니다.
+                입금 후 아래 버튼으로 상태를 다시 확인해주세요.
             </p>
         </div>
 
-        <a id="actionBtn" href="/analysis" class="btn-action" style="background:#2563eb;">나만의 솔루션 보러가기</a>
+        <button id="statusRetry" type="button" class="btn-action" style="display:none; border:0; cursor:pointer; font:inherit; margin-bottom:12px;">상태 다시 확인</button>
+        <a id="actionBtn" href="/qna" class="btn-action" style="background:#2563eb;">문의하기</a>
+        <noscript><p>결제 상태를 확인하려면 JavaScript를 켜주세요. 이미 결제했다면 다시 결제하지 말고 문의해주세요.</p></noscript>
 
         <a href="/" class="btn-home">메인 화면으로 돌아가기</a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.3/dist/amazon-cognito-identity.min.js"></script>
-    <script src="/js/config.js?v=20260524a"></script>
-    <script src="/js/shared/api.js?v=20260930-v2"></script>
-    <script src="/js/auth.js?v=20260930-v2"></script>
-    <script src="/js/payment-success-v2.js?v=20260930-v2"></script>
+    <script src="/js/config.js?v=20260524a" defer></script>
+    <script src="/js/shared/api.js?v=20260602f" defer></script>
+    <script src="/js/payment-status.js?v=20260912a" defer></script>
 </body>
 </html>

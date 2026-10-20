@@ -1,7 +1,8 @@
-import { TODAY_DATE } from '../constants/runtime-defaults.js';
+import { getTodayDateKey } from '../constants/runtime-defaults.js';
 import { buildPlannerId } from '../state/planner-storage.js';
 import { getData } from './action-utils.js';
 import { dotForPlannerCategory, minutesBetween } from '../screens/planner/planner-options.js';
+import { shiftedPlannerDate } from '../screens/planner/calendar-navigation.js';
 
 function noop() {}
 
@@ -27,13 +28,8 @@ function queryAll(ctx, selector) {
   return Array.from(getDocument(ctx)?.querySelectorAll?.(selector) || []);
 }
 
-function getPlannerAddRoot(ctx) {
-  return query(ctx, '[data-planner-add-root]');
-}
-
 function getPlannerAddStepIndex(ctx) {
-  const root = getPlannerAddRoot(ctx);
-  const activeStep = root?.querySelector?.('[data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
+  const activeStep = query(ctx, '[data-planner-add-root] [data-planner-add-step].active')?.getAttribute?.('data-planner-add-step') || PLANNER_ADD_STEPS[0];
   return Math.max(0, PLANNER_ADD_STEPS.indexOf(activeStep));
 }
 
@@ -95,40 +91,8 @@ function dotForSubject(subject = '') {
   return 'sci';
 }
 
-function getRefValue(ref, fallback = '') {
-  return ref && typeof ref === 'object' ? ref.current ?? fallback : fallback;
-}
-
-function toPlannerDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function parsePlannerDate(value = TODAY_DATE, fallback = TODAY_DATE) {
-  const raw = String(value || '').trim();
-  const fallbackDay = Number(String(fallback).split('-')[2]) || Number(String(TODAY_DATE).split('-')[2]) || 1;
-  const source = /^\d{4}-\d{2}-\d{2}$/.test(raw)
-    ? raw
-    : `2026-07-${String(Math.max(1, Math.min(31, Number(raw) || fallbackDay))).padStart(2, '0')}`;
-  const [year, month, day] = source.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function addPlannerDays(date, days) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-}
-
-function addPlannerMonths(date, months) {
-  const target = new Date(date.getFullYear(), date.getMonth() + months, 1);
-  const maxDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-  return new Date(target.getFullYear(), target.getMonth(), Math.min(date.getDate(), maxDay));
-}
-
 export function createPlannerHandlers(ctx) {
   const {
-    centerPlannerDate = noop,
     goto,
     plannerCalendarMode = 'week',
     plannerContentRef,
@@ -138,7 +102,6 @@ export function createPlannerHandlers(ctx) {
     plannerEditItem = null,
     preserveScrollAfterStateChange = (fn) => fn?.(),
     preserveY = (fn) => fn?.(),
-    requestAnimationFrame = globalThis.requestAnimationFrame || ((fn) => fn()),
     restoreIfUnexpectedTopJump = noop,
     selectedPlannerDate = '',
     selectedPlannerDateKey = '',
@@ -149,10 +112,14 @@ export function createPlannerHandlers(ctx) {
     setPlannerItems,
     setSelectedDate,
     setShowStudyBreakdown,
-    todayDate = TODAY_DATE
+    todayDate = getTodayDateKey()
   } = ctx;
 
-  return {
+  function shiftPlannerCalendar(delta) {
+    preserveY(() => setSelectedDate(shiftedPlannerDate(selectedPlannerDateKey || selectedPlannerDate, delta, plannerCalendarMode, todayDate)));
+  }
+
+  const handlers = {
     openPlannerAddPage() {
       goto?.('plannerAdd');
       return true;
@@ -172,16 +139,12 @@ export function createPlannerHandlers(ctx) {
     },
 
     plannerCalendarPrevWeek() {
-      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
-      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, -1) : addPlannerDays(current, -7);
-      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+      shiftPlannerCalendar(-1);
       return true;
     },
 
     plannerCalendarNextWeek() {
-      const current = parsePlannerDate(selectedPlannerDateKey || selectedPlannerDate, todayDate);
-      const next = plannerCalendarMode === 'month' ? addPlannerMonths(current, 1) : addPlannerDays(current, 7);
-      preserveY(() => setSelectedDate(toPlannerDateKey(next)));
+      shiftPlannerCalendar(1);
       return true;
     },
 
@@ -202,7 +165,6 @@ export function createPlannerHandlers(ctx) {
       if (!date) return false;
       const nextDate = String(date);
       setSelectedDate(nextDate);
-      requestAnimationFrame(() => centerPlannerDate(nextDate, 'smooth'));
       restoreIfUnexpectedTopJump();
       return true;
     },
@@ -239,13 +201,13 @@ export function createPlannerHandlers(ctx) {
       const detailSubject = getCheckedValue(ctx, 'plannerDetailSubject', '');
       const activityType = getCheckedValue(ctx, 'plannerActivityType', '');
       const memo = getInputValue(ctx, '[data-field="plannerMemo"]').trim();
-      const content = String(getInputValue(ctx, '[data-field="plannerContent"]') || getRefValue(plannerContentRef)).trim();
-      const customMinutes = String(getRefValue(plannerCustomMinutesRef)).trim();
+      const content = String(getInputValue(ctx, '[data-field="plannerContent"]') || plannerContentRef?.current || '').trim();
+      const customMinutes = String(plannerCustomMinutesRef?.current || '').trim();
       const minutesFromRange = minutesBetween(start, end);
       const minutes = minutesFromRange || (draft.durationChoice === 'custom' ? Number(customMinutes) : Number(draft.durationChoice));
       if (!category || !content || !minutes || Number.isNaN(minutes)) return false;
       if (start && end && !minutesFromRange) return false;
-      setPlannerItems((prev) => [
+      const saved = setPlannerItems((prev) => [
         ...prev,
         {
           id: buildPlannerId(),
@@ -262,15 +224,15 @@ export function createPlannerHandlers(ctx) {
           dot: dotForPlannerCategory(category) || dotForSubject(category)
         }
       ]);
-      setRefValue(plannerContentRef, '');
-      setRefValue(plannerCustomMinutesRef, '');
+      if (saved === false) return true;
+      plannerContentRef.current = plannerCustomMinutesRef.current = '';
       setPlannerDraft({ subject: '', content: '', durationChoice: '', customMinutes: '', start: '', end: '', detailSubject: '', activityType: '', memo: '' });
       goto?.('planner', false);
       return true;
     },
 
     savePlannerEdit() {
-      if (plannerEditIndex === null) return false;
+      if (plannerEditIndex === null || !plannerEditItem) return false;
       const subject = getInputValue(ctx, '[data-field="plannerEditSubject"]').trim();
       const detailSubject = getInputValue(ctx, '[data-field="plannerEditDetailSubject"]').trim();
       const activityType = getInputValue(ctx, '[data-field="plannerEditActivityType"]').trim();
@@ -282,7 +244,7 @@ export function createPlannerHandlers(ctx) {
       const minutes = rangeMinutes || Number(plannerEditItem.minutes || 0);
       if (!subject || !content || !minutes || !plannerEditItem) return false;
       if (start && end && !rangeMinutes) return false;
-      setPlannerItems((prev) => prev.map((item) => (
+      const saved = setPlannerItems((prev) => prev.map((item) => (
         item.id === plannerEditIndex
           ? {
               ...item,
@@ -299,6 +261,7 @@ export function createPlannerHandlers(ctx) {
             }
           : item
       )));
+      if (saved === false) return true;
       setPlannerEditIndex(null);
       return true;
     },
@@ -320,4 +283,5 @@ export function createPlannerHandlers(ctx) {
       return true;
     }
   };
+  return ctx.plannerAccount ? ctx.plannerAccount.bindHandlers(handlers, ctx) : handlers;
 }

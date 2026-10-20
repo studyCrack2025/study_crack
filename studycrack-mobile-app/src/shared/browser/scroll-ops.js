@@ -79,21 +79,6 @@ export function createScrollOps(options = {}) {
     });
   };
 
-  // 플래너 날짜 스트립을 선택 날짜가 가운데 오도록 가로 스크롤(원본 centerPlannerDate).
-  const centerPlannerDate = (date, behavior = 'smooth') => {
-    const container = doc?.querySelector?.('.planner-date-strip');
-    const selectedBtn = container?.querySelector?.(`[data-planner-date="${date}"]`);
-    if (!container || !selectedBtn) return;
-    const containerRect = container.getBoundingClientRect();
-    const btnRect = selectedBtn.getBoundingClientRect();
-    const targetLeft =
-      (container.scrollLeft || 0) +
-      (btnRect.left - containerRect.left) -
-      container.clientWidth / 2 +
-      selectedBtn.clientWidth / 2;
-    container.scrollTo({ left: Math.max(0, targetLeft), behavior });
-  };
-
   return {
     isIOSSafari,
     safeScrollTo,
@@ -101,7 +86,6 @@ export function createScrollOps(options = {}) {
     afterSafariViewportStable,
     preserveY,
     markStableScrollPosition,
-    restoreIfUnexpectedTopJump,
-    centerPlannerDate
+    restoreIfUnexpectedTopJump
   };
 }

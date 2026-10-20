@@ -5,6 +5,7 @@ import { hydrateStudyStorage } from '../features/study/storage.js';
 import { hydrateAccountStorage } from '../features/account/storage.js';
 import { hydrateNotificationsStorage } from '../features/notifications/storage.js';
 import { notificationsSlice } from '../features/notifications/state.js';
+import { getMobileAccountStorage } from '../shared/browser/mobile-runtime.js';
 import {
   appStateReducer,
   createInitialAppState
@@ -27,12 +28,13 @@ export const MAIN_TAB_SCREENS = ['timer', 'planner', 'aquarium', 'analysis', 'st
 export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
   if (!storage) return state;
   const currentNotifications = notificationsSlice.selectors.field(state, 'notifications');
-  const notificationPatch = hydrateNotificationsStorage(storage);
+  const accountStorage = getMobileAccountStorage(storage);
+  const notificationPatch = hydrateNotificationsStorage(accountStorage);
   const patch = {
-    ...hydrateAnalysisStorage(storage),
+    ...hydrateAnalysisStorage(accountStorage),
     ...hydratePlannerStorage(storage),
-    ...hydrateStudyStorage(storage),
-    ...hydrateAccountStorage(storage),
+    ...hydrateStudyStorage(accountStorage),
+    ...hydrateAccountStorage(accountStorage),
     ...hydrateNavigationStorage(storage),
     ...(notificationPatch.notifications
       ? { notifications: { ...currentNotifications, ...notificationPatch.notifications } }
@@ -43,29 +45,35 @@ export function hydrateAppState(state = {}, storage = globalThis.localStorage) {
 
 // 내비게이션 백본 (순수). React 셸이 getState/setState를 주입한다.
 // onScreenChange: 화면 전환 시 부수효과(스크롤 저장 등) 훅. 브라우저 의존은 셸이 주입.
-export function createNavigationOps({ getState, setState, onScreenChange } = {}) {
+export function createNavigationOps({ getState, setState, onScreenChange, myNavigation } = {}) {
   function goto(next, addHistory = true) {
     const target = next === 'home' ? 'analysis' : next;
     const state = getState();
     if (!target || target === state.screen) return false;
     onScreenChange?.(state.screen, target);
-    const patch = { screen: target };
-    if (addHistory && state.screen !== target) patch.history = [...state.history, state.screen];
+    const patch = { screen: target, ...myNavigation?.goto(state, target, MAIN_TAB_SCREENS.includes(target)) };
+    if (state.studyPanelMode) patch.studyPanelMode = '';
+    if (addHistory && state.screen !== target && !patch.history) patch.history = [...state.history, state.screen];
     if (MAIN_TAB_SCREENS.includes(target)) patch.tab = target;
     setState(patch);
     return true;
   }
 
-  function back() {
+  function back(afterMotion = false) {
     const state = getState();
-    onScreenChange?.(state.screen, null);
-    if (!state.history.length) return goto('timer', false);
     const clone = [...state.history];
     const prev = clone.pop();
-    const target = prev === 'home' ? 'analysis' : prev;
-    setState({ history: clone, screen: target, ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
+    const target = prev === 'home' ? 'analysis' : prev || 'timer';
+    const commit = () => {
+      const current = getState();
+      if (current.screen === state.screen && current.history === state.history && current.myReturn === state.myReturn && current.user?.email === state.user?.email) back(true);
+    };
+    if (!afterMotion && myNavigation?.deferBack?.(state, commit, { target, depth: clone.length })) return true;
+    onScreenChange?.(state.screen, null);
+    if (!state.history.length) return goto('timer', false);
+    setState({ history: clone, screen: target, ...myNavigation?.back(state, target, clone.length), ...(state.studyPanelMode ? { studyPanelMode: '' } : {}), ...(MAIN_TAB_SCREENS.includes(target) ? { tab: target } : {}) });
     return true;
   }
 
-  return { goto, back };
+  return { goto, back, rememberMy: myNavigation?.remember };
 }

@@ -35,7 +35,8 @@ const AUTH_URL = CONFIG.api.auth;
 
 const poolData = {
     UserPoolId: CONFIG.cognito.userPoolId,
-    ClientId: CONFIG.cognito.clientId
+    ClientId: CONFIG.cognito.clientId,
+    Storage: createCognitoMemoryStorage()
 };
 const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
@@ -89,72 +90,27 @@ function shouldSkipPostLoginIdentityResolve() {
 // auth.js 는 그 위에서 동작 — 중복 정의 제거.
 
 async function registerRefreshCookie(refreshToken, options = {}) {
-    // 로컬 프리뷰에서는 서버 세션 등록을 생략하고 클라이언트 fallback을 사용한다.
+    const scope = options.sessionScope || captureClientSession();
     if (IS_LOCAL) {
+        if (!isClientSessionCurrent(scope, { login: true })) throw createSharedSessionChangedError();
         localStorage.setItem('refreshToken', refreshToken);
+        completeClientLogin({ accessToken: options.accessToken || getAccessToken(), idToken: options.idToken || getIdToken() }, scope);
         return false;
     }
-
     const accessToken = options.accessToken || getAccessToken();
     const idToken = options.idToken || getIdToken();
-    const shouldReplaceExisting = options.replaceExisting !== false;
-
     if (accessToken && idToken && refreshToken) {
         try {
-            const fastCookieRes = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    type: 'register_login_cookies',
-                    accessToken,
-                    idToken,
-                    refreshToken
-                })
-            });
-            if (fastCookieRes.ok) {
-                const cookieData = await fastCookieRes.json().catch(() => ({}));
-                if (typeof syncTokensFromAuthResponse === 'function') {
-                    const synced = syncTokensFromAuthResponse(cookieData);
-                    if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
-                        return false;
-                    }
-                }
+            const { response, data } = await fetchSharedAuthJson({ type: 'register_login_cookies', accessToken, idToken, refreshToken }, { sessionScope: scope });
+            if (response.ok && data.success === true && data.accessToken === accessToken && data.idToken === idToken) {
+                completeClientLogin(data, scope);
                 localStorage.removeItem('refreshToken');
                 return true;
             }
-        } catch (e) {
-            // 레거시 경로로 폴백
-        }
+        } catch (_) {}
     }
-
-    if (shouldReplaceExisting && typeof clearServerSessionCookies === 'function') {
-        try { await clearServerSessionCookies(); } catch (_) {}
-    }
-
-    try {
-        const cookieRes = await fetch(AUTH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ type: 'register_refresh_cookie', refreshToken })
-        });
-        if (cookieRes.ok) {
-            const cookieData = await cookieRes.json().catch(() => ({}));
-            if (typeof syncTokensFromAuthResponse === 'function') {
-                const synced = syncTokensFromAuthResponse(cookieData);
-                if (!synced && (cookieData.accessToken || cookieData.idToken || cookieData.userId)) {
-                    return false;
-                }
-            }
-            localStorage.removeItem('refreshToken');
-            return true;
-        }
-    } catch (e) {
-        // noop: fallback below
-    }
-    localStorage.setItem('refreshToken', refreshToken);
-    return false;
+    if (!options.sessionScope && isClientSessionCurrent(scope, { login: true })) clearClientSession();
+    throw new Error('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
 }
 
 // tryRefreshToken / apiFetch 본문은 js/shared/api.js 로 이관됨.
@@ -178,39 +134,14 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
     if (!localStorage.getItem('userId')) return;
 
     try {
-        if (options.waitFor && typeof options.waitFor.then === 'function') {
-            await options.waitFor;
-        }
-        const headers = { 'Content-Type': 'application/json' };
-        const bearerToken = options.accessToken || getAccessToken();
-        if (bearerToken) {
-            headers.Authorization = `Bearer ${bearerToken}`;
-        }
-
-        // 인증 오류 시 세션 갱신 후 한 번 재시도한다.
-        const fetchIdentity = async (requestType) => {
-            const doFetch = () => fetch(USER_API_URL, {
-                method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ type: requestType })
-            });
-            let res = await doFetch();
-            // 인증 오류 처리.
-            if (res.status === 401 || res.status === 403) {
-                const refreshed = await tryRefreshToken();
-                if (refreshed) {
-                    const refreshedBearerToken = getAccessToken();
-                    if (refreshedBearerToken) {
-                        headers.Authorization = `Bearer ${refreshedBearerToken}`;
-                    } else {
-                        delete headers.Authorization;
-                    }
-                    res = await doFetch();
-                }
-            }
-            return res;
-        };
+        if (options.waitFor && typeof options.waitFor.then === 'function') await options.waitFor;
+        const scope = captureClientSession();
+        const fetchIdentity = (requestType) => apiFetch(USER_API_URL, {
+            method: 'POST', body: JSON.stringify({ type: requestType })
+        }).catch(error => {
+            if ([400, 404].includes(error.status)) return { ok: false, status: error.status };
+            throw error;
+        });
 
         const profileMode = sessionStorage.getItem('user_profile_api_mode');
         const shouldUseLegacy = profileMode === 'legacy';
@@ -228,12 +159,9 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             sessionStorage.setItem('user_profile_api_mode', 'light');
         }
 
-        if (userRes.status === 401 || userRes.status === 403) {
-            throw new Error("Auth expired");
-        }
-
         if (userRes.ok) {
             const data = await userRes.json();
+            if (!isClientSessionCurrent(scope)) return false;
             const role = data.role || 'student';
             const userName = data.name || (role === 'admin' ? '관리자' : role === 'tutor' ? '선생님' : '학생');
             localStorage.setItem('userName', userName);
@@ -251,7 +179,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                     localStorage.setItem('tutorial_completed', 'true');
                 } else {
                     localStorage.removeItem('tutorial_completed');
-                    const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success'];
+                    const exemptPaths = ['/tutorial', '/login', '/signup', '/welcome', '/social-callback', '/mbti_survey', '/mbti_download', '/checkout', '/success', '/2027-jungsi-consulting/start'];
                     const currentPath = window.location.pathname;
                     if (!exemptPaths.some(p => currentPath.startsWith(p))) {
                         alert('튜토리얼이 완료되지 않아 튜토리얼 페이지로 이동합니다.');
@@ -261,9 +189,6 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
                 }
             }
 
-            if (options.waitFor && typeof options.waitFor.then === 'function') {
-                try { await options.waitFor; } catch (e) { /* noop */ }
-            }
             handleRoleSuccess(role, eventType, userName, promoCode);
             return true;
         } else {
@@ -271,9 +196,11 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
         }
 
     } catch (error) {
+        if (options.sessionScope && !isClientSessionCurrent(options.sessionScope, { login: true })) return false;
+        if (error?.code === 'AUTH_SESSION_CHANGED') return false;
         window.SCTrack?.identify(null);
-        console.error("Identity Resolve Error:", error);
-        if (eventType === 'none' && String(error?.message || '').includes('Auth expired')) {
+        console.error('계정 정보를 확인하지 못했습니다.');
+        if (eventType === 'none' && error?.code === 'AUTH_EXPIRED') {
             clearClientSession();
             const currentPath = window.location.pathname || '/';
             if (!isPublicRoute(currentPath)) {
@@ -328,10 +255,18 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
 
     localStorage.setItem('userRole', role);
 
+    let authReturnUrl = null;
+    try {
+        const value = new URLSearchParams(window.location.search).get('returnUrl') || '';
+        if (isSafeAuthReturnPath(value)) authReturnUrl = value || null;
+    } catch (_) { authReturnUrl = null; }
+
     if (eventType === 'signup') {
         if (role === 'tutor') {
             alert(`${userName} 선생님, 가입이 완료되었습니다!`);
             window.location.href = '/mypage/tutor'; // 튜터는 가입 후 튜터 전용 페이지로
+        } else if (authReturnUrl) {
+            window.location.replace(authReturnUrl);
         } else {
             // 학생은 웰컴 페이지로, 프로모 코드가 있다면 쿼리 파라미터 포함
             if (promoCode) {
@@ -346,12 +281,7 @@ function handleRoleSuccess(role, eventType, userName = '회원', promoCode = '')
     if (eventType === 'login') {
         // 모바일 앱 등에서 ?returnUrl=로 복귀 지점 전달 시 우선 이동.
         // open-redirect 방지: 동일 출처 절대경로(/...)만 허용한다.
-        let returnUrl = null;
-        try {
-            const raw = new URLSearchParams(window.location.search).get('returnUrl');
-            const decoded = raw ? decodeURIComponent(raw) : '';
-            if (decoded && decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('\\')) returnUrl = decoded;
-        } catch (_) { /* 파싱 실패 시 기본 라우팅 */ }
+        const returnUrl = authReturnUrl;
 
         if (role === 'tutor') {
             alert(`${userName} 선생님, 안녕하세요.`);
@@ -731,23 +661,26 @@ function startTimer(duration, displayId, intervalVar) {
 // 역할은 서버 응답 기준으로만 확정한다.
 // ------------------------------------------
 function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail = '/login' } = {}) {
+    const scope = beginClientLogin();
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-    const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+    const cognitoUserToAuth = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUserToAuth.authenticateUser(authDetails, {
         onSuccess: async function(authResult) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const refreshToken = authResult.getRefreshToken().getToken();
             setAccessToken(authResult.getAccessToken().getJwtToken());
             setIdToken(authResult.getIdToken().getJwtToken());
             localStorage.setItem('userId', authResult.getIdToken().payload.sub);
             localStorage.setItem('userEmail', email);
 
-            const cookiePromise = registerRefreshCookie(refreshToken);
+            const cookiePromise = registerRefreshCookie(refreshToken, { sessionScope: scope });
             markPostLoginIdentitySkip();
 
 
             resolveUserIdentity('signup', promoCode, {
+                sessionScope: scope,
                 accessToken: getAccessToken(),
                 waitFor: cookiePromise
             });
@@ -762,30 +695,25 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
 
 // ------------------------------------------
 // [공유] 회원가입 완료 — 학생/튜터 공통
-// signUp → update_profile(역할은 서버가 promoCode로 결정) → 자동 로그인.
-// 호출부는 attributeList/profileData/promoCode와 onError(버튼 복구 등)만 주입한다.
-// onError(err, ctx): ctx.afterAccountCreated=true면 계정 생성 후 단계(update_profile/통신) 실패.
+// 실패 시 입력과 버튼 상태를 복원한다.
 // ------------------------------------------
 function completeSignUp({ email, password, attributeList, profileData, promoCode = '', loginPathOnFail = '/login', onError }) {
+    const scope = captureClientSession();
     userPool.signUp(email, password, attributeList, null, async function(err, result) {
-        if (err) {
+        if (!isClientSessionCurrent(scope, { login: true })) return;
+        if (err && err.code !== 'UsernameExistsException') {
             if (typeof onError === 'function') onError(err, { afterAccountCreated: false });
             return;
         }
-
-        const userSub = result.userSub;
-
         try {
-            const response = await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'update_profile', userId: userSub, data: profileData })
-            });
-
-            if (!response.ok) throw new Error("계정 승인 및 DB 저장 실패");
-
+            const { submitSignupProfile, reauthenticateSignup } = await import('./shared/signup-submit.js');
+            const recovered = err ? await reauthenticateSignup({ CognitoUser: AmazonCognitoIdentity.CognitoUser,
+                AuthenticationDetails: AmazonCognitoIdentity.AuthenticationDetails, pool: userPool, email, password }) : null;
+            await submitSignupProfile({ url: AUTH_URL, userId: result?.userSub, profile: profileData, recoveryAccessToken: recovered?.accessToken });
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             autoLoginAfterSignup(email, password, { promoCode, loginPathOnFail });
         } catch (error) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             console.error(error);
             if (typeof onError === 'function') onError(error, { afterAccountCreated: true });
         }
@@ -817,6 +745,14 @@ async function handleFinalSubmit() {
     
     const chkMarketingEl = document.getElementById('chkMarketing');
     const marketingAgreed = chkMarketingEl ? chkMarketingEl.checked : false;
+    const signupConsent = { schema: 1, documents: Object.fromEntries(Array.from(document.querySelectorAll('[data-signup-document]')).map(el => [el.dataset.signupDocument, { revision: el.dataset.revision, accepted: el.dataset.signupDocument === 'marketing' ? marketingAgreed : true }])) };
+    const birthDay = new Date(`${birthdate}T00:00:00Z`);
+    const ageDay = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const cutoff = `${ageDay.getUTCFullYear() - 14}-${String(ageDay.getUTCMonth() + 1).padStart(2, '0')}-${String(ageDay.getUTCDate()).padStart(2, '0')}`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthdate) || !Number.isFinite(birthDay.getTime()) || birthDay.toISOString().slice(0, 10) !== birthdate || birthdate > cutoff) {
+        alert('만 14세 이상만 가입할 수 있습니다. 생년월일을 확인해주세요.');
+        return;
+    }
     const promoCode = document.getElementById('promoCode') ? document.getElementById('promoCode').value.trim() : "";
 
     const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -869,6 +805,7 @@ async function handleFinalSubmit() {
         referral: referral,
         gender: gender,
         birthdate: birthdate,
+        signupConsent,
         termsAgreed: true,
         marketingAgreed: marketingAgreed
     };
@@ -878,7 +815,7 @@ async function handleFinalSubmit() {
         loginPathOnFail: '/login',
         onError: (err, ctx) => {
             if (ctx && ctx.afterAccountCreated) {
-                alert("계정은 생성되었으나 서버 통신 지연으로 활성화에 실패했습니다. 관리자에게 문의하세요.");
+                alert(err?.message || '계정 활성화에 실패했습니다. 고객센터에 문의해주세요.');
                 submitBtn.innerText = "다시 시도하기";
             } else {
                 alert(getErrorMessage(err));
@@ -978,21 +915,10 @@ async function handleSignOut(silent = false) {
     if (cognitoUser != null) cognitoUser.signOut();
     const redirectPath = getRoleLoginPath();
 
-    // 서버 세션 종료 완료 후 클라이언트 상태를 정리한다.
+    clearClientSession();
     if (typeof clearServerSessionCookies === 'function') {
         await clearServerSessionCookies();
-    } else {
-        try {
-            await fetch(AUTH_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ type: 'logout' })
-            });
-        } catch (_) { /* 네트워크 실패해도 클라이언트 정리는 진행 */ }
     }
-
-    clearClientSession();
 
     if (!silent) alert("로그아웃 되었습니다.");
     window.location.replace(redirectPath);
@@ -1015,15 +941,16 @@ function handleSignIn() {
     // 관리자 로그인과 같은 방식으로 계정 정보를 확인한다.
     const prevCognitoUser = userPool.getCurrentUser();
     if (prevCognitoUser) prevCognitoUser.signOut();
-    clearClientSession();
+    const scope = beginClientLogin();
 
     const authData = { Username: email, Password: password };
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails(authData);
-    const userData = { Username: email, Pool: userPool };
+    const userData = { Username: email, Pool: userPool, Storage: userPool.storage };
     const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const idTokenJwt = idToken.getJwtToken();
@@ -1040,6 +967,7 @@ function handleSignIn() {
             const cookiePromise = registerRefreshCookie(refreshToken, {
                 accessToken,
                 idToken: idTokenJwt,
+                sessionScope: scope,
                 replaceExisting: true
             }).then((result) => {
                 timing.mark('cookie_register_done');
@@ -1053,7 +981,7 @@ function handleSignIn() {
 
 
             timing.mark('identity_start');
-            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise })
+            resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise, sessionScope: scope })
                 .then((ok) => {
                     timing.mark('identity_done');
                     timing.flush(ok === false ? 'identity_failed' : 'success');
@@ -1065,6 +993,7 @@ function handleSignIn() {
         onFailure: function(err) {
             timing.mark('cognito_failure');
             timing.flush('failure');
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             alert(getErrorMessage(err));
         }
     });
@@ -1093,10 +1022,12 @@ function handleTutorSignIn() {
     clearClientSession();
 
     const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
-    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+    const scope = captureClientSession();
+    const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage });
 
     cognitoUser.authenticateUser(authDetails, {
         onSuccess: async function(result) {
+            if (!isClientSessionCurrent(scope, { login: true })) return;
             const accessToken = result.getAccessToken().getJwtToken();
             const idToken = result.getIdToken();
             const idTokenJwt = idToken.getJwtToken();
@@ -1111,6 +1042,7 @@ function handleTutorSignIn() {
             const cookiePromise = registerRefreshCookie(refreshToken, {
                 accessToken,
                 idToken: idTokenJwt,
+                sessionScope: scope,
                 replaceExisting: true
             }).then((result) => {
                 timing.mark('cookie_register_done');
@@ -1120,12 +1052,20 @@ function handleTutorSignIn() {
                 throw error;
             });
 
+            try { await cookiePromise; } catch (_) {
+                if (!isClientSessionCurrent(scope, { login: true })) return;
+                cognitoUser.signOut();
+                clearClientSession();
+                alert('로그인 세션을 등록하지 못했습니다. 다시 시도해주세요.');
+                return;
+            }
+
             // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
                 await cookiePromise;
                 timing.mark('identity_start');
-                const res = await fetch(USER_API_URL, {
+                const res = await apiFetch(USER_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAccessToken()}` },
                     credentials: 'include',
@@ -1138,8 +1078,7 @@ function handleTutorSignIn() {
                 }
                 timing.mark('identity_done');
             } catch (e) { /* role 미확인 → 아래에서 차단 */ }
-
-            await cookiePromise.catch(() => {});
+            if (!isClientSessionCurrent(scope)) return;
 
             if (role !== 'tutor') {
                 const dest = role === 'admin' ? '/admin/login' : '/login';
@@ -1150,8 +1089,8 @@ function handleTutorSignIn() {
                         : "튜터 계정이 아니거나 정보를 확인할 수 없습니다. 계정을 확인해주세요.";
                 const prev = userPool.getCurrentUser();
                 if (prev) prev.signOut();
-                if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
                 clearClientSession();
+                if (typeof clearServerSessionCookies === 'function') await clearServerSessionCookies();
                 alert(msg);
                 timing.flush('role_blocked');
                 window.location.replace(dest);
@@ -1214,32 +1153,14 @@ window.handleSocialLogin = function(provider) {
         return;
     }
 
-    // CSRF state: randomHex|provider
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    const state = `${stateNonce}|${provider}`;
-    sessionStorage.setItem('socialState', state);
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state,
-            auth_type: 'reauthenticate'
-        });
-    } else {
+    try {
+        const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
+        navigateSocialLogin(createSocialLoginUrl({ provider, returnUrl: isSafeSocialReturnPath(returnUrl) ? returnUrl : '' }));
+    } catch (_) {
+        discardSocialLoginAttempt();
         buttons.forEach(btn => { btn.disabled = false; });
-        alert("지원하지 않는 로그인 방식입니다.");
-        return;
+        alert('소셜 로그인을 시작하지 못했습니다. 다시 시도해주세요.');
     }
-
-    window.location.href = authUrl;
 };
 
 window.openAuthModal = function(modalId) {

@@ -77,7 +77,6 @@ function updateTutorialExamNotice() {
     const notice = document.getElementById('tutExamEstimateNotice');
     if (notice) {
         const messages = {
-            jul: '7월 학평 환산값은 전과목 등급컷 기반 보간 추정치라 실제 성적표와 다를 수 있습니다.',
             sep: '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치입니다. 실제 성적표의 표준점수·백분위·등급과 다를 수 있습니다.'
         };
         notice.textContent = messages[month] || '';
@@ -510,7 +509,7 @@ async function _nextStepCore() {
         tutorialData.examMonth = examMonth;
 
         if (examMonth === 'jul' && (!isTutorialJulyInquiryAvailable(inq1Name) || !isTutorialJulyInquiryAvailable(inq2Name))) {
-            alert('7월 학평 추정 데이터에서 지원하지 않는 탐구 과목입니다.');
+            alert('7월 학평에서 지원하지 않는 탐구 과목입니다.');
             return;
         }
 
@@ -712,7 +711,7 @@ function simulateMbtiAnalysis() {
         .join('');
     const container = document.getElementById('stepContent');
     container.innerHTML = `
-        <div class="step-card mbti-result-card">
+        <div class="tut-step-card mbti-result-card">
             <div class="mbti-result-top">
                 <div class="mbti-result-code">${mbtiCode}</div>
                 <div class="mbti-result-name">${profile.name}</div>
@@ -731,7 +730,7 @@ function simulateMbtiAnalysis() {
     document.getElementById('tutPrevBtn').style.display = 'none';
     document.getElementById('mbtiResultNextBtn').addEventListener('click', () => {
         container.innerHTML = `
-            <div class="step-card" style="text-align:center; padding: 48px 20px;">
+            <div class="tut-step-card" style="text-align:center; padding: 48px 20px;">
                 <div style="font-size:2.5rem; margin-bottom:16px;">🔍</div>
                 <div style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:8px;">성적과 학습 유형을 종합 분석 중이에요</div>
                 <div style="font-size:0.95rem; color:#64748b;">잠시만 기다려주세요...</div>

@@ -17,7 +17,7 @@ export function useAdmissionCalendarResource({ enabled, getApiBinding, hasSessio
     fetchMobileAdmissionCalendar({ ...getApiBinding(), signal: controller?.signal }).then((result) => {
       if (requestKeyRef.current !== requestKey) return;
       setState(result.ok
-        ? { personalEvents: result.data || [], calendarSyncStatus: 'ready' }
+        ? { personalEvents: result.data || [], calendarSyncStatus: 'ready', calendarSupportsIdempotency: result.code === 'CALENDAR_IDEMPOTENT' }
         : { calendarSyncStatus: result.code === 'AUTH_EXPIRED' ? 'loading' : 'error' });
     });
     return () => {

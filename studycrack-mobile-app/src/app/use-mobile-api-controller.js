@@ -1,17 +1,26 @@
 import React from 'react';
 import { saveNotificationPreferences, saveQualitative, saveQuantitative, saveTargetUnivs } from '../features/account/api.js';
 import { acknowledgeFishDraw, claimStarterFish, claimStudyReward, drawFish, feedFish, renameFish, setActiveFish } from '../features/gamification/api.js';
-import { completeServerStudySession, startServerStudySession } from '../features/study/api.js';
-import { completeStudyRewardPipeline } from '../features/study/reward-pipeline.js';
 import { requestMobileProReport, saveMobileWeeklyCheck, uploadMobileFile, uploadMobileWeeklyFiles } from '../features/reports/api.js';
 import { saveMobileQna } from '../features/support/api.js';
 import {
   getMobileApiBinding,
   getMobileFileApiBinding,
-  hasMobileClientSession
+  hasMobileClientSession,
+  loadMobileModule
 } from '../shared/browser/mobile-runtime.js';
 
 const { useCallback, useMemo } = React;
+
+async function studyRequest(binding, operation, data) {
+  const browser = globalThis.window;
+  const scope = browser?.captureClientSession?.();
+  let api;
+  try { api = await loadMobileModule(() => import('../features/study/api.js')); }
+  catch { return { ok: false, error: '공부 기록 연결을 다시 확인해주세요.' }; }
+  if (scope && !browser.isClientSessionCurrent(scope)) return { ok: false, code: 'REQUEST_ABORTED' };
+  return api[operation]({ ...binding, ...data });
+}
 
 export function useMobileApiController({ setState, stateRef } = {}) {
   const getUserApiBinding = useCallback(() => getMobileApiBinding('user', 'userApiUrl'), []);
@@ -36,7 +45,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     [getUserApiBinding]
   );
   const startStudySession = useCallback(
-    (session) => startServerStudySession({ ...getUserApiBinding(), session }),
+    session => studyRequest(getUserApiBinding(), 'startServerStudySession', { session }),
     [getUserApiBinding]
   );
   const claimCompletedStudyReward = useCallback(
@@ -60,7 +69,7 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     [getGameApiBinding]
   );
   const startAquariumFishDraw = useCallback(
-    (requestId) => drawFish({ ...getGameApiBinding(), requestId }),
+    (requestId, ticketPolicyVersion) => drawFish({ ...getGameApiBinding(), requestId, ticketPolicyVersion }),
     [getGameApiBinding]
   );
   const acknowledgeAquariumFishDraw = useCallback(
@@ -68,13 +77,8 @@ export function useMobileApiController({ setState, stateRef } = {}) {
     [getGameApiBinding]
   );
   const completeStudySession = useCallback(
-    (sessionId, onPhase) => completeStudyRewardPipeline({
-      sessionId,
-      onPhase,
-      completeSession: (id) => completeServerStudySession({ ...getUserApiBinding(), sessionId: id }),
-      claimReward: claimCompletedStudyReward
-    }),
-    [claimCompletedStudyReward, getUserApiBinding]
+    sessionId => studyRequest(getUserApiBinding(), 'completeServerStudySession', { sessionId }),
+    [getUserApiBinding]
   );
   const refreshStudyRanking = useCallback(() => {
     setState({ rankingRefreshTick: Number(stateRef.current.rankingRefreshTick || 0) + 1 });

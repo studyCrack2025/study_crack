@@ -6,7 +6,7 @@
 // 역추적 UX (sim-card 4-상태 모델: default / loading / backtrace / upsell)
 // ============================================================
 const BT_LOADING_MIN_MS = 900;     // 분석중 애니메이션 최소 지속 시간 (기존 대비 2배)
-const BT_BACKTRACE_TIERS = ['standard', 'pro']; // 역추적 기능 허용 등급
+const BT_BACKTRACE_TIERS = ['basic', 'starter', 'standard', 'pro']; // 역추적 기능 허용 등급
 
 function extractBacktraceRawSnapshot(scoreData) {
     const coreKeys = ['kor', 'math', 'inq1', 'inq2'];
@@ -25,9 +25,9 @@ function _findSimItemByOriginalIdx(originalIdx) {
 
 async function requestBacktrace(originalIdx) {
     const item = _findSimItemByOriginalIdx(originalIdx);
-    if (!item || item.ineligible) return;
+    if (!item || item.ineligible || item._uiMode === 'loading') return;
 
-    // 1) Tier 게이팅 — standard/pro 외엔 upsell 모드
+    // 1) 이용 가능한 멤버십 확인
     if (!BT_BACKTRACE_TIERS.includes(currentUserTier)) {
         item._uiMode = 'upsell';
         renderDetailedSimCard();
@@ -596,7 +596,9 @@ function renderDetailedSimCard() {
         `;
 
         const reachableMsg = isReachable
-            ? `합격권에 도달하려면 <strong>원점수 +${planTotal}점</strong>이 필요합니다.`
+            ? (planTotal === 0
+                ? `이미 합격 기준에 도달했습니다. 추가 필요 원점수는 <strong>0점</strong>입니다.`
+                : `합격권에 도달하려면 <strong>원점수 +${planTotal}점</strong>이 필요합니다.`)
             : (backtrace.error
                 ? escapeHtml(backtrace.error)
                 : `현재 설정 범위 안에서는 합격권 도달이 어렵습니다.${Number.isFinite(planTotal) ? ` 최선 조합 기준 +${planTotal}점.` : ''}`);
@@ -619,8 +621,8 @@ function renderDetailedSimCard() {
         <button class="sim-backtrace-cta" type="button" onclick="requestBacktrace(${originalIdx})">
             <span class="cta-icon"><i class="fas fa-search-location"></i></span>
             <span class="cta-text">
-                <span class="cta-headline">현재 점수로는 합격권 도달이 어렵습니다</span>
-                <span class="cta-action">몇 점을 더 받으면 가능한지 확인하기 →</span>
+                <span class="cta-headline">합격권 도달 조합</span>
+                <span class="cta-action">필요한 최소 원점수 확인하기 →</span>
             </span>
         </button>
     `;
@@ -634,20 +636,20 @@ function renderDetailedSimCard() {
         </div>
     `;
 
-    // Upsell 본문 (free/trial/basic 등에서 CTA 누른 경우)
+    // 이용권 안내
     const buildUpsellBlock = (originalIdx) => `
         <div class="sim-backtrace-upsell">
             <button class="sim-backtrace-back" type="button" onclick="goBackFromBacktrace(${originalIdx})">
                 <i class="fas fa-arrow-left"></i> 다시 보기
             </button>
             <div class="bt-upsell-icon"><i class="fas fa-lock"></i></div>
-            <h4>합격권 도달 경로 분석은 Standard 이상 전용입니다</h4>
+            <h4>합격권 도달 경로 분석은 Basic 이상에서 제공됩니다</h4>
             <p>현재 점수로 어떤 과목을 몇 점 올려야 합격권에 도달하는지,
-               SKY 합격생들의 루트 기반으로 정밀하게 분석해드립니다.</p>
+               대학별 환산 기준에 따라 예상 조합을 확인할 수 있습니다.</p>
             <ul>
                 <li><i class="fas fa-check"></i> 과목별 정확한 원점수 상승 목표</li>
-                <li><i class="fas fa-check"></i> 합격권 도달까지 필요한 학습 기간</li>
-                <li><i class="fas fa-check"></i> 매주 어떻게 공부할지 플래너 제공</li>
+                <li><i class="fas fa-check"></i> 필요한 원점수 상승 합계</li>
+                <li><i class="fas fa-check"></i> 조합 적용 후 예상 환산점수</li>
             </ul>
             <button class="bt-upsell-btn" type="button" onclick="location.href='/payment'">멤버십 둘러보기 →</button>
         </div>
@@ -803,11 +805,11 @@ function renderDetailedSimCard() {
                     </div>`;
             });
 
-            // 역추적 CTA 노출 조건: 현재 UI 점수 < 10 + 1점 상승해도 < 25 (사실상 도달 어려운 카드만)
+            // 점수 구간과 관계없이 도달 조합을 확인할 수 있습니다.
             const uiMode = data._uiMode || 'default';
-            const showBtCTA = ((window.DEV_FORCE_BT_CTA || localStorage.getItem('DEV_FORCE_BT_CTA') === '1') || (currentScore < 10 && (currentScore + maxRise) < 25)) && !data.ineligible && data.sim_data;
+            const showBtCTA = !data.ineligible && data.sim_data;
 
-            // Warning 박스 — 안정권만 유지. 불합격권은 역추적 CTA가 같은 조건으로 떠서 중복 → 제거.
+            // 안정권 안내
             let warningHTML = '';
             if (currentScore >= 225 || (currentScore + maxRise) >= 250) {
                 warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><h4 style="color:#166534; margin:0; line-height:1.3; font-size:0.95rem;"><i class="fas fa-check-circle"></i> 안정권입니다</h4><p style="margin:0; line-height:1.4; color:#475569; font-size:0.85rem;">상위 대학 도전을 고려해보세요.</p></div>`;
@@ -929,7 +931,7 @@ function renderDetailedSimCard() {
         });
 
         const uiMode = data._uiMode || 'default';
-        const showBtCTA = (currentScore < 10 && (currentScore + maxRise) < 25 && !data.ineligible && data.sim_data);
+        const showBtCTA = !data.ineligible && data.sim_data;
 
         let warningHTML = '';
         if (currentScore >= 225 || (currentScore + maxRise) >= 250) warningHTML = `<div class="sim-warning" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534;"><i class="fas fa-check-circle"></i><div><strong>이미 상당히 안정권입니다.</strong></div></div>`;

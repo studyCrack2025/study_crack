@@ -2,6 +2,7 @@ import { APP_STATE_FIELD_KINDS, APP_STATE_FIELD_OWNERS, selectAppStateField } fr
 
 export const HANDLER_STATE_FIELDS = Object.freeze({
   navigation: Object.freeze([]),
+  productGuide: Object.freeze([]),
   auth: Object.freeze([
     'authError', 'authSubmitting', 'findEmailModalOpen', 'foundEmailMasked', 'openTermsType',
     'resetPasswordEmail', 'resetPasswordModalOpen', 'resetPasswordSending', 'resetPasswordStep',
@@ -9,16 +10,18 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'signupSubmitting', 'signupTerms', 'signupVerifiedEmail', 'signupVerifiedPhone'
   ]),
   timer: Object.freeze([
+    'studyPanelMode',
     'activePlannerItemId', 'activeStudySession', 'activeStudySubject', 'completionError',
     'gameProfile', 'gameProfileError', 'gameProfileStatus', 'gameRefreshTick', 'lastCompletedSession',
     'gameRulesOpen', 'notifModalOpen', 'plannerItems', 'rewardPendingSessionId', 'rewardResult', 'studyRecords',
     'studySessionDetailsOpen', 'studyStartDraft', 'studySubjectRecords', 'studySubjectSheetOnlyPlanned', 'studySubjectSheetOpen', 'studySummaryRefreshTick',
+    'studyRecovery', 'rewardClaimingSessionId', 'rewardRecoveryError',
     'studyTimerRunning', 'studyTimerTick', 'timerPhase'
   ]),
   gamification: Object.freeze([
     'activeDrawRequestId', 'activeFish', 'aquariumActionError', 'aquariumActionStatus',
     'aquariumDrawRevealStep', 'aquariumMode', 'aquariumResult', 'aquariumSelectedFishId',
-    'aquariumStarterSpeciesId', 'fishCatalog', 'fishCount', 'fishInventory', 'gameProfile',
+    'aquariumStarterSpeciesId', 'fishCatalog', 'fishCatalogStatus', 'fishCatalogError', 'fishCount', 'fishInventory', 'gameProfile', 'gameProfileStatus', 'gameProfileError',
     'gameRefreshTick', 'pendingDraw', 'pendingDrawError', 'pendingDrawStatus'
   ]),
   planner: Object.freeze([
@@ -30,15 +33,17 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'myProfileEditOpen', 'myProfileNameDraft', 'myProfilePhoneCodeDraft', 'myProfilePhoneDraft',
     'notifications', 'ob2SkippedNoScore', 'obGed', 'obGradeStatus', 'openFaq', 'openTermsType',
     'phoneChangeModalOpen', 'phoneChangeSending', 'phoneChangeStep', 'profileDetailModalOpen',
-    'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep',
+    'profilePhotoUploading', 'rankingPeriod', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreEditErrors', 'scoreEditSaveError',
     'scoreExamKey', 'scoreSubjectSaving', 'scores', 'targetMajor', 'user', 'withdrawModalOpen',
-    'withdrawPassword'
+    'withdrawPassword', 'withdrawSubmitting'
   ]),
   service: Object.freeze([
+    'streakSummary', 'user',
+    'notiRefreshTick', 'qnaRefreshTick', 'reportsRefreshTick',
     'analysisSearchOpen', 'checkoutPlan', 'coachingDropReasons', 'coachingExamFiles',
     'coachingExamScores', 'coachingExamType', 'coachingPlannerFiles', 'coachingSheetOpen',
     'coachingStep', 'coachingSubjectRows', 'coachingSubmitted', 'coachingSubmitting', 'coachingTrend',
-    'coachingView', 'drawerOpen', 'duration', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
+    'coachingView', 'drawerOpen', 'history', 'notiDetailId', 'notiExpandedId', 'notiList',
     'notiPage', 'notifModalOpen', 'proReports',
     'proReportsStatus', 'proRequestModalOpen', 'proRequestSubmitting', 'proRequestText',
     'qnaComposerOpen', 'qnaDraftContent', 'qnaDraftTitle', 'qnaHistory', 'qnaStatus',
@@ -55,8 +60,8 @@ export const HANDLER_STATE_FIELDS = Object.freeze({
     'universityRecommendationRetryTick', 'universitySelectedName'
   ]),
   calendar: Object.freeze([
-    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMonthAnchor',
-    'calendarSaving', 'calendarSelectedDate', 'calendarSheetOpen', 'personalEvents'
+    'calendarEventDraft', 'calendarEventEditId', 'calendarEventFormOpen', 'calendarMutationError',
+    'calendarMutationRecovery', 'calendarSaving', 'calendarSyncStatus', 'personalEvents', 'selectedDate'
   ]),
   form: Object.freeze([
     'analysisSearchTerm', 'coachingAnswers', 'coachingExamFiles', 'coachingExamScores',

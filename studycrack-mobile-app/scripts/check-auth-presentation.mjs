@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
+import { fileURLToPath } from 'node:url';
+import { EXAM_OPTIONS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../src/constants/options.js';
 
 const [authSource, authHandlers, authCss, signupCss, recoveryCss, introSource, ob3Source, surveySource, onboardingCss, splashCss] = await Promise.all([
   readFile(new URL('../src/screens/auth/AuthScreens.jsx', import.meta.url), 'utf8'),
@@ -24,7 +29,6 @@ assert.doesNotMatch(authSource, /auth-recovery-icon/);
 assert.match(authSource, /마케팅 정보 수신 동의/);
 assert.match(authSource, /<TermsModal openTermsType=\{openTermsType\}/);
 assert.doesNotMatch(authSource, /dangerouslySetInnerHTML/);
-assert.doesNotMatch(authSource, /SignupProgress/);
 assert.match(authSource, /export function AuthFindIdScreen/);
 assert.match(authSource, /export function AuthFindPwScreen/);
 assert.doesNotMatch(authSource, /소셜 계정으로 시작하기/);
@@ -37,9 +41,14 @@ assert.match(authSource, /auth-brand-name">StudyCrack/);
 assert.match(authSource, /auth-brand-tagline">합격 전략을 시작해볼까요\?/);
 assert.doesNotMatch(authSource, /ADMISSIONS PLATFORM/);
 assert.doesNotMatch(authSource, /auth-brand-eyebrow|auth-wordmark|auth-title/);
-assert.doesNotMatch(authSource, /signup-topbar|signup-progress/);
+assert.match(authSource, /className="signup-progress" aria-label="회원가입 진행 단계"/);
+assert.match(authSource, /aria-current=\{step === index \+ 1 \? 'step' : undefined\}/);
+assert.match(authSource, /auth-brand-centered/);
+assert.doesNotMatch(authSource, /성적 분석부터 오늘의 계획까지/, '로그인에서 반복 홍보 안내를 표시하지 않습니다.');
+assert.doesNotMatch(authSource, /55\.5|오늘 첫 과제 \+0\.1|prototype-session/);
 assert.match(signupCss, /\.signup-stage\{/);
-assert.doesNotMatch(signupCss, /\.signup-topbar|\.signup-progress/);
+assert.match(signupCss, /\.signup-topbar\{/);
+assert.match(signupCss, /\.signup-progress\{/);
 assert.match(signupCss, /\.signup-page\{[^}]*display:flex;flex-direction:column/);
 assert.match(signupCss, /\.signup-form-card\{[^}]*flex:0 0 auto;[^}]*margin:0 auto/);
 assert.match(signupCss, /\.signup-stage-head h2\{[^}]*font-size:var\(--sc-type-title\)/);
@@ -48,7 +57,11 @@ assert.match(recoveryCss, /width:min\(100%,360px\)/);
 assert.match(introSource, /onboarding-kicker/);
 assert.match(introSource, /지원학과 환산 점수/);
 assert.match(introSource, /지원학과 환산점수를 분석해요/);
-assert.match(introSource, /환산점수 \+18점/);
+assert.match(introSource, /대학별 반영 방식으로 계산/);
+assert.match(introSource, /내 성적으로 직접 비교/);
+assert.doesNotMatch(introSource, /정확하게 예측|목표 도달 시간/);
+assert.match(introSource, /원점수 변화가 환산점수에/);
+assert.doesNotMatch(introSource, />128<|환산점수 \+18점/);
 assert.doesNotMatch(introSource, /합격 가능성<\/div>/);
 assert.match(surveySource, /defaultValue=\{obSchoolName\}/);
 assert.match(surveySource, /defaultValue=\{obGoalText\}/);
@@ -58,4 +71,13 @@ assert.match(onboardingCss, /\.onboarding-container\{height:100%/);
 assert.match(onboardingCss, /\.onboarding-next\{/);
 assert.match(splashCss, /background:var\(--sc-canvas\)/);
 
-console.log('auth/onboarding presentation contract ok');
+const vite = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), appType: 'custom', logLevel: 'silent', server: { middlewareMode: true, hmr: false } });
+try {
+  const { Ob2Screen } = await vite.ssrLoadModule('/src/screens/onboarding/SurveyScreens.jsx');
+  for (const scoreExamType of EXAM_OPTIONS) {
+    const html = renderToStaticMarkup(createElement(Ob2Screen, { scoreExamType }));
+    assert.equal(html.includes(SEPTEMBER_SCORE_ESTIMATE_NOTICE), scoreExamType.includes('9월'), `estimate notice follows scoreExamType: ${scoreExamType}`);
+    assert.equal((html.match(/class="ob-score-estimate-notice" role="status"/g) || []).length, scoreExamType.includes('9월') ? 1 : 0);
+  }
+} finally { await vite.close(); }
+console.log('auth/onboarding presentation contract ok, including exam-specific estimate notice');

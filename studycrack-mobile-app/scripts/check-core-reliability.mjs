@@ -34,6 +34,7 @@ const timerStateActions = Object.fromEntries(HANDLER_STATE_FIELDS.timer.map((fie
 const timerPhases = [];
 const timerHandlers = createTimerHandlers({
   ...timerStateActions,
+  studyStorage: { getItem: () => null, setItem() {} },
   activeStudySession: { sessionId: 'session-5678', subject: '국어', startedAt: new Date(Date.now() - 60000).toISOString(), status: 'running' },
   activeStudySubject: '국어',
   activePlannerItemId: '',
@@ -44,26 +45,21 @@ const timerHandlers = createTimerHandlers({
   timerPhase: 'running',
   studyTimerRunning: true,
   studyTimerSecondsRef: { current: 60 },
-  completeStudySession: async (_sessionId, onPhase) => {
-    onPhase('settling-session');
-    onPhase('claiming-reward');
-    return {
-      completion: { ok: true, data: { sessionId: 'session-5678', durationSeconds: 60, endedAt: new Date().toISOString() } },
-      reward: {
+  completeStudySession: async () => ({ ok: true, data: { sessionId: 'session-5678', durationSeconds: 60, endedAt: new Date().toISOString() } }),
+  claimCompletedStudyReward: async () => ({
         ok: true,
         data: {
           sessionId: 'session-5678', durationSeconds: 60, reward: { shells: 1, food: 1 },
           profile: { shellBalance: 1, foodBalance: 1, activeFishIds: [], dailyReward: {} }
         }
-      }
-    };
-  },
+  }),
   setTimerPhase: (phase) => timerPhases.push(phase),
+  setActiveStudySession(value) { this.activeStudySession = value; },
   refreshStudyRanking: () => { rankingRefreshCount += 1; }
 });
 await timerHandlers.stopStudyTimer();
 assert.equal(rankingRefreshCount, 1);
-assert.deepEqual(timerPhases, ['settling-session', 'claiming-reward', 'rewarded']);
+assert.deepEqual(timerPhases, ['settling-session', 'idle', 'rewarded']);
 
 const backtrace = await fetchMobileBacktrace({
   apiFetch,

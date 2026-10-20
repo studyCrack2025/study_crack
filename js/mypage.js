@@ -6,6 +6,7 @@ let cognitoUser = null;
 let currentTutorData = null;
 let currentUserAuthProvider = 'local';
 let currentUserEmail = '';
+let deletionReauthAccessToken = '';
 
 let mypagePhoneTimerInterval = null;
 
@@ -156,11 +157,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initCognitoAndFetchData() {
     const poolData = {
         UserPoolId: CONFIG.cognito.userPoolId,
-        ClientId: CONFIG.cognito.clientId
+        ClientId: CONFIG.cognito.clientId,
+        Storage: createCognitoMemoryStorage()
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
-    cognitoUser = userPool.getCurrentUser();
+    const email = localStorage.getItem('userEmail');
+    cognitoUser = email ? new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool, Storage: userPool.storage }) : null;
 
     // 세션이 유효하면 데이터 조회.
     const userId = localStorage.getItem('userId');
@@ -638,14 +641,27 @@ function changePassword() {
         return;
     }
 
-    cognitoUser.changePassword(oldPw, newPw, function(err, result) {
-        if (err) {
-            if (err.name === 'NotAuthorizedException') alert("현재 비밀번호가 일치하지 않습니다.");
-            else alert("비밀번호 변경 실패: 정책에 맞지 않거나 오류가 발생했습니다.");
-            return;
+    if (!cognitoUser) return alert('현재 로그인한 계정을 확인해주세요.');
+    const details = new AmazonCognitoIdentity.AuthenticationDetails({ Username: cognitoUser.getUsername(), Password: oldPw });
+    cognitoUser.authenticateUser(details, {
+        onFailure: () => alert('현재 비밀번호를 확인해주세요.'),
+        newPasswordRequired: () => alert('비밀번호 찾기로 다시 설정해주세요.'),
+        onSuccess: session => {
+            if (session.getIdToken().payload.sub !== localStorage.getItem('userId')) {
+                cognitoUser.signOut();
+                alert('현재 로그인한 계정을 확인해주세요.');
+                return;
+            }
+            cognitoUser.changePassword(oldPw, newPw, async function(err, result) {
+                if (err) {
+                    if (err.name === 'NotAuthorizedException') alert("현재 비밀번호가 일치하지 않습니다.");
+                    else alert("비밀번호 변경 실패: 정책에 맞지 않거나 오류가 발생했습니다.");
+                    return;
+                }
+                alert("비밀번호가 변경되었습니다. 안전을 위해 다시 로그인해주세요.");
+                handleSignOut();
+            });
         }
-        alert("비밀번호가 변경되었습니다. 안전을 위해 다시 로그인해주세요.");
-        handleSignOut(); 
     });
 }
 
@@ -728,70 +744,16 @@ async function unlinkSocial(provider) {
 }
 
 function linkSocial(provider) {
-    const social = CONFIG && CONFIG.social;
-    const clientId = social && social[provider] && social[provider].clientId;
-    const callbackUrl = social && social.callbackUrl;
-
-    if (!clientId || !callbackUrl) {
-        alert('소셜 연동 설정이 완료되지 않았습니다. 관리자에게 문의해주세요.');
-        return;
-    }
-
-    // auth.js와 동일한 state 형식: {nonce}|{provider}
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    const state = `${stateNonce}|${provider}`;
-    sessionStorage.setItem('socialState', state);
-    sessionStorage.setItem('socialLinkMode', 'true'); // 연동 모드 플래그
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
-        });
-    }
-
-    if (authUrl) window.location.href = authUrl;
+    alert('새 소셜 계정 연동은 현재 지원하지 않습니다. 기존 로그인 방식으로 이용해주세요.');
 }
 
 function startDeleteReauth(provider) {
-    const social = CONFIG && CONFIG.social;
-    const clientId = social && social[provider] && social[provider].clientId;
-    const callbackUrl = social && social.callbackUrl;
-
-    if (!clientId || !callbackUrl) {
-        alert('소셜 인증 설정을 불러올 수 없습니다. 관리자에게 문의해주세요.');
-        return;
+    try {
+        navigateSocialLogin(createSocialLoginUrl({ provider, purpose: 'delete_reauth' }));
+    } catch (_) {
+        discardSocialLoginAttempt();
+        alert('소셜 인증을 시작하지 못했습니다. 다시 시도해주세요.');
     }
-
-    const stateNonce = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map(b => b.toString(16).padStart(2, '0')).join('');
-    // purpose를 state에 인코딩 → OAuth 리다이렉트 후에도 sessionStorage 소실 없이 서버가 목적 확인 가능
-    const state = `${stateNonce}|${provider}|delete_reauth`;
-    sessionStorage.setItem('socialState', state);
-
-    let authUrl = '';
-    if (provider === 'google') {
-        authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
-            client_id: clientId, redirect_uri: callbackUrl,
-            response_type: 'code', scope: 'openid email profile',
-            state, access_type: 'offline', prompt: 'select_account'
-        });
-    } else if (provider === 'naver') {
-        authUrl = `https://nid.naver.com/oauth2.0/authorize?` + new URLSearchParams({
-            response_type: 'code', client_id: clientId,
-            redirect_uri: callbackUrl, state
-        });
-    }
-
-    if (authUrl) window.location.href = authUrl;
 }
 
 async function handleSignOut() {
@@ -906,6 +868,7 @@ function checkDeleteButtonVisibility(url) {
 // [기능 4] 회원 탈퇴
 // ==========================================
 function handleDeleteAccount() {
+    deletionReauthAccessToken = '';
     const isSocialOnly = currentUserAuthProvider !== 'local';
     const authGroup = document.getElementById('deleteAuthGroup');
     const step1Btn = document.querySelector('#deleteStep1 .primary-btn');
@@ -969,7 +932,8 @@ function deleteStep1Submit() {
         });
 
         cognitoUser.authenticateUser(authDetails, {
-            onSuccess: function () {
+            onSuccess: function (session) {
+                deletionReauthAccessToken = session.getAccessToken().getJwtToken();
                 _proceedToDeleteStep2();
             },
             onFailure: function () {
@@ -999,22 +963,29 @@ function deleteStep2Submit() {
     }
 
     const btn = document.querySelector('#deleteStep2 .danger-btn');
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 데이터 삭제 중...`;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 삭제 요청 중...`;
     btn.disabled = true;
     processBackendDeletion();
 }
 
 async function processBackendDeletion() {
-    // 소셜 계정 탈퇴 시 재인증으로 발급된 deleteConfirmToken 첨부 (5분 이내 사용)
     const deleteConfirmToken = sessionStorage.getItem('deleteConfirmToken') || null;
-    sessionStorage.removeItem('deleteConfirmToken');
 
     try {
-        await apiFetch(USER_API_URL, {
+        const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'delete_user', ...(deleteConfirmToken && { deleteConfirmToken }) })
+            body: JSON.stringify({ type: 'request_account_deletion', ...(deleteConfirmToken ? { deleteConfirmToken } : { reauthAccessToken: deletionReauthAccessToken }) })
         });
-
+        const result = await response.json();
+        if (result?.success !== true || result?.completed !== true || result?.status !== 'complete') {
+            if (result?.success === true && result?.completed === false && result?.status === 'review_required') {
+                sessionStorage.removeItem('deleteConfirmToken');
+                alert('삭제 요청이 접수되었습니다. 담당자가 삭제·보존 범위를 확인한 뒤 처리합니다. 아직 삭제가 완료된 것은 아닙니다. 문의: contact@studycrack.co.kr');
+                document.getElementById('deleteAccountModal').classList.add('hidden');
+            } else alert('삭제 완료 여부를 확인하지 못했습니다. 고객센터에 문의해주세요.');
+            return;
+        }
+        sessionStorage.removeItem('deleteConfirmToken');
         alert("회원 탈퇴가 정상적으로 완료되었습니다. 그동안 스터디크랙을 이용해 주셔서 감사합니다.");
         clearClientSession();
         window.location.href = '/';
@@ -1022,6 +993,14 @@ async function processBackendDeletion() {
         if (error.message !== "Auth expired") alert("서버 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         const btn = document.querySelector('#deleteStep2 .danger-btn');
         if (btn) { btn.innerText = '탈퇴하기'; btn.disabled = false; }
+    } finally {
+        deletionReauthAccessToken = '';
+        document.getElementById('deleteStep1').classList.remove('hidden');
+        document.getElementById('deleteStep2').classList.add('hidden');
+        const verifyBtn = document.querySelector('#deleteStep1 .primary-btn');
+        if (verifyBtn) { verifyBtn.innerText = '본인 확인'; verifyBtn.disabled = false; }
+        const btn = document.querySelector('#deleteStep2 .danger-btn');
+        if (btn) { btn.innerText = '삭제 요청하기'; btn.disabled = false; }
     }
 }
 

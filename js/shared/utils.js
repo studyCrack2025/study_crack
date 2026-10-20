@@ -12,6 +12,22 @@ function escapeHtml(text) {
         .replace(/'/g, '&#039;');
 }
 
+// 첨부 링크는 실행 가능한 URL과 인증정보가 포함된 URL을 거절한다.
+function safeAttachmentUrl(value) {
+    if (typeof value !== 'string' || !value || value.length > 8192 || /[\u0000-\u0020\u007f\\]/.test(value)) return '';
+    try {
+        const url = new URL(value, window.location.origin);
+        if (url.username || url.password) return '';
+        if (url.protocol !== 'https:' && !(url.protocol === 'http:' && url.origin === window.location.origin)) return '';
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(value) && (!value.startsWith('/') || value.startsWith('//'))) return '';
+        return url.href;
+    } catch (_) { return ''; }
+}
+
+function isSafeReportDomKey(value) {
+    return typeof value === 'string' && /^[A-Za-z0-9_:.-]{1,100}$/.test(value);
+}
+
 function formatReportKey(key, isPro = true) {
     if (!key) return '알 수 없는 리포트';
     if (key.length === 6 && /^\d+$/.test(key)) {

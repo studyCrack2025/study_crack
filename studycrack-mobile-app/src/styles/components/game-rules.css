@@ -1,0 +1,46 @@
+.game-rules-modal{height:min(720px,calc(var(--sc-visual-height) - 32px));min-height:0;padding:0;overflow:hidden;}
+.game-rules-head{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--sc-space-12);padding:var(--sc-space-16);border-bottom:1px solid var(--sc-line-subtle);}
+.game-rules-head > div{min-width:0;display:grid;gap:var(--sc-space-4);}
+.game-rules-head h2{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-title);line-height:1.3;}
+.game-rules-eyebrow{color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}
+.game-rules-progress{flex:none;display:flex;align-items:center;gap:var(--sc-space-12);padding:10px var(--sc-space-16);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
+.game-rules-progress ol{display:flex;flex:1;gap:var(--sc-space-8);margin:0;padding:0;list-style:none;}
+.game-rules-progress li{flex:1;height:4px;border-radius:var(--sc-radius-pill);background:var(--sc-line-subtle);}
+.game-rules-progress .is-current{background:var(--sc-brand-navy);}
+.game-rules-body{flex:1;min-height:0;padding:0 var(--sc-space-16) var(--sc-space-16);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.game-rules-step{min-width:0;display:grid;align-content:start;gap:var(--sc-space-8);}
+.game-rules-copy{display:grid;gap:var(--sc-space-8);}
+.game-rules-body h3{margin:0;color:var(--sc-ink-strong);font-size:var(--sc-type-section);line-height:1.4;overflow-wrap:anywhere;}
+.game-rules-body p{margin:0;color:var(--sc-ink);font-size:var(--sc-type-body);line-height:1.6;overflow-wrap:anywhere;}
+.game-rules-example{min-width:0;display:grid;gap:var(--sc-space-8);margin:0;}
+.game-rules-example-frame{min-width:0;height:clamp(96px,15dvh,128px);display:grid;place-items:center;padding:var(--sc-space-8);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface-card);overflow:hidden;}
+.game-rules-example-frame img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;}
+.game-rules-example-frame > span{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;overflow-wrap:anywhere;}
+.game-rules-example figcaption{min-width:0;color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;overflow-wrap:anywhere;}
+.game-rules-details{min-width:0;border-top:1px solid var(--sc-line-subtle);}
+.game-rules-details > summary{min-height:48px;align-content:center;padding:var(--sc-space-12) 0;color:var(--sc-brand-navy);font-size:var(--sc-type-body);font-weight:800;line-height:1.55;cursor:pointer;overflow-wrap:anywhere;}
+.game-rules-details > .sc-disclosure-body > *{margin-top:var(--sc-space-12);}
+.game-rules-rarities{display:flex;flex-wrap:wrap;gap:var(--sc-space-8);}
+.game-rules-rarities span{padding:var(--sc-space-8) var(--sc-space-12);border-radius:var(--sc-radius-label);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);font-size:var(--sc-type-caption);font-weight:800;}
+.game-rules-growth{min-width:0;display:grid;gap:var(--sc-space-12);padding-top:var(--sc-space-16);border-top:1px solid var(--sc-line-subtle);}
+.game-rules-body .game-rules-note{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);}
+.game-rules-body .game-rules-highlight{padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);color:var(--sc-action-positive-strong);font-size:var(--sc-type-caption);font-weight:800;}
+.game-rules-growth-state{padding:var(--sc-space-12);border-radius:var(--sc-radius-control);background:var(--sc-surface-positive);}
+.game-rules-background-pair,.game-rules-background-grid{min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sc-space-12);}
+.game-rules-background{min-width:0;display:grid;gap:var(--sc-space-8);margin:0;}
+.game-rules-background > div{aspect-ratio:4/3;display:grid;place-items:center;overflow:hidden;border-radius:var(--sc-radius-card);background:var(--sc-brand-navy-deep);}
+.game-rules-background img{width:100%;height:100%;display:block;object-fit:cover;}
+.game-rules-background > div > span{padding:var(--sc-space-12);color:var(--sc-on-brand);font-size:var(--sc-type-caption);line-height:1.55;text-align:center;}
+.game-rules-background figcaption{display:grid;gap:var(--sc-space-4);}
+.game-rules-background small{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;}
+.game-rules-background b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-first-day{min-width:0;display:grid;justify-items:center;align-content:center;gap:var(--sc-space-12);padding:var(--sc-space-12);border:1px dashed var(--sc-line-strong);border-radius:var(--sc-radius-card);background:var(--sc-surface-subtle);text-align:center;}
+.game-rules-first-day .icon{width:36px;height:36px;stroke:var(--sc-brand-navy);}
+.game-rules-first-day b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-first-day span{color:var(--sc-ink-muted);font-size:var(--sc-type-caption);line-height:1.55;}
+.game-rules-status{display:grid;gap:var(--sc-space-12);padding:var(--sc-space-16);border-radius:var(--sc-radius-control);background:var(--sc-surface-subtle);}
+.game-rules-status > .icon{width:64px;height:64px;stroke:var(--sc-brand-navy);}
+.game-rules-status b{color:var(--sc-ink-strong);font-size:var(--sc-type-body);line-height:1.55;}
+.game-rules-footer{flex:none;display:flex;gap:var(--sc-space-12);padding:var(--sc-space-12) var(--sc-space-16) max(var(--sc-space-12),env(safe-area-inset-bottom));border-top:1px solid var(--sc-line-subtle);}
+.game-rules-footer > .btn{flex:1;min-width:0;min-height:var(--sc-primary-height);font-size:var(--sc-type-body);overflow-wrap:anywhere;}
+.aquarium-rules-button{min-height:48px;padding:var(--sc-space-8) var(--sc-space-12);border:1px solid var(--sc-line-subtle);border-radius:var(--sc-radius-button);background:var(--sc-surface-card);color:var(--sc-brand-navy);font:inherit;font-size:var(--sc-type-caption);font-weight:800;line-height:1.55;}

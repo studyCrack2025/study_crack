@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function initCognitoUser() {
     const poolData = { 
         UserPoolId: CONFIG.cognito.userPoolId, 
-        ClientId: CONFIG.cognito.clientId 
+        ClientId: CONFIG.cognito.clientId,
+        Storage: createCognitoMemoryStorage()
     };
     const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
     cognitoUser = userPool.getCurrentUser();
@@ -26,20 +27,10 @@ function initCognitoUser() {
         if (userEmail) {
             cognitoUser = new AmazonCognitoIdentity.CognitoUser({
                 Username: userEmail,
-                Pool: userPool
+                Pool: userPool,
+                Storage: userPool.storage
             });
         }
-    }
-
-    if (cognitoUser != null) {
-        cognitoUser.getSession(function(err, session) {
-            if (err) {
-                console.error("세션 갱신 실패:", err);
-                // 세션 갱신에 실패했다면 깔끔하게 로그아웃 처리
-                clearClientSession();
-                window.location.href = '/login';
-            }
-        });
     }
 }
 
@@ -71,27 +62,38 @@ function executeChangePassword() {
         return;
     }
 
-    cognitoUser.changePassword(oldPw, newPw, function(err, result) {
-        if (err) {
-            console.error(err);
-            // 💡 3. 영어로 된 원시 에러 메시지 대신 한글로 친절하게 안내
-            if (err.name === 'NotAuthorizedException') {
-                alert("현재 비밀번호가 일치하지 않습니다.");
-            } else if (err.name === 'LimitExceededException') {
-                alert("요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.");
-            } else {
-                alert("비밀번호 변경에 실패했습니다. 올바른 비밀번호인지 확인해주세요.");
+    const details = new AmazonCognitoIdentity.AuthenticationDetails({ Username: cognitoUser.getUsername(), Password: oldPw });
+    cognitoUser.authenticateUser(details, {
+        onFailure: () => alert('현재 비밀번호를 확인해주세요.'),
+        newPasswordRequired: () => alert('비밀번호 찾기로 다시 설정해주세요.'),
+        onSuccess: session => {
+            if (session.getIdToken().payload.sub !== localStorage.getItem('userId')) {
+                cognitoUser.signOut();
+                alert('현재 로그인한 계정을 확인해주세요.');
+                return;
             }
-            return;
-        }
-        
-        alert("비밀번호가 성공적으로 변경되었습니다.\n안전을 위해 자동으로 로그아웃 됩니다. 새 비밀번호로 다시 로그인해주세요.");
-        
-        // Cognito 로그아웃 및 로컬 세션 클리어
-        cognitoUser.signOut();
-        clearClientSession();
+            cognitoUser.changePassword(oldPw, newPw, async function(err, result) {
+                if (err) {
+                    console.error(err);
+                    // 💡 3. 영어로 된 원시 에러 메시지 대신 한글로 친절하게 안내
+                    if (err.name === 'NotAuthorizedException') {
+                        alert("현재 비밀번호가 일치하지 않습니다.");
+                    } else if (err.name === 'LimitExceededException') {
+                        alert("요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.");
+                    } else {
+                        alert("비밀번호 변경에 실패했습니다. 올바른 비밀번호인지 확인해주세요.");
+                    }
+                    return;
+                }
+                alert("비밀번호가 성공적으로 변경되었습니다.\n안전을 위해 자동으로 로그아웃 됩니다. 새 비밀번호로 다시 로그인해주세요.");
+                // Cognito 로그아웃 및 로컬 세션 클리어
+                await clearServerSessionCookies();
+                cognitoUser.signOut();
+                clearClientSession();
 
-        // 로그인 페이지로 강제 리다이렉트
-        window.location.href = '/login';
+                // 로그인 페이지로 강제 리다이렉트
+                window.location.href = '/login';
+            });
+        }
     });
 }

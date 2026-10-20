@@ -5,6 +5,8 @@ export function createOverlayInitialState() {
     serverResource: {},
     localDraft: {},
     ephemeralUi: {
+      streakSummary: { open: false, returnTarget: '' },
+      productGuideUi: { open: false, step: 1, mode: 'auto', returnTarget: '', busy: false, error: '' },
       upgradePromptTier: '',
       upgradePromptTarget: '',
       lockedFeatureTarget: '',
