@@ -6,6 +6,7 @@ const repoRoot = new URL('../', import.meta.url);
 const expectedSitemapUrls = [
   'https://studycrack.co.kr/',
   'https://studycrack.co.kr/service',
+  'https://studycrack.co.kr/jungsi-score-guide',
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
   'https://studycrack.co.kr/qna'
@@ -13,6 +14,7 @@ const expectedSitemapUrls = [
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
   ['service.html', 'https://studycrack.co.kr/service'],
+  ['jungsi-score-guide.html', 'https://studycrack.co.kr/jungsi-score-guide'],
   ['analysis.html', 'https://studycrack.co.kr/analysis'],
   ['payment.html', 'https://studycrack.co.kr/payment'],
   ['qna.html', 'https://studycrack.co.kr/qna']

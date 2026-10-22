@@ -119,6 +119,8 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .landing-value { padding: 42px 20px 32px; text-align: center; background: #fff; }
 .landing-value h2 { margin: 0 0 18px; color: var(--primary-dark); font-size: clamp(20px,2.1vw,26px); font-weight: 800; }
 .landing-value p { margin: 0; color: var(--muted); font-size: 12px; }
+.landing-value .admission-guide-cta { margin: 24px auto 0; }
+.landing-value .admission-guide-cta:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 4px; }
 .landing-proof-note { margin: 28px 0 0; text-align: center; color: #fff; font-size: 12px; }
 
 /* =========================================
