@@ -148,8 +148,10 @@
     "js/tutorial.js",
     "jungsi-consulting-2027.html",
     "jungsi-consulting-app.html",
+    "jungsi-score-guide.html",
     "css/jungsi-consulting.css",
     "css/jungsi-consulting-app-shell.css",
+    "css/jungsi-score-guide.css",
     "js/jungsi-consulting.js",
     "login.html",
     "mbti_download.html",
@@ -183,6 +185,7 @@
   ],
   "aliases": {
     "basic-preview": "basic-preview.html",
+    "jungsi-score-guide": "jungsi-score-guide.html",
     "2027-jungsi-consulting": "jungsi-consulting-2027.html",
     "2027-jungsi-consulting/start": "jungsi-consulting-app.html",
     "2027-jungsi-consulting/login": "jungsi-consulting-app.html",
