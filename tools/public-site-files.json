@@ -139,6 +139,7 @@
     "js/script.js",
     "js/service.js",
     "js/shared/api.js",
+    "js/shared/account-recovery.js",
     "js/shared/signup-submit.js",
     "js/shared/hamburger.js",
     "js/shared/store.js",

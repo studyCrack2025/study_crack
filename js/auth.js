@@ -1199,16 +1199,13 @@ async function requestPasswordReset() {
     btn.disabled = true;
 
     try {
-        await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'send_pw_reset_code', email: email })
-        });
+        const { requestAccountRecovery } = await import('./shared/account-recovery.js');
+        await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'send_pw_reset_code', email } });
         alert("비밀번호 재설정 코드가 이메일로 발송되었습니다.");
         document.getElementById('forgotPwStep1').classList.add('hidden');
         document.getElementById('forgotPwStep2').classList.remove('hidden');
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('404') ? "가입되지 않은 이메일입니다." : "통신 중 오류가 발생했습니다.");
+        alert(e.message || '비밀번호 재설정 코드 요청 중 오류가 발생했습니다.');
         btn.innerText = "인증 코드 받기";
         btn.disabled = false;
     }
@@ -1230,16 +1227,13 @@ async function confirmPasswordReset() {
     }
 
     try {
-        await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'reset_password', email: email, code: code, newPassword: newPw })
-        });
+        const { requestAccountRecovery } = await import('./shared/account-recovery.js');
+        await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'reset_password', email, code, newPassword: newPw } });
         alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
         closeAuthModal('forgotPwModal');
         document.getElementById('password').value = '';
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('400') ? "인증코드가 일치하지 않거나 만료되었습니다." : "통신 중 오류가 발생했습니다.");
+        alert(e.message || '비밀번호 변경 중 오류가 발생했습니다.');
     }
 }
 
@@ -1249,14 +1243,9 @@ async function handleFindEmail() {
 
     if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
 
-    let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
-
     try {
-        const response = await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'find_email', name: name, phone: dbFormattedPhone })
-        });
-        const data = await response.json();
+        const { formatRecoveryPhone, requestAccountRecovery } = await import('./shared/account-recovery.js');
+        const data = await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'find_email', name, phone: formatRecoveryPhone(phoneRaw) } });
         const resultBox = document.getElementById('foundEmailResult');
 
         if (data.email) {
@@ -1264,7 +1253,7 @@ async function handleFindEmail() {
             resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
 
             const strongTag = document.createElement('strong');
-            strongTag.textContent = escapeHtml(data.email);
+            strongTag.textContent = data.email;
             resultBox.appendChild(strongTag);
 
             resultBox.appendChild(document.createTextNode(" 입니다."));
@@ -1274,7 +1263,6 @@ async function handleFindEmail() {
             alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('404') ? "입력하신 정보와 일치하는 계정을 찾을 수 없습니다." : "통신 중 오류가 발생했습니다. 잠시 후 시도해주세요.");
+        alert(e.message || '이메일 찾기 중 오류가 발생했습니다.');
     }
 }
