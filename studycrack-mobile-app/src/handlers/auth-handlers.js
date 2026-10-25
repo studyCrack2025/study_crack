@@ -9,6 +9,7 @@ import {
 import { getData } from './action-utils.js';
 import { isValidEmailAddress, sanitizeEmailInput } from '../utils/email-input.js';
 import { reloadMobileLocation } from '../shared/browser/mobile-runtime.js';
+import { formatRecoveryPhone, requestAccountRecovery } from '../../../js/shared/account-recovery.js';
 
 function noop() {}
 
@@ -44,12 +45,6 @@ function getInputValue(ctx, selector) {
 function getResetEmail(ctx) {
   if (typeof ctx.getResetPasswordEmail === 'function') return ctx.getResetPasswordEmail();
   return ctx.resetPasswordEmail || '';
-}
-
-function formatKoreanPhoneForDb(phone) {
-  const digits = String(phone || '').replace(/\D+/g, '');
-  if (!digits) return '';
-  return digits.startsWith('0') ? `+82${digits.slice(1)}` : `+82${digits}`;
 }
 
 function normalizeCognitoPhone(phone) {
@@ -124,38 +119,16 @@ function buildSocialAuthUrl(ctx, provider) {
 }
 
 async function defaultFindEmail({ authApiUrl, fetchImpl = globalThis.fetch, name, phone }) {
-  if (!authApiUrl || !fetchImpl) return '';
-  const res = await fetchImpl(authApiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'find_email', name, phone: formatKoreanPhoneForDb(phone) })
-  });
-  const data = await res.json();
-  return res.ok && data?.success && data?.email ? String(data.email) : '';
+  const data = await requestAccountRecovery({ url: authApiUrl, fetchImpl, payload: { type: 'find_email', name, phone: formatRecoveryPhone(phone) } });
+  return data.email ? String(data.email) : '';
 }
 
 async function defaultRequestResetCode({ authApiUrl, email, fetchImpl = globalThis.fetch }) {
-  if (!authApiUrl || !fetchImpl) throw new Error('AUTH_API_MISSING');
-  const res = await fetchImpl(authApiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'send_pw_reset_code', email })
-  });
-  const data = await res.json();
-  if (!res.ok || !data?.success) throw new Error(data?.message || 'REQUEST_FAILED');
-  return data;
+  return requestAccountRecovery({ url: authApiUrl, fetchImpl, payload: { type: 'send_pw_reset_code', email } });
 }
 
 async function defaultResetPassword({ authApiUrl, code, email, fetchImpl = globalThis.fetch, newPassword }) {
-  if (!authApiUrl || !fetchImpl) throw new Error('AUTH_API_MISSING');
-  const res = await fetchImpl(authApiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'reset_password', email, code, newPassword })
-  });
-  const data = await res.json();
-  if (!res.ok || !data?.success) throw new Error(data?.message || 'RESET_FAILED');
-  return data;
+  return requestAccountRecovery({ url: authApiUrl, fetchImpl, payload: { type: 'reset_password', email, code, newPassword } });
 }
 
 export function createAuthHandlers(ctx) {
@@ -237,8 +210,10 @@ export function createAuthHandlers(ctx) {
       let masked = '';
       try {
         masked = await findEmail({ authApiUrl: ctx.authApiUrl, fetchImpl, name, phone });
-      } catch (_) {
-        masked = '';
+      } catch (error) {
+        alert(error.message || '이메일 찾기 중 오류가 발생했습니다.');
+        setFoundEmailMasked('');
+        return false;
       }
       if (!masked) {
         alert('일치하는 이메일을 찾지 못했습니다.');
