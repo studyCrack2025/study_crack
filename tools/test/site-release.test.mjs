@@ -148,8 +148,9 @@ test('publication uploads dependencies before entrypoints and never performs a b
   assert.ok(commands.every((args) => args[2].startsWith('/safe/artifact/site')));
   assert.ok(commands[0][2].endsWith('/dist/chunks'));
   assert.ok(commands[0].includes(IMMUTABLE));
-  for (const file of ['js/config.js', 'js/shared/api.js', `${dist}/studycrack-mobile.bundle.js`, `${dist}/studycrack-mobile.css`]) {
+  for (const file of ['js/config.js', 'js/shared/api.js', 'js/shared/account-recovery.js', `${dist}/studycrack-mobile.bundle.js`, `${dist}/studycrack-mobile.css`]) {
     assert.ok(commands.some((args) => args[2].endsWith(`/${file}`) && args.includes(NO_CACHE)));
+    assert.equal(cacheControlFor(file), NO_CACHE);
   }
   assert.ok(commands.some((args) => args.includes('basic-preview') && args.includes('text/html; charset=utf-8')));
   assert.ok(commands.some((args) => args.includes('application/manifest+json; charset=utf-8')));
