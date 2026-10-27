@@ -210,20 +210,24 @@ function responseFor(payload, state) {
       const tier = String(payload.data?.tier || 'standard').toUpperCase();
       const prices = { BASIC: 25000, STARTER: 39000, STANDARD: 49000, PRO: 149000, TEST: 100 };
       const paymentIntentId = 'PI_123e4567e89b12d3a456426614174000';
-      return {
-        success: true,
-        data: {
-          paymentIntentId,
-          orderId: paymentIntentId,
-          purchaseKind: 'subscription',
-          tier,
-          productName: `스터디크랙 ${tier} 멤버십`,
-          amount: prices[tier],
-          status: 'intent_created',
-          fulfillmentStatus: 'pending',
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-        }
+      const intent = {
+        paymentIntentId,
+        orderId: paymentIntentId,
+        purchaseKind: 'subscription',
+        tier,
+        productName: `스터디크랙 ${tier} 멤버십`,
+        amount: prices[tier],
+        status: 'intent_created',
+        fulfillmentStatus: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
       };
+      state.paymentIntents ??= new Map();
+      state.paymentIntents.set(paymentIntentId, intent);
+      return { success: true, data: intent };
+    }
+    case 'get_payment_status': {
+      const intent = state.paymentIntents?.get(payload.data?.paymentIntentId);
+      return intent ? { success: true, data: intent } : { success: false };
     }
     case 'convert_score': {
       const raw = Number(payload.score || 0);

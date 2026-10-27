@@ -166,6 +166,10 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
             const userName = data.name || (role === 'admin' ? '관리자' : role === 'tutor' ? '선생님' : '학생');
             localStorage.setItem('userName', userName);
             if (data.computedTier) localStorage.setItem('userTier', data.computedTier);
+            window.SCTrack?.identify(localStorage.getItem('userId'));
+            if (role === 'student' && (eventType === 'login' || eventType === 'signup')) {
+                window.SCTrack?.event(eventType === 'signup' ? 'sign_up' : 'login', { method: 'password' });
+            }
 
             // 학생만 튜토리얼 체크
             if (role === 'student') {
@@ -194,6 +198,7 @@ async function resolveUserIdentity(eventType = 'none', promoCode = '', options =
     } catch (error) {
         if (options.sessionScope && !isClientSessionCurrent(options.sessionScope, { login: true })) return false;
         if (error?.code === 'AUTH_SESSION_CHANGED') return false;
+        window.SCTrack?.identify(null);
         console.error('계정 정보를 확인하지 못했습니다.');
         if (eventType === 'none' && error?.code === 'AUTH_EXPIRED') {
             clearClientSession();
@@ -673,8 +678,6 @@ function autoLoginAfterSignup(email, password, { promoCode = '', loginPathOnFail
             const cookiePromise = registerRefreshCookie(refreshToken, { sessionScope: scope });
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: authResult.getIdToken().payload.sub });
 
             resolveUserIdentity('signup', promoCode, {
                 sessionScope: scope,
@@ -828,6 +831,7 @@ async function handleFinalSubmit() {
 // ==========================================
 
 function clearClientSession() {
+    window.SCTrack?.identify(null);
     // 메모리 토큰 정리 — sessionStorage.removeItem도 같이 수행
     clearAccessToken();
     clearIdToken();
@@ -975,8 +979,6 @@ function handleSignIn() {
 
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: userId });
 
             timing.mark('identity_start');
             resolveUserIdentity('login', '', { accessToken, waitFor: cookiePromise, sessionScope: scope })
@@ -1061,6 +1063,7 @@ function handleTutorSignIn() {
             // 서버가 확정한 역할만 신뢰한다.
             let role = null, userName = '선생님';
             try {
+                await cookiePromise;
                 timing.mark('identity_start');
                 const res = await apiFetch(USER_API_URL, {
                     method: 'POST',
@@ -1097,8 +1100,6 @@ function handleTutorSignIn() {
             localStorage.setItem('userRole', 'tutor');
             markPostLoginIdentitySkip();
 
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ event: "login", user_id: userId });
 
             alert(`${userName} 선생님, 안녕하세요.`);
             timing.flush('success');
@@ -1198,16 +1199,13 @@ async function requestPasswordReset() {
     btn.disabled = true;
 
     try {
-        await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'send_pw_reset_code', email: email })
-        });
+        const { requestAccountRecovery } = await import('./shared/account-recovery.js');
+        await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'send_pw_reset_code', email } });
         alert("비밀번호 재설정 코드가 이메일로 발송되었습니다.");
         document.getElementById('forgotPwStep1').classList.add('hidden');
         document.getElementById('forgotPwStep2').classList.remove('hidden');
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('404') ? "가입되지 않은 이메일입니다." : "통신 중 오류가 발생했습니다.");
+        alert(e.message || '비밀번호 재설정 코드 요청 중 오류가 발생했습니다.');
         btn.innerText = "인증 코드 받기";
         btn.disabled = false;
     }
@@ -1229,16 +1227,13 @@ async function confirmPasswordReset() {
     }
 
     try {
-        await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'reset_password', email: email, code: code, newPassword: newPw })
-        });
+        const { requestAccountRecovery } = await import('./shared/account-recovery.js');
+        await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'reset_password', email, code, newPassword: newPw } });
         alert("비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.");
         closeAuthModal('forgotPwModal');
         document.getElementById('password').value = '';
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('400') ? "인증코드가 일치하지 않거나 만료되었습니다." : "통신 중 오류가 발생했습니다.");
+        alert(e.message || '비밀번호 변경 중 오류가 발생했습니다.');
     }
 }
 
@@ -1248,14 +1243,9 @@ async function handleFindEmail() {
 
     if (!name || !phoneRaw) { alert("이름과 전화번호를 모두 입력해주세요."); return; }
 
-    let dbFormattedPhone = phoneRaw.replace(/(^02.{0}|^01.{1}|[0-9]{3})([0-9]+)([0-9]{4})/, "$1-$2-$3");
-
     try {
-        const response = await apiFetch(AUTH_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'find_email', name: name, phone: dbFormattedPhone })
-        });
-        const data = await response.json();
+        const { formatRecoveryPhone, requestAccountRecovery } = await import('./shared/account-recovery.js');
+        const data = await requestAccountRecovery({ url: AUTH_URL, payload: { type: 'find_email', name, phone: formatRecoveryPhone(phoneRaw) } });
         const resultBox = document.getElementById('foundEmailResult');
 
         if (data.email) {
@@ -1263,7 +1253,7 @@ async function handleFindEmail() {
             resultBox.appendChild(document.createTextNode("회원님의 이메일은 "));
 
             const strongTag = document.createElement('strong');
-            strongTag.textContent = escapeHtml(data.email);
+            strongTag.textContent = data.email;
             resultBox.appendChild(strongTag);
 
             resultBox.appendChild(document.createTextNode(" 입니다."));
@@ -1273,7 +1263,6 @@ async function handleFindEmail() {
             alert("입력하신 정보와 일치하는 계정을 찾을 수 없습니다.");
         }
     } catch (e) {
-        const msg = e.message || "";
-        alert(msg.includes('404') ? "입력하신 정보와 일치하는 계정을 찾을 수 없습니다." : "통신 중 오류가 발생했습니다. 잠시 후 시도해주세요.");
+        alert(e.message || '이메일 찾기 중 오류가 발생했습니다.');
     }
 }

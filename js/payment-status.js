@@ -8,7 +8,9 @@
         const retry = byId('statusRetry');
         const action = byId('actionBtn');
         const bank = byId('vbankBox');
-        const id = new URLSearchParams(location.search).get('paymentIntentId') || '';
+        const params = new URLSearchParams(location.search);
+        const retiredPromo = params.get('status') === 'promo' && (params.get('source') || '').toLowerCase() === 'kcc01';
+        const id = params.get('paymentIntentId') || '';
         const validId = /^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(id);
         const labels = { BASIC: 'BASIC', STARTER: 'STARTER', STANDARD: 'STANDARD', PRO: 'PRO', TEST: 'TEST' };
         let generation = 0;
@@ -42,6 +44,18 @@
         window.addEventListener('storage', event => {
             if (event.key === null || ['userId', 'accessToken', 'token', 'refreshToken'].includes(event.key)) invalidate();
         });
+
+        async function measurePaid(data, ticket, startedAccount) {
+            if (data.tier === 'TEST') return;
+            try {
+                const verifiedId = await resolveMeasurementIdentity();
+                if (verifiedId && ticket === generation && startedAccount === account()) {
+                    window.SCTrack?.identify(verifiedId);
+                    await window.SCMeasurementV2?.purchase({ status: 'paid', transaction_id: id,
+                        value: data.amount, currency: 'KRW', plan_type: data.tier.toLowerCase() });
+                }
+            } catch (_) {}
+        }
 
         async function refresh() {
             if (inFlight || !validId) return;
@@ -84,6 +98,7 @@
                     } else if (['pending', 'processing'].includes(data.fulfillmentStatus)) {
                         show('결제 완료 · 이용권 반영 대기', '결제 승인은 확인되었습니다. 다시 결제하지 마세요. 잠시 후 상태를 다시 확인하고, 계속 지연되면 문의해주세요.');
                     } else throw new Error('unknown fulfillment');
+                    void measurePaid(data, ticket, startedAccount);
                 } else if (data.status === 'vbank_ready') {
                     show('입금을 기다리고 있어요', '서버에서 확인한 입금 계좌입니다. 이미 입금했다면 추가로 입금하지 말고 상태를 다시 확인해주세요.');
                     const details = data.vbank;
@@ -118,6 +133,13 @@
         }
         retry.addEventListener('click', refresh);
         clearDetails();
+        if (retiredPromo) {
+            badge.textContent = '종료된 프로모션';
+            show('종료된 프로모션입니다', '현재 신청할 수 없는 프로모션입니다. 다른 서비스를 확인해 주세요.');
+            action.textContent = '홈으로 돌아가기'; action.href = '/';
+            history.replaceState({}, '', location.pathname);
+            return;
+        }
         if (!validId) {
             show('결제 내역 확인이 필요합니다', '확인 가능한 주문 정보가 없습니다. 이전 결제 내역이나 이미 입금한 주문은 다시 결제하지 말고 문의해주세요.');
             return;

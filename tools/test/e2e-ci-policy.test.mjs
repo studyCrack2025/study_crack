@@ -64,3 +64,21 @@ test('timing report includes nested cases, retries and failures instead of hidin
     { file: 'one.mjs', tests: 1, duration: 1500, unexpected: 0, flaky: 1 }
   ]);
 });
+
+test('browser shards use a lockfile-matched immutable image without runtime downloads', async () => {
+  const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const browser = workflow.slice(workflow.indexOf('  e2e:'), workflow.indexOf('  verify:'));
+  const lock = JSON.parse(await readFile(new URL('../../studycrack-mobile-app/package-lock.json', import.meta.url), 'utf8'));
+  const image = browser.match(/image: mcr\.microsoft\.com\/playwright:v(\d+\.\d+\.\d+)-noble@sha256:([a-f0-9]{64})\n/);
+  assert.ok(image, 'Use an immutable official Playwright image');
+  assert.equal(image[1], lock.packages['node_modules/@playwright/test'].version);
+  assert.match(browser, /PLAYWRIGHT_BROWSERS_PATH: \/ms-playwright/);
+  assert.match(browser, /PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'/);
+  assert.match(browser, /shell: bash/);
+  assert.doesNotMatch(browser, /playwright install|apt-get|apt install|continue-on-error/);
+  const runtime = browser.indexOf('- name: Verify preinstalled browser runtime');
+  const tests = browser.indexOf('- name: Test required browser coverage');
+  assert.ok(runtime >= 0 && tests > runtime);
+  assert.match(browser.slice(runtime, tests), /timeout-minutes: 2\n        run: node scripts\/verify-ci-browser-runtime.mjs/);
+  assert.match(browser, /timeout-minutes: 10/);
+});

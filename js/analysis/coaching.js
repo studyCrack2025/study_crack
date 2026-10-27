@@ -523,6 +523,8 @@ async function downloadReportPDF(reportTitle) {
     if (!weekId) return alert('화면을 새로고침한 뒤 보고서를 다시 열어주세요.');
     if (document.getElementById('pdf-loading-overlay')) return;
 
+    window.SCTrack?.event('download_report_click');
+
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'pdf-loading-overlay';
     loadingOverlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.98); z-index:999999; display:flex; flex-direction:column; align-items:center; justify-content:center;';

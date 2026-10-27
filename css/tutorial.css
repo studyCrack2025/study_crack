@@ -13,6 +13,11 @@ body { background-color: #f8fafc; font-family: 'Noto Sans KR', sans-serif; margi
 .mascot-img { width: 140px; height: auto; flex-shrink: 0; }
 .dialogue-bubble { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; font-weight: 600; font-size: 0.95rem; color: #1e293b; line-height: 1.55; max-width: 65%; }
 
+.tutorial-progress { margin: 0 0 12px; color: #475569; font-size: 0.82rem; font-weight: 700; }
+.tutorial-progress-heading { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.tutorial-progress-track { height: 6px; overflow: hidden; border-radius: 99px; background: #e2e8f0; }
+.tutorial-progress-fill { display: block; width: 16.6667%; height: 100%; border-radius: inherit; background: #2563eb; transition: width 0.2s ease; }
+
 /* ── 스텝 카드 ─────────────────────────────────────────────────── */
 .step-container { background: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; }
 .tut-step-card { min-width: 0; }

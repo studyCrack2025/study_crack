@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 7. 결제창 호출
 let isPaymentInProgress = false;
-function submitCheckout() {
+async function submitCheckout() {
     if (isPaymentInProgress) return;
     const agree = document.getElementById('agreeTerms').checked;
     if (!agree) {
@@ -143,6 +143,16 @@ function submitCheckout() {
     if (payBtn) { payBtn.disabled = true; payBtn.style.opacity = '0.6'; }
 
     try {
+        const response = await apiFetch(CONFIG.api.payment, {
+            method: 'POST', body: JSON.stringify({ type: 'get_payment_status', data: { paymentIntentId: checkoutData.paymentIntentId } })
+        });
+        const result = await response.json();
+        const intent = result?.data;
+        if (!result?.success || intent?.paymentIntentId !== checkoutData.paymentIntentId
+            || intent.purchaseKind !== 'subscription' || String(intent.tier || '').toLowerCase() !== checkoutData.tier
+            || intent.status !== 'intent_created' || !Number.isSafeInteger(intent.amount) || intent.amount !== amount) {
+            throw new Error('주문 상태가 변경되었습니다. 이미 결제했다면 다시 결제하지 말고 결제 내역을 확인해주세요.');
+        }
         const mallReserved = { paymentIntentId: checkoutData.paymentIntentId };
 
         const requestPayload = {

@@ -102,6 +102,10 @@ test('웹 결제 이관은 서버 결제 의도를 만들고 콜백에 불투명
   expect(capturedRequest.orderId).toBe(checkoutData.paymentIntentId);
   expect(capturedRequest.amount).toBe(49000);
   expect(JSON.parse(capturedRequest.mallReserved)).toEqual({ paymentIntentId: checkoutData.paymentIntentId });
+  expect(api.requests.filter(({ payload }) => payload.type === 'create_payment_intent')).toHaveLength(2);
+  const statusReads = api.requests.filter(({ payload }) => payload.type === 'get_payment_status');
+  expect(statusReads).toHaveLength(1);
+  expect(statusReads[0].payload.data).toEqual({ paymentIntentId: checkoutData.paymentIntentId });
 });
 
 test('잠긴 미리보기는 예시 지표나 발행 상태를 제품 데이터처럼 표시하지 않는다', async ({ page }) => {

@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPaymentLoadingInterceptor();
     fetchUserInfo(userId);
     initMobileSwipeUX();
+    window.SCTrack?.once('plans', 'plan_view');
     const requestedTier = normalizePaymentTier(urlParams.get('plan'));
     const requestedDurations = urlParams.getAll('duration');
     const supportedDuration = requestedDurations.length === 0 || (requestedDurations.length === 1 && (
@@ -620,7 +621,10 @@ async function processPayment() {
         const body = await response.json();
         const intent = body && body.data;
         const amount = Number(intent && intent.amount);
-        if (!body?.success || !intent?.paymentIntentId || intent.orderId !== intent.paymentIntentId || !Number.isSafeInteger(amount) || amount <= 0) {
+        if (!body?.success || !/^PI_(?:[0-9a-f]{32}|[0-9a-f-]{36})$/i.test(intent?.paymentIntentId || '')
+            || intent.orderId !== intent.paymentIntentId || intent.purchaseKind !== 'subscription'
+            || String(intent.tier || '').toLowerCase() !== requestedTier || intent.status !== 'intent_created'
+            || !(Date.parse(intent.expiresAt) > Date.now()) || !Number.isSafeInteger(amount) || amount <= 0) {
             throw new Error('결제 정보를 확인할 수 없습니다.');
         }
         const checkoutData = {
@@ -635,6 +639,11 @@ async function processPayment() {
             email
         };
         localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+        if (!isTestPayment) {
+            window.SCTrack?.event('begin_checkout', { plan_type: checkoutData.tier, ecommerce: {
+                plan_type: checkoutData.tier, value: amount, currency: 'KRW'
+            }});
+        }
         allowPaymentNavigationOnce();
         window.location.href = '/checkout';
     } catch (error) {

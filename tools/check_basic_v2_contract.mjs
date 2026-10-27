@@ -27,7 +27,8 @@ assert.match(home, /나에게 가장 가치 있는 다음 1점/, 'the landing mu
 assert.match(home, /합격에 유리하고,/, 'the landing must include the first line of the Basic v2 hero title');
 assert.match(home, /내가 올리기 쉬운 과목부터\./, 'the landing must include the second line of the Basic v2 hero title');
 assert.match(home, /내 성적으로 다음 1점 확인하기/, 'the landing must include the Basic v2 primary CTA');
-assert.match(homeScript, /basic_landing_cta_click/, 'the landing must track the approved Basic v2 CTA event');
+assert.match(homeScript, /SCTrack\?\.event\('cta_click', \{ entry \}\)/, 'the landing must emit the V2 CTA event with its entry placement');
+assert.doesNotMatch(homeScript, /basic_landing_cta_click/, 'retired CTA event must not be emitted in parallel');
 assert.doesNotMatch(publicBasicV2Sources, /StudyCrack\s*X\s*KCC|\/promotion\/kcc01/, 'Basic v2 screens must not restore the KCC promotion');
 assert.match(home, /최대 18개 대학·학과를 비교하고/, 'the landing must preserve the approved comparison copy');
 assert.doesNotMatch(home, /class="[^"\n]*proof-preview/, 'real service screenshots must not be replaced with diagrams');
