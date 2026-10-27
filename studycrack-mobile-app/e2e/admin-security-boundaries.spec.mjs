@@ -272,6 +272,37 @@ test('배정 버튼의 식별자는 HTML과 이벤트 코드에 삽입되지 않
   await safe(page);
 });
 
+for (const status of [409, 500]) test(`실제 공통 요청의 배정 ${status} 오류를 구분하고 현재 목록을 다시 조회한다`, async ({ page }) => {
+  await prepare(page, '<span id="newMatchCount"></span><span id="matchingBadge"></span><div id="newMatchList"></div><select id="changeOldTutor"></select><select id="changeNewTutor"></select><select id="changeStudent"></select>');
+  await page.evaluate(() => { window.IS_LOCAL = false; });
+  const requests = [], dialogs = [];
+  const student = { userid: 'student-a', name: '가상학생', createdAt: '2026-10-27', tutorAssignmentRevision: 7 };
+  const tutors = [{ tutorId: 'new-id', nickname: '가상튜터', name: '가상튜터' }];
+  await page.route('**/synthetic/admin', async route => {
+    const payload = route.request().postDataJSON();
+    requests.push(payload);
+    const rejected = payload.type === 'admin_assign_tutor';
+    await route.fulfill({ status: rejected ? status : 200, contentType: 'application/json', body: JSON.stringify(rejected ? { code: status === 409 ? 'ASSIGNMENT_CONFLICT' : '', error: 'private backend detail' } : payload.type === 'admin_get_tutor_list' ? { tutors } : [student]) });
+  });
+  page.on('dialog', async dialog => { dialogs.push(dialog.message()); await dialog.accept(); });
+  await page.addScriptTag({ content: await source('js/shared/api.js') });
+  await page.addScriptTag({ content: await source('js/admin/matching.js') });
+  await page.evaluate(({ student, tutors }) => {
+    window.getTierBadgeHTML = () => '<span>STANDARD</span>';
+    globalAllStudentsForMatch = [student]; globalUnmatchedStudents = [student]; globalTutorsForMatch = tutors;
+    renderNewMatchingList();
+  }, { student, tutors });
+  await page.locator('#select_tutor_student-a').selectOption('new-id');
+  await page.locator('[data-confirm-assignment]').click();
+  await expect.poll(() => dialogs.length).toBe(1);
+  expect(dialogs[0]).toMatch(status === 409 ? /담당 정보 또는 계정 상태/ : /서버 오류.*500/);
+  expect(dialogs[0]).not.toMatch(/통신 오류 발생|private|배정이 완료/);
+  await expect.poll(() => requests.filter(payload => payload.type !== 'admin_assign_tutor').length).toBe(2);
+  expect(requests.filter(payload => payload.type === 'admin_assign_tutor')).toEqual([{ type: 'admin_assign_tutor', userId: 'synthetic-user', data: { targetUserId: 'student-a', newTutorId: 'new-id', expectedRevision: 7 } }]);
+  await expect(page.locator('.match-card-name')).toHaveText('가상학생');
+  await safe(page);
+});
+
 test('알림 읽기와 대상 삭제는 텍스트 및 식별자를 코드로 실행하지 않는다', async ({ page }) => {
   await prepare(page, '<div id="notiListBody"></div><div id="selectedTargetTags"></div><span id="targetCountText"></span>');
   await page.evaluate(value => {
