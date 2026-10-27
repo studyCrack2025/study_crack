@@ -43,7 +43,8 @@ test('both verification scopes retain public artifact smoke before deployment', 
   const { e2eSuiteSelection } = await import('../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs');
   const browser = workflow.indexOf('- name: Test required browser coverage');
   const seal = workflow.indexOf('- name: Seal verified artifact identity');
-  assert.ok(browser > workflow.indexOf('- name: Install browser runtime') && seal > browser);
+  const runtime = workflow.indexOf('- name: Verify preinstalled browser runtime');
+  assert.ok(runtime >= 0 && browser > runtime && seal > browser);
   const step = workflow.slice(browser, seal);
   assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
   assert.ok(step.includes('--workers=1 --retries=0'));
