@@ -8,6 +8,7 @@ let globalTutorsForMatch = [];
 let globalAllStudentsForMatch = [];
 let globalLegacyAssignments = [];
 let matchingLoadSequence = 0;
+const matchingSavesInFlight = new Set();
 
 function switchMatchingTab(tabName) {
     document.getElementById('matchTab_new').style.display = tabName === 'new' ? 'block' : 'none';
@@ -145,6 +146,7 @@ function confirmTutorChange() {
 }
 
 async function executeMatching(studentId, isChange, newTutorArg = null, oldTutorArg = null) {
+    if (matchingSavesInFlight.has(studentId)) return;
     const newTutorId = isChange ? newTutorArg : document.getElementById(`select_tutor_${studentId}`).value;
     if (!newTutorId) return alert("튜터를 선택해주세요.");
     const student = globalAllStudentsForMatch.find(s => s.userid === studentId);
@@ -152,12 +154,32 @@ async function executeMatching(studentId, isChange, newTutorArg = null, oldTutor
     if (!student.assignedTutorId && student.tutorName && !confirm('기존 이름 배정을 ID로 연결합니다. 선택한 튜터가 실제 담당자인지 확인하셨습니까? 저장 시 배정 알림이 발송됩니다.')) return;
     const expectedRevision = student.tutorAssignmentRevision ?? 0;
     const adminId = localStorage.getItem('userId');
+    matchingSavesInFlight.add(studentId);
 
     try {
         const response = await apiFetch(ADMIN_API_URL, { method: 'POST', body: JSON.stringify({ type: 'admin_assign_tutor', userId: adminId, data: { targetUserId: studentId, newTutorId, expectedRevision } }) });
-        if (!response.ok) { alert(response.status === 409 ? '담당 정보가 변경되었습니다. 새 목록에서 다시 확인해주세요.' : '배정하지 못했습니다. 계정 상태와 선택 항목을 확인해주세요.'); await loadMatchingData(); return; }
+        if (localStorage.getItem('userId') !== adminId) return;
+        if (!response.ok) throw Object.assign(new Error('Assignment rejected'), { status: response.status });
+        const result = await response.json();
+        if (localStorage.getItem('userId') !== adminId) return;
+        if (result?.success !== true || result.assignedTutorId !== newTutorId || result.tutorAssignmentRevision !== expectedRevision + 1) throw new Error('Assignment result unconfirmed');
         alert(isChange ? "튜터가 성공적으로 변경되었습니다." : "튜터 배정이 완료되었습니다.");
         if (isChange) { document.getElementById('changeOldTutor').value = ''; document.getElementById('changeStudent').innerHTML = '<option value="">먼저 튜터를 선택하세요</option>'; document.getElementById('changeNewTutor').value = ''; }
         await loadMatchingData();
-    } catch(e) { console.error(e); if (e.message !== "Auth expired") alert("통신 오류 발생"); }
+    } catch (error) {
+        if (localStorage.getItem('userId') !== adminId || error?.code === 'AUTH_SESSION_CHANGED' || error?.name === 'AbortError') return;
+        if (error?.code === 'AUTH_EXPIRED') {
+            alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+            return;
+        }
+        if (error?.code === 'ASSIGNMENT_TUTOR_BLOCKED') alert('학생이 차단한 튜터는 배정할 수 없습니다. 다른 튜터를 선택해주세요.');
+        else if (error?.status === 409) alert('담당 정보 또는 계정 상태가 변경되었습니다. 새 목록에서 다시 확인해주세요.');
+        else if (error?.status === 400) alert('배정 요청 정보를 확인하지 못했습니다. 새 목록에서 학생과 튜터를 다시 선택해주세요.');
+        else if (error?.status === 403) alert('튜터 배정 권한을 확인하지 못했습니다. 관리자 계정으로 다시 로그인해주세요.');
+        else if (error?.status >= 500) alert(`서버 오류로 배정 결과를 확인하지 못했습니다. 현재 담당 정보를 다시 조회합니다. (오류 ${error.status})`);
+        else alert('배정 결과를 확인하지 못했습니다. 현재 담당 정보를 다시 조회한 뒤 다시 시도해주세요.');
+        await loadMatchingData();
+    } finally {
+        matchingSavesInFlight.delete(studentId);
+    }
 }
