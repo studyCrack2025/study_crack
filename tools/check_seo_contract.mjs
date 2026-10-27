@@ -7,6 +7,8 @@ const expectedSitemapUrls = [
   'https://studycrack.co.kr/',
   'https://studycrack.co.kr/service',
   'https://studycrack.co.kr/jungsi-score-guide',
+  'https://studycrack.co.kr/jungsi-admission-prediction-guide',
+  'https://studycrack.co.kr/jungsi-percentile-guide',
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
   'https://studycrack.co.kr/qna'
@@ -15,6 +17,8 @@ const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
   ['service.html', 'https://studycrack.co.kr/service'],
   ['jungsi-score-guide.html', 'https://studycrack.co.kr/jungsi-score-guide'],
+  ['jungsi-admission-prediction-guide.html', 'https://studycrack.co.kr/jungsi-admission-prediction-guide'],
+  ['jungsi-percentile-guide.html', 'https://studycrack.co.kr/jungsi-percentile-guide'],
   ['analysis.html', 'https://studycrack.co.kr/analysis'],
   ['payment.html', 'https://studycrack.co.kr/payment'],
   ['qna.html', 'https://studycrack.co.kr/qna']
@@ -144,7 +148,7 @@ const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, succ
 ]);
 
 const sitemapUrls = sitemapLocations(sitemap);
-assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the five public URLs in the approved order');
+assert.deepEqual(sitemapUrls, expectedSitemapUrls, 'sitemap.xml must contain the approved indexable URLs in order');
 assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'sitemap.xml contains duplicate URLs');
 assert.match(robots, /^Sitemap:\s*https:\/\/studycrack\.co\.kr\/sitemap\.xml\s*$/m, 'robots.txt must declare the production sitemap');
 assert.doesNotMatch(robots, /^Disallow:\s*\/(?:login|signup)\/?\s*$/mi, 'login and signup must remain crawlable for noindex');
