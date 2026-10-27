@@ -103,12 +103,19 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+      options: --user 1001 --ipc=host
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     strategy:
       fail-fast: false
       matrix:
         shard: ${{ fromJSON(needs.prepare.outputs.suite == 'web-css' && '[1]' || '[1,2,3,4,5,6]') }}
     defaults:
       run:
+        shell: bash
         working-directory: studycrack-mobile-app
     steps:
       - name: Checkout test sources
@@ -132,8 +139,9 @@ jobs:
         env:
           CANDIDATE_DIGEST: ${{ needs.prepare.outputs.manifest-digest }}
         run: node ../tools/site-release.mjs verify ../release-artifact "$GITHUB_SHA" "$CANDIDATE_DIGEST"
-      - name: Install browser runtime
-        run: npx playwright install --with-deps chromium
+      - name: Verify preinstalled browser runtime
+        timeout-minutes: 2
+        run: node scripts/verify-ci-browser-runtime.mjs
       - name: Test required browser coverage
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
