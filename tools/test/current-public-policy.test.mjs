@@ -3,12 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { assertPublicReferences, loadPublicPolicy } from '../site-release.mjs';
 
-test('current web release includes its new pages and artwork without retired or example pages', async () => {
+test('current web release includes its new pages and artwork with the public fictional sample and without retired promotion pages', async () => {
   const policy = await loadPublicPolicy();
-  for (const file of ['404.html', 'css/not-found.css', 'basic-preview.html', 'css/basic-preview.css', 'js/basic-preview.js', ...['hero-phone', 'plan-books', 'proof-classroom', 'result-position', 'result-effects', 'result-priority'].map(name => `assets/basic-v2/${name}.png`)]) {
+  for (const file of ['404.html', 'css/not-found.css', 'basic-preview.html', 'css/basic-preview.css', 'js/basic-preview.js', 'basic-preview-example.html', 'css/basic-preview-example.css', 'js/basic-preview-example.js', ...['hero-phone', 'plan-books', 'proof-classroom', 'result-position', 'result-effects', 'result-priority'].map(name => `assets/basic-v2/${name}.png`)]) {
     assert.ok(policy.files.includes(file), `Missing current public file: ${file}`);
   }
   assert.equal(policy.aliases['basic-preview'], 'basic-preview.html');
+  assert.equal(policy.aliases['basic-preview-example'], 'basic-preview-example.html');
   for (const slug of ['terms', 'privacy', 'refund', 'delete-account']) {
     assert.equal(policy.aliases[slug], `${slug}.html`);
     assert.ok(policy.files.includes(`${slug}.html`));
@@ -16,7 +17,7 @@ test('current web release includes its new pages and artwork without retired or 
   assert.ok(policy.files.includes('css/legal-page.css'));
   assert.ok(!policy.files.some(file => file.startsWith('content/legal/')));
   assert.equal(policy.aliases['promotion/kcc01'], undefined);
-  assert.ok(policy.files.every(file => !/promotion[-_]kcc01|basic-preview-example/.test(file)));
+  assert.ok(policy.files.every(file => !/promotion[-_]kcc01/.test(file)));
   const contents = new Map(policy.files.map(file => [file, Buffer.alloc(0)]));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.css', Buffer.alloc(0));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.bundle.js', Buffer.alloc(0));
@@ -53,4 +54,15 @@ test('both verification scopes retain public artifact smoke before deployment', 
   for (const spec of ['fish-artwork-lifecycle', 'payment-account-switch', 'public-artifact']) {
     await readFile(new URL(`../../studycrack-mobile-app/e2e/${spec}.spec.mjs`, import.meta.url));
   }
+});
+
+// This intentionally public, fictional sample must survive publication cleanup.
+test('public sample is retained while private files remain protected', async () => {
+  const { createPrivateCleanupCommands } = await import('../private-site-paths.mjs');
+  const commands = createPrivateCleanupCommands('test.example');
+  assert.ok(commands.every(args => !args.some(arg => arg.includes('basic-preview-example'))));
+  assert.ok(commands.some(args => args.includes('s3://test.example/.env')));
+  assert.ok(commands.some(args => args.includes('s3://test.example/backend-backup/')));
+  const html = await readFile(new URL('../../basic-preview-example.html', import.meta.url), 'utf8');
+  assert.match(html, /설명용 가상 사례 · 실제 분석 결과 아님/);
 });

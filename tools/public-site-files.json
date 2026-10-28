@@ -2,9 +2,12 @@
   "files": [
     "404.html",
     "basic-preview.html",
+    "basic-preview-example.html",
     "css/basic-preview.css",
+    "css/basic-preview-example.css",
     "css/not-found.css",
     "js/basic-preview.js",
+    "js/basic-preview-example.js",
     "js/mobile-boot.js",
     "assets/basic-v2/hero-phone.png",
     "assets/basic-v2/plan-books.png",
@@ -204,6 +207,7 @@
     "terms": "terms.html",
     "privacy": "privacy.html",
     "refund": "refund.html",
-    "delete-account": "delete-account.html"
+    "delete-account": "delete-account.html",
+    "basic-preview-example": "basic-preview-example.html"
   }
 }
