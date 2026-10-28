@@ -109,6 +109,7 @@
     "js/admin/consulting.js",
     "js/admin/consulting-intake.js",
     "js/admin/consulting-materials.js",
+    "js/admin/consulting-operations.js",
     "js/admin/consulting-scheduling.js",
     "js/admin/matching.js",
     "js/admin/modals.js",

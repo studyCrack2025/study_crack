@@ -128,6 +128,7 @@ function toggleSubmenu(id) {
 
 function showSection(sectionName) {
     if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
+    if (sectionName !== 'consulting' && typeof resetConsultingOperations === 'function') resetConsultingOperations();
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.menu-item > a').forEach(el => { el.style.backgroundColor = ''; el.style.color = '#cbd5e1'; });
     document.querySelectorAll('.submenu li a').forEach(el => { el.style.color = '#94a3b8'; });
@@ -167,6 +168,7 @@ function showSection(sectionName) {
     else if (sectionName === 'consulting') {
         loadConsultingPaymentReview();
         loadConsultingMaterialReview();
+        if (typeof loadConsultingOperations === 'function') loadConsultingOperations();
     }
 }
 
