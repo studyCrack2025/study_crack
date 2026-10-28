@@ -54,3 +54,33 @@ test('검수 대기 상태도 읽기 전용 업무 항목으로 구분한다', a
     await prepare(page); await page.evaluate(() => { window.__detail.status = 'pending_review'; window.__detail.label = 'AI 초안 확인'; window.__detail.retryOutbox.allowed = false; window.__detail.retryReport.allowed = false; });
     await page.getByRole('button', { name: '운영 목록 새로고침' }).click(); await expect(page.locator('#consultingOperationsBody')).toContainText('검수 대기'); await detail(page); await expect(page.locator('#consultingRetryOutboxBtn')).toBeHidden(); await expect(page.locator('#consultingRetryReportBtn')).toBeHidden();
 });
+async function serviceFixture(page) {
+    await prepare(page);
+    await page.evaluate(caseId => {
+        const original = window.apiFetch; window.__control = { caseId, revision: 9, held: false, hold: { allowed: true, reason: '업무 변경과 자동 처리를 보류합니다.' } }; window.__controlReceipts = {};
+        window.apiFetch = async (url, options) => { const req = JSON.parse(options.body); if (!['admin_get_consulting_service_control', 'admin_hold_consulting_service', 'admin_resume_consulting_service'].includes(req.type)) return original(url, options); window.__calls.push(req);
+            let data;
+            if (req.type === 'admin_get_consulting_service_control') data = structuredClone(window.__control);
+            else { if (window.__controlDefer) await new Promise(resolve => { window.__controlResolve = resolve; }); if (!window.__controlReceipts[req.data.idempotencyKey]) { window.__control.held = req.type === 'admin_hold_consulting_service'; window.__control.revision++; window.__control.hold.allowed = !window.__control.held; window.__controlReceipts[req.data.idempotencyKey] = { result: window.__control.held ? 'held' : 'resumed' }; } data = window.__controlReceipts[req.data.idempotencyKey]; if (window.__controlFail) throw new Error('Synthetic response lost'); }
+            return { json: async () => ({ success: true, data }) };
+        };
+    }, caseId);
+    await page.locator('#consultingServiceCaseId').fill(caseId); await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await expect(page.locator('#consultingServiceDetail')).toBeVisible();
+}
+test('서비스 보류·재개는 사유·확인을 요구하며 응답 유실에는 동일 요청으로 확인한다', async ({ page }) => {
+    await serviceFixture(page); await page.locator('#consultingServiceHoldBtn').click(); await expect(page.locator('#consultingServiceStatus')).toContainText('10자 이상');
+    await page.locator('#consultingServiceReason').fill('학생 요청을 확인하고 서비스 보류'); page.once('dialog', dialog => dialog.dismiss()); await page.locator('#consultingServiceHoldBtn').click();
+    expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_hold_consulting_service').length)).toBe(0);
+    await page.evaluate(() => { window.__controlFail = true; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingServiceHoldBtn').click(); await expect(page.locator('#consultingServiceStatus')).toContainText('결과를 확인하지 못했습니다');
+    await page.evaluate(() => { window.__controlFail = false; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingServiceHoldBtn').click(); await expect(page.locator('#consultingServiceStatus')).toContainText('서비스를 보류했습니다');
+    const calls = await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_hold_consulting_service')); expect(calls).toHaveLength(2); expect(calls[0].data).toEqual(calls[1].data);
+    await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await expect(page.locator('#consultingServiceHoldBtn')).toBeHidden(); await expect(page.locator('#consultingServiceResumeBtn')).toBeVisible(); await page.locator('#consultingServiceReason').fill('운영 확인을 마쳐 서비스를 재개함'); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingServiceResumeBtn').click(); await expect(page.locator('#consultingServiceStatus')).toContainText('서비스를 재개했습니다');
+});
+test('확정 예약의 보류 제한과 세션 종료 후 늦은 응답을 처리한다', async ({ page }) => {
+    await serviceFixture(page); await page.evaluate(() => { window.__control.hold.allowed = false; }); await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await expect(page.locator('#consultingServiceHoldBtn')).toBeDisabled();
+    await page.evaluate(() => { window.__control.hold.allowed = true; }); await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await page.locator('#consultingServiceReason').fill('일정 검토를 완료한 뒤 보류 요청'); await page.evaluate(() => { window.__controlDefer = true; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingServiceHoldBtn').click(); await expect(page.locator('#consultingServiceReason')).toBeDisabled();
+    await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__controlResolve(); }); await expect(page.locator('#consultingServiceDetail')).toBeHidden(); await expect(page.locator('#consultingServiceReason')).toHaveValue(''); await expect(page.locator('#consultingServiceSummary')).toBeEmpty(); await expect(page.locator('#consultingServiceStatus')).toBeEmpty();
+});
+test('보류 운영 항목은 케이스를 채운 서비스 제어 화면에 연결한다', async ({ page }) => {
+    await serviceFixture(page); await page.evaluate(() => { window.__detail.destination = 'serviceControl'; }); await detail(page); await page.getByRole('button', { name: '관련 업무 화면 열기' }).click(); await expect(page.locator('#consultingServiceCaseId')).toHaveValue(caseId); await expect(page.locator('#consultingServiceDetail')).toBeVisible(); expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_get_consulting_service_control').length)).toBe(2);
+});

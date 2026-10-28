@@ -128,6 +128,7 @@ function toggleSubmenu(id) {
 
 function showSection(sectionName) {
     if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
+    if (sectionName !== 'consulting' && typeof resetConsultingServiceControl === 'function') resetConsultingServiceControl();
     if (sectionName !== 'consulting' && typeof resetConsultingOperations === 'function') resetConsultingOperations();
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.menu-item > a').forEach(el => { el.style.backgroundColor = ''; el.style.color = '#cbd5e1'; });

@@ -104,8 +104,41 @@ async function recoverConsultingOperation(kind) {
 function openConsultingOperationWorkspace() {
     const item = consultingOperationsCurrent;
     if (consultingOperationsBusy || !item || !/^CASE_[a-f0-9-]{36}$/i.test(item.caseId)) return;
+    if (item.destination === 'serviceControl') { document.getElementById('consultingServiceCaseId').value = item.caseId; void loadConsultingServiceControl(); document.getElementById('consultingServicePanel').scrollIntoView({ block: 'start' }); return; }
     if (item.destination === 'schedule') { document.getElementById('consultingScheduleCaseId').value = item.caseId; document.getElementById('consultingScheduleCaseId').scrollIntoView({ block: 'center' }); return; }
     const path = item.destination === 'finalCall' ? 'final-call' : 'report';
     window.location.assign(`/2027-jungsi-consulting/${path}?caseId=${encodeURIComponent(item.caseId)}`);
 }
 window.addEventListener('studycrack:session-ended', resetConsultingOperations);
+
+let consultingServiceCurrent = null;
+let consultingServiceBusy = false;
+let consultingServiceGeneration = 0;
+let consultingServiceRequest = null;
+function consultingServiceStatus(message, state = '') { const node = document.getElementById('consultingServiceStatus'); if (node) { node.textContent = message; node.dataset.state = state; } }
+function consultingServiceLock(value) { consultingServiceBusy = value; const panel = document.getElementById('consultingServicePanel'); panel?.setAttribute('aria-busy', String(value)); panel?.querySelectorAll('button, input, textarea').forEach(node => { node.disabled = value; }); if (!value && consultingServiceCurrent) { document.getElementById('consultingServiceHoldBtn').disabled = !consultingServiceCurrent.hold.allowed; } }
+function resetConsultingServiceControl() { consultingServiceGeneration++; consultingServiceCurrent = null; consultingServiceRequest = null; document.getElementById('consultingServiceDetail')?.setAttribute('hidden', ''); const input = document.getElementById('consultingServiceReason'); if (input) input.value = ''; const caseInput = document.getElementById('consultingServiceCaseId'); if (caseInput) caseInput.value = ''; const summary = document.getElementById('consultingServiceSummary'); if (summary) summary.textContent = ''; consultingServiceStatus(''); consultingServiceLock(false); }
+async function loadConsultingServiceControl() {
+    if (consultingServiceBusy) return;
+    const caseId = document.getElementById('consultingServiceCaseId')?.value.trim() || '';
+    if (!/^CASE_[a-f0-9-]{36}$/i.test(caseId)) return consultingServiceStatus('케이스 ID를 확인해주세요.', 'error');
+    consultingServiceCurrent = null; consultingServiceRequest = null; document.getElementById('consultingServiceDetail').hidden = true; document.getElementById('consultingServiceReason').value = '';
+    const generation = ++consultingServiceGeneration; consultingServiceLock(true);
+    try { const data = await requestConsultingAdmin('admin_get_consulting_service_control', { caseId }); if (generation !== consultingServiceGeneration) return; consultingServiceCurrent = data; document.getElementById('consultingServiceSummary').textContent = `${data.held ? '현재 서비스 보류 중' : '서비스 진행 중'} · ${data.hold.reason}`; document.getElementById('consultingServiceHoldBtn').hidden = data.held; document.getElementById('consultingServiceResumeBtn').hidden = !data.held; document.getElementById('consultingServiceDetail').hidden = false; consultingServiceStatus('최신 상태를 확인했습니다.'); }
+    catch (_error) { if (generation === consultingServiceGeneration) consultingServiceStatus('현재 환경·권한·케이스 상태를 확인한 뒤 다시 조회해주세요.', 'error'); }
+    finally { if (generation === consultingServiceGeneration) consultingServiceLock(false); }
+}
+async function changeConsultingService(kind) {
+    const c = consultingServiceCurrent;
+    if (consultingServiceBusy || !c || !['hold', 'resume'].includes(kind) || (kind === 'hold' ? !c.hold.allowed : !c.held)) return;
+    const reason = document.getElementById('consultingServiceReason').value.replace(/\s+/g, ' ').trim();
+    if (reason.length < 10) return consultingServiceStatus('처리 사유를 10자 이상 입력해주세요.', 'error');
+    if (!confirm(kind === 'hold' ? '학생·상담사 변경과 자동 처리를 보류할까요?' : '서비스를 재개할까요? 이전 AI 작업은 다시 요청하고 상담 일정은 별도로 확인해주세요.')) return;
+    const data = { caseId: c.caseId, expectedRevision: c.revision, reason }, fingerprint = JSON.stringify({ kind, ...data });
+    if (consultingServiceRequest?.fingerprint !== fingerprint) consultingServiceRequest = { fingerprint, key: crypto.randomUUID() };
+    data.idempotencyKey = consultingServiceRequest.key; const generation = consultingServiceGeneration; consultingServiceLock(true);
+    try { const result = await requestConsultingAdmin(kind === 'hold' ? 'admin_hold_consulting_service' : 'admin_resume_consulting_service', data); if (generation !== consultingServiceGeneration) return; consultingServiceCurrent = null; document.getElementById('consultingServiceDetail').hidden = true; document.getElementById('consultingServiceReason').value = ''; consultingServiceStatus(result.result === 'held' ? '서비스를 보류했습니다. 재개하려면 상태를 다시 조회해주세요.' : '서비스를 재개했습니다. 기존 AI 작업은 다시 요청하고 필요 일정을 확인해주세요.', 'success'); }
+    catch (_error) { if (generation === consultingServiceGeneration) consultingServiceStatus('결과를 확인하지 못했습니다. 같은 요청으로 재확인하거나 최신 상태를 조회해주세요.', 'error'); }
+    finally { if (generation === consultingServiceGeneration) consultingServiceLock(false); }
+}
+window.addEventListener('studycrack:session-ended', resetConsultingServiceControl);

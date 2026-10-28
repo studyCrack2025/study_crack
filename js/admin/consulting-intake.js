@@ -121,6 +121,7 @@ async function openConsultingApplication(applicationId) {
         ];
         if (data.payerRelationshipDetail) values.push(['입금자 관계 기타 내용', data.payerRelationshipDetail]);
         if (data.contactMethodDetail) values.push(['연락 방법 기타 내용', data.contactMethodDetail]);
+        if (data.inviteRevoked) values.push(['초대 상태', '취소됨 · 필요하면 재발급']);
         if (data.invitedAt) values.push(['초대 발급 시각', formatConsultingDate(data.invitedAt)]);
         values.forEach(([label, value]) => {
             const block = document.createElement('div');
@@ -137,6 +138,7 @@ async function openConsultingApplication(applicationId) {
         document.getElementById('consultingHoldReason').value = application.duplicateSuspected ? 'DUPLICATE_CANDIDATE' : 'PAYMENT_NOT_FOUND';
         document.getElementById('consultingRejectReason').value = application.duplicateSuspected ? 'DUPLICATE_APPLICATION' : 'PAYMENT_NOT_FOUND';
         document.getElementById('consultingPaymentActions').hidden = application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold'].includes(application.paymentReviewStatus);
+        const revokeButton = document.getElementById('consultingRevokeBtn'); if (revokeButton) revokeButton.hidden = data.stageVerified !== true || data.inviteRevoked === true || application.applicationState !== 'INVITED';
         document.getElementById('consultingInviteActions').hidden = application.applicationState !== 'INVITED' || !data.activeInviteId;
         document.getElementById('consultingApplicationDetail').hidden = false;
         setConsultingStatus('신청 상세를 불러왔습니다. 실제 수신할 전화번호와 이메일을 확인하세요.', 'success');
@@ -249,3 +251,12 @@ async function reissueConsultingInvite() {
 
 window.addEventListener('studycrack:session-ended', resetConsultingIntake);
 window.addEventListener('pagehide', resetConsultingIntake);
+
+async function revokeConsultingInvite() {
+    const current = currentConsultingApplication, application = current?.application;
+    if (consultingMutationBusy || !application || application.applicationState !== 'INVITED' || !current.activeInviteId || !current.stageVerified || current.inviteRevoked) return;
+    const reason = prompt('초대 취소 사유를 10자 이상 입력해주세요. 개인정보는 제외하세요.', ''); if (reason === null) return;
+    const normalized = reason.replace(/\s+/g, ' ').trim(); if (normalized.length < 10 || normalized.length > 1000) return setConsultingStatus('사유는 10~1000자로 입력해주세요.', 'error');
+    if (!confirm('미사용 초대를 취소할까요? 기존 링크·코드는 사용할 수 없게 됩니다. 이미 발송 중인 메시지는 회수되지 않으며 입금·이용권 환불은 별도입니다.')) return;
+    await runConsultingMutation('admin_revoke_consulting_invite', { applicationId: application.applicationId, expectedRevision: application.revision, reason: normalized, idempotencyKey: crypto.randomUUID() }, '미사용 초대 취소 완료. 환불은 별도 처리이며 필요하면 새 초대를 재발급할 수 있습니다.');
+}
