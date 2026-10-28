@@ -21,3 +21,7 @@ export async function downloadConsultingReport(binding, reportId) {
     return response.ok && body?.success === true && /^https:\/\//.test(body.downloadUrl || '') ? { ok: true, downloadUrl: body.downloadUrl } : { ok: false, error: body?.error || 'PDF를 만들지 못했습니다.' };
   } catch (_error) { return { ok: false, error: 'PDF를 만들지 못했습니다.' }; }
 }
+
+export const getReportAIDraft = (binding, caseId, signal) => request(binding, 'counselor_get_v2_report_ai_draft', { caseId }, 'AI 초안 상태를 불러오지 못했습니다.', signal);
+export const queueReportAIDraft = (binding, data, signal) => request(binding, 'counselor_queue_v2_report_ai_draft', data, 'AI 초안 생성을 요청하지 못했습니다.', signal);
+export const applyReportAIDraft = (binding, data, signal) => request(binding, 'counselor_apply_v2_report_ai_draft', data, '검토한 초안을 적용하지 못했습니다.', signal);
