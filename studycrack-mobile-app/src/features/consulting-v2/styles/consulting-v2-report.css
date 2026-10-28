@@ -30,3 +30,28 @@
 .consulting-report-actions button{padding:11px 16px;border:1px solid #3156d3;border-radius:12px;background:#fff;color:#3156d3;font:inherit;font-weight:900;}
 .consulting-report-actions button:last-child{background:#3156d3;color:#fff;}
 .consulting-report-release{display:grid;gap:8px;margin:28px 0;font-weight:900;}
+.consulting-analysis{overflow-wrap:anywhere;}
+.consulting-analysis h2{margin:0;font-size:24px;}
+.consulting-analysis fieldset{margin:24px 0;min-width:0;}
+.consulting-analysis legend{padding:0 0 16px;font-weight:800;}
+.consulting-analysis select{width:100%;min-height:44px;max-width:100%;padding:12px;border:1px solid var(--sc-line-strong);border-radius:12px;background:var(--sc-surface-card);color:var(--sc-ink);font:inherit;}
+.consulting-analysis select[multiple]{min-height:100px;}
+.consulting-analysis small{font-size:13px;font-weight:400;color:var(--sc-ink-muted);line-height:1.6;}
+.consulting-analysis button{min-height:44px;cursor:pointer;}
+.consulting-analysis button:disabled{opacity:.6;cursor:default;}
+.consulting-analysis input:focus-visible,.consulting-analysis select:focus-visible,.consulting-analysis textarea:focus-visible,.consulting-analysis button:focus-visible{outline:3px solid var(--sc-focus-ring);outline-offset:2px;}
+.consulting-analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:16px;align-items:start;}
+.consulting-analysis details{margin:18px 0;}
+.consulting-analysis summary{min-height:44px;cursor:pointer;font-weight:800;line-height:1.6;}
+.consulting-analysis-alert{padding:14px;border:1px solid var(--sc-state-danger);border-radius:12px;background:var(--sc-surface-urgent);color:var(--sc-state-danger);line-height:1.65;}
+.consulting-analysis-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;}
+.consulting-analysis-candidates article{padding:20px;border:1px solid var(--sc-line-subtle);border-radius:16px;background:var(--sc-surface-subtle);min-width:0;}
+.consulting-analysis-candidates h3{margin:0;font-size:19px;line-height:1.5;}
+.consulting-analysis-candidates dl{margin:16px 0;}
+.consulting-analysis-candidates dl>div{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:12px 0;}
+.consulting-analysis-candidates dt{font-weight:700;}
+.consulting-analysis-candidates dd{margin:0;font-variant-numeric:tabular-nums;}
+.consulting-analysis-approval{display:grid;gap:16px;margin-top:24px;}
+.consulting-analysis label.consulting-analysis-check{display:flex;align-items:flex-start;gap:12px;font-weight:500;line-height:1.65;}
+.consulting-analysis-check input{width:22px;min-width:22px;height:22px;margin:2px 0;padding:0;}
+.consulting-analysis-refresh{display:flex;justify-content:flex-end;width:min(920px,calc(100% - 32px));margin:24px auto;}
