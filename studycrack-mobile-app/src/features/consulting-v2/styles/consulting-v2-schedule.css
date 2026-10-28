@@ -16,3 +16,9 @@
 .consulting-schedule-confirmed strong { color:#1e3f8f; font-size:1.25rem; }
 .consulting-schedule-confirmed span { color:#16233a; font-size:1.6rem; font-weight:850; }
 .consulting-schedule-confirmed small { color:#64748b; }
+.consulting-final-agenda { display:grid; gap:16px; margin:24px 0; }
+.consulting-final-agenda article { padding:18px; border:1px solid #dbe4f0; border-radius:14px; background:#f8fafc; }
+.consulting-final-agenda h3 { margin:0 0 10px; font-size:1rem; }
+.consulting-final-agenda p { white-space:pre-wrap; line-height:1.75; }
+.consulting-final-agenda small { display:block; margin-top:12px; }
+.consulting-final-contact { padding:16px; border:1px solid #dbe4f0; border-radius:12px; font-weight:800; font-size:1.3rem; }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useConsultingHome } from '../use-consulting-home.js';
 import { ACTION_LABELS, actionPathForState, formatConsultingDueAt, PROGRESS_LABELS } from '../progress-model.js';
-import { navigateConsulting } from '../route-model.js';
+import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 
 export function ConsultingHomeScreen({ binding }) {
   const resource = useConsultingHome(binding);
@@ -14,6 +14,7 @@ export function ConsultingHomeScreen({ binding }) {
     <section className="consulting-v2-home-hero"><p>나의 컨설팅</p><h1>현재 진행 상황을 확인하세요</h1><p>기초조사부터 파이널 콜까지 필요한 다음 행동을 순서대로 안내합니다.</p></section>
     <section className="consulting-v2-progress" aria-labelledby="progressTitle"><h2 id="progressTitle">전체 진행 단계</h2><ol>{resource.data.progress.map(step => <li key={step.step} data-status={step.status}><span aria-hidden="true"></span><div><strong>{PROGRESS_LABELS[step.step]}</strong><small>{step.status === 'completed' ? '완료' : step.status === 'current' ? '진행 중' : '예정'}</small></div></li>)}</ol></section>
     <section className="consulting-v2-next" aria-labelledby="nextTitle"><p>지금 할 일</p><h2 id="nextTitle">{ACTION_LABELS[resource.data.nextAction] || '모든 컨설팅 과정이 완료되었습니다.'}</h2>{resource.data.nextDueAt ? <p>기한: {formatConsultingDueAt(resource.data.nextDueAt)}</p> : <p>화면 안내에 따라 다음 단계를 진행해주세요.</p>}{actionPath ? <button type="button" onClick={() => navigateConsulting(actionPath)}>다음 단계로 이동</button> : null}</section>
+    {resource.data.workflowState === 'SERVICE_COMPLETED' ? <div className="consulting-v2-actions"><button className="consulting-v2-secondary" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.report)}>공개 보고서 보기</button><button className="consulting-v2-secondary" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.finalCall)}>통화 완료 확인</button></div> : null}
     {resource.data.alerts.length ? <section className="consulting-v2-alerts" aria-label="알림">{resource.data.alerts.map(alert => <p key={alert}>{alert}</p>)}</section> : null}
   </main>;
 }

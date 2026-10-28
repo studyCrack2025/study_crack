@@ -7,6 +7,7 @@ import { ConsultingSurveyScreen } from './screens/ConsultingSurveyScreen.jsx';
 import { ConsultingMaterialsScreen } from './screens/ConsultingMaterialsScreen.jsx';
 import { ConsultingScheduleScreen } from './screens/ConsultingScheduleScreen.jsx';
 import { ConsultingWrittenSessionScreen } from './screens/ConsultingWrittenSessionScreen.jsx';
+import { ConsultingFinalCallScreen } from './screens/ConsultingFinalCallScreen.jsx';
 import { ConsultingReportScreen } from './screens/ConsultingReportScreen.jsx';
 import './styles/consulting-v2-survey.css';
 import './styles/consulting-v2-schedule.css';
@@ -58,6 +59,7 @@ export default function ConsultingApp() {
   if (route.screen === 'materials') return <ConsultingMaterialsScreen binding={binding} />;
   if (route.screen === 'schedule') return <ConsultingScheduleScreen binding={binding} />;
   if (route.screen === 'writtenSession') return <ConsultingWrittenSessionScreen binding={binding} />;
+  if (route.screen === 'finalCall') return <ConsultingFinalCallScreen binding={binding} />;
   if (route.screen === 'report') return <ConsultingReportScreen binding={binding} />;
   return <PendingScreen label={PENDING_LABELS[route.screen] || '컨설팅'} />;
 }
