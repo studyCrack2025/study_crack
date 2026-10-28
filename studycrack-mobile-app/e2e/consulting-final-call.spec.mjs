@@ -8,6 +8,7 @@ function installFinalApi() {
     const reply = (data, status = 200) => new Response(JSON.stringify(status === 200 ? { success: true, data } : { success: false, error: '최신 상태를 확인해주세요.', code: 'FINAL_CALL_CONFLICT' }), { status, headers: { 'Content-Type': 'application/json' } });
     if (s.forbidden) return reply(null, 403);
     const status = () => ({ caseId: s.caseId, workflowState: s.workflowState, caseRevision: s.caseRevision, availabilityRevision: s.availabilityRevision, selectedSlots: s.selectedSlots, session: s.session, editable: s.workflowState === 'FINAL_CALL_SCHEDULING' });
+    if (type === 'counselor_get_report_amendment_workspace') return reply({ caseId: s.caseId, caseRevision: s.caseRevision, history: [], canCreate: false, canEdit: false, canReview: false, latest: null });
     if (type === 'student_get_v2_final_call_status') { if (s.deferStatus) await new Promise(resolve => { window.__finalResolve = resolve; }); return reply(status()); }
     if (type === 'student_list_v2_final_call_slots') return reply({ slots: s.slots });
     if (type === 'student_submit_v2_final_call_availability') {
