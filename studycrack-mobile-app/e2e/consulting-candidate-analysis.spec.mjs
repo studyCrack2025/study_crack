@@ -45,7 +45,13 @@ function installSyntheticApi() {
       return reply({ draftRevision: s.draft.draftRevision, workflowState: s.workflowState });
     }
     if (request.type === 'counselor_submit_v2_report_review') { s.workflowState = 'REPORT_REVIEW'; s.draft.status = 'review'; return reply({ workflowState: s.workflowState }); }
-    if (request.type === 'admin_approve_v2_report') { s.workflowState = 'REPORT_SCHEDULED'; return reply({ releaseAt: request.data.releaseAt }); }
+    if (request.type === 'admin_approve_v2_report') { s.workflowState = 'REPORT_SCHEDULED'; s.draft.status = 'approved'; return reply({ releaseAt: request.data.releaseAt }); }
+    if (request.type === 'admin_reopen_v2_report') {
+      if (s.deferReopen) await new Promise(resolve => { window.__resolveReopen = resolve; });
+      if (s.reopenConflict) return reply(null, 409, 'REPORT_REOPEN_CONFLICT');
+      s.workflowState = 'REPORT_GENERATING'; s.draft.status = 'draft'; s.draft.publicationHoldReasonCode = 'REPORT_REAPPROVAL_REQUESTED';
+      return reply({ caseId: s.caseId, workflowState: s.workflowState });
+    }
     return reply(null, 400, 'INVALID_REQUEST');
   };
 }
@@ -203,4 +209,74 @@ test('분석 권한이 없는 상담사도 숫자 없는 수동 보고서 경로
   expect(saved.data).not.toHaveProperty('analysisResultId');
   expect(saved.data.analysisFallback.status).toBe('manual_review');
   expect(saved.data.content.candidates[0]).not.toHaveProperty('probability');
+});
+
+async function loadManualReport(page, workflowState = 'REPORT_REVIEW') {
+  await page.evaluate(workflowState => {
+    const s = window.__analysis;
+    s.workflowState = workflowState;
+    s.draft = { status: workflowState === 'REPORT_REVIEW' ? 'review' : 'approved', draftRevision: 2, content: {
+      title: '합성 수동 보고서', executiveSummary: '상담 요약', scoreAssessment: '성적 확인',
+      candidates: [{ universityName: '합성 대학', admissionUnitName: '합성 학과', admissionGroup: '가군', rationale: '상담 확인', convertedScore: null, expectedCutoff: null, probability: null, probabilityStatus: 'not_available' }],
+      applicationStrategy: '지원 전략', risksAndCautions: '유의사항', finalCallChecklist: '파이널 콜 확인'
+    } };
+  }, workflowState);
+  await page.getByRole('button', { name: '보고서 새로고침' }).click();
+  await expect(page.getByRole('heading', { name: '합성 수동 보고서', exact: true })).toBeVisible();
+}
+
+test('공개 예약 후 취소 사유와 확인을 거쳐 재검토로 돌리고 중복 작업을 잠근다', async ({ page }, testInfo) => {
+  await prepare(page, { role: 'admin' }); await loadManualReport(page);
+  await page.getByLabel('공개 시각 (기기 현지 시각)').fill('2027-01-01T12:00');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '승인하고 공개 예약', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '공개 예약 재검토', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true })).toBeDisabled();
+  await page.getByLabel('공개 예약 취소 사유').fill('상담 내용 변경으로 다시 검토');
+  expect(await page.locator('.consulting-report-document').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await page.getByRole('heading', { name: '공개 예약 재검토', exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `/private/tmp/jungsi-publication-${testInfo.project.name}.png` });
+  page.once('dialog', dialog => dialog.dismiss());
+  await page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true }).click();
+  expect(await page.evaluate(() => window.__analysis.calls.some(call => call.type === 'admin_reopen_v2_report'))).toBe(false);
+  await page.evaluate(() => { window.__analysis.deferReopen = true; });
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true }).click();
+  await expect(page.getByRole('button', { name: '예약 취소 중…', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '보고서 새로고침' })).toBeDisabled();
+  await page.evaluate(() => window.__resolveReopen());
+  await expect(page.getByText('공개가 보류된 보고서입니다.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '승인하고 공개 예약', exact: true })).toBeDisabled();
+  expect(await page.evaluate(() => window.__analysis.calls.filter(call => call.type === 'admin_reopen_v2_report'))).toEqual([{ type: 'admin_reopen_v2_report', data: { caseId, reason: '상담 내용 변경으로 다시 검토' } }]);
+});
+
+test('공개와 취소가 경합하면 성공으로 안내하지 않고 최신 상태를 다시 읽는다', async ({ page }) => {
+  await prepare(page, { role: 'admin' }); await loadManualReport(page, 'REPORT_SCHEDULED');
+  await page.evaluate(() => { window.__analysis.reopenConflict = true; });
+  await page.getByLabel('공개 예약 취소 사유').fill('다시 확인');
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true }).click();
+  await expect(page.getByText('최신 보고서 상태를 다시 불러와주세요.', { exact: false })).toBeVisible();
+  await expect(page.getByText('공개 예약을 취소했습니다.', { exact: false })).toHaveCount(0);
+  await page.evaluate(() => { window.__analysis.workflowState = 'FINAL_CALL_SCHEDULING'; });
+  await page.getByRole('button', { name: '보고서 새로고침' }).click();
+  await expect(page.getByRole('heading', { name: '공개 예약 재검토', exact: true })).toHaveCount(0);
+});
+
+test('상담사는 공개 보류 안내를 보고 초안을 고쳐 다시 검수를 요청한다', async ({ page }) => {
+  await prepare(page);
+  await page.evaluate(() => {
+    const s = window.__analysis;
+    s.workflowState = 'REPORT_GENERATING';
+    s.draft = { status: 'draft', draftRevision: 3, publicationHoldReasonCode: 'REPORT_SOURCE_CHANGED', content: { title: '보류된 합성 보고서', executiveSummary: '', scoreAssessment: '', candidates: [], applicationStrategy: '', risksAndCautions: '', finalCallChecklist: '' } };
+  });
+  await page.getByRole('button', { name: '보고서 다시 불러오기' }).click();
+  await expect(page.getByText('예약 공개가 보류되었습니다.', { exact: false })).toBeVisible();
+  for (const label of ['핵심 요약', '성적 판단', '지원 전략', '위험 요소와 유의사항', '파이널 콜 확인 항목', '수동 검토 사유']) await page.getByLabel(label, { exact: true }).fill('변경 내용을 다시 확인함');
+  await page.getByRole('button', { name: '후보 추가', exact: true }).click();
+  await page.getByLabel('후보 1 대학').fill('합성 대학'); await page.getByLabel('후보 1 모집단위').fill('합성 학과');
+  await page.getByLabel('후보 1 모집군').fill('가군'); await page.getByLabel('후보 1 근거').fill('변경 기준 확인');
+  await page.getByRole('button', { name: '저장 후 검수 요청', exact: true }).click();
+  await expect(page.getByText('관리자 검수를 요청했습니다.', { exact: true })).toBeVisible();
 });

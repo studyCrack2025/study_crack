@@ -1,6 +1,6 @@
 import React from 'react';
 import { listCounselorWrittenSessions } from '../written-session-api.js';
-import { approveAdminReport, getAdminReportReview, getCounselorReportDraft } from '../report-api.js';
+import { approveAdminReport, getAdminReportReview, getCounselorReportDraft, reopenAdminReport } from '../report-api.js';
 import { CandidateAnalysisPanel } from './CandidateAnalysisPanel.jsx';
 import { CounselorReportEditor } from './CounselorReportEditor.jsx';
 import { formatAnalysisNumber, formatAnalysisRange } from '../candidate-analysis-model.js';
@@ -65,6 +65,8 @@ export function AdminReport({ binding }) {
   const [snapshot, setSnapshot] = React.useState(null);
   const [releaseAt, setReleaseAt] = React.useState('');
   const [approved, setApproved] = React.useState(false);
+  const [reopenReason, setReopenReason] = React.useState('');
+  const [panelRevision, setPanelRevision] = React.useState(0);
   const lock = useOperation();
   const active = React.useRef(null);
   const load = React.useCallback(async () => {
@@ -81,12 +83,25 @@ export function AdminReport({ binding }) {
       if (Number.isNaN(date.getTime())) { setState(value => ({ ...value, error: '공개 시각을 확인해주세요.' })); return; }
       const result = await approveAdminReport(binding, { caseId, releaseAt: date.toISOString() });
       if (active.current.signal.aborted) return;
-      if (result.ok) setApproved(true);
+      if (result.ok) { await load(); setApproved(true); setSnapshot(null); setPanelRevision(value => value + 1); }
       setState(value => ({ ...value, error: result.ok ? '승인 완료 · 선택한 시각에 공개 예정입니다.' : `${result.error} 보고서와 분석을 다시 불러와 확인해주세요.` }));
     } finally { lock.endOperation(); }
   };
+  const refresh = async () => {
+    if (!lock.beginOperation('refresh')) return;
+    try { await load(); setSnapshot(null); setPanelRevision(value => value + 1); } finally { lock.endOperation(); }
+  };
+  const reopen = async () => {
+    if (lock.operation || !reopenReason.trim() || !globalThis.confirm('아직 공개되지 않은 예약을 취소하고 보고서를 다시 검토하도록 돌릴까요?') || !lock.beginOperation('reopen')) return;
+    try {
+      const result = await reopenAdminReport(binding, { caseId, reason: reopenReason.trim() });
+      if (active.current.signal.aborted) return;
+      if (result.ok) { await load(); setSnapshot(null); setPanelRevision(value => value + 1); setReleaseAt(''); setReopenReason(''); }
+      setState(value => ({ ...value, error: result.ok ? '공개 예약을 취소했습니다. 상담사가 수정 후 다시 검수를 요청해야 합니다.' : `${result.error} 최신 보고서 상태를 다시 불러와주세요.` }));
+    } finally { lock.endOperation(); }
+  };
   const content = state.data?.draft?.content;
-  return <main className="consulting-report"><header><button type="button" onClick={() => globalThis.location.assign('/admin_index.html')}>← 관리자</button><strong>정시 분석·보고서 검수</strong></header>
-    {caseId ? <CandidateAnalysisPanel key={caseId} binding={binding} caseId={caseId} {...lock} beforeRun={value => !value.analysis || globalThis.confirm('기존 분석 승인을 해제하고 보고서를 다시 검토하도록 변경할까요?')} onRun={load} onSnapshot={setSnapshot} /> : null}
-    <article className="consulting-report-document"><h1>{content?.title || '보고서 검수'}</h1>{!caseId ? <p>관리자 정시 컨설팅 메뉴에서 케이스를 선택해주세요.</p> : state.status === 'loading' ? <p>보고서를 불러오고 있습니다.</p> : !content ? <p>{state.error || '상담사가 보고서 검수를 요청하면 이곳에서 확인할 수 있습니다.'}</p> : <><section><h2>핵심 요약</h2><p>{content.executiveSummary}</p></section><section><h2>성적 판단</h2><p>{content.scoreAssessment}</p></section><div className="consulting-report-candidates">{content.candidates.map((item, index) => <article key={item.candidateId || index}><h3>{item.universityName} · {item.admissionUnitName}</h3><p>{item.rationale}</p><p>환산점수 {formatAnalysisNumber(item.convertedScore)} · 예상컷 {formatAnalysisRange(item.expectedCutoff)} · 합격 가능성 {item.probabilityStatus === 'available' ? formatAnalysisRange(item.probability, '%') : '미제공'}</p></article>)}</div>{[['applicationStrategy', '지원 전략'], ['risksAndCautions', '위험 요소와 유의사항'], ['finalCallChecklist', '파이널 콜 확인 항목']].map(([key, label]) => <section key={key}><h2>{label}</h2><p>{content[key]}</p></section>)}{stale ? <p className="consulting-analysis-alert">연결된 분석을 다시 확인·승인하고 보고서 검수를 요청해야 합니다.</p> : null}<label className="consulting-report-release">공개 시각 (기기 현지 시각)<input type="datetime-local" disabled={approved || Boolean(lock.operation)} value={releaseAt} onChange={event => setReleaseAt(event.target.value)} /></label><button className="consulting-v2-primary consulting-v2-wide" type="button" disabled={approved || stale || Boolean(lock.operation) || !releaseAt || state.data.workflowState !== 'REPORT_REVIEW'} onClick={approve}>{approved ? '승인 완료' : lock.operation === 'publish' ? '승인 중…' : '승인하고 공개 예약'}</button></>}{state.error && content ? <p role="status">{state.error}</p> : null}</article></main>;
+  return <main className="consulting-report"><header><button type="button" onClick={() => globalThis.location.assign('/admin_index.html')}>← 관리자</button><strong>정시 분석·보고서 검수</strong><button type="button" disabled={Boolean(lock.operation)} onClick={refresh}>보고서 새로고침</button></header>
+    {caseId ? <CandidateAnalysisPanel key={`${caseId}-${panelRevision}`} binding={binding} caseId={caseId} {...lock} beforeRun={value => !value.analysis || globalThis.confirm('기존 분석 승인을 해제하고 보고서를 다시 검토하도록 변경할까요?')} onRun={load} onSnapshot={setSnapshot} /> : null}
+    <article className="consulting-report-document"><h1>{content?.title || '보고서 검수'}</h1>{state.data?.draft?.publicationHoldReasonCode ? <p className="consulting-analysis-alert" role="status">공개가 보류된 보고서입니다. 상담사가 최신 기준으로 수정하고 다시 검수를 요청해야 합니다.</p> : null}{!caseId ? <p>관리자 정시 컨설팅 메뉴에서 케이스를 선택해주세요.</p> : state.status === 'loading' ? <p>보고서를 불러오고 있습니다.</p> : !content ? <p>{state.error || '상담사가 보고서 검수를 요청하면 이곳에서 확인할 수 있습니다.'}</p> : <><section><h2>핵심 요약</h2><p>{content.executiveSummary}</p></section><section><h2>성적 판단</h2><p>{content.scoreAssessment}</p></section><div className="consulting-report-candidates">{content.candidates.map((item, index) => <article key={item.candidateId || index}><h3>{item.universityName} · {item.admissionUnitName}</h3><p>{item.rationale}</p><p>환산점수 {formatAnalysisNumber(item.convertedScore)} · 예상컷 {formatAnalysisRange(item.expectedCutoff)} · 합격 가능성 {item.probabilityStatus === 'available' ? formatAnalysisRange(item.probability, '%') : '미제공'}</p></article>)}</div>{[['applicationStrategy', '지원 전략'], ['risksAndCautions', '위험 요소와 유의사항'], ['finalCallChecklist', '파이널 콜 확인 항목']].map(([key, label]) => <section key={key}><h2>{label}</h2><p>{content[key]}</p></section>)}{stale ? <p className="consulting-analysis-alert">연결된 분석을 다시 확인·승인하고 보고서 검수를 요청해야 합니다.</p> : null}<label className="consulting-report-release">공개 시각 (기기 현지 시각)<input type="datetime-local" disabled={approved || Boolean(lock.operation)} value={releaseAt} onChange={event => setReleaseAt(event.target.value)} /></label><button className="consulting-v2-primary consulting-v2-wide" type="button" disabled={approved || stale || Boolean(lock.operation) || !releaseAt || state.data.workflowState !== 'REPORT_REVIEW'} onClick={approve}>{approved ? '승인 완료' : lock.operation === 'publish' ? '승인 중…' : '승인하고 공개 예약'}</button></>}{state.data?.workflowState === 'REPORT_SCHEDULED' ? <section><h2>공개 예약 재검토</h2><p>아직 공개되지 않은 예약만 취소할 수 있습니다. 공개가 먼저 완료되면 취소되지 않습니다.</p><label className="consulting-report-release">공개 예약 취소 사유<textarea maxLength="1000" disabled={Boolean(lock.operation)} value={reopenReason} onChange={event => setReopenReason(event.target.value)} /></label><button type="button" className="consulting-v2-secondary" disabled={Boolean(lock.operation) || !reopenReason.trim()} onClick={reopen}>{lock.operation === 'reopen' ? '예약 취소 중…' : '공개 예약 취소 후 재검토'}</button></section> : null}{state.error && content ? <p role="status">{state.error}</p> : null}</article></main>;
 }

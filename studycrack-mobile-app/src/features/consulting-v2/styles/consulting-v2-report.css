@@ -20,7 +20,7 @@
 .consulting-report-workbench label{display:grid;gap:8px;font-weight:800;}
 .consulting-report-workbench input{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;}
 .consulting-report-workbench textarea{width:100%;min-height:132px;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;resize:vertical;line-height:1.6;}
-.consulting-report-release input{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;}
+.consulting-report-release input,.consulting-report-release textarea{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;color:#14213d;font:inherit;}
 .consulting-report-editor-candidates{display:grid;gap:12px;}
 .consulting-report-editor-candidates article{display:grid;gap:10px;padding:16px;background:#f8fafc;border-radius:16px;}
 .consulting-report-editor-candidates article>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;}

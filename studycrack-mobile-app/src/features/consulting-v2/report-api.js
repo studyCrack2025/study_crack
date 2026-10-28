@@ -12,6 +12,7 @@ export const saveCounselorReportDraft = (binding, data) => request(binding, 'cou
 export const submitCounselorReportReview = (binding, caseId) => request(binding, 'counselor_submit_v2_report_review', { caseId }, '보고서 검수를 요청하지 못했습니다.');
 export const getAdminReportReview = (binding, caseId, signal) => request(binding, 'admin_get_v2_report_review', { caseId }, '검수할 보고서를 불러오지 못했습니다.', signal);
 export const approveAdminReport = (binding, data) => request(binding, 'admin_approve_v2_report', data, '보고서를 승인하지 못했습니다.');
+export const reopenAdminReport = (binding, data) => request(binding, 'admin_reopen_v2_report', data, '공개 예약을 취소하지 못했습니다.');
 
 export async function downloadConsultingReport(binding, reportId) {
   try {

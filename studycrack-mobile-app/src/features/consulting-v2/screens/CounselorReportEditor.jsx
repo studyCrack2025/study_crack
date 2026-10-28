@@ -55,6 +55,7 @@ export function CounselorReportEditor({ binding, caseId, initial, transcriptHash
     field('candidates', content.candidates.map(item => ({ universityName: item.universityName, admissionUnitName: item.admissionUnitName, admissionGroup: item.admissionGroup, riskBand: 'manual_review', rationale: item.rationale })));
   };
   return <section className="consulting-report-workbench"><div className="consulting-report-workbench-head"><div><p className="consulting-v2-kicker">상담사 전용</p><h1>보고서 작성</h1></div><span>{submitted || initial?.status === 'review' ? '검수 중' : initial?.status === 'approved' ? '승인 완료' : `초안 v${draftRevision}`}</span></div>
+    {initial?.publicationHoldReasonCode ? <p className="consulting-analysis-alert" role="status">예약 공개가 보류되었습니다. 최신 성적·상담 내용과 분석을 확인하고 다시 검수를 요청해주세요.</p> : null}
     {linkedId ? <p role="status">{linkedBlocked ? '연결된 분석을 사용할 수 없습니다. 최신 결과를 다시 확인·승인하고 연결해주세요.' : '승인된 분석 연결됨 · 점수와 확률은 분석 결과를 사용합니다.'}</p> : <p>수동 검토 중 · 환산점수·예상컷·확률은 제공하지 않습니다.</p>}
     {linkedId && editable ? <button type="button" className="consulting-v2-secondary" disabled={Boolean(operation)} onClick={switchManual}>수동 검토로 전환</button> : null}
     <fieldset disabled={!editable || Boolean(operation)}><label>제목<input maxLength="120" value={content.title} onChange={event => field('title', event.target.value)} /></label>
