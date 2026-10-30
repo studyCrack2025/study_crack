@@ -135,6 +135,7 @@ test('분석 저장 후 응답 실패 시 같은 키로 재확인하며 중복 �
   await page.getByRole('button', { name: '후보 분석 실행', exact: true }).click();
   await expect(page.getByRole('button', { name: '분석 중…' })).toBeDisabled();
   await expect(page.getByRole('button', { name: '초안 저장', exact: true })).toBeDisabled();
+  await page.waitForFunction(() => typeof window.__resolveRun === 'function');
   await page.evaluate(() => { window.__analysis.deferRun = false; window.__resolveRun(); });
   await expect(page.locator('.consulting-analysis-alert')).toContainText('같은 입력으로 다시');
   await page.getByRole('button', { name: '후보 분석 실행', exact: true }).click();
@@ -184,6 +185,7 @@ test('학생 전환 전에 시작한 조회의 늦은 응답은 새 학생 결�
   await prepare(page); await run(page);
   await page.evaluate(() => { window.__analysis.deferGet = true; });
   await page.getByRole('button', { name: '분석 새로고침' }).click();
+  await page.waitForFunction(() => typeof window.__resolveGet === 'function');
   page.once('dialog', dialog => dialog.accept());
   await page.getByLabel('학생 케이스 선택').selectOption(otherCase);
   await expect(page.getByText('아직 실행한 분석이 없습니다.', { exact: false })).toBeVisible();
@@ -267,6 +269,7 @@ test('공개 예약 후 취소 사유와 확인을 거쳐 재검토로 돌리고
   await page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true }).click();
   await expect(page.getByRole('button', { name: '예약 취소 중…', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '보고서 새로고침' })).toBeDisabled();
+  await page.waitForFunction(() => typeof window.__resolveReopen === 'function');
   await page.evaluate(() => window.__resolveReopen());
   await expect(page.getByText('공개가 보류된 보고서입니다.', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true })).toHaveCount(0);
@@ -311,6 +314,9 @@ async function requestReportAI(page) {
   await page.getByRole('button', { name: 'AI 초안 생성 요청', exact: true }).click();
 }
 async function completeReportAI(page) {
+  const panel = page.locator('.consulting-report-ai');
+  await expect(panel.getByRole('status')).toContainText('생성 대기 중입니다.');
+  await expect(panel).toHaveAttribute('aria-busy', 'false');
   await page.evaluate(() => {
     const s = window.__analysis; s.reportJob.status = 'completed';
     s.reportContent = { title: 'AI 합성 지원 보고서', executiveSummary: '확인한 지역 선호를 반영한 초안', scoreAssessment: '승인한 분석 기준',
@@ -320,6 +326,21 @@ async function completeReportAI(page) {
   await page.getByRole('button', { name: 'AI 초안 새로고침', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'AI 합성 지원 보고서', exact: true })).toBeVisible();
 }
+
+test('AI 생성 접수 응답이 지연돼도 접수 완료 후에만 결과를 반영한다', async ({ page }) => {
+  await prepare(page); await run(page); await approve(page);
+  await page.evaluate(() => { window.__analysis.deferAIQueue = true; });
+  await requestReportAI(page);
+  await expect(page.getByRole('button', { name: '요청 중…', exact: true })).toBeDisabled();
+  await page.waitForFunction(() => typeof window.__resolveAIQueue === 'function');
+  expect(await page.evaluate(() => window.__analysis.reportJob)).toBeUndefined();
+  await Promise.all([
+    completeReportAI(page),
+    page.evaluate(() => { window.__analysis.deferAIQueue = false; window.__resolveAIQueue(); })
+  ]);
+  await expect(page.getByRole('heading', { name: 'AI 합성 지원 보고서', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.__analysis.reportKeys.length)).toBe(1);
+});
 
 test('AI 초안 생성·전체 검토·명시 적용·수정·검수 요청을 연결하고 자동 덮어쓰기를 막는다', async ({ page }, testInfo) => {
   await prepare(page); await run(page); await approve(page); await requestReportAI(page);
@@ -343,6 +364,7 @@ test('AI 초안 생성·전체 검토·명시 적용·수정·검수 요청을 �
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: '검토한 초안을 편집기에 적용' }).click();
   await expect(page.getByRole('button', { name: '초안 저장', exact: true })).toBeDisabled();
+  await page.waitForFunction(() => typeof window.__resolveAIApply === 'function');
   await page.evaluate(() => window.__resolveAIApply());
   await expect(page.getByLabel('핵심 요약', { exact: true })).toHaveValue('확인한 지역 선호를 반영한 초안');
   await expect(page.getByLabel('후보 1 대학')).toHaveJSProperty('readOnly', true);
@@ -359,6 +381,7 @@ test('AI 초안 요청 응답 유실은 같은 키로 확인하고 대기 중에
   await page.evaluate(() => { window.__analysis.failAIQueueAfterCommit = true; window.__analysis.deferAIQueue = true; });
   await requestReportAI(page);
   await expect(page.getByRole('button', { name: '초안 저장', exact: true })).toBeDisabled();
+  await page.waitForFunction(() => typeof window.__resolveAIQueue === 'function');
   await page.evaluate(() => { window.__analysis.deferAIQueue = false; window.__resolveAIQueue(); });
   await expect(page.getByText('같은 조건으로 다시 누르면 기존 요청을 확인합니다.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: 'AI 초안 생성 요청', exact: true }).click();
@@ -382,6 +405,7 @@ test('AI 초안 적용 경합은 검토 체크와 미리보기를 해제하고 �
 test('AI 초안 늦은 응답은 학생 전환 후 새 학생 화면을 덮지 않는다', async ({ page }) => {
   await prepare(page); await run(page); await approve(page); await requestReportAI(page); await completeReportAI(page);
   await page.evaluate(() => { window.__analysis.deferAIGet = true; }); await page.getByRole('button', { name: 'AI 초안 새로고침', exact: true }).click();
+  await page.waitForFunction(() => typeof window.__resolveAIGet === 'function');
   page.once('dialog', dialog => dialog.accept()); await page.getByLabel('학생 케이스 선택').selectOption(otherCase);
   await expect(page.getByText('아직 실행한 분석이 없습니다.', { exact: false })).toBeVisible();
   await page.evaluate(() => window.__resolveAIGet()); await expect(page.locator('.consulting-report-ai-preview')).toHaveCount(0);
