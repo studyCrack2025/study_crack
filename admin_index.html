@@ -173,19 +173,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="consulting-heading-row consulting-schedule-heading">
-                <div>
-                    <h2 class="page-title">📄 보고서 검수·승인</h2>
-                    <p class="consulting-caption">검수 요청된 케이스를 전용 보고서 화면에서 확인하고 공개 시각을 예약합니다.</p>
-                </div>
-            </div>
-            <div class="consulting-lookup">
-                <label for="consultingReportCaseId">검수할 케이스 ID</label>
-                <div class="consulting-lookup-row">
-                    <input id="consultingReportCaseId" type="text" autocomplete="off" placeholder="CASE_...">
-                    <button type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingReportReview()">보고서 검수 열기</button>
-                </div>
-            </div>
+
         </div>
 
         <div id="section-students" class="content-section">
@@ -412,6 +400,21 @@
         </div>
                 
         <div id="section-consulting" class="content-section">
+            <section id="consultingServicePanel" aria-labelledby="consultingServiceTitle" aria-busy="false">
+                <h2 id="consultingServiceTitle" class="page-title">서비스 보류·재개</h2>
+                <p class="consulting-caption">현재 환경이 확인된 케이스를 조회하세요. 확정 상담·공개 예약은 먼저 관련 업무 화면에서 취소·재검수해야 합니다.</p>
+                <form class="consulting-lookup" onsubmit="event.preventDefault(); loadConsultingServiceControl();"><label for="consultingServiceCaseId">케이스 ID</label><div class="consulting-lookup-row"><input id="consultingServiceCaseId" maxlength="41" autocomplete="off" placeholder="CASE_..."><button class="consulting-btn consulting-btn-secondary" type="submit">서비스 상태 조회</button></div></form>
+                <div id="consultingServiceStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div id="consultingServiceDetail" class="consulting-detail" hidden><p id="consultingServiceSummary"></p><label class="consulting-operations-reason" for="consultingServiceReason">처리 사유 (10자 이상, 개인정보 제외)</label><textarea id="consultingServiceReason" maxlength="1000" autocomplete="off"></textarea><div class="consulting-actions"><button id="consultingServiceHoldBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="changeConsultingService('hold')">서비스 보류</button><button id="consultingServiceResumeBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="changeConsultingService('resume')">서비스 재개</button></div></div>
+            </section>
+            <section id="consultingOperationsPanel" aria-labelledby="consultingOperationsTitle" aria-busy="false">
+                <div class="consulting-heading-row"><div><h2 id="consultingOperationsTitle" class="page-title">운영 대기·실패 확인</h2><p class="consulting-caption">보고서 승인 이후 환경이 확인된 케이스의 검토·실패·자동 처리 상태를 확인합니다. 접수·초대 재발급은 아래 기존 접수 관리에서 진행하세요.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations()">운영 목록 새로고침</button></div>
+                <div class="consulting-lookup"><label for="consultingOperationsGroup">확인할 목록</label><select id="consultingOperationsGroup" onchange="loadConsultingOperations()"><option value="review">운영 검토·실패</option><option value="reportDue">공개 시각이 지난 보고서</option><option value="reportOutbox">보고서 알림 처리 대기</option><option value="finalOutbox">파이널 콜 알림 처리 대기</option></select></div>
+                <div id="consultingOperationsStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div class="table-responsive"><table class="student-table consulting-table"><thead><tr><th>기록 시각</th><th>관리번호</th><th>확인 항목</th><th>상태</th><th>확인</th></tr></thead><tbody id="consultingOperationsBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 운영 상태를 불러옵니다.</td></tr></tbody></table></div>
+                <button id="consultingOperationsNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations(true)" disabled>다음 페이지</button>
+                <section id="consultingOperationsDetail" class="consulting-detail" hidden aria-labelledby="consultingOperationsDetailTitle"><div class="consulting-detail-head"><h3 id="consultingOperationsDetailTitle">운영 상세</h3><button type="button" class="consulting-close" onclick="closeConsultingOperation()" aria-label="운영 상세 닫기">×</button></div><div id="consultingOperationsSummary" class="consulting-material-copy"></div><label class="consulting-operations-reason" for="consultingOperationsReason">복구 사유 (10자 이상)</label><textarea id="consultingOperationsReason" maxlength="1000"></textarea><div class="consulting-actions"><button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingOperationWorkspace()">관련 업무 화면 열기</button><button id="consultingRetryOutboxBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="recoverConsultingOperation('outbox')" hidden>사이트 알림 재처리 요청</button><button id="consultingRetryReportBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="recoverConsultingOperation('report')" hidden>보고서 공개 재검증</button></div></section>
+            </section>
             <section id="consultingIntakePanel" aria-labelledby="consultingIntakeTitle" aria-busy="false">
             <div class="consulting-heading-row">
                 <div>
@@ -454,6 +457,7 @@
                     <button type="button" class="consulting-btn consulting-btn-danger" onclick="rejectConsultingApplication()">신청 거절</button>
                 </div>
                 <div id="consultingInviteActions" class="consulting-actions" hidden>
+                    <button id="consultingRevokeBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="revokeConsultingInvite()" hidden>미사용 초대 취소</button>
                     <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
                 </div>
             </section>
@@ -525,6 +529,20 @@
                     <thead><tr><th>순위</th><th>일시</th><th>상담사</th><th>학생 우선순위</th><th>점수</th><th>확정</th></tr></thead>
                     <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="6" class="empty-msg">케이스 ID로 배정 후보를 조회해주세요.</td></tr></tbody>
                 </table>
+            </div>
+            <div class="consulting-heading-row consulting-schedule-heading">
+                <div>
+                    <h2 class="page-title">📊 후보 분석·보고서 검수</h2>
+                    <p class="consulting-caption">서면상담이 완료된 케이스의 후보 분석을 실행·승인하고 보고서를 검수합니다.</p>
+                </div>
+            </div>
+            <div class="consulting-lookup">
+                <label for="consultingReportCaseId">분석·검수할 케이스 ID</label>
+                <div class="consulting-lookup-row">
+                    <input id="consultingReportCaseId" type="text" autocomplete="off" placeholder="CASE_...">
+                    <button type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingReportReview()">분석·보고서 열기</button>
+                    <button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingFinalCall()">파이널 콜 일정·완료</button>
+                </div>
             </div>
         </div>
 
@@ -722,6 +740,7 @@
     <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

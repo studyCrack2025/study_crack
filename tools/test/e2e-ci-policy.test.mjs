@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
 import { e2eSuiteSelection, smokeSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
 import { summarizeResults } from '../../studycrack-mobile-app/scripts/summarize-e2e-results.mjs';
@@ -81,4 +81,14 @@ test('browser shards use a lockfile-matched immutable image without runtime down
   assert.ok(runtime >= 0 && tests > runtime);
   assert.match(browser.slice(runtime, tests), /timeout-minutes: 2\n        run: node scripts\/verify-ci-browser-runtime.mjs/);
   assert.match(browser, /timeout-minutes: 10/);
+});
+
+test('browser screenshot paths cannot depend on a developer machine or host filesystem', async () => {
+  const root = new URL('../../studycrack-mobile-app/e2e/', import.meta.url);
+  const specs = (await readdir(root, { recursive: true })).filter(file => file.endsWith('.spec.mjs'));
+  assert.ok(specs.length > 0);
+  for (const file of specs) {
+    const source = await readFile(new URL(file, root), 'utf8');
+    assert.ok(!/\.screenshot\(\s*\{[^}]*\bpath\s*:\s*['"`](?:\/|[A-Za-z]:[\\/])/.test(source), `${file}: save browser screenshots with testInfo.outputPath()`);
+  }
 });

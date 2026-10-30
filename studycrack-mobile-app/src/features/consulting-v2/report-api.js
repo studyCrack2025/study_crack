@@ -12,11 +12,16 @@ export const saveCounselorReportDraft = (binding, data) => request(binding, 'cou
 export const submitCounselorReportReview = (binding, caseId) => request(binding, 'counselor_submit_v2_report_review', { caseId }, '보고서 검수를 요청하지 못했습니다.');
 export const getAdminReportReview = (binding, caseId, signal) => request(binding, 'admin_get_v2_report_review', { caseId }, '검수할 보고서를 불러오지 못했습니다.', signal);
 export const approveAdminReport = (binding, data) => request(binding, 'admin_approve_v2_report', data, '보고서를 승인하지 못했습니다.');
+export const reopenAdminReport = (binding, data) => request(binding, 'admin_reopen_v2_report', data, '공개 예약을 취소하지 못했습니다.');
 
-export async function downloadConsultingReport(binding, reportId) {
+export async function downloadConsultingReport(binding, reportId, amendmentVersion, signal) {
   try {
-    const response = await binding.apiFetch(binding.pdfApiUrl, { method: 'POST', body: JSON.stringify({ reportId }) });
+    const response = await binding.apiFetch(binding.pdfApiUrl, { method: 'POST', signal, body: JSON.stringify({ reportId, ...(amendmentVersion !== undefined ? { amendmentVersion } : {}) }) });
     const body = await response.json().catch(() => null);
-    return response.ok && body?.success === true && /^https:\/\//.test(body.downloadUrl || '') ? { ok: true, downloadUrl: body.downloadUrl } : { ok: false, error: body?.error || 'PDF를 만들지 못했습니다.' };
+    return response.ok && body?.success === true && /^https:\/\//.test(body.downloadUrl || '') ? { ok: true, data: { downloadUrl: body.downloadUrl } } : { ok: false, error: body?.error || 'PDF를 만들지 못했습니다.' };
   } catch (_error) { return { ok: false, error: 'PDF를 만들지 못했습니다.' }; }
 }
+
+export const getReportAIDraft = (binding, caseId, signal) => request(binding, 'counselor_get_v2_report_ai_draft', { caseId }, 'AI 초안 상태를 불러오지 못했습니다.', signal);
+export const queueReportAIDraft = (binding, data, signal) => request(binding, 'counselor_queue_v2_report_ai_draft', data, 'AI 초안 생성을 요청하지 못했습니다.', signal);
+export const applyReportAIDraft = (binding, data, signal) => request(binding, 'counselor_apply_v2_report_ai_draft', data, '검토한 초안을 적용하지 못했습니다.', signal);

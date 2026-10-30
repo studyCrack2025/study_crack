@@ -29,6 +29,7 @@ export function parseHomeResponse(body) {
   if (progress.some(step => !step) || value.session !== null || value.report !== null || !Array.isArray(value.alerts) || value.alerts.some(alert => typeof alert !== 'string' || alert.length > 120)) return null;
   return Object.freeze({
     available: true,
+    ...(value.serviceHold === true ? { serviceHold: true } : {}),
     workflowState: value.workflowState,
     nextAction: value.nextAction,
     nextDueAt: value.nextDueAt,

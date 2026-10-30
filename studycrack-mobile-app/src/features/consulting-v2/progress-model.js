@@ -8,6 +8,7 @@ export const PROGRESS_LABELS = Object.freeze({
 });
 
 export const ACTION_LABELS = Object.freeze({
+  WAIT_FOR_FINAL_CALL_ASSIGNMENT: '파이널 콜 일정 확정을 기다려주세요',
   ACCEPT_SERVICE_TERMS: '서비스 안내를 확인하고 기초조사를 시작해주세요.',
   COMPLETE_SURVEY: '기초조사서를 작성해주세요.',
   WAIT_FOR_MATERIAL_REVIEW: '제출한 자료를 확인하고 있습니다.',
