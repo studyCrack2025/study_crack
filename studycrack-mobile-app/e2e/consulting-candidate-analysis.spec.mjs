@@ -196,12 +196,12 @@ test('조회 거절은 실행 버튼 없이 안내하고 모바일·데스크톱
   await prepare(page); await run(page); await approve(page);
   const top = async () => { await page.evaluate(() => { document.body.scrollTop = 0; document.documentElement.scrollTop = 0; window.scrollTo(0, 0); }); await expect(page.getByRole('heading', { name: '후보 분석과 검토' })).toBeInViewport(); };
   await top();
-  await page.screenshot({ path: `/private/tmp/jungsi-analysis-${testInfo.project.name}-mobile.png` });
+  await page.screenshot({ path: testInfo.outputPath(`jungsi-analysis-${testInfo.project.name}-mobile.png`) });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(page.locator('.consulting-analysis:not(.consulting-report-ai)')).toBeVisible();
   expect(await page.locator('.consulting-analysis:not(.consulting-report-ai)').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await top();
-  await page.screenshot({ path: `/private/tmp/jungsi-analysis-${testInfo.project.name}-desktop.png` });
+  await page.screenshot({ path: testInfo.outputPath(`jungsi-analysis-${testInfo.project.name}-desktop.png`) });
   await page.evaluate(() => { window.__analysis.getForbidden = true; });
   await page.getByRole('button', { name: '분석 새로고침' }).click();
   await expect(page.getByRole('button', { name: '분석 다시 불러오기' })).toBeVisible();
@@ -258,7 +258,7 @@ test('공개 예약 후 취소 사유와 확인을 거쳐 재검토로 돌리고
   await page.getByLabel('공개 예약 취소 사유').fill('상담 내용 변경으로 다시 검토');
   expect(await page.locator('.consulting-report-document').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.getByRole('heading', { name: '공개 예약 재검토', exact: true }).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: `/private/tmp/jungsi-publication-${testInfo.project.name}.png` });
+  await page.screenshot({ path: testInfo.outputPath(`jungsi-publication-${testInfo.project.name}.png`) });
   page.once('dialog', dialog => dialog.dismiss());
   await page.getByRole('button', { name: '공개 예약 취소 후 재검토', exact: true }).click();
   expect(await page.evaluate(() => window.__analysis.calls.some(call => call.type === 'admin_reopen_v2_report'))).toBe(false);
@@ -334,10 +334,10 @@ test('AI 초안 생성·전체 검토·명시 적용·수정·검수 요청을 �
   expect(await page.evaluate(() => window.__analysis.calls.filter(call => call.type === 'counselor_apply_v2_report_ai_draft'))).toHaveLength(0);
   expect(await page.locator('.consulting-report-ai-preview').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.getByRole('heading', { name: 'AI 보고서 초안', exact: true }).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: `/private/tmp/jungsi-report-ai-${testInfo.project.name}-mobile.png` });
+  await page.screenshot({ path: testInfo.outputPath(`jungsi-report-ai-${testInfo.project.name}-mobile.png`) });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('heading', { name: 'AI 합성 지원 보고서', exact: true }).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: `/private/tmp/jungsi-report-ai-${testInfo.project.name}-desktop.png` });
+  await page.screenshot({ path: testInfo.outputPath(`jungsi-report-ai-${testInfo.project.name}-desktop.png`) });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => { window.__analysis.deferAIApply = true; });
   page.once('dialog', dialog => dialog.accept());

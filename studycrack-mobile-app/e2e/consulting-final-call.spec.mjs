@@ -70,7 +70,7 @@ test('연락처는 저장소에 남기지 않고 화면 숨김과 30초 뒤 지�
 test('완료된 학생 화면과 320px·데스크톱에서 종료 상태와 보고서 접근을 유지한다', async ({ page }, testInfo) => {
   await prepare(page, 'student', { workflowState: 'SERVICE_COMPLETED', session: { startAt: '2026-10-29T01:00:00.000Z', endAt: '2026-10-29T01:30:00.000Z', status: 'completed' } });
   await expect(page.getByText('파이널 콜 완료', { exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: '가능 시간 제출·자동 배정' })).toHaveCount(0);
-  for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: `/private/tmp/jungsi-final-call-${testInfo.project.name}-${width}.png`, fullPage: true }); }
+  for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: testInfo.outputPath(`jungsi-final-call-${testInfo.project.name}-${width}.png`), fullPage: true }); }
 });
 test('권한 거절은 빈 예약으로 오인하지 않고 로그아웃 뒤의 늦은 응답도 무시한다', async ({ page }) => {
   await prepare(page, 'student', { forbidden: true }); await expect(page.getByRole('alert')).toContainText('로그인과 이용 단계');
@@ -79,5 +79,5 @@ test('권한 거절은 빈 예약으로 오인하지 않고 로그아웃 뒤의 
 
 test('상담사 공개 보고서와 검토 화면은 작은 화면에서도 읽고 조작할 수 있다', async ({ page }, testInfo) => {
   await prepare(page, 'tutor'); await page.getByText('공개 보고서 전체 보기', { exact: true }).click(); await expect(page.getByRole('heading', { name: '합성 공개 보고서' })).toBeVisible();
-  for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: `/private/tmp/jungsi-final-review-${testInfo.project.name}-${width}.png` }); await page.getByRole('button', { name: '통화 완료·서비스 종료' }).scrollIntoViewIfNeeded(); await expect(page.getByRole('button', { name: '통화 완료·서비스 종료' })).toBeInViewport(); await page.screenshot({ path: `/private/tmp/jungsi-final-review-bottom-${testInfo.project.name}-${width}.png` }); await page.evaluate(() => scrollTo(0, 0)); }
+  for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: testInfo.outputPath(`jungsi-final-review-${testInfo.project.name}-${width}.png`) }); await page.getByRole('button', { name: '통화 완료·서비스 종료' }).scrollIntoViewIfNeeded(); await expect(page.getByRole('button', { name: '통화 완료·서비스 종료' })).toBeInViewport(); await page.screenshot({ path: testInfo.outputPath(`jungsi-final-review-bottom-${testInfo.project.name}-${width}.png`) }); await page.evaluate(() => scrollTo(0, 0)); }
 });
