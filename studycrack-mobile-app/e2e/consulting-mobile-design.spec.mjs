@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test';
-import { readdir } from 'node:fs/promises';
 
 const widths = [320, 360, 390, 430, 768, 1440];
 const steps = ['onboarding', 'survey', 'materials', 'written_consultation', 'report', 'final_call'];
@@ -17,8 +16,11 @@ const homeFor = ([workflowState, nextAction, current]) => ({ available: true, wo
 async function prepare(page, { loggedIn = true } = {}) {
   const state = { home: homeFor(states[1]), error: false, defer: false, campaign: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'open', price: 300000, applicationUrl: 'https://docs.google.com/forms/d/e/synthetic/viewform' } };
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const fonts = (await readdir(new URL('../dist/assets/', import.meta.url))).filter(name => /^paperlogy-.*\.woff2$/.test(name));
-  await page.route('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css', route => route.fulfill({ contentType: 'text/css', body: fonts.map(name => `@font-face{font-family:Paperlogy;font-style:normal;font-weight:${name.match(/paperlogy-(\d+)/)[1]};font-display:swap;src:url('/studycrack-mobile-app/dist/assets/${name}') format('woff2')}`).join('\n') }));
+  const fontResponse = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css');
+  expect(fontResponse.ok(), 'The preview must serve the built font stylesheet').toBe(true);
+  const fonts = ((await fontResponse.text()).match(/@font-face\s*\{[^}]*\}/g) || []).filter(rule => /\bfont-family:\s*(["']?)Paperlogy\1\s*[;}]/.test(rule));
+  expect(fonts.length, 'The preview stylesheet must contain the Paperlogy font faces').toBeGreaterThan(0);
+  await page.route('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css', route => route.fulfill({ contentType: 'text/css', body: fonts.join('\n') }));
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'https://api.example.invalid/consulting',consultingPublic:'https://api.example.invalid/public'}};` }));
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     localStorage.setItem('userRole','student');
