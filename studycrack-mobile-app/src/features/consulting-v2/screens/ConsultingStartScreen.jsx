@@ -1,4 +1,5 @@
 import React from 'react';
+import { ConsultingBrand } from '../ConsultingBrand.jsx';
 import { claimConsultingInvite, preflightConsultingInvite } from '../api.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { inviteErrorMessage, safeInviteSummary } from './presentation.js';
@@ -99,8 +100,8 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   };
 
   return <main className="consulting-v2-center"><section className="consulting-v2-card" aria-labelledby="consultingStartTitle">
-    <img className="consulting-v2-logo" src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack" />
-    <p className="consulting-v2-kicker">2027 정시 컨설팅</p>
+    <ConsultingBrand />
+    <p className="consulting-v2-kicker">초대받은 계정으로 시작하기</p>
     <h1 id="consultingStartTitle">컨설팅 이용 인증</h1>
     <p className="consulting-v2-status" data-tone={tone || undefined} role="status">{status}</p>
     {summary ? <div className="consulting-v2-summary">

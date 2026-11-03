@@ -1,6 +1,6 @@
 .consulting-written { min-height:100vh; padding:14px; background:#eef3f9; }
 .consulting-written > header { width:min(100%,1120px); min-height:54px; margin:0 auto 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; color:#526079; font-size:.86rem; }
-.consulting-written > header button { border:0; background:transparent; color:#2856c7; font:inherit; font-weight:750; cursor:pointer; }
+.consulting-written > header button { min-height:44px; border:0; background:transparent; color:var(--sc-brand-navy); font:inherit; font-weight:700; cursor:pointer; }
 .consulting-written > header strong { display:var(--consulting-written-heading-display,inline); }
 .consulting-written-layout { width:min(100%,1120px); margin:0 auto; display:grid; grid-template-columns:var(--consulting-written-columns,minmax(0,1fr) minmax(250px,320px)); gap:16px; }
 .consulting-written-chat { min-width:0; overflow:hidden; border:1px solid #d8e1ed; border-radius:20px; background:#fff; box-shadow:0 18px 42px rgba(31,55,91,.09); }
@@ -19,7 +19,7 @@
 .consulting-written-chat footer { padding:14px 18px 18px; border-top:1px solid #e5ebf3; }
 .consulting-written-chat footer textarea { width:100%; min-height:82px; padding:12px; border:1px solid #c6d1e0; border-radius:11px; color:#1f2e45; font:inherit; resize:vertical; }
 .consulting-written-chat footer > div { margin-top:8px; display:flex; align-items:center; justify-content:space-between; }
-.consulting-written-chat footer button,.consulting-written-tools button { min-height:40px; padding:0 16px; border:0; border-radius:9px; background:#2856c7; color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+.consulting-written-chat footer button,.consulting-written-tools button { min-height:44px; padding:0 16px; border:0; border-radius:9px; background:var(--sc-brand-navy); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .consulting-written-chat button:disabled,.consulting-written-tools button:disabled { cursor:not-allowed; opacity:.5; }
 .consulting-written-feedback { margin:0; padding:0 18px 16px; color:#8a4b08; font-size:.86rem; }
 .consulting-written-tools { order:var(--consulting-written-tools-order,0); align-self:start; padding:20px; display:grid; gap:14px; border:1px solid #d8e1ed; border-radius:18px; background:#fff; }
