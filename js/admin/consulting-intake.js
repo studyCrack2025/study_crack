@@ -3,6 +3,35 @@ let currentConsultingMutationKeys = null;
 let consultingPaymentReviewRequest = 0;
 let consultingApplicationRequest = 0;
 let consultingMutationBusy = false;
+const consultingInputFields = { studentName: 'consultingContactStudentName', phone: 'consultingContactPhone', email: 'consultingContactEmail', payerName: 'consultingContactPayerName', payerRelationship: 'consultingContactRelationship', contactMethod: 'consultingContactMethod', studentStatus: 'consultingContactStudentStatus' };
+const consultingInputLabels = { studentName: '학생 이름', phone: '전화번호', email: '이메일', payerName: '입금자명', payerRelationship: '입금자와의 관계', contactMethod: '연락 방법', studentStatus: '학생 상태', payerRelationshipDetail: '입금자 관계 기타 내용', contactMethodDetail: '연락 방법 기타 내용' };
+
+function consultingInputNeedsReview(application) {
+    return application?.inputReviewRequired === true || application?.paymentReviewStatus === 'input_review' || Array.isArray(application?.intakeIssues) && application.intakeIssues.length > 0;
+}
+
+function renderConsultingInputReview(data) {
+    const original = document.getElementById('consultingOriginalSubmission');
+    original.replaceChildren();
+    for (const [field, label] of Object.entries(consultingInputLabels)) {
+        if (!data.originalSubmission || !Object.prototype.hasOwnProperty.call(data.originalSubmission, field)) continue;
+        const block = document.createElement('div'), term = document.createElement('strong'), value = document.createElement('span');
+        term.textContent = label;
+        const raw = data.originalSubmission[field];
+        value.textContent = raw === null || raw === '' ? '미입력' : typeof raw === 'string' ? raw : JSON.stringify(raw);
+        block.append(term, value); original.appendChild(block);
+    }
+    document.getElementById('consultingOriginalDetails').hidden = !original.children.length;
+    const editable = data.application.applicationState === 'PAYMENT_REVIEW' && ['pending', 'hold', 'input_review'].includes(data.application.paymentReviewStatus);
+    document.getElementById('consultingInputEditor').hidden = !editable;
+    for (const [field, id] of Object.entries(consultingInputFields)) document.getElementById(id).value = String(data.contact[field] ?? data[field] ?? '');
+    document.getElementById('consultingInputConfirmed').checked = false;
+    const fields = [...new Set((Array.isArray(data.application.intakeIssues) ? data.application.intakeIssues : []).map(issue => Object.prototype.hasOwnProperty.call(consultingInputLabels, issue?.field) ? consultingInputLabels[issue.field] : null).filter(Boolean))];
+    document.getElementById('consultingInputIssues').textContent = consultingInputNeedsReview(data.application)
+        ? `접수는 저장됐습니다. ${fields.join(' · ') || '신청 정보'} 항목을 원본과 대조하고 아래에서 수정·확인해주세요.`
+        : '접수 정보에 오타가 있으면 아래에서 수정·확인해주세요.';
+    document.getElementById('consultingApproveBtn').disabled = consultingInputNeedsReview(data.application);
+}
 
 function createConsultingCell(text) {
     const cell = document.createElement('td');
@@ -33,6 +62,8 @@ function setConsultingIntakeBusy(busy) {
     const panel = document.getElementById('consultingIntakePanel');
     panel?.setAttribute('aria-busy', String(busy));
     panel?.querySelectorAll('button, input, select').forEach(control => { control.disabled = busy; });
+    const approve = document.getElementById('consultingApproveBtn');
+    if (approve) approve.disabled = busy || consultingInputNeedsReview(currentConsultingApplication?.application);
 }
 
 function renderConsultingPaymentReview(items) {
@@ -46,8 +77,8 @@ function renderConsultingPaymentReview(items) {
         row.appendChild(createConsultingCell(`${item.studentNameMask || '-'} / ${item.phoneMask || '-'}`));
         row.appendChild(createConsultingCell(item.payerNameMask || '-'));
         row.appendChild(createConsultingCell(formatConsultingMoney(item.expectedAmount)));
-        const reviewState = item.paymentReviewStatus === 'hold' ? '보류' : '입금 확인 대기';
-        row.appendChild(createConsultingCell(`${reviewState}${item.duplicateSuspected ? ' · 중복 가능성 확인 필요' : ''}`));
+        const reviewState = item.paymentReviewStatus === 'input_review' ? '신청 정보 확인 대기' : item.paymentReviewStatus === 'hold' ? '보류' : '입금 확인 대기';
+        row.appendChild(createConsultingCell(`${reviewState}${consultingInputNeedsReview(item) ? ' · 신청 정보 보완 필요' : ''}${item.duplicateSuspected ? ' · 중복 가능성 확인 필요' : ''}`));
         const action = document.createElement('td');
         const button = document.createElement('button');
         button.type = 'button';
@@ -103,7 +134,7 @@ async function openConsultingApplication(applicationId) {
         if (application?.applicationId !== applicationId || !Number.isSafeInteger(application.revision) || !data.contact || typeof data.contact !== 'object') throw new Error('신청 상세 형식이 올바르지 않습니다.');
         const mutationKeys = {
             payment: consultingRequestKey('payment'), hold: consultingRequestKey('hold'),
-            reject: consultingRequestKey('reject'), reissue: consultingRequestKey('reissue')
+            reject: consultingRequestKey('reject'), reissue: consultingRequestKey('reissue'), input: consultingRequestKey('input')
         };
         const summary = document.getElementById('consultingDetailSummary');
         summary.replaceChildren();
@@ -116,8 +147,9 @@ async function openConsultingApplication(applicationId) {
             ['접수 시각', formatConsultingDate(application.submittedAt || application.createdAt)],
             ['예정 금액', formatConsultingMoney(application.expectedAmount)],
             ['신청 상태', consultingIntakeLabel(application.applicationState, { PAYMENT_REVIEW: '입금 검수', INVITED: '초대 발급', REJECTED: '거절', CLAIMED: '가입 연결 완료' })],
-            ['검수 상태', consultingIntakeLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', verified: '승인', rejected: '거절' })],
-            ['수정 버전', application.revision], ['중복 가능성', application.duplicateSuspected ? '확인 필요' : '없음']
+            ['검수 상태', consultingIntakeLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', input_review: '신청 정보 확인 대기', verified: '승인', rejected: '거절' })],
+            ['수정 버전', application.revision], ['중복 가능성', application.duplicateSuspected ? '확인 필요' : '없음'],
+            ['신청 정보 확인', consultingInputNeedsReview(application) ? '보완·확인 필요' : '보완 대기 없음']
         ];
         if (data.payerRelationshipDetail) values.push(['입금자 관계 기타 내용', data.payerRelationshipDetail]);
         if (data.contactMethodDetail) values.push(['연락 방법 기타 내용', data.contactMethodDetail]);
@@ -134,10 +166,11 @@ async function openConsultingApplication(applicationId) {
         });
         currentConsultingApplication = data;
         currentConsultingMutationKeys = mutationKeys;
+        renderConsultingInputReview(data);
         document.getElementById('consultingApplicationLookup').value = applicationId;
         document.getElementById('consultingHoldReason').value = application.duplicateSuspected ? 'DUPLICATE_CANDIDATE' : 'PAYMENT_NOT_FOUND';
         document.getElementById('consultingRejectReason').value = application.duplicateSuspected ? 'DUPLICATE_APPLICATION' : 'PAYMENT_NOT_FOUND';
-        document.getElementById('consultingPaymentActions').hidden = application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold'].includes(application.paymentReviewStatus);
+        document.getElementById('consultingPaymentActions').hidden = application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold', 'input_review'].includes(application.paymentReviewStatus);
         const revokeButton = document.getElementById('consultingRevokeBtn'); if (revokeButton) revokeButton.hidden = data.stageVerified !== true || data.inviteRevoked === true || application.applicationState !== 'INVITED';
         document.getElementById('consultingInviteActions').hidden = application.applicationState !== 'INVITED' || !data.activeInviteId;
         document.getElementById('consultingApplicationDetail').hidden = false;
@@ -156,13 +189,21 @@ function closeConsultingDetail(force = false) {
     currentConsultingMutationKeys = null;
     // 상세를 닫으면 개인정보를 DOM에서도 제거한다.
     document.getElementById('consultingDetailSummary')?.replaceChildren();
+    document.getElementById('consultingOriginalSubmission')?.replaceChildren();
+    const original = document.getElementById('consultingOriginalDetails');
+    if (original) { original.open = false; original.hidden = true; }
+    for (const id of Object.values(consultingInputFields)) { const field = document.getElementById(id); if (field) field.value = ''; }
+    const inputConfirmed = document.getElementById('consultingInputConfirmed');
+    if (inputConfirmed) inputConfirmed.checked = false;
+    const inputIssues = document.getElementById('consultingInputIssues');
+    if (inputIssues) inputIssues.textContent = '';
     for (const id of ['consultingPaidAmount', 'consultingPaidAt']) {
         const field = document.getElementById(id);
         if (field) field.value = '';
     }
     const confirmed = document.getElementById('consultingPayerConfirmed');
     if (confirmed) confirmed.checked = false;
-    for (const id of ['consultingApplicationDetail', 'consultingPaymentActions', 'consultingInviteActions']) {
+    for (const id of ['consultingApplicationDetail', 'consultingPaymentActions', 'consultingInviteActions', 'consultingInputEditor']) {
         const element = document.getElementById(id);
         if (element) element.hidden = true;
     }
@@ -176,7 +217,7 @@ function resetConsultingIntake() {
     setConsultingActionStatus('');
 }
 
-async function runConsultingMutation(type, data, successMessage) {
+async function runConsultingMutation(type, data, successMessage, reopen = false) {
     if (consultingMutationBusy || currentConsultingApplication?.application.applicationId !== data.applicationId) return null;
     const requestId = consultingApplicationRequest;
     ++consultingPaymentReviewRequest;
@@ -185,6 +226,7 @@ async function runConsultingMutation(type, data, successMessage) {
     let result;
     try {
         result = await requestConsultingAdmin(type, data);
+        if (type === 'admin_review_application_input' && (result.applicationId !== data.applicationId || result.inputReviewRequired !== false || result.revision !== data.expectedRevision + 1)) throw new Error('신청 정보 저장 결과를 확인하지 못했습니다.');
     } catch (error) {
         if (requestId === consultingApplicationRequest) {
             closeConsultingDetail(true);
@@ -200,14 +242,19 @@ async function runConsultingMutation(type, data, successMessage) {
     const refresh = loadConsultingPaymentReview();
     const refreshRequestId = consultingApplicationRequest;
     await refresh;
-    if (refreshRequestId !== consultingApplicationRequest) return result;
+    if (refreshRequestId !== consultingApplicationRequest) return reopen ? null : result;
+    if (reopen) {
+        await openConsultingApplication(data.applicationId);
+        if (currentConsultingApplication?.application.applicationId !== data.applicationId) return null;
+    }
     setConsultingActionStatus(`${data.applicationId}: ${successMessage} 처리된 건은 신청 ID로 다시 조회할 수 있습니다.`, 'success');
     return result;
 }
 
 async function approveConsultingPayment() {
     const application = currentConsultingApplication?.application;
-    if (consultingMutationBusy || !application || application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold'].includes(application.paymentReviewStatus)) return;
+    if (consultingMutationBusy || !application || application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold', 'input_review'].includes(application.paymentReviewStatus)) return;
+    if (consultingInputNeedsReview(application)) return setConsultingStatus('신청 정보 보완·확인을 먼저 저장해주세요.', 'error');
     const payerNameConfirmed = document.getElementById('consultingPayerConfirmed').checked;
     const paidAtValue = document.getElementById('consultingPaidAt').value;
     const paidAt = new Date(paidAtValue);
@@ -219,6 +266,15 @@ async function approveConsultingPayment() {
         idempotencyKey: currentConsultingMutationKeys.payment, paidAmount,
         paidAt: paidAt.toISOString(), payerNameConfirmed: true, reasonCode: 'MANUAL_BANK_MATCH'
     }, '입금 승인 및 초대 발송 예약 완료. 실제 발송·수신 성공은 별도 확인이 필요합니다.');
+}
+
+async function saveConsultingApplicationInput() {
+    const current = currentConsultingApplication, application = current?.application;
+    if (consultingMutationBusy || !application || application.applicationState !== 'PAYMENT_REVIEW' || !['pending', 'hold', 'input_review'].includes(application.paymentReviewStatus)) return;
+    if (!document.getElementById('consultingInputConfirmed').checked) return setConsultingStatus('신청 정보와 연락처의 수신 대상을 직접 확인해주세요.', 'error');
+    const input = Object.fromEntries(Object.entries(consultingInputFields).map(([field, id]) => [field, document.getElementById(id).value]));
+    for (const [field, choice] of [['payerRelationshipDetail', 'payerRelationship'], ['contactMethodDetail', 'contactMethod']]) if (input[choice] === 'other' && current[field]) input[field] = current[field];
+    await runConsultingMutation('admin_review_application_input', { applicationId: application.applicationId, expectedRevision: application.revision, idempotencyKey: currentConsultingMutationKeys.input, inputReviewConfirmed: true, input }, '신청 정보 확인·저장 완료. 계좌 내역을 대조한 뒤 입금 승인을 진행하세요.', true);
 }
 
 async function holdConsultingPayment() {
