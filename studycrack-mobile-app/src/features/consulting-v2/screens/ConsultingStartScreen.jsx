@@ -20,19 +20,32 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const [tone, setTone] = React.useState(invite ? '' : 'error');
   const [code, setCode] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [canClaim, setCanClaim] = React.useState(false);
+  const claimRequest = React.useRef(null);
+  const readyMessage = hasSession ? '이메일로 받은 인증코드를 입력해주세요.' : '신청 이메일과 같은 이메일의 계정으로 로그인하거나 회원가입해주세요.';
 
   React.useEffect(() => {
+    claimRequest.current?.abort();
+    claimRequest.current = null;
+    setSubmitting(false);
+    setCode('');
+    setCanClaim(false);
+    setSummary(null);
     if (!invite) return undefined;
+    setTone(invite ? '' : 'error');
+    setStatus(invite ? '초대 정보를 확인하고 있습니다.' : '유효한 초대 정보를 찾을 수 없습니다. 문자로 받은 링크를 다시 열어주세요.');
     const controller = new AbortController();
     preflightConsultingInvite({ ...binding, ...invite, signal: controller.signal }).then(result => {
       if (controller.signal.aborted) return;
       if (!result.ok) {
-        if (result.status === 409 && hasSession) {
+        if (result.code === 'INVITE_ALREADY_CLAIMED' && result.status === 409 && hasSession) {
+          setTone('');
+          setCanClaim(true);
           setStatus('이미 처리된 초대인지 로그인 계정으로 확인해주세요.');
           return;
         }
         setTone('error');
-        setStatus(inviteErrorMessage(result.code, result.status));
+        setStatus(inviteErrorMessage(result.code, result.status, { preflight: true }));
         return;
       }
       const safeSummary = safeInviteSummary(result.data);
@@ -42,28 +55,39 @@ export function ConsultingStartScreen({ binding, hasSession }) {
         return;
       }
       setSummary(safeSummary);
-      setStatus(hasSession ? '이메일로 받은 인증코드를 입력해주세요.' : '신청 시 입력한 연락처와 같은 계정으로 로그인해주세요.');
+      setTone('');
+      setCanClaim(true);
+      setStatus(readyMessage);
     });
-    return () => controller.abort();
-  }, [binding.fetchImpl, binding.publicApiUrl, hasSession, invite]);
+    return () => { controller.abort(); claimRequest.current?.abort(); claimRequest.current = null; };
+  }, [binding.fetchImpl, binding.publicApiUrl, hasSession, invite, readyMessage]);
 
   const clearInvite = () => {
     globalThis.sessionStorage?.removeItem(INVITE_KEY);
     setInvite(null);
     setSummary(null);
+    setCode('');
+    setCanClaim(false);
     setTone('');
     setStatus('이 브라우저에서 초대 정보를 지웠습니다. 다시 시작하려면 받은 문자 링크를 열어주세요.');
   };
 
   const submit = async event => {
     event.preventDefault();
+    if (claimRequest.current || !hasSession || !canClaim) return;
     if (!invite || !/^\d{10}$/.test(code.trim())) {
       setTone('error');
       setStatus('이메일로 받은 10자리 인증코드를 확인해주세요.');
       return;
     }
+    const controller = new AbortController();
+    claimRequest.current = controller;
+    setTone('');
+    setStatus('인증코드를 확인하고 있습니다.');
     setSubmitting(true);
-    const result = await claimConsultingInvite({ ...binding, ...invite, code: code.trim() });
+    const result = await claimConsultingInvite({ ...binding, ...invite, code: code.trim(), signal: controller.signal });
+    if (controller.signal.aborted || claimRequest.current !== controller) return;
+    claimRequest.current = null;
     setSubmitting(false);
     if (!result.ok) {
       setTone('error');
@@ -88,9 +112,9 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>로그인</a>
       <a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>회원가입</a>
     </div> : null}
-    {invite && hasSession ? <form className="consulting-v2-form" onSubmit={submit}>
+    {invite && hasSession && canClaim ? <form className="consulting-v2-form" onSubmit={submit}>
       <label htmlFor="consultingInviteCode">이메일로 받은 10자리 인증코드</label>
-      <input id="consultingInviteCode" value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{10}" maxLength="10" required />
+      <input id="consultingInviteCode" value={code} onChange={event => { setCode(event.target.value.replace(/\D/g, '').slice(0, 10)); if (!submitting) { setTone(''); setStatus(readyMessage); } }} disabled={submitting} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{10}" maxLength="10" required />
       <button type="submit" disabled={submitting}>{submitting ? '확인 중…' : '유료회원 인증하고 시작하기'}</button>
     </form> : null}
     {hasSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>내 진행 현황 보기</button> : null}

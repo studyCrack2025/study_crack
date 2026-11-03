@@ -35,11 +35,14 @@ export default function ConsultingApp() {
   React.useEffect(() => {
     const routeChanged = () => setPathname(globalThis.location?.pathname || CONSULTING_ROUTES.home);
     const sessionChanged = () => setSessionRevision(value => value + 1);
+    const pageRestored = event => { if (event.persisted) { routeChanged(); sessionChanged(); } };
     globalThis.addEventListener?.('popstate', routeChanged);
     globalThis.addEventListener?.('studycrack:session-ended', sessionChanged);
+    globalThis.addEventListener?.('pageshow', pageRestored);
     return () => {
       globalThis.removeEventListener?.('popstate', routeChanged);
       globalThis.removeEventListener?.('studycrack:session-ended', sessionChanged);
+      globalThis.removeEventListener?.('pageshow', pageRestored);
     };
   }, []);
   const route = resolveConsultingRoute(pathname);
