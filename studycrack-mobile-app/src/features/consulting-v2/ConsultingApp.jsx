@@ -1,4 +1,5 @@
 import React from 'react';
+import { ConsultingBrand } from './ConsultingBrand.jsx';
 import './styles/consulting-v2-shell.css';
 import './styles/consulting-v2-home.css';
 import { ConsultingStartScreen } from './screens/ConsultingStartScreen.jsx';
@@ -20,7 +21,7 @@ function LoginScreen({ hasSession }) {
   React.useEffect(() => {
     if (hasSession) navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
   }, [hasSession]);
-  return <main className="consulting-v2-center"><section className="consulting-v2-card"><img className="consulting-v2-logo" src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack" /><p className="consulting-v2-kicker">2027 정시 컨설팅</p><h1>계정으로 시작하기</h1><p className="consulting-v2-status">StudyCrack 계정으로 로그인한 뒤 전용 화면으로 돌아옵니다.</p><div className="consulting-v2-actions"><a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>로그인</a><a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>회원가입</a></div></section></main>;
+  return <main className="consulting-v2-center"><section className="consulting-v2-card"><ConsultingBrand /><p className="consulting-v2-kicker">나의 컨설팅 이어가기</p><h1>계정으로 시작하기</h1><p className="consulting-v2-status">StudyCrack 계정으로 로그인하고<br />컨설팅 진행 현황을 확인하세요.</p><div className="consulting-v2-actions"><a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>로그인</a><a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>회원가입</a></div></section></main>;
 }
 
 function PendingScreen({ label }) {
