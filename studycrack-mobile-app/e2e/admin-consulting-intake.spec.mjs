@@ -12,6 +12,12 @@ async function prepare(page) {
     await page.goto('http://localhost');
     const html = (await source(page, 'admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '');
     await page.setContent(html);
+    await page.evaluate(() => {
+        const panel = document.getElementById('consultingIntakePanel');
+        document.getElementById('section-consulting').replaceChildren(panel);
+        document.getElementById('consultingPaymentReviewBody').closest('div[hidden]').hidden = false;
+        window.closeConsultingStudent = () => closeConsultingDetail();
+    });
     for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(page, file) });
     await page.evaluate(id => {
         window.CONFIG = { api: { consulting: '/synthetic/consulting', noti: '/synthetic/noti', qna: '/synthetic/qna' } };
@@ -124,7 +130,7 @@ test('승인 충돌은 오래된 상세를 닫고 재조회 안내만 표시한�
     await page.evaluate(() => { window.__mutationFailure = true; });
     page.once('dialog', dialog => dialog.accept());
     await page.locator('#consultingApproveBtn').click();
-    await expect(page.locator('#consultingActionStatus')).toContainText('신청 ID로 다시 조회');
+    await expect(page.locator('#consultingActionStatus')).toContainText('학생 상세를 다시 조회');
     await expect(page.locator('#consultingApplicationDetail')).toBeHidden();
     expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment').length)).toBe(1);
 });

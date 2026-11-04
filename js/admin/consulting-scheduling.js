@@ -1,3 +1,4 @@
+let consultingScheduleGeneration = 0;
 let currentConsultingSchedule = null;
 
 function setConsultingScheduleStatus(message, state = '') {
@@ -67,26 +68,30 @@ async function generateConsultingSlots() {
 async function loadConsultingScheduleCandidates() {
     const caseId = document.getElementById('consultingScheduleCaseId')?.value.trim();
     if (!caseId) return setConsultingScheduleStatus('케이스 ID를 입력해주세요.', 'error');
+    const generation = ++consultingScheduleGeneration;
     const button = document.getElementById('consultingLoadCandidatesBtn');
     button.disabled = true;
     setConsultingScheduleStatus('배정 후보를 계산하고 있습니다.', 'loading');
     try {
         const data = await requestConsultingAdmin('admin_list_schedule_candidates', { caseId });
+        if (generation !== consultingScheduleGeneration) return;
         currentConsultingSchedule = data;
         renderConsultingCurrentSession(data.session);
         renderConsultingScheduleCandidates(data);
         setConsultingScheduleStatus(`배정 후보 ${data.candidates.length}건을 점수 순으로 불러왔습니다.`, 'success');
     } catch (error) {
+        if (generation !== consultingScheduleGeneration) return;
         currentConsultingSchedule = null;
         renderConsultingCurrentSession(null);
         renderConsultingScheduleCandidates({ candidates: [] });
         setConsultingScheduleStatus(error.message || '배정 후보를 불러오지 못했습니다.', 'error');
     } finally {
-        button.disabled = false;
+        if (generation === consultingScheduleGeneration) button.disabled = false;
     }
 }
 
 async function confirmConsultingScheduleCandidate(candidate) {
+    const generation = consultingScheduleGeneration;
     const current = currentConsultingSchedule;
     if (!current || !confirm(current.session ? '현재 일정을 이 후보로 변경하시겠습니까?' : '이 후보로 서면상담 일정을 확정하시겠습니까?')) return;
     const type = current.session ? 'admin_reschedule_written_session' : 'admin_confirm_written_assignment';
@@ -94,23 +99,30 @@ async function confirmConsultingScheduleCandidate(candidate) {
     setConsultingScheduleStatus('일정을 저장하고 있습니다.', 'loading');
     try {
         await requestConsultingAdmin(type, data);
-        await loadConsultingScheduleCandidates();
+        if (generation !== consultingScheduleGeneration) return;
+        if (typeof consultingWorkspaceHasStudent === 'function' && consultingWorkspaceHasStudent()) await refreshConsultingWorkspaceStudent();
+        else await loadConsultingScheduleCandidates();
         setConsultingScheduleStatus(current.session ? '서면상담 일정을 재배정했습니다.' : '서면상담 일정을 확정했습니다.', 'success');
     } catch (error) {
+        if (generation !== consultingScheduleGeneration) return;
         setConsultingScheduleStatus(error.message || '일정을 저장하지 못했습니다.', 'error');
     }
 }
 
 async function cancelConsultingWrittenSession() {
+    const generation = consultingScheduleGeneration;
     const current = currentConsultingSchedule;
     if (!current?.session || !confirm('현재 서면상담 일정을 취소하고 다시 배정 대기 상태로 돌리시겠습니까?')) return;
     const button = document.getElementById('consultingCancelSessionBtn');
     button.disabled = true;
     try {
         await requestConsultingAdmin('admin_cancel_written_session', { caseId: current.caseId, expectedSessionRevision: current.session.revision, reasonCode: 'OPERATOR_CANCELLED' });
-        await loadConsultingScheduleCandidates();
+        if (generation !== consultingScheduleGeneration) return;
+        if (typeof consultingWorkspaceHasStudent === 'function' && consultingWorkspaceHasStudent()) await refreshConsultingWorkspaceStudent();
+        else await loadConsultingScheduleCandidates();
         setConsultingScheduleStatus('일정을 취소하고 재배정 대기 상태로 변경했습니다.', 'success');
     } catch (error) {
+        if (generation !== consultingScheduleGeneration) return;
         setConsultingScheduleStatus(error.message || '일정을 취소하지 못했습니다.', 'error');
     } finally {
         button.disabled = false;
@@ -128,3 +140,15 @@ function openConsultingFinalCall() {
     if (!/^CASE_[0-9a-f-]{36}$/i.test(caseId)) return setConsultingScheduleStatus('올바른 케이스 ID를 입력해주세요.', 'error');
     window.location.assign(`/2027-jungsi-consulting/final-call?caseId=${encodeURIComponent(caseId)}`);
 }
+
+function resetConsultingSchedule() {
+    consultingScheduleGeneration++; currentConsultingSchedule = null;
+    renderConsultingCurrentSession(null);
+    document.getElementById('consultingScheduleCandidatesBody')?.replaceChildren();
+    const input = document.getElementById('consultingScheduleCaseId'); if (input) input.value = '';
+    const button = document.getElementById('consultingLoadCandidatesBtn'); if (button) button.disabled = false;
+    setConsultingScheduleStatus('');
+}
+
+window.addEventListener('pagehide', resetConsultingSchedule);
+window.addEventListener('studycrack:session-ended', resetConsultingSchedule);

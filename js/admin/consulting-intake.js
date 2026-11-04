@@ -121,14 +121,14 @@ function consultingIntakeLabel(value, labels) {
     return Object.hasOwn(labels, value) ? labels[value] : (value || '-');
 }
 
-async function openConsultingApplication(applicationId) {
+async function openConsultingApplication(applicationId, suppliedData = null) {
     if (consultingMutationBusy) return;
     closeConsultingDetail();
     if (!/^APP_[0-9a-f-]{36}$/i.test(applicationId)) return setConsultingStatus('APP_로 시작하는 올바른 신청 ID를 입력해주세요.', 'error');
     const requestId = consultingApplicationRequest;
     setConsultingStatus('신청 상세를 불러오는 중입니다.', 'loading');
     try {
-        const data = await requestConsultingAdmin('admin_get_application_detail', { applicationId });
+        const data = suppliedData || await requestConsultingAdmin('admin_get_application_detail', { applicationId });
         if (requestId !== consultingApplicationRequest) return;
         const application = data.application;
         if (application?.applicationId !== applicationId || !Number.isSafeInteger(application.revision) || !data.contact || typeof data.contact !== 'object') throw new Error('신청 상세 형식이 올바르지 않습니다.');
@@ -139,7 +139,7 @@ async function openConsultingApplication(applicationId) {
         const summary = document.getElementById('consultingDetailSummary');
         summary.replaceChildren();
         const values = [
-            ['신청 ID', application.applicationId], ['학생', data.contact.studentName], ['전화번호', data.contact.phone],
+            ['학생', data.contact.studentName], ['전화번호', data.contact.phone],
             ['이메일', data.contact.email], ['입금자', data.contact.payerName],
             ['입금자 관계', consultingIntakeLabel(data.payerRelationship, { self: '본인', parent: '부모님', other: '기타' })],
             ['연락 방법', consultingIntakeLabel(data.contactMethod, { kakao: '카카오톡', sms: '문자', phone: '전화', email: '이메일', other: '기타' })],
@@ -148,7 +148,7 @@ async function openConsultingApplication(applicationId) {
             ['예정 금액', formatConsultingMoney(application.expectedAmount)],
             ['신청 상태', consultingIntakeLabel(application.applicationState, { PAYMENT_REVIEW: '입금 검수', INVITED: '초대 발급', REJECTED: '거절', CLAIMED: '가입 연결 완료' })],
             ['검수 상태', consultingIntakeLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', input_review: '신청 정보 확인 대기', verified: '승인', rejected: '거절' })],
-            ['수정 버전', application.revision], ['중복 가능성', application.duplicateSuspected ? '확인 필요' : '없음'],
+            ['중복 가능성', application.duplicateSuspected ? '확인 필요' : '없음'],
             ['신청 정보 확인', consultingInputNeedsReview(application) ? '보완·확인 필요' : '보완 대기 없음']
         ];
         if (data.payerRelationshipDetail) values.push(['입금자 관계 기타 내용', data.payerRelationshipDetail]);
@@ -210,6 +210,7 @@ function closeConsultingDetail(force = false) {
 }
 
 function resetConsultingIntake() {
+    setConsultingIntakeBusy(false);
     ++consultingPaymentReviewRequest;
     closeConsultingDetail(true);
     showConsultingReviewMessage('메뉴를 열면 입금 확인 대기 건을 불러옵니다.');
@@ -229,15 +230,21 @@ async function runConsultingMutation(type, data, successMessage, reopen = false)
         if (type === 'admin_review_application_input' && (result.applicationId !== data.applicationId || result.inputReviewRequired !== false || result.revision !== data.expectedRevision + 1)) throw new Error('신청 정보 저장 결과를 확인하지 못했습니다.');
     } catch (error) {
         if (requestId === consultingApplicationRequest) {
+            if (typeof invalidateConsultingWorkspaceStudent === 'function') invalidateConsultingWorkspaceStudent();
             closeConsultingDetail(true);
             const message = error?.status === 409 ? '신청 상태가 변경됐거나 결과 확인이 필요합니다.' : '처리를 완료했는지 확인하지 못했습니다.';
-            setConsultingActionStatus(`${message} 신청 ID로 다시 조회한 뒤 판단해주세요. 자동으로 재전송하지 않습니다.`, 'error');
+            setConsultingActionStatus(`${message} 학생 상세를 다시 조회한 뒤 판단해주세요. 자동으로 재전송하지 않습니다.`, 'error');
         }
         return null;
     } finally {
-        setConsultingIntakeBusy(false);
+        if (requestId === consultingApplicationRequest || !currentConsultingApplication) setConsultingIntakeBusy(false);
     }
     if (requestId !== consultingApplicationRequest) return result;
+    if (typeof consultingWorkspaceHasStudent === 'function' && consultingWorkspaceHasStudent()) {
+        await refreshConsultingWorkspaceStudent();
+        setConsultingActionStatus(successMessage, 'success');
+        return result;
+    }
     closeConsultingDetail();
     const refresh = loadConsultingPaymentReview();
     const refreshRequestId = consultingApplicationRequest;

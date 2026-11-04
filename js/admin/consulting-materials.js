@@ -105,9 +105,12 @@ function renderConsultingMaterialFiles(caseId, files) {
 }
 
 async function openConsultingMaterial(caseId) {
+    const requestId = ++consultingMaterialRequest;
+    closeConsultingMaterialDetail(false);
     setConsultingMaterialStatus('제출 자료를 불러오는 중입니다.', 'loading');
     try {
         const data = await requestConsultingAdmin('admin_get_v2_material_detail', { caseId });
+        if (requestId !== consultingMaterialRequest) return;
         currentConsultingMaterial = data;
         const summary = document.getElementById('consultingMaterialSummary');
         summary.innerHTML = '';
@@ -141,19 +144,26 @@ async function openConsultingMaterial(caseId) {
         document.getElementById('consultingMaterialDetail').hidden = false;
         setConsultingMaterialStatus('제출 자료를 불러왔습니다.', 'success');
     } catch (error) {
+        if (requestId !== consultingMaterialRequest) return;
         setConsultingMaterialStatus(error.message || '제출 자료를 불러오지 못했습니다.', 'error');
     }
 }
 
-function closeConsultingMaterialDetail() {
+function closeConsultingMaterialDetail(invalidate = true) {
+    if (invalidate) consultingMaterialRequest++;
     currentConsultingMaterial = null;
     document.getElementById('consultingMaterialDetail').hidden = true;
+    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingMaterialFiles', 'consultingVerifiedScores']) document.getElementById(id)?.replaceChildren();
+    for (const id of ['consultingMaterialReason', 'consultingMaterialDifferences', 'consultingSupplementText']) { const node = document.getElementById(id); if (node) node.value = ''; }
 }
+function resetConsultingMaterial() { closeConsultingMaterialDetail(); setConsultingMaterialStatus(''); }
 
 async function openConsultingMaterialFile(caseId, fileId) {
+    const requestId = consultingMaterialRequest;
     try {
         const response = await apiFetch(CONFIG.api.file, { method: 'POST', body: JSON.stringify({ type: 'consulting_get_score_download_url', data: { caseId, fileId } }) });
         const payload = await response.json();
+        if (requestId !== consultingMaterialRequest) return;
         const url = payload?.success === true ? payload.data?.downloadUrl : '';
         if (!response.ok || typeof url !== 'string' || !url.startsWith('https://')) throw new Error('파일을 열 수 없습니다.');
         const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -181,6 +191,7 @@ function readConsultingVerifiedScores() {
 }
 
 async function verifyConsultingMaterials() {
+    const requestId = consultingMaterialRequest;
     const current = currentConsultingMaterial?.case;
     const reason = document.getElementById('consultingMaterialReason').value.trim();
     if (!current || !reason || !confirm('자료 검수를 완료하고 학생에게 상담 가능 시간 입력 단계를 여시겠습니까?')) return;
@@ -188,10 +199,13 @@ async function verifyConsultingMaterials() {
     button.disabled = true;
     try {
         await requestConsultingAdmin('admin_verify_v2_materials', { caseId: current.caseId, result: document.getElementById('consultingMaterialResult').value, reason, differences: document.getElementById('consultingMaterialDifferences').value.split('\n').map(value => value.trim()).filter(Boolean), verifiedInput: readConsultingVerifiedScores() });
+        if (requestId !== consultingMaterialRequest) return;
         closeConsultingMaterialDetail();
-        await loadConsultingMaterialReview();
+        if (typeof consultingWorkspaceHasStudent === 'function' && consultingWorkspaceHasStudent()) await refreshConsultingWorkspaceStudent();
+        else await loadConsultingMaterialReview();
         setConsultingMaterialStatus('자료 검수를 완료했습니다.', 'success');
     } catch (error) {
+        if (requestId !== consultingMaterialRequest) return;
         setConsultingMaterialStatus(error.message || '자료 검수를 완료하지 못했습니다.', 'error');
     } finally {
         button.disabled = false;
@@ -199,6 +213,7 @@ async function verifyConsultingMaterials() {
 }
 
 async function requestConsultingSupplement() {
+    const requestId = consultingMaterialRequest;
     const current = currentConsultingMaterial?.case;
     const reasonText = document.getElementById('consultingSupplementText').value.trim();
     if (!current || !reasonText || !confirm('학생에게 보완 요청을 보내시겠습니까?')) return;
@@ -206,12 +221,18 @@ async function requestConsultingSupplement() {
     button.disabled = true;
     try {
         await requestConsultingAdmin('admin_request_v2_supplement', { caseId: current.caseId, reasonCode: document.getElementById('consultingSupplementReason').value, reasonText });
+        if (requestId !== consultingMaterialRequest) return;
         closeConsultingMaterialDetail();
-        await loadConsultingMaterialReview();
+        if (typeof consultingWorkspaceHasStudent === 'function' && consultingWorkspaceHasStudent()) await refreshConsultingWorkspaceStudent();
+        else await loadConsultingMaterialReview();
         setConsultingMaterialStatus('학생에게 자료 보완을 요청했습니다.', 'success');
     } catch (error) {
+        if (requestId !== consultingMaterialRequest) return;
         setConsultingMaterialStatus(error.message || '보완 요청을 처리하지 못했습니다.', 'error');
     } finally {
         button.disabled = false;
     }
 }
+
+window.addEventListener('pagehide', resetConsultingMaterial);
+window.addEventListener('studycrack:session-ended', resetConsultingMaterial);

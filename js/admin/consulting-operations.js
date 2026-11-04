@@ -104,6 +104,7 @@ async function recoverConsultingOperation(kind) {
 function openConsultingOperationWorkspace() {
     const item = consultingOperationsCurrent;
     if (consultingOperationsBusy || !item || !/^CASE_[a-f0-9-]{36}$/i.test(item.caseId)) return;
+    if (typeof openConsultingWorkspaceCase === 'function') { void openConsultingWorkspaceCase(item); return; }
     if (item.destination === 'serviceControl') { document.getElementById('consultingServiceCaseId').value = item.caseId; void loadConsultingServiceControl(); document.getElementById('consultingServicePanel').scrollIntoView({ block: 'start' }); return; }
     if (item.destination === 'schedule') { document.getElementById('consultingScheduleCaseId').value = item.caseId; document.getElementById('consultingScheduleCaseId').scrollIntoView({ block: 'center' }); return; }
     const path = item.destination === 'finalCall' ? 'final-call' : 'report';

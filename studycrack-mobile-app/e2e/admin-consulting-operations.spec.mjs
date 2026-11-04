@@ -1,11 +1,15 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-const source = path => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+async function source(page, path) { const response = await page.request.get(`/${path}`); expect(response.ok(), `Preview asset is required: ${path}`).toBe(true); return response.text(); }
 const caseId = 'CASE_123e4567-e89b-12d3-a456-426614174000';
 async function prepare(page, { empty = false, report = false } = {}) {
     await page.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html><body></body></html>' })); await page.goto('http://localhost');
-    await page.setContent((await source('admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, ''));
-    for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(file) });
+    await page.setContent((await source(page, 'admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, ''));
+    await page.evaluate(() => {
+        const service = document.getElementById('consultingServicePanel'), operations = document.getElementById('consultingOperationsPanel');
+        document.getElementById('section-consulting').replaceChildren(service, operations);
+        document.getElementById('consultingServiceCaseId').closest('div[hidden]').hidden = false;
+    });
+    for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(page, file) });
     await page.evaluate(({ caseId, empty, report }) => {
         window.CONFIG = { api: { consulting: '/synthetic/consulting' } }; window.__calls = [];
         window.__detail = { caseId, reference: 'TASK#OUTBOX#EVT_synthetic001', snapshot: `sha256:${'a'.repeat(64)}`, label: '<img src=x onerror=alert(1)> 확인', status: 'open', destination: 'report', retryOutbox: { allowed: !report, reason: '동일 알림을 기존 식별자로 처리합니다.' }, retryReport: { allowed: report, reason: '원자료를 다시 검증합니다.' }, outbox: { attempts: 5, maxAttempts: 5, recoveryCount: 0 } };
@@ -19,7 +23,7 @@ async function prepare(page, { empty = false, report = false } = {}) {
         };
         window.loadConsultingPaymentReview = () => {}; window.loadConsultingMaterialReview = () => {};
     }, { caseId, empty, report });
-    for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-operations.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-operations.js']) await page.addScriptTag({ content: await source(page, file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click(); await expect(page.locator('#consultingOperationsStatus')).toContainText('현재 페이지');
 }
 async function detail(page) { await page.locator('#consultingOperationsBody').getByRole('button', { name: '내용 확인' }).click(); await expect(page.locator('#consultingOperationsDetail')).toBeVisible(); }
