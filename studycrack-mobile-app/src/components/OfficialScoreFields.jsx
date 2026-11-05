@@ -1,4 +1,4 @@
-import { INQUIRY_SUBJECTS } from '../constants/options.js';
+import { INQUIRY_SUBJECT_GROUPS, INQUIRY_SUBJECTS } from '../constants/options.js';
 
 function displayedScore(value) {
   return value === 0 || value === '0' ? '0' : String(value || '');
@@ -20,8 +20,15 @@ function DirectScoreInput({ error, field, hint, label, max, unit = '점', value 
 
 function InquiryOptions({ selected = '' }) {
   const saved = String(selected || '').trim();
-  const options = saved && !INQUIRY_SUBJECTS.includes(saved) ? [saved, ...INQUIRY_SUBJECTS] : INQUIRY_SUBJECTS;
-  return <><option value="">과목 선택</option>{options.map((subject) => <option value={subject} key={subject}>{subject}</option>)}</>;
+  return <>
+    <option value="">과목 선택</option>
+    {saved && !INQUIRY_SUBJECTS.includes(saved) ? <option value={saved}>{saved}</option> : null}
+    {INQUIRY_SUBJECT_GROUPS.map(([label, subjects]) => (
+      <optgroup key={label} label={label}>
+        {subjects.map(subject => <option key={subject} value={subject}>{subject}</option>)}
+      </optgroup>
+    ))}
+  </>;
 }
 
 export function OfficialSubjectPanel({ errors = {}, subject = {}, subjectKey, title }) {

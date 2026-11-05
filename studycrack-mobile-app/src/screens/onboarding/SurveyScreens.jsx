@@ -1,5 +1,5 @@
 import { CRACKY_SRC } from '../../constants/assets.js';
-import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS, INQUIRY_SUBJECTS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
+import { EXAM_OPTIONS, GRADE_STATUS_OPTIONS, INQUIRY_SUBJECT_GROUPS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
 import { OnboardingScreenShell } from './OnboardingShell.jsx';
 import { lazy, Suspense } from 'react';
 const OfficialSubjectPanel = lazy(() => import('../../components/OfficialScoreFields.jsx'));
@@ -7,7 +7,6 @@ import { isOfficialScoreExam } from '../../features/analysis/score-model.js';
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const TRACKS = ['예체능', '인문', '자연'];
-const INQUIRY_GROUPS = [['사회탐구', INQUIRY_SUBJECTS.slice(0, 9)], ['과학탐구', INQUIRY_SUBJECTS.slice(9)]];
 
 function Required() {
   return <span className="ob-required">*</span>;
@@ -22,7 +21,7 @@ function SubjectTypeSelect({ field, value = '', options }) {
 }
 
 function InquirySelect({ field, value = '' }) {
-  return <select className="ob1-score-select" data-field={field} defaultValue={value}><option value="">과목 선택</option>{INQUIRY_GROUPS.map(([label, subjects]) => <optgroup label={label} key={label}>{subjects.map(subject => <option value={subject} key={subject}>{subject}</option>)}</optgroup>)}</select>;
+  return <select className="ob1-score-select" data-field={field} defaultValue={value}><option value="">과목 선택</option>{INQUIRY_SUBJECT_GROUPS.map(([label, subjects]) => <optgroup label={label} key={label}>{subjects.map(subject => <option value={subject} key={subject}>{subject}</option>)}</optgroup>)}</select>;
 }
 
 export function Ob1Screen(ctx) {
