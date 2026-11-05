@@ -1,7 +1,8 @@
 // js/survey.js      
 const DATA_FETCH_URL = CONFIG.api.analysis;   
 
-let examScores = {}; 
+let examScores = {};
+const scoreConversionSequence = { kor: 0, math: 0, inq1: 0, inq2: 0 };
 
 // apiFetch는 shared/api.js 의 단일 구현 사용
 
@@ -41,6 +42,32 @@ function updateExamEstimateNotice(month) {
     };
     notice.textContent = messages[month] || '';
     notice.hidden = !messages[month];
+}
+
+function updateScoreInputMode(month) {
+    const official = month === 'csat';
+    const guide = document.getElementById('scoreInputGuide');
+    if (guide) guide.textContent = official
+        ? '수능 성적표의 선택과목·표준점수·백분위·등급을 그대로 입력해 주세요.'
+        : '원점수를 입력하면 표준점수·백분위·등급이 자동 계산됩니다.';
+    for (const prefix of ['kor', 'math', 'inq1', 'inq2']) {
+        scoreConversionSequence[prefix] += 1;
+        for (const [suffix, max] of [['Std', 200], ['Pct', 100], ['Grd', 9]]) {
+            const input = document.getElementById(`${prefix}${suffix}`);
+            if (!input) continue;
+            input.readOnly = !official;
+            input.classList.toggle('readonly-input', !official);
+            input.min = suffix === 'Grd' ? '1' : '0';
+            input.max = String(max);
+            input.step = '1';
+            input.placeholder = official ? '성적표 값' : '';
+            input.setAttribute('aria-label', `${{ kor: '국어', math: '수학', inq1: '탐구1', inq2: '탐구2' }[prefix]} ${{ Std: '표준점수', Pct: '백분위', Grd: '등급' }[suffix]}`);
+        }
+    }
+    for (const id of ['korCommon', 'korElective', 'mathCommon', 'mathElective', 'inq1Raw', 'inq2Raw']) {
+        const input = document.getElementById(id);
+        if (input) { input.disabled = official; input.placeholder = official ? '해당 없음' : '입력'; }
+    }
 }
 
 function updateInquiryAvailabilityForExam(month) {
@@ -226,6 +253,8 @@ function applyRequestedExamSelection() {
 // ============================================================
 async function requestScoreConversion(type) {
     const month = document.getElementById('examSelect').value;
+    if (month === 'csat') return;
+    const sequence = ++scoreConversionSequence[type];
     let subjectKey = type;
     let scoreVal = 0;
     let optVal = "";
@@ -320,7 +349,8 @@ async function requestScoreConversion(type) {
             })
         });
 
-        const data = await response.json(); 
+        const data = await response.json();
+        if (scoreConversionSequence[type] !== sequence || document.getElementById('examSelect').value !== month) return;
         
         if (data.error || (!data.std && !data.pct && !data.grd)) {
             alert(data.error || "입력하신 원점수에 해당하는 데이터가 없습니다.\n(선택과목을 먼저 지정했는지 확인해주세요)");
@@ -337,6 +367,7 @@ async function requestScoreConversion(type) {
         if (data.grd && grdEl) grdEl.value = data.grd;
 
     } catch (e) {
+        if (scoreConversionSequence[type] !== sequence || document.getElementById('examSelect').value !== month) return;
         if (e.message === "Auth expired") return;
         // 월별 모의고사 데이터 미준비 등 서버측 명시 사유는 그대로 노출하고 3월로 복귀.
         const msg = e.message || "";
@@ -487,7 +518,7 @@ function fillQualitativeForm(qual) {
     
     for (const [id, val] of Object.entries(ids)) {
         const el = document.getElementById(id);
-        if (el) el.value = val || '';
+        if (el) el.value = val ?? '';
     }
     
     // 검정고시 체크박스 처리
@@ -568,11 +599,15 @@ function loadExamData() {
     const month = document.getElementById('examSelect').value;
     const d = examScores[month] || {};
     updateExamEstimateNotice(month);
+    updateScoreInputMode(month);
     
     const setVal = (id, val) => { 
         const el = document.getElementById(id); 
         if(el) {
-            el.value = val || ''; 
+            const value = val ?? '';
+            const key = text => String(text).normalize('NFKC').replace(/[\s·ㆍ・]/g, '').toLowerCase().replace(/ii$/, '2').replace(/i$/, '1');
+            const option = el.tagName === 'SELECT' ? Array.from(el.options).find(item => key(item.value) === key(value) || key(item.textContent) === key(value)) : null;
+            el.value = option ? option.value : value;
         }
     };
 
@@ -590,14 +625,20 @@ function loadExamData() {
     setVal('mathRaw', d.math?.raw); 
     setVal('mathStd', d.math?.std); setVal('mathPct', d.math?.pct); setVal('mathGrd', d.math?.grd);
     
-    setVal('engGrd', normalizeGradeValue(d.eng?.grd)); 
-    setVal('histGrd', normalizeGradeValue(d.hist?.grd));
+    setVal('engGrd', normalizeGradeValue(d.eng?.grd ?? d.eng?.grade));
+    setVal('histGrd', normalizeGradeValue(d.hist?.grd ?? d.hist?.grade ?? d.history?.grd ?? d.history?.grade));
     
     setVal('inq1Name', d.inq1?.name); setVal('inq1Raw', d.inq1?.raw); setVal('inq1Std', d.inq1?.std); setVal('inq1Pct', d.inq1?.pct); setVal('inq1Grd', d.inq1?.grd);
     setVal('inq2Name', d.inq2?.name); setVal('inq2Raw', d.inq2?.raw); setVal('inq2Std', d.inq2?.std); setVal('inq2Pct', d.inq2?.pct); setVal('inq2Grd', d.inq2?.grd);
     
     setVal('foreignName', d.foreign?.name); setVal('foreignGrd', d.foreign?.grd);
     updateInquiryAvailabilityForExam(month);
+    if (month === 'csat') {
+        for (const id of ['korCommon', 'korElective', 'korRaw', 'mathCommon', 'mathElective', 'mathRaw', 'inq1Raw', 'inq2Raw']) {
+            const input = document.getElementById(id);
+            if (input) input.value = '';
+        }
+    }
 
 }
 
@@ -629,7 +670,7 @@ async function saveQuantitative() {
         return;
     }
 
-    const currentData = {
+    let currentData = {
         kor: { opt: korOpt, common: getVal('korCommon'), elective: getVal('korElective'), raw: getVal('korRaw'), std: getVal('korStd'), pct: getVal('korPct'), grd: getVal('korGrd') },
         math: { opt: mathOpt, common: getVal('mathCommon'), elective: getVal('mathElective'), raw: getVal('mathRaw'), std: getVal('mathStd'), pct: getVal('mathPct'), grd: getVal('mathGrd') },
         eng: { grd: engGrd }, 
@@ -639,16 +680,34 @@ async function saveQuantitative() {
         foreign: { name: getVal('foreignName'), grd: getVal('foreignGrd') }
     };
     
-    examScores[month] = currentData;
+    if (month === 'csat') {
+        const numeric = (value, min, max) => /^\d{1,3}$/.test(String(value).trim()) && Number(value) >= min && Number(value) <= max;
+        if (!['화작', '언매'].includes(korOpt) || !['확통', '미적', '기하'].includes(mathOpt) || !inq1Name || !inq2Name || inq1Name === inq2Name) {
+            alert('국어·수학 선택과목과 서로 다른 탐구 두 과목을 선택해 주세요.');
+            return;
+        }
+        const official = { scoreBasis: 'official', eng: { grd: Number(engGrd) }, hist: { grd: Number(histGrd) }, foreign: currentData.foreign };
+        for (const [key, label] of [['kor', '국어'], ['math', '수학'], ['inq1', '탐구1'], ['inq2', '탐구2']]) {
+            const item = currentData[key];
+            if (!numeric(item.std, 0, 200) || !numeric(item.pct, 0, 100) || !numeric(item.grd, 1, 9)) {
+                alert(`${label} 성적표의 표준점수·백분위·등급을 확인해 주세요.`);
+                return;
+            }
+            official[key] = { [key === 'kor' || key === 'math' ? 'opt' : 'name']: item.opt || item.name, std: Number(item.std), pct: Number(item.pct), grd: Number(item.grd) };
+        }
+        currentData = official;
+    }
+    const nextExamScores = { ...examScores, [month]: currentData };
 
     try {
         const response = await apiFetch(USER_API_URL, {
             method: 'POST',
-            body: JSON.stringify({ type: 'update_quan', data: examScores })
+            body: JSON.stringify({ type: 'update_quan', data: nextExamScores })
         });
         
         // 💡 [해결] 응답 성공 여부를 확실히 체크
         if (!response.ok) throw new Error("서버 응답 오류");
+        examScores = nextExamScores;
         
         window.SCTrack?.event('score_input_complete');
         // 튜토리얼 여부에 따라 알림 메시지와 이동 경로 분기

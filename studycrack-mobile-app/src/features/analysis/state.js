@@ -30,6 +30,8 @@ export function createAnalysisInitialState() {
       universityCatalogError: '',
       universityCatalogRetryTick: 0,
       universityRecommendations: [],
+      universityRecommendationDetails: [],
+      universityRecommendationSummary: null,
       universityRecommendationStatus: 'idle',
       universityRecommendationError: '',
       universityRecommendationRetryTick: 0,

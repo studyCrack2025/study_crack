@@ -1,3 +1,4 @@
+import { mapExamDataToScorePatch, scoreChoiceLabel } from '../src/features/analysis/score-model.js';
 import assert from 'node:assert/strict';
 import { convertExamScores } from '../src/features/analysis/api.js';
 
@@ -45,4 +46,38 @@ const unavailable = await convertExamScores({
 assert.equal(unavailable.ok, false);
 assert.match(unavailable.error, /성적표 데이터/);
 
-console.log('score-conversion contracts passed');
+
+for (const [stored, displayed] of [['미적', '미적분'], ['확통', '확률과통계'], ['언매', '언어와매체'], ['화작', '화법과작문'],
+  ['물1', '물리학Ⅰ'], ['지구과학I', '지구과학Ⅰ'], ['화학2', '화학Ⅱ'], ['사회문화', '사회·문화']]) assert.equal(scoreChoiceLabel(stored), displayed);
+const restored = mapExamDataToScorePatch({ kor: { raw: 24, opt: '언매', common: 0, elective: 24 }, math: { raw: 26, opt: '미적', common: 0, elective: 26 },
+  eng: { grade: 2 }, hist: { grade: 1 }, inq1: { raw: 0, name: '물1' }, inq2: { raw: 0, name: '화학2' } });
+assert.equal(restored.scoreEditState.korean.type, '언어와매체');
+assert.equal(restored.scoreEditState.math.type, '미적분');
+assert.equal(restored.scoreEditState.math.common, 0);
+assert.equal(restored.scoreEditState.inquiry1.score, 0);
+assert.equal(restored.scoreEditState.english, 2);
+assert.equal(restored.scoreEditState.history, 1);
+
+
+const official = {
+  kor: { opt: '언매', std: '132', pct: '94', grd: '2', raw: 78 },
+  math: { opt: '미적분', std: 135, pct: 96, grd: 1 },
+  inq1: { name: '물1', std: 40, pct: 0, grd: 9 }, inq2: { name: '화학Ⅱ', std: 65, pct: 90, grd: 2 },
+  eng: { grd: 2 }, hist: { grd: 1 }
+};
+let officialCalls = 0;
+const direct = await convertExamScores({ apiFetch: async () => { officialCalls++; throw new Error('no raw conversion for official scores'); }, examMode: 'csat', examData: official });
+assert.equal(direct.ok, true);
+assert.equal(officialCalls, 0);
+assert.deepEqual(direct.data.kor, { opt: '언어와매체', std: 132, pct: 94, grd: 2 });
+assert.equal(direct.data.inq1.pct, 0);
+assert.equal(direct.data.kor.raw, undefined);
+for (const invalid of [null, {}, { ...official, kor: { ...official.kor, std: '' } }, { ...official, inq2: { ...official.inq2, name: '물리학I' } }]) {
+  assert.equal((await convertExamScores({ examMode: 'csat', examData: invalid })).ok, false);
+}
+const officialPatch = mapExamDataToScorePatch(direct.data, { scores: { korean: 99, inquiry1: 45 } });
+assert.equal(officialPatch.scoreEditState.korean.std, 132);
+assert.equal(officialPatch.scoreEditState.inquiry1.pct, 0);
+assert.equal(officialPatch.scores.korean, undefined, 'missing raw never reuses a previous exam');
+assert.equal(officialPatch.scores.inquiry1, undefined);
+console.log('score-conversion contracts passed, including official score preservation without raw conversion');

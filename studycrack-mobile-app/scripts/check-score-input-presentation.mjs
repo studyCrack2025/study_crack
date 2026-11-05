@@ -136,6 +136,46 @@ for (const outcome of ['failure', 'throw', 'missing', 'conversion', 'stale']) {
   assert.equal(h.ctx.scoreEditOpen, true);
 }
 
+
+const officialDraft = () => ({
+  korean: { type: '언어와매체', std: '132', pct: '94', grd: '2' },
+  math: { type: '미적분', std: '135', pct: '96', grd: '1' }, english: '2', history: '1',
+  inquiry1: { subject: '물리학Ⅰ', std: '40', pct: '0', grd: '9' }, inquiry2: { subject: '화학Ⅱ', std: '65', pct: '90', grd: '2' }
+});
+for (const action of ['saveScoreEdit', 'saveScoreSubject']) {
+  const h = harness({ scoreExamType: '수능', scoreEditStep: 6, scoreEditState: officialDraft() });
+  h.ctx.user.quantitative.csat = { foreign: { name: '일본어', grd: 2 }, kor: { raw: 88, std: 100 } };
+  assert.equal(await h.handlers()[action](), true);
+  assert.equal(h.converted.length, 0, 'official scores never enter raw conversion');
+  assert.equal(h.writes.length, 1);
+  assert.equal(h.writes[0].csat.scoreBasis, 'official');
+  assert.deepEqual(h.writes[0].csat.foreign, { name: '일본어', grd: 2 }, 'optional saved subjects survive editing');
+  assert.deepEqual(h.writes[0].csat.kor, { opt: '언어와매체', std: 132, pct: 94, grd: 2 });
+  assert.equal(h.writes[0].csat.inq1.pct, 0);
+  assert.deepEqual(h.writes[0].jun, h.otherExam);
+}
+{
+  const h = harness({ scoreExamType: '수능', scoreEditStep: 1, scoreEditState: officialDraft() });
+  h.ctx.scoreEditState.korean.pct = '';
+  assert.equal(await h.handlers().saveScoreSubject(), false);
+  assert.ok(h.ctx.scoreEditErrors['v2e-korean-pct']);
+  assert.equal(h.writes.length, 0);
+  h.ctx.scoreEditState.korean.pct = '0';
+  assert.equal(await h.handlers().saveScoreSubject(), true);
+  h.ctx.scoreEditStep = 6;
+  h.ctx.scoreEditState.inquiry2.subject = '물리학Ⅰ';
+  assert.equal(await h.handlers().saveScoreSubject(), false);
+  assert.ok(h.ctx.scoreEditErrors['v2e-inq2-subject']);
+}
+{
+  const h = harness({ scoreExamType: '수능', scoreEditStep: 6, scoreEditState: officialDraft(), persistQuantitative: async () => ({ ok: false, error: '확인 필요' }) });
+  assert.equal(await h.handlers().saveScoreSubject(), false);
+  assert.equal(h.ctx.scoreEditOpen, true);
+  assert.equal(h.ctx.scoreEditState.inquiry1.pct, '0');
+  assert.equal(h.ctx.scoreEditSaveError, '확인 필요');
+  assert.equal(h.saved.length, 0);
+}
+
 const vite = await createServer({ appType: 'custom', logLevel: 'silent', root: fileURLToPath(new URL('..', import.meta.url)), server: { middlewareMode: true, hmr: false } });
 try {
   const { ScoreEditModal } = await vite.ssrLoadModule('/src/screens/profile/ScoreEditModal.jsx');
@@ -150,5 +190,10 @@ try {
   assert.match(render({ scoreExamKey: 'sep' }), /실제 성적표/);
   assert.doesNotMatch(render({ scoreExamKey: 'mar' }), /score-edit-estimate-notice/);
   assert.match(render({ scoreEditStep: 6, scoreEditSaveError: '저장에 실패했어요.' }), /score-save-error" role="alert"/);
+  const officialHtml = render({ scoreExamType: '수능', scoreEditState: officialDraft() });
+  assert.match(officialHtml, /v2e-korean-std/);
+  assert.match(officialHtml, /v2e-korean-pct/);
+  assert.match(officialHtml, /v2e-korean-grd/);
+  assert.doesNotMatch(officialHtml, /v2e-korean-common/);
   console.log('Score input presentation passed: six steps, zero/missing, bounds, inline errors, conversion, retries, duplicates and stale-account protection.');
 } finally { await vite.close(); }

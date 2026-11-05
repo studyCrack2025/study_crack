@@ -53,6 +53,11 @@ let tutorialData = { qual: {}, quan: {}, mbti: null, selectedUniv: null, selecte
 let isInterrupted = false;
 let tutorialCompleted = false;
 let mbtiDimSelections = [null, null, null, null];
+let recommendationInputRevision = 0;
+let tutorialRecommendationGeneration = 0;
+let tutorialRecommendationRequest = 0;
+let tutorialRecommendationPage = { key: '', cursor: null, exhausted: false, unrestricted: false };
+let pendingAcademicSave = Promise.resolve();
 
 const JUL_AVAILABLE_INQUIRY_CODES = new Set([
     '생윤', '윤사', '한지', '세지', '동사', '세사', '경제', '정법', '사문',
@@ -124,6 +129,7 @@ function buildAuthenticatedFetchOptions(options = {}) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
+    localStorage.removeItem('tut_selectedUnivs');
     // 인증 가드: 로그인하지 않은 사용자는 로그인 페이지로 이동
     if (!localStorage.getItem('userId')) {
         const refreshed = await tryRefreshToken();
@@ -174,11 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tutorialData.qual = data.qualitative;
                 if (data.qualitative.mbti) tutorialData.mbti = normalizeMbtiCode(data.qualitative.mbti);
             }
-            // 추천 대학 목록 DB 복원 (localStorage보다 DB 우선)
-            if (data.tut_selectedUnivs && Array.isArray(data.tut_selectedUnivs) && data.tut_selectedUnivs.length > 0) {
-                tutorialData.selectedUnivs = data.tut_selectedUnivs;
-                localStorage.setItem('tut_selectedUnivs', JSON.stringify(data.tut_selectedUnivs));
-            }
+            recommendationInputRevision = Number.isSafeInteger(data.recommendationInputRevision) ? data.recommendationInputRevision : 0;
         }
     } catch (e) {
         const parsed = parseInt(localStorage.getItem('tutorialStatus'), 10);
@@ -192,35 +194,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem('tutorialStatus', currentStepIdx);
         // MBTI 결과를 DB에 저장
         if (localStorage.getItem('userId')) {
-            apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
+            pendingAcademicSave = apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
                 if (result.success === true) window.SCTrack?.once('profile-saved', 'learning_profile_complete');
             }).catch(() => {});
-        }
-        // 추천 대학 목록 복원
-        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
-        if (savedUnivs) {
-            try { tutorialData.selectedUnivs = JSON.parse(savedUnivs); } catch(e) {}
         }
         simulateMbtiAnalysis();
         bindEvents();
         return;
-    }
-
-    // 추천 대학 목록 및 선택 대학 복원 (4단계 이상 재진입 시)
-    if (currentStepIdx >= 4) {
-        const savedUnivs = localStorage.getItem('tut_selectedUnivs');
-        if (savedUnivs) {
-            try {
-                tutorialData.selectedUnivs = JSON.parse(savedUnivs);
-                // 선택한 대학 복원 (qualitative에 저장된 tutorialUniv 기준)
-                if (tutorialData.qual?.tutorialUniv && tutorialData.selectedUnivs?.length > 0) {
-                    const tu = tutorialData.qual.tutorialUniv;
-                    const cards = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
-                    const match = cards.find(c => c.school === tu.univ && c.major === tu.major);
-                    tutorialData.selectedUniv = match || cards[0] || null;
-                }
-            } catch(e) {}
-        }
     }
 
     if (currentStepIdx > 0 && currentStepIdx < STEPS.length - 1) {
@@ -262,15 +242,10 @@ function bindEvents() {
         const opts = buildAuthenticatedFetchOptions({ method: 'POST', keepalive: true });
         // 1. step 저장
         fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_tutorial_status', data: { step: currentStepIdx } }) }).catch(() => {});
-        // 2. qual 저장 (현재 폼에서 재수집, 또는 마지막 저장 상태)
+        // 작성 중인 내용만 보존한다.
         const freshQual = _collectCurrentQual();
-        const qualToSave = freshQual || tutorialData.qual;
-        if (qualToSave && Object.keys(qualToSave).length > 0) {
-            fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_qual', data: qualToSave }) }).catch(() => {});
-        }
-        // 3. quan 저장 (마지막 변환 완료된 상태)
-        if (tutorialData.quan && Object.keys(tutorialData.quan).length > 0) {
-            fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_quan', data: tutorialData.quan }) }).catch(() => {});
+        if (freshQual && JSON.stringify(freshQual) !== JSON.stringify(tutorialData.qual)) {
+            fetch(CONFIG.api.user, { ...opts, body: JSON.stringify({ type: 'update_qual', data: freshQual }) }).catch(() => {});
         }
     };
 
@@ -559,17 +534,7 @@ async function _nextStepCore() {
         tutorialData.totalStdScore = [korConv.std, mathConv.std, inq1Conv.std, inq2Conv.std]
             .reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
 
-        const stream = tutorialData.qual.stream;
-        if (stream && tutorialData.totalStdScore > 0) {
-            fetchTutorialRecommendations(stream, tutorialData.quan[examMonth], tutorialData.totalStdScore, examMonth)
-                .then(selected => {
-                    if (selected && selected.length > 0) {
-                        tutorialData.selectedUnivs = selected;
-                        localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
-                        apiCall('update_tutorial_status', { selectedUnivs: selected }).catch(() => {});
-                    }
-                }).catch(e => console.error('[튜토리얼] 추천대학 백그라운드 선정 실패:', e));
-        }
+
     }
 
     if (currentStepIdx < STEPS.length - 1) {
@@ -656,7 +621,7 @@ function confirmMBTIDims() {
     }
     tutorialData.mbti = mbtiDimSelections.join('');
     // MBTI 결과를 DB에 저장 (재진입 시 복원용)
-    apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
+    pendingAcademicSave = apiCall('update_qual', { ...tutorialData.qual, mbti: tutorialData.mbti }).then((result) => {
         if (result.success === true) window.SCTrack?.once('profile-saved', 'learning_profile_complete');
     }).catch(() => {});
     simulateMbtiAnalysis();
@@ -745,83 +710,11 @@ const TUTORIAL_RECO_TARGET_COUNT = 3;
 const TUTORIAL_RECO_BASE_MIN = 100;
 const TUTORIAL_RECO_SIM_MIN = 125;
 
-function toFiniteNumber(value, fallback = null) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : fallback;
-}
-
 function normalizeRecommendExcludes(excludes) {
     if (!Array.isArray(excludes)) return [];
     return excludes
         .filter(u => u && u.univ && u.major)
         .map(u => ({ univ: u.univ, major: u.major }));
-}
-
-function deriveRecommendationScores(item, fallbackCurrentScore = 0) {
-    const currentScore = toFiniteNumber(item?.currentScore, toFiniteNumber(fallbackCurrentScore, 0));
-    let simScore = toFiniteNumber(item?.simScore, null);
-    if (simScore === null) {
-        const gain = toFiniteNumber(item?.gain, null);
-        if (gain !== null) simScore = currentScore + gain;
-    }
-    if (simScore === null) {
-        const passCut = toFiniteNumber(item?.passCut, null);
-        if (passCut !== null) simScore = Math.max(currentScore, passCut);
-    }
-    if (simScore === null) simScore = currentScore;
-    return { currentScore, simScore };
-}
-
-function rankTutorialRecommendations(candidates, fallbackCurrentScore = 0, limit = TUTORIAL_RECO_TARGET_COUNT) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return [];
-
-    const scored = candidates
-        .filter(item => item && item.school && item.major)
-        .map((item, idx) => {
-            const { currentScore, simScore } = deriveRecommendationScores(item, fallbackCurrentScore);
-            const meetsBase = currentScore >= TUTORIAL_RECO_BASE_MIN;
-            const meetsBoost = simScore >= TUTORIAL_RECO_SIM_MIN;
-            const priority = meetsBase && meetsBoost ? 0 : meetsBoost ? 1 : meetsBase ? 2 : 3;
-            const gain = Math.max(0, simScore - currentScore);
-            return { ...item, __priority: priority, __simScore: simScore, __currentScore: currentScore, __gain: gain, __idx: idx };
-        });
-
-    scored.sort((a, b) =>
-        a.__priority - b.__priority ||
-        b.__simScore - a.__simScore ||
-        b.__currentScore - a.__currentScore ||
-        b.__gain - a.__gain ||
-        String(a.school || '').localeCompare(String(b.school || '')) ||
-        String(a.major || '').localeCompare(String(b.major || '')) ||
-        a.__idx - b.__idx
-    );
-
-    const picked = [];
-    const seen = new Set();
-    for (const row of scored) {
-        const key = `${row.school}||${row.major}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const { __priority, __simScore, __currentScore, __gain, __idx, ...clean } = row;
-        if (!Number.isFinite(Number(clean.currentScore))) clean.currentScore = Math.round(__currentScore);
-        if (!Number.isFinite(Number(clean.simScore))) clean.simScore = Math.round(__simScore);
-        picked.push(clean);
-        if (picked.length >= limit) break;
-    }
-    return picked;
-}
-
-function countPreferredRecommendations(candidates, fallbackCurrentScore = 0) {
-    if (!Array.isArray(candidates) || candidates.length === 0) return 0;
-    return candidates.reduce((count, item) => {
-        const { currentScore, simScore } = deriveRecommendationScores(item, fallbackCurrentScore);
-        return count + ((currentScore >= TUTORIAL_RECO_BASE_MIN && simScore >= TUTORIAL_RECO_SIM_MIN) ? 1 : 0);
-    }, 0);
-}
-
-function logRecommendationReason(stage, reasonCode, detail = {}) {
-    // Intentionally no-op in runtime to keep end-user console clean.
-    return;
 }
 
 function buildTutorialRecommendationPayload(stream, mar, totalStdScore, examMode, boostedRawScores, options = {}) {
@@ -855,191 +748,37 @@ function buildTutorialRecommendationPayload(stream, mar, totalStdScore, examMode
 }
 
 async function requestTutorialRecommendations(payload) {
-    try {
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
-            console.error('[튜토리얼] get_tutorial_recommendations 실패:', res.status);
-            return null;
-        }
-        const data = await res.json();
-        return Array.isArray(data.selected) ? data.selected : [];
-    } catch (e) {
-        console.error('[튜토리얼] get_tutorial_recommendations 에러:', e);
-        return null;
+    const res = await tutorialAnalysisFetch({ method: 'POST', body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) {
+        const error = new Error(typeof data.error === 'string' ? data.error : '추천을 불러오지 못했습니다. 다시 시도해 주세요.');
+        error.code = data.code;
+        throw error;
     }
+    if (!Array.isArray(data.selected) || data.selected.length > 3 || data.selected.some(item =>
+        typeof item?.school !== 'string' || !item.school.trim() || typeof item?.major !== 'string' || !item.major.trim()
+        || !Number.isFinite(item.currentScore) || item.currentScore < 0 || item.currentScore > 250
+        || !Number.isFinite(item.simScore) || item.simScore < item.currentScore || item.simScore > 250)) {
+        throw new Error('추천 응답을 확인하지 못했습니다. 다시 시도해 주세요.');
+    }
+    return data;
 }
 
 async function fetchTutorialRecommendations(stream, mar, totalStdScore, examMonth, boostedRawScores, extraOptions = {}) {
-    if (!localStorage.getItem('userId') || !stream || !mar) return null;
-
-    const requestedExamMode = examMonth || 'mar';
-    const fallbackCurrentScore = toFiniteNumber(extraOptions.fallbackCurrentScore, toFiniteNumber(totalStdScore, 0));
-    const targetCount = TUTORIAL_RECO_TARGET_COUNT;
-    const selectedUniv = (extraOptions.selectedUniv && extraOptions.selectedUniv.univ)
-        ? { univ: extraOptions.selectedUniv.univ, major: extraOptions.selectedUniv.major }
-        : null;
-    const excludeUnivs = normalizeRecommendExcludes(extraOptions.excludeUnivs);
-    const candidatePool = [];
-
-    const attempts = [
-        {
-            stage: 'strict',
-            examMode: requestedExamMode,
-            options: {
-                selectedUniv,
-                excludeUnivs,
-                minCurrentScore: TUTORIAL_RECO_BASE_MIN,
-                minSimScore: TUTORIAL_RECO_SIM_MIN
-            }
-        },
-        {
-            stage: 'expand_excludes',
-            examMode: requestedExamMode,
-            options: {
-                selectedUniv,
-                excludeUnivs: [],
-                minCurrentScore: TUTORIAL_RECO_BASE_MIN,
-                minSimScore: TUTORIAL_RECO_SIM_MIN
-            }
-        },
-        {
-            stage: 'expand_difficulty',
-            examMode: requestedExamMode,
-            options: {
-                selectedUniv: null,
-                excludeUnivs: [],
-                minCurrentScore: TUTORIAL_RECO_BASE_MIN - 5,
-                minSimScore: TUTORIAL_RECO_SIM_MIN - 5
-            }
-        }
-    ];
-
-    // 월별 학평/모평 모드는 데이터 미준비·매핑 누락 시를 대비해 mar 폴백 시도.
-    const isLearningMonthMode = (requestedExamMode === 'may' || requestedExamMode === 'jun' || requestedExamMode === 'jul' || requestedExamMode === 'sep');
-    if (isLearningMonthMode) {
-        attempts.push({
-            stage: 'fallback_exam_month_strict',
-            examMode: 'mar',
-            options: {
-                selectedUniv,
-                excludeUnivs: [],
-                minCurrentScore: TUTORIAL_RECO_BASE_MIN,
-                minSimScore: TUTORIAL_RECO_SIM_MIN
-            }
-        });
-        attempts.push({
-            stage: 'fallback_exam_month_relaxed',
-            examMode: 'mar',
-            options: {
-                selectedUniv: null,
-                excludeUnivs: [],
-                minCurrentScore: TUTORIAL_RECO_BASE_MIN - 5,
-                minSimScore: TUTORIAL_RECO_SIM_MIN - 5
-            }
-        });
-    }
-
-    attempts.push({
-        stage: 'deterministic_top3',
-        examMode: isLearningMonthMode ? 'mar' : requestedExamMode,
-        options: {
-            selectedUniv: null,
-            excludeUnivs: []
-        }
+    if (!localStorage.getItem('userId') || !stream || !mar) return [];
+    const payload = buildTutorialRecommendationPayload(stream, mar, totalStdScore, examMonth, boostedRawScores, {
+        ...extraOptions,
+        minCurrentScore: extraOptions.minCurrentScore ?? TUTORIAL_RECO_BASE_MIN,
+        minSimScore: extraOptions.minSimScore ?? TUTORIAL_RECO_SIM_MIN
     });
-
-    for (const attempt of attempts) {
-        const attemptScores = tutorialData.quan?.[attempt.examMode] || mar;
-        if (!attemptScores) {
-            logRecommendationReason(attempt.stage, 'missing_score_payload', { examMode: attempt.examMode });
-            continue;
-        }
-        const payload = buildTutorialRecommendationPayload(
-            stream,
-            attemptScores,
-            totalStdScore,
-            attempt.examMode,
-            boostedRawScores,
-            attempt.options
-        );
-        const selected = await requestTutorialRecommendations(payload);
-        if (selected === null) {
-            logRecommendationReason(attempt.stage, 'api_error', { examMode: attempt.examMode });
-            continue;
-        }
-
-        const ranked = rankTutorialRecommendations(selected, fallbackCurrentScore, targetCount);
-        if (ranked.length === 0) {
-            logRecommendationReason(attempt.stage, 'empty_candidates', { examMode: attempt.examMode });
-            continue;
-        }
-
-        candidatePool.push(...ranked);
-        const mergedTop = rankTutorialRecommendations(candidatePool, fallbackCurrentScore, targetCount);
-        const preferredCount = countPreferredRecommendations(mergedTop, fallbackCurrentScore);
-
-        if (preferredCount >= targetCount) {
-            logRecommendationReason(attempt.stage, 'strict_target_met', {
-                examMode: attempt.examMode,
-                totalCount: mergedTop.length,
-                preferredCount
-            });
-            return mergedTop;
-        }
-
-        logRecommendationReason(attempt.stage, 'partial_result', {
-            examMode: attempt.examMode,
-            totalCount: mergedTop.length,
-            preferredCount
-        });
-    }
-
-    let finalTop = rankTutorialRecommendations(candidatePool, fallbackCurrentScore, targetCount);
-    if (finalTop.length < targetCount && Array.isArray(tutorialData.selectedUnivs) && tutorialData.selectedUnivs.length > 0) {
-        finalTop = rankTutorialRecommendations(
-            [...finalTop, ...tutorialData.selectedUnivs],
-            fallbackCurrentScore,
-            targetCount
-        );
-        if (finalTop.length > 0) {
-            logRecommendationReason('final', 'used_cached_candidates', { totalCount: finalTop.length });
-        }
-    }
-
-    if (finalTop.length > 0) {
-        logRecommendationReason('final', 'deterministic_fill', {
-            totalCount: finalTop.length,
-            preferredCount: countPreferredRecommendations(finalTop, fallbackCurrentScore)
-        });
-        return finalTop;
-    }
-
-    logRecommendationReason('final', 'no_candidates_left');
-    return null;
+    const result = await requestTutorialRecommendations(payload);
+    return result.selected;
 }
 
 function buildUserScoresForAnalysis(mar) {
-    const mathOpt = (mar.math?.opt || '').replace(/\s/g, '');
-    const inq1Name = mar.inq1?.name || '';
-    const inq2Name = mar.inq2?.name || '';
-    const sciSubjects = ['물리학1','물리학2','화학1','화학2','생명과학1','생명과학2','지구과학1','지구과학2'];
-    const hasSci = [inq1Name, inq2Name].some(n => sciSubjects.some(s => n.replace(/\s/g, '').includes(s)));
-    const isMijet = mathOpt.includes('미적분') || mathOpt.includes('기하');
-    const restriction = [];
-    if (isMijet) restriction.push('미적기하 필수');
-    if (hasSci) restriction.push('과탐 필수');
-    if (restriction.length === 0) restriction.push('자유선택');
-    return {
-        kor: { std: parseFloat(mar.kor?.std) || 0, pct: parseFloat(mar.kor?.pct) || 0, grd: parseInt(mar.kor?.grd) || 9, opt: mar.kor?.opt || '', name: '국어', raw: parseInt(mar.kor?.raw) || 0, common: parseInt(mar.kor?.common) || 0, elective: parseInt(mar.kor?.elective) || 0 },
-        math: { std: parseFloat(mar.math?.std) || 0, pct: parseFloat(mar.math?.pct) || 0, grd: parseInt(mar.math?.grd) || 9, opt: mar.math?.opt || '', name: '수학', raw: parseInt(mar.math?.raw) || 0, common: parseInt(mar.math?.common) || 0, elective: parseInt(mar.math?.elective) || 0 },
-        eng: { grd: mar.eng?.grd || 9 },
-        inq1: { std: parseFloat(mar.inq1?.std) || 0, pct: parseFloat(mar.inq1?.pct) || 0, grd: parseInt(mar.inq1?.grd) || 9, name: inq1Name, raw: parseInt(mar.inq1?.raw) || 0 },
-        inq2: { std: parseFloat(mar.inq2?.std) || 0, pct: parseFloat(mar.inq2?.pct) || 0, grd: parseInt(mar.inq2?.grd) || 9, name: inq2Name, raw: parseInt(mar.inq2?.raw) || 0 },
-        restriction
-    };
+    const scores = { ...mar };
+    delete scores.restriction;
+    return scores;
 }
 
 async function tutorialAnalysisFetch(options = {}) {
@@ -1065,13 +804,13 @@ function buildUnivCards(selectedUnivs, studentScore) {
     if (selectedUnivs.length > 0 && 'currentScore' in selectedUnivs[0]) {
         const PASS_CUT = 100, TOP70_CUT = 150, MAX_SCORE = 250;
         return selectedUnivs.map(u => {
-            const gain = Math.max(0, Math.round(u.simScore - u.currentScore));
+            const gain = Math.max(0, Number((u.simScore - u.currentScore).toFixed(1)));
             return {
                 school: u.school, major: u.major,
-                currentScore: Math.round(u.currentScore),
+                currentScore: Number(u.currentScore.toFixed(1)),
                 passCut: PASS_CUT, top70Cut: TOP70_CUT, maxScore: MAX_SCORE,
-                simScore: Math.round(Math.min(u.simScore, MAX_SCORE)),
-                gain,
+                simScore: Number(Math.min(u.simScore, MAX_SCORE).toFixed(1)),
+                gain, simulation: u.simulation,
                 subjectAlloc: defaultAlloc, top2Subject: '국어', top2Pct: 28,
                 top2NeedPts: Math.max(2, Math.round(Math.abs(PASS_CUT - u.currentScore) * 0.3) + 1)
             };
@@ -1096,101 +835,77 @@ function buildUnivCards(selectedUnivs, studentScore) {
     });
 }
 
-function getMaxUiDiffFromSimData(simData) {
-    if (!simData || typeof simData !== 'object') return 0;
-    let max = 0;
-    ['kor', 'math', 'inq1', 'inq2'].forEach((key) => {
-        const uiDiff = Number(simData[key]?.uiDiff || 0);
-        if (Number.isFinite(uiDiff) && uiDiff > max) max = uiDiff;
-    });
-    return max;
-}
-
-async function alignTutorialCardSimScores(univCards) {
-    if (!Array.isArray(univCards) || univCards.length === 0) return univCards;
-
-    const examMonth = tutorialData.examMonth || 'mar';
-    const monthScores = tutorialData.quan?.[examMonth];
-    if (!monthScores) return univCards;
-
-    const targetUnivs = univCards
-        .filter(u => u && u.school && u.major)
-        .map(u => ({ univ: u.school, major: u.major }));
-    if (targetUnivs.length === 0) return univCards;
-
-    try {
-        const res = await tutorialAnalysisFetch({
-            method: 'POST',
-            body: JSON.stringify({
-                type: 'simulate_score_rise',
-                isTutorial: true,
-                targetUnivs,
-                userScores: buildUserScoresForAnalysis(monthScores),
-                examMode: examMonth
-            })
-        });
-        if (!res.ok) return univCards;
-
-        const simList = await res.json();
-        if (!Array.isArray(simList)) return univCards;
-
-        const simByKey = new Map();
-        simList.forEach((item) => {
-            if (!item || !item.univ || !item.major) return;
-            simByKey.set(`${item.univ}||${item.major}`, item);
-        });
-
-        return univCards.map((card) => {
-            const simItem = simByKey.get(`${card.school}||${card.major}`);
-            if (!simItem || !Number.isFinite(Number(simItem.base_ui_score))) return card;
-
-            const currentScore = Math.round(Number(simItem.base_ui_score));
-            const maxUiDiff = getMaxUiDiffFromSimData(simItem.sim_data);
-            const simScore = Math.round(Math.min(card.maxScore || 250, currentScore + maxUiDiff));
-            const gain = Math.max(0, simScore - currentScore);
-            return { ...card, currentScore, simScore, gain };
-        });
-    } catch (e) {
-        console.error('[튜토리얼] 카드 시뮬레이션 정합화 실패:', e);
-        return univCards;
-    }
-}
-
 // ── 추천 대학 시뮬레이션 ──────────────────────────────────────────
-async function initUnivSim() {
+async function initUnivSim({ next = false, resetMinimum = false } = {}) {
     const list = document.getElementById('univCardList');
     if (!list) return;
-    list.innerHTML = '';
-
-    // P1: 데이터가 없으면 재요청 시도
-    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학 재탐색 중입니다…</div>';
-        try {
-            const stream = tutorialData.qual?.stream;
-            const examMonth = tutorialData.examMonth || 'mar';
-            const mar = tutorialData.quan?.[examMonth];
-            if (stream && tutorialData.totalStdScore > 0) {
-                const selected = await fetchTutorialRecommendations(stream, mar, tutorialData.totalStdScore, examMonth);
-                if (selected && selected.length > 0) {
-                    tutorialData.selectedUnivs = selected;
-                    localStorage.setItem('tut_selectedUnivs', JSON.stringify(selected));
-                    apiCall('update_tutorial_status', { selectedUnivs: selected }).catch(() => {});
-                }
-            }
-        } catch (e) {
-            console.error('[튜토리얼] 추천대학 재요청 실패:', e);
+    const request = ++tutorialRecommendationRequest;
+    tutorialData.selectedUniv = null;
+    const nextStepButton = document.getElementById('tutNextBtn');
+    if (nextStepButton) nextStepButton.disabled = true;
+    list.textContent = '현재 성적 기준으로 추천을 확인하고 있습니다…';
+    await pendingAcademicSave;
+    if (request !== tutorialRecommendationRequest || !list.isConnected) return;
+    const generation = tutorialRecommendationGeneration;
+    const revision = recommendationInputRevision;
+    const owner = localStorage.getItem('userId');
+    const month = tutorialData.examMonth || 'mar';
+    const scores = tutorialData.quan?.[month];
+    const key = JSON.stringify([owner, scores, tutorialData.qual?.stream, month, revision]);
+    if (tutorialRecommendationPage.key !== key) tutorialRecommendationPage = { key, cursor: null, exhausted: false, unrestricted: false };
+    if (resetMinimum) tutorialRecommendationPage = { key, cursor: null, exhausted: false, unrestricted: true };
+    const current = () => {
+        const active = request === tutorialRecommendationRequest && generation === tutorialRecommendationGeneration
+            && revision === recommendationInputRevision && owner === localStorage.getItem('userId') && list.isConnected;
+        if (!active && request === tutorialRecommendationRequest && list.isConnected) {
+            tutorialData.selectedUnivs = null;
+            list.textContent = '입력 정보가 변경되었습니다. 추천을 다시 확인해 주세요.';
+            const retry = document.createElement('button');
+            retry.className = 'tut-action-btn'; retry.textContent = '추천 다시 확인';
+            retry.onclick = () => initUnivSim();
+            list.appendChild(retry);
         }
-    }
-
-    if (!tutorialData.selectedUnivs || tutorialData.selectedUnivs.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748b;font-size:0.95rem;">추천 대학 재탐색 중입니다…<br>잠시 후 다시 시도해 주세요.</div><button class="tut-action-btn" style="margin:16px auto;display:block;" onclick="currentStepIdx=2;renderStep();">성적 입력으로 돌아가기</button>';
+        return active;
+    };
+    let result;
+    try {
+        const payload = buildTutorialRecommendationPayload(tutorialData.qual?.stream, scores, tutorialData.totalStdScore, month, null, {
+            minCurrentScore: tutorialRecommendationPage.unrestricted ? 0 : TUTORIAL_RECO_BASE_MIN,
+            minSimScore: tutorialRecommendationPage.unrestricted ? 0 : TUTORIAL_RECO_SIM_MIN
+        });
+        if (next && !tutorialRecommendationPage.exhausted && tutorialRecommendationPage.cursor) payload.cursor = tutorialRecommendationPage.cursor;
+        result = await requestTutorialRecommendations(payload);
+        if (!current()) return;
+        if (!result.snapshot) throw new Error('추천 자료를 새로 준비해야 합니다. 잠시 후 다시 시도해 주세요.');
+        const saved = await apiCall('update_tutorial_status', { selectedUnivs: result.selected, recommendationSnapshot: result.snapshot,
+            expectedRecommendationRevision: revision });
+        if (!current()) return;
+        if (saved.code === 'RECOMMENDATION_INPUT_CHANGED') throw new Error('성적 또는 희망 계열이 변경되었습니다. 페이지를 새로고침해 주세요.');
+        tutorialData.selectedUnivs = result.selected;
+        tutorialRecommendationPage.cursor = result.page?.nextCursor || null;
+        tutorialRecommendationPage.exhausted = result.page?.hasMore !== true;
+        result.saveFailed = saved.success !== true;
+    } catch (error) {
+        if (!current()) return;
+        tutorialData.selectedUnivs = null;
+        if (error.code === 'RECOMMENDATION_CURSOR_STALE') tutorialRecommendationPage.cursor = null;
+        list.textContent = error.message || '추천을 확인하지 못했습니다. 다시 시도해 주세요.';
+        const retry = document.createElement('button');
+        retry.className = 'tut-action-btn'; retry.textContent = '다시 시도';
+        retry.onclick = () => initUnivSim({ next });
+        list.appendChild(retry);
         return;
     }
-
-    const rawUnivsToRender = buildUnivCards(tutorialData.selectedUnivs, tutorialData.totalStdScore);
-    const univsToRender = await alignTutorialCardSimScores(rawUnivsToRender);
-
-    univsToRender.forEach((u) => {
+    if (!current()) return;
+    list.textContent = '';
+    const univsToRender = buildUnivCards(result.selected, tutorialData.totalStdScore);
+    const notice = document.createElement('p');
+    notice.setAttribute('role', 'status');
+    notice.textContent = result.saveFailed ? '추천은 확인했지만 저장하지 못했습니다. 다시 조회하면 저장을 재시도합니다.'
+        : !univsToRender.length ? '현재 조건에 맞는 남은 후보가 없습니다. 점수 제한을 직접 해제하거나 성적을 확인해 주세요.'
+        : tutorialRecommendationPage.exhausted ? `현재 조건에 맞는 마지막 후보 ${univsToRender.length}개입니다.` : '현재 성적과 선택과목을 기준으로 추천했습니다.';
+    list.appendChild(notice);
+    univsToRender.forEach((u, index) => {
         const card = document.createElement('div');
         card.className = 'univ-card';
 
@@ -1203,7 +918,7 @@ async function initUnivSim() {
         const passPct   = (u.passCut     / u.maxScore * 100).toFixed(1);
         const simPct    = (u.simScore    / u.maxScore * 100).toFixed(1);
 
-        const fillId = 'sbcFill_' + u.school.replace(/\s/g, '_');
+        const fillId = `sbcFill_${request}_${index}`;
 
         card.dataset.currentPct = currentPct;
         card.dataset.simPct = simPct;
@@ -1213,8 +928,8 @@ async function initUnivSim() {
         card.innerHTML = `
             <div class="univ-card-header">
                 <div>
-                    <div class="univ-card-title">${u.school}</div>
-                    <div class="univ-card-major">${u.major}</div>
+                    <div class="univ-card-title"></div>
+                    <div class="univ-card-major"></div>
                 </div>
                 <div class="univ-gap-badge ${badgeClass}">${badgeText}</div>
             </div>
@@ -1232,18 +947,34 @@ async function initUnivSim() {
             </div>
             <div class="univ-sim-badge" style="display:none">
                 <span class="sim-badge-icon">✨</span>
-                <span>1점 상승 시뮬레이션 <strong>+${u.gain}점</strong></span>
+                <span class="tutorial-simulation-evidence"></span>
             </div>`;
 
+        card.querySelector('.univ-card-title').textContent = u.school;
+        card.querySelector('.univ-card-major').textContent = u.major;
+        const sim = u.simulation;
+        const subject = new Map([['kor', '국어'], ['math', '수학'], ['inq1', '탐구1'], ['inq2', '탐구2']]).get(sim?.subject);
+        const valid = sim?.status === 'available' && subject && Number.isInteger(sim.rawIncrease) && sim.rawIncrease >= 1 && sim.rawIncrease <= 5;
+        card.querySelector('.tutorial-simulation-evidence').textContent = valid
+            ? `${sim.rawSource === 'percentile_estimate' || sim.combinationEstimated ? '추정 기준 · ' : ''}${subject} 원점수 +${sim.rawIncrease}점 → 표시 점수 +${u.gain}점`
+            : sim?.status === 'unavailable' ? '원점수 상승 자료 없음 · 현재 점수 기준 추천'
+                : sim?.status === 'at_maximum' ? '확인 가능한 원점수는 만점입니다.' : '원점수 상승 시뮬레이션 결과';
         card.onclick = () => selectUniv(card, u, fillId, simPct);
         list.appendChild(card);
     });
 
-    // 추천 대학 리스트가 생성되면 즉시 DB에 저장 (재진입 시 복원용)
-    if (univsToRender.length > 0) {
-        const univList = univsToRender.map(u => ({ univ: u.school, major: u.major }));
-        apiCall('update_tutorial_status', { tutorialUniv: univList }).catch(() => {});
+    const nextButton = document.createElement('button');
+    nextButton.type = 'button'; nextButton.className = 'tut-action-btn';
+    nextButton.textContent = tutorialRecommendationPage.exhausted ? '처음 추천 다시 보기' : '다른 후보 보기';
+    nextButton.onclick = () => initUnivSim({ next: !tutorialRecommendationPage.exhausted });
+    list.appendChild(nextButton);
+    if (!univsToRender.length && !tutorialRecommendationPage.unrestricted) {
+        const reset = document.createElement('button');
+        reset.type = 'button'; reset.className = 'tut-action-btn'; reset.textContent = '점수 제한 없이 다시 추천';
+        reset.onclick = () => initUnivSim({ resetMinimum: true });
+        list.appendChild(reset);
     }
+
 }
 
 function selectUniv(element, data, fillId, simPct) {
@@ -1292,9 +1023,13 @@ function selectUniv(element, data, fillId, simPct) {
 
     // 선택한 대학을 DB에 저장 (재진입 시 복원 + /analysis 1지망 설정용)
     const qualPayload = { ...tutorialData.qual, mbti: tutorialData.mbti, tutorialUniv: { univ: data.school, major: data.major } };
-    apiCall('update_qual', qualPayload).catch(() => {});
-
-    document.getElementById('tutNextBtn').style.display = 'block';
+    const nextButton = document.getElementById('tutNextBtn');
+    nextButton.style.display = 'block'; nextButton.disabled = true;
+    pendingAcademicSave = pendingAcademicSave.then(() => apiCall('update_qual', qualPayload)).then(result => {
+        if (tutorialData.selectedUniv !== data) return;
+        if (Number.isSafeInteger(result?.recommendationInputRevision)) nextButton.disabled = false;
+        else alert('선택한 대학을 저장하지 못했습니다. 대학을 다시 선택해 주세요.');
+    });
 }
 
 // ── Greedy 점수 분배 — 사양: docs/algorithms/tutorial-recommendation.md §3 ──
@@ -1467,7 +1202,7 @@ function getStrategyFutureSteps(mode, baseStream) {
 
 async function fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs) {
     const boostedRawScores = strategyResult?.boostedRawScores;
-    if (!boostedRawScores || !mar || !tutorialData.totalStdScore) return Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null;
+    if (!boostedRawScores || !mar || !tutorialData.totalStdScore) return [];
     const mode = strategyResult?.mode || 'normal_growth';
     const steps = getStrategyFutureSteps(mode, tutorialData.qual?.stream);
     const merged = [];
@@ -1491,8 +1226,8 @@ async function fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs)
             step.boosted ? boostedRawScores : null,
             {
                 selectedUniv: step.relaxed ? null : { univ: univ.school, major: univ.major },
-                excludeUnivs,
-                minCurrentScore: step.relaxed ? 0 : Number(univ.currentScore || 0),
+                excludeUnivs: [...excludeUnivs, ...merged.map(item => ({ univ: item.school, major: item.major }))],
+                minCurrentScore: Number(univ.currentScore || 0),
                 fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
             }
         );
@@ -1501,31 +1236,7 @@ async function fetchStrategyFutureUnivs(strategyResult, mar, univ, excludeUnivs)
         if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
     }
 
-    if (merged.length < TUTORIAL_RECO_TARGET_COUNT) {
-        for (const step of steps) {
-            if (!step.stream) continue;
-            const selected = await fetchTutorialRecommendations(
-                step.stream,
-                mar,
-                tutorialData.totalStdScore,
-                tutorialData.examMonth || 'mar',
-                step.boosted ? boostedRawScores : null,
-                {
-                    selectedUniv: null,
-                    excludeUnivs: [],
-                    minCurrentScore: 0,
-                    fallbackCurrentScore: Number(univ.currentScore || tutorialData.totalStdScore || 0)
-                }
-            );
-            for (const item of (selected || [])) {
-                addCandidate(item, step.label);
-                if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
-            }
-            if (merged.length >= TUTORIAL_RECO_TARGET_COUNT) break;
-        }
-    }
-
-    return merged.length > 0 ? merged.slice(0, TUTORIAL_RECO_TARGET_COUNT) : (Array.isArray(strategyResult?.futureUnivs) ? strategyResult.futureUnivs : null);
+    return merged.slice(0, TUTORIAL_RECO_TARGET_COUNT);
 }
 
 function getStrategyModeCopy(mode) {
@@ -1902,13 +1613,22 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
 }
 
 async function apiCall(type, data) {
+    const academic = type === 'update_qual' || type === 'update_quan';
+    if (academic) {
+        tutorialRecommendationGeneration++;
+        if (type === 'update_quan' || data?.stream !== tutorialData.qual?.stream) tutorialData.selectedUnivs = null;
+    }
     try {
         const response = await apiFetch(CONFIG.api.user, {
             method: 'POST',
             body: JSON.stringify({ type, data })
         });
-        return await response.json();
+        const result = await response.json();
+        if (academic && Number.isSafeInteger(result.recommendationInputRevision)) {
+            recommendationInputRevision = Math.max(recommendationInputRevision, result.recommendationInputRevision);
+        }
+        return result;
     } catch (e) {
-        return { success: false };
+        return { success: false, code: e?.code, status: e?.status };
     }
 }

@@ -82,8 +82,35 @@ const recommendation = await fetchUniversityRecommendations({
 assert.equal(recommendation.ok, true);
 assert.deepEqual(recommendation.data, ['연세대학교 정치외교학과']);
 assert.equal(request.type, 'get_tutorial_recommendations');
-assert.equal(request.stream, 'natural');
+assert.equal(request.stream, '');
 assert.equal(request.totalStdScore, 375);
 assert.deepEqual(request.excludeUnivs, [{ univ: '고려대학교', major: '경영학과', date: null }]);
+
+for (const savedStream of ['의치한약수', '자연/공학', '상경계열', '인문사회', '사범/교대', '간호/보건', '예체능', '기타', 'natural', 'humanities']) {
+  let payload;
+  await fetchUniversityRecommendations({
+    analysisApiUrl: '/analysis', savedStream, examData: { kor: { std: 120 } },
+    apiFetch: async (_url, options) => { payload = JSON.parse(options.body); return { ok: true, json: async () => ({ selected: [] }) }; }
+  });
+  assert.equal(payload.stream, savedStream, 'A saved preference must reach the service without collapsing its category.');
+}
+
+for (const throws of [false, true]) {
+  const result = await fetchUniversityRecommendations({
+    analysisApiUrl: '/analysis', savedStream: '확인필요', examData: { kor: { std: 120 } },
+    apiFetch: async () => {
+      if (throws) throw Object.assign(new Error('request rejected'), { status: 400, code: 'RECOMMENDATION_STREAM_INVALID' });
+      return { ok: false, status: 400, json: async () => ({ code: 'RECOMMENDATION_STREAM_INVALID' }) };
+    }
+  });
+  assert.equal(result.error, '희망 계열을 다시 확인해 주세요.');
+  assert.equal(result.code, 'RECOMMENDATION_STREAM_INVALID');
+}
+
+
+const { resolveAnalysisExamMode } = await import('../src/features/analysis/resource-model.js');
+const latestExamScores = { kor: { std: 120 }, math: { std: 120 } };
+assert.equal(resolveAnalysisExamMode({ user: { quantitative: { mar: latestExamScores, sep: latestExamScores, csat: latestExamScores } } }), 'csat');
+assert.equal(resolveAnalysisExamMode({ scoreExamKey: 'sep', user: { quantitative: { sep: latestExamScores, csat: latestExamScores } } }), 'sep');
 
 console.log('university-catalog contracts passed');

@@ -171,14 +171,15 @@ function updateScoreStateFromField({ alert, field, setScoreState, target, value 
     setScoreState((prev) => ({ ...prev, [subject]: normalizedValue }));
   }
   if (subject === 'korean' || subject === 'math') {
-    const normalizedKey = key === 'type' ? 'type' : key === 'common' ? 'common' : 'elective';
+    const normalizedKey = ['type', 'common', 'elective', 'std', 'pct', 'grd'].includes(key) ? key : null;
+    if (!normalizedKey) return;
     setScoreState((prev) => ({ ...prev, [subject]: { ...prev[subject], [normalizedKey]: normalizedValue } }));
   }
   if (subject === 'inq1' || subject === 'inq2') {
     const stateKey = subject === 'inq1' ? 'inquiry1' : 'inquiry2';
     setScoreState((prev) => ({
       ...prev,
-      [stateKey]: { ...prev[stateKey], [key === 'subject' ? 'subject' : 'score']: normalizedValue }
+      [stateKey]: { ...prev[stateKey], [key === 'subject' ? 'subject' : ['std', 'pct', 'grd'].includes(key) ? key : 'score']: normalizedValue }
     }));
   }
 }
@@ -270,10 +271,11 @@ export function createFormHandlers(ctx) {
       return { handled: true, field };
     }
     if (field?.startsWith('v2e-') && target.classList?.contains('score-direct-input')) {
-      const numeric = String(target.value || '').replace(/\D+/g, '').slice(0, 3);
+      const official = target.getAttribute('data-score-format') === 'official';
+      const numeric = official ? String(target.value || '') : String(target.value || '').replace(/\D+/g, '').slice(0, 3);
       if (target.value !== numeric) target.value = numeric;
       const max = Number(target.getAttribute('data-score-max') || 0);
-      target.setAttribute('aria-invalid', max && Number(numeric) > max ? 'true' : 'false');
+      target.setAttribute('aria-invalid', (official && !/^\d{1,3}$/.test(numeric)) || (max && Number(numeric) > max) ? 'true' : 'false');
       return { handled: true, field };
     }
     if (field === 'coachPlannerFiles') {

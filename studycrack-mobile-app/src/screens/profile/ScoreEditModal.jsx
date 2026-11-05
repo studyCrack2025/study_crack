@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Modal } from '../../components/Modal.jsx';
 import { INQUIRY_SUBJECTS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
+import { OfficialSubjectPanel } from '../../components/OfficialScoreFields.jsx';
+import { isOfficialScoreExam } from '../../features/analysis/score-model.js';
 
 const SCORE_STEPS = ['국어', '수학', '영어', '한국사', '탐구 1', '탐구 2'];
 
@@ -12,11 +14,11 @@ function FieldError({ field, error }) {
   return error ? <span className="score-field-error" id={`${field}-error`} role="alert">{error}</span> : null;
 }
 
-function DirectScoreInput({ error, field, label, max, value }) {
+function DirectScoreInput({ error, field, hint, label, max, unit = '점', value }) {
   return (
     <label className="score-direct-field">
-      <span className="score-field-line"><span>{label}</span><small>{max}점 만점</small></span>
-      <span className="score-direct-control"><input id={field} className="planner-input score-direct-input" data-field={field} data-score-max={max} defaultValue={displayedScore(value)} type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" autoComplete="off" placeholder="0" aria-label={label} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? `${field}-error` : undefined} /><em>점</em></span>
+      <span className="score-field-line"><span>{label}</span><small>{hint || `${max}점 만점`}</small></span>
+      <span className="score-direct-control"><input id={field} className="planner-input score-direct-input" data-field={field} data-score-max={max} defaultValue={displayedScore(value)} type="text" inputMode="numeric" pattern="[0-9]*" maxLength={max === 9 ? 1 : 3} autoComplete="off" placeholder={max === 9 ? '1' : '0'} aria-label={label} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? `${field}-error` : undefined} /><em>{unit}</em></span>
       <FieldError field={field} error={error} />
     </label>
   );
@@ -57,7 +59,12 @@ function InquirySubjectPanel({ errors, inquiry, scoreField, subjectField, title 
   );
 }
 
-function ScoreStepPanel({ errors, state, step }) {
+
+function ScoreStepPanel({ errors, official, state, step }) {
+  if (official && [1, 2, 5, 6].includes(step)) {
+    const [subjectKey, stateKey] = { 1: ['korean', 'korean'], 2: ['math', 'math'], 5: ['inq1', 'inquiry1'], 6: ['inq2', 'inquiry2'] }[step];
+    return <OfficialSubjectPanel title={SCORE_STEPS[step - 1]} subjectKey={subjectKey} subject={state[stateKey]} errors={errors} />;
+  }
   if (step === 1) return <RawSubjectPanel title="국어" selectField="v2e-korean-type" options={['화법과작문', '언어와매체']} commonField="v2e-korean-common" electiveField="v2e-korean-elective" commonMax={76} electiveMax={24} subject={state.korean || {}} errors={errors} />;
   if (step === 2) return <RawSubjectPanel title="수학" selectField="v2e-math-type" options={['확률과통계', '미적분', '기하']} commonField="v2e-math-common" electiveField="v2e-math-elective" commonMax={74} electiveMax={26} subject={state.math || {}} errors={errors} />;
   if (step === 3) return <GradeSubjectPanel title="영어" field="v2e-english" value={state.english} error={errors['v2e-english']} />;
@@ -83,7 +90,7 @@ export function ScoreEditModal({ scoreEditOpen = false, scoreEditState = {}, sco
     <Modal dismissAction="closeScoreEdit" ariaLabel="성적 수정" panelClass="score-edit-modal score-stepper-modal">
       <div className="score-onepage-head"><div><p className="sc-modal-padded-title">성적 입력</p><p className="sub">{scoreExamType || '시험 성적'}</p></div><button type="button" className="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
       <div className="score-stepper-progress"><span>{SCORE_STEPS[step - 1]} <b>{step} / {SCORE_STEPS.length}</b></span><div className="score-stepper-bar" role="progressbar" aria-label="성적 입력 단계" aria-valuemin={1} aria-valuemax={6} aria-valuenow={step}><i style={{ width: `${Math.round(step / SCORE_STEPS.length * 100)}%` }} /></div></div>
-      <div className="score-stepper-body" ref={bodyRef}>{scoreExamKey === 'sep' ? <p className="score-edit-estimate-notice" role="status">{SEPTEMBER_SCORE_ESTIMATE_NOTICE}</p> : null}<ScoreStepPanel key={step} state={scoreEditState} step={step} errors={scoreEditErrors} /></div>
+      <div className="score-stepper-body" ref={bodyRef}>{isOfficialScoreExam(scoreExamType || scoreExamKey) ? <p className="score-edit-estimate-notice" role="status">수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요.</p> : scoreExamKey === 'sep' ? <p className="score-edit-estimate-notice" role="status">{SEPTEMBER_SCORE_ESTIMATE_NOTICE}</p> : null}<ScoreStepPanel key={`${scoreExamType}-${step}`} state={scoreEditState} step={step} errors={scoreEditErrors} official={isOfficialScoreExam(scoreExamType || scoreExamKey)} /></div>
       <div className="score-stepper-actions">{scoreEditSaveError ? <p className="score-save-error" role="alert">{scoreEditSaveError}</p> : null}<div className="score-stepper-buttons"><button type="button" className="btn btn-secondary score-step-nav" data-action="scoreStepPrev" disabled={step === 1 || scoreSubjectSaving}>이전</button><button type="button" className="btn btn-primary score-step-save" data-action="saveScoreSubject" disabled={scoreSubjectSaving}>{primaryLabel}</button></div></div>
     </Modal>
   );
