@@ -72,6 +72,37 @@ async function expectContained(locator) {
   }))).toBe(true);
 }
 
+async function waitForCalendarForm(page) {
+  const form = page.getByRole('region', { name: '내 일정 추가', exact: true });
+  await expect(form).toBeVisible();
+  const reveal = page.locator('#calendar-event-form');
+  await expect(reveal).toHaveAttribute('data-open', 'true');
+  await expect.poll(() => reveal.evaluate(node => node.getAnimations().length), {
+    message: '일정 폼의 열림 효과가 끝나야 안쪽 입력란으로 이동합니다.'
+  }).toBe(0);
+  return form;
+}
+
+test('일정 폼의 느린 열림이 끝난 뒤 추가 정보에 입력할 수 있다', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setup(page);
+  await page.goto('/studycrack-mobile.html?screen=planner');
+  const reveal = page.locator('#calendar-event-form');
+  await reveal.evaluate(node => { node.style.transitionDuration = '1200ms'; });
+  await page.getByRole('button', { name: '+ 내 일정 추가', exact: true }).click();
+  await expect.poll(() => reveal.evaluate(node => node.getAnimations().length)).toBeGreaterThan(0);
+  const form = await waitForCalendarForm(page);
+  expect(await reveal.evaluate(node => node.getAnimations().length)).toBe(0);
+  expect(await page.locator('.calendar-form-reveal-inner').evaluate(node => node.scrollTop)).toBe(0);
+  await form.getByLabel('일정 제목', { exact: true }).fill('느린 열림 뒤의 일정');
+  await form.getByLabel('시작일', { exact: true }).fill('2026-10-01');
+  await form.locator('summary').click();
+  await expect(form.locator('summary')).toHaveAttribute('aria-expanded', 'true');
+  await form.getByLabel('메모', { exact: true }).fill('메모 입력 확인');
+  await expect(form.getByLabel('메모', { exact: true })).toHaveValue('메모 입력 확인');
+});
+
 for (const width of [320, 390, 430]) {
   test(`inline calendar entry, CRUD, drafts and native inputs (${width}px)`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 844 });
@@ -86,11 +117,13 @@ for (const width of [320, 390, 430]) {
     await expect(calendar.getByLabel('선택한 날의 일정')).toContainText('개인 면접 준비');
     await expect(page.locator('.calendar-cell[data-planner-date="2026-10-02"]')).toHaveAttribute('aria-pressed', 'true');
     await calendar.getByRole('button', { name: '+ 내 일정 추가', exact: true }).click();
-    const form = page.getByRole('region', { name: '내 일정 추가', exact: true });
+    const form = await waitForCalendarForm(page);
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await form.getByLabel('일정 제목', { exact: true }).fill('오늘의 면접');
     await form.getByLabel('시작일', { exact: true }).fill('2026-10-01');
     await form.locator('summary').click();
+    await expect(form.locator('summary')).toHaveAttribute('aria-expanded', 'true');
+    await expect(form.getByLabel('메모', { exact: true })).toBeVisible();
     await form.getByLabel('메모', { exact: true }).fill('준비물 확인');
     await expect.poll(() => form.locator('.calendar-form-details').evaluate(el => el.getAnimations().length)).toBe(0);
     await expectContained(form.locator('input[type="date"]'));

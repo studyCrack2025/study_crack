@@ -61,14 +61,23 @@ test('wrong-account response is not interpreted as payment failure', async ({ pa
   await expect(page.locator('#successTitle')).toContainText('이 계정에서');
   await expect(page.locator('#vbankBox')).not.toBeVisible();
 });
-test('expired authentication offers login without losing the status link', async ({ page }) => {
+for (const pendingFont of [false, true]) test(`expired authentication offers login without losing the status link${pendingFont ? ' while a font is pending' : ''}`, async ({ page }) => {
   await setup(page, [{ statusCode: 401 }]);
   await page.route('**/auth', route => route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }));
-  await page.goto(`/success.html?paymentIntentId=${id}`);
-  await expect(page.locator('#successTitle')).toHaveText('로그인 후 결제 상태를 확인해주세요');
-  await expect(page.locator('#actionBtn')).toHaveAttribute('href', '/login');
-  await expect(page.locator('#actionBtn')).toHaveAttribute('target', '_blank');
-  expect(new URL(page.url()).searchParams.get('paymentIntentId')).toBe(id);
+  const heldFonts = [];
+  if (pendingFont) await page.route(/^https:\/\/cdn\.jsdelivr\.net\/gh\/fonts-archive\/Paperlogy\/subsets\/[^/]+\.woff2$/, route => { heldFonts.push(route); });
+  try {
+    await page.goto(`/success.html?paymentIntentId=${id}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#successTitle')).toHaveText('로그인 후 결제 상태를 확인해주세요');
+    await expect(page.locator('#actionBtn')).toHaveAttribute('href', '/login');
+    await expect(page.locator('#actionBtn')).toHaveAttribute('target', '_blank');
+    expect(new URL(page.url()).searchParams.get('paymentIntentId')).toBe(id);
+    if (pendingFont) {
+      await expect.poll(() => heldFonts.length).toBeGreaterThan(0);
+    }
+  } finally {
+    await Promise.all(heldFonts.map(route => route.abort().catch(() => {})));
+  }
 });
 for (const [status, label] of [['failed', '실패'], ['expired', '만료'], ['cancelled', '취소']]) {
   test(`terminal ${status} displays verified state without a new purchase action`, async ({ page }) => {
