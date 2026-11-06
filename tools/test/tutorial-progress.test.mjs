@@ -41,6 +41,12 @@ test('progress indicator reports the first, middle, and final tutorial steps', (
     }
 });
 
+test('intro explains the required inputs without promising an unmeasured total duration', () => {
+    assert.match(html, /<h2>내 성적에 맞는 전략, 차근차근 설정해요<\/h2>/);
+    assert.doesNotMatch(html, /3분이면 나만의 합격 전략이 완성돼요/);
+    assert.match(html, /학습 유형 검사 시작하기 \(3분\)/);
+});
+
 test('progress updater safely no-ops when the indicator is not present', () => {
     const context = { STEPS: [{}, {}], currentStepIdx: 0, document: { getElementById: () => null } };
     const update = vm.runInNewContext(`${helper}\nupdateTutorialProgress;`, context);
