@@ -26,7 +26,7 @@ export function assertSafePath(relative) {
 
 function isStaticPath(relative) {
   return /^[^/]+\.html$/.test(relative)
-    || ['favicon.ico', 'robots.txt', 'sitemap.xml', 'studycrack-mobile.webmanifest'].includes(relative)
+    || ['favicon.ico', 'robots.txt', 'llms.txt', 'og-image.jpg', 'sitemap.xml', 'studycrack-mobile.webmanifest'].includes(relative)
     || /^(?:js\/.+\.js|css\/.+\.css|assets\/.+\.(?:png|jpg|jpeg|svg|webp|pdf|woff2?))$/.test(relative);
 }
 

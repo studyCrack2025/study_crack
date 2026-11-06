@@ -24,7 +24,7 @@ test('public Jungsi guide answers the target intent with current official source
   assert.match(guide, /https:\/\/www\.adiga\.kr\/cct\/stp\/guide\/novicePopup030103\.do/);
   assert.match(guide, /합격을 보장하지 않습니다/);
   assert.match(guide, /<link rel="stylesheet" href="\/css\/jungsi-score-guide\.css">/);
-  assert.doesNotMatch(guide, /<script\b|<form\b|<style\b|localStorage|sessionStorage|document\.cookie/i);
+  assert.doesNotMatch(guide, /<script\b(?![^>]*type="application\/ld\+json")|<form\b|<style\b|localStorage|sessionStorage|document\.cookie/i);
   assert.match(css, /@media \(max-width:600px\)/);
   assert.match(css, /:focus-visible/);
   for (const [, attrs] of guide.matchAll(/<a\b([^>]*href="https?:\/\/[^>]+)>/gi)) {

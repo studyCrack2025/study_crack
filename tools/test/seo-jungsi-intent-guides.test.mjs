@@ -51,7 +51,7 @@ test('two intent-specific guides are indexable, distinct, linked, and source-gro
     assert.match(html, /\/jungsi-score-guide/);
     assert.match(html, /\/service/);
     for (const phrase of page.required) assert.ok(html.includes(phrase), `missing ${phrase} in ${page.file}`);
-    assert.doesNotMatch(html, /<script\b|<form\b|localStorage|sessionStorage|document\.cookie/i);
+    assert.doesNotMatch(html, /<script\b(?![^>]*type="application\/ld\+json")|<form\b|localStorage|sessionStorage|document\.cookie/i);
     for (const [, attrs] of html.matchAll(/<a\b([^>]*href="https?:\/\/[^>]+)>/gi)) {
       assert.match(attrs, /rel="noopener noreferrer"/i, 'external sources must not expose opener context');
     }

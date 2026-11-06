@@ -35,3 +35,5 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
   .steps { grid-template-columns:1fr; gap:10px; }
   .lead { font-size:17px; }
 }
+
+.article-meta{color:#475569;font-size:.9rem}.table-scroll{overflow-x:auto;margin:1.5rem 0}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;font-weight:700;margin-bottom:.5rem}th,td{padding:.75rem;border:1px solid #cbd5e1}thead{background:#f1f5f9}

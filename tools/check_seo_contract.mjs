@@ -175,7 +175,7 @@ for (const [fileName, canonicalUrl] of indexedPages) {
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
 
-const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
+const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.webp');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
 assert.equal(targetImage[0].alt, '', 'the decorative classroom background must use an empty alt attribute');
 assert.ok(String(targetImage[0].class || '').split(/\s+/).includes('bg-img'), 'the classroom image must remain a decorative background');
