@@ -19,8 +19,13 @@ const registeredScreens = [
 ].sort();
 assert.deepEqual(Object.keys(SCREEN_CONTEXT_KEYS).sort(), registeredScreens, '모든 React screen은 명시 context 계약을 가져야 합니다.');
 assert.equal(Object.keys(createInitialAppState()).length, 12, 'root state는 12개 feature slice를 유지해야 합니다.');
-assert.equal(Object.keys(APP_STATE_FIELD_OWNERS).length, 254, 'state field 분류 누락 또는 무단 추가를 확인하세요.');
-assert.equal(Object.keys(APP_STATE_FIELD_KINDS).length, 254, 'state field 종류 분류 누락 또는 무단 추가를 확인하세요.');
+assert.equal(Object.keys(APP_STATE_FIELD_OWNERS).length, 256, 'state field 분류 누락 또는 무단 추가를 확인하세요.');
+assert.equal(Object.keys(APP_STATE_FIELD_KINDS).length, 256, 'state field 종류 분류 누락 또는 무단 추가를 확인하세요.');
+for (const field of ['universityRecommendationDetails', 'universityRecommendationSummary']) {
+  assert.equal(APP_STATE_FIELD_OWNERS[field], 'analysis');
+  assert.equal(APP_STATE_FIELD_KINDS[field], 'serverResource');
+  assert.ok(SCREEN_CONTEXT_KEYS.addUniversity.includes(field));
+}
 for (const retired of ['calendarSheetOpen', 'calendarSelectedDate', 'calendarMonthAnchor']) assert.equal(APP_STATE_FIELD_OWNERS[retired], undefined);
 for (const field of ['calendarMutationError', 'calendarMutationRecovery']) assert.equal(APP_STATE_FIELD_OWNERS[field], 'account');
 for (const [field, kind] of [['studyRecovery', 'localDraft'], ['rewardRecoveryError', 'ephemeralUi'], ['rewardClaimingSessionId', 'ephemeralUi']]) {

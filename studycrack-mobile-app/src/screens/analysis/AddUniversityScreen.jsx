@@ -6,13 +6,52 @@ function AddButton({ added, major, targetPolicy, addingUniversity }) {
   return <button type="button" className={`btn ${added ? 'btn-secondary' : 'btn-primary'} mini`} data-action="addAnalysisTarget" data-target-major={major} disabled={added || addingUniversity || targetPolicy?.canAdd === false}>{added ? '추가됨' : addingUniversity ? '저장 중' : '추가'}</button>;
 }
 
-function RecommendationRow({ analysisTargetList, name, targetPolicy, addingUniversity }) {
+const recommendationBands = { safe: '안정', match: '적정', reach: '상향' };
+
+function recommendationDiagnosticText(summary) {
+  const diagnostic = summary?.diagnostics;
+  if (!diagnostic || diagnostic.version !== 'diagnostics-v1') return '';
+  const messages = new Map([
+      ['NO_PREPARED_CANDIDATES', '선택한 계열의 추천 자료를 준비하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+      ['REVIEWED_CANDIDATES_UNAVAILABLE', '검수 기준에 따라 현재 추천에 포함할 후보가 없습니다.'],
+      ['NO_ADMISSION_FILTER_MATCH', '선택한 연도·지역·모집군에 맞는 검수 후보가 없습니다.'],
+      ['CANDIDATE_EVALUATION_FAILED', '일부 후보를 계산하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+      ['SUBJECT_REQUIREMENTS_NOT_MET', '선택과목 조건으로 후보가 제외되었습니다. 저장한 과목을 확인해 주세요.'],
+      ['MINIMUM_CURRENT_SCORE_NOT_MET', '설정한 현재 점수 기준으로 후보가 제외되었습니다.'],
+      ['MATCHES_EXCLUDED_BY_REQUEST', '제외 목록에 포함된 후보는 표시하지 않았습니다.'],
+      ['SIMULATION_CHECK_FAILED', '일부 후보의 상승 점수를 계산하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+      ['MINIMUM_SIMULATION_SCORE_NOT_MET', '설정한 상승 후 점수 기준으로 후보가 제외되었습니다.'],
+      ['REQUESTED_BANDS_UNAVAILABLE', '요청한 안정·적정·상향 구성을 채울 후보가 부족합니다.'],
+      ['PAGE_EXHAUSTED', '현재 조건에 맞는 후보를 모두 확인했습니다.'],
+      ['INSUFFICIENT_MATCHES', '현재 조건을 모두 충족하는 후보가 요청한 수보다 적습니다.'],
+      ['CANDIDATE_DATA_GAPS', '일부 후보의 자료를 확인하지 못해 확인 가능한 후보만 표시했습니다.'],
+      ['SIMULATION_DATA_UNAVAILABLE', '원점수 상승 자료가 없어 현재 점수로 비교했습니다.']
+  ]);
+  const reasons = Array.isArray(diagnostic.reasonCodes) ? diagnostic.reasonCodes.slice(0, 16) : [];
+  const notices = Array.isArray(diagnostic.noticeCodes) ? diagnostic.noticeCodes.slice(0, 16) : [];
+  const codes = [...reasons, ...notices.filter(code => code !== 'SIMULATION_DATA_UNAVAILABLE'
+      || reasons.includes('MINIMUM_SIMULATION_SCORE_NOT_MET'))];
+  return [...new Set(codes.filter(code => typeof code === 'string').map(code => messages.get(code)).filter(Boolean))].slice(0, 2).join(' ');
+}
+
+function simulationLabel(detail) {
+  const subject = new Map([['kor', '국어'], ['math', '수학'], ['inq1', '탐구1'], ['inq2', '탐구2']]).get(detail?.subject);
+  if (detail?.status === 'available' && subject && Number.isInteger(detail.rawIncrease) && detail.rawIncrease >= 1 && detail.rawIncrease <= 5
+    && typeof detail.uiGain === 'number' && Number.isFinite(detail.uiGain) && detail.uiGain > 0) {
+    const estimated = detail.rawSource === 'percentile_estimate' || detail.combinationEstimated === true;
+    return `${estimated ? '추정 기준 · ' : ''}${subject} 원점수 +${detail.rawIncrease}점 → 표시 점수 +${detail.uiGain}점`;
+  }
+  return detail?.status === 'unavailable' ? '원점수 상승 자료 없음 · 현재 점수 기준 추천'
+    : detail?.status === 'at_maximum' ? '확인 가능한 원점수는 만점입니다.'
+      : detail?.status === 'no_gain' ? '원점수 +1~5점 범위에서 표시 점수 변화 없음' : '';
+}
+
+function RecommendationRow({ analysisTargetList, name, detail, targetPolicy, addingUniversity }) {
   const added = analysisTargetList.includes(name);
   return (
     <div className="sc-secondary-row add-univ-card">
-      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b></div>
-      <span className="sc-badge">추천</span>
-      <AddButton added={added} major={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} />
+      <div className="sc-secondary-row-main add-univ-item-text"><b>{name}</b>{detail ? <div className="add-univ-recommendation-detail"><span>환산점수 {detail.convertedScore}</span><span>예상 컷 {detail.estimatedCut} · 차이 {detail.marginToCut > 0 ? '+' : ''}{detail.marginToCut}</span><span>선택과목 조건을 충족한 후보</span>{simulationLabel(detail.simulation) ? <span>{simulationLabel(detail.simulation)}</span> : null}</div> : null}</div>
+      <div className="add-univ-recommendation-actions"><span className="sc-badge">{recommendationBands[detail?.band] || '추천'}</span><AddButton added={added} major={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} /></div>
     </div>
   );
 }
@@ -79,10 +118,17 @@ export function AddUniversityScreen(ctx) {
     addingUniversity = false,
     tab = 'analysis',
     universityRecommendationError = '',
+    universityRecommendationDetails = [],
+    universityRecommendationSummary = null,
     universityRecommendationStatus = 'idle'
   } = ctx;
-  const recommendationState = analysisRecommended.length ? analysisRecommended.map((name) => <RecommendationRow analysisTargetList={analysisTargetList} name={name} key={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} />) : (
-    <SecondaryState kind={universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty'} title={universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError ? '추천을 불러오지 못했어요' : '현재 조건에 맞는 추천이 없어요'} description={universityRecommendationError || (universityRecommendationStatus === 'loading' ? '선택한 시험의 저장된 성적을 확인하고 있어요.' : '이미 등록한 대학은 제외돼요. 성적을 확인하거나 아래에서 직접 추가할 수 있어요.')} />
+  const missing = universityRecommendationSummary?.missing;
+  const shortage = missing ? Object.entries(recommendationBands).filter(([key]) => Number.isSafeInteger(missing[key]) && missing[key] > 0)
+    .map(([key, label]) => `${label} ${missing[key]}개`).join(' · ') : '';
+  const diagnostic = universityRecommendationStatus !== 'loading' && !universityRecommendationError
+    ? recommendationDiagnosticText(universityRecommendationSummary) : '';
+  const recommendationState = analysisRecommended.length ? analysisRecommended.map((name) => <RecommendationRow analysisTargetList={analysisTargetList} name={name} detail={universityRecommendationDetails.find(item => item.label === name)} key={name} targetPolicy={targetPolicy} addingUniversity={addingUniversity} />) : (
+    <SecondaryState kind={universityRecommendationStatus === 'loading' ? 'loading' : universityRecommendationError ? 'error' : 'empty'} title={universityRecommendationStatus === 'loading' ? '추천 대학을 계산 중이에요' : universityRecommendationError ? '추천을 불러오지 못했어요' : diagnostic ? '추천 결과를 확인해 주세요' : '현재 조건에 맞는 추천이 없어요'} description={universityRecommendationError || (universityRecommendationStatus === 'loading' ? '선택한 시험의 저장된 성적을 확인하고 있어요.' : diagnostic || '이미 등록한 대학은 제외돼요. 성적을 확인하거나 아래에서 직접 추가할 수 있어요.')} />
   );
   return (
     <SecondaryScreenShell screen="addUniversity" title="대학 추가" tab={tab} overlayOpen={analysisSearchOpen} overlays={analysisSearchOpen ? <UniversitySearchSheet {...ctx} /> : null}>
@@ -91,7 +137,9 @@ export function AddUniversityScreen(ctx) {
             <TargetAllowance policy={targetPolicy} showPlanAction={false} />
             {targetSaveError && !analysisSearchOpen ? <p className="add-univ-save-error" role="alert">{targetSaveError}</p> : null}
             <section className="sc-secondary-section add-univ-section">
-              <div className="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3></div><button type="button" className="btn btn-secondary mini" data-action="refreshUniversityRecommendations" disabled={universityRecommendationStatus === 'loading'}>{universityRecommendationStatus === 'loading' ? '추천 중' : '새로고침'}</button></div>
+              <div className="sc-secondary-section-head add-univ-head"><div><h3>현재 성적 기준 추천</h3></div><button type="button" className="btn btn-secondary mini" data-action="refreshUniversityRecommendations" disabled={universityRecommendationStatus === 'loading'}>{universityRecommendationStatus === 'loading' ? '추천 중' : universityRecommendationStatus === 'exhausted' ? '처음 추천 다시 보기' : universityRecommendationStatus === 'error' ? '다시 시도' : '다른 후보 보기'}</button></div>
+              <p className="add-univ-recommendation-note">안정·적정·상향은 표시 점수 기준 분류이며 합격 확률이 아닙니다.</p>
+              {analysisRecommended.length && (diagnostic || shortage) ? <p className="add-univ-recommendation-note" role="status">{[diagnostic, shortage ? `조건에 맞는 후보 부족: ${shortage}. 다른 분류로 채우지 않았어요.` : ''].filter(Boolean).join(' ')}</p> : null}
               <div className="sc-secondary-list add-univ-grid">{recommendationState}</div>
             </section>
             <section className="sc-secondary-section add-univ-section">

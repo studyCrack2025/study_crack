@@ -1,15 +1,24 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
-const source = path => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
+async function source(page, path) {
+    const response = await page.request.get(`/${path}`);
+    expect(response.ok(), `Preview asset is required: ${path}`).toBe(true);
+    return response.text();
+}
 const applicationId = 'APP_11111111-1111-4111-8111-111111111111';
 
 async function prepare(page) {
     await page.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html><body></body></html>' }));
     await page.goto('http://localhost');
-    const html = (await source('admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '');
+    const html = (await source(page, 'admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '');
     await page.setContent(html);
-    for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(file) });
+    await page.evaluate(() => {
+        const panel = document.getElementById('consultingIntakePanel');
+        document.getElementById('section-consulting').replaceChildren(panel);
+        document.getElementById('consultingPaymentReviewBody').closest('div[hidden]').hidden = false;
+        window.closeConsultingStudent = () => closeConsultingDetail();
+    });
+    for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(page, file) });
     await page.evaluate(id => {
         window.CONFIG = { api: { consulting: '/synthetic/consulting', noti: '/synthetic/noti', qna: '/synthetic/qna' } };
         window.__calls = [];
@@ -31,13 +40,18 @@ async function prepare(page) {
                 if (window.__mutationFailure) throw Object.assign(new Error('Synthetic mutation failure'), { status: 409 });
                 if (window.__deferMutation) await new Promise(resolve => { window.__resolveMutation = resolve; });
                 if (request.type === 'admin_verify_manual_payment') window.__approved = true;
-                data = { applicationId: id, applicationState: 'INVITED', revision: 2 };
+                if (request.type === 'admin_review_application_input') {
+                    for (const field of ['studentName', 'phone', 'email', 'payerName']) window.__detail.contact[field] = request.data.input[field];
+                    for (const field of ['payerRelationship', 'contactMethod', 'studentStatus']) window.__detail[field] = request.data.input[field];
+                    Object.assign(window.__detail.application, { inputReviewRequired: false, paymentReviewStatus: 'pending', intakeIssues: [], revision: request.data.expectedRevision + 1 });
+                    data = { applicationId: id, revision: window.__detail.application.revision, inputReviewRequired: false };
+                } else data = { applicationId: id, applicationState: 'INVITED', revision: 2 };
             }
             return { json: async () => ({ success: true, data }) };
         };
         window.loadConsultingMaterialReview = () => {};
     }, applicationId);
-    for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js']) await page.addScriptTag({ content: await source(page, file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await expect(page.locator('#consultingStatus')).toHaveAttribute('data-state', 'success');
 }
@@ -116,7 +130,7 @@ test('승인 충돌은 오래된 상세를 닫고 재조회 안내만 표시한�
     await page.evaluate(() => { window.__mutationFailure = true; });
     page.once('dialog', dialog => dialog.accept());
     await page.locator('#consultingApproveBtn').click();
-    await expect(page.locator('#consultingActionStatus')).toContainText('신청 ID로 다시 조회');
+    await expect(page.locator('#consultingActionStatus')).toContainText('학생 상세를 다시 조회');
     await expect(page.locator('#consultingApplicationDetail')).toBeHidden();
     expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment').length)).toBe(1);
 });
@@ -148,4 +162,75 @@ test('초대 취소는 환경이 확인된 미사용 초대만 노출하고 사�
     page.once('dialog', dialog => dialog.dismiss()); await page.locator('#consultingRevokeBtn').click(); expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite').length)).toBe(0);
     page.on('dialog', dialog => dialog.accept(dialog.type() === 'prompt' ? '잘못 발급한 합성 초대를 취소함' : undefined)); await page.locator('#consultingRevokeBtn').click(); await expect(page.locator('#consultingActionStatus')).toContainText('미사용 초대 취소 완료');
     const request = await page.evaluate(() => window.__calls.find(x => x.type === 'admin_revoke_consulting_invite')); expect(request.data.applicationId).toBe(applicationId); expect(request.data.expectedRevision).toBe(0); expect(request.data.reason).toBe('잘못 발급한 합성 초대를 취소함');
+});
+
+async function prepareInputReview(page) {
+    await prepare(page);
+    await page.evaluate(() => {
+        Object.assign(window.__detail.application, { inputReviewRequired: true, paymentReviewStatus: 'input_review', intakeIssues: [{ field: 'phone', code: 'PHONE_FORMAT' }, { field: 'email', code: 'EMAIL_FORMAT' }] });
+        Object.assign(window.__detail.contact, { studentName: '합성2', phone: '', email: 'invalid-email' });
+        window.__detail.originalSubmission = { studentName: '합성2', phone: '', email: '<svg onload=alert(1)>', studentStatus: ['senior'] };
+        return window.loadConsultingPaymentReview();
+    });
+    await expect(page.locator('#consultingPaymentReviewBody')).toContainText('신청 정보 보완 필요');
+    await openDetail(page);
+}
+
+test('입력 오류 접수는 원본을 보존하고 확인 전 승인 요청을 보내지 않는다', async ({ page }) => {
+    await prepareInputReview(page);
+    await expect(page.locator('#consultingInputIssues')).toContainText('접수는 저장됐습니다');
+    await expect(page.locator('#consultingApproveBtn')).toBeDisabled();
+    await page.locator('#consultingOriginalDetails summary').click();
+    await expect(page.locator('#consultingOriginalSubmission')).toContainText('<svg onload=alert(1)>');
+    await expect(page.locator('#consultingOriginalSubmission svg')).toHaveCount(0);
+    await page.locator('#consultingSaveInputBtn').click();
+    expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_review_application_input').length)).toBe(0);
+    await page.evaluate(() => window.approveConsultingPayment());
+    expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_verify_manual_payment').length)).toBe(0);
+});
+
+test('같은 접수의 정보를 확인·저장하면 원본은 유지하고 승인 준비 상태를 새로 조회한다', async ({ page }) => {
+    await prepareInputReview(page);
+    await page.locator('#consultingContactPhone').fill('01000000000');
+    await page.locator('#consultingContactEmail').fill('corrected@example.invalid');
+    await page.locator('#consultingInputConfirmed').check();
+    await page.locator('#consultingSaveInputBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('신청 정보 확인·저장 완료');
+    await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+    await expect(page.locator('#consultingApproveBtn')).toBeEnabled();
+    await expect(page.locator('#consultingInputConfirmed')).not.toBeChecked();
+    await expect(page.locator('#consultingPayerConfirmed')).not.toBeChecked();
+    await expect(page.locator('#consultingContactEmail')).toHaveValue('corrected@example.invalid');
+    await page.locator('#consultingOriginalDetails summary').click();
+    await expect(page.locator('#consultingOriginalSubmission')).toContainText('<svg onload=alert(1)>');
+    const calls = await page.evaluate(() => window.__calls);
+    const request = calls.find(x => x.type === 'admin_review_application_input');
+    expect(request.data.applicationId).toBe(applicationId);
+    expect(request.data.expectedRevision).toBe(0);
+    expect(request.data.inputReviewConfirmed).toBe(true);
+    expect(calls.filter(x => x.type === 'admin_verify_manual_payment')).toHaveLength(0);
+});
+
+test('보완 저장 실패는 원본과 수정 입력을 지우며 자동 재전송하지 않는다', async ({ page }) => {
+    await prepareInputReview(page);
+    await page.locator('#consultingContactPhone').fill('01000000000');
+    await page.locator('#consultingContactEmail').fill('corrected@example.invalid');
+    await page.locator('#consultingInputConfirmed').check();
+    await page.evaluate(() => { window.__mutationFailure = true; });
+    await page.locator('#consultingSaveInputBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toHaveAttribute('data-state', 'error');
+    await expect(page.locator('#consultingOriginalSubmission')).toBeEmpty();
+    await expect(page.locator('#consultingContactEmail')).toHaveValue('');
+    await expect(page.locator('#consultingApplicationDetail')).toBeHidden();
+    expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_review_application_input').length)).toBe(1);
+});
+
+test('보완 입력은 320px에서 가로 넘침 없이 마지막 확인 버튼까지 접근한다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await prepareInputReview(page);
+    expect(await page.locator('#consultingInputEditor').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    for (const id of ['consultingContactStudentName', 'consultingContactPhone', 'consultingContactEmail', 'consultingSaveInputBtn']) expect(await page.locator(`#${id}`).evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    await page.locator('#consultingSaveInputBtn').scrollIntoViewIfNeeded();
+    await expect(page.locator('#consultingSaveInputBtn')).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath('consulting-input-review-320.png'), fullPage: true });
 });

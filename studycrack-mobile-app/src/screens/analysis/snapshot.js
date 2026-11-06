@@ -27,13 +27,15 @@ export function buildAnalysisSnapshot(state = {}) {
     ? (state.analysisSimulations || []).find(item => univKey(`${item.univ}${item.major || ''}`) === univKey(selected?.major)) : null;
   const base = simulation?.base_ui_score;
   const rows = base !== null && base !== undefined && base !== '' && Number.isFinite(Number(base)) ? buildServerSimRows(simulation) : [];
+  const currentScoreRow = (label, item) => item?.raw !== undefined && item.raw !== null && item.raw !== ''
+    ? [label, item.raw, '점'] : [`${label} 표준`, item?.std, '점'];
   return {
     ready, score: selected?.score ?? null, needsCalculation: Boolean(saved?.changed), comparison, busy: Boolean(saved?.busy), updatedAt: saved?.updatedAt || 0, resultScores, error: state.analysisApiError || '',
     simulationStatus: ready ? state.analysisSimulationStatus === 'ready' && !rows.length ? 'empty' : state.analysisSimulationStatus || 'idle' : 'idle',
     currentScores: state.userLoadStatus === 'ready' && state.user?.quantitative?.[exam] ? [
-      ['국어', scores.kor?.raw, '점'], ['수학', scores.math?.raw, '점'],
+      currentScoreRow('국어', scores.kor), currentScoreRow('수학', scores.math),
       ['영어', scores.eng?.grade ?? scores.eng?.grd, '등급'],
-      [scores.inq1?.name || '탐구1', scores.inq1?.raw, '점'], [scores.inq2?.name || '탐구2', scores.inq2?.raw, '점']
+      currentScoreRow(scores.inq1?.name || '탐구1', scores.inq1), currentScoreRow(scores.inq2?.name || '탐구2', scores.inq2)
     ].filter(([, value]) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))) : [],
     rows, canSimulate: canUseScoreSimulation(state),
     backtraceReady: ready && canUseReverseProjection(state)

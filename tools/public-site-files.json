@@ -106,6 +106,8 @@
     "favicon.ico",
     "index.html",
     "js/admin/detail-core.js",
+    "js/admin/navigation.js",
+    "js/admin/consulting-workspace.js",
     "js/admin/consulting.js",
     "js/admin/consulting-intake.js",
     "js/admin/consulting-materials.js",

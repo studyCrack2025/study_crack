@@ -279,6 +279,71 @@ test('navigation resets intake and hidden action groups cannot be forced visible
     const navigation = await readFile(new URL('../../js/admin_ui.js', import.meta.url), 'utf8');
     const css = await readFile(new URL('../../css/admin_consulting.css', import.meta.url), 'utf8');
     assert.match(navigation, /sectionName !== 'consulting'.*resetConsultingIntake/);
-    assert.match(css, /\.consulting-actions\[hidden\] \{ display:none; \}/);
+    assert.match(css, /\.consulting-actions\[hidden\][^{]*\{ display:none; \}/);
+    assert.match(css, /\.consulting-contact-review\[hidden\][^{]*\{ display:none; \}/);
     assert.match(html, /onsubmit="event.preventDefault\(\); lookupConsultingApplication\(\);"/);
+});
+
+test('input review flags block approval and originals are rendered as text then removed on close', async () => {
+    const { context, open, get, run, calls, fillPayment } = setup();
+    const data = detail();
+    data.application.inputReviewRequired = true;
+    data.application.intakeIssues = [{ field: 'email', code: 'EMAIL_FORMAT' }];
+    data.originalSubmission = { email: '<img src=x onerror=alert(1)>', phone: null };
+    context.respond = () => data;
+    await open();
+    assert.equal(get('consultingApproveBtn').disabled, true);
+    assert.match(get('consultingInputIssues').textContent, /접수는 저장됐습니다/);
+    assert.match(get('consultingInputIssues').textContent, /이메일/);
+    assert.match(get('consultingOriginalSubmission').textContent, /<img src=x onerror=alert\(1\)>/);
+    fillPayment();
+    await run('approveConsultingPayment()');
+    assert.equal(calls.filter(c => c.type === 'admin_verify_manual_payment').length, 0);
+    run('closeConsultingDetail()');
+    assert.equal(get('consultingOriginalSubmission').textContent, '');
+    assert.equal(get('consultingContactEmail').value, '');
+    assert.equal(get('consultingInputEditor').hidden, true);
+});
+
+test('input correction requires confirmation and reloads the same application without approval', async () => {
+    const { context, open, get, run, calls } = setup();
+    const data = detail();
+    data.application.inputReviewRequired = true;
+    data.application.intakeIssues = [{ field: 'phone', code: 'PHONE_FORMAT' }];
+    context.respond = request => {
+        if (request.type === 'admin_get_application_detail') return data;
+        if (request.type === 'admin_list_payment_review') return { items: [data.application] };
+        assert.equal(request.type, 'admin_review_application_input');
+        Object.assign(data.application, { revision: 1, inputReviewRequired: false, intakeIssues: [] });
+        return { applicationId, revision: 1, inputReviewRequired: false };
+    };
+    await open();
+    await run('saveConsultingApplicationInput()');
+    assert.equal(calls.filter(c => c.type === 'admin_review_application_input').length, 0);
+    get('consultingContactStudentName').value = '합성2(확인)';
+    get('consultingInputConfirmed').checked = true;
+    await run('saveConsultingApplicationInput()');
+    const request = calls.find(c => c.type === 'admin_review_application_input');
+    assert.equal(request.data.input.studentName, '합성2(확인)');
+    assert.equal(request.data.expectedRevision, 0);
+    assert.equal(request.data.inputReviewConfirmed, true);
+    assert.equal(calls.filter(c => c.type === 'admin_verify_manual_payment').length, 0);
+    assert.equal(get('consultingApproveBtn').disabled, false);
+    assert.equal(get('consultingPayerConfirmed').checked, false);
+    assert.equal(get('consultingInputConfirmed').checked, false);
+    assert.equal(get('consultingApplicationDetail').hidden, false);
+    assert.match(get('consultingActionStatus').textContent, /확인·저장 완료/);
+});
+
+test('ambiguous correction results clear PII and never retry or report success', async () => {
+    const { context, open, get, run, calls } = setup();
+    context.respond = request => request.type === 'admin_get_application_detail' ? { ...detail(), originalSubmission: { email: 'synthetic@example.invalid' } } : { applicationId, revision: 1 };
+    await open();
+    get('consultingInputConfirmed').checked = true;
+    await run('saveConsultingApplicationInput()');
+    assert.equal(calls.filter(c => c.type === 'admin_review_application_input').length, 1);
+    assert.equal(get('consultingApplicationDetail').hidden, true);
+    assert.equal(get('consultingOriginalSubmission').textContent, '');
+    assert.equal(get('consultingContactEmail').value, '');
+    assert.equal(get('consultingActionStatus').dataset.state, 'error');
 });

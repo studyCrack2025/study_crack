@@ -2,6 +2,7 @@ import { apiFailure, apiInvalidResponse, apiSuccess, postJson } from '../../shar
 import { ANALYSIS_REQUEST_TYPES } from '../../shared/api/request-types.js';
 import { isRecord, validateAnalysisResult, validateModelList } from '../../shared/model/contracts.js';
 import { parseTargetMajor, toAnalysisTargetPayload } from './target-model.js';
+import { isOfficialScoreExam } from './score-model.js';
 
 function isConvertedMetric(metric) {
   return metric
@@ -17,7 +18,8 @@ async function convertSubjectScore({ analysisApiUrl, apiFetch, payload }) {
     payload: { type: ANALYSIS_REQUEST_TYPES.CONVERT_SCORE, ...payload },
     fallbackError: '성적 환산에 실패했습니다.'
   });
-  if (!result.ok) return result;
+  if (!result.ok) return result.code === 'RAW_SCORE_DATA_UNAVAILABLE'
+    ? { ...result, error: '선택한 시험의 원점수 환산 자료가 없습니다. 성적표의 표준점수·백분위·등급을 사용해 주세요.' } : result;
   if (!isConvertedMetric(result.data)) {
     return apiFailure(result.data?.error || '입력한 원점수 조합에 해당하는 성적표 데이터를 찾지 못했습니다.', { status: result.status });
   }
@@ -29,6 +31,11 @@ async function convertSubjectScore({ analysisApiUrl, apiFetch, payload }) {
 }
 
 export async function convertExamScores({ analysisApiUrl, apiFetch, examData, examMode } = {}) {
+  if (isOfficialScoreExam(examMode)) {
+    const { prepareOfficialScoreExam } = await import('./official-score-model.js');
+    const prepared = prepareOfficialScoreExam(examData);
+    return prepared.error ? apiFailure(prepared.error, { code: 'OFFICIAL_SCORE_INVALID' }) : apiSuccess(prepared.data);
+  }
   if (!examData?.kor || !examData?.math || !examData?.inq1 || !examData?.inq2) {
     return apiFailure('환산할 성적 정보가 충분하지 않습니다.');
   }
@@ -82,17 +89,8 @@ export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch, signal 
     : apiFailure('대학·학과 목록이 비어 있습니다.', { status: result.status });
 }
 
-function inferRecommendationStream(examData, savedStream = '') {
-  const normalized = String(savedStream || '').toLowerCase();
-  if (normalized === 'natural' || /자연|공학|의치|약수|간호/.test(normalized)) return 'natural';
-  if (normalized === 'humanities' || /인문|사회|상경|사범|교대/.test(normalized)) return 'humanities';
-  const mathOpt = String(examData?.math?.opt || '').replace(/\s+/g, '');
-  const inquiries = [examData?.inq1?.name, examData?.inq2?.name].map((name) => String(name || '').replace(/\s+/g, ''));
-  const hasScience = inquiries.some((name) => ['물리학', '화학', '생명과학', '지구과학'].some((subject) => name.includes(subject)));
-  return /미적분|기하/.test(mathOpt) || hasScience ? 'natural' : 'humanities';
-}
-
-export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch, examData, examMode, excludeTargets = [], savedStream = '', signal } = {}) {
+export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch, examData, examMode, excludeTargets = [], savedStream = '', cursor,
+  recommendationCount = 3, recommendationMode = 'fit', signal } = {}) {
   if (!examData) return apiFailure('추천에 필요한 성적 정보가 없습니다.');
   const totalStdScore = ['kor', 'math', 'inq1', 'inq2'].reduce((sum, key) => sum + (Number(examData?.[key]?.std) || 0), 0);
   if (!totalStdScore) return apiFailure('표준점수가 포함된 성적을 먼저 저장해주세요.');
@@ -104,19 +102,42 @@ export async function fetchUniversityRecommendations({ analysisApiUrl, apiFetch,
     payload: {
       type: ANALYSIS_REQUEST_TYPES.GET_TUTORIAL_RECOMMENDATIONS,
       userScores: examData,
-      stream: inferRecommendationStream(examData, savedStream),
+      stream: savedStream,
       totalStdScore,
       examMode,
+      recommendationCount,
+      recommendationMode,
+      ...(cursor ? { cursor } : {}),
       excludeUnivs: (excludeTargets || []).map(parseTargetMajor).filter(Boolean)
     }
   });
-  if (!result.ok) return result;
+  if (!result.ok) {
+    const messages = new Map([
+      ['RECOMMENDATION_STREAM_INVALID', [400, '희망 계열을 다시 확인해 주세요.']],
+      ['RECOMMENDATION_STREAM_REQUIRED', [400, '희망 계열 또는 선택과목을 먼저 입력해 주세요.']],
+      ['RECOMMENDATION_STREAM_UNAVAILABLE', [503, '선택한 계열의 추천 자료를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.']],
+      ['RECOMMENDATION_DATA_UNAVAILABLE', [503, '추천 자료를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.']],
+      ['EXAM_MODE_INVALID', [400, '선택한 시험을 다시 확인해 주세요.']],
+      ['CSAT_NOT_READY', [503, '수능 성적표 자료를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.']]
+    ]);
+    const message = messages.get(result.code);
+    return message && message[0] === result.status ? { ...result, error: message[1] } : result;
+  }
   if (!Array.isArray(result.data?.selected)) return apiInvalidResponse(result, '추천 대학 응답이 올바르지 않습니다.');
-  const recommendations = Array.from(new Set((Array.isArray(result.data?.selected) ? result.data.selected : [])
+  const recommendations = Array.from(new Set(result.data.selected
+    .filter(item => typeof (item?.school || item?.univ) === 'string' && (item.school || item.univ).trim()
+      && typeof item?.major === 'string' && item.major.trim())
     .map((item) => `${String(item?.school || item?.univ || '').trim()} ${String(item?.major || '').trim()}`.trim())
     .filter((label) => label && label.includes(' '))))
-    .slice(0, 3);
-  return apiSuccess(recommendations, { status: result.status });
+    .slice(0, recommendationCount);
+  const details = result.data.selected.filter(item => recommendations.includes(`${item.school || item.univ} ${item.major}`)
+    && ['safe', 'match', 'reach'].includes(item.recommendation?.band)
+    && ['convertedScore', 'estimatedCut', 'marginToCut'].every(key => typeof item.recommendation[key] === 'number' && Number.isFinite(item.recommendation[key])))
+    .map(item => ({ label: `${item.school || item.univ} ${item.major}`, band: item.recommendation.band,
+      convertedScore: item.recommendation.convertedScore, estimatedCut: item.recommendation.estimatedCut, marginToCut: item.recommendation.marginToCut }));
+  for (const detail of details) detail.simulation = result.data.selected.find(item => `${item.school || item.univ} ${item.major}` === detail.label)?.simulation || null;
+  return { ...apiSuccess(recommendations, { status: result.status }), details, summary: result.data.selectionSummary || null,
+    page: result.data.page || { nextCursor: null, hasMore: false } };
 }
 
 function normalizeAnalysisResults(payload) {

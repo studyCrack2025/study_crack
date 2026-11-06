@@ -1407,15 +1407,32 @@ function calcTotalStdScore(scoreData) {
     return korStd + mathStd + inq1Std + inq2Std;
 }
 
-function inferStream(scoreData) {
-    const mathOpt = (scoreData?.math?.opt || '').replace(/\s/g, '');
-    const inq1Name = (scoreData?.inq1?.name || '').replace(/\s/g, '');
-    const inq2Name = (scoreData?.inq2?.name || '').replace(/\s/g, '');
-    const sciSubjects = ['물리학','화학','생명과학','지구과학'];
-    const hasSci = [inq1Name, inq2Name].some(n => sciSubjects.some(s => n.includes(s)));
-    const isMijet = mathOpt.includes('미적분') || mathOpt.includes('기하');
-    if (isMijet || hasSci) return 'natural';
-    return 'humanities';
+let recommendationPage = { key: '', cursor: null, exhausted: false, request: 0, failed: false };
+
+function recommendationDiagnosticText(summary) {
+    const diagnostic = summary?.diagnostics;
+    if (!diagnostic || diagnostic.version !== 'diagnostics-v1') return '';
+    const messages = new Map([
+        ['NO_PREPARED_CANDIDATES', '선택한 계열의 추천 자료를 준비하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+        ['REVIEWED_CANDIDATES_UNAVAILABLE', '검수 기준에 따라 현재 추천에 포함할 후보가 없습니다.'],
+        ['NO_ADMISSION_FILTER_MATCH', '선택한 연도·지역·모집군에 맞는 검수 후보가 없습니다.'],
+        ['CANDIDATE_EVALUATION_FAILED', '일부 후보를 계산하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+        ['SUBJECT_REQUIREMENTS_NOT_MET', '선택과목 조건으로 후보가 제외되었습니다. 저장한 과목을 확인해 주세요.'],
+        ['MINIMUM_CURRENT_SCORE_NOT_MET', '설정한 현재 점수 기준으로 후보가 제외되었습니다.'],
+        ['MATCHES_EXCLUDED_BY_REQUEST', '제외 목록에 포함된 후보는 표시하지 않았습니다.'],
+        ['SIMULATION_CHECK_FAILED', '일부 후보의 상승 점수를 계산하지 못했습니다. 잠시 후 다시 확인해 주세요.'],
+        ['MINIMUM_SIMULATION_SCORE_NOT_MET', '설정한 상승 후 점수 기준으로 후보가 제외되었습니다.'],
+        ['REQUESTED_BANDS_UNAVAILABLE', '요청한 안정·적정·상향 구성을 채울 후보가 부족합니다.'],
+        ['PAGE_EXHAUSTED', '현재 조건에 맞는 후보를 모두 확인했습니다.'],
+        ['INSUFFICIENT_MATCHES', '현재 조건을 모두 충족하는 후보가 요청한 수보다 적습니다.'],
+        ['CANDIDATE_DATA_GAPS', '일부 후보의 자료를 확인하지 못해 확인 가능한 후보만 표시했습니다.'],
+        ['SIMULATION_DATA_UNAVAILABLE', '원점수 상승 자료가 없어 현재 점수로 비교했습니다.']
+    ]);
+    const reasons = Array.isArray(diagnostic.reasonCodes) ? diagnostic.reasonCodes.slice(0, 16) : [];
+    const notices = Array.isArray(diagnostic.noticeCodes) ? diagnostic.noticeCodes.slice(0, 16) : [];
+    const codes = [...reasons, ...notices.filter(code => code !== 'SIMULATION_DATA_UNAVAILABLE'
+        || reasons.includes('MINIMUM_SIMULATION_SCORE_NOT_MET'))];
+    return [...new Set(codes.filter(code => typeof code === 'string').map(code => messages.get(code)).filter(Boolean))].slice(0, 2).join(' ');
 }
 
 async function handleRecommendUniv() {
@@ -1428,12 +1445,18 @@ async function handleRecommendUniv() {
         return;
     }
 
+    const excludes = (userTargetUnivs || []).filter(item => item?.univ && item?.major).map(({ univ, major }) => ({ univ, major }));
+    const inputKey = JSON.stringify([localStorage.getItem('userId'), scoreData, userStream, currentExamMode, excludes]);
+    if (recommendationPage.key !== inputKey || recommendationPage.exhausted) {
+        recommendationPage = { key: inputKey, cursor: null, exhausted: false, request: recommendationPage.request, failed: false };
+    }
+    const request = ++recommendationPage.request;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 추천 중...';
 
     try {
         const totalStdScore = calcTotalStdScore(scoreData);
-        const stream = userStream || inferStream(scoreData);
+        const stream = userStream || '';
 
         const res = await apiFetch(UNIV_DATA_API_URL, {
             method: 'POST',
@@ -1442,44 +1465,65 @@ async function handleRecommendUniv() {
                 userScores: scoreData,
                 stream: stream,
                 totalStdScore: totalStdScore,
-                examMode: currentExamMode
+                examMode: currentExamMode,
+                recommendationCount: 6,
+                recommendationMode: 'balanced',
+                excludeUnivs: excludes,
+                ...(recommendationPage.cursor ? { cursor: recommendationPage.cursor } : {})
             })
         });
 
         const data = await res.json();
-        const selected = data.selected || [];
-
-        if (selected.length === 0) {
-            alert('추천할 수 있는 대학이 없습니다.');
+        if (recommendationPage.request !== request || currentSlotIndex === null) return;
+        if (!res.ok) {
+            alert(typeof data.error === 'string' ? data.error : '추천을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
             return;
         }
-
-        // 이미 등록된 대학 제외 (없으면 원본 사용)
-        const existingKeys = new Set(
-            (userTargetUnivs || []).filter(t => t && t.univ).map(t => `${t.univ}||${t.major}`)
-        );
-        const available = selected.filter(s => !existingKeys.has(`${s.school}||${s.major}`));
-        const uniqueMap = new Map();
-        available.forEach(item => uniqueMap.set(`${item.school}||${item.major}`, item));
-        if (uniqueMap.size < 3) {
-            selected.forEach(item => {
-                if (uniqueMap.size >= 3) return;
-                const key = `${item.school}||${item.major}`;
-                if (!uniqueMap.has(key)) uniqueMap.set(key, item);
-            });
-        }
-        recommendedUnivCandidates = Array.from(uniqueMap.values()).slice(0, 3);
-        const shortageMessage = (recommendedUnivCandidates.length < 3)
-            ? `기준을 충족하는 대학이 부족해 ${recommendedUnivCandidates.length}개만 추천합니다.`
-            : '';
-        showRecommendedUnivChoices(recommendedUnivCandidates, shortageMessage);
+        const selected = Array.isArray(data.selected) ? data.selected : [];
+        recommendationPage.cursor = data.page?.nextCursor || null;
+        recommendationPage.exhausted = data.page?.hasMore !== true;
+        recommendationPage.failed = false;
+        const existing = new Set(excludes.map(item => `${item.univ}||${item.major}`));
+        recommendedUnivCandidates = selected.filter(item => typeof item?.school === 'string' && typeof item?.major === 'string'
+            && !existing.has(`${item.school}||${item.major}`)).slice(0, 6);
+        const bandNames = { safe: '안정', match: '적정', reach: '상향' };
+        const missing = data.selectionSummary?.missing;
+        const missingText = missing ? Object.entries(bandNames).filter(([key]) => Number.isSafeInteger(missing[key]) && missing[key] > 0)
+            .map(([key, label]) => `${label} ${missing[key]}개`).join(' · ') : '';
+        const diagnostic = recommendationDiagnosticText(data.selectionSummary);
+        const note = !recommendedUnivCandidates.length ? diagnostic
+            ? `${diagnostic} 전체 대학 목록에서 직접 선택할 수 있습니다.`
+            : '현재 조건에 맞는 남은 후보가 없습니다. 전체 대학 목록에서 직접 선택할 수 있습니다.'
+            : missingText ? `조건에 맞는 후보 부족: ${missingText}. 다른 분류로 채우지 않았습니다.`
+            : recommendedUnivCandidates.length < 6 ? `현재 조건에 맞는 남은 후보 ${recommendedUnivCandidates.length}개입니다.`
+            : recommendationPage.exhausted ? '현재 조건에 맞는 마지막 후보입니다.' : '';
+        showRecommendedUnivChoices(recommendedUnivCandidates, recommendedUnivCandidates.length
+            ? [diagnostic, note].filter(Boolean).join(' ') : note);
         if (res.ok) window.SCTrack?.event('university_recommendation_view', { analysis_type: 'recommendations' });
     } catch(e) {
+        if (recommendationPage.request !== request) return;
+        recommendationPage.failed = true;
+        if (e?.code === 'RECOMMENDATION_CURSOR_STALE') {
+            recommendationPage.cursor = null;
+            alert('성적이나 추천 기준이 변경되었습니다. 다시 누르면 처음부터 확인합니다.');
+            return;
+        }
         console.error('추천대학 API 오류:', e);
-        alert('추천 중 오류가 발생했습니다.');
+        const messages = new Map([
+            ['RECOMMENDATION_STREAM_INVALID', [400, '희망 계열을 다시 확인해 주세요.']],
+            ['RECOMMENDATION_STREAM_REQUIRED', [400, '희망 계열 또는 선택과목을 먼저 입력해 주세요.']],
+            ['RECOMMENDATION_STREAM_UNAVAILABLE', [503, '선택한 계열의 추천 자료를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.']],
+            ['RECOMMENDATION_DATA_UNAVAILABLE', [503, '추천 자료를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.']],
+            ['EXAM_MODE_INVALID', [400, '선택한 시험을 다시 확인해 주세요.']],
+            ['CSAT_NOT_READY', [503, '수능 성적표 자료를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.']]
+        ]);
+        const message = messages.get(e?.code);
+        alert(message && message[0] === e?.status ? message[1] : '추천 중 오류가 발생했습니다.');
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-magic"></i> 추천대학/학과';
+        if (recommendationPage.request === request) {
+            btn.disabled = false;
+            btn.textContent = recommendationPage.failed ? '다시 시도' : recommendationPage.exhausted ? '처음 추천 다시 보기' : '다른 후보 보기';
+        }
     }
 }
 
@@ -1503,11 +1547,18 @@ function showRecommendedUnivChoices(candidates, shortageMessage = '') {
     listContainer.innerHTML = '';
 
     if (!Array.isArray(candidates) || candidates.length === 0) {
-        listContainer.innerHTML = '<div class="empty-search-result"><i class="fas fa-exclamation-circle" style="font-size:2.2rem; color:#cbd5e1;"></i>추천 결과가 없습니다. 다시 시도해주세요.</div>';
+        const empty = document.createElement('div');
+        empty.className = 'empty-search-result';
+        empty.textContent = shortageMessage || '현재 조건에 맞는 남은 후보가 없습니다.';
+        listContainer.appendChild(empty);
         return;
     }
 
     const frag = document.createDocumentFragment();
+    const basisNote = document.createElement('small');
+    basisNote.className = 'analysis-recommendation-detail';
+    basisNote.textContent = '안정·적정·상향은 표시 점수 기준 분류이며 합격 확률이 아닙니다.';
+    frag.appendChild(basisNote);
     if (shortageMessage) {
         const note = document.createElement('div');
         note.style.gridColumn = '1 / -1';
@@ -1526,7 +1577,34 @@ function showRecommendedUnivChoices(candidates, shortageMessage = '') {
         const card = document.createElement('button');
         card.type = 'button';
         card.className = 'selection-item selection-item-recommend';
-        card.innerHTML = `<span class="recommend-rank">추천 ${idx + 1}</span><strong>${item.school}</strong><em>${item.major}</em>`;
+        const rank = document.createElement('span'), school = document.createElement('strong'), major = document.createElement('em');
+        rank.className = 'recommend-rank';
+        const detail = item.recommendation;
+        const band = { safe: '안정', match: '적정', reach: '상향' }[detail?.band];
+        rank.textContent = band ? `${band} · 추천 ${idx + 1}` : `추천 ${idx + 1}`;
+        school.textContent = item.school;
+        major.textContent = item.major;
+        card.append(rank, school, major);
+        if (band && ['convertedScore', 'estimatedCut', 'marginToCut'].every(key => typeof detail[key] === 'number' && Number.isFinite(detail[key]))) {
+            const evidence = document.createElement('small');
+            evidence.className = 'analysis-recommendation-detail';
+            evidence.textContent = `환산점수 ${detail.convertedScore} · 예상 컷 ${detail.estimatedCut} · 차이 ${detail.marginToCut > 0 ? '+' : ''}${detail.marginToCut}`;
+            card.appendChild(evidence);
+        }
+        const sim = item.simulation;
+        const subject = new Map([['kor', '국어'], ['math', '수학'], ['inq1', '탐구1'], ['inq2', '탐구2']]).get(sim?.subject);
+        let simulationText = '';
+        if (sim?.status === 'available' && subject && Number.isInteger(sim.rawIncrease) && sim.rawIncrease >= 1 && sim.rawIncrease <= 5
+            && typeof sim.uiGain === 'number' && Number.isFinite(sim.uiGain) && sim.uiGain > 0) {
+            simulationText = `${sim.rawSource === 'percentile_estimate' || sim.combinationEstimated ? '추정 기준 · ' : ''}${subject} 원점수 +${sim.rawIncrease}점 → 표시 점수 +${sim.uiGain}점`;
+        } else if (sim?.status === 'unavailable') simulationText = '원점수 상승 자료 없음 · 현재 점수 기준 추천';
+        else if (sim?.status === 'at_maximum') simulationText = '확인 가능한 원점수는 만점입니다.';
+        else if (sim?.status === 'no_gain') simulationText = '원점수 +1~5점 범위에서 표시 점수 변화 없음';
+        if (simulationText) {
+            const note = document.createElement('small');
+            note.className = 'analysis-recommendation-detail'; note.textContent = simulationText;
+            card.appendChild(note);
+        }
         card.onclick = () => selectComplete(item.school, item.major);
         frag.appendChild(card);
     });
@@ -1534,6 +1612,9 @@ function showRecommendedUnivChoices(candidates, shortageMessage = '') {
 }
 
 function closeUnivModal() {
+    recommendationPage = { key: '', cursor: null, exhausted: false, request: recommendationPage.request + 1, failed: false };
+    const recommendButton = document.getElementById('recommendBtn');
+    if (recommendButton) { recommendButton.disabled = false; recommendButton.textContent = '추천대학/학과'; }
     document.getElementById('univSelectModal').style.display = 'none';
 
     document.body.classList.remove('modal-open');

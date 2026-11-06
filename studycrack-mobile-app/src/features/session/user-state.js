@@ -64,7 +64,7 @@ const TIER_TO_PLAN_DISPLAY = {
   pro: 'Pro'
 };
 
-const EXAM_PRIORITY = ['sep', 'jul', 'jun', 'may', 'mar', 'apr', 'oct', 'csat', 'active'];
+const EXAM_PRIORITY = ['csat', 'sep', 'jul', 'jun', 'may', 'mar', 'apr', 'oct', 'active'];
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);

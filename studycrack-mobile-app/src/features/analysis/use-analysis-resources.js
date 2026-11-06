@@ -11,7 +11,7 @@ export function useAnalysisResources({ canBacktrace, canSimulate, getApiBinding,
     getApiBinding,
     recommendationRetryTick: state.universityRecommendationRetryTick,
     retryTick: state.universityCatalogRetryTick,
-    savedStream: state.user?.qualitative?.stream || state.obTrack,
+    savedStream: state.screen === 'ob4' ? state.obTrack : (state.user?.qualitative?.stream || ''),
     screen: state.screen,
     setState,
     userReady: state.userLoadStatus === 'ready'

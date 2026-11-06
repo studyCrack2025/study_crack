@@ -26,7 +26,8 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
     'targetPolicy', 'targetSaveError', 'addingUniversity', 'analysisSearchOpen',
     'analysisRecommended', 'analysisSearchList', 'analysisSearchTerm', 'analysisTargetList',
     'tab', 'universityCatalogError', 'universityCatalogStatus',
-    'universityRecommendationError', 'universityRecommendationStatus', 'universitySelectedName'
+    'universityRecommendationError', 'universityRecommendationStatus', 'universitySelectedName',
+    'universityRecommendationDetails', 'universityRecommendationSummary'
   ]),
   analysis: Object.freeze(ANALYSIS_CONTEXT_KEYS),
   aquarium: Object.freeze([

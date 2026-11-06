@@ -80,7 +80,7 @@ function CurrentScoreSummary({ scores = {}, confirmedItems = null }) {
   if (!items.length) return null;
   return (
     <div className="analysis-score-summary">
-      <div className="analysis-score-summary-head"><h4>현재 성적</h4><span>{confirmedItems ? '원점수 · 영어 등급' : '원점수 기준'}</span></div>
+      <div className="analysis-score-summary-head"><h4>현재 성적</h4><span>{items.some(([label]) => label.endsWith(' 표준')) ? '표준점수 · 영어 등급' : confirmedItems ? '원점수 · 영어 등급' : '원점수 기준'}</span></div>
       <div className="analysis-score-summary-grid">
         {items.map(([label, value, unit = '점'], index) => <div key={`${label}-${index}`}><span>{label}</span><b>{formatPoint(value)}{unit}</b></div>)}
       </div>
