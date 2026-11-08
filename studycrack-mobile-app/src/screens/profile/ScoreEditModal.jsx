@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Modal } from '../../components/Modal.jsx';
-import { INQUIRY_SUBJECTS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../../constants/options.js';
+import { INQUIRY_SUBJECTS } from '../../constants/options.js';
 import { OfficialSubjectPanel } from '../../components/OfficialScoreFields.jsx';
 import { isOfficialScoreExam } from '../../features/analysis/score-model.js';
 
@@ -86,11 +86,15 @@ export function ScoreEditModal({ scoreEditOpen = false, scoreEditState = {}, sco
   if (!scoreEditOpen) return null;
   const isLast = step === SCORE_STEPS.length;
   const primaryLabel = scoreSubjectSaving ? '저장 중…' : isLast ? '전체 성적 저장' : '다음';
+  const official = isOfficialScoreExam(scoreExamType || scoreExamKey);
   return (
     <Modal dismissAction="closeScoreEdit" ariaLabel="성적 수정" panelClass="score-edit-modal score-stepper-modal">
       <div className="score-onepage-head"><div><p className="sc-modal-padded-title">성적 입력</p><p className="sub">{scoreExamType || '시험 성적'}</p></div><button type="button" className="score-onepage-close" data-action="closeScoreEdit">닫기</button></div>
       <div className="score-stepper-progress"><span>{SCORE_STEPS[step - 1]} <b>{step} / {SCORE_STEPS.length}</b></span><div className="score-stepper-bar" role="progressbar" aria-label="성적 입력 단계" aria-valuemin={1} aria-valuemax={6} aria-valuenow={step}><i style={{ width: `${Math.round(step / SCORE_STEPS.length * 100)}%` }} /></div></div>
-      <div className="score-stepper-body" ref={bodyRef}>{isOfficialScoreExam(scoreExamType || scoreExamKey) ? <p className="score-edit-estimate-notice" role="status">수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요.</p> : scoreExamKey === 'sep' ? <p className="score-edit-estimate-notice" role="status">{SEPTEMBER_SCORE_ESTIMATE_NOTICE}</p> : null}<ScoreStepPanel key={`${scoreExamType}-${step}`} state={scoreEditState} step={step} errors={scoreEditErrors} official={isOfficialScoreExam(scoreExamType || scoreExamKey)} /></div>
+      <div className="score-stepper-body" ref={bodyRef}>
+        {official ? <p className="score-edit-official-notice" role="status">수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요.</p> : null}
+        <ScoreStepPanel key={`${scoreExamType}-${step}`} state={scoreEditState} step={step} errors={scoreEditErrors} official={official} />
+      </div>
       <div className="score-stepper-actions">{scoreEditSaveError ? <p className="score-save-error" role="alert">{scoreEditSaveError}</p> : null}<div className="score-stepper-buttons"><button type="button" className="btn btn-secondary score-step-nav" data-action="scoreStepPrev" disabled={step === 1 || scoreSubjectSaving}>이전</button><button type="button" className="btn btn-primary score-step-save" data-action="saveScoreSubject" disabled={scoreSubjectSaving}>{primaryLabel}</button></div></div>
     </Modal>
   );

@@ -8,7 +8,7 @@ const BASIC_PREVIEW_STATE_COPY = {
     unauthorized: { title: '로그인이 필요해요', description: '로그인 후 저장된 성적으로 개인화 결과를 확인할 수 있어요.', action: '로그인하기', href: '/login?returnUrl=%2Fbasic-preview' }
 };
 
-const BASIC_PREVIEW_EXAM_LABELS = { mar: '3월 학력평가', may: '5월 학력평가', jun: '6월 모의평가', jul: '7월 학력평가', sep: '9월 모의평가', csat: '수능' };
+const BASIC_PREVIEW_EXAM_LABELS = { mar: '3월 학력평가', may: '5월 학력평가', jun: '6월 모의평가', jul: '7월 학력평가', sep: '9월 모의평가', oct: '10월 학력평가', csat: '수능' };
 
 let basicPreviewLoading = false;
 

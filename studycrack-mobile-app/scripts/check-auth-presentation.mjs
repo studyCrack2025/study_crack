@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
-import { EXAM_OPTIONS, SEPTEMBER_SCORE_ESTIMATE_NOTICE } from '../src/constants/options.js';
+import { EXAM_OPTIONS } from '../src/constants/options.js';
 
 const [authSource, authHandlers, authCss, signupCss, recoveryCss, introSource, ob3Source, surveySource, onboardingCss, splashCss] = await Promise.all([
   readFile(new URL('../src/screens/auth/AuthScreens.jsx', import.meta.url), 'utf8'),
@@ -76,8 +76,8 @@ try {
   const { Ob2Screen } = await vite.ssrLoadModule('/src/screens/onboarding/SurveyScreens.jsx');
   for (const scoreExamType of EXAM_OPTIONS) {
     const html = renderToStaticMarkup(createElement(Ob2Screen, { scoreExamType }));
-    assert.equal(html.includes(SEPTEMBER_SCORE_ESTIMATE_NOTICE), scoreExamType.includes('9월'), `estimate notice follows scoreExamType: ${scoreExamType}`);
-    assert.equal((html.match(/class="ob-score-estimate-notice" role="status"/g) || []).length, scoreExamType.includes('9월') ? 1 : 0);
+    assert.ok(html.includes(`value="${scoreExamType}" selected=""`), `selected exam: ${scoreExamType}`);
+    assert.doesNotMatch(html, /임시 추정치|ob-score-estimate-notice/);
   }
 } finally { await vite.close(); }
-console.log('auth/onboarding presentation contract ok, including exam-specific estimate notice');
+console.log('auth/onboarding presentation contract ok, including exam selection');

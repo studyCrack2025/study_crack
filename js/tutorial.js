@@ -41,7 +41,7 @@ const MASCOTS = {
 const STEPS = [
     { id: 'intro',       msg: '지금 바로 나만의 합격 전략을 확인해보세요.',                        mascot: 'hi' },
     { id: 'survey-qual', msg: '먼저 현재 학년과 희망 계열을 알려주세요.',                          mascot: 'thumbsup' },
-    { id: 'survey-quan', msg: '3월·5월·7월 학력평가 또는 6월 모의평가 원점수를 입력해주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
+    { id: 'survey-quan', msg: '학력평가 또는 모의평가를 선택하고 원점수를 입력해 주세요. 수능 예측 점수로 자동 보정돼요.',    mascot: 'analysis' },
     { id: 'mbti',        msg: '학습 성향을 파악할게요. 검사를 시작하거나 직접 선택해주세요.',       mascot: 'hi' },
     { id: 'univ-rec',    msg: '성적을 분석했어요! 목표 대학을 선택하면 상세 시뮬레이션을 볼 수 있어요.', mascot: 'showresult' },
     { id: 'subject-rec', msg: '분석 준비가 끝났어요. 지금 가장 가치 있는 다음 1점을 확인해보세요.', mascot: 'showresult' }
@@ -77,16 +77,8 @@ function clearTutorialInquiry(prefix) {
     });
 }
 
-function updateTutorialExamNotice() {
+function updateTutorialInquiryAvailability() {
     const month = document.getElementById('tutExamMonth')?.value || 'mar';
-    const notice = document.getElementById('tutExamEstimateNotice');
-    if (notice) {
-        const messages = {
-            sep: '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치입니다. 실제 성적표의 표준점수·백분위·등급과 다를 수 있습니다.'
-        };
-        notice.textContent = messages[month] || '';
-        notice.hidden = !messages[month];
-    }
     ['tutInq1Name', 'tutInq2Name'].forEach((selectId) => {
         const select = document.getElementById(selectId);
         if (!select) return;
@@ -104,9 +96,13 @@ function setupTutorialExamControls() {
     const examSelect = document.getElementById('tutExamMonth');
     if (examSelect) {
         examSelect.value = tutorialData.examMonth || 'mar';
-        examSelect.addEventListener('change', updateTutorialExamNotice);
+        examSelect.addEventListener('change', updateTutorialInquiryAvailability);
     }
-    updateTutorialExamNotice();
+    updateTutorialInquiryAvailability();
+}
+
+function latestTutorialExam(quantitative) {
+    return ['oct', 'sep', 'jul', 'jun', 'may', 'mar'].find(month => quantitative?.[month]) || 'mar';
 }
 
 function buildAuthenticatedFetchOptions(options = {}) {
@@ -167,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 점수 데이터 복원 (최신 시험 월 우선)
             if (data.quantitative) {
                 tutorialData.quan = data.quantitative;
-                const activeMonth = data.quantitative.sep ? 'sep' : (data.quantitative.jul ? 'jul' : (data.quantitative.jun ? 'jun' : (data.quantitative.may ? 'may' : 'mar')));
+                const activeMonth = latestTutorialExam(data.quantitative);
                 tutorialData.examMonth = activeMonth;
                 const activeQuan = data.quantitative[activeMonth];
                 if (activeQuan) {
@@ -483,6 +479,12 @@ async function _nextStepCore() {
         let examMonth = document.getElementById('tutExamMonth')?.value || 'mar';
         tutorialData.examMonth = examMonth;
 
+        if (examMonth === 'oct' && ['tutKorCommon', 'tutKorSel', 'tutMathCommon', 'tutMathSel', 'tutInq1', 'tutInq2']
+            .some(id => !document.getElementById(id)?.value)) {
+            alert('국어·수학·탐구 원점수를 입력해 주세요.');
+            return;
+        }
+
         if (examMonth === 'jul' && (!isTutorialJulyInquiryAvailable(inq1Name) || !isTutorialJulyInquiryAvailable(inq2Name))) {
             alert('7월 학평에서 지원하지 않는 탐구 과목입니다.');
             return;
@@ -499,6 +501,12 @@ async function _nextStepCore() {
                 convertScore(examMonth, 'inq2', inq2Raw, '', inq2Name)
             ]);
         } catch (e) {
+            if (examMonth === 'oct') {
+                alert(e.code === 'OCT_NOT_READY' || e.code === 'OCT_SUBJECT_NOT_AVAILABLE'
+                    ? e.message
+                    : '10월 학력평가 성적을 환산하지 못했습니다. 입력을 확인하고 다시 시도해 주세요.');
+                return;
+            }
             if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE' || e.code === 'SEP_NOT_READY')) {
                 alert(e.message || '선택한 시험 데이터를 불러오지 못했습니다. 3월 학평 기준으로 진행할게요.');
                 examMonth = 'mar';
@@ -516,7 +524,8 @@ async function _nextStepCore() {
             }
         }
 
-        tutorialData.quan = {
+        const quantitative = {
+            ...tutorialData.quan,
             [examMonth]: {
                 kor:     { opt: korOpt,  common: korCommon,  elective: korSel,  raw: korCommon  + korSel,  ...korConv  },
                 math:    { opt: mathOpt, common: mathCommon, elective: mathSel, raw: mathCommon + mathSel, ...mathConv },
@@ -527,8 +536,13 @@ async function _nextStepCore() {
                 foreign: { name: '', grd: '' }
             }
         };
-        const scoreSaveResult = await apiCall('update_quan', tutorialData.quan);
-        if (scoreSaveResult.success === true) window.SCTrack?.event('score_input_complete');
+        const scoreSaveResult = await apiCall('update_quan', quantitative);
+        if (examMonth === 'oct' && (scoreSaveResult.success === false || scoreSaveResult.error)) {
+            alert('성적을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+            return;
+        }
+        tutorialData.quan = quantitative;
+        if (scoreSaveResult.success === true || scoreSaveResult.message === 'Saved') window.SCTrack?.event('score_input_complete');
 
         // 보정 표준점수 단순합 계산 후 백그라운드로 학교 선정
         tutorialData.totalStdScore = [korConv.std, mathConv.std, inq1Conv.std, inq2Conv.std]
@@ -1273,7 +1287,7 @@ async function initSubjectRec() {
     showTutLoading(true);
 
     const univ = tutorialData.selectedUniv;
-    const activeMonth = tutorialData.examMonth || (tutorialData.quan?.sep ? 'sep' : (tutorialData.quan?.jul ? 'jul' : (tutorialData.quan?.jun ? 'jun' : (tutorialData.quan?.may ? 'may' : 'mar'))));
+    const activeMonth = tutorialData.examMonth || latestTutorialExam(tutorialData.quan);
     const mar  = tutorialData.quan?.[activeMonth];
     const mbti = tutorialData.mbti;
 
@@ -1577,7 +1591,7 @@ async function endTutorial() {
 }
 
 async function convertScore(month, subject, score, opt, subName, common, elective) {
-    if (!score || score <= 0) return { std: '', pct: '', grd: '' };
+    if (month !== 'oct' && (!score || score <= 0)) return { std: '', pct: '', grd: '' };
     const hasDual = common != null && elective != null;
     const payload = { type: 'convert_score', subject, score, opt: opt || '', subName: subName || '', ...(hasDual ? { common, elective } : {}) };
     try {
@@ -1589,12 +1603,14 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
                 err.code = data.code || 'CONVERT_SCORE_FAILED';
                 throw err;
             }
-            if (!data.error && (data.std || data.pct || data.grd)) return { std: data.std || '', pct: data.pct || '', grd: data.grd || '' };
-        } else if (res.status === 503 && (month === 'jun' || month === 'jul' || month === 'sep')) {
-            // 호출자가 dropdown 복귀 + 알림 처리하도록 명시적 throw.
+            if (month === 'oct' && (!Number.isInteger(data.std) || !Number.isFinite(data.pct) || !Number.isInteger(data.grd))) {
+                throw new Error('Invalid score conversion');
+            }
+            if (data.std || data.pct || data.grd) return { std: data.std ?? '', pct: data.pct ?? '', grd: data.grd ?? '' };
+        } else if (month === 'oct' || (res.status === 503 && (month === 'jun' || month === 'jul' || month === 'sep'))) {
             const body = await res.json().catch(() => ({}));
             const err = new Error(body.error || '선택한 시험 데이터를 불러오지 못했습니다.');
-            err.code = body.code || (month === 'jul' ? 'JUL_NOT_READY' : (month === 'sep' ? 'SEP_NOT_READY' : 'JUN_NOT_READY'));
+            err.code = body.code || (res.status === 503 ? `${month.toUpperCase()}_NOT_READY` : 'CONVERT_SCORE_FAILED');
             throw err;
         }
         // 5월 변환 실패 시 3월 기준 폴백 (legacy 동작 유지 — may 데이터 매핑 누락 edge case 대비).
@@ -1607,7 +1623,7 @@ async function convertScore(month, subject, score, opt, subName, common, electiv
         }
         return { std: '', pct: '', grd: '' };
     } catch (e) {
-        if (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE' || e.code === 'SEP_NOT_READY')) throw e;
+        if (month === 'oct' || (e && (e.code === 'JUN_NOT_READY' || e.code === 'JUL_NOT_READY' || e.code === 'JUL_SUBJECT_NOT_AVAILABLE' || e.code === 'SEP_NOT_READY'))) throw e;
         return { std: '', pct: '', grd: '' };
     }
 }

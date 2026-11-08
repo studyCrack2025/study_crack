@@ -110,7 +110,8 @@ for (const throws of [false, true]) {
 
 const { resolveAnalysisExamMode } = await import('../src/features/analysis/resource-model.js');
 const latestExamScores = { kor: { std: 120 }, math: { std: 120 } };
-assert.equal(resolveAnalysisExamMode({ user: { quantitative: { mar: latestExamScores, sep: latestExamScores, csat: latestExamScores } } }), 'csat');
-assert.equal(resolveAnalysisExamMode({ scoreExamKey: 'sep', user: { quantitative: { sep: latestExamScores, csat: latestExamScores } } }), 'sep');
+assert.equal(resolveAnalysisExamMode({ user: { quantitative: { sep: latestExamScores, oct: latestExamScores } } }), 'oct');
+assert.equal(resolveAnalysisExamMode({ user: { quantitative: { oct: latestExamScores, csat: latestExamScores } } }), 'csat');
+assert.equal(resolveAnalysisExamMode({ scoreExamKey: 'sep', user: { quantitative: { sep: latestExamScores, oct: latestExamScores } } }), 'sep');
 
 console.log('university-catalog contracts passed');

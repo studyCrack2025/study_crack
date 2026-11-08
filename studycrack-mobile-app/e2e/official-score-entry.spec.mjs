@@ -209,3 +209,124 @@ test('늦게 도착한 모의고사 환산 응답은 수능 성적표 입력을 
   await expect(page.locator('#korStd')).toHaveValue('133');
   await expect(page.locator('#korPct')).toHaveValue('94');
 });
+
+async function mockOctoberConversion(page) {
+  const requests = [];
+  let ready = false;
+  await page.route('**/api/**', route => {
+    const payload = route.request().postDataJSON();
+    if (payload?.type !== 'convert_score') return route.fallback();
+    requests.push(payload);
+    if (!ready) return route.fulfill({ status: 503, json: { code: 'OCT_NOT_READY', error: '10월 성적표 자료 준비 중입니다.' } });
+    return route.fulfill({ json: payload.score === 0 ? { std: 31, pct: 0.1, grd: 9 } : { std: 123, pct: 86.43, grd: 3 } });
+  });
+  return { requests, makeReady: () => { ready = true; } };
+}
+
+test('10월 성적 공지는 이전 달 숨김 기록과 분리하고 10월 입력으로 연결한다', async ({ page, baseURL }) => {
+  const previewOrigin = new URL(baseURL).origin;
+  await page.route('**/*', route => {
+    const url = new URL(route.request().url());
+    if (url.origin === previewOrigin) return route.continue();
+    if (url.pathname.endsWith('/amazon-cognito-identity.min.js')) {
+      return route.fulfill({ contentType: 'application/javascript', body: cognitoBrowserSdk });
+    }
+    return route.abort();
+  });
+  await page.addInitScript(() => localStorage.setItem('septemberMockUpdateHideUntil', String(Date.now() + 86_400_000)));
+  await page.clock.install();
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  const dialog = page.getByRole('dialog', { name: '10월 성적 업데이트' });
+  await expect(dialog).toBeVisible();
+  const link = dialog.getByRole('link', { name: '10월 성적 입력하기' });
+  await expect(link).toHaveAttribute('href', '/survey?exam=oct');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(dialog).toBeVisible();
+  await link.click();
+  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fsurvey%3Fexam%3Doct$/);
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await dialog.getByRole('button', { name: '3일간 보지 않기' }).click();
+  await expect(dialog).toBeHidden();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.clock.runFor(600);
+  await expect(dialog).toBeHidden();
+});
+
+test('웹 조사서 10월 링크는 자료 미준비 시 입력을 유지하고 소수 백분위를 저장한다', async ({ page }) => {
+  const api = await prepare(page);
+  api.user.targetUnivs = [{ univ: '연세대학교', major: '정치외교학과' }];
+  const conversion = await mockOctoberConversion(page);
+  await page.goto('/survey?exam=oct', { waitUntil: 'domcontentloaded' });
+  const exam = page.locator('#examSelect');
+  await expect(exam).toBeVisible();
+  await expect(exam).toHaveValue('oct');
+  await page.locator('#engGrd').selectOption('2');
+  await page.locator('#histGrd').selectOption('1');
+  await page.locator('#koreanOpt').selectOption('언매');
+  await page.locator('#korCommon').fill('55');
+  await page.locator('#korCommon').blur();
+  await expect.poll(() => api.dialogs).toContain('10월 성적표 자료 준비 중입니다.');
+  await expect(exam).toHaveValue('oct');
+  await expect(page.locator('#korCommon')).toHaveValue('55');
+
+  const save = page.getByRole('button', { name: '선택한 시험 성적 저장' });
+  await save.click();
+  await expect.poll(() => api.dialogs).toContain('국어·수학·탐구 원점수와 환산 결과를 확인한 뒤 저장해 주세요.');
+  expect(api.writes).toHaveLength(0);
+
+  conversion.makeReady();
+  await page.locator('#mathOpt').selectOption('확통');
+  await page.locator('#inq1Name').selectOption('생윤');
+  await page.locator('#inq2Name').selectOption('사문');
+  for (const [id, value] of Object.entries({ korElective: '20', mathCommon: '60', mathElective: '20', inq1Raw: '0', inq2Raw: '42' })) {
+    const field = page.locator(`#${id}`);
+    await field.fill(value);
+    await field.blur();
+  }
+  for (const id of ['korStd', 'mathStd', 'inq2Std']) await expect(page.locator(`#${id}`)).toHaveValue('123');
+  await expect(page.locator('#inq1Pct')).toHaveValue('0.1');
+  await save.click();
+  await expect(page).toHaveURL(/\/analysis(?:\.html)?$/);
+  expect(api.writes[0].mar).toEqual(march);
+  expect(api.writes[0].oct.inq1).toMatchObject({ raw: '0', pct: '0.1', grd: '9' });
+  expect(conversion.requests.every(request => request.month === 'oct')).toBe(true);
+  await expect(page.locator('#sideQuanSelector')).toHaveValue('oct');
+  await expect.poll(() => api.requests.find(request => request.type === 'analyze_my_targets' && request.examMode === 'oct')?.userScores.inq1.pct).toBe('0.1');
+});
+
+test('웹 튜토리얼은 10월 자료를 기다린 뒤 같은 시험으로 재시도하고 이전 달 성적도 보존한다', async ({ page }) => {
+  const api = await prepare(page);
+  api.user.tutorialStatus = 2;
+  api.user.tutorialRewardClaimed = false;
+  const conversion = await mockOctoberConversion(page);
+  await page.goto('/tutorial.html', { waitUntil: 'domcontentloaded' });
+  const exam = page.locator('#tutExamMonth');
+  await expect(exam).toBeVisible();
+  await exam.selectOption('oct');
+  await page.locator('#tutInq1Name').selectOption('생윤');
+  await page.locator('#tutInq2Name').selectOption('사문');
+  await page.locator('#tutEngGrd').selectOption('2');
+  await page.locator('#tutHistGrd').selectOption('1');
+  for (const [id, value] of Object.entries({ tutKorCommon: '55', tutKorSel: '20', tutMathCommon: '60', tutMathSel: '20', tutInq1: '0', tutInq2: '42' })) {
+    await page.locator(`#${id}`).fill(value);
+  }
+  const next = page.locator('#tutNextBtn');
+  await next.click();
+  await expect.poll(() => api.dialogs).toContain('10월 성적표 자료 준비 중입니다.');
+  await expect(exam).toHaveValue('oct');
+  await expect(page.locator('#tutInq1')).toHaveValue('0');
+  expect(api.writes).toHaveLength(0);
+
+  conversion.makeReady();
+  await next.click();
+  await expect(page.locator('#tutorialProgress')).toHaveAttribute('aria-valuenow', '4');
+  expect(api.writes).toHaveLength(1);
+  expect(api.writes[0].mar).toEqual(march);
+  expect(api.writes[0].oct.inq1).toMatchObject({ raw: 0, pct: 0.1, grd: 9 });
+  expect(conversion.requests).toHaveLength(8);
+  expect(conversion.requests.every(request => request.month === 'oct')).toBe(true);
+});

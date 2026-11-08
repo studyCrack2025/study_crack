@@ -5,7 +5,7 @@
    ========================================= */
 const AUTH_API_URL = CONFIG.api.auth;
 const NOTI_API_URL = CONFIG.api.noti;
-const SEPTEMBER_UPDATE_HIDE_UNTIL_KEY = 'septemberMockUpdateHideUntil';
+const SCORE_UPDATE_HIDE_UNTIL_KEY = 'october2026ScoreUpdateHideUntil';
 
 // 점수 상승 시뮬레이션 토글
 function toggleScoreUp(btnEl) {
@@ -55,17 +55,17 @@ function closeModal(type) {
     }
 }
 
-function initSeptemberUpdateBanner() {
-    const modal = document.getElementById('septemberUpdateBanner-modal');
-    const closeButton = document.getElementById('septemberUpdateClose');
-    const dismissButton = document.getElementById('septemberUpdateDismiss');
-    const hideButton = document.getElementById('septemberUpdateHide3Days');
-    const cta = document.getElementById('septemberUpdateCta');
+function initScoreUpdateBanner() {
+    const modal = document.getElementById('scoreUpdateBanner-modal');
+    const closeButton = document.getElementById('scoreUpdateClose');
+    const dismissButton = document.getElementById('scoreUpdateDismiss');
+    const hideButton = document.getElementById('scoreUpdateHide3Days');
+    const cta = document.getElementById('scoreUpdateCta');
     if (!modal || !closeButton || !dismissButton || !hideButton || !cta) return;
 
     let hideUntil = 0;
     try {
-        hideUntil = Number(localStorage.getItem(SEPTEMBER_UPDATE_HIDE_UNTIL_KEY) || 0);
+        hideUntil = Number(localStorage.getItem(SCORE_UPDATE_HIDE_UNTIL_KEY) || 0);
     } catch (_) {
         hideUntil = 0;
     }
@@ -111,7 +111,7 @@ function initSeptemberUpdateBanner() {
     dismissButton.addEventListener('click', close);
     hideButton.addEventListener('click', () => {
         try {
-            localStorage.setItem(SEPTEMBER_UPDATE_HIDE_UNTIL_KEY, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
+            localStorage.setItem(SCORE_UPDATE_HIDE_UNTIL_KEY, String(Date.now() + 3 * 24 * 60 * 60 * 1000));
         } catch (_) {
             /* localStorage 차단 환경에서는 현재 안내만 닫는다. */
         }
@@ -130,7 +130,7 @@ function initSeptemberUpdateBanner() {
         }
         if (!hasSession) {
             event.preventDefault();
-            window.location.href = `/login?returnUrl=${encodeURIComponent('/survey?exam=sep')}`;
+            window.location.href = `/login?returnUrl=${encodeURIComponent('/survey?exam=oct')}`;
         }
     });
 
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     initPptCardSlider();
     initEffectsSlider();
-    initSeptemberUpdateBanner();
+    initScoreUpdateBanner();
     initBasicPreviewEntryTracking();
 
     const myPageBtn = document.getElementById('myPageBtn');

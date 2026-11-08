@@ -8,7 +8,7 @@ export function resolveAnalysisExamMode(state = {}) {
   const explicitKey = state.scoreExamKey || scoreExamTypeToKey(state.scoreExamType);
   if (explicitKey && explicitKey !== 'active') return explicitKey;
   const quantitative = state.user?.quantitative || {};
-  return ['csat', 'sep', 'jul', 'jun', 'may', 'mar', 'apr', 'oct']
+  return ['csat', 'oct', 'sep', 'jul', 'jun', 'may', 'mar', 'apr']
     .find((examKey) => {
       const item = quantitative[examKey];
       return item && typeof item === 'object' && (item.kor || item.math || item.eng || item.inq1 || item.inq2);
