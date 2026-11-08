@@ -79,6 +79,8 @@ test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽�
   await question.focus(); await page.keyboard.press('Enter');
   await expect(page.locator('details').first()).toHaveAttribute('open', '');
   await expect(page.locator('details').first()).toContainText('10자리 인증코드');
+  await page.getByText('소셜 로그인으로도 이용할 수 있나요?', { exact: true }).click();
+  await expect(page.getByText('인증코드는 신청할 때 입력한 이메일에서 확인해주세요.', { exact: false })).toBeVisible();
 });
 
 test('모집 중이 아니거나 신청 URL이 올바르지 않으면 디자인 변경 뒤에도 접수를 열지 않는다', async ({ page }) => {
