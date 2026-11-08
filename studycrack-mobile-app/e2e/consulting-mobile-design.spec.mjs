@@ -1,20 +1,29 @@
 import { expect, test } from '@playwright/test';
+import { createEmptySurvey } from '../src/features/consulting-v2/survey-model.js';
 
 const widths = [320, 360, 390, 430, 768, 1440];
 const steps = ['onboarding', 'survey', 'materials', 'written_consultation', 'report', 'final_call'];
 const states = [
-  ['ONBOARDING', 'ACCEPT_SERVICE_TERMS', 0], ['SURVEY_DRAFT', 'COMPLETE_SURVEY', 1],
-  ['MATERIAL_REVIEW', 'WAIT_FOR_MATERIAL_REVIEW', 2], ['SUPPLEMENT_REQUIRED', 'SUBMIT_SUPPLEMENT', 2],
-  ['AVAILABILITY_REQUIRED', 'SUBMIT_WRITTEN_AVAILABILITY', 3], ['SCHEDULING', 'WAIT_FOR_WRITTEN_ASSIGNMENT', 3],
-  ['WRITTEN_SESSION_BOOKED', 'ATTEND_WRITTEN_SESSION', 3], ['WRITTEN_SESSION_COMPLETED', 'WAIT_FOR_REPORT', 4],
-  ['REPORT_GENERATING', 'WAIT_FOR_REPORT', 4], ['REPORT_REVIEW', 'WAIT_FOR_REPORT', 4],
-  ['REPORT_SCHEDULED', 'WAIT_FOR_REPORT_RELEASE', 4], ['FINAL_CALL_SCHEDULING', 'SUBMIT_FINAL_CALL_AVAILABILITY', 5],
-  ['FINAL_CALL_BOOKED', 'ATTEND_FINAL_CALL', 5], ['SERVICE_COMPLETED', null, 6]
+  ['ONBOARDING', 'ACCEPT_SERVICE_TERMS', 0, '기초조사서 작성하기', 'survey'],
+  ['SURVEY_DRAFT', 'COMPLETE_SURVEY', 1, '이어서 작성하기', 'survey'],
+  ['MATERIAL_REVIEW', 'WAIT_FOR_MATERIAL_REVIEW', 2, '제출 자료 보기', 'materials'],
+  ['SUPPLEMENT_REQUIRED', 'SUBMIT_SUPPLEMENT', 2, '보완 작성하기', 'survey'],
+  ['AVAILABILITY_REQUIRED', 'SUBMIT_WRITTEN_AVAILABILITY', 3, '가능 시간 선택하기', 'schedule'],
+  ['SCHEDULING', 'WAIT_FOR_WRITTEN_ASSIGNMENT', 3, '가능 시간 확인하기', 'schedule'],
+  ['WRITTEN_SESSION_BOOKED', 'ATTEND_WRITTEN_SESSION', 3, '서면 상담 열기', 'written-session'],
+  ['WRITTEN_SESSION_COMPLETED', 'WAIT_FOR_REPORT', 4, '보고서 상태 보기', 'report'],
+  ['REPORT_GENERATING', 'WAIT_FOR_REPORT', 4, '보고서 상태 보기', 'report'],
+  ['REPORT_REVIEW', 'WAIT_FOR_REPORT', 4, '보고서 상태 보기', 'report'],
+  ['REPORT_SCHEDULED', 'WAIT_FOR_REPORT_RELEASE', 4, '보고서 상태 보기', 'report'],
+  ['FINAL_CALL_SCHEDULING', 'SUBMIT_FINAL_CALL_AVAILABILITY', 5, '파이널 콜 시간 선택하기', 'final-call'],
+  ['FINAL_CALL_BOOKED', 'ATTEND_FINAL_CALL', 5, '통화 일정 확인하기', 'final-call'],
+  ['SERVICE_COMPLETED', null, 6, '공개 보고서 보기', 'report']
 ];
 const homeFor = ([workflowState, nextAction, current]) => ({ available: true, workflowState, nextAction, nextDueAt: null, progress: steps.map((step, index) => ({ step, status: index < current ? 'completed' : index === current ? 'current' : 'upcoming' })), session: null, report: null, alerts: [] });
 
 async function prepare(page, { loggedIn = true } = {}) {
   const state = { home: homeFor(states[1]), error: false, defer: false, campaign: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'open', price: 300000, applicationUrl: 'https://docs.google.com/forms/d/e/synthetic/viewform' } };
+  state.survey = { caseId: 'CASE_synthetic', workflowState: 'ONBOARDING', draft: null, files: [] };
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const fontResponse = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css');
   expect(fontResponse.ok(), 'The preview must serve the built font stylesheet').toBe(true);
@@ -25,16 +34,31 @@ async function prepare(page, { loggedIn = true } = {}) {
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     localStorage.setItem('userRole','student');
     window.hasClientSession=()=>${loggedIn};
-    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},calls:[]};
+    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},survey:${JSON.stringify(state.survey)},calls:[],saves:[],submissions:[]};
     window.apiFetch=async(_url,options)=>{
-      const {type}=JSON.parse(options.body), f=window.__design; f.calls.push(type);
+      const {type,data:input}=JSON.parse(options.body), f=window.__design; f.calls.push(type);
       if(type==='student_get_v2_consulting_home'){
         if(f.defer) await new Promise(resolve=>{window.__releaseHome=resolve;});
         return new Response(JSON.stringify(f.error?{success:false,code:'SERVER_ERROR'}:{success:true,data:f.home}),{status:f.error?503:200});
       }
       let data={};
       if(type==='student_get_v2_survey_schema') data={caseId:'CASE_synthetic'};
-      else if(type==='student_get_v2_survey_draft') data={caseId:'CASE_synthetic',workflowState:'SURVEY_DRAFT',draft:{snapshot:null,draftRevision:0},files:[]};
+      else if(type==='student_get_v2_survey_draft') data=f.survey;
+      else if(type==='student_save_v2_survey_draft'){
+        f.saves.push(input);
+        if(f.saveMode==='defer') await new Promise(resolve=>{f.releaseSave=resolve;});
+        if(f.saveMode==='error') return new Response(JSON.stringify({success:false,code:'INVALID_SURVEY_INPUT'}),{status:400});
+        const revision=f.survey.draft?.draftRevision||0;
+        if(input.expectedDraftRevision!==revision) return new Response(JSON.stringify({success:false,code:'REVISION_CONFLICT'}),{status:409});
+        f.survey.draft={snapshot:input.snapshot,draftRevision:revision+1};
+        f.survey.workflowState='SURVEY_DRAFT';
+        data={caseId:f.survey.caseId,workflowState:f.survey.workflowState,draftRevision:revision+1};
+      }
+      else if(type==='student_submit_v2_survey'){
+        f.submissions.push(input);
+        f.survey.workflowState='MATERIAL_REVIEW';
+        data={caseId:f.survey.caseId,workflowState:f.survey.workflowState};
+      }
       else if(type==='student_list_v2_written_slots') data={slots:['2099-01-01','2099-01-02','2099-01-03'].flatMap(localDate=>['10:00','10:30'].map(localTime=>({slotId:'WST_'+localDate.replaceAll('-','')+'_'+localTime.replace(':',''),localDate,localTime,startAt:localDate+'T'+localTime+':00+09:00',endAt:localDate+'T11:00:00+09:00'})))};
       else if(type==='student_get_v2_written_availability') data={selectedSlots:[],revision:0};
       else if(type==='student_get_v2_written_booking') data={session:null};
@@ -93,33 +117,35 @@ test('모집 중이 아니거나 신청 URL이 올바르지 않으면 디자인 
   }
 });
 
-for (const width of [320, 768, 1440]) test(`홈 14단계는 ${width}px에서 순서·현재 행동·문서 스크롤을 유지한다`, async ({ page }, testInfo) => {
+for (const width of [320, 768, 1440]) test(`홈 14개 상태는 ${width}px에서 현재 행동과 문서 스크롤을 제공한다`, async ({ page }, testInfo) => {
   const fixture = await prepare(page);
-  await page.setViewportSize({ width, height: 900 });
   for (const state of states) {
+    await page.setViewportSize({ width, height: 900 });
     fixture.home = homeFor(state);
     await page.goto('/2027-jungsi-consulting/home');
     await expect(page.locator('#nextTitle')).toBeVisible();
     await fits(page);
-    await expect(page.locator('.consulting-v2-progress li')).toHaveCount(6);
-    await expect(page.locator('[aria-current="step"]')).toHaveCount(state[0] === 'SERVICE_COMPLETED' ? 0 : 1);
-    expect(await page.locator('.consulting-v2-next').evaluate(node => node.getBoundingClientRect().top < document.querySelector('.consulting-v2-progress').getBoundingClientRect().top)).toBe(true);
+    await expect(page.getByRole('heading', { name: '전체 진행 단계' })).toHaveCount(0);
+    const next = page.getByRole('button', { name: state[3], exact: true });
+    await expect(page.locator('.consulting-v2-next .consulting-v2-primary')).toHaveCount(1);
+    expect(await next.evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(900);
     if (state[0] === 'SERVICE_COMPLETED') {
-      await expect(page.getByRole('button', { name: '다음 단계로 이동' })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: '공개 보고서 보기' })).toBeVisible();
+      await expect(page.getByRole('button', { name: '통화 완료 확인' })).toBeVisible();
     } else {
-      const next = page.getByRole('button', { name: '다음 단계로 이동' });
-      expect(await next.evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(900);
       await expect(page.locator('#nextTitle')).not.toContainText('모든 컨설팅 과정이 완료');
     }
     if (state[0] === 'SURVEY_DRAFT') {
-      const ys = await page.locator('.consulting-v2-progress li > span').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().top));
-      expect(width < 760 ? ys[1] > ys[0] : Math.abs(ys[1] - ys[0]) < 2).toBe(true);
+      await expect.poll(() => page.locator('.consulting-v2-next-art img').evaluate(node => node.naturalWidth)).toBeGreaterThan(0);
       await page.screenshot({ path: testInfo.outputPath(`consulting-home-${width}.png`), fullPage: true });
     }
+    if (width === 320) await page.setViewportSize({ width, height: 420 });
     await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
     await expect(page.locator('.consulting-v2-home-footer')).toBeInViewport();
-    if (width === 320) expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+    if (width === 320) {
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      await next.click();
+      await expect(page).toHaveURL(new RegExp(`/2027-jungsi-consulting/${state[4]}$`));
+    }
   }
 });
 
@@ -129,10 +155,10 @@ test('보류·빈 상태·일시 오류·미제공 다음 행동은 완료로 �
   fixture.home = { ...homeFor(states[1]), serviceHold: true, nextAction: null };
   await page.goto('/2027-jungsi-consulting/home');
   await expect(page.locator('#nextTitle')).toHaveText('서비스가 일시 보류되었습니다.');
-  await expect(page.getByRole('button', { name: '다음 단계로 이동' })).toHaveCount(0);
+  await expect(page.locator('.consulting-v2-next button')).toHaveCount(0);
   fixture.home = { ...homeFor(states[1]), nextAction: null };
   await page.reload();
-  await expect(page.locator('#nextTitle')).toHaveText('현재 진행 상태를 확인해주세요.');
+  await expect(page.locator('#nextTitle')).toHaveText('진행 상황을 확인해주세요.');
   fixture.home = { available: false }; await page.reload();
   await expect(page.getByRole('heading', { name: '등록된 컨설팅이 없습니다' })).toBeVisible();
   fixture.error = true; await page.reload();
@@ -172,9 +198,11 @@ test('신청자 로그인 진입도 작은 화면과 확대된 레이아웃에�
   await expect(page.getByRole('link', { name: '회원가입', exact: true })).toBeInViewport();
 });
 
-test('기초조사 7개 입력 단계와 자료·일정·서면상담은 320px에서도 하단까지 조작한다', async ({ page }) => {
+test('기초조사 7개 입력 단계와 자료·일정·서면상담은 320px에서도 하단까지 조작한다', async ({ page }, testInfo) => {
   await prepare(page); await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
+  await expect.poll(() => page.locator('.consulting-survey-mascot').evaluate(node => node.naturalWidth)).toBeGreaterThan(0);
+  await page.screenshot({ path: testInfo.outputPath('consulting-survey-320.png'), fullPage: true });
   for (let i = 0; i < 7; i++) {
     await expect(page.locator('.consulting-survey-card h1')).toBeVisible();
     await fits(page);
@@ -188,4 +216,82 @@ test('기초조사 7개 입력 단계와 자료·일정·서면상담은 320px�
   await expect(page.getByRole('button', { name: '가능 시간 저장' })).toBeVisible(); await fits(page);
   await page.goto('/2027-jungsi-consulting/written-session');
   await expect(page.locator('.consulting-written-chat footer textarea')).toBeVisible(); await fits(page);
+});
+
+test('자동저장 실패는 멈추고 다시 저장하면 다음 구간과 새로고침에서 답변을 보존한다', async ({ page }) => {
+  await page.clock.install();
+  const fixture = await prepare(page);
+  await page.goto('/2027-jungsi-consulting/survey');
+  await page.evaluate(() => { window.__design.saveMode = 'error'; });
+  await page.getByLabel('학교명', { exact: true }).fill('가상고');
+  await page.clock.runFor(2100);
+  await expect(page.locator('.consulting-survey-save-state')).toHaveText('저장 실패');
+  await page.clock.runFor(6500);
+  expect(await page.evaluate(() => window.__design.saves.length)).toBe(1);
+  await expect(page.getByLabel('학교명', { exact: true })).toHaveValue('가상고');
+  await page.evaluate(() => { window.__design.saveMode = 'success'; });
+  await page.getByRole('button', { name: '다시 저장', exact: true }).click();
+  await expect(page.locator('.consulting-survey-save-state')).toHaveText('저장됨');
+  const saves = await page.evaluate(() => window.__design.saves);
+  expect(saves).toHaveLength(2);
+  expect(saves[1].snapshot.qualitative.consultationQuestions).toEqual([]);
+  await page.getByRole('button', { name: '저장하고 다음' }).click();
+  await expect(page.getByRole('heading', { name: '성적', exact: true })).toBeVisible();
+  fixture.survey = await page.evaluate(() => window.__design.survey);
+  await page.reload();
+  await expect(page.getByLabel('학교명', { exact: true })).toHaveValue('가상고');
+});
+
+test('진행 중인 자동저장과 다음 이동은 최신 입력을 revision 순서대로 저장한다', async ({ page }) => {
+  await page.clock.install();
+  await prepare(page);
+  await page.goto('/2027-jungsi-consulting/survey');
+  await page.evaluate(() => { window.__design.saveMode = 'defer'; });
+  const school = page.getByLabel('학교명', { exact: true });
+  await school.fill('첫 입력');
+  await page.clock.runFor(2100);
+  await expect(page.locator('.consulting-survey-save-state')).toHaveText('저장 중…');
+  await school.fill('최신 입력');
+  await page.getByRole('button', { name: '저장하고 다음' }).click();
+  await expect(page.getByRole('heading', { name: '학생 상태', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.__design.saves.length)).toBe(1);
+  await page.evaluate(() => { window.__design.saveMode = 'success'; window.__design.releaseSave(); });
+  await expect(page.getByRole('heading', { name: '성적', exact: true })).toBeVisible();
+  const saves = await page.evaluate(() => window.__design.saves);
+  expect(saves.map(save => [save.expectedDraftRevision, save.snapshot.studentStatus.schoolName])).toEqual([[0, '첫 입력'], [1, '최신 입력']]);
+});
+
+test('최종 제출은 시험 종류를 안내하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  const snapshot = createEmptySurvey();
+  Object.assign(snapshot.studentStatus, { applicantType: 'graduate', residenceRegion: '서울' });
+  snapshot.scores.records = snapshot.scores.records.map(row => ({ ...row, grade: 2, confirmed: true }));
+  Object.assign(snapshot.preferences, { desiredRegions: ['서울'], desiredMajors: ['경영'], desiredTracks: ['상경'] });
+  snapshot.strategy.riskTolerance = 'balanced';
+  snapshot.qualitative.consultationQuestions = ['지원 조합이 궁금합니다.'];
+  snapshot.consent.accurateInformation = true;
+  const fileId = 'FILE_123e4567-e89b-12d3-a456-426614174001';
+  fixture.survey = { ...fixture.survey, workflowState: 'SURVEY_DRAFT', draft: { snapshot, draftRevision: 1 }, files: [{ fileId, displayName: '성적표.pdf', status: 'quarantined' }] };
+  await page.goto('/2027-jungsi-consulting/survey');
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  for (let step = 0; step < 6; step += 1) await next.click();
+  const submit = page.getByRole('button', { name: '최종 제출' });
+  await submit.click();
+  await expect(page.getByRole('alert')).toHaveText('시험 종류를 선택해주세요.');
+  await page.getByRole('combobox', { name: '시험 종류', exact: true }).selectOption('september_mock');
+  for (let step = 1; step < 6; step += 1) await next.click();
+  const consent = page.getByRole('checkbox', { name: '컨설팅 분석을 위한 자료 이용에 동의합니다.', exact: true });
+  await consent.check();
+  await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.survey.files[0].status = 'ready'; });
+  await page.getByRole('button', { name: '검사 상태 확인' }).click();
+  await expect(page.getByText('검사 완료', { exact: true })).toBeVisible();
+  await expect(consent).toBeChecked();
+  page.once('dialog', dialog => dialog.accept());
+  await submit.click();
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting\/materials$/);
+  const { draft, submissions } = await page.evaluate(() => ({ draft: window.__design.survey.draft, submissions: window.__design.submissions }));
+  expect(submissions).toHaveLength(1);
+  expect(submissions[0]).toMatchObject({ fileIds: [fileId], expectedDraftRevision: draft.draftRevision });
+  expect(draft.snapshot.consent.analysisUse).toBe(true);
 });
