@@ -23,7 +23,11 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const [submitting, setSubmitting] = React.useState(false);
   const [canClaim, setCanClaim] = React.useState(false);
   const claimRequest = React.useRef(null);
-  const readyMessage = hasSession ? '이메일로 받은 인증코드를 입력해주세요.' : '신청 이메일과 같은 이메일의 계정으로 로그인하거나 회원가입해주세요.';
+  const staffSession = hasSession && (binding.userRole === 'admin' || binding.userRole === 'tutor');
+  const showCodeForm = invite && hasSession && !staffSession && canClaim;
+  const readyMessage = staffSession
+    ? '관리자 또는 상담사 계정으로 로그인되어 있습니다. 시크릿 창에서 받은 링크를 열고 컨설팅을 이용할 학생 계정으로 로그인해주세요.'
+    : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.' : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
 
   React.useEffect(() => {
     claimRequest.current?.abort();
@@ -42,7 +46,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
         if (result.code === 'INVITE_ALREADY_CLAIMED' && result.status === 409 && hasSession) {
           setTone('');
           setCanClaim(true);
-          setStatus('이미 처리된 초대인지 로그인 계정으로 확인해주세요.');
+          setStatus(staffSession ? readyMessage : '이미 처리된 초대인지 로그인 계정으로 확인해주세요.');
           return;
         }
         setTone('error');
@@ -61,7 +65,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       setStatus(readyMessage);
     });
     return () => { controller.abort(); claimRequest.current?.abort(); claimRequest.current = null; };
-  }, [binding.fetchImpl, binding.publicApiUrl, hasSession, invite, readyMessage]);
+  }, [binding.fetchImpl, binding.publicApiUrl, hasSession, invite, readyMessage, staffSession]);
 
   const clearInvite = () => {
     globalThis.sessionStorage?.removeItem(INVITE_KEY);
@@ -75,8 +79,8 @@ export function ConsultingStartScreen({ binding, hasSession }) {
 
   const submit = async event => {
     event.preventDefault();
-    if (claimRequest.current || !hasSession || !canClaim) return;
-    if (!invite || !/^\d{10}$/.test(code.trim())) {
+    if (claimRequest.current || !showCodeForm) return;
+    if (!/^\d{10}$/.test(code.trim())) {
       setTone('error');
       setStatus('이메일로 받은 10자리 인증코드를 확인해주세요.');
       return;
@@ -105,20 +109,20 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     <h1 id="consultingStartTitle">컨설팅 이용 인증</h1>
     <p className="consulting-v2-status" data-tone={tone || undefined} role="status">{status}</p>
     {summary ? <div className="consulting-v2-summary">
-      <p><span>등록 이메일</span><strong>{summary.maskedEmail}</strong></p>
-      <p><span>등록 전화번호</span><strong>{summary.maskedPhone}</strong></p>
+      <p><span>신청 이메일</span><strong>{summary.maskedEmail}</strong></p>
+      <p><span>신청 전화번호</span><strong>{summary.maskedPhone}</strong></p>
       <p><span>인증 기한</span><strong>{new Date(summary.expiresAt).toLocaleString('ko-KR')}</strong></p>
     </div> : null}
     {invite && !hasSession ? <div className="consulting-v2-actions">
       <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>로그인</a>
       <a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>회원가입</a>
     </div> : null}
-    {invite && hasSession && canClaim ? <form className="consulting-v2-form" onSubmit={submit}>
+    {showCodeForm ? <form className="consulting-v2-form" onSubmit={submit}>
       <label htmlFor="consultingInviteCode">이메일로 받은 10자리 인증코드</label>
       <input id="consultingInviteCode" value={code} onChange={event => { setCode(event.target.value.replace(/\D/g, '').slice(0, 10)); if (!submitting) { setTone(''); setStatus(readyMessage); } }} disabled={submitting} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{10}" maxLength="10" required />
       <button type="submit" disabled={submitting}>{submitting ? '확인 중…' : '유료회원 인증하고 시작하기'}</button>
     </form> : null}
-    {hasSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>내 진행 현황 보기</button> : null}
+    {hasSession && !staffSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>내 진행 현황 보기</button> : null}
     <button className="consulting-v2-link" type="button" onClick={clearInvite}>이 초대 정보 지우기</button>
   </section></main>;
 }
