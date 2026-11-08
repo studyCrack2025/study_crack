@@ -187,10 +187,10 @@ try {
   html = render({ scoreEditErrors: { 'v2e-korean-common': '원점수를 확인해 주세요.' } });
   assert.match(html, /aria-invalid="true" aria-describedby="v2e-korean-common-error"/);
   assert.match(html, /id="v2e-korean-common-error" role="alert"/);
-  assert.match(render({ scoreExamKey: 'sep' }), /실제 성적표/);
-  assert.doesNotMatch(render({ scoreExamKey: 'mar' }), /score-edit-estimate-notice/);
+  assert.doesNotMatch(render({ scoreExamType: '9월 평가원', scoreExamKey: 'sep' }), /임시 추정치|score-edit-official-notice/);
   assert.match(render({ scoreEditStep: 6, scoreEditSaveError: '저장에 실패했어요.' }), /score-save-error" role="alert"/);
   const officialHtml = render({ scoreExamType: '수능', scoreEditState: officialDraft() });
+  assert.match(officialHtml, /수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요/);
   assert.match(officialHtml, /v2e-korean-std/);
   assert.match(officialHtml, /v2e-korean-pct/);
   assert.match(officialHtml, /v2e-korean-grd/);

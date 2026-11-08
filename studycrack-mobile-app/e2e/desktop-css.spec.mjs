@@ -32,7 +32,9 @@ for (const width of [390, 1440]) {
           expect(inner.x + inner.width).toBeLessThanOrEqual(box.x + box.width + 1);
         }
         await page.locator('#tutExamMonth').selectOption('jul');
-        await expect(page.locator('#tutExamEstimateNotice')).toBeHidden();
+        await expect(page.locator('#tutExamMonth')).toHaveValue('jul');
+        await page.locator('#tutExamMonth').selectOption('sep');
+        await expect(card).not.toContainText('임시 추정치');
       }
     }
   });

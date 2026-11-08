@@ -4,7 +4,7 @@ import { convertExamScores } from '../src/features/analysis/api.js';
 
 const requests = [];
 const metrics = {
-  kor: { std: 132, pct: 91, grd: 2 },
+  kor: { std: 132, pct: 91.25, grd: 2 },
   math: { std: 128, pct: 87, grd: 3 },
   inq1: { std: 64, pct: 89, grd: 2 },
   inq2: { std: 61, pct: 82, grd: 3 }
@@ -23,18 +23,18 @@ const examData = {
   inq2: { name: '사회·문화', raw: 43 }
 };
 
-const converted = await convertExamScores({ apiFetch, analysisApiUrl: '/analysis', examMode: 'jun', examData });
+const converted = await convertExamScores({ apiFetch, analysisApiUrl: '/analysis', examMode: 'oct', examData });
 assert.equal(converted.ok, true);
 assert.deepEqual(converted.data.kor, { ...examData.kor, ...metrics.kor });
 assert.deepEqual(converted.data.inq2, { ...examData.inq2, ...metrics.inq2 });
 assert.equal(requests.length, 4);
 assert.deepEqual(
   requests.find((item) => item.subject === 'kor'),
-  { type: 'convert_score', subject: 'kor', score: 78, opt: '언어와매체', common: 58, elective: 20, month: 'jun' }
+  { type: 'convert_score', subject: 'kor', score: 78, opt: '언어와매체', common: 58, elective: 20, month: 'oct' }
 );
 assert.deepEqual(
   requests.find((item) => item.subject === 'inq1'),
-  { type: 'convert_score', subject: 'inq1', score: 45, subName: '생활과 윤리', month: 'jun' }
+  { type: 'convert_score', subject: 'inq1', score: 45, subName: '생활과 윤리', month: 'oct' }
 );
 
 const unavailable = await convertExamScores({
