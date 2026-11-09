@@ -1,7 +1,7 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { clientSurveyError, COMMUTE_OPTIONS, createEmptySurvey, hasPreviousExamScores, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
-import { deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, readV2ScorePhoto, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
 import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
 import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
@@ -180,7 +180,7 @@ export function ConsultingSurveyScreen({ binding }) {
     session.action = true;
     setActionBusy(true);
     try {
-      await action(session);
+      return await action(session);
     } finally {
       session.action = false;
       if (draft.current === session) setActionBusy(false);
@@ -221,6 +221,11 @@ export function ConsultingSurveyScreen({ binding }) {
     if (!result.ok) return showNotice(result.error || '성적표를 삭제하지 못했습니다.', true);
     setFiles(current => current.filter(item => item.fileId !== file.fileId));
     showNotice('첨부한 성적표를 삭제했습니다.');
+  });
+  const readPhoto = file => runAction(async session => {
+    setNotice(null);
+    const result = await readV2ScorePhoto(binding, { caseId: session.caseId, fileId: file.fileId });
+    if (draft.current === session) return result;
   });
   const submit = () => runAction(async session => {
     const readyFiles = files.filter(file => file.status === 'ready');
@@ -274,7 +279,7 @@ export function ConsultingSurveyScreen({ binding }) {
       {notice ? <p className="consulting-survey-message" data-tone={notice.error ? 'error' : 'info'} role={notice.error ? 'alert' : 'status'}>{notice.text}</p> : null}
       <fieldset className="consulting-survey-fields" disabled={actionBusy} aria-labelledby="survey-title">
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
-        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} fileActions={fileActions} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
+        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} fileActions={{ ...fileActions, onReadPhoto: readPhoto }} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} />}
         {key === 'preferences' && <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}

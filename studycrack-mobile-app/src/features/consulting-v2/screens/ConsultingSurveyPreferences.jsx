@@ -3,12 +3,10 @@ import { getMobileApiBinding } from '../../../shared/browser/mobile-runtime.js';
 import { fetchV2SurveyUniversities } from '../survey-api.js';
 import { ADDITIONAL_PREFERENCE_MAX, EMPTY_RANKED_CHOICE, hasRankedChoice, MAX_RANKED_CHOICES } from '../survey-model.js';
 
-const REGIONS = ['서울', '경기', '인천', '강원', '대전', '세종', '충북', '충남', '광주', '전북', '전남', '대구', '경북', '부산', '울산', '경남', '제주'];
 const TRACKS = [
   '인문·어문', '사회과학', '경영·경제', '자연과학·수학', '공학', '컴퓨터·소프트웨어', '농림·수산·생명',
   '교육·사범', '의학', '치의학', '한의학', '수의학', '약학', '간호', '보건', '디자인·미술', '음악·공연', '체육', '자유전공·융합', '기타 계열'
 ];
-const EMPTY_PICKER = { query: '', notice: '' };
 const SEARCH_RESULTS_LIMIT = 8;
 const searchKey = value => value.normalize('NFKC').toLocaleLowerCase('ko').replace(/[^\p{L}\p{N}]/gu, '');
 
@@ -19,51 +17,42 @@ function universityMatches(name, compact, words) {
   return [name, short, familiar].map(searchKey).some(key => key.includes(compact) || words.every(word => key.includes(word)));
 }
 
-function ChoiceSelect({ label, value, options, onChange, disabled = false }) {
+function ChoiceSelect({ label, value, options, onChange }) {
   const availableOptions = value && !options.includes(value) ? [value, ...options] : options;
   return <label className="consulting-survey-field">
     <span>{label}</span>
-    <select value={value} disabled={disabled} onChange={event => onChange(event.currentTarget.value)}>
+    <select value={value} onChange={event => onChange(event.currentTarget.value)}>
       <option value="">선택하지 않음</option>
       {availableOptions.map(option => <option key={option} value={option}>{option}</option>)}
     </select>
   </label>;
 }
 
-function UniversityPicker({ choice, catalog, picker, onSearch, onChoose }) {
+function UniversityPicker({ university, catalog, query, onSearch, onChoose }) {
   const ready = catalog.status === 'ready';
-  const available = catalog.universities.filter(item => !choice.region || item.regions?.includes(choice.region));
-  const search = searchKey(picker.query);
-  const terms = picker.query.trim().split(/\s+/u).map(searchKey).filter(Boolean);
-  const matches = search ? available.filter(item => universityMatches(item.univName, search, terms)) : [];
-  const outsideList = ready && choice.university && !available.some(item => item.univName === choice.university);
-  const hasRegions = catalog.universities.some(item => item.regions?.length);
+  const search = searchKey(query);
+  const terms = query.trim().split(/\s+/u).map(searchKey).filter(Boolean);
+  const matches = search ? catalog.universities.filter(item => universityMatches(item.univName, search, terms)) : [];
   let searchMessage = '';
-  if (ready && choice.region && !hasRegions) {
-    searchMessage = '지역별 목록을 불러오지 못했어요. 지역 선택을 비워 전체 대학을 검색하거나 아래에 직접 적어주세요.';
-  } else if (ready && search) {
+  if (ready && search) {
     searchMessage = matches.length ? `검색 결과 ${matches.length}곳` : '일치하는 대학이 없어요. 검색어를 바꾸거나 아래에 직접 적어주세요.';
     if (matches.length > SEARCH_RESULTS_LIMIT) searchMessage += ' · 검색어를 더 입력하면 목록이 좁혀져요.';
-  } else if (ready && choice.region) {
-    searchMessage = available.length ? `${choice.region} 소재 대학 ${available.length}곳` : '이 지역의 대학이 목록에 없어요. 아래 추가 희망에 직접 적어주세요.';
   }
   return <div className="consulting-university-picker">
     <label className="consulting-survey-field">
       <span>대학명 검색</span>
-      <input type="search" placeholder="예: 연세대, 한국외대 글로벌" maxLength="80" value={picker.query} disabled={!ready} onChange={event => onSearch(event.currentTarget.value)} />
+      <input type="search" placeholder="예: 연세대, 한국외대 글로벌" maxLength="80" value={query} disabled={!ready} onChange={event => onSearch(event.currentTarget.value)} />
     </label>
-    {!search && <ChoiceSelect label="희망 대학" options={available.map(item => item.univName)} value={outsideList ? '' : choice.university} disabled={!ready || !available.length} onChange={onChoose} />}
+    {university && <div className="consulting-score-lookup">
+      <p className="consulting-score-note">선택한 대학 · <strong>{university}</strong></p>
+      <button className="consulting-v2-secondary" type="button" onClick={() => onChoose('')}>대학 선택 지우기</button>
+    </div>}
     {searchMessage && <p className="consulting-score-note" role="status">{searchMessage}</p>}
     {matches.length > 0 && <ul className="consulting-university-results" aria-label="대학 검색 결과">
       {matches.slice(0, SEARCH_RESULTS_LIMIT).map(({ univName, regions }) => <li key={univName}>
         <button type="button" onClick={() => onChoose(univName)}><strong>{univName}</strong>{regions?.length > 0 && <span>{regions.join(' · ')}</span>}</button>
       </li>)}
     </ul>}
-    {outsideList ? <div className="consulting-score-lookup">
-      <p className="consulting-score-note">이전에 저장한 대학 · {choice.university}. 현재 목록에서 다시 선택할 수 있어요.</p>
-      <button className="consulting-v2-secondary" type="button" onClick={() => onChoose('')}>기존 대학 선택 지우기</button>
-    </div> : search && choice.university && <p className="consulting-score-note">선택한 대학 · {choice.university}</p>}
-    {picker.notice && <p className="consulting-score-note" role="status">{picker.notice}</p>}
   </div>;
 }
 
@@ -86,16 +75,9 @@ export function ConsultingSurveyPreferences({ value, update }) {
   const changeChoice = (index, patch) => update({
     rankedChoices: choices.map((choice, position) => position === index ? { ...choice, ...patch } : choice)
   });
-  const changePicker = (index, state) => setPickers(items => choices.map((_, position) => position === index ? state : items[position]));
-  const changeRegion = (index, region) => {
-    const { university } = choices[index];
-    const regions = catalog.universities.find(item => item.univName === university)?.regions;
-    const clear = region && regions?.length && !regions.includes(region);
-    changeChoice(index, clear ? { region, university: '' } : { region });
-    changePicker(index, clear ? { query: '', notice: '지역이 바뀌어 이전 희망 대학 선택을 비웠어요.' } : EMPTY_PICKER);
-  };
+  const changePicker = (index, query) => setPickers(items => choices.map((_, position) => position === index ? query : items[position]));
   return <div className="consulting-survey-preferences">
-    <p className="consulting-score-note"><strong>최대 {MAX_RANKED_CHOICES}지망</strong>까지 적을 수 있어요. 각 지망의 지역을 고르면 그 지역의 대학만 표시돼요.</p>
+    <p className="consulting-score-note"><strong>최대 {MAX_RANKED_CHOICES}지망</strong>까지 적을 수 있어요. 대학을 검색하거나 희망 계열을 골라주세요.</p>
     {catalog.status === 'loading' && <p className="consulting-score-note" role="status">대학 목록을 불러오고 있어요.</p>}
     {catalog.status === 'error' && <div className="consulting-score-lookup">
       <p className="consulting-score-note" role="status">대학 목록을 불러오지 못했어요. 아래 추가 희망에 대학명을 적을 수 있어요.</p>
@@ -106,14 +88,12 @@ export function ConsultingSurveyPreferences({ value, update }) {
     </div>}
     {choices.map((choice, index) => <fieldset key={index} className="consulting-survey-preference-rank">
       <legend>{index + 1}지망</legend>
-      <div className="consulting-survey-preference-selects">
-        <ChoiceSelect label="희망 지역" options={REGIONS} value={choice.region} onChange={region => changeRegion(index, region)} />
-        <ChoiceSelect label="희망 계열" options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
-      </div>
-      <UniversityPicker choice={choice} catalog={catalog} picker={pickers[index] || EMPTY_PICKER} onSearch={query => changePicker(index, { query, notice: '' })} onChoose={university => {
+      <UniversityPicker university={choice.university} catalog={catalog} query={pickers[index] || ''} onSearch={query => changePicker(index, query)} onChoose={university => {
         changeChoice(index, { university });
-        changePicker(index, EMPTY_PICKER);
+        changePicker(index, '');
       }} />
+      <ChoiceSelect label="희망 계열" options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
+      {choice.region && <p className="consulting-score-note">이전에 입력한 희망 지역 · {choice.region}</p>}
       {choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {
         update({ rankedChoices: choices.filter((_, position) => position !== index) });
         setPickers(items => items.filter((_, position) => position !== index));

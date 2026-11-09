@@ -42,6 +42,7 @@ async function fileRequest(binding, type, data, fallbackError) {
 }
 
 export const deleteV2ScoreFile = (binding, data) => fileRequest(binding, 'consulting_delete_unsubmitted_score_file', data, '성적표를 삭제하지 못했습니다.');
+export const readV2ScorePhoto = (binding, data) => fileRequest(binding, 'consulting_read_score_photo', data, '사진을 읽지 못했습니다. 성적을 직접 입력할 수 있어요.');
 
 export async function uploadV2ScoreFile(binding, { caseId, file }) {
   const created = await fileRequest(binding, 'consulting_create_score_upload', { caseId, fileName: file.name, contentType: file.type, size: file.size }, '업로드를 준비하지 못했습니다.');
