@@ -38,9 +38,14 @@ async function prepare(page, hash = '') {
             Object.assign(state.students[0].application, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 }); state.students[0].activeInviteId = 'SYNTHETIC_INVITE';
             data = { applicationId: applicationId(1), applicationState: 'INVITED', revision: 1 };
         } else if (request.type === 'admin_get_v2_material_detail') data = { case: { caseId, workflowState: 'MATERIAL_REVIEW' }, submission: { snapshot: {
+            formVersion: 3,
             conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null },
             preferences: { rankedChoices: [{ region: '서울', university: '가상대학교', track: '공학' }], additionalPreference: '가상대학교 전자공학과 검토' },
-            qualitative: { concerns: '합성 상담 내용' }
+            qualitative: { concerns: '합성 상담 내용' },
+            scores: { examYear: 2026, examType: 'csat', records: [
+                { area: 'korean', subject: '국어', selection: '화법과작문', commonRawScore: 76, electiveRawScore: 0, rawScore: 76 },
+                { area: 'english', subject: '영어', rawScore: 83 }, { area: 'inquiry', subject: '탐구 1' }
+            ] }
         } }, files: [] };
         else data = { items: [], nextCursor: null };
         if (state.deferType === request.type) await new Promise(resolve => { state.resolve = resolve; });
@@ -79,6 +84,11 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     await expect(survey).toContainText('1지망: 서울 · 가상대학교 · 공학');
     await expect(survey).toContainText('추가 희망: 가상대학교 전자공학과 검토');
     await expect(survey).toContainText('최대 편도 통학 시간: 2시간 이상도 가능');
+    await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
+    await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
+    await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: '탐구 1 과목명' })).toHaveValue('');
+    await expect(page.getByLabel('검수 결과').locator('option').first()).toHaveText('성적표 확인 완료');
     await page.getByRole('button', { name: '분석·보고서', exact: true }).click(); await page.reload();
     await expect(page.locator('#consultingWorkspaceReport')).toBeVisible(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
     await page.route('**/2027-jungsi-consulting/report?*', route => route.fulfill({ body: '<html><body>합성 작업 화면</body></html>' }));

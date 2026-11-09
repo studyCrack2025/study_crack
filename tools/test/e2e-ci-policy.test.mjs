@@ -21,6 +21,14 @@ test('parallel browser jobs preserve one final gate, scope, immutable bytes and 
   const verify = workflow.slice(workflow.indexOf('  verify:'), workflow.indexOf('  rollback:'));
   assert.match(workflow, /pull_request:\n    branches: \[dev, main\]/);
   assert.doesNotMatch(workflow, /pull_request_target|continue-on-error/);
+  assert.match(workflow, /^env:\n  CI_NODE_VERSION: '24'$/m);
+  const runners = [...workflow.matchAll(/^    runs-on: (.+)$/gm)].map(([, runner]) => runner);
+  const nodeVersions = [...workflow.matchAll(/^          node-version: (.+)$/gm)].map(([, version]) => version);
+  assert.equal(nodeVersions.length, runners.length);
+  assert.ok(nodeVersions.length > 0);
+  assert.ok(runners.every(runner => runner === 'ubuntu-26.04'));
+  assert.ok(nodeVersions.every(version => version === '${{ env.CI_NODE_VERSION }}'));
+  assert.doesNotMatch(workflow, /check-latest: true/);
   assert.match(prepare, /github.event_name == 'push' \|\| github.event_name == 'pull_request'/);
   assert.match(prepare, /fetch-depth: 0/);
   assert.match(prepare, /node ..\/tools\/verification-scope.mjs/);

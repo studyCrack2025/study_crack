@@ -29,14 +29,17 @@ on:
 permissions:
   contents: read
 
+env:
+  CI_NODE_VERSION: '24'
+
 concurrency:
   group: static-release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   prepare:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -59,7 +62,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
           cache-dependency-path: studycrack-mobile-app/package-lock.json
       - name: Select required browser coverage
@@ -101,7 +104,7 @@ jobs:
   e2e:
     needs: prepare
     if: github.event_name == 'push' || github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
@@ -125,7 +128,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
           cache-dependency-path: studycrack-mobile-app/package-lock.json
       - name: Install dependencies
@@ -171,7 +174,7 @@ jobs:
   verify:
     needs: [prepare, e2e]
     if: ${{ always() && !cancelled() && (github.event_name == 'push' || github.event_name == 'pull_request') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       artifact-name: ${{ steps.release-info.outputs.artifact-name }}
@@ -190,7 +193,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.CI_NODE_VERSION }}
       - name: Download tested candidate artifact
         uses: actions/download-artifact@v4
         with:
@@ -222,7 +225,7 @@ jobs:
 
   rollback:
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       actions: read
@@ -238,7 +241,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.CI_NODE_VERSION }}
       - name: Check deployment and rollback boundaries
         run: node --test tools/test/*.test.mjs
       - name: Validate explicit rollback source
@@ -277,7 +280,7 @@ jobs:
       ${{ always() && !cancelled() &&
           ((github.event_name == 'push' && needs.verify.result == 'success') ||
            (github.event_name == 'workflow_dispatch' && needs.rollback.result == 'success')) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     env:
       RELEASE_COMMIT: ${{ needs.verify.outputs.source-commit || needs.rollback.outputs.source-commit }}
@@ -293,7 +296,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.CI_NODE_VERSION }}
       - name: Download verified public artifact
         uses: actions/download-artifact@v4
         with:

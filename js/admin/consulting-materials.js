@@ -65,29 +65,42 @@ function appendConsultingMaterialValue(container, label, value) {
     container.appendChild(block);
 }
 
-function renderConsultingVerifiedScores(scores) {
+function renderConsultingVerifiedScores(scores, rawEntry) {
     const target = document.getElementById('consultingVerifiedScores');
     target.innerHTML = '';
-    const meta = document.createElement('div');
-    meta.className = 'consulting-score-editor-row';
-    meta.dataset.examYear = String(scores?.examYear || '');
-    meta.dataset.examType = String(scores?.examType || '');
+    let inquiryNumber = 0;
     (scores?.records || []).forEach(record => {
         const row = document.createElement('div');
         row.className = 'consulting-score-editor-row';
         row.dataset.area = String(record.area || '');
+        const area = record.area === 'inquiry' ? `탐구 ${++inquiryNumber}`
+            : ({ korean: '국어', math: '수학', english: '영어', korean_history: '한국사' })[record.area] || record.subject;
+        const parts = [
+            record.rawScore != null ? `원점수 ${record.rawScore}점` : '',
+            record.commonRawScore != null ? `공통 ${record.commonRawScore}점` : '',
+            record.electiveRawScore != null ? `선택 ${record.electiveRawScore}점` : ''
+        ].filter(Boolean);
+        const label = document.createElement('p');
+        label.className = 'consulting-score-editor-source';
+        label.textContent = [area, ...parts].join(' · ');
+        row.appendChild(label);
         ['subject', 'selection', 'standardScore', 'percentile', 'grade'].forEach(field => {
             const input = document.createElement('input');
             input.dataset.field = field;
             input.type = ['standardScore', 'percentile', 'grade'].includes(field) ? 'number' : 'text';
-            input.value = record[field] ?? '';
-            input.placeholder = ({ subject: '과목', selection: '선택과목', standardScore: '표준', percentile: '백분위', grade: '등급' })[field];
+            const placeholder = ({ subject: '과목명', selection: '선택과목', standardScore: '표준점수', percentile: '백분위', grade: '등급' })[field];
+            const absolute = ['english', 'korean_history'].includes(record.area);
+            const emptyInquiry = rawEntry && field === 'subject' && record.area === 'inquiry' && /^탐구\s*[12]$/u.test(record.subject);
+            input.disabled = rawEntry && (absolute && field !== 'subject' && field !== 'grade' || record.area === 'inquiry' && field === 'selection');
+            input.value = input.disabled || emptyInquiry ? '' : record[field] ?? '';
+            input.placeholder = placeholder;
+            input.setAttribute('aria-label', `${area} ${placeholder}`);
             row.appendChild(input);
         });
         target.appendChild(row);
     });
-    target.dataset.examYear = meta.dataset.examYear;
-    target.dataset.examType = meta.dataset.examType;
+    target.dataset.examYear = String(scores?.examYear || '');
+    target.dataset.examType = String(scores?.examType || '');
 }
 
 function renderConsultingMaterialFiles(caseId, files) {
@@ -119,6 +132,7 @@ async function openConsultingMaterial(caseId) {
         appendConsultingMaterialValue(summary, '검수 상태', data.case.scoreVerificationStatus);
         appendConsultingMaterialValue(summary, '보완 횟수', data.case.supplementAttempt);
         const snapshot = data.submission?.snapshot || data.originalSubmission?.snapshot || {};
+        const rawEntry = snapshot.formVersion >= 3;
         const survey = document.getElementById('consultingMaterialSurvey');
         survey.innerHTML = '';
         const preferences = snapshot.preferences || {};
@@ -148,7 +162,11 @@ async function openConsultingMaterial(caseId) {
             survey.appendChild(item);
         });
         renderConsultingMaterialFiles(caseId, data.files || []);
-        renderConsultingVerifiedScores(data.verification?.studentInput || snapshot.scores);
+        renderConsultingVerifiedScores(data.verification?.studentInput || snapshot.scores, rawEntry);
+        document.getElementById('consultingMaterialScoreGuide').hidden = !rawEntry;
+        const resultSelect = document.getElementById('consultingMaterialResult');
+        resultSelect.value = 'matched';
+        resultSelect.options[0].textContent = rawEntry ? '성적표 확인 완료' : '입력과 일치';
         document.getElementById('consultingMaterialReason').value = '';
         document.getElementById('consultingMaterialDifferences').value = '';
         document.getElementById('consultingSupplementText').value = '';
