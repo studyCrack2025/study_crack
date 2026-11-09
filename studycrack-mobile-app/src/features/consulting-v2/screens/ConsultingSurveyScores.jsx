@@ -1,7 +1,7 @@
 import React from 'react';
 import { INQUIRY_SUBJECT_GROUPS } from '../../../constants/options.js';
 import { scoreChoiceLabel } from '../../analysis/score-model.js';
-import { applyScoreConversions, clearConvertedScores, EMPTY_SCORE_METRICS, labelScoreRows, photoGradeSuggestions, scoreConversionBatch } from '../score-entry-model.js';
+import { applyScoreConversions, clearConvertedScores, EMPTY_SCORE_METRICS, labelScoreRows, scoreConversionBatch } from '../score-entry-model.js';
 import { convertV2SurveyScores } from '../survey-api.js';
 import { FOREIGN_LANGUAGE_SUBJECTS, inquirySubject, isGradeOnlyArea, SPLIT_SCORE_LIMITS, splitRawTotal } from '../survey-model.js';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
@@ -119,16 +119,10 @@ export function ConsultingSurveyScores({ value, update, binding, fileActions, ac
   const changeRow = (index, patch) => update(current => ({
     records: current.records.map((row, position) => position === index ? { ...row, ...patch } : row)
   }));
-  const applyPhotoGrades = photo => update(current => {
-    const suggestions = photoGradeSuggestions(current.records, photo);
-    if (!suggestions.length) return null;
-    const patches = new Map(suggestions.map(({ area, patch }) => [area, patch]));
-    return { records: current.records.map(row => patches.has(row.area) ? { ...row, ...patches.get(row.area) } : row) };
-  });
   return <div className="consulting-score-entry">
     <div className="consulting-score-exam"><span>입력 대상</span><strong>2027학년도 수능</strong></div>
     {previousExamScores && <p className="consulting-score-note" role="status">이번 수능에 응시한 성적을 입력해 주세요. 이전에 다른 시험으로 저장한 점수는 가져오지 않았어요.</p>}
-    <SurveyScoreFiles {...fileActions} scores={value.records} onApplyPhotoGrades={applyPhotoGrades} />
+    <SurveyScoreFiles {...fileActions} />
     <div className="consulting-score-tools">
       <div className="consulting-score-subhead"><h2>과목별 성적</h2><span className="consulting-score-pill">선택 입력</span></div>
       <p className="consulting-score-note">국어·수학·탐구는 원점수, 영어·한국사는 등급을 적어주세요. 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>
