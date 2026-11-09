@@ -30,11 +30,11 @@ async function prepare(page, { loggedIn = true } = {}) {
   const fonts = ((await fontResponse.text()).match(/@font-face\s*\{[^}]*\}/g) || []).filter(rule => /\bfont-family:\s*(["']?)Paperlogy\1\s*[;}]/.test(rule));
   expect(fonts.length, 'The preview stylesheet must contain the Paperlogy font faces').toBeGreaterThan(0);
   await page.route('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css', route => route.fulfill({ contentType: 'text/css', body: fonts.join('\n') }));
-  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'https://api.example.invalid/consulting',consultingPublic:'https://api.example.invalid/public'}};` }));
+  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'https://api.example.invalid/consulting',consultingPublic:'https://api.example.invalid/public',file:'https://api.example.invalid/file'}};` }));
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     localStorage.setItem('userRole','student');
     window.hasClientSession=()=>${loggedIn};
-    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},survey:${JSON.stringify(state.survey)},calls:[],saves:[],submissions:[]};
+    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},survey:${JSON.stringify(state.survey)},calls:[],saves:[],submissions:[],conversions:[]};
     window.apiFetch=async(_url,options)=>{
       const {type,data:input}=JSON.parse(options.body), f=window.__design; f.calls.push(type);
       if(type==='student_get_v2_consulting_home'){
@@ -44,6 +44,25 @@ async function prepare(page, { loggedIn = true } = {}) {
       let data={};
       if(type==='student_get_v2_survey_schema') data={caseId:'CASE_synthetic'};
       else if(type==='student_get_v2_survey_draft') data=f.survey;
+      else if(type==='student_convert_v2_survey_scores'){
+        f.conversions.push(input);
+        data={results:input.records.map(row=>{
+          if(input.examType==='csat') return {status:'board_unavailable'};
+          if(row.rawScore===98 && (row.commonRawScore==null || row.electiveRawScore==null)) return {status:'split_required'};
+          return {status:'converted',metrics:{standardScore:138,percentile:100,grade:1}};
+        })};
+      }
+      else if(type==='consulting_create_score_upload') {
+        f.photo={fileId:'FILE_synthetic',displayName:input.fileName,contentType:input.contentType,size:input.size,status:'quarantined'};
+        data={fileId:f.photo.fileId,fields:{key:'synthetic'},uploadUrl:'/__score-photo-upload'};
+      }
+      else if(type==='consulting_complete_score_upload') {
+        f.survey.files.push(f.photo);
+        data=f.photo;
+      }
+      else if(type==='consulting_read_score_photo') {
+        data={records:[{area:'korean',selection:'언어와매체',standardScore:132,percentile:94,grade:2},{area:'english',grade:1}]};
+      }
       else if(type==='student_save_v2_survey_draft'){
         f.saves.push(input);
         if(f.saveMode==='defer') await new Promise(resolve=>{f.releaseSave=resolve;});
@@ -259,6 +278,63 @@ test('진행 중인 자동저장과 다음 이동은 최신 입력을 revision �
   await expect(page.getByRole('heading', { name: '성적', exact: true })).toBeVisible();
   const saves = await page.evaluate(() => window.__design.saves);
   expect(saves.map(save => [save.expectedDraftRevision, save.snapshot.studentStatus.schoolName])).toEqual([[0, '첫 입력'], [1, '최신 입력']]);
+});
+
+test('원점수는 해당 시험의 조합만 환산하고 결과를 저장한다', async ({ page }, testInfo) => {
+  await prepare(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/survey');
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  await next.click();
+  const exam = page.getByRole('combobox', { name: '시험 종류', exact: true });
+  await exam.selectOption('september_mock');
+  const korean = page.getByRole('group', { name: '국어', exact: true });
+  await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('화법과작문');
+  await korean.getByRole('spinbutton', { name: '원점수', exact: true }).fill('98');
+  await expect(korean.getByRole('spinbutton', { name: '공통 원점수', exact: true })).toBeVisible();
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('');
+  await korean.getByRole('spinbutton', { name: '공통 원점수', exact: true }).fill('76');
+  await korean.getByRole('spinbutton', { name: '선택 원점수', exact: true }).fill('22');
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('138');
+  await expect(korean.getByRole('checkbox')).not.toBeChecked();
+  await korean.getByRole('checkbox').check();
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('consulting-scores-320.png'), fullPage: true });
+  await next.click();
+  const persisted = await page.evaluate(() => window.__design.survey.draft.snapshot.scores);
+  expect(persisted.records[0]).toMatchObject({ rawScore: 98, commonRawScore: 76, electiveRawScore: 22, standardScore: 138, confirmed: true });
+  await page.getByRole('button', { name: '이전', exact: true }).click();
+  await exam.selectOption('csat');
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('');
+  await expect(korean).toContainText('이 시험의 원점수 환산 자료가 없습니다.');
+  await page.getByRole('button', { name: '성적표 수치 직접 입력' }).click();
+  await korean.getByRole('spinbutton', { name: '표준점수', exact: true }).fill('135');
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('135');
+});
+
+test('검사 완료 사진의 읽기 결과는 선택한 과목에만 반영된다', async ({ page }) => {
+  await prepare(page);
+  await page.route('**/__score-photo-upload', route => route.fulfill({ status: 204, body: '' }));
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto('/2027-jungsi-consulting/survey');
+  await page.getByRole('button', { name: '저장하고 다음' }).click();
+  await page.getByRole('combobox', { name: '시험 종류', exact: true }).selectOption('csat');
+  await page.getByText('사진에서 성적 읽기', { exact: true }).click();
+  await page.getByLabel('성적표 사진 첨부').setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic') });
+  await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '사진 읽기', exact: true })).toHaveCount(0);
+  await page.evaluate(() => { window.__design.photo.status = 'ready'; });
+  await page.getByRole('button', { name: '검사 상태 확인' }).click();
+  await page.getByRole('button', { name: '사진 읽기', exact: true }).click();
+  const korean = page.getByRole('group', { name: '국어', exact: true });
+  await expect(page.getByText('사진에서 읽은 성적', { exact: true })).toBeVisible();
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('');
+  await page.getByRole('checkbox', { name: '영어 등급 1' }).uncheck();
+  await page.getByRole('button', { name: '선택한 성적 반영' }).click();
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('132');
+  await expect(korean.getByRole('checkbox')).not.toBeChecked();
+  await expect(page.getByRole('group', { name: '영어', exact: true }).getByRole('spinbutton', { name: '등급', exact: true })).toHaveValue('');
+  await fits(page);
 });
 
 test('최종 제출은 시험 종류를 안내하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }) => {

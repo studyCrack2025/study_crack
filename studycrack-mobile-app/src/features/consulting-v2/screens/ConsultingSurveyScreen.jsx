@@ -1,7 +1,9 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { clientSurveyError, createEmptySurvey, joinList, normalizeSurveyDraft, PRIORITY_LABELS, splitList, surveySaveSnapshot, SURVEY_STEPS } from '../survey-model.js';
-import { getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
+import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 
 const toOptionalNumber = value => value === '' ? null : Number(value);
 const idempotencyKey = prefix => `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
@@ -13,12 +15,6 @@ function Field({ children, label }) {
 function StudentStatusStep({ snapshot, update }) {
   const value = snapshot.studentStatus;
   return <div className="consulting-survey-grid"><Field label="지원자 구분"><select value={value.applicantType} onChange={event => update({ applicantType: event.target.value })}><option value="">선택</option><option value="high_school_senior">고3 재학생</option><option value="graduate">졸업생</option><option value="qualification_exam">검정고시</option></select></Field><Field label="졸업 연도"><input type="number" min="2020" max="2027" value={value.graduationYear ?? ''} onChange={event => update({ graduationYear: toOptionalNumber(event.target.value) })} /></Field><Field label="학교 유형"><select value={value.schoolType} onChange={event => update({ schoolType: event.target.value })}><option value="">선택</option><option value="general">일반고</option><option value="specialized">특목·특성화고</option><option value="autonomous">자율고</option><option value="other">기타</option></select></Field><Field label="학교명"><input maxLength="80" value={value.schoolName} onChange={event => update({ schoolName: event.target.value })} /></Field><Field label="거주 지역"><input maxLength="40" placeholder="예: 서울 송파구" value={value.residenceRegion} onChange={event => update({ residenceRegion: event.target.value })} /></Field></div>;
-}
-
-function ScoresStep({ snapshot, update }) {
-  const value = snapshot.scores;
-  const changeRow = (index, patch) => update({ records: value.records.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row) });
-  return <><div className="consulting-survey-grid"><Field label="시험 연도"><input type="number" min="2025" max="2027" value={value.examYear ?? ''} onChange={event => update({ examYear: toOptionalNumber(event.target.value) })} /></Field><Field label="시험 종류"><select value={value.examType} onChange={event => update({ examType: event.target.value })}><option value="">선택</option><option value="june_mock">6월 모의평가</option><option value="september_mock">9월 모의평가</option><option value="csat">수능</option><option value="other">기타</option></select></Field></div><div className="consulting-score-list">{value.records.map((row, index) => <fieldset key={`${row.area}-${index}`}><legend>{row.area === 'inquiry' ? `탐구 ${value.records.filter((item, rowIndex) => item.area === 'inquiry' && rowIndex <= index).length}` : ({ korean: '국어', math: '수학', english: '영어', korean_history: '한국사' }[row.area] || row.area)}</legend><input aria-label="과목명" maxLength="40" placeholder="과목명" value={row.subject} onChange={event => changeRow(index, { subject: event.target.value })} /><input aria-label="선택과목" maxLength="40" placeholder="선택과목" value={row.selection || ''} onChange={event => changeRow(index, { selection: event.target.value })} /><input aria-label="표준점수" type="number" min="0" max="200" placeholder="표준" value={row.standardScore ?? ''} onChange={event => changeRow(index, { standardScore: toOptionalNumber(event.target.value) })} /><input aria-label="백분위" type="number" min="0" max="100" placeholder="백분위" value={row.percentile ?? ''} onChange={event => changeRow(index, { percentile: toOptionalNumber(event.target.value) })} /><input aria-label="등급" type="number" min="1" max="9" placeholder="등급" value={row.grade ?? ''} onChange={event => changeRow(index, { grade: toOptionalNumber(event.target.value) })} /><label className="consulting-survey-check"><input type="checkbox" checked={row.confirmed} onChange={event => changeRow(index, { confirmed: event.target.checked })} /> 성적표와 확인</label></fieldset>)}</div></>;
 }
 
 function ConditionsStep({ snapshot, update }) {
@@ -66,19 +62,9 @@ function QualitativeStep({ snapshot, update }) {
   return <div className="consulting-survey-grid consulting-survey-grid-single"><Field label="강점"><textarea maxLength="1500" value={value.strengths} onChange={event => update({ strengths: event.target.value })} /></Field><Field label="현재 가장 큰 고민"><textarea maxLength="1500" value={value.concerns} onChange={event => update({ concerns: event.target.value })} /></Field><Field label="보호자 의견"><textarea maxLength="1000" value={value.guardianOpinion} onChange={event => update({ guardianOpinion: event.target.value })} /></Field><Field label="특이사항"><textarea maxLength="1000" value={value.specialCircumstances} onChange={event => update({ specialCircumstances: event.target.value })} /></Field><Field label="기초조사서 외에 상담에서 꼭 묻고 싶은 점"><textarea maxLength="500" required value={question} onChange={event => update({ consultationQuestions: [event.target.value, ...value.consultationQuestions.slice(1)] })} /></Field></div>;
 }
 
-function ConsentStep({ snapshot, update, files, onUpload, onRefresh }) {
+function ConsentStep({ snapshot, update, fileActions }) {
   return <>
-    <div className="consulting-file-panel">
-      <h3>성적표 파일</h3>
-      <p>PDF·JPG·PNG, 파일당 10MB 이하. 보안 검사가 끝나면 제출할 수 있습니다.</p>
-      <input type="file" aria-label="성적표 파일" accept="application/pdf,image/jpeg,image/png" onChange={event => {
-        const file = event.currentTarget.files?.[0];
-        event.currentTarget.value = '';
-        if (file) onUpload(file);
-      }} />
-      {files.length ? <ul>{files.map(file => <li key={file.fileId}><span>{file.displayName}</span><strong data-status={file.status}>{({ ready: '검사 완료', linked: '제출됨', quarantined: '검사 중', rejected: '업로드 거절' }[file.status] || file.status)}</strong></li>)}</ul> : <p>등록된 파일이 없습니다.</p>}
-      {files.some(file => file.status === 'quarantined') ? <button className="consulting-v2-secondary consulting-survey-refresh" type="button" onClick={onRefresh}>검사 상태 확인</button> : null}
-    </div>
+    <SurveyScoreFiles {...fileActions} />
     <label className="consulting-survey-check"><input type="checkbox" checked={snapshot.consent.accurateInformation} onChange={event => update({ accurateInformation: event.target.checked })} /> 입력한 정보가 사실과 같음을 확인합니다.</label>
     <label className="consulting-survey-check"><input type="checkbox" checked={snapshot.consent.analysisUse} onChange={event => update({ analysisUse: event.target.checked })} /> 컨설팅 분석을 위한 자료 이용에 동의합니다.</label>
   </>;
@@ -128,16 +114,19 @@ export function ConsultingSurveyScreen({ binding }) {
   }, [load]);
   React.useEffect(() => { heading.current?.focus(); }, [step]);
 
-  const updateSection = (key, patch) => {
+  const updateSection = React.useCallback((key, patch) => {
     const session = draft.current;
     if (!session?.snapshot || session.action) return;
     const current = session.snapshot;
-    session.snapshot = { ...current, [key]: { ...current[key], ...patch } };
+    const changes = typeof patch === 'function' ? patch(current[key]) : patch;
+    if (!changes) return;
+    session.snapshot = { ...current, [key]: { ...current[key], ...changes } };
     session.edit += 1;
     setSnapshot(session.snapshot);
     setSaveState(previous => session.inFlight || session.conflict ? previous : { kind: 'pending' });
     setNotice(null);
-  };
+  }, []);
+  const updateScores = React.useCallback(patch => updateSection('scores', patch), [updateSection]);
   const save = React.useCallback(session => {
     if (session.inFlight) return session.inFlight;
     if (session.conflict || draft.current !== session) return Promise.resolve(false);
@@ -215,6 +204,14 @@ export function ConsultingSurveyScreen({ binding }) {
     setFiles(Array.isArray(result.data.files) ? result.data.files : []);
     showNotice('성적표 검사 상태를 확인했습니다.');
   });
+  const deleteFile = file => runAction(async session => {
+    if (!globalThis.confirm?.('첨부한 성적표를 삭제할까요?')) return;
+    const result = await deleteV2ScoreFile(binding, { caseId: session.caseId, fileId: file.fileId });
+    if (draft.current !== session) return;
+    if (!result.ok) return showNotice(result.error || '성적표를 삭제하지 못했습니다.', true);
+    setFiles(current => current.filter(item => item.fileId !== file.fileId));
+    showNotice('첨부한 성적표를 삭제했습니다.');
+  });
   const submit = () => runAction(async session => {
     const readyFiles = files.filter(file => file.status === 'ready');
     const validation = clientSurveyError(session.snapshot, readyFiles);
@@ -245,6 +242,7 @@ export function ConsultingSurveyScreen({ binding }) {
   if (resource.status === 'error') return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>조사서를 불러오지 못했습니다</h1><p className="consulting-v2-status" data-tone="error">{resource.message}</p><button className="consulting-v2-primary consulting-v2-wide" onClick={load}>다시 시도</button></section></main>;
   const { key, label, guide } = SURVEY_STEPS[step];
   const update = patch => updateSection(key, patch);
+  const fileActions = { files, onUpload: upload, onRefresh: refreshFiles, onDelete: deleteFile };
   return <main className="consulting-survey">
     <header>
       <button type="button" disabled={actionBusy} onClick={() => runAction(async session => {
@@ -266,12 +264,12 @@ export function ConsultingSurveyScreen({ binding }) {
       {notice ? <p className="consulting-survey-message" data-tone={notice.error ? 'error' : 'info'} role={notice.error ? 'alert' : 'status'}>{notice.text}</p> : null}
       <fieldset className="consulting-survey-fields" disabled={actionBusy} aria-labelledby="survey-title">
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
-        {key === 'scores' && <ScoresStep snapshot={snapshot} update={update} />}
+        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} caseId={draft.current.caseId} fileActions={fileActions} actionBusy={actionBusy} />}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} />}
         {key === 'preferences' && <PreferencesStep snapshot={snapshot} update={update} />}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}
         {key === 'qualitative' && <QualitativeStep snapshot={snapshot} update={update} />}
-        {key === 'consent' && <ConsentStep snapshot={snapshot} update={update} files={files} onUpload={upload} onRefresh={refreshFiles} />}
+        {key === 'consent' && <ConsentStep snapshot={snapshot} update={update} fileActions={fileActions} />}
       </fieldset>
       {saveState.kind === 'failed' ? <div className="consulting-survey-save-error">
         <p role="alert">{saveState.message}</p>
