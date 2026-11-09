@@ -1,0 +1,9 @@
+{
+  "Name": "studycrack-static-seo-baseline",
+  "Comment": "Static website baseline; merge with existing response policy instead of replacing CSP or CORS",
+  "SecurityHeadersConfig": {
+    "StrictTransportSecurity": {"Override": true, "AccessControlMaxAgeSec": 31536000, "IncludeSubdomains": false, "Preload": false},
+    "ContentTypeOptions": {"Override": true},
+    "ReferrerPolicy": {"Override": true, "ReferrerPolicy": "strict-origin-when-cross-origin"}
+  }
+}

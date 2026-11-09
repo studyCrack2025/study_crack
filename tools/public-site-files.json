@@ -187,7 +187,17 @@
     "privacy.html",
     "refund.html",
     "delete-account.html",
-    "css/legal-page.css"
+    "css/legal-page.css",
+    "assets/images/service_device_image.webp",
+    "assets/images/payment-hero-student.webp",
+    "assets/basic-v2/hero-phone.webp",
+    "assets/basic-v2/proof-classroom.webp",
+    "assets/figma/figma-asset-08.webp",
+    "assets/figma/figma-asset-18.webp",
+    "assets/images/seo-share-v1.jpg",
+    "css/icons-subset.css",
+    "llms.txt",
+    "og-image.jpg"
   ],
   "aliases": {
     "basic-preview": "basic-preview.html",

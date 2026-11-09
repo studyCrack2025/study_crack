@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const output = process.env.BASIC_V2_QA_DIR || path.join(root, 'docs/exec-plans/evidence/260914_basic_v2');
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const normalize = value => value.replace(/\s+/g, ' ').trim();
 
 async function main() {
@@ -93,8 +93,8 @@ async function main() {
             });
             assert.equal(metrics.overflow, 0, `${width}px horizontal overflow`);
             assert.equal(metrics.kcc, false);
-            assert.ok(metrics.heroBackground.includes('/assets/basic-v2/hero-phone.png'));
-            assert.equal(metrics.heroPreload, '/assets/basic-v2/hero-phone.png');
+            assert.ok(metrics.heroBackground.includes('/assets/basic-v2/hero-phone.webp'));
+            assert.equal(metrics.heroPreload, '/assets/basic-v2/hero-phone.webp');
             assert.equal(metrics.firstHeroDot, true);
             assert.ok(metrics.ctaBackground.includes('/assets/figma/figma-asset-10.png'), 'original final CTA background');
             assert.equal(metrics.ctaAfterReviews, true, 'final CTA immediately follows reviews');
@@ -108,7 +108,7 @@ async function main() {
             assert.equal(metrics.priceBackground, 'rgb(255, 255, 255)', 'BASIC price card is white');
             assert.notEqual(metrics.priceTextColor, 'rgb(255, 255, 255)', 'BASIC card text contrasts with white');
             assert.ok(metrics.images.every(image => image.loaded), 'all original images load');
-            assert.equal(metrics.images[0].src, '/assets/basic-v2/proof-classroom.png', 'classroom background is not replaced by a result screenshot');
+            assert.equal(metrics.images[0].src, '/assets/basic-v2/proof-classroom.webp', 'classroom background is not replaced by a result screenshot');
             assert.ok(metrics.proof[0].y < metrics.proof[1].y, 'screenshot above copy');
             if (width > 900) {
                 const [one,two,three] = metrics.cards;
@@ -131,7 +131,7 @@ async function main() {
                         const active = document.querySelectorAll('#pptIndicators button')[index].classList.contains('active');
                         return active && rect.x >= -1 && rect.right <= innerWidth + 1;
                     }, index);
-                    assert.equal(await page.locator('.landing-proof .bg-img').getAttribute('src'), '/assets/basic-v2/proof-classroom.png');
+                    assert.equal(await page.locator('.landing-proof .bg-img').getAttribute('src'), '/assets/basic-v2/proof-classroom.webp');
                     await page.locator('.landing-proof').screenshot({ path: path.join(output, `${width}-proof-card-${index + 1}.png`), style: '#site-header { visibility: hidden; }' });
                 }
             }

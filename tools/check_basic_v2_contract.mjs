@@ -46,7 +46,8 @@ const originalImages = {
 for (const [name, digest] of Object.entries(originalImages)) {
   const bytes = await readFile(new URL(`assets/basic-v2/${name}`, repoRoot));
   assert.equal(createHash('sha256').update(bytes).digest('hex'), digest, `original image: ${name}`);
-  assert.ok(`${home}\n${homeScript}`.includes(`/assets/basic-v2/${name}`), `referenced image: ${name}`);
+  const servedName = ['hero-phone.png', 'proof-classroom.png'].includes(name) ? name.replace('.png', '.webp') : name;
+  assert.ok(`${home}\n${homeScript}`.includes(`/assets/basic-v2/${servedName}`), `referenced image: ${name}`);
 }
 
 assert.equal(occurrences(preview, '/css/basic-preview.css'), 1, 'the preview stylesheet must load exactly once');
