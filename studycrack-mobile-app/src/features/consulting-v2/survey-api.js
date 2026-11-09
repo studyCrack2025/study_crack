@@ -37,15 +37,18 @@ export async function fetchV2SurveyUniversities({ analysisApiUrl, apiFetch, sign
 
 async function fileRequest(binding, type, data, fallbackError) {
   const result = await postJson({ apiFetch: binding.apiFetch, url: binding.fileApiUrl, fallbackError, payload: { type, data } });
-  if (!result.ok || result.data?.success !== true || !result.data.data) return { ok: false, error: result.error || fallbackError, code: result.data?.code || result.code };
+  if (!result.ok || result.data?.success !== true || !result.data.data) {
+    return { ok: false, error: result.status >= 500 ? fallbackError : result.error || fallbackError, code: result.data?.code || result.code, status: result.status };
+  }
   return { ok: true, data: result.data.data };
 }
 
 export const deleteV2ScoreFile = (binding, data) => fileRequest(binding, 'consulting_delete_unsubmitted_score_file', data, '성적표를 삭제하지 못했습니다.');
 export const readV2ScorePhoto = (binding, data) => fileRequest(binding, 'consulting_read_score_photo', data, '사진을 읽지 못했습니다. 성적을 직접 입력할 수 있어요.');
+export const confirmV2ScoreUpload = (binding, data) => fileRequest(binding, 'consulting_complete_score_upload', data, '첨부 확인에 실패했어요. 파일 옆에서 다시 확인할 수 있어요.');
 
 export async function uploadV2ScoreFile(binding, { caseId, file }) {
-  const created = await fileRequest(binding, 'consulting_create_score_upload', { caseId, fileName: file.name, contentType: file.type, size: file.size }, '업로드를 준비하지 못했습니다.');
+  const created = await fileRequest(binding, 'consulting_create_score_upload', { caseId, fileName: file.name, contentType: file.type, size: file.size }, '성적표 업로드를 시작하지 못했어요. 잠시 후 파일을 다시 선택해 주세요.');
   if (!created.ok) return created;
   const form = new FormData();
   Object.entries(created.data.fields || {}).forEach(([key, value]) => form.append(key, String(value)));
@@ -56,5 +59,10 @@ export async function uploadV2ScoreFile(binding, { caseId, file }) {
   } catch (_error) {
     return { ok: false, error: '성적표 업로드에 실패했습니다.', code: 'UPLOAD_FAILED' };
   }
-  return fileRequest(binding, 'consulting_complete_score_upload', { caseId, fileId: created.data.fileId }, '업로드 확인에 실패했습니다.');
+  const { fileId } = created.data;
+  const confirmed = await confirmV2ScoreUpload(binding, { caseId, fileId });
+  if (!confirmed.ok && (!confirmed.status || confirmed.status >= 500)) {
+    return { ...confirmed, pendingFile: { fileId, displayName: file.name, contentType: file.type, size: file.size, status: 'upload_pending' } };
+  }
+  return confirmed;
 }

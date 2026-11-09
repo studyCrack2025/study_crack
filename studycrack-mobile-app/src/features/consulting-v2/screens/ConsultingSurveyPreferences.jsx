@@ -28,29 +28,49 @@ function ChoiceSelect({ label, value, options, onChange }) {
   </label>;
 }
 
-function UniversityPicker({ university, catalog, query, onSearch, onChoose }) {
+function UniversityPicker({ university, catalog, query, editing, onSearch, onToggleSearch, onChoose }) {
+  const searchInput = React.useRef(null);
+  const editButton = React.useRef(null);
+  const moveFocus = React.useRef(false);
+  const showSearch = !university || editing;
   const ready = catalog.status === 'ready';
   const search = searchKey(query);
   const terms = query.trim().split(/\s+/u).map(searchKey).filter(Boolean);
-  const matches = search ? catalog.universities.filter(item => universityMatches(item.univName, search, terms)) : [];
+  const matches = showSearch && search ? catalog.universities.filter(item => universityMatches(item.univName, search, terms)) : [];
+  React.useEffect(() => {
+    if (!moveFocus.current) return;
+    moveFocus.current = false;
+    (showSearch ? searchInput : editButton).current?.focus();
+  }, [showSearch]);
+  const choose = next => {
+    if (next || !showSearch) moveFocus.current = true;
+    else searchInput.current?.focus();
+    onChoose(next);
+  };
   let searchMessage = '';
-  if (ready && search) {
+  if (showSearch && ready && search) {
     searchMessage = matches.length ? `검색 결과 ${matches.length}곳` : '일치하는 대학이 없어요. 검색어를 바꾸거나 아래에 직접 적어주세요.';
     if (matches.length > SEARCH_RESULTS_LIMIT) searchMessage += ' · 검색어를 더 입력하면 목록이 좁혀져요.';
   }
   return <div className="consulting-university-picker">
-    <label className="consulting-survey-field">
-      <span>대학명 검색</span>
-      <input type="search" placeholder="예: 연세대, 한국외대 글로벌" maxLength="80" value={query} disabled={!ready} onChange={event => onSearch(event.currentTarget.value)} />
-    </label>
-    {university && <div className="consulting-score-lookup">
-      <p className="consulting-score-note">선택한 대학 · <strong>{university}</strong></p>
-      <button className="consulting-v2-secondary" type="button" onClick={() => onChoose('')}>대학 선택 지우기</button>
+    {university && <div className="consulting-university-selected">
+      <p role="status"><span>선택한 대학</span><strong>{university}</strong></p>
+      <div className="consulting-university-actions">
+        <button ref={editButton} className="consulting-v2-secondary" type="button" disabled={!ready && !editing} onClick={() => {
+          moveFocus.current = true;
+          onToggleSearch();
+        }}>{editing ? '검색 닫기' : '선택 변경'}</button>
+        <button className="consulting-v2-secondary" type="button" onClick={() => choose('')}>선택 지우기</button>
+      </div>
     </div>}
+    {showSearch && <label className="consulting-survey-field">
+      <span>대학명 검색</span>
+      <input ref={searchInput} type="search" placeholder="예: 연세대, 한국외대 글로벌" maxLength="80" value={query} disabled={!ready} onChange={event => onSearch(event.currentTarget.value)} />
+    </label>}
     {searchMessage && <p className="consulting-score-note" role="status">{searchMessage}</p>}
     {matches.length > 0 && <ul className="consulting-university-results" aria-label="대학 검색 결과">
       {matches.slice(0, SEARCH_RESULTS_LIMIT).map(({ univName, regions }) => <li key={univName}>
-        <button type="button" onClick={() => onChoose(univName)}><strong>{univName}</strong>{regions?.length > 0 && <span>{regions.join(' · ')}</span>}</button>
+        <button type="button" onClick={() => choose(univName)}><strong>{univName}</strong>{regions?.length > 0 && <span>{regions.join(' · ')}</span>}</button>
       </li>)}
     </ul>}
   </div>;
@@ -75,7 +95,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
   const changeChoice = (index, patch) => update({
     rankedChoices: choices.map((choice, position) => position === index ? { ...choice, ...patch } : choice)
   });
-  const changePicker = (index, query) => setPickers(items => choices.map((_, position) => position === index ? query : items[position]));
+  const changePicker = (index, patch) => setPickers(items => choices.map((_, position) => position === index ? { ...items[position], ...patch } : items[position]));
   return <div className="consulting-survey-preferences">
     <p className="consulting-score-note"><strong>최대 {MAX_RANKED_CHOICES}지망</strong>까지 적을 수 있어요. 대학을 검색하거나 희망 계열을 골라주세요.</p>
     {catalog.status === 'loading' && <p className="consulting-score-note" role="status">대학 목록을 불러오고 있어요.</p>}
@@ -88,10 +108,16 @@ export function ConsultingSurveyPreferences({ value, update }) {
     </div>}
     {choices.map((choice, index) => <fieldset key={index} className="consulting-survey-preference-rank">
       <legend>{index + 1}지망</legend>
-      <UniversityPicker university={choice.university} catalog={catalog} query={pickers[index] || ''} onSearch={query => changePicker(index, query)} onChoose={university => {
-        changeChoice(index, { university });
-        changePicker(index, '');
-      }} />
+      <UniversityPicker
+        university={choice.university} catalog={catalog}
+        query={pickers[index]?.query || ''} editing={pickers[index]?.editing === true}
+        onSearch={query => changePicker(index, { query })}
+        onToggleSearch={() => changePicker(index, { editing: !pickers[index]?.editing, query: '' })}
+        onChoose={university => {
+          changeChoice(index, { university });
+          changePicker(index, { editing: false, query: '' });
+        }}
+      />
       <ChoiceSelect label="희망 계열" options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
       {choice.region && <p className="consulting-score-note">이전에 입력한 희망 지역 · {choice.region}</p>}
       {choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {

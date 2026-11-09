@@ -1,14 +1,14 @@
 import React from 'react';
 import { photoGradeSuggestions } from '../score-entry-model.js';
 
-const statuses = { ready: '검사 완료', linked: '제출됨', quarantined: '검사 중', rejected: '업로드 거절', upload_pending: '업로드 대기' };
+const statuses = { ready: '검사 완료', linked: '제출됨', quarantined: '검사 중', rejected: '업로드 거절', upload_pending: '첨부 확인 대기' };
 const readablePhoto = file => file.status === 'ready' && ['image/jpeg', 'image/png'].includes(file.contentType) && file.size > 0 && file.size <= 8 * 1024 * 1024;
 const photoErrors = {
   SCORE_PHOTO_SCAN_REFERENCE_MISSING: '이전에 올린 사진은 읽을 수 없어요. 사진을 새로 첨부하거나 성적을 직접 입력해 주세요.',
   SCORE_PHOTO_CHANGED: '첨부한 사진을 확인할 수 없어요. 사진을 다시 올려주세요.'
 };
 
-export function SurveyScoreFiles({ files, onUpload, onRefresh, onDelete, onReadPhoto, scores, onApplyPhotoGrades }) {
+export function SurveyScoreFiles({ files, onUpload, onConfirmUpload, onRefresh, onDelete, onReadPhoto, scores, onApplyPhotoGrades }) {
   const [reading, setReading] = React.useState(null);
   const preview = reading && files.some(file => file.fileId === reading.fileId && readablePhoto(file)) ? reading : null;
   const suggestions = preview?.records ? photoGradeSuggestions(scores, preview.records) : [];
@@ -31,6 +31,7 @@ export function SurveyScoreFiles({ files, onUpload, onRefresh, onDelete, onReadP
     {files.length ? <ul>{files.map(file => <li key={file.fileId}>
       <div><span>{file.displayName}</span><strong data-status={file.status}>{statuses[file.status] || file.status}</strong></div>
       <div className="consulting-score-file-actions">
+        {file.status === 'upload_pending' && <button className="consulting-v2-secondary" type="button" onClick={() => onConfirmUpload(file)}>첨부 다시 확인</button>}
         {onReadPhoto && readablePhoto(file) && <button className="consulting-v2-secondary" type="button" onClick={() => read(file)}>사진 읽기</button>}
         {['upload_pending', 'quarantined', 'rejected', 'ready'].includes(file.status) && <button className="consulting-v2-secondary" type="button" aria-label={`${file.displayName} 삭제`} onClick={() => onDelete(file)}>삭제</button>}
       </div>
