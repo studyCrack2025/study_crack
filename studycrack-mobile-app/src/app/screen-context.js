@@ -64,7 +64,7 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   notificationList: Object.freeze(['notiDetailId', 'notiList', 'notiPage', 'notiError', 'notiStatus']),
   notificationSettings: Object.freeze(['notifications']),
   ob1: Object.freeze(['crackySrc', 'obGoalText', 'obGradeStatus', 'obQuestionText', 'obSchoolName', 'obTrack']),
-  ob2: Object.freeze(['crackySrc', 'scoreEditState', 'scoreExamType', 'scoreSubjectSaving']),
+  ob2: Object.freeze(['crackySrc', 'hasClientSession', 'scoreEditState', 'scoreExamType', 'scoreSubjectSaving', 'userLoadStatus']),
   ob3: Object.freeze(['crackySrc', 'mbtiAnswers', 'mbtiModalOpen', 'mbtiResult', 'mbtiStep']),
   ob4: Object.freeze([
     'analysisApiError', 'analysisApiStatus', 'analysisGaugeFill', 'analysisMajorOptions', 'analysisRecommended',
@@ -108,8 +108,8 @@ export const SCREEN_CONTEXT_KEYS = Object.freeze({
   ]),
   reportDetail: Object.freeze([]),
   scoreInfo: Object.freeze([
-    'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreEditErrors', 'scoreEditSaveError', 'scoreExamKey', 'scoreExamType',
-    'scoreInfoSubjects', 'scoreSubjectSaving', 'user'
+    'hasClientSession', 'scoreEditOpen', 'scoreEditState', 'scoreEditStep', 'scoreEditErrors', 'scoreEditSaveError', 'scoreExamKey', 'scoreExamType',
+    'scoreInfoSubjects', 'scoreSubjectSaving', 'user', 'userLoadStatus'
   ]),
   settingsMain: Object.freeze(['logoutModalOpen']),
   settingsTermsPicker: Object.freeze(['openTermsType', 'termsContent']),

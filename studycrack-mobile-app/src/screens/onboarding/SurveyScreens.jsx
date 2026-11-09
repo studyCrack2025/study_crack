@@ -24,6 +24,14 @@ function InquirySelect({ field, value = '' }) {
   return <select className="ob1-score-select" data-field={field} defaultValue={value}><option value="">과목 선택</option>{INQUIRY_SUBJECT_GROUPS.map(([label, subjects]) => <optgroup label={label} key={label}>{subjects.map(subject => <option value={subject} key={subject}>{subject}</option>)}</optgroup>)}</select>;
 }
 
+function OfficialScoreCard(props) {
+  return <div className="ob1-subject-card">
+    <Suspense fallback={<p role="status">성적표 입력란을 준비하고 있어요.</p>}>
+      <OfficialSubjectPanel {...props} />
+    </Suspense>
+  </div>;
+}
+
 export function Ob1Screen(ctx) {
   const { crackySrc = CRACKY_SRC, obGradeStatus = '', obGoalText = '', obQuestionText = '', obSchoolName = '', obTrack = '예체능' } = ctx;
   return <OnboardingScreenShell screen="ob1" step={1} title="학습성향 진단 1-1" crackySrc={crackySrc} subcopy={<>지금 성적과 공부 습관을 바탕으로<br />나에게 맞는 합격 전략을 찾아볼게요.</>} bubble="성적만 보는 게 아니라, 공부 방식까지 같이 봐야 정확해요!" cta={<button type="button" className="cta-button" data-action="saveQualInfo">저장하고 성적 입력으로</button>}>
@@ -38,16 +46,44 @@ export function Ob1Screen(ctx) {
 }
 
 export function Ob2Screen(ctx) {
-  const { crackySrc = CRACKY_SRC, scoreEditState = {}, scoreExamType = EXAM_OPTIONS[0], scoreSubjectSaving = false } = ctx;
+  const { crackySrc = CRACKY_SRC, hasClientSession, scoreEditState = {}, scoreExamType = EXAM_OPTIONS[0], scoreSubjectSaving = false, userLoadStatus } = ctx;
+  const shell = {
+    screen: 'ob2',
+    step: 2,
+    title: '학습성향 진단 1-2',
+    crackySrc,
+    subcopy: <>과목별 성적을 입력하면 현재 위치를<br />더 정확하게 계산할 수 있어요.</>
+  };
+  if (hasClientSession?.() && userLoadStatus !== 'ready') {
+    const failed = userLoadStatus === 'error';
+    return <OnboardingScreenShell {...shell}
+      bubble="이전에 저장한 성적이 있는지 확인할게요."
+      cta={failed ? <button type="button" className="cta-button" data-action="retryInit">다시 시도</button> : null}>
+      <div className="ob1-score-wrap">
+        <h3>성적 입력</h3>
+        {failed ? <p role="alert">저장된 성적을 불러오지 못했어요. 다시 시도해 주세요.</p> : <p role="status">저장된 성적을 확인하고 있어요.</p>}
+      </div>
+    </OnboardingScreenShell>;
+  }
+
   const official = isOfficialScoreExam(scoreExamType);
-  return <OnboardingScreenShell screen="ob2" step={2} title="학습성향 진단 1-2" crackySrc={crackySrc} subcopy={<>과목별 성적을 입력하면 현재 위치를<br />더 정확하게 계산할 수 있어요.</>} bubble={official ? '수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요.' : '입력한 원점수를 환산해 내 성적 정보에 저장해요.'} cta={<><button type="button" className="cta-button" data-action="saveScoreEdit" disabled={scoreSubjectSaving}>{scoreSubjectSaving ? '저장 중...' : '저장하고 학습 MBTI로'}</button><button type="button" className="auth-link-btn" data-action="skipOb2WithoutScore" disabled={scoreSubjectSaving}>시험 성적이 없어요</button></>}>
-    <div className="ob1-score-wrap"><h3>성적 입력 <Required /></h3><div className="ob1-score-exam"><label>시험 선택</label><select className="ob1-score-select" data-field="scoreExamType" defaultValue={scoreExamType}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select></div><div className="ob1-score-grid">
-      {official ? <div className="ob1-subject-card"><Suspense fallback={<p role="status">성적표 입력란을 준비하고 있어요.</p>}><OfficialSubjectPanel title="국어" subjectKey="korean" subject={scoreEditState.korean} /></Suspense></div> : <div className="ob1-subject-card"><h4>국어</h4><SubjectTypeSelect field="v2e-korean-type" value={scoreEditState.korean?.type} options={['화법과작문', '언어와매체']} /><div className="ob1-score-two-col"><input className="ob1-score-input score-direct-input" data-field="v2e-korean-common" data-score-max="76" defaultValue={scoreEditState.korean?.common || ''} placeholder="공통 원점수" type="number" /><input className="ob1-score-input score-direct-input" data-field="v2e-korean-elective" data-score-max="24" defaultValue={scoreEditState.korean?.elective || ''} placeholder="선택 원점수" type="number" /></div></div>}
-      {official ? <div className="ob1-subject-card"><Suspense fallback={<p role="status">성적표 입력란을 준비하고 있어요.</p>}><OfficialSubjectPanel title="수학" subjectKey="math" subject={scoreEditState.math} /></Suspense></div> : <div className="ob1-subject-card"><h4>수학</h4><SubjectTypeSelect field="v2e-math-type" value={scoreEditState.math?.type} options={['확률과통계', '미적분', '기하']} /><div className="ob1-score-two-col"><input className="ob1-score-input score-direct-input" data-field="v2e-math-common" data-score-max="74" defaultValue={scoreEditState.math?.common || ''} placeholder="공통 원점수" type="number" /><input className="ob1-score-input score-direct-input" data-field="v2e-math-elective" data-score-max="26" defaultValue={scoreEditState.math?.elective || ''} placeholder="선택 원점수" type="number" /></div></div>}
+  const examOptions = EXAM_OPTIONS.includes(scoreExamType) ? EXAM_OPTIONS : [scoreExamType, ...EXAM_OPTIONS];
+  return <OnboardingScreenShell {...shell} bubble={official ? '수능 성적표의 표준점수·백분위·등급을 그대로 입력해 주세요.' : '입력한 원점수를 환산해 내 성적 정보에 저장해요.'} cta={<><button type="button" className="cta-button" data-action="saveScoreEdit" disabled={scoreSubjectSaving}>{scoreSubjectSaving ? '저장 중...' : '저장하고 학습 MBTI로'}</button><button type="button" className="auth-link-btn" data-action="skipOb2WithoutScore" disabled={scoreSubjectSaving}>시험 성적이 없어요</button></>}>
+    <div className="ob1-score-wrap">
+      <h3>성적 입력 <Required /></h3>
+      <div className="ob1-score-exam">
+        <label htmlFor="ob-score-exam">시험 선택</label>
+        <select id="ob-score-exam" className="ob1-score-select" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>
+          {examOptions.map(label => <option value={label} key={label}>{label || '선택해 주세요'}</option>)}
+        </select>
+      </div>
+      <div className="ob1-score-grid" key={scoreExamType}>
+      {official ? <OfficialScoreCard title="국어" subjectKey="korean" subject={scoreEditState.korean} /> : <div className="ob1-subject-card"><h4>국어</h4><SubjectTypeSelect field="v2e-korean-type" value={scoreEditState.korean?.type} options={['화법과작문', '언어와매체']} /><div className="ob1-score-two-col"><input className="ob1-score-input score-direct-input" data-field="v2e-korean-common" data-score-max="76" defaultValue={scoreEditState.korean?.common || ''} placeholder="공통 원점수" type="number" /><input className="ob1-score-input score-direct-input" data-field="v2e-korean-elective" data-score-max="24" defaultValue={scoreEditState.korean?.elective || ''} placeholder="선택 원점수" type="number" /></div></div>}
+      {official ? <OfficialScoreCard title="수학" subjectKey="math" subject={scoreEditState.math} /> : <div className="ob1-subject-card"><h4>수학</h4><SubjectTypeSelect field="v2e-math-type" value={scoreEditState.math?.type} options={['확률과통계', '미적분', '기하']} /><div className="ob1-score-two-col"><input className="ob1-score-input score-direct-input" data-field="v2e-math-common" data-score-max="74" defaultValue={scoreEditState.math?.common || ''} placeholder="공통 원점수" type="number" /><input className="ob1-score-input score-direct-input" data-field="v2e-math-elective" data-score-max="26" defaultValue={scoreEditState.math?.elective || ''} placeholder="선택 원점수" type="number" /></div></div>}
       <div className="ob1-subject-card"><h4>영어</h4><GradeSelect field="v2e-english" value={scoreEditState.english || ''} /></div>
       <div className="ob1-subject-card"><h4>한국사</h4><GradeSelect field="v2e-history" value={scoreEditState.history || ''} /></div>
-      {official ? <div className="ob1-subject-card"><Suspense fallback={<p role="status">성적표 입력란을 준비하고 있어요.</p>}><OfficialSubjectPanel title="탐구1" subjectKey="inq1" subject={scoreEditState.inquiry1} /></Suspense></div> : <div className="ob1-subject-card"><h4>탐구1</h4><InquirySelect field="v2e-inq1-subject" value={scoreEditState.inquiry1?.subject || ''} /><input className="ob1-score-input score-direct-input" data-field="v2e-inq1-score" data-score-max="50" defaultValue={scoreEditState.inquiry1?.score || ''} placeholder="원점수" type="number" /></div>}
-      {official ? <div className="ob1-subject-card"><Suspense fallback={<p role="status">성적표 입력란을 준비하고 있어요.</p>}><OfficialSubjectPanel title="탐구2" subjectKey="inq2" subject={scoreEditState.inquiry2} /></Suspense></div> : <div className="ob1-subject-card"><h4>탐구2</h4><InquirySelect field="v2e-inq2-subject" value={scoreEditState.inquiry2?.subject || ''} /><input className="ob1-score-input score-direct-input" data-field="v2e-inq2-score" data-score-max="50" defaultValue={scoreEditState.inquiry2?.score || ''} placeholder="원점수" type="number" /></div>}
+      {official ? <OfficialScoreCard title="탐구1" subjectKey="inq1" subject={scoreEditState.inquiry1} /> : <div className="ob1-subject-card"><h4>탐구1</h4><InquirySelect field="v2e-inq1-subject" value={scoreEditState.inquiry1?.subject || ''} /><input className="ob1-score-input score-direct-input" data-field="v2e-inq1-score" data-score-max="50" defaultValue={scoreEditState.inquiry1?.score || ''} placeholder="원점수" type="number" /></div>}
+      {official ? <OfficialScoreCard title="탐구2" subjectKey="inq2" subject={scoreEditState.inquiry2} /> : <div className="ob1-subject-card"><h4>탐구2</h4><InquirySelect field="v2e-inq2-subject" value={scoreEditState.inquiry2?.subject || ''} /><input className="ob1-score-input score-direct-input" data-field="v2e-inq2-score" data-score-max="50" defaultValue={scoreEditState.inquiry2?.score || ''} placeholder="원점수" type="number" /></div>}
     </div></div>
   </OnboardingScreenShell>;
 }

@@ -105,7 +105,17 @@ function ScoreSubjectCard({ grade = '-', pct = '-', raw = '-', std = '-', subjec
 }
 
 export function ScoreInfoScreen(ctx) {
-  const { scoreEditOpen = false, scoreExamType = '', scoreInfoSubjects = [] } = ctx;
+  const { hasClientSession, scoreEditOpen = false, scoreExamType = '', scoreInfoSubjects = [], userLoadStatus } = ctx;
+  if (hasClientSession?.() && userLoadStatus !== 'ready') {
+    return <SecondaryScreenShell screen="scoreInfo" title="성적 정보">
+      <section className="sc-secondary-page score-info-page">
+        {userLoadStatus === 'error'
+          ? <SecondaryState kind="error" title="저장된 성적을 불러오지 못했어요" action={<button type="button" className="btn btn-secondary mini" data-action="retryInit">다시 시도</button>} />
+          : <SecondaryState kind="loading" title="저장된 성적을 확인하고 있어요" />}
+      </section>
+    </SecondaryScreenShell>;
+  }
+  const examOptions = EXAM_OPTIONS.includes(scoreExamType) ? EXAM_OPTIONS : [scoreExamType, ...EXAM_OPTIONS];
   const overlays = <ScoreEditModal {...ctx} />;
   return (
     <SecondaryScreenShell screen="scoreInfo" title="성적 정보" overlays={scoreEditOpen ? overlays : null}>
@@ -113,7 +123,7 @@ export function ScoreInfoScreen(ctx) {
         <SecondaryIntro eyebrow="SCORE DATA" title="모의고사 성적" />
         <section className="sc-secondary-section">
           <div className="sc-secondary-section-head"><div><h3>분석 기준 시험</h3></div></div>
-          <div className="score-info-picker"><label htmlFor="profile-score-exam">기준 시험</label><select id="profile-score-exam" className="planner-input" data-field="scoreExamType" defaultValue={scoreExamType}>{EXAM_OPTIONS.map((label) => <option value={label} key={label}>{label}</option>)}</select><button type="button" className="btn btn-secondary" data-action="applyScoreExam">적용</button></div>
+          <div className="score-info-picker"><label htmlFor="profile-score-exam">기준 시험</label><select id="profile-score-exam" className="planner-input" data-field="scoreExamType" value={scoreExamType} onChange={() => {}}>{examOptions.map(label => <option value={label} key={label}>{label || '선택해 주세요'}</option>)}</select><button type="button" className="btn btn-secondary" data-action="applyScoreExam">적용</button></div>
         </section>
         <section className="sc-secondary-section score-info-card">
           <div className="sc-secondary-section-head score-info-card-head"><div><h3>내 성적</h3></div><button type="button" className="btn btn-primary score-edit-btn" data-action="openScoreEdit">입력·수정</button></div>
