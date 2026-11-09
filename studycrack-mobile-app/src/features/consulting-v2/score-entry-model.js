@@ -1,8 +1,7 @@
-import { inquirySubject, isConsultingSurveyExam, SCORE_ROWS, SPLIT_SCORE_LIMITS, splitRawTotal } from './survey-model.js';
+import { FOREIGN_LANGUAGE_SUBJECTS, inquirySubject, isConsultingSurveyExam, isGradeOnlyArea, SCORE_ROWS, SPLIT_SCORE_LIMITS, splitRawTotal } from './survey-model.js';
 
 const SCORE_METRICS = [['standardScore', 0, 200], ['percentile', 0, 100], ['grade', 1, 9]];
 export const EMPTY_SCORE_METRICS = Object.freeze({ standardScore: null, percentile: null, grade: null });
-const isAbsoluteScore = area => area === 'english' || area === 'korean_history';
 const hasReportMetrics = row => SCORE_METRICS.some(([key]) => row[key] != null);
 
 export function labelScoreRows(records) {
@@ -17,7 +16,7 @@ export function clearConvertedScores(row) {
 export function scoreConversionBatch(value) {
   if (!isConsultingSurveyExam(value)) return null;
   const entries = value.records.flatMap((row, index) => {
-    if (hasReportMetrics(row)) return [];
+    if (isGradeOnlyArea(row.area) || hasReportMetrics(row)) return [];
     const { area, subject, selection, commonRawScore, electiveRawScore } = row;
     const split = Object.hasOwn(SPLIT_SCORE_LIMITS, area);
     const rawScore = split ? splitRawTotal(commonRawScore, electiveRawScore) : row.rawScore;
@@ -34,16 +33,30 @@ export function applyScoreConversions(records, entries, results) {
     const row = records[index];
     const result = results[order];
     if (row.convertedFromRaw || result?.status !== 'converted') return;
-    const metrics = usableMetrics(result.metrics, row.area);
-    if (metrics.grade == null || (!isAbsoluteScore(row.area) && (metrics.standardScore == null || metrics.percentile == null))) return;
+    const metrics = usableMetrics(result.metrics);
+    if (metrics.grade == null || metrics.standardScore == null || metrics.percentile == null) return;
     updated[index] = { ...row, ...metrics, convertedFromRaw: true, confirmed: false };
   });
   return updated.some((row, index) => row !== records[index]) ? updated : null;
 }
 
-function usableMetrics(metrics, area) {
+function usableMetrics(metrics) {
   return Object.fromEntries(SCORE_METRICS.flatMap(([key, min, max]) => {
     const value = metrics?.[key];
-    return (!isAbsoluteScore(area) || key === 'grade') && Number.isInteger(value) && value >= min && value <= max ? [[key, value]] : [];
+    return Number.isInteger(value) && value >= min && value <= max ? [[key, value]] : [];
   }));
+}
+
+export function photoGradeSuggestions(records, photoRecords) {
+  if (!Array.isArray(photoRecords)) return [];
+  return records.flatMap(row => {
+    if (!isGradeOnlyArea(row.area) || row.grade != null) return [];
+    const matches = photoRecords.filter(item => item?.area === row.area);
+    if (matches.length !== 1) return [];
+    const { grade, subject } = matches[0];
+    if (!Number.isInteger(grade) || grade < 1 || grade > 9) return [];
+    if (row.area !== 'foreign_language') return [{ area: row.area, label: row.subject, patch: { grade } }];
+    if (!FOREIGN_LANGUAGE_SUBJECTS.includes(subject) || (row.subject && row.subject !== subject)) return [];
+    return [{ area: row.area, label: subject, patch: { subject, grade } }];
+  });
 }

@@ -47,7 +47,7 @@
 .consulting-score-editor { display:grid; gap:8px; }
 .consulting-score-editor-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); gap:8px; }
 .consulting-score-editor-source { grid-column:1/-1; margin:0; color:#334155; font-size:.88rem; font-weight:650; }
-.consulting-score-editor-row input { min-width:0; padding:9px; border:1px solid #cbd5e1; border-radius:8px; }
+.consulting-score-editor-row :is(input,select) { min-width:0; padding:9px; border:1px solid #cbd5e1; border-radius:8px; }
 .consulting-material-actions { align-items:stretch; }
 .consulting-material-reason { flex:1 1 260px; }
 .consulting-material-reason textarea { min-height:78px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; resize:vertical; }

@@ -1,6 +1,6 @@
 export const SURVEY_STEPS = Object.freeze([
   { key: 'studentStatus', label: '학생 상태', guide: '지원자 구분과 거주 지역부터 알려주세요. 지원 자격과 통학 여건을 함께 살펴볼게요.' },
-  { key: 'scores', label: '성적', guide: '2027학년도 수능 성적표를 첨부해 주세요. 원점수를 알고 있다면 함께 적어주세요.' },
+  { key: 'scores', label: '성적', guide: '2027학년도 수능 성적표를 첨부해 주세요. 알고 있는 원점수와 등급도 함께 적을 수 있어요.' },
   { key: 'conditions', label: '지원 조건', guide: '편도 통학 시간과 진학할 때 고려할 조건을 알려주세요.' },
   { key: 'preferences', label: '희망 지원', guide: '가장 희망하는 지원 방향부터 최대 3지망까지 알려주세요.' },
   { key: 'strategy', label: '지원 전략', guide: '어떤 지원을 선호하는지, 그리고 대학을 선택할 때 무엇이 중요한지 알려주세요.' },
@@ -9,14 +9,15 @@ export const SURVEY_STEPS = Object.freeze([
 ]);
 
 export const SCORE_ROWS = Object.freeze([
-  ['korean', '국어'], ['math', '수학'], ['english', '영어'], ['inquiry', '탐구 1'], ['inquiry', '탐구 2'], ['korean_history', '한국사']
+  ['korean', '국어'], ['math', '수학'], ['english', '영어'], ['inquiry', '탐구 1'], ['inquiry', '탐구 2'], ['korean_history', '한국사'], ['foreign_language', '제2외국어·한문']
 ]);
+export const FOREIGN_LANGUAGE_SUBJECTS = Object.freeze(['독일어Ⅰ', '프랑스어Ⅰ', '스페인어Ⅰ', '중국어Ⅰ', '일본어Ⅰ', '러시아어Ⅰ', '아랍어Ⅰ', '베트남어Ⅰ', '한문Ⅰ']);
+export const isGradeOnlyArea = area => ['english', 'korean_history', 'foreign_language'].includes(area);
 
 export const PRIORITY_LABELS = Object.freeze({ region: '지역', major: '전공', brand: '대학 인지도', employment: '취업', commute: '통학' });
-export const SURVEY_FORM_VERSION = 3;
+export const SURVEY_FORM_VERSION = 4;
 export const CONSULTING_SURVEY_EXAM = Object.freeze({ examYear: 2026, examType: 'csat' });
 export const SPLIT_SCORE_LIMITS = { korean: [76, 24], math: [74, 26] };
-export const rawScoreMax = area => ['inquiry', 'korean_history'].includes(area) ? 50 : 100;
 export const splitRawTotal = (common, elective) => common == null || elective == null ? null : common + elective;
 export const COMMUTE_OPTIONS = Object.freeze([
   ['30', '30분 이내'], ['60', '1시간 이내'], ['90', '1시간 30분 이내'], ['120', '2시간 이내'], ['over_120', '2시간 이상도 가능']
@@ -31,7 +32,12 @@ export function isConsultingSurveyExam(value) {
 
 const hasText = value => typeof value === 'string' && Boolean(value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim());
 const integerInRange = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max;
-const choiceKey = ({ region, university, track }) => JSON.stringify([region, university, track]);
+const legacyAbsoluteGrade = (area, rawScore) => {
+  if (area === 'english' && integerInRange(rawScore, 0, 100)) return Math.min(9, 10 - Math.floor(rawScore / 10));
+  if (area === 'korean_history' && integerInRange(rawScore, 0, 50)) return Math.max(1, 9 - Math.floor(rawScore / 5));
+  return null;
+};
+const choiceKey = ({ region, university, track }) => JSON.stringify([university || track ? '' : region, university, track]);
 export const inquirySubject = row => /^탐구\s*[12]$/u.test(row.subject || '') ? '' : row.subject?.trim() || '';
 
 export const hasRankedChoice = ({ region, university, track }) => [region, university, track].some(hasText);
@@ -61,7 +67,7 @@ export function createEmptySurvey() {
   return {
     formVersion: SURVEY_FORM_VERSION,
     studentStatus: { graduationYear: 2027, applicantType: '', schoolType: '', schoolName: '', residenceRegion: '' },
-    scores: { ...CONSULTING_SURVEY_EXAM, records: SCORE_ROWS.map(([area, label]) => ({ area, subject: label, selection: '', standardScore: null, percentile: null, grade: null, confirmed: false })) },
+    scores: { ...CONSULTING_SURVEY_EXAM, records: SCORE_ROWS.map(([area, label]) => ({ area, subject: area === 'foreign_language' ? '' : label, selection: '', standardScore: null, percentile: null, grade: null, confirmed: false })) },
     conditions: { commuteLimit: '', commuteMaxMinutes: null, dormitoryAllowed: false, repeatStudyAllowed: false },
     preferences: { rankedChoices: [], additionalPreference: '' },
     strategy: { riskTolerance: '', priorityOrder: ['region', 'major', 'brand', 'employment', 'commute'] },
@@ -85,6 +91,10 @@ export function normalizeSurveyDraft(snapshot) {
     studentStatus: { ...empty.studentStatus, ...(snapshot.studentStatus || {}) },
     scores: { ...empty.scores, records: empty.scores.records.map(row => {
       const saved = row.area === 'inquiry' ? inquiries.shift() : savedScores.find(item => item.area === row.area);
+      if (isGradeOnlyArea(row.area)) {
+        const subject = row.area === 'foreign_language' && FOREIGN_LANGUAGE_SUBJECTS.includes(saved?.subject) ? saved.subject : row.subject;
+        return { ...row, subject, grade: integerInRange(saved?.grade, 1, 9) ? saved.grade : legacyAbsoluteGrade(row.area, saved?.rawScore) };
+      }
       return { ...row, ...saved, subject: saved?.subject?.trim() || row.subject };
     }) },
     conditions: {
@@ -103,6 +113,10 @@ export function normalizeSurveyDraft(snapshot) {
 export function surveySaveSnapshot(snapshot) {
   return {
     ...snapshot,
+    scores: {
+      ...snapshot.scores,
+      records: snapshot.scores.records.filter(row => row.area !== 'foreign_language' || row.subject || row.grade != null)
+    },
     qualitative: {
       ...snapshot.qualitative,
       consultationQuestions: snapshot.qualitative.consultationQuestions.filter(hasText)
@@ -133,6 +147,8 @@ export function clientSurveyError(snapshot, readyFiles) {
 
 function surveyRawScoreError(records) {
   for (const row of records) {
+    if (row.area === 'foreign_language' && (row.subject || row.grade != null)
+        && (!FOREIGN_LANGUAGE_SUBJECTS.includes(row.subject) || !integerInRange(row.grade, 1, 9))) return '응시한 제2외국어·한문 과목과 등급을 모두 선택해주세요.';
     const limits = SPLIT_SCORE_LIMITS[row.area];
     const { rawScore, commonRawScore, electiveRawScore } = row;
     if (limits && (commonRawScore != null || electiveRawScore != null)) {

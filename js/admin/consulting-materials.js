@@ -1,5 +1,6 @@
 let currentConsultingMaterial = null;
 let consultingMaterialRequest = 0;
+const consultingForeignLanguageSubjects = ['독일어Ⅰ', '프랑스어Ⅰ', '스페인어Ⅰ', '중국어Ⅰ', '일본어Ⅰ', '러시아어Ⅰ', '아랍어Ⅰ', '베트남어Ⅰ', '한문Ⅰ'];
 
 function setConsultingMaterialStatus(message, state = '') {
     const target = document.getElementById('consultingMaterialStatus');
@@ -65,34 +66,41 @@ function appendConsultingMaterialValue(container, label, value) {
     container.appendChild(block);
 }
 
-function renderConsultingVerifiedScores(scores, rawEntry) {
+function renderConsultingVerifiedScores(scores, rawEntry, gradeEntry) {
     const target = document.getElementById('consultingVerifiedScores');
     target.innerHTML = '';
     let inquiryNumber = 0;
-    (scores?.records || []).forEach(record => {
+    const records = [...(scores?.records || [])];
+    if (gradeEntry && !records.some(record => record.area === 'foreign_language')) records.push({ area: 'foreign_language' });
+    records.forEach(record => {
         const row = document.createElement('div');
         row.className = 'consulting-score-editor-row';
         row.dataset.area = String(record.area || '');
         const area = record.area === 'inquiry' ? `탐구 ${++inquiryNumber}`
-            : ({ korean: '국어', math: '수학', english: '영어', korean_history: '한국사' })[record.area] || record.subject;
+            : ({ korean: '국어', math: '수학', english: '영어', korean_history: '한국사', foreign_language: '제2외국어·한문' })[record.area] || record.subject;
+        const absolute = ['english', 'korean_history', 'foreign_language'].includes(record.area);
         const parts = [
             record.rawScore != null ? `원점수 ${record.rawScore}점` : '',
             record.commonRawScore != null ? `공통 ${record.commonRawScore}점` : '',
-            record.electiveRawScore != null ? `선택 ${record.electiveRawScore}점` : ''
+            record.electiveRawScore != null ? `선택 ${record.electiveRawScore}점` : '',
+            gradeEntry && absolute && record.grade != null ? `학생 입력 ${record.area === 'foreign_language' ? record.subject + ' ' : ''}${record.grade}등급` : ''
         ].filter(Boolean);
         const label = document.createElement('p');
         label.className = 'consulting-score-editor-source';
         label.textContent = [area, ...parts].join(' · ');
         row.appendChild(label);
         ['subject', 'selection', 'standardScore', 'percentile', 'grade'].forEach(field => {
-            const input = document.createElement('input');
+            const subjectSelect = record.area === 'foreign_language' && field === 'subject';
+            const input = document.createElement(subjectSelect ? 'select' : 'input');
             input.dataset.field = field;
-            input.type = ['standardScore', 'percentile', 'grade'].includes(field) ? 'number' : 'text';
+            if (subjectSelect) {
+                input.add(new Option('응시한 과목만 선택', ''));
+                consultingForeignLanguageSubjects.forEach(subject => input.add(new Option(subject, subject)));
+            } else input.type = ['standardScore', 'percentile', 'grade'].includes(field) ? 'number' : 'text';
             const placeholder = ({ subject: '과목명', selection: '선택과목', standardScore: '표준점수', percentile: '백분위', grade: '등급' })[field];
-            const absolute = ['english', 'korean_history'].includes(record.area);
             const emptyInquiry = rawEntry && field === 'subject' && record.area === 'inquiry' && /^탐구\s*[12]$/u.test(record.subject);
             input.disabled = rawEntry && (absolute && field !== 'subject' && field !== 'grade' || record.area === 'inquiry' && field === 'selection');
-            input.value = input.disabled || emptyInquiry ? '' : record[field] ?? '';
+            input.value = input.disabled || emptyInquiry || (gradeEntry && absolute && (field === 'grade' || subjectSelect)) ? '' : record[field] ?? '';
             input.placeholder = placeholder;
             input.setAttribute('aria-label', `${area} ${placeholder}`);
             row.appendChild(input);
@@ -162,7 +170,7 @@ async function openConsultingMaterial(caseId) {
             survey.appendChild(item);
         });
         renderConsultingMaterialFiles(caseId, data.files || []);
-        renderConsultingVerifiedScores(data.verification?.studentInput || snapshot.scores, rawEntry);
+        renderConsultingVerifiedScores(data.verification?.studentInput || snapshot.scores, rawEntry, snapshot.formVersion === 4);
         document.getElementById('consultingMaterialScoreGuide').hidden = !rawEntry;
         const resultSelect = document.getElementById('consultingMaterialResult');
         resultSelect.value = 'matched';
@@ -215,7 +223,7 @@ function readConsultingVerifiedScores() {
             standardScore: number(row.querySelector('[data-field="standardScore"]')),
             percentile: number(row.querySelector('[data-field="percentile"]')),
             grade: number(row.querySelector('[data-field="grade"]'))
-        }))
+        })).filter(row => row.area !== 'foreign_language' || row.subject || row.grade != null)
     };
 }
 

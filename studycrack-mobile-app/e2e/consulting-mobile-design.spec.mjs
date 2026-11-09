@@ -67,6 +67,10 @@ async function prepare(page, { loggedIn = true } = {}) {
         f.survey.files.push(f.photo);
         data=f.photo;
       }
+      else if(type==='consulting_read_score_photo') {
+        if (f.photoError) return new Response(JSON.stringify({success:false,code:'SCORE_PHOTO_SCAN_REFERENCE_MISSING'}),{status:409});
+        data={records:[{area:'korean_history',grade:2},{area:'english',grade:3},{area:'foreign_language',subject:'독일어Ⅰ',grade:4},{area:'korean',grade:1}]};
+      }
       else if(type==='student_save_v2_survey_draft'){
         f.saves.push(input);
         if(f.saveMode==='defer') await new Promise(resolve=>{f.releaseSave=resolve;});
@@ -352,6 +356,8 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   snapshot.formVersion = 2;
   snapshot.scores.records[0].rawScore = 91;
   snapshot.scores.records[3].subject = '';
+  snapshot.scores.records[2].rawScore = 89;
+  snapshot.scores.records[5].rawScore = 0;
   fixture.survey.draft = { snapshot, draftRevision: 1 };
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
@@ -369,6 +375,15 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   }
   await expect(korean).toContainText('이전에 저장한 총점은 91점');
   await expect(page.getByRole('spinbutton', { name: /표준점수|백분위|등급/ })).toHaveCount(0);
+  for (const [area, grade] of [['영어', '2'], ['한국사', '9']]) {
+    const group = page.getByRole('group', { name: area, exact: true });
+    await expect(group.getByRole('combobox', { name: '등급' })).toHaveValue(grade);
+    await expect(group.getByRole('spinbutton', { name: '원점수' })).toHaveCount(0);
+  }
+  const foreign = page.getByRole('group', { name: '제2외국어·한문', exact: true });
+  await expect(foreign.getByRole('combobox', { name: '등급' })).toHaveCount(0);
+  await foreign.getByRole('combobox', { name: '응시 과목 (선택)' }).selectOption('한문Ⅰ');
+  await foreign.getByRole('combobox', { name: '등급' }).selectOption('4');
   await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('화법과작문');
   await korean.getByRole('spinbutton', { name: '공통 원점수', exact: true }).fill('76');
   await korean.getByRole('spinbutton', { name: '선택 원점수', exact: true }).fill('22');
@@ -385,29 +400,54 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   await page.screenshot({ path: testInfo.outputPath('consulting-scores-320.png'), fullPage: true });
   await next.click();
   const persisted = await page.evaluate(() => window.__design.survey.draft.snapshot);
-  expect(persisted.formVersion).toBe(3);
+  expect(persisted.formVersion).toBe(4);
   expect(persisted.scores).toMatchObject({ examYear: 2026, examType: 'csat' });
   expect(persisted.scores.records[0]).toMatchObject({ rawScore: 98, commonRawScore: 76, electiveRawScore: 22, standardScore: 138 });
   expect(persisted.scores.records[1]).toMatchObject({ rawScore: 74, commonRawScore: 74, electiveRawScore: 0, standardScore: null });
   expect(persisted.scores.records[3].subject).toBe('탐구 1');
+  expect(persisted.scores.records[2]).toMatchObject({ area: 'english', grade: 2 });
+  expect(persisted.scores.records[2]).not.toHaveProperty('rawScore');
+  expect(persisted.scores.records[6]).toMatchObject({ area: 'foreign_language', subject: '한문Ⅰ', grade: 4 });
   await page.getByRole('button', { name: '이전', exact: true }).click();
   await expect(math.getByRole('spinbutton', { name: '선택 원점수' })).toHaveValue('0');
+  await foreign.getByRole('combobox', { name: '응시 과목 (선택)' }).selectOption('');
+  await next.click();
+  expect(await page.evaluate(() => window.__design.survey.draft.snapshot.scores.records.some(row => row.area === 'foreign_language'))).toBe(false);
   const conversions = await page.evaluate(() => window.__design.conversions);
   expect(conversions.every(({ examYear, examType }) => examYear === 2026 && examType === 'csat')).toBe(true);
 });
 
-test('성적 단계에서 첨부한 성적표는 검사 상태를 확인할 수 있고 원점수에 섞이지 않는다', async ({ page }) => {
+test('검사가 끝난 사진에서 등급을 읽고 확인한 뒤 기존 입력을 보존하며 빈칸에 반영한다', async ({ page }) => {
   await prepare(page);
   await page.route('**/__score-photo-upload', route => route.fulfill({ status: 204, body: '' }));
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
   await page.getByRole('button', { name: '저장하고 다음' }).click();
+  const englishGrade = page.getByRole('group', { name: '영어', exact: true }).getByRole('combobox', { name: '등급' });
+  await englishGrade.selectOption('5');
   await page.getByLabel('성적표 파일').setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic') });
   await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '사진 읽기', exact: true })).toHaveCount(0);
   await page.evaluate(() => { window.__design.photo.status = 'ready'; });
   await page.getByRole('button', { name: '검사 상태 확인' }).click();
   await expect(page.getByText('검사 완료', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.photoError = true; });
+  const read = page.getByRole('button', { name: '사진 읽기', exact: true });
+  await read.click();
+  await expect(page.getByRole('alert')).toHaveText('이전에 올린 사진은 읽을 수 없어요. 사진을 새로 첨부하거나 성적을 직접 입력해 주세요.');
+  await page.evaluate(() => { window.__design.photoError = false; });
+  await read.click();
+  const preview = page.getByLabel('사진에서 읽은 성적', { exact: true });
+  await expect(preview).toContainText('한국사 2등급 · 독일어Ⅰ 4등급');
+  await expect(preview).not.toContainText('영어');
+  const historyGrade = page.getByRole('group', { name: '한국사', exact: true }).getByRole('combobox', { name: '등급' });
+  await expect(historyGrade).toHaveValue('');
+  await page.getByRole('button', { name: '빈칸에 반영' }).click();
+  await expect(historyGrade).toHaveValue('2');
+  await expect(englishGrade).toHaveValue('5');
+  const foreign = page.getByRole('group', { name: '제2외국어·한문', exact: true });
+  await expect(foreign.getByRole('combobox', { name: '응시 과목 (선택)' })).toHaveValue('독일어Ⅰ');
+  await expect(foreign.getByRole('combobox', { name: '등급' })).toHaveValue('4');
   await expect(page.getByRole('group', { name: '국어', exact: true }).getByRole('spinbutton', { name: '공통 원점수' })).toHaveValue('');
   await expect(page.getByRole('button', { name: 'synthetic.png 삭제' })).toBeVisible();
   await fits(page);
@@ -417,6 +457,8 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   const fixture = await prepare(page);
   await page.setViewportSize({ width: 320, height: 900 });
   const snapshot = createEmptySurvey();
+  snapshot.formVersion = 3;
+  snapshot.preferences.rankedChoices = [{ region: '부산', university: '', track: '' }];
   Object.assign(snapshot.studentStatus, { applicantType: 'graduate', residenceRegion: '서울' });
   snapshot.strategy.riskTolerance = 'balanced';
   snapshot.qualitative.consultationQuestions = ['지원 조합이 궁금합니다.'];
@@ -444,28 +486,23 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   await page.getByRole('button', { name: '대학 목록 다시 불러오기' }).click();
   const first = page.getByRole('group', { name: '1지망', exact: true });
   await expect(page.getByText('최대 3지망', { exact: true })).toBeVisible();
-  await first.getByLabel('희망 지역').selectOption('서울');
-  await expect(first.getByLabel('희망 대학').locator('option')).toHaveText(['선택하지 않음', '가상대학교', '한국외국어대학교']);
+  await expect(first.getByLabel('희망 지역')).toHaveCount(0);
+  await expect(first.getByText('이전에 입력한 희망 지역 · 부산')).toBeVisible();
   const search = first.getByRole('searchbox', { name: '대학명 검색' });
+  await search.fill('없는대학');
+  await expect(first.getByText(/일치하는 대학이 없어요/)).toBeVisible();
   await search.fill('가 상 대');
   await first.getByRole('button', { name: /가상대학교/ }).click();
-  await first.getByLabel('희망 지역').selectOption('경기');
-  await expect(first.getByLabel('희망 대학')).toHaveValue('');
-  await expect(first.getByText('지역이 바뀌어 이전 희망 대학 선택을 비웠어요.')).toBeVisible();
-  await search.fill('가상');
-  await expect(first.getByText(/일치하는 대학이 없어요/)).toBeVisible();
-  await first.getByLabel('희망 지역').selectOption('서울');
-  await first.getByLabel('희망 대학').selectOption('가상대학교');
   await first.getByLabel('희망 계열').selectOption('공학');
   await page.getByRole('button', { name: /2지망 추가/ }).click();
   const second = page.getByRole('group', { name: '2지망', exact: true });
-  await second.getByLabel('희망 지역').selectOption('경기');
   await second.getByRole('searchbox', { name: '대학명 검색' }).fill('한국외대 글로벌');
   await expect(second.getByRole('list', { name: '대학 검색 결과' })).toBeVisible();
   await fits(page);
   await second.getByRole('button', { name: /한국외국어대학교\(글로벌\)/ }).click();
   await expect(search).toHaveValue('');
-  await expect(first.getByLabel('희망 대학')).toHaveValue('가상대학교');
+  await expect(first.getByText('선택한 대학 · 가상대학교')).toBeVisible();
+  await expect(second.getByText('선택한 대학 · 한국외국어대학교(글로벌)')).toBeVisible();
   await page.getByRole('button', { name: /3지망 추가/ }).click();
   await page.getByRole('group', { name: '3지망', exact: true }).getByLabel('희망 계열').selectOption('자유전공·융합');
   await expect(page.getByRole('button', { name: '지망 추가' })).toHaveCount(0);
@@ -495,11 +532,11 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   expect(submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({ fileIds: [fileId], expectedDraftRevision: draft.draftRevision });
   expect(draft.snapshot).toMatchObject({
-    formVersion: 3,
+    formVersion: 4,
     conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null },
     preferences: { rankedChoices: [
-      { region: '서울', university: '가상대학교', track: '공학' },
-      { region: '경기', university: '한국외국어대학교(글로벌)', track: '' },
+      { region: '부산', university: '가상대학교', track: '공학' },
+      { region: '', university: '한국외국어대학교(글로벌)', track: '' },
       { region: '', university: '', track: '자유전공·융합' }
     ], additionalPreference: note },
     strategy: { priorityOrder: ['commute', 'major', 'brand', 'employment', 'region'] },
