@@ -48,6 +48,21 @@ async function prepare(page, { saved = false, failOnce = false } = {}) {
   return { user, requests, writes, dialogs };
 }
 
+async function deferFirstProfile(page, { fail = false } = {}) {
+  let attempts = 0;
+  let release;
+  const delayed = new Promise(resolve => { release = resolve; });
+  await page.route('**/api/**', async route => {
+    if (route.request().postDataJSON()?.type !== 'get_user_analysis') return route.fallback();
+    attempts += 1;
+    if (attempts > 1) return route.fallback();
+    await delayed;
+    if (fail) return route.fulfill({ status: 503, json: { error: '프로필 조회 일시 실패' } });
+    return route.fallback();
+  });
+  return { attempts: () => attempts, release };
+}
+
 async function openModal(page) {
   await page.getByRole('button', { name: '입력·수정', exact: true }).click();
   return page.getByRole('dialog', { name: '성적 수정', exact: true });
@@ -83,8 +98,17 @@ test('수능 최초 입력은 원점수 환산 없이 저장하고 실패·재�
   expect(api.writes[1].csat).toEqual(exam);
   expect(api.writes[1].mar).toEqual(march);
   expect(api.requests.filter(request => request.type === 'convert_score')).toHaveLength(0);
-  await page.reload();
-  await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('수능');
+  const profile = await deferFirstProfile(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const scoreInfo = page.locator('[data-screen="scoreInfo"]');
+  try {
+    await expect.poll(profile.attempts).toBe(1);
+    await expect(scoreInfo.getByRole('status')).toHaveText('저장된 성적을 확인하고 있어요');
+    await expect(scoreInfo.locator('[data-field="scoreExamType"]')).toHaveCount(0);
+  } finally {
+    profile.release();
+  }
+  await expect(scoreInfo.getByRole('combobox', { name: '기준 시험', exact: true })).toHaveValue('수능');
   const reopened = await openModal(page);
   await expect(reopened.locator('[data-field="v2e-korean-std"]')).toHaveValue('132');
   await reopened.getByRole('button', { name: '닫기', exact: true }).click();
@@ -141,11 +165,28 @@ test('수능과 모의고사 전환 시 각각의 저장 성적과 입력 방식
   await expect(dialog.locator('[data-field="v2e-korean-std"]')).toHaveValue('132');
 });
 
-test('온보딩도 수능 성적표를 원점수 없이 저장한다', async ({ page }) => {
+test('온보딩은 느린 프로필 응답을 기다리고 수능 성적표를 원점수 없이 저장한다', async ({ page }) => {
   const api = await prepare(page);
-  await page.goto('/studycrack-mobile.html?screen=ob2');
-  await page.locator('[data-field="scoreExamType"]').selectOption('수능');
+  const profile = await deferFirstProfile(page, { fail: true });
+  await page.goto('/studycrack-mobile.html?screen=ob2', { waitUntil: 'domcontentloaded' });
   const root = page.locator('[data-screen="ob2"]');
+  const picker = root.getByRole('combobox', { name: '시험 선택', exact: true });
+  try {
+    await expect.poll(profile.attempts).toBe(1);
+    await expect(root.getByRole('status')).toHaveText('저장된 성적을 확인하고 있어요.');
+    await expect(root.locator('[data-field="scoreExamType"]')).toHaveCount(0);
+  } finally {
+    profile.release();
+  }
+  await expect(root.getByRole('alert')).toContainText('저장된 성적을 불러오지 못했어요.');
+  await expect(root.locator('[data-field="scoreExamType"]')).toHaveCount(0);
+  await root.getByRole('button', { name: '다시 시도', exact: true }).click();
+  await expect(picker).toHaveValue('3월 모의고사');
+  expect(profile.attempts()).toBe(2);
+  await expect(root.locator('[data-field="v2e-korean-common"]')).toHaveValue('60');
+  await picker.selectOption('수능');
+  await expect(root.locator('[data-field="v2e-korean-std"]')).toBeVisible();
+  await expect(root.locator('[data-field="v2e-korean-common"]')).toHaveCount(0);
   const exam = official();
   for (const [key, item] of [['korean', exam.kor], ['math', exam.math], ['inq1', exam.inq1], ['inq2', exam.inq2]]) await fillSubject(root, key, item);
   await root.locator('[data-field="v2e-english"]').selectOption('2');
@@ -153,6 +194,7 @@ test('온보딩도 수능 성적표를 원점수 없이 저장한다', async ({ 
   await root.getByRole('button', { name: '저장하고 학습 MBTI로' }).click();
   await expect(page.locator('[data-screen="ob3"]')).toBeVisible();
   expect(api.writes[0].csat).toEqual(exam);
+  expect(api.writes[0].mar).toEqual(march);
   expect(api.requests.filter(request => request.type === 'convert_score')).toHaveLength(0);
 });
 
