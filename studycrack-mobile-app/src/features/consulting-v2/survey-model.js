@@ -1,6 +1,6 @@
 export const SURVEY_STEPS = Object.freeze([
   { key: 'studentStatus', label: '학생 상태', guide: '지원자 구분과 거주 지역부터 알려주세요. 지원 자격과 통학 여건을 함께 살펴볼게요.' },
-  { key: 'scores', label: '성적', guide: '성적표를 보면서 시험 종류와 과목별 성적을 입력하고, 확인한 과목에 체크해주세요.' },
+  { key: 'scores', label: '성적', guide: '시험을 선택한 뒤 원점수나 성적표로 입력해 주세요. 채워진 수치는 제출 전에 확인할 수 있어요.' },
   { key: 'conditions', label: '지원 조건', guide: '등록금과 통학처럼 실제 진학을 결정할 때 고려할 조건을 알려주세요.' },
   { key: 'preferences', label: '희망 지원', guide: '희망 지역과 전공을 알려주세요. 함께 살펴보고 싶은 대학도 적을 수 있어요.' },
   { key: 'strategy', label: '지원 전략', guide: '어떤 지원을 선호하는지, 그리고 대학을 선택할 때 무엇이 중요한지 알려주세요.' },
