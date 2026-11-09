@@ -42,7 +42,14 @@
 .consulting-score-total strong { font-size:15px; font-variant-numeric:tabular-nums; }
 .consulting-score-file-actions { display:flex; flex-wrap:wrap; align-items:center; gap:5px; }
 .consulting-score-file-actions button { min-height:44px; padding:8px 10px; }
-.consulting-score-photo-preview { display:grid; justify-items:start; gap:7px; padding:12px; border:1px solid var(--sc-line-subtle); border-radius:9px; background:var(--sc-surface-card); color:var(--sc-brand-navy); }
+.consulting-score-photo-preview { display:grid; flex:1 0 100%; min-width:0; justify-items:start; gap:8px; padding:12px; border:1px solid var(--sc-line-subtle); border-radius:9px; background:var(--sc-surface-subtle); color:var(--sc-brand-navy); }
+.consulting-score-photo-preview[data-result="notice"] { color:var(--sc-state-danger); }
+.consulting-file-panel .consulting-score-photo-preview p { margin:0; }
+.consulting-score-read-rows { display:grid; width:100%; gap:5px; margin:0; font-size:.86rem; }
+.consulting-score-read-rows div { display:grid; grid-template-columns: minmax(70px,auto) minmax(0,1fr); gap:8px; padding:5px 0; border-top:1px solid var(--sc-line-subtle); }
+.consulting-score-read-rows dt { font-weight:700; }
+.consulting-score-read-rows dd { margin:0; }
+.consulting-score-read-rows dd span { display:inline-block; margin-inline-start:6px; padding:1px 5px; border-radius:5px; background:var(--sc-surface-card); font-size:.78rem; font-weight:700; }
 .consulting-survey-check { display:flex; align-items:center; gap:9px; min-height:44px; color:var(--sc-ink); font-size:.92rem; font-weight:700; }
 .consulting-survey-check input { flex:0 0 auto; width:18px; height:18px; accent-color:var(--sc-brand-navy); }
 .consulting-survey-preferences { display:grid; gap:16px; }

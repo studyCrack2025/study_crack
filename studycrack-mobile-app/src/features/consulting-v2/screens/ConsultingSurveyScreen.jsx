@@ -1,7 +1,8 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { clientSurveyError, COMMUTE_OPTIONS, createEmptySurvey, hasPreviousExamScores, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
-import { confirmV2ScoreUpload, deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, readV2ScorePhoto, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { confirmV2ScoreUpload, deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { useSurveyFileReading } from '../use-survey-file-reading.js';
 import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
 import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
@@ -107,6 +108,7 @@ export function ConsultingSurveyScreen({ binding }) {
       needsFormUpgrade: Boolean(saved && saved.snapshot?.formVersion !== SURVEY_FORM_VERSION),
       previousExamScores: hasPreviousExamScores(saved?.snapshot?.scores),
       revision: Number(saved?.draftRevision || 0),
+      autoReadFiles: new Set(),
       edit: 0,
       savedEdit: 0
     });
@@ -135,6 +137,10 @@ export function ConsultingSurveyScreen({ binding }) {
     setNotice(null);
   }, []);
   const updateScores = React.useCallback(patch => updateSection('scores', patch), [updateSection]);
+  const { readPending, ...fileReading } = useSurveyFileReading({
+    binding, draft, session: resource.status === 'ready' ? draft.current : null,
+    files, setFiles, canRead: step > 0, actionBusy, updateScores
+  });
   const save = React.useCallback(session => {
     if (session.inFlight) return session.inFlight;
     if (session.conflict || draft.current !== session) return Promise.resolve(false);
@@ -199,14 +205,17 @@ export function ConsultingSurveyScreen({ binding }) {
   });
 
   const rememberFile = file => setFiles(current => [...current.filter(item => item.fileId !== file.fileId), file]);
-  const showUploadResult = result => {
+  const showUploadResult = (result, session) => {
     if (!result.ok) {
-      if (result.pendingFile) rememberFile(result.pendingFile);
+      if (result.pendingFile) {
+        session.autoReadFiles.add(result.pendingFile.fileId);
+        rememberFile(result.pendingFile);
+      }
       return showNotice(result.error || '업로드하지 못했습니다.', true);
     }
+    if (!files.some(file => file.fileId === result.data.fileId && file.status !== 'upload_pending')) session.autoReadFiles.add(result.data.fileId);
     rememberFile(result.data);
-    if (result.data.status === 'rejected') return showNotice('성적표 검사를 통과하지 못했어요. 다른 파일을 첨부해 주세요.', true);
-    showNotice(['ready', 'linked'].includes(result.data.status) ? '성적표 검사가 완료되었습니다.' : '성적표를 업로드했습니다. 검사가 끝나면 제출할 수 있어요.');
+    if (result.data.status === 'rejected') showNotice('성적표가 보안 검사에서 거절됐어요. 다른 파일을 첨부해 주세요.', true);
   };
   const upload = file => runAction(async session => {
     if (files.length >= 3) return showNotice('성적표는 최대 3개까지 등록할 수 있습니다.', true);
@@ -214,19 +223,12 @@ export function ConsultingSurveyScreen({ binding }) {
     if (!(await flush(session))) return;
     setNotice(null);
     const result = await uploadV2ScoreFile(binding, { caseId: session.caseId, file });
-    if (draft.current === session) showUploadResult(result);
+    if (draft.current === session) showUploadResult(result, session);
   });
   const confirmUpload = file => runAction(async session => {
     setNotice(null);
     const result = await confirmV2ScoreUpload(binding, { caseId: session.caseId, fileId: file.fileId });
-    if (draft.current === session) showUploadResult(result);
-  });
-  const refreshFiles = () => runAction(async session => {
-    const result = await getV2SurveyDraft(binding);
-    if (draft.current !== session) return;
-    if (!result.ok || result.data.caseId !== session.caseId) return showNotice('성적표 상태를 확인하지 못했습니다. 다시 시도해주세요.', true);
-    setFiles(Array.isArray(result.data.files) ? result.data.files : []);
-    showNotice('성적표 검사 상태를 확인했습니다.');
+    if (draft.current === session) showUploadResult(result, session);
   });
   const deleteFile = file => runAction(async session => {
     if (!globalThis.confirm?.('첨부한 성적표를 삭제할까요?')) return;
@@ -236,12 +238,8 @@ export function ConsultingSurveyScreen({ binding }) {
     setFiles(current => current.filter(item => item.fileId !== file.fileId));
     showNotice('첨부한 성적표를 삭제했습니다.');
   });
-  const readPhoto = file => runAction(async session => {
-    setNotice(null);
-    const result = await readV2ScorePhoto(binding, { caseId: session.caseId, fileId: file.fileId });
-    if (draft.current === session) return result;
-  });
   const submit = () => runAction(async session => {
+    if (readPending) return;
     const readyFiles = files.filter(file => file.status === 'ready');
     const validation = clientSurveyError(session.snapshot, readyFiles);
     if (validation) {
@@ -271,7 +269,7 @@ export function ConsultingSurveyScreen({ binding }) {
   if (resource.status === 'error') return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>조사서를 불러오지 못했습니다</h1><p className="consulting-v2-status" data-tone="error">{resource.message}</p><button className="consulting-v2-primary consulting-v2-wide" onClick={load}>다시 시도</button></section></main>;
   const { key, label, guide } = SURVEY_STEPS[step];
   const update = patch => updateSection(key, patch);
-  const fileActions = { files, onUpload: upload, onConfirmUpload: confirmUpload, onRefresh: refreshFiles, onDelete: deleteFile };
+  const fileActions = { files, onUpload: upload, onConfirmUpload: confirmUpload, onDelete: deleteFile, ...fileReading };
   return <main className="consulting-survey">
     <header>
       <button type="button" disabled={actionBusy} onClick={() => runAction(async session => {
@@ -293,7 +291,7 @@ export function ConsultingSurveyScreen({ binding }) {
       {notice ? <p className="consulting-survey-message" data-tone={notice.error ? 'error' : 'info'} role={notice.error ? 'alert' : 'status'}>{notice.text}</p> : null}
       <fieldset className="consulting-survey-fields" disabled={actionBusy} aria-labelledby="survey-title">
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
-        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} fileActions={{ ...fileActions, onReadPhoto: readPhoto }} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
+        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} fileActions={fileActions} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} />}
         {key === 'preferences' && <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}
@@ -312,7 +310,7 @@ export function ConsultingSurveyScreen({ binding }) {
         <button type="button" className="consulting-v2-secondary" disabled={step === 0 || actionBusy} onClick={() => { setNotice(null); setStep(value => value - 1); }}>이전</button>
         {step < SURVEY_STEPS.length - 1
           ? <button type="button" className="consulting-v2-primary" disabled={actionBusy || saveState.conflict} onClick={next}>저장하고 다음</button>
-          : <button type="button" className="consulting-v2-primary" disabled={actionBusy || saveState.conflict} onClick={submit}>{draft.current?.workflowState === 'SUPPLEMENT_REQUIRED' ? '보완 제출' : '최종 제출'}</button>}
+          : <button type="button" className="consulting-v2-primary" disabled={actionBusy || saveState.conflict || readPending} onClick={submit}>{draft.current?.workflowState === 'SUPPLEMENT_REQUIRED' ? '보완 제출' : '최종 제출'}</button>}
       </footer>
     </section>
   </main>;
