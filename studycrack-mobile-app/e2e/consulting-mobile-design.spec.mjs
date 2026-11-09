@@ -29,8 +29,9 @@ async function prepare(page, { loggedIn = true } = {}) {
   expect(fontResponse.ok(), 'The preview must serve the built font stylesheet').toBe(true);
   const fonts = ((await fontResponse.text()).match(/@font-face\s*\{[^}]*\}/g) || []).filter(rule => /\bfont-family:\s*(["']?)Paperlogy\1\s*[;}]/.test(rule));
   expect(fonts.length, 'The preview stylesheet must contain the Paperlogy font faces').toBeGreaterThan(0);
-  await page.route('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css', route => route.fulfill({ contentType: 'text/css', body: fonts.join('\n') }));
-  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'https://api.example.invalid/consulting',consultingPublic:'https://api.example.invalid/public',file:'https://api.example.invalid/file'}};` }));
+  const previewFonts = fonts.join('\n').replace(/url\((["']?)(\/[^)]+?)\1\)/g, (_, quote, asset) => `url("${new URL(asset, fontResponse.url())}")`);
+  await page.route('https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css', route => route.fulfill({ contentType: 'text/css', body: previewFonts }));
+  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'https://api.example.invalid/consulting',consultingPublic:'https://api.example.invalid/public',file:'https://api.example.invalid/file',analysis:'https://api.example.invalid/analysis'}};` }));
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     localStorage.setItem('userRole','student');
     window.hasClientSession=()=>${loggedIn};
@@ -44,10 +45,14 @@ async function prepare(page, { loggedIn = true } = {}) {
       let data={};
       if(type==='student_get_v2_survey_schema') data={caseId:'CASE_synthetic'};
       else if(type==='student_get_v2_survey_draft') data=f.survey;
+      else if(type==='get_univ_list_only'){
+        if(f.catalogUnavailable) return new Response(JSON.stringify({error:'목록 조회 실패'}),{status:503});
+        return new Response(JSON.stringify([{univName:'가상대학교',majors:[]},{univName:'예시대학교(분교)',majors:[]}]));
+      }
       else if(type==='student_convert_v2_survey_scores'){
         f.conversions.push(input);
         data={results:input.records.map(row=>{
-          if(input.examType==='csat') return {status:'board_unavailable'};
+          if(f.scoreboardUnavailable) return {status:'board_unavailable'};
           if(row.rawScore===98 && (row.commonRawScore==null || row.electiveRawScore==null)) return {status:'split_required'};
           return {status:'converted',metrics:{standardScore:138,percentile:100,grade:1}};
         })};
@@ -105,6 +110,7 @@ test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽�
     await page.goto('/2027-jungsi-consulting');
     await expect(page.locator('#consultingApply')).toHaveText('컨설팅 신청하기');
     await page.evaluate(() => document.fonts.ready);
+    expect(await page.evaluate(() => Array.from(document.fonts).some(font => font.family === 'Paperlogy' && font.status === 'loaded'))).toBe(true);
     await fits(page);
     await expect(page.locator('#consultingPrice')).toHaveText('컨설팅 비용 300,000원');
     expect(await page.locator('.jungsi-landing-header').evaluate(node => node.getBoundingClientRect().height)).toBeLessThanOrEqual(81);
@@ -217,6 +223,67 @@ test('신청자 로그인 진입도 작은 화면과 확대된 레이아웃에�
   await expect(page.getByRole('link', { name: '회원가입', exact: true })).toBeInViewport();
 });
 
+test('쿠키 로그인 상태에서 서비스 안내와 나의 컨설팅을 오가며 다시 로그인하지 않는다', async ({ page, baseURL }) => {
+  const fixture = await prepare(page);
+  await page.unroute('**/js/shared/api.js*');
+  await page.unroute('**/js/config.js*');
+  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
+    window.IS_LOCAL=false;
+    window.CONFIG={api:{consulting:'/__consulting',consultingPublic:'https://api.example.invalid/public',auth:'/__auth'}};
+  ` }));
+  await page.addInitScript(() => {
+    const fetchFromPage = window.fetch.bind(window);
+    window.__consultingCredentials = [];
+    window.fetch = (url, options) => {
+      if (url === '/__consulting') window.__consultingCredentials.push(options?.credentials);
+      return fetchFromPage(url, options);
+    };
+  });
+  await page.route('**/__auth', route => route.fulfill({ json: { success: true } }));
+  let protectedCalls = 0;
+  await page.route('**/__consulting', async route => {
+    const request = route.request();
+    const headers = await request.allHeaders();
+    expect(headers.authorization).toBeUndefined();
+    protectedCalls++;
+    const data = {
+      student_get_v2_consulting_home: fixture.home,
+      student_get_v2_survey_schema: { caseId: fixture.survey.caseId },
+      student_get_v2_survey_draft: fixture.survey
+    }[request.postDataJSON().type];
+    return route.fulfill({ json: { success: Boolean(data), data } });
+  });
+  await page.goto('/2027-jungsi-consulting');
+  const publicLogin = page.getByRole('link', { name: '신청자 로그인', exact: true });
+  await expect(publicLogin).toHaveAttribute('href', '/2027-jungsi-consulting/login');
+  await publicLogin.click();
+  await expect(page.getByRole('heading', { name: '계정으로 시작하기' })).toBeVisible();
+
+  await page.evaluate(() => {
+    localStorage.setItem('userId', 'student-synthetic');
+    localStorage.setItem('userRole', 'student');
+  });
+  await page.context().addCookies([{ name: 'fixture-session', value: 'active', url: baseURL, httpOnly: true }]);
+  expect(await page.context().cookies(baseURL)).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'fixture-session', httpOnly: true })]));
+  await page.goto('/2027-jungsi-consulting/login');
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting\/home$/);
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: '이어서 작성하기' })).toBeVisible();
+  await page.getByRole('link', { name: '서비스 안내', exact: true }).click();
+  const returnLink = page.getByRole('navigation', { name: '정시 컨설팅 메뉴' }).getByRole('link', { name: '나의 컨설팅', exact: true });
+  await expect(returnLink).toHaveAttribute('href', '/2027-jungsi-consulting/home');
+  await expect(publicLogin).toHaveCount(0);
+  await returnLink.click();
+  await page.getByRole('button', { name: '이어서 작성하기' }).click();
+  await expect(page.getByRole('heading', { name: '학생 상태', exact: true })).toBeVisible();
+  expect(protectedCalls).toBeGreaterThanOrEqual(5);
+  expect(await page.evaluate(() => window.__consultingCredentials)).toEqual(['include', 'include', 'include']);
+  await page.goto('/2027-jungsi-consulting');
+  await page.evaluate(() => window.clearClientSession());
+  await expect(publicLogin).toHaveAttribute('href', '/2027-jungsi-consulting/login');
+});
+
 test('기초조사 7개 입력 단계와 자료·일정·서면상담은 320px에서도 하단까지 조작한다', async ({ page }, testInfo) => {
   await prepare(page); await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
@@ -280,14 +347,15 @@ test('진행 중인 자동저장과 다음 이동은 최신 입력을 revision �
   expect(saves.map(save => [save.expectedDraftRevision, save.snapshot.studentStatus.schoolName])).toEqual([[0, '첫 입력'], [1, '최신 입력']]);
 });
 
-test('원점수는 해당 시험의 조합만 환산하고 결과를 저장한다', async ({ page }, testInfo) => {
+test('원점수는 2027학년도 수능으로 환산하고 자료가 없으면 직접 입력을 받는다', async ({ page }, testInfo) => {
   await prepare(page);
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
   const next = page.getByRole('button', { name: '저장하고 다음' });
   await next.click();
-  const exam = page.getByRole('combobox', { name: '시험 종류', exact: true });
-  await exam.selectOption('september_mock');
+  await expect(page.locator('.consulting-score-exam')).toContainText('2027학년도 수능');
+  await expect(page.getByRole('combobox', { name: '시험 종류', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: '응시 연도', exact: true })).toHaveCount(0);
   const korean = page.getByRole('group', { name: '국어', exact: true });
   await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('화법과작문');
   await korean.getByRole('spinbutton', { name: '원점수', exact: true }).fill('98');
@@ -301,15 +369,21 @@ test('원점수는 해당 시험의 조합만 환산하고 결과를 저장한�
   await fits(page);
   await page.screenshot({ path: testInfo.outputPath('consulting-scores-320.png'), fullPage: true });
   await next.click();
-  const persisted = await page.evaluate(() => window.__design.survey.draft.snapshot.scores);
+  const persisted = await page.evaluate(() => {
+    window.__design.scoreboardUnavailable = true;
+    return window.__design.survey.draft.snapshot.scores;
+  });
+  expect(persisted).toMatchObject({ examYear: 2026, examType: 'csat' });
   expect(persisted.records[0]).toMatchObject({ rawScore: 98, commonRawScore: 76, electiveRawScore: 22, standardScore: 138, confirmed: true });
   await page.getByRole('button', { name: '이전', exact: true }).click();
-  await exam.selectOption('csat');
+  await korean.getByRole('spinbutton', { name: '원점수', exact: true }).fill('97');
   await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('');
   await expect(korean).toContainText('이 시험의 원점수 환산 자료가 없습니다.');
   await page.getByRole('button', { name: '성적표 수치 직접 입력' }).click();
   await korean.getByRole('spinbutton', { name: '표준점수', exact: true }).fill('135');
   await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('135');
+  const conversions = await page.evaluate(() => window.__design.conversions);
+  expect(conversions.every(({ examYear, examType }) => examYear === 2026 && examType === 'csat')).toBe(true);
 });
 
 test('검사 완료 사진의 읽기 결과는 선택한 과목에만 반영된다', async ({ page }) => {
@@ -318,7 +392,6 @@ test('검사 완료 사진의 읽기 결과는 선택한 과목에만 반영된�
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
   await page.getByRole('button', { name: '저장하고 다음' }).click();
-  await page.getByRole('combobox', { name: '시험 종류', exact: true }).selectOption('csat');
   await page.getByText('사진에서 성적 읽기', { exact: true }).click();
   await page.getByLabel('성적표 사진 첨부').setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic') });
   await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
@@ -337,12 +410,12 @@ test('검사 완료 사진의 읽기 결과는 선택한 과목에만 반영된�
   await fits(page);
 });
 
-test('최종 제출은 시험 종류를 안내하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }) => {
+test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }, testInfo) => {
   const fixture = await prepare(page);
+  await page.setViewportSize({ width: 320, height: 900 });
   const snapshot = createEmptySurvey();
   Object.assign(snapshot.studentStatus, { applicantType: 'graduate', residenceRegion: '서울' });
   snapshot.scores.records = snapshot.scores.records.map(row => ({ ...row, grade: 2, confirmed: true }));
-  Object.assign(snapshot.preferences, { desiredRegions: ['서울'], desiredMajors: ['경영'], desiredTracks: ['상경'] });
   snapshot.strategy.riskTolerance = 'balanced';
   snapshot.qualitative.consultationQuestions = ['지원 조합이 궁금합니다.'];
   snapshot.consent.accurateInformation = true;
@@ -350,12 +423,46 @@ test('최종 제출은 시험 종류를 안내하고 파일 검사가 끝난 최
   fixture.survey = { ...fixture.survey, workflowState: 'SURVEY_DRAFT', draft: { snapshot, draftRevision: 1 }, files: [{ fileId, displayName: '성적표.pdf', status: 'quarantined' }] };
   await page.goto('/2027-jungsi-consulting/survey');
   const next = page.getByRole('button', { name: '저장하고 다음' });
+  await expect(next).toBeVisible();
   for (let step = 0; step < 6; step += 1) await next.click();
   const submit = page.getByRole('button', { name: '최종 제출' });
   await submit.click();
-  await expect(page.getByRole('alert')).toHaveText('시험 종류를 선택해주세요.');
-  await page.getByRole('combobox', { name: '시험 종류', exact: true }).selectOption('september_mock');
-  for (let step = 1; step < 6; step += 1) await next.click();
+  await expect(page.getByRole('alert')).toHaveText('최대 편도 통학 시간을 선택해주세요.');
+  const commute = page.getByRole('combobox', { name: '최대 편도 통학 시간' });
+  await expect(commute.locator('option')).toHaveText(['선택해 주세요', '30분 이내', '1시간 이내', '1시간 30분 이내', '2시간 이내', '2시간 이상도 가능']);
+  await expect(page.getByLabel(/등록금/)).toHaveCount(0);
+  await commute.selectOption('over_120');
+  await page.evaluate(() => { window.__design.catalogUnavailable = true; });
+  await next.click();
+  await expect(page.getByRole('heading', { name: '희망 지원', exact: true })).toBeVisible();
+  await expect(page.getByRole('status', { name: '' }).filter({ hasText: '대학 목록을 불러오지 못했어요.' })).toBeVisible();
+  const note = '가상대 전자공학과 우선 검토\n목록 외 대학도 검토';
+  await page.getByLabel('추가 희망 (선택)', { exact: true }).fill(note);
+  await page.evaluate(() => { window.__design.catalogUnavailable = false; });
+  await page.getByRole('button', { name: '대학 목록 다시 불러오기' }).click();
+  const first = page.getByRole('group', { name: '1지망', exact: true });
+  const search = page.getByRole('searchbox', { name: '대학명 검색' });
+  await search.fill('가상');
+  await first.getByLabel('희망 대학').selectOption('가상대학교');
+  await first.getByLabel('희망 지역').selectOption('서울');
+  await first.getByLabel('희망 계열').selectOption('공학');
+  await page.getByRole('button', { name: '지망 추가' }).click();
+  await search.fill('예시');
+  await expect(first.getByLabel('희망 대학')).toHaveValue('가상대학교');
+  await page.getByRole('group', { name: '2지망', exact: true }).getByLabel('희망 대학').selectOption('예시대학교(분교)');
+  await page.getByRole('button', { name: '지망 추가' }).click();
+  await page.getByRole('group', { name: '3지망', exact: true }).getByLabel('희망 계열').selectOption('자유전공·융합');
+  await expect(page.getByRole('button', { name: '지망 추가' })).toHaveCount(0);
+  await expect(page.getByLabel(/희망 학과|제외할 후보/)).toHaveCount(0);
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('consulting-preferences-320.png'), fullPage: true });
+  await next.click();
+  await page.getByRole('combobox', { name: '통학 순위' }).selectOption({ label: '1순위' });
+  await expect(page.getByRole('combobox', { name: '지역 순위' })).toHaveValue('4');
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('consulting-priorities-320.png'), fullPage: true });
+  await next.click();
+  await next.click();
   const consent = page.getByRole('checkbox', { name: '컨설팅 분석을 위한 자료 이용에 동의합니다.', exact: true });
   await consent.check();
   await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
@@ -369,5 +476,45 @@ test('최종 제출은 시험 종류를 안내하고 파일 검사가 끝난 최
   const { draft, submissions } = await page.evaluate(() => ({ draft: window.__design.survey.draft, submissions: window.__design.submissions }));
   expect(submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({ fileIds: [fileId], expectedDraftRevision: draft.draftRevision });
-  expect(draft.snapshot.consent.analysisUse).toBe(true);
+  expect(draft.snapshot).toMatchObject({
+    formVersion: 2,
+    conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null },
+    preferences: { rankedChoices: [
+      { region: '서울', university: '가상대학교', track: '공학' },
+      { region: '', university: '예시대학교(분교)', track: '' },
+      { region: '', university: '', track: '자유전공·융합' }
+    ], additionalPreference: note },
+    strategy: { priorityOrder: ['commute', 'major', 'brand', 'employment', 'region'] },
+    consent: { analysisUse: true }
+  });
+});
+
+test('기존 모의평가 초안의 점수는 수능으로 복사하지 않고 지망 메모와 이전 통학 시간은 이어받는다', async ({ page }) => {
+  const fixture = await prepare(page);
+  const snapshot = createEmptySurvey();
+  delete snapshot.formVersion;
+  snapshot.scores.examType = 'september_mock';
+  Object.assign(snapshot.scores.records[0], { rawScore: 91, standardScore: 130, grade: 2, confirmed: true });
+  snapshot.conditions = { commuteMaxMinutes: 45, tuitionBudgetAnnual: 5000000 };
+  snapshot.preferences = { desiredUniversities: ['가상대'], requiredCandidates: ['가상대 전자공학과'], excludedCandidates: ['제외대'] };
+  fixture.survey.draft = { snapshot, draftRevision: 4 };
+  fixture.survey.workflowState = 'SURVEY_DRAFT';
+  await page.goto('/2027-jungsi-consulting/survey');
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  await expect(next).toBeVisible();
+  expect(await page.evaluate(() => window.__design.saves.length)).toBe(0);
+  await next.click();
+  await expect(page.getByText('이전에 다른 시험으로 입력한 점수는 옮기지 않았어요.', { exact: false })).toBeVisible();
+  const korean = page.getByRole('group', { name: '국어', exact: true });
+  await expect(korean.getByRole('spinbutton', { name: '원점수', exact: true })).toHaveValue('');
+  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveValue('');
+  await next.click();
+  await expect(page.getByText('이전에 45분으로 입력했어요.', { exact: false })).toBeVisible();
+  await expect(page.getByLabel('최대 편도 통학 시간')).toHaveValue('');
+  await next.click();
+  await expect(page.getByRole('textbox', { name: '추가 희망 (선택)', exact: true })).toHaveValue('이전 조사서에 적은 희망\n대학 — 가상대\n꼭 검토할 후보 — 가상대 전자공학과');
+  const migrated = await page.evaluate(() => window.__design.survey.draft.snapshot);
+  expect(migrated.scores).toMatchObject({ examYear: 2026, examType: 'csat' });
+  expect(migrated.conditions).not.toHaveProperty('tuitionBudgetAnnual');
+  expect(migrated.preferences).not.toHaveProperty('excludedCandidates');
 });

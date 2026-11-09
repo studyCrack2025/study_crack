@@ -40,7 +40,7 @@
 .consulting-material-heading { margin:0 0 18px; }
 .consulting-material-block { margin-top:20px; padding:18px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
 .consulting-material-block h3 { margin:0 0 14px; color:#1e293b; }
-.consulting-material-copy { display:grid; gap:10px; color:#334155; line-height:1.6; white-space:pre-wrap; }
+.consulting-material-copy { display:grid; gap:10px; color:#334155; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
 .consulting-material-copy p { margin:0; padding:10px; border-radius:8px; background:#fff; }
 .consulting-material-files { display:flex; flex-wrap:wrap; gap:10px; }
 .consulting-material-files button { padding:9px 12px; border:1px solid #93c5fd; border-radius:8px; background:#eff6ff; color:#1d4ed8; font-weight:700; cursor:pointer; }

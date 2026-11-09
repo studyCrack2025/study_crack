@@ -37,7 +37,11 @@ async function prepare(page, hash = '') {
         } else if (request.type === 'admin_verify_manual_payment') {
             Object.assign(state.students[0].application, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 }); state.students[0].activeInviteId = 'SYNTHETIC_INVITE';
             data = { applicationId: applicationId(1), applicationState: 'INVITED', revision: 1 };
-        } else if (request.type === 'admin_get_v2_material_detail') data = { case: { caseId, workflowState: 'MATERIAL_REVIEW' }, submission: { snapshot: { preferences: {}, qualitative: { concerns: '합성 상담 내용' } } }, files: [] };
+        } else if (request.type === 'admin_get_v2_material_detail') data = { case: { caseId, workflowState: 'MATERIAL_REVIEW' }, submission: { snapshot: {
+            conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null },
+            preferences: { rankedChoices: [{ region: '서울', university: '가상대학교', track: '공학' }], additionalPreference: '가상대학교 전자공학과 검토' },
+            qualitative: { concerns: '합성 상담 내용' }
+        } }, files: [] };
         else data = { items: [], nextCursor: null };
         if (state.deferType === request.type) await new Promise(resolve => { state.resolve = resolve; });
         if (state.failMutation && request.type === 'admin_review_application_input') return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
@@ -70,6 +74,11 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     expect(state.calls.some(call => call.type === 'admin_list_consulting_operations')).toBe(false);
     await page.getByRole('button', { name: '04 분석·보고서', exact: true }).click(); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('합*생'); await openStudent(page);
     await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생'); await expect(page.locator('#consultingStudentProgress [aria-current="step"]')).toHaveText('분석·보고서');
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    const survey = page.locator('#consultingMaterialSurvey');
+    await expect(survey).toContainText('1지망: 서울 · 가상대학교 · 공학');
+    await expect(survey).toContainText('추가 희망: 가상대학교 전자공학과 검토');
+    await expect(survey).toContainText('최대 편도 통학 시간: 2시간 이상도 가능');
     await page.getByRole('button', { name: '분석·보고서', exact: true }).click(); await page.reload();
     await expect(page.locator('#consultingWorkspaceReport')).toBeVisible(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
     await page.route('**/2027-jungsi-consulting/report?*', route => route.fulfill({ body: '<html><body>합성 작업 화면</body></html>' }));

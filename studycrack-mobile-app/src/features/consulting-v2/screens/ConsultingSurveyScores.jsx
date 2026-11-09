@@ -1,7 +1,7 @@
 import React from 'react';
 import { INQUIRY_SUBJECT_GROUPS } from '../../../constants/options.js';
 import { scoreChoiceLabel } from '../../analysis/score-model.js';
-import { applyScoreConversions, canConvertExam, clearConvertedScores, EMPTY_SCORE_METRICS, hasReportMetrics, isAbsoluteScore, labelScoreRows, photoScorePatches, rawScoreMax, scoreConversionBatch, SCORE_METRICS, splitLimits } from '../score-entry-model.js';
+import { applyScoreConversions, clearConvertedScores, EMPTY_SCORE_METRICS, hasReportMetrics, isAbsoluteScore, labelScoreRows, photoScorePatches, rawScoreMax, scoreConversionBatch, SCORE_METRICS, splitLimits } from '../score-entry-model.js';
 import { convertV2SurveyScores, readV2ScorePhoto } from '../survey-api.js';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 
@@ -11,7 +11,6 @@ const optionGroups = {
   inquiry: INQUIRY_SUBJECT_GROUPS
 };
 const customOption = '__custom__';
-const examTypes = [['csat', '수능'], ['june_mock', '6월 모의평가'], ['september_mock', '9월 모의평가'], ['other', '기타']];
 const scoreNotes = {
   subject_required: '선택과목을 고르면 환산할 수 있어요.',
   split_required: '같은 총점에서도 결과가 달라질 수 있어요. 공통·선택 원점수를 입력해 주세요.',
@@ -89,11 +88,10 @@ function PhotoInput({ binding, caseId, value, update, fileActions }) {
   const [notice, setNotice] = React.useState('');
   const request = React.useRef(null);
   React.useEffect(() => () => { request.current = null; }, []);
-  const basis = `${value.examType}:${value.examYear}`;
-  const currentPreview = preview?.basis === basis && fileActions.files.some(file => file.fileId === preview.fileId && file.status === 'ready') ? preview : null;
+  const currentPreview = preview && fileActions.files.some(file => file.fileId === preview.fileId && file.status === 'ready') ? preview : null;
   const patches = currentPreview ? photoScorePatches(currentPreview.records, value.records) : [];
   const read = async file => {
-    if (request.current || !canConvertExam(value)) return;
+    if (request.current) return;
     const run = {};
     request.current = run;
     setReading(true);
@@ -106,7 +104,7 @@ function PhotoInput({ binding, caseId, value, update, fileActions }) {
     if (!result.ok) return setNotice(result.error);
     const records = Array.isArray(result.data.records) ? result.data.records : [];
     if (!records.length) return setNotice('읽을 수 있는 수치가 없어요. 더 선명한 사진을 쓰거나 직접 입력해 주세요.');
-    setPreview({ basis, fileId: file.fileId, records, skipped: [] });
+    setPreview({ fileId: file.fileId, records, skipped: [] });
   };
   const apply = () => {
     const selected = patches.filter(({ index }) => !currentPreview.skipped.includes(index));
@@ -118,10 +116,9 @@ function PhotoInput({ binding, caseId, value, update, fileActions }) {
     setPreview(null);
   };
   return <details className="consulting-score-photo">
-    <summary><span aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M8 4h8l2 3h3v13H3V7h3z" /><circle cx="12" cy="13" r="3.5" /></svg></span><span><strong>사진에서 성적 읽기</strong><small>성적표를 올리고 읽어낸 값을 확인해 주세요.</small></span></summary>
+    <summary><span aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M8 4h8l2 3h3v13H3V7h3z" /><circle cx="12" cy="13" r="3.5" /></svg></span><span><strong>사진에서 성적 읽기</strong><small>2027학년도 수능 성적표를 올리고 읽어낸 값을 확인해 주세요.</small></span></summary>
     <div className="consulting-score-photo-body">
-      {!canConvertExam(value) && <p className="consulting-score-note">먼저 해당 수능 또는 6·9월 모의평가와 응시 연도를 선택해 주세요.</p>}
-      <SurveyScoreFiles {...fileActions} onRead={read} readDisabled={reading || !canConvertExam(value)} />
+      <SurveyScoreFiles {...fileActions} onRead={read} readDisabled={reading} />
       {reading && <p className="consulting-score-note" role="status">사진의 성적표를 읽고 있어요.</p>}
       {notice && <p className="consulting-score-note" role="status">{notice}</p>}
       {patches.length > 0 && <div className="consulting-score-preview">
@@ -140,7 +137,7 @@ function PhotoInput({ binding, caseId, value, update, fileActions }) {
   </details>;
 }
 
-export function ConsultingSurveyScores({ value, update, binding, caseId, fileActions, actionBusy }) {
+export function ConsultingSurveyScores({ value, update, binding, caseId, fileActions, actionBusy, previousExamScores }) {
   const [mode, setMode] = React.useState(() => value.records.some(row => row.rawScore != null) || !value.records.some(hasReportMetrics) ? 'raw' : 'report');
   const [lookup, setLookup] = React.useState(null);
   const [retry, setRetry] = React.useState(0);
@@ -172,25 +169,21 @@ export function ConsultingSurveyScores({ value, update, binding, caseId, fileAct
 
   const labels = labelScoreRows(value.records);
   const confirmed = value.records.filter(row => row.confirmed && row.grade != null).length;
-  const changeBasis = patch => update(current => ({ ...patch, records: current.examType ? current.records.map(clearConvertedScores) : current.records }));
   const changeRow = (index, patch) => update(current => ({ records: current.records.map((row, position) => position === index ? { ...row, ...patch } : row) }));
   return <div className="consulting-score-entry">
-    <div className="consulting-score-tools">
-      <h2>어떤 시험을 봤나요?</h2>
-      <div className="consulting-score-fields">
-        <Field label="시험 종류"><select value={value.examType} onChange={event => changeBasis({ examType: event.target.value })}><option value="">선택해 주세요</option>{examTypes.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
-        <Field label="응시 연도"><select value={value.examYear ?? ''} onChange={event => changeBasis({ examYear: Number(event.target.value) })}><option value="" disabled>선택해 주세요</option>{[2025, 2026, 2027].map(year => <option key={year} value={year}>{year}년{value.examType === 'csat' ? ` · ${year + 1}학년도` : ''}</option>)}</select></Field>
-      </div>
+    <div className="consulting-score-exam">
+      <span>입력 대상</span>
+      <strong>2027학년도 수능</strong>
     </div>
-    <PhotoInput key={`${value.examType}:${value.examYear}`} binding={binding} caseId={caseId} value={value} update={update} fileActions={fileActions} />
+    {previousExamScores && <p className="consulting-score-note" role="status">이전에 다른 시험으로 입력한 점수는 옮기지 않았어요. 이번 수능 성적을 입력해 주세요.</p>}
+    <PhotoInput binding={binding} caseId={caseId} value={value} update={update} fileActions={fileActions} />
     <div className="consulting-score-tools">
       <div className="consulting-score-subhead"><h2>과목별 성적</h2><span className="consulting-score-pill">{confirmed}/{value.records.length}과목 확인</span></div>
       <div className="consulting-score-mode" role="group" aria-label="성적 입력 방식">
         <button type="button" aria-pressed={rawMode} onClick={() => setMode('raw')}>원점수로 입력</button>
         <button type="button" aria-pressed={!rawMode} onClick={() => setMode('report')}>성적표 수치 직접 입력</button>
       </div>
-      <p className="consulting-score-note">{rawMode ? '시험과 과목을 고르고 원점수를 입력하면, 환산 자료가 있는 과목의 수치를 채워드려요.' : '성적표에 적힌 수치를 입력하고, 과목별로 성적표와 확인을 눌러주세요.'}</p>
-      {rawMode && value.examType && !canConvertExam(value) && <p className="consulting-score-note">이 시험은 자동 환산이 제공되지 않습니다. 성적표 수치를 입력해 주세요.</p>}
+      <p className="consulting-score-note">{rawMode ? '원점수를 입력하면 환산 자료가 있는 과목의 수치를 채워드려요.' : '성적표에 적힌 수치를 입력하고, 과목별로 성적표와 확인을 눌러주세요.'}</p>
       {batchKey && lookup?.key === batchKey && lookup.loading && <p className="consulting-score-note" role="status">원점수를 환산하고 있어요.</p>}
       {batchKey && lookup?.key === batchKey && lookup.error && <div className="consulting-score-lookup"><p className="consulting-score-note" role="status">{lookup.error}</p><button type="button" className="consulting-v2-secondary" onClick={() => setRetry(value => value + 1)}>다시 환산</button></div>}
     </div>

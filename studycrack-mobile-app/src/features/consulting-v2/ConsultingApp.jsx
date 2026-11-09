@@ -17,10 +17,7 @@ import './styles/consulting-v2-report.css';
 import { CONSULTING_ROUTES, navigateConsulting, resolveConsultingRoute } from './route-model.js';
 import { getConsultingRuntimeContext } from '../../shared/browser/mobile-runtime.js';
 
-function LoginScreen({ hasSession }) {
-  React.useEffect(() => {
-    if (hasSession) navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
-  }, [hasSession]);
+function LoginScreen() {
   return <main className="consulting-v2-center"><section className="consulting-v2-card"><ConsultingBrand /><p className="consulting-v2-kicker">나의 컨설팅 이어가기</p><h1>계정으로 시작하기</h1><p className="consulting-v2-status">StudyCrack 계정으로 로그인하고<br />컨설팅 진행 현황을 확인하세요.</p><div className="consulting-v2-actions"><a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>로그인</a><a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>회원가입</a></div></section></main>;
 }
 
@@ -52,12 +49,16 @@ export default function ConsultingApp() {
   const binding = runtime;
 
   React.useEffect(() => {
-    if (route.screen === 'unknown') navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
+    if (hasSession && ['login', 'unknown'].includes(route.screen)) navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
     else if (route.protected && !hasSession) navigateConsulting(CONSULTING_ROUTES.login, { replace: true });
   }, [hasSession, route.protected, route.screen]);
 
   if (route.screen === 'start') return <ConsultingStartScreen binding={binding} hasSession={hasSession} />;
-  if (route.screen === 'login' || (route.protected && !hasSession) || route.screen === 'unknown') return <LoginScreen hasSession={hasSession} />;
+  if (route.screen === 'login' || (route.protected && !hasSession) || route.screen === 'unknown') {
+    return hasSession
+      ? <main className="consulting-v2-center"><p className="consulting-v2-loading" role="status">나의 컨설팅을 열고 있습니다.</p></main>
+      : <LoginScreen />;
+  }
   if (route.screen === 'home') return <ConsultingHomeScreen binding={binding} />;
   if (route.screen === 'survey') return <ConsultingSurveyScreen binding={binding} />;
   if (route.screen === 'materials') return <ConsultingMaterialsScreen binding={binding} />;

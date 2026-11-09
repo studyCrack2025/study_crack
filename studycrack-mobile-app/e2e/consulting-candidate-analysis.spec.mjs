@@ -16,7 +16,7 @@ function installSyntheticApi() {
       if (s.deferGet) { s.deferGet = false; await new Promise(resolve => { window.__resolveGet = resolve; }); }
       if (s.getForbidden) return reply(null, 403, 'FORBIDDEN');
       return reply({ caseId: request.data.caseId, caseRevision: s.caseRevision, analysisRevision: s.analysisRevision,
-        workspace: { sourceReady: true, canRun: s.canRun, canApprove: s.canApprove, workflowState: s.workflowState, catalog: s.catalog, surveyPreferences: { desiredRegions: ['서울'], desiredMajors: ['경영'], desiredTracks: [] } }, analysis: request.data.caseId === s.otherCase ? null : s.analysis });
+        workspace: { sourceReady: true, canRun: s.canRun, canApprove: s.canApprove, workflowState: s.workflowState, catalog: s.catalog, surveyPreferences: { desiredRegions: ['서울'], desiredMajors: ['경영'], desiredTracks: [], ...s.rankedPreferences } }, analysis: request.data.caseId === s.otherCase ? null : s.analysis });
     }
     if (request.type === 'counselor_run_candidate_analysis') {
       if (s.deferRun) await new Promise(resolve => { window.__resolveRun = resolve; });
@@ -79,12 +79,12 @@ function installSyntheticApi() {
   };
 }
 
-async function prepare(page, { role = 'tutor', canRun = true, canApprove = true, name = '합성대학교', getForbidden = false } = {}) {
+async function prepare(page, { role = 'tutor', canRun = true, canApprove = true, name = '합성대학교', getForbidden = false, rankedPreferences = null } = {}) {
   await page.addInitScript(data => {
     localStorage.setItem('userRole', data.role);
     window.__analysis = { ...data, calls: [], keys: [], reportKeys: [], caseRevision: 9, analysisRevision: 0, analysis: null, draft: null, workflowState: 'WRITTEN_SESSION_COMPLETED',
       catalog: { regions: [{ id: 'REGION_SEOUL', label: '서울' }], tracks: [{ id: 'TRACK_BUSINESS', label: '경영' }], units: [{ id: 'UNIT_SYNTHETIC', label: '합성대학교 경영학과' }] } };
-  }, { role, canRun, canApprove, name, getForbidden, caseId, otherCase });
+  }, { role, canRun, canApprove, name, getForbidden, rankedPreferences, caseId, otherCase });
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `(${installSyntheticApi.toString()})();` }));
   await page.goto(`/2027-jungsi-consulting/report?caseId=${caseId}`);
   if (role !== 'student') await expect(page.getByRole('heading', { name: getForbidden ? '후보 분석' : '후보 분석과 검토', exact: true })).toBeVisible();
@@ -102,7 +102,13 @@ async function approve(page) {
 }
 
 test('첫 분석·숫자 비가용 결과·검토 승인·보고서 연결과 저장이 이어진다', async ({ page }) => {
-  await prepare(page);
+  await prepare(page, { rankedPreferences: {
+    rankedChoices: [{ region: '서울', university: '합성대학교', track: '경영·경제' }],
+    additionalPreference: '합성대학교 경영학과도 검토'
+  } });
+  const wishes = page.getByRole('region', { name: '조사서 희망' });
+  await expect(wishes).toContainText('1지망 · 서울 · 합성대학교 · 경영·경제');
+  await expect(wishes).toContainText('추가 희망 · 합성대학교 경영학과도 검토');
   await expect(page.getByRole('button', { name: '후보 분석 실행' })).toBeDisabled();
   await run(page);
   await expect(page.locator('.consulting-analysis-results')).toContainText('확률 미제공');

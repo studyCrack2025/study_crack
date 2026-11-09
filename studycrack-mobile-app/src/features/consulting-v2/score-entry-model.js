@@ -1,12 +1,11 @@
 import { scoreChoiceLabel } from '../analysis/score-model.js';
-import { SCORE_ROWS } from './survey-model.js';
+import { isConsultingSurveyExam, SCORE_ROWS } from './survey-model.js';
 
 export const SCORE_METRICS = [['standardScore', '표준점수', 0, 200], ['percentile', '백분위', 0, 100], ['grade', '등급', 1, 9]];
 export const EMPTY_SCORE_METRICS = Object.freeze({ standardScore: null, percentile: null, grade: null });
 export const splitLimits = { korean: [76, 24], math: [74, 26] };
 export const isAbsoluteScore = area => area === 'english' || area === 'korean_history';
 export const rawScoreMax = area => ['inquiry', 'korean_history'].includes(area) ? 50 : 100;
-export const canConvertExam = ({ examType, examYear }) => [2025, 2026].includes(examYear) && ['csat', 'june_mock', 'september_mock'].includes(examType);
 export const hasReportMetrics = row => SCORE_METRICS.some(([key]) => row[key] != null);
 
 export function labelScoreRows(records) {
@@ -19,7 +18,7 @@ export function clearConvertedScores(row) {
 }
 
 export function scoreConversionBatch(value) {
-  if (!canConvertExam(value)) return null;
+  if (!isConsultingSurveyExam(value)) return null;
   const entries = value.records.flatMap((row, index) => {
     if (!Number.isInteger(row.rawScore) || (hasReportMetrics(row) && !row.convertedFromRaw)) return [];
     const { area, subject, selection, rawScore, commonRawScore, electiveRawScore } = row;
