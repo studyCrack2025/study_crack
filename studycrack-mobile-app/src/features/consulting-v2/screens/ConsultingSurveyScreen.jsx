@@ -274,7 +274,7 @@ export function ConsultingSurveyScreen({ binding }) {
       {notice ? <p className="consulting-survey-message" data-tone={notice.error ? 'error' : 'info'} role={notice.error ? 'alert' : 'status'}>{notice.text}</p> : null}
       <fieldset className="consulting-survey-fields" disabled={actionBusy} aria-labelledby="survey-title">
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
-        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} caseId={draft.current.caseId} fileActions={fileActions} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
+        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} fileActions={fileActions} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} />}
         {key === 'preferences' && <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}

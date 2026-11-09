@@ -1,6 +1,6 @@
 export const SURVEY_STEPS = Object.freeze([
   { key: 'studentStatus', label: '학생 상태', guide: '지원자 구분과 거주 지역부터 알려주세요. 지원 자격과 통학 여건을 함께 살펴볼게요.' },
-  { key: 'scores', label: '성적', guide: '2027학년도 수능 원점수나 성적표 수치를 입력해 주세요. 자동으로 채워진 수치는 제출 전에 확인할 수 있어요.' },
+  { key: 'scores', label: '성적', guide: '2027학년도 수능 성적표를 첨부해 주세요. 원점수를 알고 있다면 함께 적어주세요.' },
   { key: 'conditions', label: '지원 조건', guide: '편도 통학 시간과 진학할 때 고려할 조건을 알려주세요.' },
   { key: 'preferences', label: '희망 지원', guide: '가장 희망하는 지원 방향부터 최대 3지망까지 알려주세요.' },
   { key: 'strategy', label: '지원 전략', guide: '어떤 지원을 선호하는지, 그리고 대학을 선택할 때 무엇이 중요한지 알려주세요.' },
@@ -13,8 +13,11 @@ export const SCORE_ROWS = Object.freeze([
 ]);
 
 export const PRIORITY_LABELS = Object.freeze({ region: '지역', major: '전공', brand: '대학 인지도', employment: '취업', commute: '통학' });
-export const SURVEY_FORM_VERSION = 2;
+export const SURVEY_FORM_VERSION = 3;
 export const CONSULTING_SURVEY_EXAM = Object.freeze({ examYear: 2026, examType: 'csat' });
+export const SPLIT_SCORE_LIMITS = { korean: [76, 24], math: [74, 26] };
+export const rawScoreMax = area => ['inquiry', 'korean_history'].includes(area) ? 50 : 100;
+export const splitRawTotal = (common, elective) => common == null || elective == null ? null : common + elective;
 export const COMMUTE_OPTIONS = Object.freeze([
   ['30', '30분 이내'], ['60', '1시간 이내'], ['90', '1시간 30분 이내'], ['120', '2시간 이내'], ['over_120', '2시간 이상도 가능']
 ]);
@@ -29,11 +32,12 @@ export function isConsultingSurveyExam(value) {
 const hasText = value => typeof value === 'string' && Boolean(value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim());
 const integerInRange = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max;
 const choiceKey = ({ region, university, track }) => JSON.stringify([region, university, track]);
+export const inquirySubject = row => /^탐구\s*[12]$/u.test(row.subject || '') ? '' : row.subject?.trim() || '';
 
 export const hasRankedChoice = ({ region, university, track }) => [region, university, track].some(hasText);
 export const hasPreviousExamScores = scores => !isConsultingSurveyExam(scores) && Array.isArray(scores?.records) && scores.records.some(row => row.selection || row.confirmed
   || [row.rawScore, row.commonRawScore, row.electiveRawScore, row.standardScore, row.percentile, row.grade].some(value => value != null)
-  || (row.area === 'inquiry' && row.subject && !['탐구 1', '탐구 2'].includes(row.subject)));
+  || (row.area === 'inquiry' && inquirySubject(row)));
 
 function normalizePreferences(preferences = {}) {
   if (Array.isArray(preferences.rankedChoices)) {
@@ -74,10 +78,15 @@ export function normalizeSurveyDraft(snapshot) {
   const hasMatchingLimit = COMMUTE_OPTIONS.some(([key]) => key === previousLimit);
   const previousPriorities = Array.isArray(snapshot.strategy?.priorityOrder) ? snapshot.strategy.priorityOrder : [];
   const priorityOrder = [...new Set([...previousPriorities.filter(key => Object.hasOwn(PRIORITY_LABELS, key)), ...empty.strategy.priorityOrder])];
+  const savedScores = isConsultingSurveyExam(snapshot.scores) && Array.isArray(snapshot.scores.records) ? snapshot.scores.records : [];
+  const inquiries = savedScores.filter(row => row.area === 'inquiry');
   return {
     ...empty,
     studentStatus: { ...empty.studentStatus, ...(snapshot.studentStatus || {}) },
-    scores: isConsultingSurveyExam(snapshot.scores) && Array.isArray(snapshot.scores.records) && snapshot.scores.records.length ? snapshot.scores : empty.scores,
+    scores: { ...empty.scores, records: empty.scores.records.map(row => {
+      const saved = row.area === 'inquiry' ? inquiries.shift() : savedScores.find(item => item.area === row.area);
+      return { ...row, ...saved, subject: saved?.subject?.trim() || row.subject };
+    }) },
     conditions: {
       commuteLimit: commuteLimit ?? (hasMatchingLimit ? previousLimit : ''),
       commuteMaxMinutes: commuteMaxMinutes ?? null,
@@ -107,14 +116,8 @@ export function clientSurveyError(snapshot, readyFiles) {
   if (!integerInRange(snapshot.studentStatus.graduationYear, 2020, 2027)) return issue('studentStatus', '졸업 연도를 2020~2027 사이로 입력해주세요.');
   if (!hasText(snapshot.studentStatus.residenceRegion)) return issue('studentStatus', '거주 지역을 입력해주세요.');
   if (!isConsultingSurveyExam(snapshot.scores)) return issue('scores', '2027학년도 수능 성적을 입력해주세요.');
-  const required = snapshot.scores.records.filter(row => ['korean', 'math', 'english', 'inquiry'].includes(row.area));
-  const missingArea = ['korean', 'math', 'english', 'inquiry'].some(area => required.filter(row => row.area === area).length !== (area === 'inquiry' ? 2 : 1));
-  if (missingArea || required.some(row => !hasText(row.subject) || !integerInRange(row.grade, 1, 9) || row.confirmed !== true)) {
-    return issue('scores', '국어·수학·영어·탐구 2과목의 과목명, 등급, 확인 체크를 완료해주세요.');
-  }
-  if (snapshot.scores.records.some(row => row.area === 'korean_history' && (!hasText(row.subject) || (row.grade != null && row.confirmed !== true)))) {
-    return issue('scores', '한국사 과목명을 확인하고, 등급을 입력했다면 성적표와 확인에 체크해주세요.');
-  }
+  const scoreError = surveyRawScoreError(snapshot.scores.records);
+  if (scoreError) return issue('scores', scoreError);
   if (!snapshot.conditions.commuteLimit) return issue('conditions', '최대 편도 통학 시간을 선택해주세요.');
   const { rankedChoices, additionalPreference } = snapshot.preferences;
   const filledChoices = rankedChoices.filter(hasRankedChoice);
@@ -125,5 +128,20 @@ export function clientSurveyError(snapshot, readyFiles) {
   if (!snapshot.qualitative.consultationQuestions.some(hasText)) return issue('qualitative', '상담에서 확인할 질문을 한 가지 이상 입력해주세요.');
   if (!snapshot.consent.accurateInformation || !snapshot.consent.analysisUse) return issue('consent', '최종 확인과 분석 이용 동의가 필요합니다.');
   if (!readyFiles.length) return issue('consent', '검사가 완료된 성적표 파일이 필요합니다.');
+  return null;
+}
+
+function surveyRawScoreError(records) {
+  for (const row of records) {
+    const limits = SPLIT_SCORE_LIMITS[row.area];
+    const { rawScore, commonRawScore, electiveRawScore } = row;
+    if (limits && (commonRawScore != null || electiveRawScore != null)) {
+      if (!integerInRange(commonRawScore, 0, limits[0]) || !integerInRange(electiveRawScore, 0, limits[1])) return `${row.subject} 공통·선택 원점수를 모두 입력해주세요.`;
+      if (!hasText(row.selection)) return `${row.subject} 선택과목을 골라주세요.`;
+    }
+    if (row.area === 'inquiry' && rawScore != null && !inquirySubject(row)) return '원점수를 적은 탐구 과목을 선택해주세요.';
+  }
+  const inquiry = records.filter(row => row.area === 'inquiry').map(row => inquirySubject(row).normalize('NFC').replace(/\s+/gu, '')).filter(Boolean);
+  if (new Set(inquiry).size !== inquiry.length) return '탐구 과목 두 개를 서로 다르게 선택해주세요.';
   return null;
 }

@@ -240,6 +240,6 @@ test('workflow passes the tested artifact and independent digest to a non-buildi
   assert.doesNotMatch(deploy, /npm (?:ci|install|run build)|bump_asset_version|aws s3 sync \./);
   assert.ok(deploy.indexOf('site-release.mjs verify') < deploy.indexOf('Configure AWS credentials'));
   assert.match(deploy, /site-release\.mjs publish/);
-  assert.match(workflow, /cancel-in-progress: false/);
+  assert.match(workflow, /concurrency:\n  group: static-release-\$\{\{ github\.ref \}\}\n  cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
   assert.match(verify, /if-no-files-found: error/);
 });
