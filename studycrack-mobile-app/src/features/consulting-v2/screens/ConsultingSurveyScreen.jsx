@@ -1,7 +1,7 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { clientSurveyError, COMMUTE_OPTIONS, createEmptySurvey, hasPreviousExamScores, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
-import { deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, readV2ScorePhoto, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { confirmV2ScoreUpload, deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, readV2ScorePhoto, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
 import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
 import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
@@ -198,14 +198,28 @@ export function ConsultingSurveyScreen({ binding }) {
     if (await flush(session)) setStep(value => value + 1);
   });
 
+  const rememberFile = file => setFiles(current => [...current.filter(item => item.fileId !== file.fileId), file]);
+  const showUploadResult = result => {
+    if (!result.ok) {
+      if (result.pendingFile) rememberFile(result.pendingFile);
+      return showNotice(result.error || '업로드하지 못했습니다.', true);
+    }
+    rememberFile(result.data);
+    if (result.data.status === 'rejected') return showNotice('성적표 검사를 통과하지 못했어요. 다른 파일을 첨부해 주세요.', true);
+    showNotice(['ready', 'linked'].includes(result.data.status) ? '성적표 검사가 완료되었습니다.' : '성적표를 업로드했습니다. 검사가 끝나면 제출할 수 있어요.');
+  };
   const upload = file => runAction(async session => {
     if (files.length >= 3) return showNotice('성적표는 최대 3개까지 등록할 수 있습니다.', true);
+    if (session.workflowState === 'ONBOARDING' && session.savedEdit === session.edit) session.edit += 1;
     if (!(await flush(session))) return;
+    setNotice(null);
     const result = await uploadV2ScoreFile(binding, { caseId: session.caseId, file });
-    if (draft.current !== session) return;
-    if (!result.ok) return showNotice(result.error || '업로드하지 못했습니다.', true);
-    setFiles(current => [...current.filter(item => item.fileId !== result.data.fileId), result.data]);
-    showNotice(result.data.status === 'ready' ? '성적표 검사가 완료되었습니다.' : '성적표를 업로드했습니다. 검사가 끝나면 제출할 수 있어요.');
+    if (draft.current === session) showUploadResult(result);
+  });
+  const confirmUpload = file => runAction(async session => {
+    setNotice(null);
+    const result = await confirmV2ScoreUpload(binding, { caseId: session.caseId, fileId: file.fileId });
+    if (draft.current === session) showUploadResult(result);
   });
   const refreshFiles = () => runAction(async session => {
     const result = await getV2SurveyDraft(binding);
@@ -257,7 +271,7 @@ export function ConsultingSurveyScreen({ binding }) {
   if (resource.status === 'error') return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>조사서를 불러오지 못했습니다</h1><p className="consulting-v2-status" data-tone="error">{resource.message}</p><button className="consulting-v2-primary consulting-v2-wide" onClick={load}>다시 시도</button></section></main>;
   const { key, label, guide } = SURVEY_STEPS[step];
   const update = patch => updateSection(key, patch);
-  const fileActions = { files, onUpload: upload, onRefresh: refreshFiles, onDelete: deleteFile };
+  const fileActions = { files, onUpload: upload, onConfirmUpload: confirmUpload, onRefresh: refreshFiles, onDelete: deleteFile };
   return <main className="consulting-survey">
     <header>
       <button type="button" disabled={actionBusy} onClick={() => runAction(async session => {

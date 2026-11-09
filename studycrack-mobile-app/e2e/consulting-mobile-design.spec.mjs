@@ -60,11 +60,14 @@ async function prepare(page, { loggedIn = true } = {}) {
         })};
       }
       else if(type==='consulting_create_score_upload') {
-        f.photo={fileId:'FILE_synthetic',displayName:input.fileName,contentType:input.contentType,size:input.size,status:'quarantined'};
+        if(f.createUploadFailure) return new Response(JSON.stringify({success:false,code:'INTERNAL_SERVER_ERROR'}),{status:500});
+        f.photo={fileId:f.uploadFileId || 'FILE_synthetic',displayName:input.fileName,contentType:input.contentType,size:input.size,status:'quarantined'};
         data={fileId:f.photo.fileId,fields:{key:'synthetic'},uploadUrl:'/__score-photo-upload'};
       }
       else if(type==='consulting_complete_score_upload') {
-        f.survey.files.push(f.photo);
+        if(input.fileId!==f.photo.fileId) throw new Error('Unexpected file ID');
+        if(f.confirmUploadFailure) return new Response(JSON.stringify({success:false,code:'INTERNAL_SERVER_ERROR'}),{status:500});
+        if(!f.survey.files.some(file=>file.fileId===input.fileId)) f.survey.files.push(f.photo);
         data=f.photo;
       }
       else if(type==='consulting_read_score_photo') {
@@ -419,14 +422,24 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
 
 test('검사가 끝난 사진에서 등급을 읽고 확인한 뒤 기존 입력을 보존하며 빈칸에 반영한다', async ({ page }) => {
   await prepare(page);
-  await page.route('**/__score-photo-upload', route => route.fulfill({ status: 204, body: '' }));
+  let uploads = 0;
+  await page.route('**/__score-photo-upload', route => {
+    uploads += 1;
+    return route.fulfill({ status: 204, body: '' });
+  });
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
   await page.getByRole('button', { name: '저장하고 다음' }).click();
   const englishGrade = page.getByRole('group', { name: '영어', exact: true }).getByRole('combobox', { name: '등급' });
   await englishGrade.selectOption('5');
+  await page.evaluate(() => { window.__design.confirmUploadFailure = true; });
   await page.getByLabel('성적표 파일').setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic') });
+  await expect(page.getByRole('alert')).toHaveText('첨부 확인에 실패했어요. 파일 옆에서 다시 확인할 수 있어요.');
+  await expect(page.getByText('첨부 확인 대기', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.confirmUploadFailure = false; });
+  await page.getByRole('button', { name: '첨부 다시 확인' }).click();
   await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
+  expect(uploads).toBe(1);
   await expect(page.getByRole('button', { name: '사진 읽기', exact: true })).toHaveCount(0);
   await page.evaluate(() => { window.__design.photo.status = 'ready'; });
   await page.getByRole('button', { name: '검사 상태 확인' }).click();
@@ -455,6 +468,7 @@ test('검사가 끝난 사진에서 등급을 읽고 확인한 뒤 기존 입력
 
 test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }, testInfo) => {
   const fixture = await prepare(page);
+  await page.route('**/__score-photo-upload', route => route.fulfill({ status: 204, body: '' }));
   await page.setViewportSize({ width: 320, height: 900 });
   const snapshot = createEmptySurvey();
   snapshot.formVersion = 3;
@@ -464,7 +478,7 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   snapshot.qualitative.consultationQuestions = ['지원 조합이 궁금합니다.'];
   snapshot.consent.accurateInformation = true;
   const fileId = 'FILE_123e4567-e89b-12d3-a456-426614174001';
-  fixture.survey = { ...fixture.survey, workflowState: 'SURVEY_DRAFT', draft: { snapshot, draftRevision: 1 }, files: [{ fileId, displayName: '성적표.pdf', status: 'quarantined' }] };
+  fixture.survey = { ...fixture.survey, workflowState: 'SURVEY_DRAFT', draft: { snapshot, draftRevision: 1 } };
   await page.goto('/2027-jungsi-consulting/survey');
   const next = page.getByRole('button', { name: '저장하고 다음' });
   await expect(next).toBeVisible();
@@ -493,6 +507,15 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   await expect(first.getByText(/일치하는 대학이 없어요/)).toBeVisible();
   await search.fill('가 상 대');
   await first.getByRole('button', { name: /가상대학교/ }).click();
+  await expect(search).toHaveCount(0);
+  await expect(first.getByRole('status').getByText('가상대학교', { exact: true })).toHaveCSS('font-size', '18px');
+  await first.getByRole('button', { name: '선택 변경' }).click();
+  await expect(search).toBeFocused();
+  await search.fill('예시대');
+  await expect(first.getByRole('button', { name: /예시대학교/ })).toBeVisible();
+  await first.getByRole('button', { name: '검색 닫기' }).click();
+  await expect(search).toHaveCount(0);
+  await expect(first.getByRole('status').getByText('가상대학교', { exact: true })).toBeVisible();
   await first.getByLabel('희망 계열').selectOption('공학');
   await page.getByRole('button', { name: /2지망 추가/ }).click();
   const second = page.getByRole('group', { name: '2지망', exact: true });
@@ -500,9 +523,9 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   await expect(second.getByRole('list', { name: '대학 검색 결과' })).toBeVisible();
   await fits(page);
   await second.getByRole('button', { name: /한국외국어대학교\(글로벌\)/ }).click();
-  await expect(search).toHaveValue('');
-  await expect(first.getByText('선택한 대학 · 가상대학교')).toBeVisible();
-  await expect(second.getByText('선택한 대학 · 한국외국어대학교(글로벌)')).toBeVisible();
+  await expect(second.getByRole('searchbox', { name: '대학명 검색' })).toHaveCount(0);
+  await expect(first.getByRole('status').getByText('가상대학교', { exact: true })).toBeVisible();
+  await expect(second.getByRole('status').getByText('한국외국어대학교(글로벌)', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /3지망 추가/ }).click();
   await page.getByRole('group', { name: '3지망', exact: true }).getByLabel('희망 계열').selectOption('자유전공·융합');
   await expect(page.getByRole('button', { name: '지망 추가' })).toHaveCount(0);
@@ -518,6 +541,13 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   await next.click();
   const consent = page.getByRole('checkbox', { name: '컨설팅 분석을 위한 자료 이용에 동의합니다.', exact: true });
   await consent.check();
+  await page.evaluate(id => { window.__design.createUploadFailure = true; window.__design.uploadFileId = id; }, fileId);
+  const fileInput = page.getByLabel('성적표 파일');
+  const attachment = { name: '성적표.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-') };
+  await fileInput.setInputFiles(attachment);
+  await expect(page.getByRole('alert')).toHaveText('성적표 업로드를 시작하지 못했어요. 잠시 후 파일을 다시 선택해 주세요.');
+  await page.evaluate(() => { window.__design.createUploadFailure = false; });
+  await fileInput.setInputFiles(attachment);
   await expect(page.getByText('검사 중', { exact: true })).toBeVisible();
   await submit.click();
   await expect(page.getByRole('alert')).toHaveText('검사가 완료된 성적표 파일이 필요합니다.');

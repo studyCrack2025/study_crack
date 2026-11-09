@@ -49,6 +49,12 @@
 .consulting-survey-preference-rank { display:grid; min-width:0; gap:12px; margin:0; padding:12px clamp(10px,2.5vw,18px) 16px; border:1px solid var(--sc-line-subtle); border-radius:12px; }
 .consulting-survey-preference-rank legend { padding:0 7px; color:var(--sc-brand-navy); font-size:14px; font-weight:750; }
 .consulting-university-picker { display:grid; min-width:0; gap:8px; }
+.consulting-university-selected { display:grid; gap:10px; min-width:0; padding:13px 14px; border:1px solid var(--sc-brand-navy); border-radius:10px; background:var(--sc-surface-subtle); color:var(--sc-brand-navy); }
+.consulting-university-selected p { display:grid; gap:4px; margin:0; overflow-wrap:anywhere; }
+.consulting-university-selected span { font-size:13px; font-weight:700; }
+.consulting-university-selected strong { font-size:clamp(18px,4.6vw,22px); line-height:1.35; font-weight:750; }
+.consulting-university-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.consulting-university-actions button { min-height:44px; padding:7px 11px; font-size:13px; }
 .consulting-university-results { display:grid; gap:4px; max-height:248px; overflow:auto; margin:0; padding:5px; list-style:none; border:1px solid var(--sc-line-subtle); border-radius:9px; background:var(--sc-surface-subtle); }
 .consulting-university-results button { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; width:100%; min-height:44px; padding:7px 10px; border:1px solid transparent; border-radius:7px; background:var(--sc-surface-card); color:var(--sc-brand-navy); font:inherit; font-size:14px; text-align:start; cursor:pointer; overflow-wrap:anywhere; }
 .consulting-university-results button:is(:hover,:focus-visible) { border-color:var(--sc-line-strong); }
