@@ -121,12 +121,23 @@ async function openConsultingMaterial(caseId) {
         const snapshot = data.submission?.snapshot || data.originalSubmission?.snapshot || {};
         const survey = document.getElementById('consultingMaterialSurvey');
         survey.innerHTML = '';
+        const preferences = snapshot.preferences || {};
+        const conditions = snapshot.conditions || {};
+        const wishes = Array.isArray(preferences.rankedChoices) ? [
+            ...preferences.rankedChoices.map(({ region, university, track }, index) => [`${index + 1}지망`, [region, university, track].filter(Boolean).join(' · ')]),
+            ['추가 희망', preferences.additionalPreference]
+        ] : [
+            ['희망 지역', (preferences.desiredRegions || []).join(', ')],
+            ['희망 대학', (preferences.desiredUniversities || []).join(', ')],
+            ['희망 학과·계열', [...(preferences.desiredMajors || []), ...(preferences.desiredTracks || [])].join(', ')],
+            ['필수 후보', (preferences.requiredCandidates || []).join(', ')],
+            ['제외 후보', (preferences.excludedCandidates || []).join(', ')]
+        ];
+        const commute = conditions.commuteLimit === 'over_120' ? '2시간 이상도 가능'
+            : Number.isFinite(conditions.commuteMaxMinutes) ? `${conditions.commuteMaxMinutes}분 이내` : '';
         [
-            ['희망 지역', (snapshot.preferences?.desiredRegions || []).join(', ')],
-            ['희망 대학', (snapshot.preferences?.desiredUniversities || []).join(', ')],
-            ['희망 학과·계열', [...(snapshot.preferences?.desiredMajors || []), ...(snapshot.preferences?.desiredTracks || [])].join(', ')],
-            ['필수 후보', (snapshot.preferences?.requiredCandidates || []).join(', ')],
-            ['제외 후보', (snapshot.preferences?.excludedCandidates || []).join(', ')],
+            ...wishes,
+            ['최대 편도 통학 시간', commute],
             ['고민', snapshot.qualitative?.concerns],
             ['상담 질문', (snapshot.qualitative?.consultationQuestions || []).join('\n')]
         ].forEach(([label, value]) => {

@@ -3,6 +3,15 @@
 
     const apply = document.getElementById('consultingApply');
     const price = document.getElementById('consultingPrice');
+    const entries = document.querySelectorAll('[data-consulting-entry]');
+
+    function syncEntryLinks() {
+        const signedIn = window.hasClientSession?.();
+        for (const entry of entries) {
+            entry.href = signedIn ? '/2027-jungsi-consulting/home' : '/2027-jungsi-consulting/login';
+            entry.firstElementChild.textContent = signedIn ? '나의 컨설팅' : entry.dataset.consultingEntry;
+        }
+    }
 
     function isSafeCampaign(value) {
         return value && value.campaignSlug === '2027-jungsi-consulting' && value.admissionYear === 2027 && ['open', 'unavailable'].includes(value.enrollmentStatus);
@@ -31,5 +40,7 @@
         } catch (_) {}
     }
 
+    syncEntryLinks();
+    for (const event of ['pageshow', 'storage', 'studycrack:session-ended']) window.addEventListener(event, syncEntryLinks);
     void loadCampaign();
 })();

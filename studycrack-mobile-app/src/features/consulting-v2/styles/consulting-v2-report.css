@@ -31,6 +31,7 @@
 .consulting-report-actions button:last-child{background:#3156d3;color:#fff;}
 .consulting-report-release{display:grid;gap:8px;margin:28px 0;font-weight:900;}
 .consulting-analysis{overflow-wrap:anywhere;}
+.consulting-analysis-preference-note { white-space:pre-wrap; }
 .consulting-analysis h2{margin:0;font-size:24px;}
 .consulting-analysis fieldset{margin:24px 0;min-width:0;}
 .consulting-analysis legend{padding:0 0 16px;font-weight:800;}

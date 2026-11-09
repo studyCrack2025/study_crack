@@ -1,7 +1,8 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
-import { clientSurveyError, createEmptySurvey, joinList, normalizeSurveyDraft, PRIORITY_LABELS, splitList, surveySaveSnapshot, SURVEY_STEPS } from '../survey-model.js';
+import { clientSurveyError, COMMUTE_OPTIONS, createEmptySurvey, hasPreviousExamScores, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
 import { deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
+import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
 import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 
@@ -19,41 +20,46 @@ function StudentStatusStep({ snapshot, update }) {
 
 function ConditionsStep({ snapshot, update }) {
   const value = snapshot.conditions;
-  return <div className="consulting-survey-grid"><Field label="연간 등록금 상한(원, 선택)"><input type="number" min="0" max="100000000" value={value.tuitionBudgetAnnual ?? ''} onChange={event => update({ tuitionBudgetAnnual: toOptionalNumber(event.target.value) })} /></Field><Field label="최대 통학 시간(분)"><input type="number" min="0" max="300" value={value.commuteMaxMinutes ?? ''} onChange={event => update({ commuteMaxMinutes: toOptionalNumber(event.target.value) })} /></Field><label className="consulting-survey-check"><input type="checkbox" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /> 기숙사 생활 가능</label><label className="consulting-survey-check"><input type="checkbox" checked={value.repeatStudyAllowed} onChange={event => update({ repeatStudyAllowed: event.target.checked })} /> 재도전 가능성 고려</label></div>;
-}
-
-function ListField({ label, value, max, placeholder, onChange }) {
-  const [text, setText] = React.useState(() => joinList(value));
-  return <Field label={label}><input value={text} placeholder={placeholder} onChange={event => {
-    const input = event.target.value;
-    setText(input);
-    onChange(splitList(input, max));
-  }} onBlur={() => setText(joinList(value))} /></Field>;
-}
-
-function PreferencesStep({ snapshot, update }) {
-  const value = snapshot.preferences;
-  const change = key => items => update({ [key]: items });
-  return <div className="consulting-survey-grid">
-    <ListField label="희망 지역(쉼표 구분)" value={value.desiredRegions} max={10} placeholder="서울, 경기" onChange={change('desiredRegions')} />
-    <ListField label="희망 대학" value={value.desiredUniversities} max={12} placeholder="대학명을 쉼표로 구분" onChange={change('desiredUniversities')} />
-    <ListField label="희망 학과" value={value.desiredMajors} max={12} placeholder="경영학과, 경제학과" onChange={change('desiredMajors')} />
-    <ListField label="희망 계열" value={value.desiredTracks} max={8} placeholder="인문, 상경" onChange={change('desiredTracks')} />
-    <ListField label="반드시 검토할 후보(최대 6)" value={value.requiredCandidates} max={6} onChange={change('requiredCandidates')} />
-    <ListField label="제외할 후보(최대 10)" value={value.excludedCandidates} max={10} onChange={change('excludedCandidates')} />
+  return <div className="consulting-survey-grid consulting-survey-grid-single">
+    <Field label="최대 편도 통학 시간">
+      <select value={value.commuteLimit} onChange={event => {
+        const limit = event.currentTarget.value;
+        update({ commuteLimit: limit, commuteMaxMinutes: limit && limit !== 'over_120' ? Number(limit) : null });
+      }}>
+        <option value="">선택해 주세요</option>
+        {COMMUTE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+      </select>
+    </Field>
+    {!value.commuteLimit && value.commuteMaxMinutes != null && <p className="consulting-score-note">이전에 {value.commuteMaxMinutes}분으로 입력했어요. 현재 선택지에서 다시 골라주세요.</p>}
+    <label className="consulting-survey-check"><input type="checkbox" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /> 기숙사 생활 가능</label>
+    <label className="consulting-survey-check"><input type="checkbox" checked={value.repeatStudyAllowed} onChange={event => update({ repeatStudyAllowed: event.target.checked })} /> 재도전 가능성 고려</label>
   </div>;
 }
 
 function StrategyStep({ snapshot, update }) {
   const value = snapshot.strategy;
-  const move = (index, direction) => {
-    const target = index + direction;
-    if (target < 0 || target >= value.priorityOrder.length) return;
+  const changeRank = (key, target) => {
+    const index = value.priorityOrder.indexOf(key);
     const next = [...value.priorityOrder];
     [next[index], next[target]] = [next[target], next[index]];
     update({ priorityOrder: next });
   };
-  return <><Field label="지원 위험 선호"><select value={value.riskTolerance} onChange={event => update({ riskTolerance: event.target.value })}><option value="">선택</option><option value="safe">안정 중심</option><option value="balanced">균형</option><option value="challenge">도전 중심</option></select></Field><div className="consulting-priority-list" aria-label="우선순위">{value.priorityOrder.map((key, index) => <div key={key}><strong>{index + 1}. {PRIORITY_LABELS[key]}</strong><span><button type="button" onClick={() => move(index, -1)} disabled={index === 0}>위</button><button type="button" onClick={() => move(index, 1)} disabled={index === value.priorityOrder.length - 1}>아래</button></span></div>)}</div></>;
+  return <>
+    <Field label="지원 위험 선호"><select value={value.riskTolerance} onChange={event => update({ riskTolerance: event.target.value })}><option value="">선택</option><option value="safe">안정 중심</option><option value="balanced">균형</option><option value="challenge">도전 중심</option></select></Field>
+    <section className="consulting-priority-list" aria-labelledby="consulting-priority-title">
+      <h2 id="consulting-priority-title">대학 선택 우선순위</h2>
+      <p className="consulting-score-note">가장 중요한 기준을 1순위로 골라주세요. 이미 사용한 순위를 고르면 두 기준의 순위가 서로 바뀝니다.</p>
+      {Object.entries(PRIORITY_LABELS).map(([key, label]) => {
+        const rank = value.priorityOrder.indexOf(key);
+        return <label className="consulting-priority-row" key={key} data-first={rank === 0 || undefined}>
+          <span>{label}</span>
+          <select aria-label={`${label} 순위`} value={rank} onChange={event => changeRank(key, Number(event.currentTarget.value))}>
+            {value.priorityOrder.map((item, position) => <option key={item} value={position}>{position + 1}순위</option>)}
+          </select>
+        </label>;
+      })}
+    </section>
+  </>;
 }
 
 function QualitativeStep({ snapshot, update }) {
@@ -98,6 +104,8 @@ export function ConsultingSurveyScreen({ binding }) {
       caseId: result.data.caseId,
       workflowState: result.data.workflowState,
       snapshot: normalizeSurveyDraft(saved?.snapshot),
+      needsFormUpgrade: Boolean(saved && saved.snapshot?.formVersion !== SURVEY_FORM_VERSION),
+      previousExamScores: hasPreviousExamScores(saved?.snapshot?.scores),
       revision: Number(saved?.draftRevision || 0),
       edit: 0,
       savedEdit: 0
@@ -147,6 +155,7 @@ export function ConsultingSurveyScreen({ binding }) {
       }
       session.revision = result.data.draftRevision;
       session.workflowState = result.data.workflowState;
+      session.needsFormUpgrade = false;
       session.savedEdit = edit;
       session.failedEdit = null;
       setSaveState({ kind: session.edit === edit ? 'saved' : 'pending' });
@@ -180,6 +189,7 @@ export function ConsultingSurveyScreen({ binding }) {
 
   const flush = async session => {
     if (session.inFlight && !(await session.inFlight) && session.failedEdit === session.edit) return false;
+    if (session.needsFormUpgrade && session.savedEdit === session.edit) session.edit += 1;
     return await save(session) && draft.current === session && session.savedEdit === session.edit;
   };
   const showNotice = (text, error = false) => setNotice({ text, error });
@@ -264,9 +274,9 @@ export function ConsultingSurveyScreen({ binding }) {
       {notice ? <p className="consulting-survey-message" data-tone={notice.error ? 'error' : 'info'} role={notice.error ? 'alert' : 'status'}>{notice.text}</p> : null}
       <fieldset className="consulting-survey-fields" disabled={actionBusy} aria-labelledby="survey-title">
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
-        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} caseId={draft.current.caseId} fileActions={fileActions} actionBusy={actionBusy} />}
+        {key === 'scores' && <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} caseId={draft.current.caseId} fileActions={fileActions} actionBusy={actionBusy} previousExamScores={draft.current.previousExamScores} />}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} />}
-        {key === 'preferences' && <PreferencesStep snapshot={snapshot} update={update} />}
+        {key === 'preferences' && <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}
         {key === 'qualitative' && <QualitativeStep snapshot={snapshot} update={update} />}
         {key === 'consent' && <ConsentStep snapshot={snapshot} update={update} fileActions={fileActions} />}
