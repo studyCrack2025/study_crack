@@ -5,9 +5,8 @@ async function prepare(page, { empty = false, report = false } = {}) {
     await page.route('**/*', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html><body></body></html>' })); await page.goto('http://localhost');
     await page.setContent((await source(page, 'admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, ''));
     await page.evaluate(() => {
-        const service = document.getElementById('consultingServicePanel'), operations = document.getElementById('consultingOperationsPanel');
+        const service = document.getElementById('consultingServicePanel'), operations = document.getElementById('consultingAdminTools');
         document.getElementById('section-consulting').replaceChildren(service, operations);
-        document.getElementById('consultingServiceCaseId').closest('div[hidden]').hidden = false;
     });
     for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(page, file) });
     await page.evaluate(({ caseId, empty, report }) => {
@@ -21,10 +20,11 @@ async function prepare(page, { empty = false, report = false } = {}) {
             else { if (window.__deferMutation) await new Promise(resolve => { window.__resolveMutation = resolve; }); if (window.__failMutation) throw new Error('Synthetic uncertain response'); data = { result: window.__report ? window.__reportResult || 'published' : 'queued' }; }
             return { json: async () => ({ success: true, data }) };
         };
-        window.loadConsultingPaymentReview = () => {}; window.loadConsultingMaterialReview = () => {};
     }, { caseId, empty, report });
     for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-operations.js']) await page.addScriptTag({ content: await source(page, file) });
-    await page.locator('a[onclick="showSection(\'consulting\')"]').click(); await expect(page.locator('#consultingOperationsStatus')).toContainText('현재 페이지');
+    await page.locator('a[onclick="showSection(\'consulting\')"]').click();
+    await page.locator('#consultingAdminTools > summary').click();
+    await expect(page.locator('#consultingOperationsStatus')).toContainText('현재 페이지');
 }
 async function detail(page) { await page.locator('#consultingOperationsBody').getByRole('button', { name: '내용 확인' }).click(); await expect(page.locator('#consultingOperationsDetail')).toBeVisible(); }
 const mutations = page => page.evaluate(() => window.__calls.filter(x => x.type.startsWith('admin_retry_')));
@@ -49,7 +49,7 @@ test('보고서 보류는 재검수로 안내한다', async ({ page }) => {
 });
 test('메뉴 이탈과 세션 종료 뒤 늦은 응답은 상세를 복원하지 않는다', async ({ page }) => {
     await prepare(page); await detail(page); await page.locator('#consultingOperationsReason').fill('화면을 나가기 전 입력한 사유'); await page.locator('a[onclick="showSection(\'students\')"]').click(); await expect(page.locator('#consultingOperationsSummary')).toBeEmpty(); await expect(page.locator('#consultingOperationsReason')).toHaveValue('');
-    await page.evaluate(() => { window.__deferList = true; }); await page.locator('a[onclick="showSection(\'consulting\')"]').click(); await expect(page.locator('#consultingOperationsPanel')).toHaveAttribute('aria-busy', 'true'); await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__resolveList(); }); await expect(page.locator('#consultingOperationsStatus')).toBeEmpty(); await expect(page.locator('#consultingOperationsDetail')).toBeHidden();
+    await page.evaluate(() => { window.__deferList = true; }); await page.locator('a[onclick="showSection(\'consulting\')"]').click(); await page.locator('#consultingAdminTools > summary').click(); await expect(page.locator('#consultingOperationsPanel')).toHaveAttribute('aria-busy', 'true'); await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__resolveList(); }); await expect(page.locator('#consultingOperationsStatus')).toBeEmpty(); await expect(page.locator('#consultingOperationsDetail')).toBeHidden();
 });
 test('320px과 데스크톱에서 복구 폼이 패널을 넘지 않는다', async ({ page }) => {
     for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 1000 }); await prepare(page); await detail(page); expect(await page.locator('#consultingOperationsPanel').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); }
@@ -69,7 +69,7 @@ async function serviceFixture(page) {
             return { json: async () => ({ success: true, data }) };
         };
     }, caseId);
-    await page.locator('#consultingServiceCaseId').fill(caseId); await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await expect(page.locator('#consultingServiceDetail')).toBeVisible();
+    await page.locator('#consultingServiceCaseId').evaluate((node, value) => { node.value = value; }, caseId); await page.getByRole('button', { name: '서비스 상태 조회' }).click(); await expect(page.locator('#consultingServiceDetail')).toBeVisible();
 }
 test('서비스 보류·재개는 사유·확인을 요구하며 응답 유실에는 동일 요청으로 확인한다', async ({ page }) => {
     await serviceFixture(page); await page.locator('#consultingServiceHoldBtn').click(); await expect(page.locator('#consultingServiceStatus')).toContainText('10자 이상');

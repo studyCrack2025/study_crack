@@ -49,6 +49,9 @@ export function ConsultingHomeScreen({ binding }) {
       </div> : null}
     </section>
     {alerts.length ? <section className="consulting-v2-alerts" aria-label="알림">{alerts.map(alert => <p key={alert}>{alert}</p>)}</section> : null}
+    {!['ONBOARDING', 'SURVEY_DRAFT'].includes(workflowState) && <section className="consulting-v2-home-help" aria-label="내 기초조사서">
+      <a href={CONSULTING_ROUTES.survey} onClick={event => { event.preventDefault(); navigateConsulting(CONSULTING_ROUTES.survey); }}><span><strong>내 답변 보기</strong><small>제출한 기초조사서를 확인할 수 있어요.</small></span><span aria-hidden="true">→</span></a>
+    </section>}
     <section className="consulting-v2-home-help" aria-label="이용 안내">
       <a href="https://pf.kakao.com/_wxjxcgn" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><span><strong>진행 중 궁금한 점이 있나요?</strong><small>스터디크랙 공식 카카오톡 채널</small></span><span aria-hidden="true">↗</span></a>
     </section>

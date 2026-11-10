@@ -77,8 +77,19 @@
 .consulting-survey-refresh { margin-top:12px; }
 .consulting-survey-message { margin:0 0 16px; padding:12px 14px; border:1px solid var(--sc-line-subtle); border-radius:8px; background:var(--sc-surface-subtle); color:var(--sc-ink); font-size:.9rem; line-height:1.65; }
 .consulting-survey-message[data-tone="error"] { color:var(--sc-state-danger); }
+.consulting-survey-notes { margin-block:20px; padding:clamp(12px,3vw,20px); border:1px solid var(--sc-line-subtle); border-radius:10px; background:var(--sc-surface-subtle); color:var(--sc-ink); line-height:1.6; }
+.consulting-survey-notes p { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.consulting-survey-notes ul { display:grid; gap:14px; margin:0; padding:0; list-style:none; }
+.consulting-survey-notes > p + ul { margin-top:16px; }
+.consulting-survey-notes li { display:grid; gap:7px; min-width:0; padding:12px; border-radius:8px; background:var(--sc-surface-card); }
+.consulting-survey-notes li button { justify-self:start; }
 .consulting-survey-save-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-top:18px; padding:12px 14px; border:1px solid var(--sc-line-subtle); border-radius:8px; background:var(--sc-surface-subtle); }
 .consulting-survey-save-error p { min-width:0; margin:0; color:var(--sc-state-danger); font-size:.9rem; line-height:1.65; }
+.consulting-survey-answer-list { display:grid; margin:14px 0 18px; min-width:0; }
+.consulting-survey-answer-list > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,2fr); gap:10px; padding:10px 0; border-bottom:1px solid var(--sc-line-subtle); overflow-wrap:anywhere; }
+.consulting-survey-answer-list dt { color:var(--sc-ink-muted); font-size:.85rem; font-weight:700; }
+.consulting-survey-answer-list dd { margin:0; color:var(--sc-ink); white-space:pre-wrap; }
+.consulting-survey-comparison { display:grid; gap:12px; margin:14px 0; padding:14px; border:1px solid var(--sc-line-subtle); border-radius:8px; }
 .consulting-survey-card footer { display:flex; justify-content:space-between; gap:10px; margin-top:30px; }
 .consulting-survey-card footer button { flex:1; min-width:0; min-height:48px; border-radius:8px; }
 .consulting-survey button:disabled { cursor:default; opacity:.55; }

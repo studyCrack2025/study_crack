@@ -174,10 +174,7 @@ function showSection(sectionName, options = {}) {
     } else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications' && !options.deferLoad) { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
-    else if (sectionName === 'consulting') {
-        if (typeof activateConsultingWorkspace === 'function') activateConsultingWorkspace(typeof readAdminLocation === 'function' ? readAdminLocation() : { phase: 'all' });
-        else { loadConsultingPaymentReview(); loadConsultingMaterialReview(); if (typeof loadConsultingOperations === 'function') loadConsultingOperations(); }
-    }
+    else if (sectionName === 'consulting' && typeof activateConsultingWorkspace === 'function') activateConsultingWorkspace(readAdminLocation());
 }
 
 window.showQnaSection = function(status) {

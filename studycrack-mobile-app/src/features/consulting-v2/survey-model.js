@@ -4,7 +4,7 @@ export const SURVEY_STEPS = Object.freeze([
   { key: 'conditions', label: '지원 조건', guide: '편도 통학 시간과 진학할 때 고려할 조건을 알려주세요.' },
   { key: 'preferences', label: '희망 지원', guide: '가장 희망하는 지원 방향부터 최대 3지망까지 알려주세요.' },
   { key: 'strategy', label: '지원 전략', guide: '어떤 지원을 선호하는지, 그리고 대학을 선택할 때 무엇이 중요한지 알려주세요.' },
-  { key: 'qualitative', label: '상담 질문', guide: '성적과 희망 조건만으로 알기 어려운 고민을 적어주세요. 서면 상담에서 함께 다룹니다.' },
+  { key: 'qualitative', label: '상담 질문', guide: '이번 정시에서 함께 결정하고 싶은 것을 알려주세요. 비교 중인 선택지와 궁금한 점을 바탕으로 서면 상담을 준비해요.' },
   { key: 'consent', label: '최종 확인', guide: '성적표를 첨부하고 보안 검사와 두 가지 확인을 마친 뒤 제출해 주세요.' }
 ]);
 
@@ -25,6 +25,17 @@ export const COMMUTE_OPTIONS = Object.freeze([
 export const MAX_RANKED_CHOICES = 3;
 export const ADDITIONAL_PREFERENCE_MAX = 3500;
 export const EMPTY_RANKED_CHOICE = Object.freeze({ region: '', university: '', track: '' });
+export const CONSULTATION_TOPIC_LABELS = Object.freeze({
+  group_plan: '가·나·다군 조합',
+  risk_mix: '상향·적정·안정 배분',
+  university_or_major: '대학과 학과 사이 선택',
+  retake_decision: '올해 진학과 재수 결정',
+  other: '기타'
+});
+export const MAX_CONSULTATION_TOPICS = 2;
+export const DECISION_OPTIONS_MAX = 1000;
+export const MAX_CONSULTATION_QUESTIONS = 5;
+export const LEGACY_CONSULTATION_LABELS = Object.freeze({ strengths: '강점', concerns: '현재 가장 큰 고민', guardianOpinion: '보호자 의견' });
 
 export function isConsultingSurveyExam(value) {
   return value?.examYear === CONSULTING_SURVEY_EXAM.examYear && value?.examType === CONSULTING_SURVEY_EXAM.examType;
@@ -71,7 +82,7 @@ export function createEmptySurvey() {
     conditions: { commuteLimit: '', commuteMaxMinutes: null, dormitoryAllowed: false, repeatStudyAllowed: false },
     preferences: { rankedChoices: [], additionalPreference: '' },
     strategy: { riskTolerance: '', priorityOrder: ['region', 'major', 'brand', 'employment', 'commute'] },
-    qualitative: { strengths: '', concerns: '', guardianOpinion: '', specialCircumstances: '', consultationQuestions: [] },
+    qualitative: { specialCircumstances: '', consultationQuestions: [] },
     consent: { accurateInformation: false, analysisUse: false }
   };
 }
@@ -111,6 +122,7 @@ export function normalizeSurveyDraft(snapshot) {
 }
 
 export function surveySaveSnapshot(snapshot) {
+  const { consultationTopics, decisionOptions, consultationQuestions, ...otherAnswers } = snapshot.qualitative;
   return {
     ...snapshot,
     scores: {
@@ -118,8 +130,10 @@ export function surveySaveSnapshot(snapshot) {
       records: snapshot.scores.records.filter(row => row.area !== 'foreign_language' || row.subject || row.grade != null)
     },
     qualitative: {
-      ...snapshot.qualitative,
-      consultationQuestions: snapshot.qualitative.consultationQuestions.filter(hasText)
+      ...otherAnswers,
+      ...(consultationTopics?.length ? { consultationTopics: Object.keys(CONSULTATION_TOPIC_LABELS).filter(topic => consultationTopics.includes(topic)) } : {}),
+      ...(hasText(decisionOptions) ? { decisionOptions } : {}),
+      consultationQuestions: consultationQuestions.filter(hasText)
     }
   };
 }
@@ -142,6 +156,7 @@ export function clientSurveyError(snapshot, readyFiles) {
   if (!snapshot.qualitative.consultationQuestions.some(hasText)) return issue('qualitative', '상담에서 확인할 질문을 한 가지 이상 입력해주세요.');
   if (!snapshot.consent.accurateInformation || !snapshot.consent.analysisUse) return issue('consent', '최종 확인과 분석 이용 동의가 필요합니다.');
   if (!readyFiles.length) return issue('consent', '검사가 완료된 성적표 파일이 필요합니다.');
+  if (readyFiles.length > 3) return issue('consent', '성적표는 최대 3개까지 제출할 수 있습니다.');
   return null;
 }
 

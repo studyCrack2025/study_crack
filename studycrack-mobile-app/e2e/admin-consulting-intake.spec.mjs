@@ -12,12 +12,6 @@ async function prepare(page) {
     await page.goto('http://localhost');
     const html = (await source(page, 'admin_index.html')).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '');
     await page.setContent(html);
-    await page.evaluate(() => {
-        const panel = document.getElementById('consultingIntakePanel');
-        document.getElementById('section-consulting').replaceChildren(panel);
-        document.getElementById('consultingPaymentReviewBody').closest('div[hidden]').hidden = false;
-        window.closeConsultingStudent = () => closeConsultingDetail();
-    });
     for (const file of ['css/admin_theme.css', 'css/admin_consulting.css']) await page.addStyleTag({ content: await source(page, file) });
     await page.evaluate(id => {
         window.CONFIG = { api: { consulting: '/synthetic/consulting', noti: '/synthetic/noti', qna: '/synthetic/qna' } };
@@ -31,33 +25,45 @@ async function prepare(page) {
             const request = JSON.parse(options.body);
             window.__calls.push({ url, ...request });
             let data;
-            if (request.type === 'admin_list_payment_review') {
-                if (window.__listFailure) throw Object.assign(new Error('Synthetic list failure'), { status: 503 });
-                data = { items: window.__approved ? [] : [window.__detail.application] };
-            } else if (request.type === 'admin_get_application_detail') {
-                data = structuredClone(window.__detail);
+            const app = window.__detail.application;
+            const student = {
+                applicationId: id, sourceResponseId: 'SYNTHETIC_INTAKE_RECORD', phase: app.applicationState === 'INVITED' ? 'onboarding' : 'intake',
+                studentNameMask: app.studentNameMask, phoneMask: app.phoneMask,
+                stateLabel: app.inputReviewRequired ? '신청 정보 보완 필요' : '입금 확인 대기', nextAction: '신청·입금 확인'
+            };
+            if (request.type === 'admin_list_consulting_students') {
+                data = { items: [student], nextCursor: null };
+            } else if (request.type === 'admin_get_consulting_student') {
+                if (window.__detailFailure) throw Object.assign(new Error('Synthetic detail failure'), { status: 503 });
+                data = { ...structuredClone(window.__detail), student };
+            } else if (request.type === 'admin_preview_application_review_notice') {
+                data = { applicationId: id, revision: app.revision, willQueue: true, recipient: '010-****-0000',
+                    message: '정시 컨설팅 신청 진행이 어렵습니다. 스터디크랙 공식 카카오톡 채널로 문의해 주세요.', previewToken: 'fixture-notice-preview' };
             } else {
                 if (window.__mutationFailure) throw Object.assign(new Error('Synthetic mutation failure'), { status: 409 });
                 if (window.__deferMutation) await new Promise(resolve => { window.__resolveMutation = resolve; });
-                if (request.type === 'admin_verify_manual_payment') window.__approved = true;
+                if (request.type === 'admin_verify_manual_payment') Object.assign(app, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 });
+                if (request.type === 'admin_reject_application') {
+                    Object.assign(app, { applicationState: 'REJECTED', paymentReviewStatus: 'rejected', revision: 1 });
+                    window.__detail.reviewNotices = [{ decision: 'reject', status: 'pending', createdAt: '2026-11-10T10:00:00Z' }];
+                }
                 if (request.type === 'admin_review_application_input') {
                     for (const field of ['studentName', 'phone', 'email', 'payerName']) window.__detail.contact[field] = request.data.input[field];
                     for (const field of ['payerRelationship', 'contactMethod', 'studentStatus']) window.__detail[field] = request.data.input[field];
                     Object.assign(window.__detail.application, { inputReviewRequired: false, paymentReviewStatus: 'pending', intakeIssues: [], revision: request.data.expectedRevision + 1 });
                     data = { applicationId: id, revision: window.__detail.application.revision, inputReviewRequired: false };
-                } else data = { applicationId: id, applicationState: 'INVITED', revision: 2 };
+                } else data = { applicationId: id, applicationState: app.applicationState, revision: app.revision, notificationQueued: request.type === 'admin_reject_application' };
             }
             return { json: async () => ({ success: true, data }) };
         };
-        window.loadConsultingMaterialReview = () => {};
     }, applicationId);
-    for (const file of ['js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js']) await page.addScriptTag({ content: await source(page, file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(page, file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
-    await expect(page.locator('#consultingStatus')).toHaveAttribute('data-state', 'success');
+    await expect(page.locator('#consultingDirectoryStatus')).toHaveAttribute('data-state', 'success');
 }
 
 async function openDetail(page) {
-    await page.getByRole('button', { name: '상세 확인', exact: true }).click();
+    await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
 }
 
@@ -69,8 +75,9 @@ async function fillPayment(page) {
 
 test('정시 메뉴는 마스킹 목록을 조회하고 상세의 입력값을 HTML로 실행하지 않는다', async ({ page }) => {
     await prepare(page);
-    await expect(page.locator('#consultingPaymentReviewBody')).toContainText('가*생 / 010****0000');
-    await expect(page.locator('#consultingPaymentReviewBody')).not.toContainText('synthetic@example.invalid');
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('가*생');
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('010****0000');
+    await expect(page.locator('#consultingDirectoryBody')).not.toContainText('synthetic@example.invalid');
     await openDetail(page);
     await expect(page.locator('#consultingDetailSummary')).toContainText('synthetic@example.invalid');
     await expect(page.locator('#consultingDetailSummary')).toContainText('<svg onload=alert(1)>');
@@ -86,10 +93,9 @@ test('정시 메뉴는 마스킹 목록을 조회하고 상세의 입력값을 H
 test('상세 닫기와 다른 메뉴 이동은 개인정보를 제거하고 새로 조회할 수 있다', async ({ page }) => {
     await prepare(page);
     await openDetail(page);
-    await page.getByRole('button', { name: '상세 닫기', exact: true }).click();
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
     await expect(page.locator('#consultingDetailSummary')).toBeEmpty();
-    await page.locator('#consultingApplicationLookup').fill(applicationId);
-    await page.locator('#consultingApplicationLookup').press('Enter');
+    await openDetail(page);
     await expect(page.locator('#consultingDetailSummary')).toContainText('synthetic@example.invalid');
     await page.locator('a[onclick="showSection(\'students\')"]').click();
     await expect(page.locator('#consultingDetailSummary')).toBeEmpty();
@@ -105,20 +111,51 @@ test('입금 승인 취소는 서버 변경 없이 종료한다', async ({ page 
     await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
 });
 
+test('거절 메모는 펼쳐서 입력하고 최종 확인 뒤 선택한 신청에만 보낸다', async ({ page }) => {
+    await prepare(page);
+    await openDetail(page);
+    const reject = page.getByRole('button', { name: '신청 거절', exact: true });
+    await expect(reject).toBeHidden();
+    await page.locator('#consultingPaymentAlternatives > summary').click();
+    await page.getByLabel('거절 사유').selectOption('OTHER');
+    await reject.click();
+    await expect(page.locator('#consultingStatus')).toContainText('기타 사유는 필수');
+    await page.getByLabel('거절 메모').fill('합성 테스트 신청 정리');
+    const preview = page.waitForEvent('dialog');
+    const click = reject.click();
+    const dialog = await preview;
+    const message = dialog.message();
+    await dialog.dismiss();
+    await click;
+    expect(message).toContain('010-****-0000');
+    expect(message).toContain('스터디크랙 공식 카카오톡 채널');
+    expect(message).not.toContain('합성 테스트 신청 정리');
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_reject_application').length)).toBe(0);
+    page.once('dialog', dialog => dialog.accept());
+    await reject.click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('신청 거절 완료');
+    const calls = await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_reject_application'));
+    expect(calls).toHaveLength(1);
+    expect(calls[0].data).toMatchObject({ applicationId, expectedRevision: 0, reasonCode: 'OTHER', reasonText: '합성 테스트 신청 정리', previewToken: 'fixture-notice-preview' });
+    await expect(page.locator('#consultingPaymentActions')).toBeHidden();
+    await expect(page.locator('#consultingDetailSummary')).toContainText('발송 예약');
+});
+
 test('승인 중 모든 변경 버튼을 잠그고 완료 후 발송 예약 결과를 유지한다', async ({ page }) => {
     await prepare(page);
     await openDetail(page);
     await fillPayment(page);
+    await page.locator('#consultingPaymentAlternatives > summary').click();
     await page.evaluate(() => { window.__deferMutation = true; });
     page.once('dialog', dialog => dialog.accept());
     await page.locator('#consultingApproveBtn').click();
     await expect(page.getByRole('button', { name: '보류', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: '신청 거절', exact: true })).toBeDisabled();
     await expect(page.locator('#consultingPaidAmount')).toBeDisabled();
-    await page.evaluate(() => { window.__listFailure = true; window.__resolveMutation(); });
+    await page.evaluate(() => { window.__detailFailure = true; window.__resolveMutation(); });
     await expect(page.locator('#consultingActionStatus')).toContainText('입금 승인 및 초대 발송 예약 완료');
     await expect(page.locator('#consultingActionStatus')).toContainText('별도 확인');
-    await expect(page.locator('#consultingStatus')).toHaveAttribute('data-state', 'error');
+    await expect(page.locator('#consultingStudentStatus')).toHaveAttribute('data-state', 'error');
     await expect(page.locator('#consultingDetailSummary')).toBeEmpty();
     expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment').length)).toBe(1);
 });
@@ -158,7 +195,7 @@ test('데스크톱에서도 상세와 승인 폼은 패널 밖으로 넘치지 �
 });
 test('초대 취소는 환경이 확인된 미사용 초대만 노출하고 사유와 최종 확인을 보낸다', async ({ page }) => {
     await prepare(page); await page.evaluate(() => { window.__detail.application.applicationState = 'INVITED'; window.__detail.activeInviteId = 'INVITE_synthetic'; }); await openDetail(page); await expect(page.locator('#consultingRevokeBtn')).toBeHidden();
-    await page.getByRole('button', { name: '상세 닫기', exact: true }).click(); await page.evaluate(() => { window.__detail.stageVerified = true; }); await openDetail(page);
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click(); await page.evaluate(() => { window.__detail.stageVerified = true; }); await openDetail(page);
     page.once('dialog', dialog => dialog.dismiss()); await page.locator('#consultingRevokeBtn').click(); expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite').length)).toBe(0);
     page.on('dialog', dialog => dialog.accept(dialog.type() === 'prompt' ? '잘못 발급한 합성 초대를 취소함' : undefined)); await page.locator('#consultingRevokeBtn').click(); await expect(page.locator('#consultingActionStatus')).toContainText('미사용 초대 취소 완료');
     const request = await page.evaluate(() => window.__calls.find(x => x.type === 'admin_revoke_consulting_invite')); expect(request.data.applicationId).toBe(applicationId); expect(request.data.expectedRevision).toBe(0); expect(request.data.reason).toBe('잘못 발급한 합성 초대를 취소함');
@@ -170,9 +207,9 @@ async function prepareInputReview(page) {
         Object.assign(window.__detail.application, { inputReviewRequired: true, paymentReviewStatus: 'input_review', intakeIssues: [{ field: 'phone', code: 'PHONE_FORMAT' }, { field: 'email', code: 'EMAIL_FORMAT' }] });
         Object.assign(window.__detail.contact, { studentName: '합성2', phone: '', email: 'invalid-email' });
         window.__detail.originalSubmission = { studentName: '합성2', phone: '', email: '<svg onload=alert(1)>', studentStatus: ['senior'] };
-        return window.loadConsultingPaymentReview();
+        return window.loadConsultingDirectory();
     });
-    await expect(page.locator('#consultingPaymentReviewBody')).toContainText('신청 정보 보완 필요');
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('신청 정보 보완 필요');
     await openDetail(page);
 }
 

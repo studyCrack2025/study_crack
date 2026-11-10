@@ -11,15 +11,38 @@ async function prepare(page, hash = '') {
         localStorage.setItem('userId', 'synthetic-admin'); localStorage.setItem('userRole', 'admin');
         window.CONFIG = { api: { consulting: '/synthetic-api', noti: '/synthetic-api', qna: '/synthetic-api', file: '/synthetic-api' } };
         window.ADMIN_API_URL = '/synthetic-api'; window.Store = { get: () => null };
-        window.apiFetch = (_url, options) => fetch('/synthetic-api', options);
+        window.apiFetch = async (_url, options) => {
+            const response = await fetch('/synthetic-api', options);
+            if (!response.ok && JSON.parse(options.body).type === 'admin_export_consulting_students') {
+                throw Object.assign(new Error('Synthetic export error'), { status: response.status });
+            }
+            return response;
+        };
         for (const name of ['loadAdminStats', 'populateTutorFilter', 'searchStudents', 'fetchUnreadNotiCount', 'fetchQnaBadgeCount', 'loadMatchingData', 'clearStudentJoinDateRange', 'loadTutorStats', 'loadAllQna']) window[name] = () => {};
     </script>`;
     const document = html.replace('</body>', `${bootstrap}${scripts.map(src => `<script src="/${src}"></script>`).join('')}</body>`);
-    const state = { calls: [], emptyFirst: false, deferType: null, resolve: null, failMutation: false, review: false };
+    const state = { calls: [], emptyFirst: false, deferType: null, resolve: null, failMutation: false, materialError: false, legacyMaterial: false, revisedMaterial: false, confirmed: false };
     const contact = { studentName: '합성 학생', phone: '01000000000', email: 'synthetic@example.invalid', payerName: '합성 입금자' };
     const detail = n => ({ application: { applicationId: applicationId(n), applicationState: n === 2 ? 'CLAIMED' : 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 300000, studentNameMask: '합*생', phoneMask: '010-****-0000' }, contact: { ...contact, studentName: n === 2 ? '둘째 합성 학생' : contact.studentName }, payerRelationship: 'self', contactMethod: 'email', studentStatus: 'senior', sourceResponseId: record(n), originalSubmission: { ...contact }, case: n === 2 ? { caseId, workflowState: 'REPORT_REVIEW', revision: 3 } : null, permissions: { materials: true, schedule: true, report: true, finalCall: true } });
     state.students = [detail(1), detail(2)];
-    const summary = (data, n) => ({ applicationId: applicationId(n), sourceResponseId: record(n), caseId: data.case?.caseId || null, studentNameMask: n === 2 ? '둘*생' : '합*생', phoneMask: '010-****-0000', phase: data.case ? 'report' : data.application.applicationState === 'INVITED' ? 'onboarding' : 'intake', stateLabel: data.case ? '보고서 검수' : data.application.applicationState === 'INVITED' ? '초대 발급·가입 대기' : data.application.inputReviewRequired ? '신청 정보 보완' : '입금 확인 대기', nextAction: data.case ? '보고서 검수·승인' : '신청 정보·입금 확인', updatedAt: '2026-11-04T00:00:00.000Z' });
+    const summary = (data, n) => {
+        const report = data.case?.workflowState === 'REPORT_REVIEW';
+        return { applicationId: applicationId(n), sourceResponseId: record(n), caseId: data.case?.caseId || null, studentNameMask: n === 2 ? '둘*생' : '합*생', phoneMask: '010-****-0000', phase: report ? 'report' : data.case || data.application.applicationState === 'INVITED' ? 'onboarding' : 'intake', stateLabel: report ? '보고서 검수' : data.case ? '자료 검수' : data.application.applicationState === 'INVITED' ? '초대 발급·가입 대기' : data.application.inputReviewRequired ? '신청 정보 보완' : '입금 확인 대기', nextAction: report ? '보고서 검수·승인' : '신청 정보·입금 확인', updatedAt: '2026-11-04T00:00:00.000Z' };
+    };
+    const snapshot = {
+        formVersion: 4,
+        studentStatus: { graduationYear: 2027, applicantType: 'high_school_senior', schoolType: 'general', schoolName: '가상고', residenceRegion: '서울 송파구' },
+        conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null, dormitoryAllowed: false, repeatStudyAllowed: true },
+        preferences: { rankedChoices: [{ region: '서울', university: '가상대학교', track: '공학' }], additionalPreference: '가상대학교 전자공학과 검토' },
+        strategy: { riskTolerance: 'safe', priorityOrder: ['major', 'region', 'brand', 'commute', 'employment'] },
+        qualitative: { strengths: '이전 답변', concerns: '합성 상담 내용\n둘째 줄', guardianOpinion: '보호자 의견 예시', specialCircumstances: '<img src=x onerror=alert(1)>', consultationQuestions: ['가군 질문', '나군 질문'] },
+        consent: { accurateInformation: true, analysisUse: true },
+        scores: { examYear: 2026, examType: 'csat', records: [
+            { area: 'korean', subject: '국어', selection: '화법과작문', commonRawScore: 76, electiveRawScore: 0, rawScore: 76 },
+            { area: 'english', subject: '영어', grade: 2 }, { area: 'inquiry', subject: '탐구 1' },
+            { area: 'foreign_language', subject: '독일어Ⅰ', grade: 4 }
+        ] }
+    };
     await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body: document }));
     await page.route('https://www.googletagmanager.com/**', route => route.abort());
     await page.route('https://fonts.googleapis.com/**', route => route.abort());
@@ -27,7 +50,24 @@ async function prepare(page, hash = '') {
         const request = route.request().postDataJSON(); state.calls.push(request); let data;
         if (request.type === 'admin_list_consulting_students') {
             const items = state.students.map((item, i) => summary(item, i + 1)).filter(item => request.data.phase === 'all' || request.data.phase === item.phase);
-            data = { items: state.emptyFirst && !request.data.cursor ? [] : items, nextCursor: state.emptyFirst && !request.data.cursor ? 'synthetic_cursor' : null };
+            const first = !request.data.cursor;
+            data = {
+                items: state.emptyFirst && first ? [] : state.splitPages ? items.slice(first ? 0 : 1, first ? 1 : 2) : items,
+                nextCursor: first && (state.emptyFirst || (state.splitPages && items.length > 1)) ? 'synthetic_cursor' : null,
+                exportLimit: state.exportLimit || null
+            };
+        } else if (request.type === 'admin_get_consulting_export_columns') {
+            data = { columns: [
+                { id: 'application_id', label: '신청 ID', group: '접수·진행' },
+                { id: 'workflow_state', label: '진행 단계', group: '접수·진행' },
+                { id: 'student_name', label: '학생 이름', group: '신청자·연락처' },
+                { id: 'phone', label: '전화번호', group: '신청자·연락처' },
+                { id: 'email', label: '이메일', group: '신청자·연락처' }
+            ] };
+        } else if (request.type === 'admin_export_consulting_students') {
+            if (state.exportStatus) return route.fulfill({ status: state.exportStatus, json: { success: false } });
+            data = { csv: '\uFEFF"진행 단계","전화번호"\r\n"입금 확인 대기","01000000001"\r\n"보고서 검수","01000000002"\r\n',
+                rowCount: request.data.students.length, fileName: 'jungsi-consulting-20261110T112233Z.csv' };
         } else if (request.type === 'admin_get_consulting_student') {
             const index = state.students.findIndex(item => item.application.applicationId === request.data.applicationId);
             data = { ...structuredClone(state.students[index]), student: summary(state.students[index], index + 1) };
@@ -37,17 +77,58 @@ async function prepare(page, hash = '') {
         } else if (request.type === 'admin_verify_manual_payment') {
             Object.assign(state.students[0].application, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 }); state.students[0].activeInviteId = 'SYNTHETIC_INVITE';
             data = { applicationId: applicationId(1), applicationState: 'INVITED', revision: 1 };
-        } else if (request.type === 'admin_get_v2_material_detail') data = { case: { caseId, workflowState: 'MATERIAL_REVIEW' }, submission: { snapshot: {
-            formVersion: 4,
-            conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null },
-            preferences: { rankedChoices: [{ region: '서울', university: '가상대학교', track: '공학' }], additionalPreference: '가상대학교 전자공학과 검토' },
-            qualitative: { concerns: '합성 상담 내용' },
-            scores: { examYear: 2026, examType: 'csat', records: [
-                { area: 'korean', subject: '국어', selection: '화법과작문', commonRawScore: 76, electiveRawScore: 0, rawScore: 76 },
-                { area: 'english', subject: '영어', grade: 2 }, { area: 'inquiry', subject: '탐구 1' },
-                { area: 'foreign_language', subject: '독일어Ⅰ', grade: 4 }
-            ] }
-        } }, files: [] };
+        } else if (request.type === 'admin_get_v2_material_detail') {
+            if (state.materialError) return route.fulfill({ status: 503, json: { success: false } });
+            const current = state.students[1].case;
+            const pending = current.workflowState === 'MATERIAL_REVIEW';
+            const submission = { submittedAt: '2026-11-04T00:00:00.000Z', snapshot };
+            data = {
+                case: current,
+                submission: state.legacyMaterial || current.workflowState === 'SURVEY_DRAFT' ? null : submission,
+                originalSubmission: state.legacyMaterial ? { ...submission, snapshot: { ...snapshot, formVersion: undefined, preferences: { desiredMajors: ['국문학'], desiredTracks: ['인문'], requiredCandidates: ['가상대'] }, conditions: { commuteMaxMinutes: 90, tuitionBudgetAnnual: 3000000 } } } : null,
+                verification: pending ? { status: 'pending', studentInput: snapshot.scores } : { status: 'matched', verifiedInput: { ...snapshot.scores, records: [{ area: 'english', subject: '영어', grade: 3 }] } },
+                files: [{ fileId: 'FILE_synthetic', status: 'linked', displayName: '제출 성적표.pdf' }, { fileId: 'FILE_waiting', status: 'quarantined', displayName: '검사 중.pdf' }]
+            };
+            if (state.revisedMaterial) {
+                const next = { ...submission, revision: 6, snapshot: { ...snapshot,
+                    studentStatus: { ...snapshot.studentStatus, residenceRegion: '부산' },
+                    conditions: { ...snapshot.conditions, repeatStudyAllowed: false },
+                    qualitative: { ...snapshot.qualitative, consultationTopics: ['group_plan', 'retake_decision'], decisionOptions: '통학과 전공을 비교' }
+                } };
+                data.submission = next;
+                data.originalSubmission = submission;
+                data.reviewedSubmission = state.confirmed ? next : submission;
+                data.surveyReview = { needsReview: !state.confirmed, scoreChanged: false, changes: state.confirmed ? [] : [{ field: ['studentStatus', 'residenceRegion'], before: '서울 송파구', after: '부산' }] };
+            }
+            if (state.supplementFields) {
+                data.submission.revision = 0;
+                data.supplementFields = state.supplementFields;
+                data.supplement = state.supplement;
+            }
+        } else if (request.type === 'admin_request_v2_supplement') {
+            const current = state.students[1].case;
+            current.workflowState = 'SUPPLEMENT_REQUIRED';
+            state.supplement = { fields: request.data.fieldNotes.map(({ field, note }) => ({
+                field, label: field === 'studentStatus.residenceRegion' ? '거주 지역' : '1지망 대학', note
+            })) };
+            data = { caseId, notificationQueued: true };
+        } else if (request.type === 'admin_verify_v2_materials') {
+            state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
+            data = { caseId, notificationQueued: true };
+        } else if (request.type === 'admin_list_v2_survey_changes') {
+            const before = request.data.before;
+            data = { caseId, nextBefore: before ? null : 2, entries: [{
+                revision: before ? 1 : 6, changedAt: '2026-11-06T00:00:00.000Z', changedBy: '학생',
+                changes: before ? [{ field: ['qualitative', 'concerns'], before: '', after: '<img src=x>' }] : [
+                    { field: ['studentStatus', 'residenceRegion'], before: '서울 송파구', after: '부산' },
+                    { field: ['conditions', 'repeatStudyAllowed'], before: true, after: false },
+                    { field: ['qualitative', 'consultationTopics'], before: null, after: ['group_plan', 'retake_decision'] }
+                ]
+            }] };
+        } else if (request.type === 'admin_confirm_v2_survey_revision') {
+            state.confirmed = true;
+            data = { caseId, surveyRevision: 6 };
+        }
         else data = { items: [], nextCursor: null };
         if (state.deferType === request.type) await new Promise(resolve => { state.resolve = resolve; });
         if (state.failMutation && request.type === 'admin_review_application_input') return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
@@ -65,6 +146,121 @@ async function openStudent(page, index = 0) {
     await expect(page.locator('#consultingStudentStatus')).toHaveAttribute('data-state', 'success');
 }
 
+test('CSV는 여러 페이지의 선택 학생과 검색해 체크한 항목만 다운로드한다', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const state = await prepare(page);
+    state.exportLimit = 25;
+    state.splitPages = true;
+    await enterConsulting(page);
+    const toolbar = page.locator('#consultingDirectoryExportTools');
+    await expect(toolbar.getByRole('button', { name: 'CSV 내보내기' })).toBeDisabled();
+    await page.locator('#consultingDirectoryBody').getByRole('checkbox', { name: /합\*생/ }).check();
+    await page.locator('#consultingDirectoryNext').click();
+    await expect(page.locator('#consultingDirectoryPage')).toHaveText('2페이지 · 1명');
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await expect(toolbar).toContainText('2명 선택 · 최대 25명');
+    await page.locator('#consultingDirectoryPrevious').click();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('checkbox')).toBeChecked();
+    await toolbar.getByRole('button', { name: 'CSV 내보내기' }).click();
+    const dialog = page.getByRole('dialog', { name: 'CSV 내보내기' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByText('선택 학생 2명', { exact: true }).click();
+    await expect(dialog.getByRole('listitem')).toHaveCount(2);
+    const submit = dialog.getByRole('button', { name: 'CSV 다운로드' });
+    await expect(submit).toBeDisabled();
+    await dialog.getByRole('checkbox', { name: '진행 단계', exact: true }).check();
+    await dialog.getByRole('searchbox').fill('전화번호');
+    await dialog.getByRole('checkbox', { name: '신청자·연락처 검색 결과 전체 선택' }).check();
+    await expect(dialog).toContainText('2개 항목 선택');
+    expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    const received = page.waitForEvent('download');
+    await submit.click();
+    const download = await received;
+    expect(download.suggestedFilename()).toBe('jungsi-consulting-20261110T112233Z.csv');
+    const chunks = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+    expect(Buffer.concat(chunks).toString('utf8')).toBe('\uFEFF"진행 단계","전화번호"\r\n"입금 확인 대기","01000000001"\r\n"보고서 검수","01000000002"\r\n');
+    expect(state.calls.filter(call => call.type === 'admin_export_consulting_students')).toEqual([{
+        type: 'admin_export_consulting_students', data: { columnIds: ['workflow_state', 'phone'],
+            students: [1, 2].map(n => ({ applicationId: applicationId(n), sourceResponseId: record(n) })) }
+    }]);
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#consultingExportListStatus')).toHaveText('2명 CSV 다운로드를 시작했습니다.');
+});
+
+test('권한과 인원 한도, 실패와 세션 종료는 CSV 발급과 선택 노출을 막는다', async ({ page }) => {
+    const state = await prepare(page);
+    await enterConsulting(page);
+    const toolbar = page.locator('#consultingDirectoryExportTools');
+    await expect(toolbar).toBeHidden();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('checkbox')).toHaveCount(0);
+    state.exportLimit = 1;
+    await page.getByRole('button', { name: '01 접수·입금', exact: true }).click();
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await page.getByRole('button', { name: '04 분석·보고서', exact: true }).click();
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await expect(page.locator('#consultingExportListStatus')).toContainText('1명까지');
+    await expect(toolbar).toContainText('1명 선택 · 최대 1명');
+    await toolbar.getByRole('button', { name: 'CSV 내보내기' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('checkbox', { name: '진행 단계', exact: true }).check();
+    const downloads = [];
+    page.on('download', download => downloads.push(download));
+    state.exportStatus = 403;
+    await dialog.getByRole('button', { name: 'CSV 다운로드' }).click();
+    await expect(dialog.getByRole('status')).toHaveText('선택한 자료를 내보낼 권한을 확인해주세요.');
+    expect(downloads).toHaveLength(0);
+    state.exportStatus = null;
+    state.deferType = 'admin_export_consulting_students';
+    await dialog.getByRole('button', { name: 'CSV 다운로드' }).click();
+    await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    await expect(dialog.getByRole('searchbox')).toBeDisabled();
+    await expect(dialog.getByRole('checkbox', { name: '진행 단계', exact: true })).toBeDisabled();
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    state.resolve();
+    await expect(dialog).toBeHidden();
+    await expect(toolbar).toBeHidden();
+    await expect(page.locator('#consultingExportStudentList')).toBeEmpty();
+    await expect(page.locator('#consultingDirectoryBody')).toBeEmpty();
+    expect(downloads).toHaveLength(0);
+});
+
+test('관리자는 항목별 보완 내용을 미리 확인해 한 번에 보내고 검수 완료로 시간 선택을 연다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementFields = ['studentStatus.residenceRegion', 'preferences.rankedChoices.0.university'];
+    await enterConsulting(page);
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click();
+    await openStudent(page);
+    await page.getByText('거주 지역 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '거주 지역 보완 메모' }).fill('구 단위로 적어주세요.');
+    await page.getByText('1지망 대학 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '1지망 대학 보완 메모' }).fill('<img src=x> 캠퍼스를 알려주세요.');
+    await page.getByRole('button', { name: '보완 요청 미리보기' }).click();
+    const preview = page.getByRole('dialog', { name: '보완 요청 확인' });
+    await expect(preview).toContainText('구 단위로 적어주세요.');
+    await expect(preview).toContainText('<img src=x> 캠퍼스를 알려주세요.');
+    await expect(preview.locator('img')).toHaveCount(0);
+    expect(state.calls.some(({ type }) => type === 'admin_request_v2_supplement')).toBe(false);
+    await preview.getByRole('button', { name: '보완 요청 보내기' }).click();
+    await expect(page.locator('#consultingMaterialSupplementNotice')).toContainText('구 단위로 적어주세요.');
+    const sent = state.calls.filter(({ type }) => type === 'admin_request_v2_supplement');
+    expect(sent).toHaveLength(1);
+    expect(sent[0].data).toMatchObject({ caseId, expectedSurveyRevision: 0, reasonCode: 'OTHER', reasonText: '', fieldNotes: [
+        { field: 'studentStatus.residenceRegion', note: '구 단위로 적어주세요.' },
+        { field: 'preferences.rankedChoices.0.university', note: '<img src=x> 캠퍼스를 알려주세요.' }
+    ] });
+
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplement = null;
+    await page.reload();
+    await page.locator('#consultingMaterialReason').fill('공식 성적표 확인 완료');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: '확인 완료 · 일정 선택 열기' }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toContainText('학생의 상담 가능 시간 선택을 열었습니다.');
+    expect(state.calls.filter(({ type }) => type === 'admin_verify_v2_materials')).toHaveLength(1);
+});
+
 test('관리자 메뉴·Q&A 상태·공지 하위 메뉴는 실제 새로고침 뒤에도 유지한다', async ({ page }) => {
     await prepare(page);
     for (const [call, section, title] of [["showSection('students')", 'students', null], ["showSection('advanced-stats')", 'advanced-stats', null], ["showQnaSection('done')", 'qna', '응답 완료'], ["showNotiMenu('sent')", 'notifications', '보낸 공지함']]) {
@@ -74,17 +270,20 @@ test('관리자 메뉴·Q&A 상태·공지 하위 메뉴는 실제 새로고침 
     }
 });
 test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보고서 화면을 복원한다', async ({ page }) => {
-    const state = await prepare(page); await enterConsulting(page);
+    const state = await prepare(page); state.students[1].case.workflowState = 'MATERIAL_REVIEW'; await enterConsulting(page);
     await expect(page.locator('#consultingDirectoryBody')).toContainText('합*생'); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('synthetic@example.invalid');
     await expect(page.locator('#consultingServicePanel')).toBeHidden(); await expect(page.locator('#consultingOperationsPanel')).toBeHidden();
     expect(state.calls.some(call => call.type === 'admin_list_consulting_operations')).toBe(false);
-    await page.getByRole('button', { name: '04 분석·보고서', exact: true }).click(); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('합*생'); await openStudent(page);
-    await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생'); await expect(page.locator('#consultingStudentProgress [aria-current="step"]')).toHaveText('분석·보고서');
-    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click(); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('합*생'); await openStudent(page);
+    await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생'); await expect(page.locator('#consultingStudentProgress [aria-current="step"]')).toHaveText('가입·조사서');
+    await expect(page.getByRole('button', { name: '조사서·성적표', exact: true })).toHaveAttribute('aria-current', 'page');
     const survey = page.locator('#consultingMaterialSurvey');
-    await expect(survey).toContainText('1지망: 서울 · 가상대학교 · 공학');
-    await expect(survey).toContainText('추가 희망: 가상대학교 전자공학과 검토');
-    await expect(survey).toContainText('최대 편도 통학 시간: 2시간 이상도 가능');
+    for (const value of ['고3 재학생', '가상고', '서울 송파구', '서울 · 가상대학교 · 공학', '가상대학교 전자공학과 검토', '2시간 이상도 가능', '어려움', '고려 가능', '안정 중심', '1. 전공', '보호자 의견 예시', '나군 질문', '분석 이용 동의']) await expect(survey).toContainText(value);
+    await expect(survey).toContainText('<img src=x onerror=alert(1)>');
+    await expect(survey.locator('img')).toHaveCount(0);
+    await expect(survey.getByRole('row', { name: /^국어 / })).toContainText('공통 76 · 선택 0 · 원점수 76');
+    await expect(page.getByRole('button', { name: '제출 성적표.pdf 열기' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '검사 중.pdf 열기' })).toBeDisabled();
     await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
     await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
     await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toBeDisabled();
@@ -95,6 +294,9 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     await page.getByRole('spinbutton', { name: '제2외국어·한문 등급' }).fill('4');
     await expect(page.getByRole('textbox', { name: '탐구 1 과목명' })).toHaveValue('');
     await expect(page.getByLabel('검수 결과').locator('option').first()).toHaveText('성적표 확인 완료');
+    await page.getByRole('button', { name: '신청·입금', exact: true }).click(); await page.reload();
+    await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+    state.students[1].case.workflowState = 'REPORT_REVIEW';
     await page.getByRole('button', { name: '분석·보고서', exact: true }).click(); await page.reload();
     await expect(page.locator('#consultingWorkspaceReport')).toBeVisible(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
     await page.route('**/2027-jungsi-consulting/report?*', route => route.fulfill({ body: '<html><body>합성 작업 화면</body></html>' }));
@@ -134,13 +336,72 @@ test('학생 목록에서 선택한 같은 신청을 보완하고 별도 승인 
     expect(state.calls.filter(call => call.type === 'admin_verify_manual_payment')).toHaveLength(1);
 });
 test('새 학생 또는 세션 종료 시 자료·수정 원본·개인정보를 지우고 늦은 자료 응답을 버린다', async ({ page }) => {
-    const state = await prepare(page); await enterConsulting(page); await openStudent(page, 1); state.deferType = 'admin_get_v2_material_detail';
-    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click(); await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    const state = await prepare(page); await enterConsulting(page); state.deferType = 'admin_get_v2_material_detail';
+    await page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' }).nth(1).click(); await expect.poll(() => Boolean(state.resolve)).toBe(true);
     await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
     const completed = page.waitForResponse(response => response.url().endsWith('/synthetic-api') && response.request().postDataJSON().type === 'admin_get_v2_material_detail'); state.resolve(); await completed;
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingDetailSummary', 'consultingOriginalSubmission', 'consultingStudentIdentifiers']) await expect(page.locator(`#${id}`)).toBeEmpty();
+    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingSurveyHistoryEntries', 'consultingDetailSummary', 'consultingOriginalSubmission', 'consultingStudentIdentifiers']) await expect(page.locator(`#${id}`)).toBeEmpty();
     await expect(page.locator('#consultingContactEmail')).toHaveValue(''); await expect(page.locator('#consultingStudentTitle')).toHaveText('학생 상세');
+});
+test('현재·최초·검수본을 전환하고 수정 이력을 확인한 뒤 최신 답변을 확인한다', async ({ page }) => {
+    const state = await prepare(page); state.revisedMaterial = true;
+    await page.setViewportSize({ width: 320, height: 900 });
+    await enterConsulting(page); await openStudent(page, 1);
+    const answers = page.locator('#consultingMaterialSurvey');
+    const versions = page.getByLabel('답변 버전');
+    const confirm = page.getByRole('button', { name: '최신 답변 확인', exact: true });
+    await expect(answers).toContainText('부산');
+    await expect(answers).toContainText('가·나·다군 조합 · 올해 진학과 재수 결정');
+    await expect(answers).toContainText('통학과 전공을 비교');
+    const retake = answers.locator('.consulting-facts > div').filter({ has: page.getByText('재수 가능성', { exact: true }) });
+    await expect(retake.locator('dd')).toHaveText('고려하지 않음');
+    await versions.selectOption('original');
+    await expect(answers).toContainText('서울 송파구');
+    await expect(answers.getByText('이전 답변', { exact: true })).toBeVisible();
+    await expect(confirm).toBeHidden();
+    await versions.selectOption('reviewed');
+    await expect(answers).toContainText('서울 송파구');
+    await versions.selectOption('current');
+    await page.getByText('검수 이후 변경된 항목', { exact: true }).click();
+    await expect(page.locator('#consultingSurveyReviewChanges')).toContainText('이전 서울 송파구');
+    expect(state.calls.some(call => call.type === 'admin_list_v2_survey_changes')).toBe(false);
+    await page.getByText('수정 이력', { exact: true }).click();
+    const history = page.locator('#consultingSurveyHistoryEntries');
+    await expect(history).toContainText('학생 저장 6회차');
+    await expect(history).toContainText('지원 조건 · 재수 가능성');
+    await expect(history).toContainText('가·나·다군 조합 · 올해 진학과 재수 결정');
+    await page.getByRole('button', { name: '이전 수정 더 보기' }).click();
+    await expect(history).toContainText('<img src=x>');
+    await expect(history.locator('img')).toHaveCount(0);
+    expect(state.calls.filter(call => call.type === 'admin_list_v2_survey_changes').map(call => call.data.before)).toEqual([undefined, 2]);
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await confirm.click();
+    await expect(page.locator('#consultingMaterialStatus')).toContainText('최신 답변을 확인했습니다.');
+    expect(state.calls.find(call => call.type === 'admin_confirm_v2_survey_revision').data).toEqual({ caseId, expectedSurveyRevision: 6 });
+    await versions.selectOption('reviewed');
+    await expect(answers).toContainText('부산');
+});
+test('제출 전·조회 실패·권한 부족을 구분하고 기존 제출본과 검수 성적을 읽는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].case.workflowState = 'SURVEY_DRAFT'; await enterConsulting(page); await openStudent(page, 1);
+    await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toHaveAttribute('data-state', 'empty');
+    state.students[1].case.workflowState = 'REPORT_REVIEW'; state.materialError = true;
+    await page.getByRole('button', { name: '학생 정보 새로고침' }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toHaveAttribute('data-state', 'error');
+    state.materialError = false; state.legacyMaterial = true;
+    await page.getByRole('button', { name: '제출 자료 다시 불러오기' }).click();
+    await expect(page.locator('#consultingMaterialSurvey')).toContainText('국문학');
+    await expect(page.locator('#consultingMaterialSurvey')).toContainText('3,000,000원');
+    await expect(page.locator('#consultingMaterialVerification')).toContainText('등급 3');
+    await expect(page.locator('#consultingMaterialReviewActions')).toBeHidden();
+    state.students[1].permissions.materials = false;
+    const requests = state.calls.filter(call => call.type === 'admin_get_v2_material_detail').length;
+    await page.getByRole('button', { name: '학생 정보 새로고침' }).click();
+    await expect(page.locator('#consultingMaterialAccess')).toBeVisible();
+    await expect(page.getByRole('button', { name: '조사서·성적표', exact: true })).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_get_v2_material_detail')).toHaveLength(requests);
 });
 test('320px·390px·데스크톱에서 단계·목록·상세가 잘리지 않고 주요 버튼은44px 이상이다', async ({ page }, testInfo) => {
     const state = await prepare(page); await enterConsulting(page);
@@ -150,9 +411,13 @@ test('320px·390px·데스크톱에서 단계·목록·상세가 잘리지 않�
         await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
         await page.screenshot({ path: testInfo.outputPath(`consulting-list-${width}.png`), fullPage: true });
         await openStudent(page); expect(await page.locator('#consultingStudentPanel').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
-        expect(await page.locator('#consultingSaveInputBtn').evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+        expect(await page.locator('#consultingApproveBtn').evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
         await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
         await page.screenshot({ path: testInfo.outputPath(`consulting-student-${width}.png`), fullPage: true }); await page.getByRole('button', { name: '← 학생 목록' }).click();
+        await openStudent(page, 1);
+        await expect(page.locator('#consultingMaterialDetail')).toBeVisible();
+        expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`consulting-survey-${width}.png`), fullPage: true }); await page.getByRole('button', { name: '← 학생 목록' }).click();
     }
     state.students[0].contact.studentName = 'A'.repeat(120);
     await page.setViewportSize({ width: 320, height: 900 }); await openStudent(page);

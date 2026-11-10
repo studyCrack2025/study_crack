@@ -17,7 +17,7 @@ export const HOME_GUIDANCE = Object.freeze({
   SUBMIT_SUPPLEMENT: {
     title: '추가로 확인할 내용이 있어요.',
     description: '보완 요청을 확인하고 해당하는 답변이나 성적표를 보완해주세요.',
-    button: '보완 작성하기'
+    button: '보완 요청 확인'
   },
   SUBMIT_WRITTEN_AVAILABILITY: {
     title: '서면 상담 시간을 정해요.',
@@ -67,8 +67,8 @@ export function formatConsultingDueAt(value) {
 }
 
 export function actionPathForState(workflowState) {
-  if (['ONBOARDING', 'SURVEY_DRAFT', 'SUPPLEMENT_REQUIRED'].includes(workflowState)) return '/2027-jungsi-consulting/survey';
-  if (workflowState === 'MATERIAL_REVIEW') return '/2027-jungsi-consulting/materials';
+  if (['ONBOARDING', 'SURVEY_DRAFT'].includes(workflowState)) return '/2027-jungsi-consulting/survey';
+  if (['MATERIAL_REVIEW', 'SUPPLEMENT_REQUIRED'].includes(workflowState)) return '/2027-jungsi-consulting/materials';
   if (['AVAILABILITY_REQUIRED', 'SCHEDULING'].includes(workflowState)) return '/2027-jungsi-consulting/schedule';
   if (workflowState === 'WRITTEN_SESSION_BOOKED') return '/2027-jungsi-consulting/written-session';
   if (['WRITTEN_SESSION_COMPLETED', 'REPORT_GENERATING', 'REPORT_REVIEW', 'REPORT_SCHEDULED'].includes(workflowState)) return '/2027-jungsi-consulting/report';

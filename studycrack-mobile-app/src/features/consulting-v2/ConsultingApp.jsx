@@ -30,9 +30,19 @@ const PENDING_LABELS = Object.freeze({ survey: '기초조사서', materials: '�
 export default function ConsultingApp() {
   const [pathname, setPathname] = React.useState(() => globalThis.location?.pathname || CONSULTING_ROUTES.home);
   const [sessionRevision, setSessionRevision] = React.useState(0);
+  const path = React.useRef(pathname);
+  const surveyLeave = React.useRef(null);
   React.useEffect(() => {
-    const routeChanged = () => setPathname(globalThis.location?.pathname || CONSULTING_ROUTES.home);
-    const sessionChanged = () => setSessionRevision(value => value + 1);
+    const routeChanged = () => {
+      const next = globalThis.location?.pathname || CONSULTING_ROUTES.home;
+      if (path.current === CONSULTING_ROUTES.survey && next !== path.current && surveyLeave.current && !surveyLeave.current()) {
+        globalThis.history.pushState(null, '', path.current);
+        return;
+      }
+      path.current = next;
+      setPathname(next);
+    };
+    const sessionChanged = () => { surveyLeave.current = null; setSessionRevision(value => value + 1); };
     const pageRestored = event => { if (event.persisted) { routeChanged(); sessionChanged(); } };
     globalThis.addEventListener?.('popstate', routeChanged);
     globalThis.addEventListener?.('studycrack:session-ended', sessionChanged);
@@ -60,7 +70,7 @@ export default function ConsultingApp() {
       : <LoginScreen />;
   }
   if (route.screen === 'home') return <ConsultingHomeScreen binding={binding} />;
-  if (route.screen === 'survey') return <ConsultingSurveyScreen binding={binding} />;
+  if (route.screen === 'survey') return <ConsultingSurveyScreen binding={binding} leaveGuard={surveyLeave} />;
   if (route.screen === 'materials') return <ConsultingMaterialsScreen binding={binding} />;
   if (route.screen === 'schedule') return <ConsultingScheduleScreen binding={binding} />;
   if (route.screen === 'writtenSession') return <ConsultingWrittenSessionScreen binding={binding} />;

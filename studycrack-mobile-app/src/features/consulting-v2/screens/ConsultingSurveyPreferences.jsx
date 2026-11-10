@@ -17,9 +17,9 @@ function universityMatches(name, compact, words) {
   return [name, short, familiar].map(searchKey).some(key => key.includes(compact) || words.every(word => key.includes(word)));
 }
 
-function ChoiceSelect({ label, value, options, onChange }) {
+function ChoiceSelect({ label, field, value, options, onChange }) {
   const availableOptions = value && !options.includes(value) ? [value, ...options] : options;
-  return <label className="consulting-survey-field">
+  return <label className="consulting-survey-field" data-survey-field={field}>
     <span>{label}</span>
     <select value={value} onChange={event => onChange(event.currentTarget.value)}>
       <option value="">선택하지 않음</option>
@@ -28,7 +28,7 @@ function ChoiceSelect({ label, value, options, onChange }) {
   </label>;
 }
 
-function UniversityPicker({ university, catalog, query, editing, onSearch, onToggleSearch, onChoose }) {
+function UniversityPicker({ field, university, catalog, query, editing, onSearch, onToggleSearch, onChoose }) {
   const searchInput = React.useRef(null);
   const editButton = React.useRef(null);
   const moveFocus = React.useRef(false);
@@ -52,7 +52,7 @@ function UniversityPicker({ university, catalog, query, editing, onSearch, onTog
     searchMessage = matches.length ? `검색 결과 ${matches.length}곳` : '일치하는 대학이 없어요. 검색어를 바꾸거나 아래에 직접 적어주세요.';
     if (matches.length > SEARCH_RESULTS_LIMIT) searchMessage += ' · 검색어를 더 입력하면 목록이 좁혀져요.';
   }
-  return <div className="consulting-university-picker">
+  return <div className="consulting-university-picker" data-survey-field={field} tabIndex={-1}>
     {university && <div className="consulting-university-selected">
       <p role="status"><span>선택한 대학</span><strong>{university}</strong></p>
       <div className="consulting-university-actions">
@@ -109,6 +109,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
     {choices.map((choice, index) => <fieldset key={index} className="consulting-survey-preference-rank">
       <legend>{index + 1}지망</legend>
       <UniversityPicker
+        field={`preferences.rankedChoices.${index}.university`}
         university={choice.university} catalog={catalog}
         query={pickers[index]?.query || ''} editing={pickers[index]?.editing === true}
         onSearch={query => changePicker(index, { query })}
@@ -118,7 +119,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
           changePicker(index, { editing: false, query: '' });
         }}
       />
-      <ChoiceSelect label="희망 계열" options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
+      <ChoiceSelect label="희망 계열" field={`preferences.rankedChoices.${index}.track`} options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
       {choice.region && <p className="consulting-score-note">이전에 입력한 희망 지역 · {choice.region}</p>}
       {choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {
         update({ rankedChoices: choices.filter((_, position) => position !== index) });
@@ -126,7 +127,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
       }}>지망 삭제</button>}
     </fieldset>)}
     {choices.length < MAX_RANKED_CHOICES && <button className="consulting-v2-secondary consulting-survey-add-rank" type="button" disabled={!choices.every(hasRankedChoice)} onClick={() => update({ rankedChoices: [...choices, EMPTY_RANKED_CHOICE] })}>＋ {choices.length + 1}지망 추가</button>}
-    <label className="consulting-survey-field">
+    <label className="consulting-survey-field" data-survey-field="preferences.additionalPreference">
       <span>추가 희망 (선택)</span>
       <textarea maxLength={ADDITIONAL_PREFERENCE_MAX} placeholder="목록에 없는 희망이나 꼭 검토하고 싶은 대학·학과를 적어주세요." value={value.additionalPreference} onChange={event => update({ additionalPreference: event.currentTarget.value })} />
     </label>

@@ -56,10 +56,10 @@ function ChoiceField({ row, label, change }) {
   </>;
 }
 
-function ScoreCard({ row, label, change }) {
+function ScoreCard({ row, label, field, change }) {
   if (isGradeOnlyArea(row.area)) {
     const foreign = row.area === 'foreign_language';
-    return <fieldset className="consulting-score-card">
+    return <fieldset className="consulting-score-card" data-survey-field={field}>
       <legend>{label}</legend>
       {foreign && <Field label="응시 과목 (선택)"><select value={row.subject} onChange={event => change({ subject: event.currentTarget.value, grade: null })}>
         <option value="">선택하지 않음</option>
@@ -80,7 +80,7 @@ function ScoreCard({ row, label, change }) {
     commonRawScore,
     electiveRawScore
   });
-  return <fieldset className="consulting-score-card">
+  return <fieldset className="consulting-score-card" data-survey-field={field}>
     <legend>{label}</legend>
     {optionGroups[row.area] && <ChoiceField row={row} label={label} change={change} />}
     {split ? <>
@@ -94,8 +94,8 @@ function ScoreCard({ row, label, change }) {
   </fieldset>;
 }
 
-export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores }) {
-  const batch = actionBusy ? null : scoreConversionBatch(value);
+export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores, autoConvert = true }) {
+  const batch = actionBusy || !autoConvert ? null : scoreConversionBatch(value);
   const batchKey = batch && JSON.stringify(batch);
   React.useEffect(() => {
     if (!batchKey) return undefined;
@@ -115,6 +115,7 @@ export function ConsultingSurveyScores({ value, update, binding, actionBusy, pre
   }, [batchKey, binding, update]);
 
   const labels = labelScoreRows(value.records);
+  let inquiryNumber = 0;
   const changeRow = (index, patch) => update(current => ({
     records: current.records.map((row, position) => position === index ? { ...row, ...patch } : row)
   }));
@@ -126,7 +127,8 @@ export function ConsultingSurveyScores({ value, update, binding, actionBusy, pre
       <p className="consulting-score-note">국어·수학·탐구는 원점수, 영어·한국사는 등급을 적어주세요. 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>
     </div>
     <div className="consulting-score-list">{value.records.map((row, index) =>
-      <ScoreCard key={labels[index]} row={row} label={labels[index]} change={patch => changeRow(index, patch)} />
+      <ScoreCard key={labels[index]} row={row} label={labels[index]}
+        field={`scores.${row.area === 'inquiry' ? `inquiry${++inquiryNumber}` : row.area}`} change={patch => changeRow(index, patch)} />
     )}</div>
   </div>;
 }

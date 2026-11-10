@@ -27,6 +27,8 @@ function closeConsultingOperation() {
 }
 function resetConsultingOperations() {
     consultingOperationsGeneration++;
+    const tools = document.getElementById('consultingAdminTools');
+    if (tools) tools.open = false;
     consultingOperationsNext = null;
     closeConsultingOperation();
     consultingOperationStatus('');
@@ -73,6 +75,11 @@ async function loadConsultingOperation(item) {
         const target = document.getElementById('consultingOperationsSummary');
         target?.replaceChildren();
         const status = document.createElement('p'); status.textContent = `${data.label} · 관리번호 ${data.caseId.slice(-8)}`; target?.appendChild(status);
+        if (data.outbox?.deliveryCode) {
+            const delivery = document.createElement('p');
+            delivery.textContent = `발송 확인 코드 · ${data.outbox.deliveryCode}`;
+            target?.appendChild(delivery);
+        }
         for (const message of [data.retryOutbox?.reason, data.retryReport?.reason, data.outbox ? `자동 시도 ${data.outbox.attempts}/${data.outbox.maxAttempts}회 · 수동 재처리 ${data.outbox.recoveryCount}/3회` : '', data.outbox?.leaseExpired ? '처리 확인 시간이 지났습니다. 자동 처리 일정과 오류 로그를 함께 확인해주세요.' : '']) { if (!message) continue; const p = document.createElement('p'); p.textContent = message; target?.appendChild(p); }
         document.getElementById('consultingRetryOutboxBtn').hidden = data.retryOutbox?.allowed !== true;
         document.getElementById('consultingRetryReportBtn').hidden = data.retryReport?.allowed !== true;
@@ -111,6 +118,9 @@ function openConsultingOperationWorkspace() {
     window.location.assign(`/2027-jungsi-consulting/${path}?caseId=${encodeURIComponent(item.caseId)}`);
 }
 window.addEventListener('studycrack:session-ended', resetConsultingOperations);
+document.getElementById('consultingAdminTools')?.addEventListener('toggle', event => {
+    if (event.currentTarget.open) void loadConsultingOperations();
+});
 
 let consultingServiceCurrent = null;
 let consultingServiceBusy = false;
