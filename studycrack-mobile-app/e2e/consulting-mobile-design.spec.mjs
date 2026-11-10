@@ -72,7 +72,7 @@ async function prepare(page, { loggedIn = true } = {}) {
       }
       else if(type==='consulting_read_score_photo') {
         if (!f.survey.files.some(file => file.fileId === input.fileId && file.status === 'ready')) throw new Error('OCR started before the safety scan');
-        if (f.photoErrors?.[input.fileId]) return new Response(JSON.stringify({success:false,code:f.photoErrors[input.fileId]}),{status:422});
+        if (f.photoOutcomes?.[input.fileId]) return new Response(JSON.stringify({success:true,data:{records:[],recognitionCode:f.photoOutcomes[input.fileId]}}),{status:200});
         if (f.deferPhotoRead) await new Promise(resolve => { f.releasePhotoRead = resolve; });
         data={records:[{area:'korean_history',grade:2},{area:'english',grade:3},{area:'foreign_language',subject:'독일어Ⅰ',grade:4},{area:'korean',selection:'화법과작문',standardScore:138,percentile:99,grade:1}]};
       }
@@ -436,7 +436,7 @@ test('첨부 뒤 보안 검사와 자동 성적 판독을 구분하고 기존 �
   await englishGrade.selectOption('6');
   await page.evaluate(() => {
     window.__design.confirmUploadFailure = true;
-    window.__design.photoErrors = { FILE_synthetic: 'SCORE_PHOTO_FORMAT' };
+    window.__design.photoOutcomes = { FILE_synthetic: 'SCORE_PHOTO_FORMAT' };
   });
   const fileInput = page.getByLabel('성적표 파일');
   await fileInput.setInputFiles({ name: 'unrelated.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-unrelated') });
@@ -457,7 +457,7 @@ test('첨부 뒤 보안 검사와 자동 성적 판독을 구분하고 기존 �
     window.__design.uploadFileId = 'FILE_valid_score';
     window.__design.deferPhotoRead = true;
   });
-  await fileInput.setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: Buffer.from('synthetic') });
+  await fileInput.setInputFiles({ name: 'synthetic.jpeg', mimeType: 'image/jpeg', buffer: Buffer.from('synthetic') });
   await expect(page.getByText('보안 검사 중', { exact: true })).toBeVisible();
   await page.evaluate(() => { window.__design.photo.status = 'ready'; });
   await expect(page.getByText('성적표를 읽고 있어요', { exact: true })).toBeVisible();
@@ -477,7 +477,7 @@ test('첨부 뒤 보안 검사와 자동 성적 판독을 구분하고 기존 �
   await expect(foreign.getByRole('combobox', { name: '응시 과목 (선택)' })).toHaveValue('독일어Ⅰ');
   await expect(foreign.getByRole('combobox', { name: '등급' })).toHaveValue('4');
   await expect(page.getByRole('group', { name: '국어', exact: true }).getByRole('spinbutton', { name: '공통 원점수' })).toHaveValue('');
-  await expect(page.getByRole('button', { name: 'synthetic.png 삭제' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'synthetic.jpeg 삭제' })).toBeVisible();
   await fits(page);
   await page.getByRole('button', { name: '저장하고 다음' }).click();
   await expect(page.getByRole('heading', { name: '지원 조건', exact: true })).toBeVisible();
