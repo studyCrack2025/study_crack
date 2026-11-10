@@ -70,11 +70,9 @@ async function prepare(page, { loggedIn = true } = {}) {
         if(!f.survey.files.some(file=>file.fileId===input.fileId)) f.survey.files.push(f.photo);
         data=f.photo;
       }
-      else if(type==='consulting_read_score_photo') {
-        if (!f.survey.files.some(file => file.fileId === input.fileId && file.status === 'ready')) throw new Error('OCR started before the safety scan');
-        if (f.photoOutcomes?.[input.fileId]) return new Response(JSON.stringify({success:true,data:{records:[],recognitionCode:f.photoOutcomes[input.fileId]}}),{status:200});
-        if (f.deferPhotoRead) await new Promise(resolve => { f.releasePhotoRead = resolve; });
-        data={records:[{area:'korean_history',grade:2},{area:'english',grade:3},{area:'foreign_language',subject:'독일어Ⅰ',grade:4},{area:'korean',selection:'화법과작문',standardScore:138,percentile:99,grade:1}]};
+      else if(type==='consulting_delete_unsubmitted_score_file') {
+        f.survey.files=f.survey.files.filter(file=>file.fileId!==input.fileId);
+        data={fileId:input.fileId,deleted:true};
       }
       else if(type==='student_save_v2_survey_draft'){
         f.saves.push(input);
@@ -422,8 +420,10 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   expect(conversions.every(({ examYear, examType }) => examYear === 2026 && examType === 'csat')).toBe(true);
 });
 
-test('첨부 뒤 보안 검사와 자동 성적 판독을 구분하고 기존 입력을 보존한다', async ({ page }) => {
-  await prepare(page);
+test('성적은 직접 입력하고 최종 확인에서 기존 첨부와 새 파일의 상태를 표시한다', async ({ page }, testInfo) => {
+  const fixture = await prepare(page);
+  const existing = { fileId: 'FILE_existing_score', displayName: '이전에 첨부한 성적표.jpeg', contentType: 'image/jpeg', size: 100, status: 'ready' };
+  fixture.survey.files = [existing];
   let uploads = 0;
   await page.route('**/__score-photo-upload', route => {
     uploads += 1;
@@ -431,57 +431,50 @@ test('첨부 뒤 보안 검사와 자동 성적 판독을 구분하고 기존 �
   });
   await page.setViewportSize({ width: 390, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
-  await page.getByRole('button', { name: '저장하고 다음' }).click();
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  await next.click();
+  await expect(page.getByRole('heading', { name: '성적', exact: true })).toBeVisible();
+  await expect(page.locator('input[type="file"]')).toHaveCount(0);
   const englishGrade = page.getByRole('group', { name: '영어', exact: true }).getByRole('combobox', { name: '등급' });
   await englishGrade.selectOption('6');
-  await page.evaluate(() => {
-    window.__design.confirmUploadFailure = true;
-    window.__design.photoOutcomes = { FILE_synthetic: 'SCORE_PHOTO_FORMAT' };
-  });
-  const fileInput = page.getByLabel('성적표 파일');
-  await fileInput.setInputFiles({ name: 'unrelated.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-unrelated') });
-  await expect(page.getByRole('alert')).toHaveText('첨부 확인에 실패했어요. 파일 옆에서 다시 확인할 수 있어요.');
-  await expect(page.getByText('첨부 확인 대기', { exact: true })).toBeVisible();
-  await page.evaluate(() => { window.__design.confirmUploadFailure = false; });
-  await page.getByRole('button', { name: '첨부 다시 확인' }).click();
-  await expect(page.getByText('보안 검사 중', { exact: true })).toBeVisible();
-  expect(uploads).toBe(1);
-  expect(await page.evaluate(() => window.__design.calls.includes('consulting_read_score_photo'))).toBe(false);
-  await page.evaluate(() => { window.__design.photo.status = 'ready'; });
-  const historyGrade = page.getByRole('group', { name: '한국사', exact: true }).getByRole('combobox', { name: '등급' });
-  await expect(page.getByText('보안 검사 통과', { exact: true })).toBeVisible();
-  await expect(page.getByText('성적표 형식을 확인하지 못했어요', { exact: true })).toBeVisible();
-  await expect(historyGrade).toHaveValue('');
+  for (let step = 0; step < 5; step += 1) await next.click();
+  await expect(page.getByRole('heading', { name: '최종 확인', exact: true })).toBeVisible();
+  const panel = page.getByRole('region', { name: '수능 성적표 첨부' });
+  await expect(panel.getByText('1개 첨부됨', { exact: true })).toBeVisible();
+  await expect(panel.getByText(existing.displayName, { exact: true })).toBeVisible();
+  await expect(panel.getByText('보안 검사 통과', { exact: true })).toBeVisible();
+  await expect(panel.getByRole('button', { name: '파일 추가', exact: true })).toBeVisible();
+  page.once('dialog', dialog => dialog.accept());
+  await panel.getByRole('button', { name: `${existing.displayName} 삭제`, exact: true }).click();
+  await expect(panel.getByText('첨부된 파일이 없어요.', { exact: true })).toBeVisible();
 
-  await page.evaluate(() => {
-    window.__design.uploadFileId = 'FILE_valid_score';
-    window.__design.deferPhotoRead = true;
-  });
-  await fileInput.setInputFiles({ name: 'synthetic.jpeg', mimeType: 'image/jpeg', buffer: Buffer.from('synthetic') });
-  await expect(page.getByText('보안 검사 중', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.confirmUploadFailure = true; });
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    panel.getByRole('button', { name: '파일 선택', exact: true }).click()
+  ]);
+  await chooser.setFiles({ name: '성적표.jpeg', mimeType: 'image/jpeg', buffer: Buffer.from('synthetic') });
+  await expect(page.getByRole('alert')).toHaveText('첨부 확인에 실패했어요. 파일 옆에서 다시 확인할 수 있어요.');
+  await expect(panel.getByText('성적표.jpeg', { exact: true })).toBeVisible();
+  await expect(panel.getByText('첨부 확인 대기', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.confirmUploadFailure = false; });
+  await panel.getByRole('button', { name: '첨부 다시 확인' }).click();
+  await expect(panel.getByText('보안 검사 중', { exact: true })).toBeVisible();
+  expect(uploads).toBe(1);
   await page.evaluate(() => { window.__design.photo.status = 'ready'; });
-  await expect(page.getByText('성적표를 읽고 있어요', { exact: true })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => Boolean(window.__design.releasePhotoRead))).toBe(true);
-  await englishGrade.selectOption('5');
-  await page.evaluate(() => { window.__design.releasePhotoRead(); });
-  const preview = page.getByLabel('성적 판독 결과', { exact: true });
-  await expect(preview).toContainText('성적을 읽고 빈칸에 반영했어요');
-  await expect(preview).toContainText('표준점수 138');
-  await expect(preview).toContainText('3등급기존 입력 유지');
-  await expect(preview).toContainText('독일어Ⅰ · 4등급자동 반영');
-  await expect(page.getByText('성적표 형식을 확인하지 못했어요', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /사진 읽기|빈칸에 반영|검사 상태 확인/ })).toHaveCount(0);
-  await expect(historyGrade).toHaveValue('2');
-  await expect(englishGrade).toHaveValue('5');
-  const foreign = page.getByRole('group', { name: '제2외국어·한문', exact: true });
-  await expect(foreign.getByRole('combobox', { name: '응시 과목 (선택)' })).toHaveValue('독일어Ⅰ');
-  await expect(foreign.getByRole('combobox', { name: '등급' })).toHaveValue('4');
-  await expect(page.getByRole('group', { name: '국어', exact: true }).getByRole('spinbutton', { name: '공통 원점수' })).toHaveValue('');
-  await expect(page.getByRole('button', { name: 'synthetic.jpeg 삭제' })).toBeVisible();
+  await expect(panel.getByText('보안 검사 통과', { exact: true })).toBeVisible();
+  await expect(panel.getByText('1개 첨부됨', { exact: true })).toBeVisible();
+  await expect(panel.getByLabel('성적표 파일')).toBeHidden();
+  await expect(panel.getByText(/판독|자동 반영/)).toHaveCount(0);
   await fits(page);
-  await page.getByRole('button', { name: '저장하고 다음' }).click();
-  await expect(page.getByRole('heading', { name: '지원 조건', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => window.__design.survey.draft.snapshot.scores.records.find(row => row.area === 'korean_history').grade)).toBe(2);
+  await page.screenshot({ path: testInfo.outputPath('consulting-final-attachment-390.png'), fullPage: true });
+
+  const previous = page.getByRole('button', { name: '이전', exact: true });
+  for (let step = 0; step < 5; step += 1) await previous.click();
+  await expect(englishGrade).toHaveValue('6');
+  const historyGrade = page.getByRole('group', { name: '한국사', exact: true }).getByRole('combobox', { name: '등급' });
+  await expect(historyGrade).toHaveValue('');
+  expect(await page.evaluate(() => window.__design.calls)).not.toContain('consulting_read_score_photo');
 });
 
 test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최신 저장본을 제출한다', async ({ page }, testInfo) => {
@@ -571,7 +564,10 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   await expect(page.getByRole('alert')).toHaveText('검사가 완료된 성적표 파일이 필요합니다.');
   await page.evaluate(() => { window.__design.survey.files[0].status = 'ready'; });
   await expect(page.getByText('보안 검사 통과', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('성적 판독 결과', { exact: true })).toContainText('성적을 읽고 빈칸에 반영했어요');
+  await expect(page.getByText('성적표.pdf', { exact: true })).toBeVisible();
+  await expect(page.getByText('1개 첨부됨', { exact: true })).toBeVisible();
+  await fits(page);
+  expect(await page.evaluate(() => window.__design.calls)).not.toContain('consulting_read_score_photo');
   await expect(consent).toBeChecked();
   page.once('dialog', dialog => dialog.accept());
   await submit.click();

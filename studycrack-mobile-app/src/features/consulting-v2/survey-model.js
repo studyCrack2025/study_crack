@@ -1,11 +1,11 @@
 export const SURVEY_STEPS = Object.freeze([
   { key: 'studentStatus', label: '학생 상태', guide: '지원자 구분과 거주 지역부터 알려주세요. 지원 자격과 통학 여건을 함께 살펴볼게요.' },
-  { key: 'scores', label: '성적', guide: '2027학년도 수능 성적표를 첨부해 주세요. 알고 있는 원점수와 등급도 함께 적을 수 있어요.' },
+  { key: 'scores', label: '성적', guide: '2027학년도 수능 원점수와 등급을 직접 입력해 주세요. 성적표는 마지막 단계에서 첨부해 주세요.' },
   { key: 'conditions', label: '지원 조건', guide: '편도 통학 시간과 진학할 때 고려할 조건을 알려주세요.' },
   { key: 'preferences', label: '희망 지원', guide: '가장 희망하는 지원 방향부터 최대 3지망까지 알려주세요.' },
   { key: 'strategy', label: '지원 전략', guide: '어떤 지원을 선호하는지, 그리고 대학을 선택할 때 무엇이 중요한지 알려주세요.' },
   { key: 'qualitative', label: '상담 질문', guide: '성적과 희망 조건만으로 알기 어려운 고민을 적어주세요. 서면 상담에서 함께 다룹니다.' },
-  { key: 'consent', label: '최종 확인', guide: '성적표 검사와 두 가지 확인을 마친 뒤 제출해주세요. 상담 준비에 필요한 자료를 검토합니다.' }
+  { key: 'consent', label: '최종 확인', guide: '성적표를 첨부하고 보안 검사와 두 가지 확인을 마친 뒤 제출해 주세요.' }
 ]);
 
 export const SCORE_ROWS = Object.freeze([
