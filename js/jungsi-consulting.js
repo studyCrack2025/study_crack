@@ -1,6 +1,35 @@
 (function() {
     'use strict';
 
+    const serviceTabs = Array.from(document.querySelectorAll('.jungsi-service-tabs [role="tab"]'));
+    function selectService(index, updateHash = false) {
+        serviceTabs.forEach((tab, i) => {
+            const active = i === index;
+            tab.setAttribute('aria-selected', String(active));
+            tab.tabIndex = active ? 0 : -1;
+            document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
+        });
+        if (updateHash) history.replaceState(null, '', index === 0 ? '#calculator' : '#consulting');
+    }
+    serviceTabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectService(index, true));
+        tab.addEventListener('keydown', event => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? serviceTabs.length - 1 : (index + 1) % serviceTabs.length;
+            selectService(next, true);
+            serviceTabs[next].focus();
+        });
+    });
+    function selectHashService() {
+        const target = document.getElementById(location.hash.slice(1));
+        selectService(target && document.getElementById('consultingPanel')?.contains(target) ? 1 : 0);
+    }
+    if (serviceTabs.length) {
+        selectHashService();
+        window.addEventListener('hashchange', selectHashService);
+    }
+
     const apply = document.getElementById('consultingApply');
     const price = document.getElementById('consultingPrice');
 

@@ -66,3 +66,17 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
  .score-guide .table-scroll { padding: 10px; }
  .score-guide .cta { padding: 20px; }
 }
+
+.score-guide .topic-library { padding-bottom: 36px; margin-bottom: 40px; border-bottom: 1px solid var(--line); }
+.score-guide .topic-library h2 { margin: 0; padding: 0; font-size: clamp(25px,4vw,32px); }
+.score-guide .topic-library-intro { margin: 10px 0 24px; }
+.score-guide .topic-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.score-guide .topic-card { display: flex; flex-direction: column; align-items: flex-start; padding: 22px 20px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); text-decoration: none; background: #fff; transition: border-color .15s, background .15s; }
+.score-guide .topic-card:hover { background: #f4f7fc; border-color: var(--blue); }
+.score-guide .topic-card.is-current { background: #edf3ff; border-color: #9ab4ee; }
+.score-guide .topic-tag { font-size: 12px; font-weight: 750; color: #315fce; padding: 3px 9px; border-radius: 6px; background: #e4edff; }
+.score-guide .topic-card h3 { margin: 16px 0 0; font-size: 19px; line-height: 1.5; }
+.score-guide .topic-card p { font-size: 14px; line-height: 1.7; margin: 12px 0 24px; }
+.score-guide .topic-action { margin-top: auto; font-size: 14px; font-weight: 750; color: var(--blue); }
+.score-guide #score-article { scroll-margin-top: 24px; }
+@media (max-width:700px) { .score-guide .topic-grid { grid-template-columns: 1fr; } .score-guide .topic-card { padding: 20px; } .score-guide .topic-card h3 { margin-top: 12px; } .score-guide .topic-card p { margin-bottom: 16px; } }

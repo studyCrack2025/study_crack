@@ -11,8 +11,14 @@
   <link rel="stylesheet" href="/css/jungsi-consulting.css">
 </head>
 <body>
-  <header class="jungsi-landing-header"><a href="/" aria-label="StudyCrack 홈"><img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack"></a><nav class="jungsi-landing-nav" aria-label="서비스 메뉴"><a href="#consulting">정시 컨설팅</a><a href="#calculator">합격 계산기</a></nav><a class="jungsi-landing-login" href="/2027-jungsi-consulting/login">이용자 로그인</a></header>
+  <header class="jungsi-landing-header"><a href="/" aria-label="StudyCrack 홈"><img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack"></a><a class="jungsi-landing-login" href="/2027-jungsi-consulting/login">이용자 로그인</a></header>
   <main>
+    <div class="jungsi-service-tabs" role="tablist" aria-label="서비스 선택"><button id="calculatorTab" type="button" role="tab" aria-controls="calculator" aria-selected="true">합격 계산기</button><button id="consultingTab" type="button" role="tab" aria-controls="consultingPanel" aria-selected="false" tabindex="-1">정시 컨설팅</button></div>
+    <section id="calculator" class="jungsi-calculator" role="tabpanel" aria-labelledby="calculatorTab" tabindex="0">
+      <div class="jungsi-calculator-copy"><p class="jungsi-landing-kicker">정시 합격 계산기 · 준비 중</p><h2 id="calculatorTitle">수능 성적으로 살펴보는<br>나의 정시 지원 가능성</h2><p>수능 성적과 목표 대학·학과를 입력해 대학별 환산점수와 지원 가능성을 비교할 수 있는 계산기를 준비하고 있습니다. 수능 전용 StudyCrack Basic 분석을 기반으로 제공할 예정입니다.</p><p>상담자와 지원 전략을 함께 설계하는 정시 컨설팅과 달리, 합격 계산기는 직접 성적과 대학을 선택해 분석 결과를 살펴보는 서비스입니다.</p><a href="/jungsi-admission-prediction-guide">합격예측 결과 읽는 방법</a></div>
+      <div class="jungsi-calculator-preview"><p class="jungsi-calculator-status">서비스 오픈 준비 중</p><ol><li><strong>01 수능 성적 입력</strong><p>국어·수학·탐구 성적과 영어·한국사 등급을 준비해 주세요.</p></li><li><strong>02 목표 대학·학과 선택</strong><p>관심 있는 모집단위를 선택해 비교합니다.</p></li><li><strong>03 분석 결과 확인</strong><p>대학별 환산점수와 지원 가능성을 살펴봅니다.</p></li></ol><button type="button" disabled>합격 계산기 준비 중</button><p class="jungsi-calculator-note">현재는 서비스 안내 화면입니다. 성적 입력과 계산 기능은 오픈 후 이용할 수 있습니다. 분석 결과는 합격을 보장하지 않습니다.</p></div>
+    </section>
+    <div id="consultingPanel" role="tabpanel" aria-labelledby="consultingTab" tabindex="0" hidden>
     <section id="consulting" class="jungsi-landing-hero" aria-labelledby="landingTitle"><div class="jungsi-landing-hero-copy"><p class="jungsi-landing-kicker">2027 정시 컨설팅</p><h1 id="landingTitle">지원 전략을<br>끝까지 함께 설계합니다</h1><p>학생의 성적과 희망 조건을 세밀하게 확인하고, 서면 상담과 맞춤 보고서, 파이널 콜로 실제 지원 결정을 돕습니다.</p><div class="jungsi-landing-actions"><a id="consultingApply" class="jungsi-landing-primary" href="#process" aria-disabled="true">모집 준비 중</a><a class="jungsi-landing-secondary" href="/2027-jungsi-consulting/login">신청자 전용 화면</a></div><p id="consultingPrice" class="jungsi-landing-price" aria-live="polite"></p></div><div class="jungsi-landing-visual" aria-hidden="true"><span>성적 분석</span><span>대학 후보</span><span>지원 가능성</span><strong>나만의<br>지원 전략</strong></div></section>
     <section class="jungsi-landing-intro" aria-labelledby="introTitle"><p class="jungsi-landing-kicker">서비스 구성</p><h2 id="introTitle">필요한 정보는 깊게,<br>진행 과정은 단순하게</h2><p>입력과 일정 안내는 전용 화면에서 한눈에 확인하고, 실제 상담과 최종 의사결정에 집중할 수 있도록 구성합니다.</p></section>
     <section id="process" class="jungsi-landing-process" aria-labelledby="processTitle"><h2 id="processTitle">컨설팅 진행 순서</h2><ol><li><span>01</span><h3>접수 및 입금</h3><p>신청 정보를 제출하고 안내에 따라 접수를 완료합니다.</p></li><li><span>02</span><h3>가입 및 기초조사</h3><p>전용 링크로 인증한 뒤 성적, 성향, 희망 지역과 계열을 입력합니다.</p></li><li><span>03</span><h3>서면 상담</h3><p>기초조사서 외에 궁금한 점을 정리하고 상담에 반영합니다.</p></li><li><span>04</span><h3>맞춤 보고서</h3><p>상담 내용을 반영한 지원 후보와 분석 결과를 제공합니다.</p></li><li><span>05</span><h3>파이널 콜</h3><p>보고서를 바탕으로 최종 지원 방향을 함께 결정합니다.</p></li></ol></section>
@@ -35,11 +41,9 @@
       </div>
     </section>
     <section class="jungsi-guide-link" aria-labelledby="scoreGuideTitle"><div><p class="jungsi-landing-kicker">정시 준비 가이드</p><h2 id="scoreGuideTitle">내 점수, 대학마다 왜 다르게 반영될까요?</h2><p>환산점수의 의미부터 지원 가능 대학을 비교하는 4단계, 반영비율 계산 예시까지 한눈에 확인하세요.</p></div><a class="jungsi-landing-secondary" href="/jungsi-score-guide">정시 환산점수 안내 보기 →</a></section>
-    <section id="calculator" class="jungsi-calculator" aria-labelledby="calculatorTitle">
-      <div class="jungsi-calculator-copy"><p class="jungsi-landing-kicker">정시 합격 계산기 · 준비 중</p><h2 id="calculatorTitle">수능 성적으로 살펴보는<br>나의 정시 지원 가능성</h2><p>수능 성적과 목표 대학·학과를 입력해 대학별 환산점수와 지원 가능성을 비교할 수 있는 계산기를 준비하고 있습니다. 수능 전용 StudyCrack Basic 분석을 기반으로 제공할 예정입니다.</p><p>상담자와 지원 전략을 함께 설계하는 정시 컨설팅과 달리, 합격 계산기는 직접 성적과 대학을 선택해 분석 결과를 살펴보는 서비스입니다.</p><a href="/jungsi-admission-prediction-guide">합격예측 결과 읽는 방법</a></div>
-      <div class="jungsi-calculator-preview"><p class="jungsi-calculator-status">서비스 오픈 준비 중</p><ol><li><strong>01 수능 성적 입력</strong><p>국어·수학·탐구 성적과 영어·한국사 등급을 준비해 주세요.</p></li><li><strong>02 목표 대학·학과 선택</strong><p>관심 있는 모집단위를 선택해 비교합니다.</p></li><li><strong>03 분석 결과 확인</strong><p>대학별 환산점수와 지원 가능성을 살펴봅니다.</p></li></ol><button type="button" disabled>합격 계산기 준비 중</button><p class="jungsi-calculator-note">현재는 서비스 안내 화면입니다. 성적 입력과 계산 기능은 오픈 후 이용할 수 있습니다. 분석 결과는 합격을 보장하지 않습니다.</p></div>
-    </section>
+
     <section class="jungsi-landing-cta"><h2>신청을 완료하셨나요?</h2><p>문자로 받은 전용 링크에서 인증을 마치면 진행 현황을 확인할 수 있습니다.</p><a href="/2027-jungsi-consulting/login">신청자 전용 화면으로 이동</a></section>
+    </div>
   </main>
   <footer class="jungsi-landing-footer"><img src="/assets/images/studycrack_logo_wo_bg.png" alt="StudyCrack"><p>2027 정시 컨설팅</p></footer>
   <script src="/js/config.js"></script>

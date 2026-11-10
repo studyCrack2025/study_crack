@@ -73,3 +73,16 @@ body { margin: 0; background: #f8fafc; }
 .jungsi-guide-link { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px; margin: 0 max(18px, calc((100vw - 1180px) / 2)) 64px; padding: 32px; border: 1px solid #dce5f1; border-radius: 20px; background: #fff; }
 .jungsi-guide-link h2 { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); word-break: keep-all; }
 .jungsi-guide-link p:last-child { max-width: 680px; color: #607087; line-height: 1.7; }
+
+.jungsi-service-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: min(100% - 36px, 1180px); margin: 32px auto 0; }
+.jungsi-service-tabs button { padding: 22px 12px; border: 1px solid #c8d5e8; border-radius: 16px; background: #fff; color: #52627a; font: inherit; font-size: clamp(1.15rem, 3vw, 1.7rem); font-weight: 850; cursor: pointer; }
+.jungsi-service-tabs button[aria-selected="true"] { background: #2856c7; border-color: #2856c7; color: #fff; }
+.jungsi-service-tabs button:focus-visible { outline: 3px solid #f3b51b; outline-offset: 4px; }
+#calculator[hidden], #consultingPanel[hidden] { display: none; }
+.jungsi-calculator { margin-top: 24px; margin-bottom: 0; }
+/* Centers on a radius of 34% at -90, 150 and 30 degrees. */
+.jungsi-landing-visual span { width: 27%; height: 27%; transform: translate(-50%, -50%); font-size: clamp(.72rem, 2.5vw, .86rem); }
+.jungsi-landing-visual span:nth-child(1) { top: 16%; left: 50%; right: auto; bottom: auto; }
+.jungsi-landing-visual span:nth-child(2) { top: 67%; left: 20.555%; right: auto; bottom: auto; }
+.jungsi-landing-visual span:nth-child(3) { top: 67%; left: 79.445%; right: auto; bottom: auto; }
+@media (max-width:700px) { .jungsi-service-tabs { margin-top: 18px; gap: 10px; } .jungsi-service-tabs button { padding: 18px 8px; } }
