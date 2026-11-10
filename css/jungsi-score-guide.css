@@ -37,3 +37,32 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
 }
 
 .article-meta{color:#475569;font-size:.9rem}.table-scroll{overflow-x:auto;margin:1.5rem 0}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;font-weight:700;margin-bottom:.5rem}th,td{padding:.75rem;border:1px solid #cbd5e1}thead{background:#f1f5f9}
+
+/* Score guide reading layout; other intent guides retain their existing layout. */
+.score-guide { background: #f5f7fb; word-break: keep-all; overflow-wrap: break-word; }
+.score-guide main { width: min(100% - 40px, 960px); margin: 36px auto 56px; padding: 48px 56px; background: #fff; border: 1px solid var(--line); border-radius: 20px; }
+.score-guide .site-header { background: #fff; }
+.score-guide h1 { max-width: 760px; }
+.score-guide h2 { padding-top: 12px; margin-top: 44px; scroll-margin-top: 24px; }
+.score-guide p { margin-top: 12px; margin-bottom: 20px; }
+.score-guide .article-meta { font-size: 13px; }
+.score-guide .guide-toc { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0; }
+.score-guide .guide-toc a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); text-decoration: none; font-weight: 650; }
+.score-guide .steps { gap: 18px; }
+.score-guide .steps li { padding: 24px; line-height: 1.9; background: #fafbfe; }
+.score-guide .steps strong { display: inline-block; margin-bottom: 8px; }
+.score-guide .table-scroll { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.score-guide table { min-width: 620px; }
+.score-guide th, .score-guide td { padding: 14px 12px; vertical-align: middle; }
+.score-guide thead th { text-align: center; white-space: nowrap; }
+.score-guide tbody td:not(:last-child), .score-guide tbody th { text-align: center; white-space: nowrap; }
+.score-guide tbody td:last-child { font-variant-numeric: tabular-nums; }
+.score-guide .source-list li { margin-bottom: 12px; }
+.score-guide .cta { padding: 24px 28px; }
+.score-guide .cta h2 { margin-top: 0; padding-top: 0; }
+@media (max-width:600px) {
+ .score-guide main { width: calc(100% - 24px); margin: 16px auto 32px; padding: 28px 20px; border-radius: 14px; }
+ .score-guide .steps li { padding: 20px; }
+ .score-guide .table-scroll { padding: 10px; }
+ .score-guide .cta { padding: 20px; }
+}
