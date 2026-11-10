@@ -3,48 +3,58 @@ import { expect, test } from '@playwright/test';
 const applicationId = 'APP_123e4567-e89b-12d3-a456-426614174000';
 const token = 'A'.repeat(43);
 const startPath = '/2027-jungsi-consulting/start';
+const homePath = '/2027-jungsi-consulting/home';
 const inviteUrl = `${startPath}#app=${applicationId}&invite=${token}`;
 const inviteKey = 'sc_jungsi_invite_v1';
+const fixtureLoginKey = 'fixture-consulting-login';
+const inviteSummary = { maskedEmail: 's***@naver.com', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' };
+const linkedHome = {
+  available: true, workflowState: 'SURVEY_DRAFT', nextAction: 'COMPLETE_SURVEY', nextDueAt: null,
+  progress: ['onboarding', 'survey', 'materials', 'written_consultation', 'report', 'final_call'].map((step, index) => ({ step, status: ['completed', 'current'][index] || 'upcoming' })),
+  session: null, report: null, alerts: []
+};
 
-async function prepare(page, { loggedIn = true, role = 'student', deferPreflight = false, preflightError = '' } = {}) {
-  const state = { preflightCalls: 0, preflightError, releasePreflight: null };
-  let unblock;
-  const gate = new Promise(resolve => { unblock = resolve; });
-  state.releasePreflight = unblock;
-  await page.addInitScript(({ loggedIn, role }) => {
+async function prepare(page, { loggedIn = true, role = 'student', deferStatus = false, inviteError = '', publicError = '', linked = false } = {}) {
+  await page.addInitScript(({ loggedIn, role, deferStatus, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome }) => {
+    loggedIn = loggedIn || sessionStorage.getItem(fixtureLoginKey) === '1';
     localStorage.setItem('userRole', role);
     if (loggedIn) localStorage.setItem('userEmail', 'student-account@example.invalid');
-    window.__inviteFixture = { loggedIn, calls: [], claimError: '', deferClaim: false, releaseClaim: null };
-  }, { loggedIn, role });
+    window.__inviteFixture = { loggedIn, calls: [], inviteError, linked, deferStatus, inviteSummary, linkedHome, claimError: '', deferClaim: false };
+  }, { loggedIn, role, deferStatus, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome });
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG = { api: { consulting: 'https://api.example.invalid/consulting', consultingPublic: 'https://api.example.invalid/consulting-public' } };` }));
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     window.hasClientSession = () => window.__inviteFixture.loggedIn;
     window.apiFetch = async (_url, options) => {
       const request = JSON.parse(options.body), fixture = window.__inviteFixture;
       fixture.calls.push(request);
+      const reply = (error, data) => {
+        const status = { FORBIDDEN: 403, INVITE_INVALID: 400, INVITE_EXPIRED: 410 }[error] ?? (error ? 409 : 200);
+        return new Response(JSON.stringify(error ? { success: false, code: error } : { success: true, data }), { status });
+      };
+      if (request.type === 'student_get_v2_consulting_invite_status') {
+        if (fixture.deferStatus) await new Promise(resolve => { fixture.releaseStatus = resolve; });
+        return reply(fixture.inviteError, fixture.linked ? { linked: true } : { linked: false, ...fixture.inviteSummary });
+      }
       if (request.type === 'student_claim_v2_consulting_invite') {
         const error = fixture.claimError;
         if (fixture.deferClaim) await new Promise(resolve => { fixture.releaseClaim = resolve; });
-        const status = { FORBIDDEN: 403, INVITE_INVALID: 400 }[error] ?? (error ? 409 : 200);
-        return new Response(JSON.stringify(error ? { success: false, code: error } : { success: true, data: { caseId: 'CASE_synthetic' } }), { status });
+        return reply(error, { caseId: 'CASE_synthetic' });
       }
-      return new Response(JSON.stringify({ success: true, data: { available: false } }));
+      return reply('', fixture.linked ? fixture.linkedHome : { available: false });
     };
   ` }));
   await page.route('https://api.example.invalid/consulting-public', async route => {
-    state.preflightCalls++;
     expect(route.request().postDataJSON().type).toBe('public_preflight_v2_consulting_invite');
-    if (deferPreflight) await gate;
-    const status = { INVITE_EXPIRED: 410, INVITE_INVALID: 400 }[state.preflightError] ?? (state.preflightError ? 409 : 200);
-    await route.fulfill({ status, json: state.preflightError ? { success: false, code: state.preflightError } : { success: true, data: { maskedEmail: 's***@naver.com', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' } } });
+    const status = publicError ? 409 : 200;
+    await route.fulfill({ status, json: publicError ? { success: false, code: publicError } : { success: true, data: inviteSummary } });
   });
   await page.goto(inviteUrl, { waitUntil: 'domcontentloaded' });
-  return state;
 }
 
 const codeInput = page => page.getByLabel('이메일로 받은 10자리 인증코드');
 const claimButton = page => page.getByRole('button', { name: '유료회원 인증하고 시작하기' });
 const claimCalls = page => page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_claim_v2_consulting_invite'));
+const statusCalls = page => page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_get_v2_consulting_invite_status'));
 
 test('첫 초대 진입은 사용할 학생 계정의 로그인이나 회원가입을 안내한다', async ({ page }) => {
   await prepare(page, { loggedIn: false });
@@ -57,13 +67,66 @@ test('첫 초대 진입은 사용할 학생 계정의 로그인이나 회원가�
 });
 
 test('로그인해도 초대 확인이 끝나기 전에는 코드를 제출할 수 없다', async ({ page }) => {
-  const state = await prepare(page, { deferPreflight: true });
+  await prepare(page, { deferStatus: true });
   await expect(page.getByRole('status')).toHaveText('초대 정보를 확인하고 있습니다.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await expect(codeInput(page)).toHaveCount(0);
   expect(await claimCalls(page)).toHaveLength(0);
-  state.releasePreflight();
+  await expect.poll(() => page.evaluate(() => typeof window.__inviteFixture.releaseStatus)).toBe('function');
+  await page.evaluate(() => window.__inviteFixture.releaseStatus());
   await expect(codeInput(page)).toBeVisible();
+});
+
+test('이미 연결한 초대는 처음 인증한 학생으로 로그인하면 코드 없이 기존 진행 현황으로 들어간다', async ({ page }) => {
+  await prepare(page, { loggedIn: false, publicError: 'INVITE_ALREADY_CLAIMED', linked: true });
+  await expect(page.getByRole('status')).toHaveText('이미 인증을 마친 초대입니다. 처음 인증한 학생 계정으로 로그인해주세요.');
+  await expect(page.getByRole('link', { name: '회원가입' })).toHaveCount(0);
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await statusCalls(page)).toHaveLength(0);
+  await page.route(/\/login\?returnUrl=/, route => {
+    expect(new URL(route.request().url()).searchParams.get('returnUrl')).toBe(startPath);
+    return route.fulfill({ contentType: 'text/html', body: `<script>sessionStorage.setItem('${fixtureLoginKey}', '1'); location.replace('${startPath}');</script>` });
+  });
+  await page.getByRole('link', { name: '로그인', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`${homePath}$`));
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅' })).toBeVisible();
+  expect((await statusCalls(page)).map(call => call.data)).toEqual([{ applicationId, token }]);
+  expect(await claimCalls(page)).toHaveLength(0);
+  expect(await page.evaluate(key => sessionStorage.getItem(key), inviteKey)).toBeNull();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅' })).toBeVisible();
+  expect(await statusCalls(page)).toHaveLength(0);
+});
+
+for (const when of ['열 때', '코드를 제출할 때']) test(`다른 학생 계정에 연결된 초대는 ${when} 처음 인증한 계정으로 안내한다`, async ({ page }) => {
+  const alreadyLinked = when === '열 때';
+  const error = 'INVITE_LINKED_TO_OTHER_ACCOUNT';
+  await prepare(page, { inviteError: alreadyLinked ? error : '' });
+  if (!alreadyLinked) {
+    await page.evaluate(error => { window.__inviteFixture.claimError = error; }, error);
+    await codeInput(page).fill('0123456789');
+    await claimButton(page).click();
+  }
+  await expect(page.getByRole('status')).toHaveText('이 초대는 이미 다른 학생 계정에 연결되어 있습니다. 처음 인증한 학생 계정으로 로그인해주세요.');
+  await expect(page.getByRole('link', { name: '다른 학생 계정으로 로그인' })).toHaveAttribute('href', /returnUrl=.*start/);
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await claimCalls(page)).toHaveLength(alreadyLinked ? 0 : 1);
+  await expect(page).toHaveURL(new RegExp(`${startPath}$`));
+});
+
+test('로그아웃 뒤 도착한 연결 확인은 진행 화면을 열지 않는다', async ({ page }) => {
+  await prepare(page, { linked: true, deferStatus: true, publicError: 'INVITE_ALREADY_CLAIMED' });
+  await expect.poll(() => page.evaluate(() => typeof window.__inviteFixture.releaseStatus)).toBe('function');
+  await page.evaluate(() => {
+    window.__inviteFixture.loggedIn = false;
+    window.dispatchEvent(new Event('studycrack:session-ended'));
+  });
+  await expect(page.getByRole('status')).toContainText('처음 인증한 학생 계정으로 로그인해주세요.');
+  await page.evaluate(() => window.__inviteFixture.releaseStatus());
+  await expect(page).toHaveURL(new RegExp(`${startPath}$`));
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await claimCalls(page)).toHaveLength(0);
+  expect(await page.evaluate(key => sessionStorage.getItem(key) !== null, inviteKey)).toBe(true);
 });
 
 for (const role of ['admin', 'tutor']) test(`${role} 세션은 학생용 인증코드 입력 대신 계정 전환 안내를 본다`, async ({ page }) => {
@@ -117,17 +180,17 @@ test('코드 오류 뒤 신청과 다른 이메일의 학생 계정으로 초대
 });
 
 test('브라우저가 이전 화면을 복원하면 실패 문구와 코드가 지워지고 자동 재인증하지 않는다', async ({ page }) => {
-  const state = await prepare(page);
+  await prepare(page);
   await page.evaluate(() => { window.__inviteFixture.claimError = 'INVITE_INVALID'; });
   await codeInput(page).fill('0123456789');
   await claimButton(page).click();
   await expect(page.getByRole('status')).toHaveAttribute('data-tone', 'error');
-  const count = state.preflightCalls;
+  const count = (await statusCalls(page)).length;
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
   await expect(page.getByRole('status')).toHaveText('신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await expect(codeInput(page)).toHaveValue('');
-  expect(state.preflightCalls).toBe(count + 1);
+  expect(await statusCalls(page)).toHaveLength(count + 1);
   expect(await claimCalls(page)).toHaveLength(1);
 });
 
@@ -156,12 +219,14 @@ for (const exit of ['navigate', 'logout']) test(`${exit} 이후 도착한 인증
 });
 
 test('잘못됐거나 만료된 초대는 코드 입력을 차단한다', async ({ page }) => {
-  const state = await prepare(page, { preflightError: 'INVITE_INVALID' });
+  await prepare(page, { inviteError: 'INVITE_INVALID' });
   await expect(page.getByRole('status')).toHaveAttribute('data-tone', 'error');
   await expect(page.getByRole('status')).not.toContainText('계정의 이메일');
   await expect(codeInput(page)).toHaveCount(0);
-  state.preflightError = 'INVITE_EXPIRED';
-  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await page.evaluate(() => {
+    window.__inviteFixture.inviteError = 'INVITE_EXPIRED';
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+  });
   await expect(page.getByRole('status')).toContainText('초대 유효기간이 만료되었습니다.');
   await expect(codeInput(page)).toHaveCount(0);
   expect(await claimCalls(page)).toHaveLength(0);

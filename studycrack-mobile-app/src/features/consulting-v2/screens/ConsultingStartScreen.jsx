@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsultingBrand } from '../ConsultingBrand.jsx';
-import { claimConsultingInvite, preflightConsultingInvite } from '../api.js';
+import { claimConsultingInvite, getConsultingInviteStatus, preflightConsultingInvite } from '../api.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { inviteErrorMessage, safeInviteSummary } from './presentation.js';
 
@@ -14,6 +14,11 @@ function readInvite() {
   } catch { return null; }
 }
 
+function openConsultingHome() {
+  globalThis.sessionStorage?.removeItem(INVITE_KEY);
+  navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
+}
+
 export function ConsultingStartScreen({ binding, hasSession }) {
   const [invite, setInvite] = React.useState(readInvite);
   const [summary, setSummary] = React.useState(null);
@@ -22,6 +27,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const [code, setCode] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [canClaim, setCanClaim] = React.useState(false);
+  const [linkedInvite, setLinkedInvite] = React.useState(false);
   const claimRequest = React.useRef(null);
   const staffSession = hasSession && (binding.userRole === 'admin' || binding.userRole === 'tutor');
   const showCodeForm = invite && hasSession && !staffSession && canClaim;
@@ -35,22 +41,25 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setSubmitting(false);
     setCode('');
     setCanClaim(false);
+    setLinkedInvite(false);
     setSummary(null);
     if (!invite) return undefined;
-    setTone(invite ? '' : 'error');
-    setStatus(invite ? '초대 정보를 확인하고 있습니다.' : '유효한 초대 정보를 찾을 수 없습니다. 문자로 받은 링크를 다시 열어주세요.');
+    setTone('');
+    setStatus('초대 정보를 확인하고 있습니다.');
     const controller = new AbortController();
-    preflightConsultingInvite({ ...binding, ...invite, signal: controller.signal }).then(result => {
-      if (controller.signal.aborted) return;
+    const signedInStudent = hasSession && !staffSession;
+    const checkInvite = signedInStudent ? getConsultingInviteStatus : preflightConsultingInvite;
+    checkInvite({ ...binding, ...invite, signal: controller.signal }).then(result => {
+      if (controller.signal.aborted || (signedInStudent && !binding.hasClientSession())) return;
       if (!result.ok) {
-        if (result.code === 'INVITE_ALREADY_CLAIMED' && result.status === 409 && hasSession) {
-          setTone('');
-          setCanClaim(true);
-          setStatus(staffSession ? readyMessage : '이미 처리된 초대인지 로그인 계정으로 확인해주세요.');
-          return;
-        }
-        setTone('error');
-        setStatus(inviteErrorMessage(result.code, result.status, { preflight: true }));
+        const usedLink = !signedInStudent && result.code === 'INVITE_ALREADY_CLAIMED';
+        setLinkedInvite(usedLink || result.code === 'INVITE_LINKED_TO_OTHER_ACCOUNT');
+        setTone(usedLink ? '' : 'error');
+        setStatus(usedLink && staffSession ? readyMessage : inviteErrorMessage(result.code, result.status, { preflight: !signedInStudent }));
+        return;
+      }
+      if (signedInStudent && result.data.linked) {
+        openConsultingHome();
         return;
       }
       const safeSummary = safeInviteSummary(result.data);
@@ -65,7 +74,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       setStatus(readyMessage);
     });
     return () => { controller.abort(); claimRequest.current?.abort(); claimRequest.current = null; };
-  }, [binding.fetchImpl, binding.publicApiUrl, hasSession, invite, readyMessage, staffSession]);
+  }, [binding, hasSession, invite, readyMessage, staffSession]);
 
   const clearInvite = () => {
     globalThis.sessionStorage?.removeItem(INVITE_KEY);
@@ -73,6 +82,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setSummary(null);
     setCode('');
     setCanClaim(false);
+    setLinkedInvite(false);
     setTone('');
     setStatus('이 브라우저에서 초대 정보를 지웠습니다. 다시 시작하려면 받은 문자 링크를 열어주세요.');
   };
@@ -95,12 +105,17 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     claimRequest.current = null;
     setSubmitting(false);
     if (!result.ok) {
+      if (result.code === 'INVITE_LINKED_TO_OTHER_ACCOUNT') {
+        setLinkedInvite(true);
+        setCanClaim(false);
+        setCode('');
+        setSummary(null);
+      }
       setTone('error');
       setStatus(inviteErrorMessage(result.code, result.status));
       return;
     }
-    globalThis.sessionStorage?.removeItem(INVITE_KEY);
-    navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
+    openConsultingHome();
   };
 
   return <main className="consulting-v2-center"><section className="consulting-v2-card" aria-labelledby="consultingStartTitle">
@@ -113,9 +128,9 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       <p><span>신청 전화번호</span><strong>{summary.maskedPhone}</strong></p>
       <p><span>인증 기한</span><strong>{new Date(summary.expiresAt).toLocaleString('ko-KR')}</strong></p>
     </div> : null}
-    {invite && !hasSession ? <div className="consulting-v2-actions">
-      <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>로그인</a>
-      <a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>회원가입</a>
+    {invite && (!hasSession || (linkedInvite && !staffSession)) ? <div className="consulting-v2-actions">
+      <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>{hasSession ? '다른 학생 계정으로 로그인' : '로그인'}</a>
+      {!linkedInvite ? <a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>회원가입</a> : null}
     </div> : null}
     {showCodeForm ? <form className="consulting-v2-form" onSubmit={submit}>
       <label htmlFor="consultingInviteCode">이메일로 받은 10자리 인증코드</label>

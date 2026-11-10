@@ -20,6 +20,20 @@ export async function preflightConsultingInvite({ applicationId, fetchImpl = glo
   }
 }
 
+export async function getConsultingInviteStatus({ apiFetch, applicationId, consultingApiUrl, signal, token } = {}) {
+  const result = await postJson({
+    apiFetch,
+    fallbackError: '초대 정보를 확인하지 못했습니다.',
+    url: consultingApiUrl,
+    signal,
+    payload: { type: 'student_get_v2_consulting_invite_status', data: { applicationId, token } }
+  });
+  const data = result.data?.data;
+  return result.ok && result.data?.success === true && typeof data?.linked === 'boolean'
+    ? { ok: true, data }
+    : { ok: false, code: result.code, status: result.status };
+}
+
 export async function claimConsultingInvite({ apiFetch, applicationId, code, consultingApiUrl, idempotencyKey, signal, token } = {}) {
   const result = await postJson({
     apiFetch,
