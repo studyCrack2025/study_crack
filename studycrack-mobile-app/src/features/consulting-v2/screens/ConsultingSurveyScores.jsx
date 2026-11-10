@@ -4,7 +4,6 @@ import { scoreChoiceLabel } from '../../analysis/score-model.js';
 import { applyScoreConversions, clearConvertedScores, EMPTY_SCORE_METRICS, labelScoreRows, scoreConversionBatch } from '../score-entry-model.js';
 import { convertV2SurveyScores } from '../survey-api.js';
 import { FOREIGN_LANGUAGE_SUBJECTS, inquirySubject, isGradeOnlyArea, SPLIT_SCORE_LIMITS, splitRawTotal } from '../survey-model.js';
-import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 
 const optionGroups = {
   korean: [['', ['화법과작문', '언어와매체']]],
@@ -95,7 +94,7 @@ function ScoreCard({ row, label, change }) {
   </fieldset>;
 }
 
-export function ConsultingSurveyScores({ value, update, binding, fileActions, actionBusy, previousExamScores }) {
+export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores }) {
   const batch = actionBusy ? null : scoreConversionBatch(value);
   const batchKey = batch && JSON.stringify(batch);
   React.useEffect(() => {
@@ -122,7 +121,6 @@ export function ConsultingSurveyScores({ value, update, binding, fileActions, ac
   return <div className="consulting-score-entry">
     <div className="consulting-score-exam"><span>입력 대상</span><strong>2027학년도 수능</strong></div>
     {previousExamScores && <p className="consulting-score-note" role="status">이번 수능에 응시한 성적을 입력해 주세요. 이전에 다른 시험으로 저장한 점수는 가져오지 않았어요.</p>}
-    <SurveyScoreFiles {...fileActions} />
     <div className="consulting-score-tools">
       <div className="consulting-score-subhead"><h2>과목별 성적</h2><span className="consulting-score-pill">선택 입력</span></div>
       <p className="consulting-score-note">국어·수학·탐구는 원점수, 영어·한국사는 등급을 적어주세요. 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>

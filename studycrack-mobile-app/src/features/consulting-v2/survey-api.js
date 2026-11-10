@@ -35,8 +35,8 @@ export async function fetchV2SurveyUniversities({ analysisApiUrl, apiFetch, sign
   return { ok: true, data: catalog.sort((a, b) => a.univName.localeCompare(b.univName, 'ko')) };
 }
 
-async function fileRequest(binding, type, data, fallbackError, signal) {
-  const result = await postJson({ apiFetch: binding.apiFetch, url: binding.fileApiUrl, fallbackError, signal, payload: { type, data } });
+async function fileRequest(binding, type, data, fallbackError) {
+  const result = await postJson({ apiFetch: binding.apiFetch, url: binding.fileApiUrl, fallbackError, payload: { type, data } });
   if (!result.ok || result.data?.success !== true || !result.data.data) {
     return { ok: false, error: result.status >= 500 ? fallbackError : result.error || fallbackError, code: result.data?.code || result.code, status: result.status };
   }
@@ -44,7 +44,6 @@ async function fileRequest(binding, type, data, fallbackError, signal) {
 }
 
 export const deleteV2ScoreFile = (binding, data) => fileRequest(binding, 'consulting_delete_unsubmitted_score_file', data, '성적표를 삭제하지 못했습니다.');
-export const readV2ScorePhoto = (binding, data, signal) => fileRequest(binding, 'consulting_read_score_photo', data, '성적표를 읽지 못했어요. 성적을 직접 입력할 수 있어요.', signal);
 export const confirmV2ScoreUpload = (binding, data) => fileRequest(binding, 'consulting_complete_score_upload', data, '첨부 확인에 실패했어요. 파일 옆에서 다시 확인할 수 있어요.');
 
 export async function uploadV2ScoreFile(binding, { caseId, file }) {
