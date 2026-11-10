@@ -17,7 +17,8 @@ function readAdminLocation(hash = window.location.hash) {
     const route = { section, phase: ADMIN_CONSULTING_PHASES.includes(params.get('phase')) ? params.get('phase') : 'all' };
     if (params.has('student') || params.has('record')) {
         if (!/^APP_[0-9a-f-]{36}$/i.test(params.get('student') || '') || !/^[A-Za-z0-9_-]{8,200}$/.test(params.get('record') || '')) return route;
-        Object.assign(route, { applicationId: params.get('student'), sourceResponseId: params.get('record'), tab: ADMIN_CONSULTING_TABS.includes(params.get('tab')) ? params.get('tab') : 'overview' });
+        Object.assign(route, { applicationId: params.get('student'), sourceResponseId: params.get('record') });
+        if (ADMIN_CONSULTING_TABS.includes(params.get('tab'))) route.tab = params.get('tab');
     }
     return route;
 }

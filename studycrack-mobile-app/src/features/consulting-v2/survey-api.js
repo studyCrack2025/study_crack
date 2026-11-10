@@ -11,6 +11,7 @@ export const getV2SurveySchema = binding => request(binding, 'student_get_v2_sur
 export const getV2SurveyDraft = (binding, signal) => request(binding, 'student_get_v2_survey_draft', {}, '저장된 조사서를 불러오지 못했습니다.', signal);
 export const convertV2SurveyScores = (binding, data) => request(binding, 'student_convert_v2_survey_scores', data, '자동 환산을 잠시 이용할 수 없습니다.');
 export const saveV2SurveyDraft = (binding, data) => request(binding, 'student_save_v2_survey_draft', data, '조사서를 저장하지 못했습니다.');
+export const saveV2SurveyRevision = (binding, data) => request(binding, 'student_save_v2_survey_revision', data, '변경한 답변을 저장하지 못했습니다.');
 export const submitV2Survey = (binding, data, supplement = false) => request(binding, supplement ? 'student_submit_v2_supplement' : 'student_submit_v2_survey', data, '조사서를 제출하지 못했습니다.');
 
 export async function fetchV2SurveyUniversities({ analysisApiUrl, apiFetch, signal }) {

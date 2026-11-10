@@ -7,6 +7,7 @@ const html = await readFile(new URL('../../admin_index.html', import.meta.url), 
 const config = await readFile(new URL('../../js/config.js', import.meta.url), 'utf8');
 const helpers = await readFile(new URL('../../js/admin/consulting.js', import.meta.url), 'utf8');
 const intake = await readFile(new URL('../../js/admin/consulting-intake.js', import.meta.url), 'utf8');
+const workspace = await readFile(new URL('../../js/admin/consulting-workspace.js', import.meta.url), 'utf8');
 const policy = JSON.parse(await readFile(new URL('../public-site-files.json', import.meta.url), 'utf8'));
 
 test('admin consulting screen and its deployment files are wired', () => {
@@ -27,19 +28,21 @@ test('payment approval sends server-validated fields and requires an explicit pa
 });
 
 test('PII is rendered as text and is not interpolated into HTML', () => {
-    assert.match(intake, /content\.textContent = String\(value/);
+    assert.match(helpers, /description\.textContent = /);
     assert.doesNotMatch(intake, /innerHTML\s*=\s*`[^`]*\$\{/);
     assert.doesNotMatch(intake, /onclick\s*=/i);
 });
 
 const applicationId = 'APP_11111111-1111-4111-8111-111111111111';
 const secondId = 'APP_22222222-2222-4222-8222-222222222222';
+const record = 'SYNTHETIC_RESPONSE';
+const student = id => ({ applicationId: id, sourceResponseId: record, phase: 'intake', studentNameMask: 'S***', phoneMask: '010****0000', stateLabel: '입금 확인 대기', nextAction: '입금 확인' });
 function detail(id = applicationId, state = 'PAYMENT_REVIEW') {
     return {
         application: { applicationId: id, applicationState: state, paymentReviewStatus: state === 'INVITED' ? 'verified' : 'pending', revision: 0, expectedAmount: 300000 },
         contact: { studentName: 'Synthetic student', phone: '01000000000', email: 'synthetic@example.invalid', payerName: 'Synthetic payer' },
         payerRelationship: 'other', payerRelationshipDetail: '<img src=x onerror=alert(1)>',
-        contactMethod: 'email', studentStatus: 'senior', activeInviteId: state === 'INVITED' ? 'synthetic-invite' : null
+        contactMethod: 'email', studentStatus: 'senior', activeInviteId: state === 'INVITED' ? 'synthetic-invite' : null, student: student(id)
     };
 }
 function deferred() {
@@ -58,6 +61,7 @@ function setup() {
             append(...children) { this.children.push(...children); },
             replaceChildren(...children) { this.ownText = ''; this.children = children; },
             setAttribute(name, value) { this[name] = value; },
+            focus() {}, scrollIntoView() {},
             addEventListener(type, handler) { this.listeners[type] = handler; },
             querySelectorAll() { return [...nodes.values()]; }
         };
@@ -66,8 +70,9 @@ function setup() {
     for (const id of html.matchAll(/id="(consulting[^"]+)"/g)) get(id[1]);
     const calls = [];
     const context = vm.createContext({
-        document: { getElementById: get, createElement: element },
+        document: { getElementById: get, createElement: element, querySelectorAll: () => [] },
         CONFIG: { api: { consulting: '/synthetic/consulting' } },
+        ADMIN_CONSULTING_PHASES: ['all', 'intake', 'onboarding'],
         Intl, Date, console,
         confirm: () => true, prompt: () => '',
         apiFetch: async (url, options) => {
@@ -77,11 +82,15 @@ function setup() {
             return { json: async () => ({ success: true, data }) };
         }
     });
-    context.respond = request => request.type === 'admin_get_application_detail' ? detail(request.data.applicationId) : { items: [] };
+    context.respond = request => request.type === 'admin_get_consulting_student' ? detail(request.data.applicationId) : { items: [] };
+    context.readAdminLocation = () => context.route;
     context.window = { crypto: { randomUUID: () => '11111111-1111-4111-8111-111111111111' }, addEventListener: (name, handler) => events.set(name, handler) };
-    vm.runInContext(helpers + '\n' + intake, context);
+    vm.runInContext([helpers, intake, workspace].join('\n'), context);
     const run = code => vm.runInContext(code, context);
-    const open = id => run(`openConsultingApplication(${JSON.stringify(id || applicationId)})`);
+    const open = (id = applicationId) => {
+        context.route = { applicationId: id, sourceResponseId: record, tab: 'overview' };
+        return run('loadConsultingWorkspaceStudent(readAdminLocation())');
+    };
     function fillPayment() {
         get('consultingPaidAmount').value = '300000';
         get('consultingPaidAt').value = '2026-10-20T10:00';
@@ -106,13 +115,13 @@ test('detail renders localized values and other text without assuming payment fa
 test('close removes PII and ignores an outstanding detail response', async () => {
     const { context, open, run, get } = setup();
     await open();
-    run('closeConsultingDetail()');
+    run('resetConsultingWorkspace()');
     assert.equal(get('consultingDetailSummary').textContent, '');
     assert.equal(run('currentConsultingApplication'), null);
     const pending = deferred();
     context.respond = () => pending.promise;
     const request = open();
-    run('closeConsultingDetail()');
+    run('resetConsultingWorkspace()');
     pending.resolve(detail());
     await request;
     assert.equal(get('consultingApplicationDetail').hidden, true);
@@ -128,14 +137,15 @@ test('a late response cannot overwrite a newer detail', async () => {
     old.resolve(detail());
     await first;
     assert.equal(run('currentConsultingApplication.application.applicationId'), secondId);
-    assert.equal(get('consultingApplicationLookup').value, secondId);
+    assert.match(get('consultingStudentIdentifiers').textContent, new RegExp(secondId));
 });
 
 test('invalid or failed new detail cannot leave the old application actionable', async () => {
     const { context, calls, open, get, run } = setup();
     await open();
-    await open('invalid');
-    assert.equal(calls.length, 1);
+    context.respond = () => detail();
+    await open(secondId);
+    assert.equal(calls.length, 2);
     assert.equal(run('currentConsultingApplication'), null);
     assert.equal(get('consultingDetailSummary').textContent, '');
     await open();
@@ -149,24 +159,24 @@ test('list error is distinct from zero results and an older failure is ignored',
     const { context, run, get } = setup();
     const old = deferred();
     context.respond = () => old.promise;
-    const first = run('loadConsultingPaymentReview()');
+    const first = run('loadConsultingDirectory()');
     context.respond = () => ({ items: [] });
-    await run('loadConsultingPaymentReview()');
+    await run('loadConsultingDirectory()');
     old.reject(new Error('late failure'));
     await first;
-    assert.equal(get('consultingStatus').dataset.state, 'success');
+    assert.equal(get('consultingDirectoryStatus').dataset.state, 'success');
     context.respond = () => { throw new Error('failure'); };
-    await run('loadConsultingPaymentReview()');
-    assert.match(get('consultingPaymentReviewBody').textContent, /불러오지 못/);
-    assert.doesNotMatch(get('consultingPaymentReviewBody').textContent, /대기·보류 건이 없습니다/);
+    await run('loadConsultingDirectory()');
+    assert.match(get('consultingDirectoryBody').textContent, /불러오지 못/);
+    assert.doesNotMatch(get('consultingDirectoryBody').textContent, /해당 단계의 학생이 없습니다/);
 });
 
 test('held applications remain visible with their real review state and masked fields', async () => {
     const { context, run, get } = setup();
-    context.respond = () => ({ items: [{ applicationId, paymentReviewStatus: 'hold', duplicateSuspected: true, studentNameMask: 'S***', phoneMask: '010****0000', payerNameMask: 'P***', expectedAmount: 300000 }] });
-    await run('loadConsultingPaymentReview()');
-    const text = get('consultingPaymentReviewBody').textContent;
-    assert.match(text, /보류 · 중복 가능성/);
+    context.respond = () => ({ items: [{ ...student(applicationId), held: true, nextAction: '보류 사유 확인' }] });
+    await run('loadConsultingDirectory()');
+    const text = get('consultingDirectoryBody').textContent;
+    assert.match(text, /보류 사유 확인/);
     assert.match(text, /S\*\*\*/);
     assert.doesNotMatch(text, /synthetic@example/);
 });
@@ -182,14 +192,14 @@ test('approval needs explicit payment input and can be cancelled without a write
     assert.equal(calls.length, 1);
 });
 
-test('all intake actions lock together and success survives a failed list refresh', async () => {
+test('all intake actions lock together and success survives a failed detail refresh', async () => {
     const { context, run, calls, open, fillPayment, get } = setup();
     await open();
     fillPayment();
     const pending = deferred();
     context.respond = request => {
         if (request.type === 'admin_verify_manual_payment') return pending.promise;
-        throw new Error('list refresh failed');
+        throw new Error('detail refresh failed');
     };
     const approve = run('approveConsultingPayment()');
     assert.equal(get('consultingApproveBtn').disabled, true);
@@ -198,8 +208,6 @@ test('all intake actions lock together and success survives a failed list refres
     await run('holdConsultingPayment()');
     await run('rejectConsultingApplication()');
     await run('reissueConsultingInvite()');
-    await open(secondId);
-    run('closeConsultingDetail()');
     assert.equal(get('consultingApplicationDetail').hidden, false);
     assert.equal(calls.filter(call => call.type === 'admin_verify_manual_payment').length, 1);
     assert.equal(calls.length, 2);
@@ -216,7 +224,7 @@ test('all intake actions lock together and success survives a failed list refres
     assert.match(get('consultingActionStatus').textContent, /발송 예약 완료/);
     assert.match(get('consultingActionStatus').textContent, /별도 확인/);
     assert.equal(get('consultingActionStatus').dataset.state, 'success');
-    assert.equal(get('consultingStatus').dataset.state, 'error');
+    assert.equal(get('consultingStudentStatus').dataset.state, 'error');
 });
 
 for (const status of [409, 500]) test(`mutation ${status} closes stale detail and never automatically resends`, async () => {
@@ -232,17 +240,31 @@ for (const status of [409, 500]) test(`mutation ${status} closes stale detail an
     assert.equal(get('consultingActionStatus').dataset.state, 'error');
 });
 
-test('hold requires other reason and sends a revision-bound request', async () => {
+test('hold requires a reason, previews the customer notice, and mutates only after confirmation', async () => {
     const { context, run, calls, open, get } = setup();
+    const respond = context.respond;
+    context.respond = request => request.type === 'admin_preview_application_review_notice'
+        ? { applicationId, revision: 0, willQueue: true, recipient: '010-****-0000', message: '신청을 보류했습니다.', previewToken: 'fixture-preview' }
+        : request.type === 'admin_hold_payment_review' ? { notificationQueued: true } : respond(request);
     await open();
     get('consultingHoldReason').value = 'OTHER';
     await run('holdConsultingPayment()');
     assert.equal(calls.length, 1);
-    context.prompt = () => 'Synthetic review reason';
+    get('consultingHoldNote').value = 'Synthetic review reason';
+    context.confirm = message => {
+        assert.match(message, /010-\*\*\*\*-0000/);
+        assert.doesNotMatch(message, /Synthetic review reason|01000000000/);
+        return false;
+    };
+    await run('holdConsultingPayment()');
+    assert.equal(calls.filter(call => call.type === 'admin_hold_payment_review').length, 0);
+    context.confirm = () => true;
     await run('holdConsultingPayment()');
     const hold = calls.find(call => call.type === 'admin_hold_payment_review');
     assert.equal(hold.data.expectedRevision, 0);
     assert.equal(hold.data.reasonText, 'Synthetic review reason');
+    assert.equal(hold.data.sourceResponseId, record);
+    assert.equal(hold.data.previewToken, 'fixture-preview');
 });
 
 test('invite reissue is available only on an invited application and needs confirmation', async () => {
@@ -250,7 +272,7 @@ test('invite reissue is available only on an invited application and needs confi
     await open();
     await run('reissueConsultingInvite()');
     assert.equal(calls.length, 1);
-    context.respond = request => request.type === 'admin_get_application_detail' ? detail(applicationId, 'INVITED') : { items: [] };
+    context.respond = request => request.type === 'admin_get_consulting_student' ? detail(applicationId, 'INVITED') : { items: [] };
     await open();
     assert.equal(get('consultingInviteActions').hidden, false);
     assert.equal(get('consultingPaymentActions').hidden, true);
@@ -281,7 +303,7 @@ test('navigation resets intake and hidden action groups cannot be forced visible
     assert.match(navigation, /sectionName !== 'consulting'.*resetConsultingIntake/);
     assert.match(css, /\.consulting-actions\[hidden\][^{]*\{ display:none; \}/);
     assert.match(css, /\.consulting-contact-review\[hidden\][^{]*\{ display:none; \}/);
-    assert.match(html, /onsubmit="event.preventDefault\(\); lookupConsultingApplication\(\);"/);
+    assert.doesNotMatch(html, /consultingApplicationLookup|consultingPaymentReviewBody/);
 });
 
 test('input review flags block approval and originals are rendered as text then removed on close', async () => {
@@ -311,8 +333,7 @@ test('input correction requires confirmation and reloads the same application wi
     data.application.inputReviewRequired = true;
     data.application.intakeIssues = [{ field: 'phone', code: 'PHONE_FORMAT' }];
     context.respond = request => {
-        if (request.type === 'admin_get_application_detail') return data;
-        if (request.type === 'admin_list_payment_review') return { items: [data.application] };
+        if (request.type === 'admin_get_consulting_student') return data;
         assert.equal(request.type, 'admin_review_application_input');
         Object.assign(data.application, { revision: 1, inputReviewRequired: false, intakeIssues: [] });
         return { applicationId, revision: 1, inputReviewRequired: false };
@@ -337,7 +358,7 @@ test('input correction requires confirmation and reloads the same application wi
 
 test('ambiguous correction results clear PII and never retry or report success', async () => {
     const { context, open, get, run, calls } = setup();
-    context.respond = request => request.type === 'admin_get_application_detail' ? { ...detail(), originalSubmission: { email: 'synthetic@example.invalid' } } : { applicationId, revision: 1 };
+    context.respond = request => request.type === 'admin_get_consulting_student' ? { ...detail(), originalSubmission: { email: 'synthetic@example.invalid' } } : { applicationId, revision: 1 };
     await open();
     get('consultingInputConfirmed').checked = true;
     await run('saveConsultingApplicationInput()');
