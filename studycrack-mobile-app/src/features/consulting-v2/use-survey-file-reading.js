@@ -11,8 +11,9 @@ const readable = file => file.size > 0 && (file.contentType === 'application/pdf
 const note = (title, message, retryable = false) => ({ kind: 'notice', title, message, retryable });
 
 const READ_NOTICES = {
-  SCORE_PHOTO_FORMAT: note('성적표 형식을 확인하지 못했어요', '수능 성적표인지 확인하고 다른 파일을 첨부해 주세요.'),
-  SCORE_PHOTO_READ_FAILED: note('성적표에서 성적을 읽지 못했어요', '글자가 선명한 성적표를 첨부하거나 성적을 직접 입력해 주세요.'),
+  SCORE_PHOTO_FORMAT: note('성적표 형식을 확인하지 못했어요', '과목명부터 등급 행까지 보이는 수능 성적표를 첨부하거나 성적을 직접 입력해 주세요.'),
+  SCORE_PHOTO_LABELS_UNCLEAR: note('성적표 항목을 읽지 못했어요', '과목명과 점수가 선명한 파일을 첨부하거나 성적을 직접 입력해 주세요.'),
+  SCORE_PHOTO_READ_FAILED: note('성적 판독을 마치지 못했어요', '잠시 뒤 다시 시도하거나 성적을 직접 입력해 주세요.', true),
   SCORE_PHOTO_UNSUPPORTED: note('이 파일은 자동 판독할 수 없어요', 'PDF 첫 페이지 또는 긴 변이 5,000px 이하인 JPG·PNG를 사용해 주세요.'),
   SCORE_PDF_UNREADABLE: note('PDF 첫 페이지를 열지 못했어요', '암호 없이 열리는 PDF나 선명한 성적표 사진을 첨부해 주세요.'),
   SCORE_PHOTO_SCAN_REFERENCE_MISSING: note('이 첨부의 판독을 시작하지 못했어요', '파일을 새로 첨부하거나 성적을 직접 입력해 주세요.'),
@@ -58,9 +59,10 @@ export function useSurveyFileReading({ binding, draft, session, files, setFiles,
     const controller = new AbortController();
     readV2ScorePhoto(binding, { caseId: session.caseId, fileId: nextId }, controller.signal).then(result => {
       if (controller.signal.aborted || draft.current !== session) return;
-      const outcome = result.ok
+      const code = result.ok ? result.data.recognitionCode : result.code;
+      const outcome = result.ok && !code
         ? { kind: 'received', records: result.data.records }
-        : Object.hasOwn(READ_NOTICES, result.code) ? READ_NOTICES[result.code]
+        : Object.hasOwn(READ_NOTICES, code) ? READ_NOTICES[code]
           : note('성적 판독을 마치지 못했어요', '잠시 뒤 다시 시도하거나 성적을 직접 입력해 주세요.', true);
       setAnalysis(current => ({ session, results: { ...(current?.session === session ? current.results : {}), [nextId]: outcome } }));
     });
