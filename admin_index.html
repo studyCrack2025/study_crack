@@ -636,7 +636,53 @@
                 </table>
             </div>
 </div>
-                <div id="consultingWorkspaceReport" class="consulting-work-card" data-workspace-pane="report" hidden><h2>분석·보고서</h2><p class="consulting-caption">선택한 학생의 분석 결과, AI 초안과 상담사 검수·승인 내역을 확인합니다.</p><input id="consultingReportCaseId" type="hidden"><button id="consultingStudentReport" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingReportReview()">분석·보고서 작업 화면 열기</button></div>
+                <div id="consultingWorkspaceReport" class="consulting-work-card" data-workspace-pane="report" hidden aria-busy="false">
+                    <div class="consulting-heading-row"><div><p class="consulting-eyebrow">보고서 작성 준비</p><h2>상담을 보고서의 기준으로</h2><p class="consulting-caption">학생의 답변과 상담에서 확인한 내용을 함께 검토하고, 보고서에 반영할 기준을 정리합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="reloadConsultingReportSource()">작성 자료 새로고침</button></div>
+                    <input id="consultingReportCaseId" type="hidden">
+                    <p id="consultingReportSourceStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                    <div id="consultingReportSourceBody" hidden>
+                        <ul id="consultingReportReadiness" class="consulting-report-source-readiness" aria-label="보고서 자료 준비 상태"></ul>
+                        <div id="consultingReportSourceNotice" class="consulting-report-source-notice" role="status"></div>
+                        <div class="consulting-survey-version-tools"><label for="consultingReportSummaryVersion">상담 정리 버전<select id="consultingReportSummaryVersion" onchange="changeConsultingReportSummaryVersion()"><option value="">현재 정리</option></select></label><p id="consultingReportSummaryMeta" class="consulting-caption"></p></div>
+                        <details id="consultingReportSurveyChanges" class="consulting-original" hidden><summary>상담 정리 이후 학생이 바꾼 답변</summary><div id="consultingReportSurveyChangesBody" class="consulting-material-copy"></div></details>
+                        <form id="consultingReportSummaryForm" onsubmit="event.preventDefault(); saveConsultingReportSummary()">
+                            <fieldset id="consultingReportSummaryFields" class="consulting-report-source-fields" disabled>
+                                <section class="consulting-report-source-section"><h3>상담 완료 정보</h3><div class="consulting-report-source-grid">
+                                    <label>상담 방식<select name="channel" aria-label="상담 방식"><option value="site">사이트 서면상담</option><option value="phone">전화 상담</option><option value="video">화상 상담</option><option value="other">그 외 직접 상담</option></select></label>
+                                    <label>외부 상담 실제 완료 시각 (한국시간)<input name="completedAt" type="datetime-local"></label>
+                                    <label class="consulting-report-source-wide">직접 정리한 근거<textarea name="meetingEvidence" maxlength="1500" rows="2" placeholder="외부에서 상담했다면 방식과 확인한 내용을 간단히 남겨주세요."></textarea></label>
+                                    <label class="consulting-contact-confirm consulting-report-source-wide"><input name="meetingConfirmed" type="checkbox">외부 상담을 실제로 마쳤으며, 아래 내용은 해당 상담을 직접 정리한 것입니다.</label>
+                                </div><p id="consultingReportSessionMeta" class="consulting-caption"></p></section>
+                                <section class="consulting-report-source-section"><h3>상담 결론과 지원 조건</h3><p class="consulting-caption">실명·연락처 대신 정시 지원 판단에 필요한 내용만 작성해주세요. 입력 중에는 자동 저장하지 않습니다.</p><div class="consulting-report-source-grid">
+                                    <label class="consulting-report-source-wide">상담 결론<textarea name="conclusion" maxlength="4000" rows="4" placeholder="학생이 최종적으로 중요하게 생각하는 선택 기준과 상담 결론"></textarea></label>
+                                    <label>반드시 지킬 조건<textarea name="requiredConditions" maxlength="2500" rows="3" placeholder="없으면 ‘없음’으로 명시해주세요."></textarea></label>
+                                    <label>조정할 수 있는 조건<textarea name="flexibleConditions" maxlength="2500" rows="3"></textarea></label>
+                                    <label>상담에서 확인한 지원 성향<select name="riskTolerance" aria-label="상담에서 확인한 지원 성향"><option value="unconfirmed">조사서 성향 유지</option><option value="safe">보수적 지원</option><option value="balanced">균형 지원</option><option value="challenge">도전적 지원</option></select></label>
+                                    <label>지원 성향을 확인한 이유<textarea name="riskReason" maxlength="1500" rows="2"></textarea></label>
+                                    <label>미해결 질문 여부<select name="unresolvedStatus" aria-label="미해결 질문 여부"><option value="unconfirmed">확인 전</option><option value="none">미해결 질문 없음</option><option value="open">추가 확인 필요</option></select></label>
+                                    <label>남은 질문·확인할 내용<textarea name="unresolvedDetail" maxlength="2500" rows="2"></textarea></label>
+                                </div></section>
+                                <section class="consulting-report-source-section"><h3>학생 질문별 답변</h3><div id="consultingReportQuestions" class="consulting-report-source-stack"></div></section>
+                                <section class="consulting-report-source-section"><h3>조사서와 다르게 확인한 내용</h3><p class="consulting-caption">원래 답변은 보존합니다. 다른 내용을 확인했다면 적용할 값과 근거를 명시해주세요. 성적은 조사서·성적표 검수에서 정정합니다.</p><div id="consultingReportClarifications" class="consulting-report-source-stack"></div><button id="consultingReportAddClarification" type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingReportClarification()">변경 확인 항목 추가</button></section>
+                                <details class="consulting-original"><summary>비교 후보·다른 지원 방향</summary><div class="consulting-report-source-grid">
+                                    <label>전문대 검토<select name="planC_vocational" aria-label="전문대 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>의료계열 검토<select name="planC_medical" aria-label="의료계열 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>다른 계열 검토<select name="planC_differentTrack" aria-label="다른 계열 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>다른 지역 검토<select name="planC_differentRegion" aria-label="다른 지역 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                </div><div id="consultingReportComparisons" class="consulting-report-source-stack"></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingReportComparison()">비교 후보 추가</button></details>
+                                <details class="consulting-original"><summary>판단 근거·내부 기록</summary><div class="consulting-report-source-grid">
+                                    <label class="consulting-report-source-wide">상담사의 판단 근거<textarea name="rationale" maxlength="3000" rows="3"></textarea></label>
+                                    <label>추가 검수 항목<textarea name="furtherChecks" maxlength="2500" rows="3"></textarea></label>
+                                    <label>직접 입력 근거 메모<textarea name="manualEvidence" maxlength="300" rows="3" placeholder="상담 정리의 확인 경로 등"></textarea></label>
+                                    <label class="consulting-report-source-wide">운영 전용 메모<textarea name="internalMemo" maxlength="4000" rows="3"></textarea><span class="consulting-caption">운영 전용 메모는 보고서 작성 기준에 포함되지 않습니다.</span></label>
+                                </div><div id="consultingReportEvidence" class="consulting-report-source-stack"></div></details>
+                            </fieldset>
+                            <div class="consulting-actions"><button id="consultingReportSaveSummary" type="submit" class="consulting-btn consulting-btn-primary" disabled>상담 정리 저장</button><span id="consultingReportDirty" class="consulting-caption"></span></div>
+                        </form>
+                        <section class="consulting-report-source-section"><h3>보고서에 반영할 내용</h3><div id="consultingReportAppliedValues" class="consulting-material-copy"></div><div class="consulting-actions"><button id="consultingReportFreezeSource" type="button" class="consulting-btn consulting-btn-primary" onclick="freezeConsultingReportSource()" disabled>이 내용으로 작성 기준 고정</button><p class="consulting-caption">현재 자료와 저장한 상담 정리를 묶습니다. 보고서 본문 작성이나 학생 전송은 시작되지 않습니다.</p></div></section>
+                    </div>
+                    <button id="consultingStudentReport" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReportReview()">기존 분석·보고서 작업 화면 열기</button>
+                </div>
                 <div id="consultingWorkspaceFinal" class="consulting-work-card" data-workspace-pane="final" hidden><h2>파이널 콜</h2><p class="consulting-caption">학생의 가능 시간과 예약·완료 기록을 확인하고 통화를 마무리합니다.</p><button id="consultingStudentFinal" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingFinalCall()">파이널 콜 일정·완료 화면 열기</button></div>
                 <div id="consultingWorkspaceService" data-workspace-pane="service" hidden>            <section id="consultingServicePanel" aria-labelledby="consultingServiceTitle" aria-busy="false">
                 <h2 id="consultingServiceTitle" class="page-title">서비스 보류·재개</h2>
@@ -846,6 +892,7 @@
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
     <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
+    <script src="/js/admin/consulting-report-source.js?v=20261111a"></script>
     <script src="/js/admin/consulting-workspace.js?v=20261104a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
