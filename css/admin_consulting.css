@@ -182,3 +182,25 @@
 .consulting-report-content-paragraph details { padding: 10px 14px; border-radius: 8px; background: #f5f7fb; color: #516078; font-size: 12px; }
 .consulting-report-content-paragraph summary { cursor: pointer; font-weight: 600; }
 .consulting-report-content-paragraph details p { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.consulting-report-revision-panel { margin: 20px 0; padding: clamp(14px, 3vw, 24px); border: 1px solid #dce2eb; border-radius: 14px; background: #f8faff; min-width: 0; }
+.consulting-report-revision-panel summary { cursor: pointer; font-weight: 700; padding: 12px 0; }
+.consulting-report-revision-evidence { margin: 16px 0; padding: 12px; border: 1px solid #dce2eb; border-radius: 10px; min-width: 0; }
+.consulting-report-revision-evidence > div { display: grid; gap: 10px; max-height: 300px; overflow: auto; }
+.consulting-report-revision-evidence-row { min-height: 44px; box-sizing: border-box; display: flex; gap: 10px; align-items: flex-start; padding: 10px; background: #fff; border-radius: 8px; }
+.consulting-report-revision-evidence-row > input { flex: 0 0 auto; width: 20px; height: 20px; margin: 3px 0 0; }
+.consulting-report-revision-evidence-row > span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; font-size: 12px; white-space: pre-wrap; }
+.consulting-report-revision-list { display: grid; gap: 10px; padding: 0; list-style: none; margin: 18px 0; }
+.consulting-report-revision-list > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #dce2eb; border-radius: 10px; background: #fff; min-width: 0; overflow-wrap: anywhere; }
+.consulting-report-revision-list > li > div { flex: 1 1 220px; min-width: 0; }
+.consulting-report-revision-list p { margin: 6px 0; line-height: 1.7; }
+.consulting-report-revision-detail { margin-top: 20px; padding: clamp(14px, 3vw, 24px); background: #fff; border: 1px solid #dce2eb; border-radius: 12px; min-width: 0; overflow-wrap: anywhere; }
+.consulting-report-revision-detail > p { line-height: 1.8; white-space: pre-wrap; }
+.consulting-report-revision-detail > label { display: block; margin-top: 16px; font-weight: 600; }
+.consulting-report-revision-detail textarea { display: block; width: 100%; box-sizing: border-box; min-height: 80px; margin: 8px 0 12px; padding: 10px; border: 1px solid #cad4e2; border-radius: 8px; font: inherit; }
+.consulting-report-revision-change { margin: 18px 0; }
+.consulting-report-revision-diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.consulting-report-revision-diff > div { padding: 16px; border: 1px solid #dce2eb; border-radius: 10px; background: #f5f7fb; min-width: 0; }
+.consulting-report-revision-diff > div[data-side="after"] { border-color: #b8dace; background: #f0faf6; }
+.consulting-report-revision-diff p { white-space: pre-wrap; line-height: 1.9; margin: 10px 0; }
+.consulting-report-revision-diff small { display: block; margin-top: 5px; color: #516078; }

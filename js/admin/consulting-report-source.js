@@ -42,7 +42,7 @@ function reportSourceRemove(row) {
     button.addEventListener('click', () => { row.remove(); markConsultingReportSourceDirty(); }); row.append(button);
 }
 function updateConsultingReportSourceButtons() {
-    const calculating = typeof consultingReportFactsBusy !== 'undefined' && consultingReportFactsBusy || typeof consultingReportContentBusy !== 'undefined' && consultingReportContentBusy;
+    const calculating = typeof consultingReportRevisionBusy !== 'undefined' && consultingReportRevisionBusy || typeof consultingReportFactsBusy !== 'undefined' && consultingReportFactsBusy || typeof consultingReportContentBusy !== 'undefined' && consultingReportContentBusy;
     const editable = consultingReportSource?.canEdit === true && !consultingReportSourceBusy && !calculating;
     consultingReportNode('consultingReportSummaryFields').disabled = !editable;
     consultingReportNode('consultingReportSaveSummary').disabled = !editable;
@@ -51,6 +51,7 @@ function updateConsultingReportSourceButtons() {
     consultingReportNode('consultingReportDirty').textContent = consultingReportSourceDirty ? '저장하지 않은 변경사항이 있습니다.' : '';
     if (typeof updateConsultingReportFactsButton === 'function') updateConsultingReportFactsButton();
     if (typeof updateConsultingReportContentButtons === 'function') updateConsultingReportContentButtons();
+    if (typeof updateConsultingReportRevisionButtons === 'function') updateConsultingReportRevisionButtons();
 }
 function markConsultingReportSourceDirty() {
     if (!consultingReportSource?.canEdit || consultingReportSourceBusy) return;
@@ -198,7 +199,7 @@ function renderConsultingReportSource(data, revision) {
     consultingReportNode('consultingStudentReport').disabled = Boolean(data.pipelineVersion);
     consultingReportNode('consultingReportSourceBody').hidden = false;
     if (typeof renderConsultingReportFacts === 'function') renderConsultingReportFacts(data.reportFacts);
-    if (typeof renderConsultingReportContent === 'function') { resetConsultingReportContent(); renderConsultingReportContent(data.reportContent); }
+    if (typeof renderConsultingReportContent === 'function') { resetConsultingReportContent(true); renderConsultingReportContent(data.reportContent); }
     updateConsultingReportSourceButtons();
 }
 

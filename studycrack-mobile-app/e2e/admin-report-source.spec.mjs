@@ -41,7 +41,24 @@ async function prepare(page, options = {}) {
             ws.reportContent = { canGenerate: !options.readOnly, status: 'not_generated', sourceDigest: ws.sourceDigest, factsDigest: 'sha256:' + 'b'.repeat(64), job: null, record: null };
             if (options.contentStatus) Object.assign(ws.reportContent, { status: options.contentStatus, canGenerate: ['failed', 'stale'].includes(options.contentStatus), job: { jobId: 'REPORT_CONTENT_SYNTHETIC', status: options.contentStatus, attempts: 1, lastErrorCode: options.contentStatus === 'failed' ? 'AI_PROVIDER_HTTP_401' : null } });
             if (options.contentStatus === 'completed') ws.reportContent.record = { revision: 1, model: 'gpt-5-mini', content: { numericalReady: true, warnings: [], evidence: [{ id: 'S001', kind: 'consultation', path: 'conclusion', value: '<img src=x onerror=alert(1)> 상담에서 확인한 전공 우선' }],
-                pages: ['전략 요약', '점수 분석', '성적 기준 지원 범위', '플랜 A', '플랜 B', '최종 판단 기준'].map((title, i) => ({ page: i + 1, title, paragraphs: [{ text: '<b>안정 지원과 전공 조건을 확인합니다.</b>', sourceRefs: ['S001'], factRefs: [] }], candidates: [2, 3, 4].includes(i) ? result.facts : [], ...(i === 1 ? { scores: result.scoreAnalysis.records } : {}), ...(i === 5 ? { planC: { paragraphs: [], candidates: [] } } : {}) })), unresolvedItems: [], disclaimer: '실제 합격을 보장하지 않습니다.' } };
+                pages: ['전략 요약', '점수 분석', '성적 기준 지원 범위', '플랜 A', '플랜 B', '최종 판단 기준'].map((title, i) => ({ page: i + 1, key: ['cover', 'scoreAnalysis', 'baseline', 'planA', 'planB', 'conclusion'][i], title, paragraphs: [{ text: '<b>안정 지원과 전공 조건을 확인합니다.</b>', sourceRefs: ['S001'], factRefs: [] }], candidates: [2, 3, 4].includes(i) ? result.facts : [], ...(i === 1 ? { scores: result.scoreAnalysis.records } : {}), ...(i === 5 ? { planC: { paragraphs: [], candidates: [] } } : {}) })), unresolvedItems: [], disclaimer: '실제 합격을 보장하지 않습니다.' } };
+        }
+        if (options.withRevisions) {
+            const state = window.__reportSource, content = state.ws.reportContent;
+            content.canRequestRevision = !options.readOnly; content.record.contentDigest = 'sha256:' + 'c'.repeat(64);
+            content.record.content.evidence.push({ id: 'S002', kind: 'survey', path: 'strategy.priorityOrder', value: '전공과 통학을 우선합니다.' });
+            state.revisions = []; state.openCount = 0;
+            state.addRevision = (input, status = 'pending') => {
+                const n = state.revisions.length + 1, id = 'REVISION_' + n.toString(16).padStart(40, '0');
+                const row = { requestId: id, requestKey: `REPORT#REVISION#REQUEST#2026-12-08T03:00:00.000Z#${id}`, createdAt: '2026-12-08T03:00:00.000Z', status,
+                    baseContentRevision: input.baseContentRevision || content.record.revision, baseContentDigest: input.baseContentDigest || content.record.contentDigest,
+                    input: { target: input.target || 'planA', paragraphIndex: input.paragraphIndex ?? null, category: input.category || 'consultation_reflection', scope: input.scope || 'section', issue: input.issue || '상담 내용 반영이 부족합니다.', instruction: input.instruction || '상담 근거로 설명을 보완해주세요.', sourceRefs: input.sourceRefs || ['S001'] },
+                    jobId: 'REPORT_CONTENT_' + n.toString(16).padStart(40, '0'), idempotencyKey: input.idempotencyKey, supersedes: input.supersedes || null };
+                state.revisions.unshift(row); state.openCount++; return row;
+            };
+            if (options.revisionStatus) state.addRevision({}, options.revisionStatus);
+            state.completeRevision = () => { const row = state.revisions[0]; row.status = 'review_required'; row.resultContentRevision = content.record.revision + 1; row.outcome = { response: { status: 'addressed', explanation: '통학 조건과 전공 우선을 명확하게 반영했습니다.' }, changedTargets: ['planA'] }; content.record.revision++; content.record.contentDigest = 'sha256:' + 'd'.repeat(64); content.record.content.pages[3].paragraphs[0].text = '상담에서 확인한 통학 조건과 전공 우선을 설명에 반영합니다.'; };
+            if (options.revisionStatus === 'review_required') state.completeRevision();
         }
         window.apiFetch = async (_url, request) => {
             const input = JSON.parse(request.body), state = window.__reportSource; state.calls.push(input);
@@ -61,6 +78,24 @@ async function prepare(page, options = {}) {
             } else if (input.type === 'admin_get_report_content') {
                 if (state.failContentGet) throw Object.assign(new Error('생성 상태를 확인할 수 없습니다.'), { status: 503 });
                 data = { ...structuredClone(state.ws.reportContent), caseId, caseRevision: state.ws.caseRevision };
+            } else if (input.type === 'admin_get_report_revision_workspace') {
+                if (state.deferRevisionList) await new Promise(resolve => { state.resolveRevisionList = resolve; });
+                if (state.failRevisionList) throw Object.assign(new Error('수정 요청을 조회하지 못했습니다.'), { status: 503 });
+                const items = input.data.cursor ? state.revisions.slice(1) : state.revisions.slice(0, 1);
+                data = { caseId, caseRevision: state.ws.caseRevision, currentContentRevision: state.ws.reportContent.record.revision, openCount: state.openCount, items: structuredClone(items), nextCursor: !input.data.cursor && state.revisions.length > 1 ? state.revisions[0].requestKey : null, hasPending: items.some(r => ['pending', 'processing'].includes(r.status)) };
+            } else if (input.type === 'admin_request_report_revision') {
+                if (state.deferRevisionSubmit) await new Promise(resolve => { state.resolveRevisionSubmit = resolve; });
+                let row = state.revisions.find(r => r.idempotencyKey === input.data.idempotencyKey), unchanged = Boolean(row);
+                if (!row) { row = state.addRevision(input.data, ['score_or_cutoff', 'candidate_or_plan'].includes(input.data.category) ? 'requires_recalculation' : 'pending'); state.ws.caseRevision++; }
+                if (state.loseRevisionResponse) { state.loseRevisionResponse = false; throw Object.assign(new Error('응답을 확인하지 못했습니다. 같은 요청으로 다시 시도해주세요.'), { status: 503 }); }
+                data = { request: structuredClone(row), unchanged };
+            } else if (input.type === 'admin_get_report_revision_detail') {
+                const row = state.revisions.find(r => r.requestKey === input.data.requestKey);
+                data = { caseId, request: structuredClone(row), currentContentRevision: state.ws.reportContent.record.revision, canEdit: !options.readOnly, requiresReapply: row.status === 'reapply_required',
+                    comparison: row.outcome ? { baseContentRevision: row.baseContentRevision, resultContentRevision: row.resultContentRevision, numbersUnchanged: true, changedTargets: ['planA'], response: row.outcome.response,
+                        evidence: state.ws.reportContent.record.content.evidence, diff: [{ target: 'planA', paragraphIndex: 0, before: { text: '기존 <img src=x onerror=alert(1)> 설명', sourceRefs: ['S001'] }, after: { text: '상담에서 확인한 통학 조건과 전공 우선을 설명에 반영합니다.', sourceRefs: ['S001', 'S002'] } }] } : null };
+            } else if (input.type === 'admin_resolve_report_revision') {
+                const row = state.revisions.find(r => r.requestKey === input.data.requestKey); row.status = input.data.action === 'withdrawn' ? 'withdrawn' : 'resolved'; row.resolution = { reason: input.data.reason }; state.openCount--; data = { request: structuredClone(row) };
             } else if (input.type === 'admin_save_report_consultation_summary') {
                 if (state.deferSave) await new Promise(resolve => { state.resolveSave = resolve; });
                 if (state.failSave) throw Object.assign(new Error('상담 정리 또는 원자료가 변경되었습니다.'), { status: 409 });
@@ -85,7 +120,7 @@ async function prepare(page, options = {}) {
             return { json: async () => ({ success: true, data }) };
         };
     }, { caseId, options });
-    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-revision.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await page.locator('[data-student-tab="report"]').click();
@@ -293,4 +328,76 @@ test('생성 요청 중 로그아웃하면 늦은 응답으로 본문과 개인�
     await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolveContent(); });
     await expect(page.locator('#consultingReportContentResult')).toBeEmpty();
     await expect(page.locator('#consultingReportGenerateContent')).toBeDisabled();
+});
+
+
+test('자연어 수정 요청은 선택한 본문·항목·근거와 설명만 전송하고 숫자를 보내지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true });
+    await page.locator('#consultingReportRevisionComposer').evaluate(e => { e.open = true; });
+    await page.getByLabel('발견한 문제', { exact: true }).fill('상담에서 전공 우선으로 확인했는데 설명이 부족합니다.');
+    await page.getByLabel('원하는 수정 방향', { exact: true }).fill('상담 결론에 맞게 선정 이유를 보완해주세요.');
+    await page.getByRole('combobox', { name: '수정할 항목', exact: true }).selectOption('planA');
+    await page.getByLabel('상담 정리 · 상담 결론', { exact: true }).check();
+    await page.getByRole('button', { name: '수정 요청 보내기', exact: true }).click();
+    await expect(page.locator('#consultingReportRevisionStatus')).toContainText('수정 요청을 보관');
+    const sent = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_request_report_revision'));
+    expect(sent).toHaveLength(1); expect(sent[0].data).toMatchObject({ caseId, baseContentRevision: 1, baseContentDigest: 'sha256:' + 'c'.repeat(64), target: 'planA', category: 'consultation_reflection', sourceRefs: ['S001'], supersedes: null });
+    expect(Object.keys(sent[0].data)).not.toContain('probability'); await expect(page.locator('.consulting-report-content-page')).toHaveCount(6);
+});
+test('응답 유실 재전송은 같은 요청 키를 유지하고 저장된 요청을 중복 생성하지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true });
+    await page.locator('#consultingReportRevisionComposer').evaluate(e => { e.open = true; });
+    await page.getByLabel('발견한 문제', { exact: true }).fill('조사서 내용 반영이 부족합니다.');
+    await page.getByLabel('원하는 수정 방향', { exact: true }).fill('선택 기준을 명확하게 설명해주세요.');
+    await page.getByLabel('상담 정리 · 상담 결론', { exact: true }).check();
+    await page.evaluate(() => { window.__reportSource.loseRevisionResponse = true; });
+    await page.locator('#consultingReportRevisionSubmit').click(); await expect(page.locator('#consultingReportRevisionStatus')).toContainText('응답을 확인하지 못했습니다');
+    await page.locator('#consultingReportRevisionSubmit').click(); await expect(page.locator('#consultingReportRevisionStatus')).toContainText('수정 요청을 보관');
+    const sent = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_request_report_revision'));
+    expect(sent).toHaveLength(2); expect(sent[0].data.idempotencyKey).toBe(sent[1].data.idempotencyKey); expect(await page.evaluate(() => window.__reportSource.revisions.length)).toBe(1);
+});
+test('수정 전후 문단·근거와 수치 유지 표시를 확인하고 처리 사유를 남긴다', async ({ page }, testInfo) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, revisionStatus: 'review_required' });
+    await page.getByRole('button', { name: '요청·변경 내용 보기', exact: true }).click();
+    await expect(page.locator('#consultingReportRevisionDetail')).toContainText('수정 전'); await expect(page.locator('#consultingReportRevisionDetail')).toContainText('수정 후');
+    await expect(page.locator('#consultingReportRevisionDetail')).toContainText('환산점수·예상컷·확률을 유지'); await expect(page.locator('#consultingReportRevisionDetail img')).toHaveCount(0);
+    await expect(page.locator('[data-side="before"]')).toContainText('<img src=x');
+    for (const width of [320, 1280]) { await page.setViewportSize({ width, height: 900 }); expect(await page.locator('#consultingReportRevisionDetail').evaluate(e => e.scrollWidth <= e.clientWidth + 1)).toBe(true); await page.locator('#consultingReportRevisionDetail').screenshot({ path: testInfo.outputPath(`report-revision-comparison-${width}.png`) }); }
+    await page.getByRole('button', { name: '수정 결과 확인 완료', exact: true }).click(); await expect(page.locator('#consultingReportRevisionStatus')).toContainText('처리 사유를 작성');
+    await page.getByLabel('수정 요청 처리 사유', { exact: true }).fill('현재 본문과 상담 근거를 직접 검토했습니다.'); page.once('dialog', d => d.accept());
+    await page.getByRole('button', { name: '수정 결과 확인 완료', exact: true }).click(); await expect(page.locator('#consultingReportRevisionDetail')).toContainText('확인 완료');
+});
+test('본문이 바뀌면 입력을 보존하고 명시적으로 최신 기준을 선택하기 전에는 전송을 막는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true });
+    await page.locator('#consultingReportRevisionComposer').evaluate(e => { e.open = true; });
+    await page.getByLabel('발견한 문제', { exact: true }).fill('아직 보내지 않은 수정 요청입니다.');
+    await page.evaluate(() => { const c = window.__reportSource.ws.reportContent; c.record.revision = 2; c.record.contentDigest = 'sha256:' + 'e'.repeat(64); });
+    await page.getByRole('button', { name: '생성 상태 확인', exact: true }).click();
+    await expect(page.getByLabel('발견한 문제', { exact: true })).toHaveValue('아직 보내지 않은 수정 요청입니다.'); await expect(page.locator('#consultingReportRevisionSubmit')).toBeDisabled();
+    await page.getByRole('button', { name: '최신 본문을 기준으로 다시 작성', exact: true }).click(); await expect(page.locator('#consultingReportRevisionBase')).toContainText('본문 2'); await expect(page.locator('#consultingReportRevisionSubmit')).toBeEnabled();
+});
+test('수정 요청 자동 조회는 입력을 덮어쓰지 않고 조회 실패 뒤 연속 오류를 멈춘다', async ({ page }) => {
+    await page.clock.install(); await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, revisionStatus: 'pending' });
+    await expect.poll(() => page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_get_report_revision_workspace').length)).toBe(1);
+    await page.clock.fastForward(11000); await expect.poll(() => page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_get_report_revision_workspace').length)).toBe(2);
+    await page.evaluate(() => { window.__reportSource.failRevisionList = true; }); await page.clock.fastForward(11000); await expect(page.locator('#consultingReportRevisionStatus')).toContainText('조회하지 못했습니다');
+    const count = await page.evaluate(() => window.__reportSource.calls.length); await page.clock.fastForward(60000); expect(await page.evaluate(() => window.__reportSource.calls.length)).toBe(count);
+});
+test('이전 요청을 현재 본문으로 재적용할 때 설명과 연결 대상을 유지한다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, revisionStatus: 'reapply_required' });
+    await page.getByRole('button', { name: '요청·변경 내용 보기', exact: true }).click(); await page.getByRole('button', { name: '현재 본문으로 다시 요청', exact: true }).click();
+    await expect(page.getByLabel('발견한 문제', { exact: true })).toHaveValue('상담 내용 반영이 부족합니다.');
+    await page.getByRole('button', { name: '수정 요청 보내기', exact: true }).click();
+    expect(await page.evaluate(() => window.__reportSource.calls.find(c => c.type === 'admin_request_report_revision').data.supersedes)).toContain('REPORT#REVISION#REQUEST#');
+});
+test('수정 요청 중 로그아웃은 입력·상세를 지우고 늦은 응답이 복구하지 못한다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true });
+    await page.locator('#consultingReportRevisionComposer').evaluate(e => { e.open = true; }); await page.getByLabel('발견한 문제', { exact: true }).fill('상담 내용 확인'); await page.getByLabel('원하는 수정 방향', { exact: true }).fill('설명을 명확히 해주세요.'); await page.getByLabel('상담 정리 · 상담 결론', { exact: true }).check();
+    await page.evaluate(() => { window.__reportSource.deferRevisionSubmit = true; }); await page.locator('#consultingReportRevisionSubmit').click(); await expect(page.getByLabel('발견한 문제', { exact: true })).toBeDisabled();
+    await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolveRevisionSubmit(); });
+    await expect(page.locator('#consultingReportRevisionPanel')).toBeHidden(); await expect(page.locator('#consultingReportRevisionDetail')).toBeEmpty(); await expect(page.getByLabel('발견한 문제', { exact: true })).toHaveValue('');
+});
+test('읽기 전용 관리자는 비교를 볼 수 있고 수정·완료 처리는 실행할 수 없다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, revisionStatus: 'review_required', readOnly: true });
+    await page.getByRole('button', { name: '요청·변경 내용 보기', exact: true }).click(); await expect(page.locator('#consultingReportRevisionDetail')).toContainText('수정 후'); await expect(page.getByRole('button', { name: '수정 결과 확인 완료', exact: true })).toHaveCount(0); await expect(page.locator('#consultingReportRevisionSubmit')).toBeDisabled();
 });
