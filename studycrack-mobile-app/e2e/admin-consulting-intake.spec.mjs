@@ -193,12 +193,36 @@ test('데스크톱에서도 상세와 승인 폼은 패널 밖으로 넘치지 �
     await openDetail(page);
     expect(await page.locator('#consultingIntakePanel').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
 });
-test('초대 취소는 환경이 확인된 미사용 초대만 노출하고 사유와 최종 확인을 보낸다', async ({ page }) => {
+test('초대 취소는 환경이 확인된 미사용 초대에서 정확한 문구와 최종 동의를 요구한다', async ({ page }) => {
     await prepare(page); await page.evaluate(() => { window.__detail.application.applicationState = 'INVITED'; window.__detail.activeInviteId = 'INVITE_synthetic'; }); await openDetail(page); await expect(page.locator('#consultingRevokeBtn')).toBeHidden();
     await page.getByRole('button', { name: '← 학생 목록', exact: true }).click(); await page.evaluate(() => { window.__detail.stageVerified = true; }); await openDetail(page);
     page.once('dialog', dialog => dialog.dismiss()); await page.locator('#consultingRevokeBtn').click(); expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite').length)).toBe(0);
-    page.on('dialog', dialog => dialog.accept(dialog.type() === 'prompt' ? '잘못 발급한 합성 초대를 취소함' : undefined)); await page.locator('#consultingRevokeBtn').click(); await expect(page.locator('#consultingActionStatus')).toContainText('미사용 초대 취소 완료');
-    const request = await page.evaluate(() => window.__calls.find(x => x.type === 'admin_revoke_consulting_invite')); expect(request.data.applicationId).toBe(applicationId); expect(request.data.expectedRevision).toBe(0); expect(request.data.reason).toBe('잘못 발급한 합성 초대를 취소함');
+    for (const incorrect of ['초대취소', '잘못 발급한 합성 초대를 취소함', '초대 취소 ']) {
+        page.once('dialog', dialog => dialog.accept(incorrect));
+        await page.locator('#consultingRevokeBtn').click();
+        await expect(page.locator('#consultingStatus')).toHaveText('초대 취소를 정확히 입력해주세요.');
+        expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite').length)).toBe(0);
+    }
+    const dialogs = [];
+    const cancelConfirmation = async dialog => {
+        dialogs.push(dialog.type());
+        if (dialog.type() === 'prompt') await dialog.accept('초대 취소');
+        else await dialog.dismiss();
+    };
+    page.on('dialog', cancelConfirmation);
+    await page.locator('#consultingRevokeBtn').click();
+    await expect.poll(() => dialogs).toEqual(['prompt', 'confirm']);
+    page.off('dialog', cancelConfirmation);
+    expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite').length)).toBe(0);
+
+    page.on('dialog', dialog => dialog.accept(dialog.type() === 'prompt' ? '초대 취소' : undefined));
+    await page.locator('#consultingRevokeBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('미사용 초대 취소 완료');
+    const requests = await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_revoke_consulting_invite'));
+    expect(requests).toHaveLength(1);
+    expect(requests[0].data.applicationId).toBe(applicationId);
+    expect(requests[0].data.expectedRevision).toBe(0);
+    expect(requests[0].data.reason).toBe('초대 취소');
 });
 
 async function prepareInputReview(page) {

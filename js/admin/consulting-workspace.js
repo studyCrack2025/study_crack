@@ -138,7 +138,7 @@ async function loadConsultingDirectory() {
         consultingDirectoryNextCursor = data.nextCursor || null;
         renderConsultingDirectory(data.items);
         document.getElementById('consultingDirectoryPage').textContent = `${consultingDirectoryPreviousCursors.length + 1}페이지 · ${data.items.length}명`;
-        consultingWorkspaceStatus('consultingDirectoryStatus', `${phase === 'all' ? '전체 신청' : phase === 'attention' ? '보류·거절' : consultingPhaseTitles[phase]} · 현재 페이지 ${data.items.length}명${data.unavailableCount ? ' · 연결 정보 확인이 필요한 신청이 있습니다.' : ''}${consultingDirectoryNextCursor ? ' · 다음 페이지가 있습니다.' : ''}`, data.unavailableCount ? 'error' : 'success');
+        consultingWorkspaceStatus('consultingDirectoryStatus', `${phase === 'all' ? '전체 신청' : phase === 'attention' ? '보류·거절·초대 취소' : consultingPhaseTitles[phase]} · 현재 페이지 ${data.items.length}명${data.unavailableCount ? ' · 연결 정보 확인이 필요한 신청이 있습니다.' : ''}${consultingDirectoryNextCursor ? ' · 다음 페이지가 있습니다.' : ''}`, data.unavailableCount ? 'error' : 'success');
     } catch (_error) {
         if (generation !== consultingWorkspaceGeneration) return;
         resetConsultingExport();

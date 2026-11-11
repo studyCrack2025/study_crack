@@ -134,3 +134,10 @@
 .consulting-identifiers, .consulting-admin-tools { margin:14px 0; padding:0 14px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; }
 .consulting-identifiers summary, .consulting-admin-tools summary { min-height:44px; padding:11px 0; color:#334155; font-weight:700; cursor:pointer; }
 .consulting-identifiers .consulting-material-copy { margin-bottom:12px; }
+
+.consulting-team-slots { display: grid; gap: 12px; max-height: 440px; overflow-y: auto; margin-bottom: 16px; }
+.consulting-team-slots fieldset { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; border: 1px solid #dce4ef; border-radius: 10px; padding: 12px; }
+.consulting-team-slots legend { padding: 0 6px; font-size: 13px; font-weight: 700; color: #14213d; }
+.consulting-team-slots label { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 8px; border: 1px solid #dce4ef; border-radius: 8px; cursor: pointer; }
+.consulting-team-slots label:has(input:checked) { background: #edf3ff; border-color: #3156d3; }
+.consulting-team-slots input { width: 18px; height: 18px; }
