@@ -7,7 +7,8 @@ const ids = ['WST_20261009_1000', 'WST_20261009_1030', 'WST_20261010_1000', 'WST
 const valid = validateWrittenSelection(Object.fromEntries(ids.map((id, index) => [id, index < 2 ? 1 : 2])));
 assert.equal(valid.valid, true);
 assert.equal(valid.selectedSlots.length, 6);
-assert.equal(validateWrittenSelection(Object.fromEntries(ids.slice(0, 5).map(id => [id, 1]))).valid, false);
+assert.equal(validateWrittenSelection({ [ids[0]]: 2 }).valid, true);
+assert.equal(validateWrittenSelection({}).valid, false);
 
 const slots = ids.map((slotId, index) => ({ slotId, localDate: slotId.slice(4, 8) + '-' + slotId.slice(8, 10) + '-' + slotId.slice(10, 12), localTime: index % 2 ? '10:30' : '10:00', startAt: `2026-10-${String(9 + Math.floor(index / 2)).padStart(2, '0')}T01:${index % 2 ? '30' : '00'}:00.000Z` }));
 assert.equal(groupWrittenSlots(slots).length, 3);

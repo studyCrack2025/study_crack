@@ -10,10 +10,7 @@ export function groupWrittenSlots(slots = []) {
 
 export function validateWrittenSelection(selected = {}) {
   const entries = Object.entries(selected).filter(([, priority]) => [1, 2, 3].includes(Number(priority)));
-  if (entries.length < 6) return { valid: false, message: '가능 시간을 6개 이상 선택해주세요.' };
-  if (entries.length > 30) return { valid: false, message: '가능 시간은 최대 30개까지 선택할 수 있습니다.' };
-  const days = new Set(entries.map(([slotId]) => String(slotId).slice(4, 12)));
-  if (days.size < 3) return { valid: false, message: '최소 3일에 나누어 선택해주세요.' };
+  if (!entries.length) return { valid: false, message: '가능 시간을 한 개 이상 선택해주세요.' };
   return { valid: true, selectedSlots: entries.map(([slotId, priority]) => ({ slotId, priority: Number(priority) })) };
 }
 

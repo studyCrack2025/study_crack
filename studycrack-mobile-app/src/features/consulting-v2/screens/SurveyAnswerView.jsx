@@ -1,5 +1,5 @@
 import React from 'react';
-import { CONSULTATION_TOPIC_LABELS, LEGACY_CONSULTATION_LABELS, PRIORITY_LABELS } from '../survey-model.js';
+import { CONSULTATION_TOPIC_LABELS, PRIORITY_LABELS } from '../survey-model.js';
 
 const choices = {
   high_school_senior: '고3 재학생', graduate: '졸업생', qualification_exam: '검정고시',
@@ -15,7 +15,7 @@ const names = {
   conditions: { dormitoryAllowed: '기숙사 생활 가능', repeatStudyAllowed: '재수 가능성', tuitionBudgetAnnual: '연간 등록금 상한' },
   strategy: { riskTolerance: '지원 위험 선호', priorityOrder: '대학 선택 우선순위' },
   qualitative: { consultationTopics: '상담 주제', decisionOptions: '비교 중인 선택지와 기준', consultationQuestions: '상담에서 답을 받고 싶은 질문',
-    specialCircumstances: '함께 알아야 할 사항', ...LEGACY_CONSULTATION_LABELS },
+    specialCircumstances: '함께 알아야 할 사항' },
   consent: { accurateInformation: '입력 내용 확인', analysisUse: '분석 이용 동의' }
 };
 const numberOrDash = value => value === true ? '예' : value === false ? '아니요' : value ?? '—';
@@ -44,8 +44,7 @@ function entries(section, value) {
     ['추가 희망', value.additionalPreference]
   ];
   const fields = section === 'preferences' ? legacyPreferences : names[section] || {};
-  const result = Object.entries(fields).filter(([key]) => Object.hasOwn(value, key)
-    && (!Object.hasOwn(LEGACY_CONSULTATION_LABELS, key) || Boolean(value[key]))).map(([key, label]) => [label, display(key, value[key])]);
+  const result = Object.entries(fields).filter(([key]) => Object.hasOwn(value, key)).map(([key, label]) => [label, display(key, value[key])]);
   if (section === 'conditions') result.unshift(['최대 편도 통학 시간', value.commuteLimit === 'over_120' ? '2시간 이상도 가능' : value.commuteMaxMinutes != null ? `${value.commuteMaxMinutes}분 이내` : '—']);
   return result;
 }

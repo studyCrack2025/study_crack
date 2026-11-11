@@ -35,7 +35,7 @@ async function prepare(page, { loggedIn = true } = {}) {
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     localStorage.setItem('userRole','student');
     window.hasClientSession=()=>${loggedIn};
-    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},survey:${JSON.stringify(state.survey)},calls:[],saves:[],revisionSaves:[],submissions:[],conversions:[]};
+    window.__design={home:${JSON.stringify(state.home)},error:${state.error},defer:${state.defer},survey:${JSON.stringify(state.survey)},booking:${JSON.stringify(state.booking || null)},calls:[],saves:[],revisionSaves:[],submissions:[],conversions:[]};
     window.apiFetch=async(_url,options)=>{
       const {type,data:input}=JSON.parse(options.body), f=window.__design; f.calls.push(type);
       if(type==='student_get_v2_consulting_home'){
@@ -102,14 +102,27 @@ async function prepare(page, { loggedIn = true } = {}) {
         f.survey.supplement=null;
         data={caseId:f.survey.caseId,workflowState:f.survey.workflowState};
       }
-      else if(type==='student_list_v2_written_slots') data={slots:['2099-01-01','2099-01-02','2099-01-03'].flatMap(localDate=>['10:00','10:30'].map(localTime=>({slotId:'WST_'+localDate.replaceAll('-','')+'_'+localTime.replace(':',''),localDate,localTime,startAt:localDate+'T'+localTime+':00+09:00',endAt:localDate+'T11:00:00+09:00'})))};
-      else if(type==='student_get_v2_written_availability') data=f.availability||{selectedSlots:[],revision:0};
+      else if(type==='student_list_v2_written_slots') data={caseId:f.survey.caseId,window:{startDate:'2026-12-07',endDate:'2026-12-20'},slots:['2026-12-07','2026-12-08','2026-12-20'].flatMap(localDate=>['10:00','10:30'].map(localTime=>({slotId:'WST_'+localDate.replaceAll('-','')+'_'+localTime.replace(':',''),localDate,localTime,startAt:localDate+'T'+localTime+':00+09:00',endAt:localDate+'T11:00:00+09:00'})))};
+      else if(type==='student_get_v2_written_availability') data={caseId:f.survey.caseId,selectedSlots:[],revision:0,...f.availability};
       else if(type==='student_submit_v2_written_availability'){
         f.availability={revision:input.expectedAvailabilityRevision+1,selectedSlots:input.selectedSlots};
         f.survey.workflowState='SCHEDULING';
         data=f.availability;
       }
-      else if(type==='student_get_v2_written_booking') data={session:null};
+      else if(type==='student_get_v2_written_booking') data={caseId:f.survey.caseId,session:null,...f.booking};
+      else if(type==='student_respond_written_reschedule'){
+        f.lastResponse=input;
+        const change=f.booking.change;
+        if(input.decision==='accept') f.booking.session={...f.booking.session,...change.offer,revision:2};
+        f.booking.change=null; f.booking.changeRevision++;
+        data=f.booking;
+      }
+      else if(type==='student_request_written_reschedule'){
+        f.lastRequest=input;
+        f.booking.changeRevision++;
+        f.booking.change={kind:'student',selectedSlots:input.selectedSlots,revision:f.booking.changeRevision};
+        data=f.booking;
+      }
       else if(type==='student_get_written_session') data={session:{caseId:'CASE_synthetic',status:'booked',entryAllowed:true,startAt:'2099-01-01T01:00:00.000Z',endAt:'2099-01-01T01:30:00.000Z'}};
       else if(type==='student_list_written_messages') data={messages:[],nextCursor:null,hasMore:false};
       else if(type==='student_get_v2_report') data={available:false,report:null};
@@ -498,10 +511,11 @@ test('제출한 답변을 열어 수정하고 충돌 시 최신본과 비교해 
   await expect(page.getByText('내 수정 학교', { exact: true })).toBeVisible();
 });
 
-test('제출한 상담 답변에 새 비교 기준을 적고 다른 탭의 새 주제도 유지한다', async ({ page }) => {
+test('구형 상담 답변은 숨기고 새 비교 기준과 다른 탭의 상담 주제를 유지한다', async ({ page }) => {
   const fixture = await prepare(page);
   const snapshot = createEmptySurvey();
-  snapshot.qualitative = { strengths: '기존 강점 메모', specialCircumstances: '', consultationQuestions: ['안정 지원을 어디에 둘까요?'] };
+  snapshot.formVersion = 3;
+  snapshot.qualitative = { strengths: '기존 강점 메모', concerns: '구형 고민', guardianOpinion: '구형 보호자 의견', specialCircumstances: '현재 상황 메모', consultationQuestions: ['안정 지원을 어디에 둘까요?'] };
   fixture.survey = { ...fixture.survey, workflowState: 'MATERIAL_REVIEW', submission: { snapshot, fileIds: [], revision: 0 } };
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/survey');
@@ -510,8 +524,10 @@ test('제출한 상담 답변에 새 비교 기준을 적고 다른 탭의 새 �
   await expect(page.locator('.consulting-survey-answer-list').getByText('재수 가능성', { exact: true })).toBeVisible();
   await expect(page.locator('.consulting-survey-answer-list').getByText('아니요', { exact: true })).toHaveCount(2);
   await sections.selectOption({ label: '상담 질문' });
-  await expect(page.getByText('기존 강점 메모', { exact: true })).toBeVisible();
+  await expect(page.locator('.consulting-survey-answer-list')).toContainText('현재 상황 메모');
+  for (const answer of ['기존 강점 메모', '구형 고민', '구형 보호자 의견']) await expect(page.getByText(answer, { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '이 항목 수정' }).click();
+  await expect(page.getByText('이전에 작성한 답변', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '강점', exact: true })).toHaveCount(0);
   const question = page.getByRole('textbox', { name: '상담에서 답을 받고 싶은 질문', exact: true });
   await expect(question).toHaveValue('안정 지원을 어디에 둘까요?');
@@ -530,8 +546,9 @@ test('제출한 상담 답변에 새 비교 기준을 적고 다른 탭의 새 �
   await next.click();
   await expect(page.getByRole('heading', { name: '최종 확인', exact: true })).toBeVisible();
   const saved = await page.evaluate(() => window.__design.revisionSaves.at(-1));
-  expect(saved).toMatchObject({ expectedSurveyRevision: 1, changes: { qualitative: {
-    strengths: '기존 강점 메모', consultationTopics: ['group_plan'], decisionOptions: '가상대와 예시대의 통학 거리 비교'
+  expect(saved).toEqual({ expectedSurveyRevision: 1, changes: { qualitative: {
+    specialCircumstances: '현재 상황 메모', consultationQuestions: ['안정 지원을 어디에 둘까요?'],
+    consultationTopics: ['group_plan'], decisionOptions: '가상대와 예시대의 통학 거리 비교'
   } } });
   await page.getByRole('button', { name: '변경 저장', exact: true }).click();
   await sections.selectOption({ label: '상담 질문' });
@@ -743,6 +760,7 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
   const primaryQuestion = page.getByRole('textbox', { name: '상담에서 답을 받고 싶은 질문', exact: true });
   await expect(primaryQuestion).toHaveValue('지원 조합이 궁금합니다.');
   await expect(page.getByRole('textbox', { name: '강점', exact: true })).toHaveCount(0);
+  await expect(page.getByText('이전에 작성한 답변', { exact: true })).toHaveCount(0);
   await page.getByRole('checkbox', { name: '올해 진학과 재수 결정', exact: true }).check();
   await page.getByRole('checkbox', { name: '가·나·다군 조합', exact: true }).check();
   await expect(page.getByRole('checkbox', { name: '상향·적정·안정 배분', exact: true })).toBeDisabled();
@@ -792,13 +810,13 @@ test('통학·3지망·숫자 순위를 선택하고 파일 검사가 끝난 최
     ], additionalPreference: note },
     strategy: { priorityOrder: ['commute', 'major', 'brand', 'employment', 'region'] },
     qualitative: {
-      strengths: '이전 초안에 저장한 메모',
       consultationTopics: ['group_plan', 'retake_decision'],
       decisionOptions: '통학과 전공을 비교하고 싶어요.',
       consultationQuestions: ['가군에 상향을 쓴다면 나군에 어느 후보를 두면 좋을까요?', '올해 진학할 수 있는 조합도 비교하고 싶어요.']
     },
     consent: { analysisUse: true }
   });
+  expect(draft.snapshot.qualitative).not.toHaveProperty('strengths');
 });
 
 test('기존 모의평가 초안의 점수는 수능으로 복사하지 않고 지망 메모와 이전 통학 시간은 이어받는다', async ({ page }) => {
@@ -829,4 +847,33 @@ test('기존 모의평가 초안의 점수는 수능으로 복사하지 않고 �
   expect(migrated.scores).toMatchObject({ examYear: 2026, examType: 'csat' });
   expect(migrated.conditions).not.toHaveProperty('tuitionBudgetAnnual');
   expect(migrated.preferences).not.toHaveProperty('excludedCandidates');
+});
+
+test('학생이 마이페이지에서 변경 제안을 수락하고 남은 시간으로 다시 변경을 요청한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  fixture.home = { ...homeFor(states.find(([state]) => state === 'WRITTEN_SESSION_BOOKED')), writtenChangePending: true };
+  fixture.booking = {
+    canRequestChange: true, changeRevision: 3,
+    session: { status: 'booked', revision: 1, startAt: '2026-12-07T02:00:00.000Z', endAt: '2026-12-07T02:30:00.000Z' },
+    change: { kind: 'admin', requestId: 'WCR_synthetic', revision: 3, offer: { startAt: '2026-12-08T02:00:00.000Z', endAt: '2026-12-08T02:30:00.000Z' } }
+  };
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/home');
+  await page.getByRole('link', { name: /새 상담 시간 제안이 도착했어요/ }).click();
+  await expect(page.getByRole('heading', { name: '운영팀에서 새 상담 시간을 제안했어요' })).toBeVisible();
+  await fits(page);
+  await page.getByRole('button', { name: '새 시간으로 변경' }).click();
+  await expect(page.getByText('새 상담 일정으로 변경됐어요.')).toBeVisible();
+  expect(await page.evaluate(() => window.__design.lastResponse)).toEqual({
+    expectedSessionRevision: 1, expectedChangeRevision: 3, requestId: 'WCR_synthetic', decision: 'accept'
+  });
+  await page.getByRole('button', { name: '일정 변경 요청' }).click();
+  await expect(page.getByText(/^12월 7일.*~.*12월 20일.*한국시간$/)).toBeVisible();
+  await page.getByRole('button', { name: '10:30' }).last().click();
+  await page.getByRole('button', { name: '변경 요청 보내기' }).click();
+  await expect(page.getByText('변경 요청을 확인 중이에요. 확정 전까지 기존 예약이 유지됩니다.')).toBeVisible();
+  expect(await page.evaluate(() => window.__design.lastRequest)).toEqual({
+    expectedSessionRevision: 2, expectedChangeRevision: 4, selectedSlots: [{ slotId: 'WST_20261220_1030', priority: 2 }]
+  });
+  await fits(page);
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
-import { clientSurveyError, COMMUTE_OPTIONS, CONSULTATION_TOPIC_LABELS, createEmptySurvey, DECISION_OPTIONS_MAX, hasPreviousExamScores,
-  LEGACY_CONSULTATION_LABELS, MAX_CONSULTATION_QUESTIONS, MAX_CONSULTATION_TOPICS, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
+import { clientSurveyError, COMMUTE_OPTIONS, CONSULTATION_TOPIC_LABELS, createEmptySurvey, currentConsultationAnswers, DECISION_OPTIONS_MAX, hasPreviousExamScores,
+  MAX_CONSULTATION_QUESTIONS, MAX_CONSULTATION_TOPICS, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
 import { confirmV2ScoreUpload, deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, saveV2SurveyRevision, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
 import { useSurveyFileScan } from '../use-survey-file-scan.js';
 import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
@@ -103,7 +103,6 @@ function QualitativeStep({ snapshot, update }) {
   const value = snapshot.qualitative;
   const topics = value.consultationTopics || [];
   const questions = value.consultationQuestions.length ? value.consultationQuestions : [''];
-  const previousAnswers = Object.entries(value).filter(([key, answer]) => Object.hasOwn(LEGACY_CONSULTATION_LABELS, key) && typeof answer === 'string' && answer.trim());
   return <div className="consulting-survey-grid consulting-survey-grid-single">
     <fieldset className="consulting-survey-preference-rank" aria-describedby="survey-consultation-topics-guide" data-survey-field="qualitative.consultationTopics">
       <legend>상담 주제</legend>
@@ -140,9 +139,6 @@ function QualitativeStep({ snapshot, update }) {
       <textarea maxLength="1000" value={value.specialCircumstances} placeholder="보호자와 의견이 다른 점이나 지원에 영향을 주는 상황을 적어 주세요."
         onChange={event => update({ specialCircumstances: event.target.value })} />
     </Field>
-    {previousAnswers.length > 0 && <details><summary>이전에 작성한 답변</summary>
-      <SurveyAnswerView section="qualitative" value={Object.fromEntries(previousAnswers)} />
-    </details>}
   </div>;
 }
 
@@ -161,7 +157,7 @@ const edits = (before, next) => Object.fromEntries(SURVEY_STEPS.map(({ key }) =>
 const pending = session => session?.snapshot && Object.keys(edits(session.saved, session.snapshot)).length > 0;
 const mayLeave = session => !pending(session) || globalThis.confirm?.('저장하지 않은 답변이 있어요. 이 화면을 나갈까요?');
 const legacySubmission = submission => submission && submission.snapshot.formVersion !== SURVEY_FORM_VERSION;
-const loadSnapshot = (saved, legacy) => legacy ? saved : normalizeSurveyDraft(saved);
+const loadSnapshot = (saved, legacy) => legacy ? { ...saved, qualitative: currentConsultationAnswers(saved.qualitative) } : normalizeSurveyDraft(saved);
 const isRecord = value => value && typeof value === 'object' && !Array.isArray(value);
 function applyEdits(before, mine, latest, field) {
   if (equal(before, mine)) return latest;

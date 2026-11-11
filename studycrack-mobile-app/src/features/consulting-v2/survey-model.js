@@ -35,7 +35,6 @@ export const CONSULTATION_TOPIC_LABELS = Object.freeze({
 export const MAX_CONSULTATION_TOPICS = 2;
 export const DECISION_OPTIONS_MAX = 1000;
 export const MAX_CONSULTATION_QUESTIONS = 5;
-export const LEGACY_CONSULTATION_LABELS = Object.freeze({ strengths: '강점', concerns: '현재 가장 큰 고민', guardianOpinion: '보호자 의견' });
 
 export function isConsultingSurveyExam(value) {
   return value?.examYear === CONSULTING_SURVEY_EXAM.examYear && value?.examType === CONSULTING_SURVEY_EXAM.examType;
@@ -87,6 +86,16 @@ export function createEmptySurvey() {
   };
 }
 
+export function currentConsultationAnswers(value) {
+  const { consultationTopics, decisionOptions, specialCircumstances, consultationQuestions } = value || {};
+  return {
+    ...(consultationTopics !== undefined ? { consultationTopics } : {}),
+    ...(decisionOptions !== undefined ? { decisionOptions } : {}),
+    specialCircumstances: specialCircumstances ?? '',
+    consultationQuestions: Array.isArray(consultationQuestions) ? consultationQuestions : []
+  };
+}
+
 export function normalizeSurveyDraft(snapshot) {
   const empty = createEmptySurvey();
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return empty;
@@ -116,13 +125,13 @@ export function normalizeSurveyDraft(snapshot) {
     },
     preferences: normalizePreferences(snapshot.preferences || {}),
     strategy: { ...empty.strategy, ...snapshot.strategy, priorityOrder },
-    qualitative: { ...empty.qualitative, ...(snapshot.qualitative || {}), consultationQuestions: Array.isArray(snapshot.qualitative?.consultationQuestions) ? snapshot.qualitative.consultationQuestions : [] },
+    qualitative: currentConsultationAnswers(snapshot.qualitative),
     consent: { ...empty.consent, ...(snapshot.consent || {}) }
   };
 }
 
 export function surveySaveSnapshot(snapshot) {
-  const { consultationTopics, decisionOptions, consultationQuestions, ...otherAnswers } = snapshot.qualitative;
+  const { consultationTopics, decisionOptions, specialCircumstances, consultationQuestions } = currentConsultationAnswers(snapshot.qualitative);
   return {
     ...snapshot,
     scores: {
@@ -130,7 +139,7 @@ export function surveySaveSnapshot(snapshot) {
       records: snapshot.scores.records.filter(row => row.area !== 'foreign_language' || row.subject || row.grade != null)
     },
     qualitative: {
-      ...otherAnswers,
+      specialCircumstances,
       ...(consultationTopics?.length ? { consultationTopics: Object.keys(CONSULTATION_TOPIC_LABELS).filter(topic => consultationTopics.includes(topic)) } : {}),
       ...(hasText(decisionOptions) ? { decisionOptions } : {}),
       consultationQuestions: consultationQuestions.filter(hasText)
