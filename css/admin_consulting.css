@@ -81,6 +81,13 @@
 .consulting-schedule-tools { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:16px; margin:18px 0; }
 .consulting-schedule-tools section { padding:18px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
 .consulting-schedule-tools h3 { margin:0 0 12px; color:#1e293b; }
+.consulting-schedule-form { display:grid; gap:10px; }
+.consulting-schedule-form[hidden], .consulting-schedule-form label[hidden] { display:none; }
+.consulting-schedule-form fieldset { min-width:0; margin:0; padding:12px; border:1px solid #cbd5e1; border-radius:8px; }
+.consulting-schedule-form label { display:grid; gap:6px; min-width:0; font-weight:650; color:#334155; }
+.consulting-schedule-form input:not([type="checkbox"]), .consulting-schedule-form select, .consulting-schedule-form textarea { width:100%; min-width:0; min-height:44px; box-sizing:border-box; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; font:inherit; }
+.consulting-schedule-form .consulting-schedule-check { display:flex; align-items:center; }
+.consulting-schedule-day th { text-align:left; background:#eff6ff; color:#1e3a8a; }
 .consulting-current-session { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:16px 0; padding:16px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; font-weight:700; }
 .consulting-operations-reason { display:block; margin:18px 0 8px; font-weight:700; color:#334155; }
 #consultingOperationsReason, #consultingServiceReason { display:block; width:100%; min-height:100px; box-sizing:border-box; padding:12px; border:1px solid #cbd5e1; border-radius:8px; font:inherit; resize:vertical; }

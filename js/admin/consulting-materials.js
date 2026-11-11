@@ -103,9 +103,7 @@ function renderConsultingSurvey(target, snapshot, decorate) {
         ['상담 주제', formatConsultingSurveyTopics(qualitative.consultationTopics), 'qualitative.consultationTopics'],
         ['비교 중인 선택지와 기준', qualitative.decisionOptions, 'qualitative.decisionOptions'],
         ['상담에서 답을 받고 싶은 질문', list(qualitative.consultationQuestions, '\n'), 'qualitative.consultationQuestions'],
-        ['함께 알아야 할 사항', qualitative.specialCircumstances, 'qualitative.specialCircumstances'],
-        ...[['강점', qualitative.strengths], ['현재 가장 큰 고민', qualitative.concerns], ['보호자 의견', qualitative.guardianOpinion]]
-            .filter(([, answer]) => typeof answer === 'string' && answer.trim())
+        ['함께 알아야 할 사항', qualitative.specialCircumstances, 'qualitative.specialCircumstances']
     ]);
     group('최종 확인', [
         ['입력 내용 확인', yesNo(consent.accurateInformation, '확인', '미확인'), 'consent.accurateInformation'],
@@ -191,7 +189,7 @@ const consultingSurveyFieldNames = {
     repeatStudyAllowed: '재수 가능성', tuitionBudgetAnnual: '연간 등록금 상한', region: '지역', university: '대학', track: '계열',
     additionalPreference: '추가 희망', desiredRegions: '희망 지역', desiredUniversities: '희망 대학', desiredMajors: '희망 학과',
     desiredTracks: '희망 계열', requiredCandidates: '필수 후보', excludedCandidates: '제외 후보', riskTolerance: '지원 위험 선호',
-    priorityOrder: '대학 선택 우선순위', strengths: '강점', concerns: '현재 가장 큰 고민', guardianOpinion: '보호자 의견', specialCircumstances: '함께 알아야 할 사항',
+    priorityOrder: '대학 선택 우선순위', specialCircumstances: '함께 알아야 할 사항',
     consultationTopics: '상담 주제', decisionOptions: '비교 중인 선택지와 기준', consultationQuestions: '상담에서 답을 받고 싶은 질문',
     accurateInformation: '입력 내용 확인', analysisUse: '분석 이용 동의', formVersion: '양식 버전'
 };
@@ -209,6 +207,10 @@ function formatConsultingSurveyChange(value, field) {
     if (typeof value === 'boolean') return value ? '예' : '아니요';
     if (value == null || value === '') return '—';
     return ['applicantType', 'schoolType', 'riskTolerance', 'area', 'commuteLimit'].includes(field) ? consultingOptionLabel(value, consultingSurveyAnswerLabels) : value;
+}
+const retiredConsultingAnswerFields = new Set(['strengths', 'concerns', 'guardianOpinion']);
+function visibleConsultingSurveyChanges(changes) {
+    return (changes || []).filter(({ field }) => field[0] !== 'qualitative' || !retiredConsultingAnswerFields.has(field[1]));
 }
 function consultingSurveyChangeFacts(changes) {
     return createConsultingFacts(changes.map(({ field, before, after }) => {
@@ -289,13 +291,14 @@ async function loadConsultingSurveyHistory() {
         if (consultingSurveyHistory !== state) return;
         if (data.caseId !== state.caseId || !Array.isArray(data.entries)) throw new Error('수정 이력 응답을 확인할 수 없습니다.');
         for (const entry of data.entries) {
-            appendConsultingRecord(target, `${formatConsultingDate(entry.changedAt)} · 학생 저장 ${entry.revision}회차`, consultingSurveyChangeFacts(entry.changes));
+            const changes = visibleConsultingSurveyChanges(entry.changes);
+            if (changes.length) appendConsultingRecord(target, `${formatConsultingDate(entry.changedAt)} · 학생 저장 ${entry.revision}회차`, consultingSurveyChangeFacts(changes));
         }
         state.loaded = true;
         state.before = data.nextBefore;
         next.hidden = !state.before;
         next.textContent = '이전 수정 더 보기';
-        status.textContent = target.children.length ? '' : '저장된 수정 이력이 없습니다.';
+        status.textContent = target.children.length ? '' : '표시할 수정 이력이 없습니다.';
     } catch (_error) {
         if (consultingSurveyHistory !== state) return;
         status.textContent = '수정 이력을 불러오지 못했습니다.';
@@ -342,8 +345,9 @@ async function openConsultingMaterial(caseId, held) {
             ? data.surveyReview.scoreChanged ? '학생이 성적 입력을 변경했습니다. 첨부 성적표와 대조한 뒤 최신 답변을 확인해 주세요.'
                 : '검수 이후 수정된 답변이 있습니다. 최신 답변을 확인해 주세요.'
             : data.reviewedSubmission ? '현재 답변을 확인했습니다.' : '';
-        if (data.surveyReview?.changes?.length) {
-            document.getElementById('consultingSurveyReviewChanges').appendChild(consultingSurveyChangeFacts(data.surveyReview.changes));
+        const reviewChanges = visibleConsultingSurveyChanges(data.surveyReview?.changes);
+        if (reviewChanges.length) {
+            document.getElementById('consultingSurveyReviewChanges').appendChild(consultingSurveyChangeFacts(reviewChanges));
             document.getElementById('consultingSurveyChangesSinceReview').hidden = false;
         }
         const supplementNotice = document.getElementById('consultingMaterialSupplementNotice');

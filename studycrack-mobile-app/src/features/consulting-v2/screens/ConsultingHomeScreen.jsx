@@ -49,6 +49,9 @@ export function ConsultingHomeScreen({ binding }) {
       </div> : null}
     </section>
     {alerts.length ? <section className="consulting-v2-alerts" aria-label="알림">{alerts.map(alert => <p key={alert}>{alert}</p>)}</section> : null}
+    {!held && workflowState === 'WRITTEN_SESSION_BOOKED' && <section className="consulting-v2-home-help" aria-label="서면상담 일정">
+      <a href={CONSULTING_ROUTES.schedule} onClick={event => { event.preventDefault(); navigateConsulting(CONSULTING_ROUTES.schedule); }}><span><strong>{resource.data.writtenChangePending ? '새 상담 시간 제안이 도착했어요' : '상담 일정 확인·변경'}</strong><small>{resource.data.writtenChangePending ? '제안된 시간을 확인하고 답해주세요.' : '확정 시간을 확인하고 필요하면 일정을 변경할 수 있어요.'}</small></span><span aria-hidden="true">→</span></a>
+    </section>}
     {!['ONBOARDING', 'SURVEY_DRAFT'].includes(workflowState) && <section className="consulting-v2-home-help" aria-label="내 기초조사서">
       <a href={CONSULTING_ROUTES.survey} onClick={event => { event.preventDefault(); navigateConsulting(CONSULTING_ROUTES.survey); }}><span><strong>내 답변 보기</strong><small>제출한 기초조사서를 확인할 수 있어요.</small></span><span aria-hidden="true">→</span></a>
     </section>}

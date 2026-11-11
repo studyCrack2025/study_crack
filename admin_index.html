@@ -402,6 +402,38 @@
         <div id="section-consulting" class="content-section">
             <section id="consultingDirectoryPanel" aria-labelledby="consultingDirectoryTitle" aria-busy="false">
                 <div class="consulting-heading-row"><div><p class="consulting-eyebrow">STUDYCRACK · 정시 컨설팅</p><h1 id="consultingDirectoryTitle" class="page-title">학생별 진행 관리</h1><p class="consulting-caption">단계를 선택하고 학생을 눌러 필요한 업무를 진행하세요.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingDirectory()">목록 새로고침</button></div>
+                <details id="consultingScheduleBoard" class="consulting-admin-tools" ontoggle="toggleConsultingScheduleBoard()">
+                    <summary>서면상담 전체 시간표</summary>
+                    <p class="consulting-caption">가능 시간을 제출한 학생을 한 시간표에 배치합니다. 추천은 열어둔 동안 갱신되고, 예약은 학생별로 확정합니다. 표의 시각은 한국시간입니다.</p>
+                    <div class="consulting-heading-row"><h2 class="consulting-detail-title">추천·확정 시간표</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingScheduleBoard()">지금 갱신</button></div>
+                    <p id="consultingScheduleBoardStatus" class="consulting-status" role="status"></p>
+                    <div class="table-responsive"><table class="student-table consulting-table"><thead><tr><th>일시</th><th>학생</th><th>상담사</th><th>상태</th><th>관리</th></tr></thead><tbody id="consultingScheduleBoardBody"></tbody></table></div>
+                    <details class="consulting-admin-tools">
+                        <summary>배정 옵션·상담사 시간 열기</summary>
+                        <div class="consulting-schedule-tools">
+                            <section><h3>선택 기간과 점심 시간</h3>
+                                <form id="consultingScheduleSettings" class="consulting-schedule-form" onsubmit="event.preventDefault(); saveConsultingScheduleSettings()">
+                                    <label>시작일 <input name="startDate" type="date" required></label>
+                                    <label>종료일 <input name="endDate" type="date" required></label>
+                                    <label>점심 시작 <input name="lunchStart" type="time" required></label>
+                                    <label>점심 종료 <input name="lunchEnd" type="time" required></label>
+                                    <label>점심 배정 <select name="lunchMode"><option value="avoid">가능하면 피하기</option><option value="block">배정 제외</option><option value="allow">다른 시간과 동일</option></select></label>
+                                    <label class="consulting-schedule-check"><input name="compactDays" type="checkbox"> 가능한 한 같은 날짜에 모으기</label>
+                                    <button type="submit" class="consulting-btn consulting-btn-primary" disabled>옵션 저장</button>
+                                    <button type="button" class="consulting-btn consulting-btn-secondary" onclick="reloadConsultingScheduleSettings()">저장된 옵션 다시 보기</button>
+                                </form>
+                            </section>
+                            <section><h3>상담사 가능 시간 열기</h3>
+                                <p class="consulting-caption">상담사의 운영 요일과 시간을 현재 선택 기간에 적용합니다. 날짜를 넓혔거나 운영 시간을 추가했으면 다시 실행하세요.</p>
+                                <div class="consulting-lookup-row">
+                                    <input id="consultingScheduleCounselorId" type="text" autocomplete="off" aria-label="상담사 ID" placeholder="상담사 ID">
+                                    <button id="consultingGenerateSlotsBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="generateConsultingSlots()">선택 기간의 시간 열기</button>
+                                </div>
+                            </section>
+                        </div>
+                        <p id="consultingScheduleSettingsStatus" class="consulting-status" role="status"></p>
+                    </details>
+                </details>
             <details id="consultingAdminTools" class="consulting-admin-tools"><summary>운영 도구</summary>
                             <section id="consultingOperationsPanel" aria-labelledby="consultingOperationsTitle" aria-busy="false">
                 <div class="consulting-heading-row"><div><h2 id="consultingOperationsTitle" class="page-title">운영 대기·실패 확인</h2><p class="consulting-caption">보고서 공개와 알림의 대기·실패 상태를 확인합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations()">운영 목록 새로고침</button></div>
@@ -411,15 +443,6 @@
                 <button id="consultingOperationsNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations(true)" disabled>다음 페이지</button>
                 <section id="consultingOperationsDetail" class="consulting-detail" hidden aria-labelledby="consultingOperationsDetailTitle"><div class="consulting-detail-head"><h3 id="consultingOperationsDetailTitle">운영 상세</h3><button type="button" class="consulting-close" onclick="closeConsultingOperation()" aria-label="운영 상세 닫기">×</button></div><div id="consultingOperationsSummary" class="consulting-material-copy"></div><label class="consulting-operations-reason" for="consultingOperationsReason">복구 사유 (10자 이상)</label><textarea id="consultingOperationsReason" maxlength="1000"></textarea><div class="consulting-actions"><button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingOperationWorkspace()">관련 업무 화면 열기</button><button id="consultingRetryOutboxBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="recoverConsultingOperation('outbox')" hidden>사이트 알림 재처리 요청</button><button id="consultingRetryReportBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="recoverConsultingOperation('report')" hidden>보고서 공개 재검증</button></div></section>
             </section>
-
-                <div class="consulting-schedule-tools">                <section>
-                    <h3>상담사 가능 시간 설정</h3>
-                    <div class="consulting-lookup-row">
-                        <input id="consultingScheduleCounselorId" type="text" autocomplete="off" placeholder="상담사 ID">
-                        <button id="consultingGenerateSlotsBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="generateConsultingSlots()">7일치 가능 시간 생성</button>
-                    </div>
-                </section>
-</div>
             </details>
                 <nav class="consulting-phases" aria-label="컨설팅 진행 단계"><button type="button" class="consulting-phase" data-phase="all" onclick="selectConsultingPhase('all')">전체</button><button type="button" class="consulting-phase" data-phase="intake" onclick="selectConsultingPhase('intake')">01 접수·입금</button><button type="button" class="consulting-phase" data-phase="onboarding" onclick="selectConsultingPhase('onboarding')">02 가입·조사서</button><button type="button" class="consulting-phase" data-phase="written" onclick="selectConsultingPhase('written')">03 서면상담</button><button type="button" class="consulting-phase" data-phase="report" onclick="selectConsultingPhase('report')">04 분석·보고서</button><button type="button" class="consulting-phase" data-phase="final" onclick="selectConsultingPhase('final')">05 파이널 콜</button><button type="button" class="consulting-phase" data-phase="completed" onclick="selectConsultingPhase('completed')">완료</button><button type="button" class="consulting-phase" data-phase="attention" onclick="selectConsultingPhase('attention')">보류·거절</button></nav>
                 <div id="consultingDirectoryStatus" class="consulting-status" role="status" aria-live="polite"></div>
@@ -442,6 +465,22 @@
                     <div class="consulting-export-footer"><span id="consultingExportColumnCount" aria-live="polite">0개 항목 선택</span><button id="consultingExportSubmit" type="button" class="consulting-btn consulting-btn-primary" onclick="downloadConsultingExport()" disabled>CSV 다운로드</button></div>
                 </dialog>
             </section>
+                <dialog id="consultingScheduleChoice" class="consulting-export-dialog" aria-labelledby="consultingScheduleChoiceTitle">
+                    <div class="consulting-heading-row"><h2 id="consultingScheduleChoiceTitle" class="consulting-detail-title">학생별 일정 선택</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="document.getElementById('consultingScheduleChoice').close()">닫기</button></div>
+                    <p id="consultingScheduleChoiceStatus" class="consulting-status" role="status"></p>
+                    <form id="consultingScheduleChoiceForm" class="consulting-schedule-form" onsubmit="event.preventDefault(); submitConsultingScheduleChoice()" hidden>
+                        <label id="consultingScheduleSingleChoice">가능한 시간 <select name="slot" required></select></label>
+                        <fieldset id="consultingScheduleProposalChoices" class="consulting-schedule-form" hidden disabled>
+                            <legend>제안할 시간 선택 · 최대 5개</legend>
+                            <div id="consultingScheduleProposalOptions" class="consulting-schedule-form"></div>
+                        </fieldset>
+                        <div id="consultingScheduleManualFields" class="consulting-schedule-form" hidden>
+                            <label class="consulting-schedule-check"><input name="contactConfirmed" type="checkbox"> 학생과 직접 연락해 이 시간에 합의했습니다.</label>
+                            <label>변경 사유 (10~500자, 개인정보 제외) <textarea name="reason" minlength="10" maxlength="500" autocomplete="off"></textarea></label>
+                        </div>
+                        <button id="consultingScheduleChoiceSubmit" type="submit" class="consulting-btn consulting-btn-primary">선택한 시간으로 처리</button>
+                    </form>
+                </dialog>
             <section id="consultingStudentPanel" class="consulting-student" hidden aria-labelledby="consultingStudentTitle" aria-busy="false">
                 <div class="consulting-heading-row"><button type="button" class="consulting-btn consulting-btn-secondary" onclick="closeConsultingStudent()">← 학생 목록</button><button type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingWorkspaceStudent()">학생 정보 새로고침</button></div>
                 <h1 id="consultingStudentTitle" class="page-title" tabindex="-1">학생 상세</h1><p id="consultingStudentState" class="consulting-caption"></p>
@@ -570,7 +609,7 @@
                 <div id="consultingWorkspaceWritten" data-workspace-pane="written" hidden>            <div class="consulting-heading-row consulting-schedule-heading">
                 <div>
                     <h2 class="page-title">🗓️ 서면상담 일정 배정</h2>
-                    <p class="consulting-caption">상담사 가능 시간을 생성한 뒤, 학생 후보를 점수 순으로 확인하고 최종 확정합니다.</p>
+                    <p class="consulting-caption">학생이 선택한 가능 시간에서 확정하세요. 예약을 변경할 때는 학생에게 새 시간을 제안할 수 있습니다.</p>
                 </div>
             </div>
             <div id="consultingScheduleStatus" class="consulting-status" role="status" aria-live="polite"></div>
@@ -585,12 +624,14 @@
             </div>
             <section id="consultingCurrentSession" class="consulting-current-session" hidden>
                 <div id="consultingCurrentSessionCopy"></div>
-                <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button>
+                <div class="consulting-actions"><button id="consultingProposeSessionBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId)">변경 시간 제안</button>
+                    <button id="consultingManualSessionBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId, true)">직접 합의 후 수동 변경</button>
+                    <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button></div>
             </section>
             <div class="table-responsive">
                 <table class="student-table consulting-table">
-                    <thead><tr><th>순위</th><th>일시</th><th>상담사</th><th>학생 우선순위</th><th>점수</th><th>확정</th></tr></thead>
-                    <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="6" class="empty-msg">학생의 상담 가능 시간 제출 후 후보를 조회할 수 있습니다.</td></tr></tbody>
+                    <thead><tr><th>일시</th><th>상담사</th><th>비고</th><th>관리</th></tr></thead>
+                    <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="4" class="empty-msg">학생의 상담 가능 시간 제출 후 후보를 조회할 수 있습니다.</td></tr></tbody>
                 </table>
             </div>
 </div>

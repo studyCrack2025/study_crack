@@ -85,12 +85,14 @@ function activateConsultingWorkspace(route) {
         closeConsultingExportDialog();
         document.getElementById('consultingDirectoryPanel').hidden = true;
         document.getElementById('consultingAdminTools').open = false;
+        document.getElementById('consultingScheduleBoard').open = false;
         if (consultingWorkspaceStudent && consultingWorkspaceReference?.applicationId === route.applicationId && consultingWorkspaceReference.sourceResponseId === route.sourceResponseId) return showConsultingStudentTab(route.tab);
         return loadConsultingWorkspaceStudent(route);
     }
     consultingWorkspaceGeneration++;
     clearConsultingWorkspaceStudent();
     document.getElementById('consultingDirectoryPanel').hidden = false;
+    if (document.getElementById('consultingScheduleBoard').open) loadConsultingScheduleBoard();
     document.getElementById('consultingDirectoryTitle').scrollIntoView({ block: 'start' });
     return loadConsultingDirectory();
 }
