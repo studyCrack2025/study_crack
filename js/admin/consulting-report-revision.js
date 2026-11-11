@@ -21,7 +21,7 @@ function updateConsultingReportRevisionButtons() {
     const s = consultingReportRevisionState, context = s.context;
     if (!reportRevisionNode('consultingReportRevisionFields')) return;
     const stale = s.draft && s.draft.baseContentDigest !== context?.record?.contentDigest;
-    const disabled = consultingReportRevisionBusy || consultingReportContentBusy || consultingReportSourceBusy || consultingReportSourceDirty || context?.canRequestRevision !== true || stale;
+    const disabled = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportRevisionBusy || consultingReportContentBusy || consultingReportSourceBusy || consultingReportSourceDirty || context?.canRequestRevision !== true || stale;
     reportRevisionNode('consultingReportRevisionFields').disabled = Boolean(disabled);
     for (const button of reportRevisionNode('consultingReportRevisionDetail').querySelectorAll('button')) button.disabled = consultingReportRevisionBusy;
     reportRevisionNode('consultingReportRevisionRefresh').disabled = consultingReportRevisionBusy || s.loading || !s.caseId;
@@ -29,6 +29,7 @@ function updateConsultingReportRevisionButtons() {
     reportRevisionNode('consultingReportRevisionRebase').hidden = !stale;
     reportRevisionNode('consultingReportRevisionRebase').disabled = !context?.record || consultingReportRevisionBusy;
     reportRevisionNode('consultingReportRevisionBase').textContent = stale ? '작성 기준 본문이 바뀌었습니다. 입력은 보존했습니다. 최신 본문을 확인한 뒤 기준을 바꿔주세요.' : s.draft ? `본문 ${s.draft.baseContentRevision}을 기준으로 요청합니다. 원자료에 없는 내용은 새 사실로 반영하지 않습니다.` : '현재 본문이 준비되면 수정 요청을 작성할 수 있습니다.';
+    if (typeof updateConsultingReportApprovalButtons === 'function') updateConsultingReportApprovalButtons();
 }
 function revisionEvidenceLabel(source) {
     const labels = { conclusion:'상담 결론', requiredConditions:'필수 조건', flexibleConditions:'조정 가능한 조건', riskReason:'지원 성향의 근거', riskTolerance:'지원 성향', questions:'질문별 답변', clarifications:'상담에서 확인한 변경', comparisons:'비교 의견', planC:'추가 경로 의향', rationale:'판단 근거', furtherChecks:'추가 확인', unresolved:'미해결 사항', 'strategy.priorityOrder':'선택 기준 우선순위', 'preferences.rankedChoices':'희망 지원', 'conditions.repeatStudyAllowed':'재수 가능성', 'conditions.commuteLimit':'통학 범위' };
@@ -120,6 +121,7 @@ async function submitConsultingReportRevision() {
         s.dirty = false; s.draft = null; form.reset(); rebaseConsultingReportRevision();
         reportRevisionMessage(['requires_recalculation', 'requires_layout_review'].includes(result.request.status) ? '요청을 보관했습니다. 본문의 설명 변경으로 처리할 수 없어 별도 검수가 필요합니다.' : '수정 요청을 보관했습니다. 현재 본문은 유지하며 수정 결과를 기다립니다.', 'success');
         consultingReportRevisionBusy = false; await refreshConsultingReportRevisions();
+        if (typeof consultingReportApprovalState !== 'undefined' && consultingReportApprovalState.caseId === s.caseId) await refreshConsultingReportApprovals();
     } catch (error) { if (generation === consultingReportRevisionState.generation) reportRevisionMessage((error.status === 409 ? '본문이나 요청 상태가 변경되었습니다. 입력은 보존했습니다. 최신 내용을 확인해주세요. ' : '') + (error.message || '요청을 등록하지 못했습니다. 같은 내용으로 다시 보내면 중복 등록하지 않습니다.'), 'error'); }
     finally { if (generation === consultingReportRevisionState.generation) { consultingReportRevisionBusy = false; updateConsultingReportSourceButtons(); } }
 }
@@ -167,6 +169,7 @@ async function closeConsultingReportRevision(row, action, reason) {
         await requestConsultingAdmin('admin_resolve_report_revision', { caseId: s.caseId, requestKey: row.requestKey, action, reason, confirmed: true, expectedContentRevision: s.context?.record?.revision || 0, expectedContentDigest: s.context?.record?.contentDigest || null });
         if (generation !== consultingReportRevisionState.generation) return;
         consultingReportRevisionBusy = false; reportRevisionMessage('요청 처리 기록을 저장했습니다.', 'success'); await refreshConsultingReportRevisions(); await openConsultingReportRevision(row.requestKey);
+        if (typeof consultingReportApprovalState !== 'undefined' && consultingReportApprovalState.caseId === s.caseId) await refreshConsultingReportApprovals();
     } catch (error) { if (generation === consultingReportRevisionState.generation) reportRevisionMessage(error.message || '처리 상태가 변경되었습니다. 최신 요청을 확인해주세요.', 'error'); }
     finally { if (generation === consultingReportRevisionState.generation) { consultingReportRevisionBusy = false; updateConsultingReportSourceButtons(); } }
 }

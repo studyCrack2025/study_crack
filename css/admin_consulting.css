@@ -204,3 +204,24 @@
 .consulting-report-revision-diff > div[data-side="after"] { border-color: #b8dace; background: #f0faf6; }
 .consulting-report-revision-diff p { white-space: pre-wrap; line-height: 1.9; margin: 10px 0; }
 .consulting-report-revision-diff small { display: block; margin-top: 5px; color: #516078; }
+
+.consulting-report-approval-panel { min-width:0; margin:28px 0 0; padding:clamp(14px,3vw,24px); border:1px solid var(--admin-border,#dce2eb); border-radius:14px; background:var(--admin-surface,#f8faff); }
+.consulting-report-approval-roles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; margin:18px 0; }
+.consulting-report-approval-role { min-width:0; padding:18px; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; background:var(--admin-card-bg,#fff); overflow-wrap:anywhere; }
+.consulting-report-approval-role h5 { margin:0 0 10px; font-size:1rem; color:var(--admin-text,#1e293b); }
+.consulting-report-approval-role p, .consulting-report-approval-role span { display:block; margin:8px 0; color:var(--admin-muted,#516078); font-size:.82rem; line-height:1.65; }
+.consulting-report-approval-role strong { display:block; margin-top:14px; color:var(--admin-text,#334155); font-size:.92rem; }
+.consulting-report-approval-role[data-state="approved"] { border-color:var(--admin-success-border,#b8dace); background:var(--admin-success-bg,#f0faf6); }
+.consulting-report-approval-blockers { padding-left:20px; color:var(--admin-text,#5b4a2e); line-height:1.8; overflow-wrap:anywhere; }
+.consulting-report-approval-actions:not([hidden]) { display:grid; justify-items:start; gap:16px; }
+.consulting-report-approval-check:not([hidden]) { display:flex; align-items:flex-start; gap:10px; min-height:44px; color:var(--admin-text,#334155); line-height:1.7; }
+.consulting-report-approval-check input { flex:0 0 auto; width:20px; height:20px; margin:3px 0 0; }
+#consultingReportApprovalWithdrawFields { width:100%; min-width:0; }
+#consultingReportApprovalWithdrawFields label { display:block; margin-bottom:8px; color:var(--admin-text,#334155); font-weight:650; }
+#consultingReportApprovalReason { display:block; width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px; border:1px solid var(--admin-border,#cad4e2); border-radius:9px; background:var(--admin-card-bg,#fff); font:inherit; line-height:1.7; resize:vertical; }
+.consulting-report-approval-ledger { margin-top:22px; border-top:1px solid var(--admin-border,#dce2eb); }
+.consulting-report-approval-ledger summary { padding:14px 0; min-height:24px; font-weight:650; cursor:pointer; }
+#consultingReportApprovalHistory { display:grid; gap:10px; padding:0; list-style:none; }
+#consultingReportApprovalHistory li { min-width:0; padding:14px; border-radius:9px; background:var(--admin-card-bg,#fff); line-height:1.7; overflow-wrap:anywhere; }
+#consultingReportApprovalHistory span { display:block; margin-top:5px; color:var(--admin-muted,#516078); font-size:.8rem; }
+#consultingReportApprovalHistory p { margin:8px 0 0; white-space:pre-wrap; }

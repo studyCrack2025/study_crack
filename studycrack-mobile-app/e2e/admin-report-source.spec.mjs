@@ -60,6 +60,21 @@ async function prepare(page, options = {}) {
             state.completeRevision = () => { const row = state.revisions[0]; row.status = 'review_required'; row.resultContentRevision = content.record.revision + 1; row.outcome = { response: { status: 'addressed', explanation: '통학 조건과 전공 우선을 명확하게 반영했습니다.' }, changedTargets: ['planA'] }; content.record.revision++; content.record.contentDigest = 'sha256:' + 'd'.repeat(64); content.record.content.pages[3].paragraphs[0].text = '상담에서 확인한 통학 조건과 전공 우선을 설명에 반영합니다.'; };
             if (options.revisionStatus === 'review_required') state.completeRevision();
         }
+        if (options.withApprovals) {
+            const state = window.__reportSource, content = state.ws.reportContent;
+            content.record.contentDigest ||= 'sha256:' + 'c'.repeat(64);
+            const ownRole = options.approverRole === 'none' ? null : options.approverRole || 'CEO';
+            state.approvedRoles = options.approvedRoles || [];
+            state.approvalView = () => ({ target: { id: state.approvalTarget || 'sha256:' + 'f'.repeat(64), contentRevision: content.record.revision, contentDigest: content.record.contentDigest },
+                status: state.approvalBlocked ? 'blocked' : state.approvedRoles.length === 3 ? 'approved' : 'awaiting_approvals', count: state.approvalBlocked ? 0 : state.approvedRoles.length,
+                ownRole, canApprove: !options.readOnly && Boolean(ownRole) && !state.approvalBlocked && !state.approvedRoles.includes(ownRole), canWithdraw: !options.readOnly && state.approvedRoles.includes(ownRole),
+                blockers: state.approvalBlocked ? [{ code: 'REPORT_APPROVAL_OPEN_REVISIONS', message: '처리하지 않은 수정 요청이 있습니다.' }] : [],
+                roles: ['CEO', 'CTO', 'CMO'].map(role => ({ role, own: role === ownRole, status: !state.approvalBlocked && state.approvedRoles.includes(role) ? 'approved' : 'pending', approvedAt: state.approvedRoles.includes(role) ? '2026-12-08T03:05:00.000Z' : null })),
+                renderRequest: state.approvedRoles.length === 3 ? { requestId: 'REPORT_RENDER_SYNTHETIC', status: 'awaiting_renderer', eligible: !state.approvalBlocked } : null,
+                history: state.approvalHistory || [], nextCursor: null, studentPublicationAllowed: false });
+            content.approval = state.approvalView();
+            state.syncApprovals = () => { content.approval = state.approvalView(); };
+        }
         window.apiFetch = async (_url, request) => {
             const input = JSON.parse(request.body), state = window.__reportSource; state.calls.push(input);
             let data = {};
@@ -78,6 +93,19 @@ async function prepare(page, options = {}) {
             } else if (input.type === 'admin_get_report_content') {
                 if (state.failContentGet) throw Object.assign(new Error('생성 상태를 확인할 수 없습니다.'), { status: 503 });
                 data = { ...structuredClone(state.ws.reportContent), caseId, caseRevision: state.ws.caseRevision };
+            } else if (input.type === 'admin_get_report_content_approvals') {
+                if (state.deferApprovalGet) await new Promise(resolve => { state.resolveApprovalGet = resolve; });
+                if (state.failApprovalGet) throw Object.assign(new Error('승인 조회를 마치지 못했습니다.'), { status: 503 });
+                state.syncApprovals(); data = { caseId, caseRevision: state.ws.caseRevision, ...structuredClone(state.approvalView()) };
+            } else if (['admin_approve_report_content', 'admin_withdraw_report_content_approval'].includes(input.type)) {
+                if (state.deferApprovalWrite) await new Promise(resolve => { state.resolveApprovalWrite = resolve; });
+                if (state.failApprovalWrite) throw Object.assign(new Error('본문이 변경되었습니다.'), { status: 409 });
+                if (input.type === 'admin_approve_report_content') state.approvedRoles = [...new Set([...state.approvedRoles, state.approvalView().ownRole])];
+                else { state.approvedRoles = []; state.approvalTarget = 'sha256:' + '1'.repeat(64); }
+                (state.approvalHistory ||= []).unshift({ event: input.type === 'admin_approve_report_content' ? 'REPORT_CONTENT_APPROVED' : 'REPORT_CONTENT_APPROVAL_WITHDRAWN', role: state.approvalView().ownRole, contentRevision: state.ws.reportContent.record.revision, createdAt: '2026-12-08T03:05:00.000Z', reason: input.data.reason || null });
+                state.ws.caseRevision++; state.syncApprovals();
+                if (state.loseApprovalResponse) { state.loseApprovalResponse = false; throw Object.assign(new Error('처리 결과의 응답을 받지 못했습니다.'), { status: 503 }); }
+                data = { caseId, caseRevision: state.ws.caseRevision, unchanged: false, approval: structuredClone(state.approvalView()) };
             } else if (input.type === 'admin_get_report_revision_workspace') {
                 if (state.deferRevisionList) await new Promise(resolve => { state.resolveRevisionList = resolve; });
                 if (state.failRevisionList) throw Object.assign(new Error('수정 요청을 조회하지 못했습니다.'), { status: 503 });
@@ -87,6 +115,7 @@ async function prepare(page, options = {}) {
                 if (state.deferRevisionSubmit) await new Promise(resolve => { state.resolveRevisionSubmit = resolve; });
                 let row = state.revisions.find(r => r.idempotencyKey === input.data.idempotencyKey), unchanged = Boolean(row);
                 if (!row) { row = state.addRevision(input.data, ['score_or_cutoff', 'candidate_or_plan'].includes(input.data.category) ? 'requires_recalculation' : 'pending'); state.ws.caseRevision++; }
+                if (options.withApprovals) { state.approvalBlocked = true; state.approvedRoles = []; state.approvalTarget = 'sha256:' + '2'.repeat(64); state.syncApprovals(); }
                 if (state.loseRevisionResponse) { state.loseRevisionResponse = false; throw Object.assign(new Error('응답을 확인하지 못했습니다. 같은 요청으로 다시 시도해주세요.'), { status: 503 }); }
                 data = { request: structuredClone(row), unchanged };
             } else if (input.type === 'admin_get_report_revision_detail') {
@@ -120,7 +149,7 @@ async function prepare(page, options = {}) {
             return { json: async () => ({ success: true, data }) };
         };
     }, { caseId, options });
-    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-revision.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-revision.js', 'js/admin/consulting-report-approval.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await page.locator('[data-student-tab="report"]').click();
@@ -400,4 +429,63 @@ test('수정 요청 중 로그아웃은 입력·상세를 지우고 늦은 응�
 test('읽기 전용 관리자는 비교를 볼 수 있고 수정·완료 처리는 실행할 수 없다', async ({ page }) => {
     await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, revisionStatus: 'review_required', readOnly: true });
     await page.getByRole('button', { name: '요청·변경 내용 보기', exact: true }).click(); await expect(page.locator('#consultingReportRevisionDetail')).toContainText('수정 후'); await expect(page.getByRole('button', { name: '수정 결과 확인 완료', exact: true })).toHaveCount(0); await expect(page.locator('#consultingReportRevisionSubmit')).toBeDisabled();
+});
+
+
+test('같은 본문의 본인 역할만 승인하고 세 번째 승인 뒤 제작 대기를 표시한다', async ({ page }, testInfo) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true, approvedRoles: ['CTO', 'CMO'] });
+    await expect(page.locator('#consultingReportApprovalMeta')).toContainText('본문 1 · 2/3 승인 · 내 역할 CEO');
+    await expect(page.locator('#consultingReportApproveContent')).toBeDisabled();
+    await page.locator('#consultingReportApprovalConfirmed').check(); await page.locator('#consultingReportApproveContent').click();
+    await expect(page.locator('#consultingReportApprovalMeta')).toContainText('3/3 승인'); await expect(page.locator('#consultingReportApprovalNext')).toContainText('PDF 제작 요청을 기록');
+    const calls = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_approve_report_content'));
+    expect(calls).toHaveLength(1); expect(calls[0].data).toEqual({ caseId, targetId: 'sha256:' + 'f'.repeat(64), confirmed: true });
+    expect(calls[0].data.role).toBeUndefined(); await expect(page.locator('#consultingReportApproveContent')).toBeHidden();
+    for (const width of [320, 1280]) { await page.setViewportSize({ width, height: 900 }); expect(await page.locator('#consultingReportApprovalPanel').evaluate(e => e.scrollWidth <= e.clientWidth + 1)).toBe(true); await page.locator('#consultingReportApprovalPanel').screenshot({ path: testInfo.outputPath(`report-approval-${width}.png`) }); }
+});
+test('승인 철회는 사유와 최종 확인을 요구하고 모든 역할의 새 승인을 기다린다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true, approvedRoles: ['CEO', 'CTO', 'CMO'] });
+    await expect(page.locator('#consultingReportWithdrawApproval')).toBeDisabled();
+    await page.getByLabel('승인 철회 사유', { exact: true }).fill('<img src=x onerror=alert(1)> 상담 근거 재검토');
+    page.once('dialog', d => d.dismiss()); await page.locator('#consultingReportWithdrawApproval').click();
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_withdraw_report_content_approval'))).toHaveLength(0);
+    page.once('dialog', d => d.accept()); await page.locator('#consultingReportWithdrawApproval').click();
+    await expect(page.locator('#consultingReportApprovalMeta')).toContainText('0/3 승인'); await expect(page.locator('#consultingReportApprovalStatus')).toContainText('세 명 모두 다시 확인');
+    await page.locator('.consulting-report-approval-ledger summary').click(); await expect(page.locator('#consultingReportApprovalHistory')).toContainText('<img src=x'); await expect(page.locator('#consultingReportApprovalHistory img')).toHaveCount(0);
+});
+test('원자료나 미전송 수정 요청을 편집하는 동안 승인할 수 없고 미해결 요청도 표시한다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true });
+    await page.locator('#consultingReportApprovalConfirmed').check(); await page.getByLabel('상담 결론', { exact: true }).fill('아직 저장하지 않은 내용'); await expect(page.locator('#consultingReportApproveContent')).toBeDisabled();
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, approvedRoles: ['CTO'] });
+    await page.locator('#consultingReportRevisionComposer').evaluate(e => { e.open = true; }); await page.getByLabel('발견한 문제', { exact: true }).fill('상담 내용 반영 오류'); await expect(page.locator('#consultingReportApproveContent')).toBeDisabled();
+    await page.getByLabel('원하는 수정 방향', { exact: true }).fill('조사서와 상담 결론에 맞춰 설명해주세요.'); await page.getByLabel('상담 정리 · 상담 결론', { exact: true }).check(); await page.locator('#consultingReportRevisionSubmit').click();
+    await expect(page.locator('#consultingReportApprovalBlockers')).toContainText('처리하지 않은 수정 요청'); await expect(page.locator('#consultingReportApprovalMeta')).toContainText('0/3 승인');
+});
+test('승인 상태 조회만으로 표시된 본문을 바꾸거나 읽지 않은 새 본문을 승인하지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true });
+    await page.locator('#consultingReportApprovalConfirmed').check();
+    await page.evaluate(() => { const c = window.__reportSource.ws.reportContent; c.record.revision = 2; c.record.contentDigest = 'sha256:' + '9'.repeat(64); window.__reportSource.approvalTarget = 'sha256:' + '8'.repeat(64); });
+    await page.locator('#consultingReportApprovalRefresh').click(); await expect(page.locator('#consultingReportApprovalBlockers')).toContainText('표시된 본문과 현재 승인 대상이 다릅니다'); await expect(page.locator('#consultingReportApproveContent')).toBeDisabled();
+    await page.locator('#consultingReportRefreshContent').click(); await expect(page.locator('#consultingReportContentStatus')).toContainText('본문 2'); await expect(page.locator('#consultingReportApprovalConfirmed')).not.toBeChecked();
+    await page.locator('#consultingReportApprovalConfirmed').check(); await expect(page.locator('#consultingReportApproveContent')).toBeEnabled();
+});
+test('응답이 유실되면 자동 재승인하지 않고 상태 조회로 성공 여부를 확인한다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true });
+    await page.evaluate(() => { window.__reportSource.loseApprovalResponse = true; }); await page.locator('#consultingReportApprovalConfirmed').check(); await page.locator('#consultingReportApproveContent').click();
+    await expect(page.locator('#consultingReportApprovalStatus')).toContainText('승인 상태를 새로고침'); await expect(page.locator('#consultingReportApproveContent')).toBeDisabled();
+    await page.locator('#consultingReportApprovalRefresh').click(); await expect(page.locator('#consultingReportApprovalMeta')).toContainText('1/3 승인');
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_approve_report_content'))).toHaveLength(1);
+});
+test('승인 처리 중 중복 클릭과 자료 편집을 막고 로그아웃 뒤 늦은 응답을 버린다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true });
+    await page.evaluate(() => { window.__reportSource.deferApprovalWrite = true; }); await page.locator('#consultingReportApprovalConfirmed').check(); await page.locator('#consultingReportApproveContent').click();
+    await expect(page.locator('#consultingReportSummaryFields')).toHaveAttribute('disabled', ''); await expect(page.getByLabel('상담 결론', { exact: true })).toBeDisabled(); await expect(page.locator('#consultingReportApproveContent')).toBeDisabled(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled(); await expect(page.locator('#consultingReportRefreshContent')).toBeDisabled();
+    await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolveApprovalWrite(); });
+    await expect(page.locator('#consultingReportApprovalPanel')).toBeHidden(); await expect(page.locator('#consultingReportApprovalRoles')).toBeEmpty(); await expect(page.locator('#consultingReportApprovalConfirmed')).not.toBeChecked();
+});
+test('승인자 이외의 계정은 세 명의 상태를 조회하며 승인·철회 동작을 실행하지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed', withApprovals: true, approverRole: 'none', readOnly: true, approvedRoles: ['CEO'] });
+    await expect(page.locator('#consultingReportApprovalMeta')).toContainText('조회 전용'); await expect(page.locator('#consultingReportApprovalOwnActions')).toBeHidden();
+    await expect(page.locator('#consultingReportApprovalRoles article')).toHaveCount(3);
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_approve_report_content'))).toHaveLength(0);
 });

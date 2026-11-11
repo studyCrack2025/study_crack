@@ -29,7 +29,7 @@ function resetConsultingReportFacts() {
     reportFactStatus(''); updateConsultingReportFactsButton();
 }
 function updateConsultingReportFactsButton() {
-    reportFactsNode('consultingReportCalculateFacts').disabled = consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true;
+    reportFactsNode('consultingReportCalculateFacts').disabled = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true;
 }
 function reportFactCard(fact, prefix) {
     const card = reportFactElement('article', undefined, 'consulting-report-fact-card');
@@ -92,7 +92,7 @@ function renderConsultingReportFacts(workspace) {
     if (!result.planC.alternatives.length) c.append(reportFactElement('p', '현재 기준에서 제안할 검수된 대안이 없습니다.')); reportFactsWarnings(c, result.planC.reasonCodes); root.append(c);
 }
 async function calculateConsultingReportFacts() {
-    if (consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true) return;
+    if ((typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true) return;
     const generation = consultingReportFactsGeneration, source = consultingReportSource;
     consultingReportFactsBusy = true; updateConsultingReportSourceButtons(); reportFactsNode('consultingReportFactsPanel').setAttribute('aria-busy', 'true'); reportFactStatus('전체 후보를 평가하고 점수·지원 플랜을 계산하고 있습니다.');
     try {
