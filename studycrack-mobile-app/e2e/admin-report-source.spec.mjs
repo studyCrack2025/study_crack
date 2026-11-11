@@ -36,6 +36,13 @@ async function prepare(page, options = {}) {
             window.__reportSource.factResult = result;
             if (options.withFactsResult) Object.assign(ws.reportFacts, { revision: 1, status: options.staleFacts ? 'stale' : 'current', record: { revision: 1, sourceRevision: 1, calculatedAt: summary.savedAt, result } });
         }
+        if (options.withContent) {
+            const ws = window.__reportSource.ws, result = window.__reportSource.factResult;
+            ws.reportContent = { canGenerate: !options.readOnly, status: 'not_generated', sourceDigest: ws.sourceDigest, factsDigest: 'sha256:' + 'b'.repeat(64), job: null, record: null };
+            if (options.contentStatus) Object.assign(ws.reportContent, { status: options.contentStatus, canGenerate: ['failed', 'stale'].includes(options.contentStatus), job: { jobId: 'REPORT_CONTENT_SYNTHETIC', status: options.contentStatus, attempts: 1, lastErrorCode: options.contentStatus === 'failed' ? 'AI_PROVIDER_HTTP_401' : null } });
+            if (options.contentStatus === 'completed') ws.reportContent.record = { revision: 1, model: 'gpt-5-mini', content: { numericalReady: true, warnings: [], evidence: [{ id: 'S001', kind: 'consultation', path: 'conclusion', value: '<img src=x onerror=alert(1)> 상담에서 확인한 전공 우선' }],
+                pages: ['전략 요약', '점수 분석', '성적 기준 지원 범위', '플랜 A', '플랜 B', '최종 판단 기준'].map((title, i) => ({ page: i + 1, title, paragraphs: [{ text: '<b>안정 지원과 전공 조건을 확인합니다.</b>', sourceRefs: ['S001'], factRefs: [] }], candidates: [2, 3, 4].includes(i) ? result.facts : [], ...(i === 1 ? { scores: result.scoreAnalysis.records } : {}), ...(i === 5 ? { planC: { paragraphs: [], candidates: [] } } : {}) })), unresolvedItems: [], disclaimer: '실제 합격을 보장하지 않습니다.' } };
+        }
         window.apiFetch = async (_url, request) => {
             const input = JSON.parse(request.body), state = window.__reportSource; state.calls.push(input);
             let data = {};
@@ -47,6 +54,13 @@ async function prepare(page, options = {}) {
                 if (state.failGet) throw Object.assign(new Error('자료를 다시 불러오지 못했습니다.'), { status: 503 });
                 data = structuredClone(state.ws);
                 if (input.data.summaryRevision) { data.summary = structuredClone(state.versions.find(v => v.revision === input.data.summaryRevision)); data.canEdit = false; }
+            } else if (input.type === 'admin_queue_report_content') {
+                if (state.deferContent) await new Promise(resolve => { state.resolveContent = resolve; });
+                state.ws.caseRevision++; Object.assign(state.ws.reportContent, { canGenerate: false, status: 'pending', job: { jobId: 'REPORT_CONTENT_SYNTHETIC', status: 'pending', attempts: 0 } });
+                data = { jobId: 'REPORT_CONTENT_SYNTHETIC', status: 'pending', unchanged: false };
+            } else if (input.type === 'admin_get_report_content') {
+                if (state.failContentGet) throw Object.assign(new Error('생성 상태를 확인할 수 없습니다.'), { status: 503 });
+                data = { ...structuredClone(state.ws.reportContent), caseId, caseRevision: state.ws.caseRevision };
             } else if (input.type === 'admin_save_report_consultation_summary') {
                 if (state.deferSave) await new Promise(resolve => { state.resolveSave = resolve; });
                 if (state.failSave) throw Object.assign(new Error('상담 정리 또는 원자료가 변경되었습니다.'), { status: 409 });
@@ -71,7 +85,7 @@ async function prepare(page, options = {}) {
             return { json: async () => ({ success: true, data }) };
         };
     }, { caseId, options });
-    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await page.locator('[data-student-tab="report"]').click();
@@ -227,4 +241,56 @@ test('점수·플랜 결과는 모바일과 데스크톱에서 가로 넘침 없
         await page.locator('#consultingReportFactsPanel').scrollIntoViewIfNeeded();
         await page.screenshot({ path: testInfo.outputPath(`report-facts-${width}.png`), fullPage: true });
     }
+});
+
+
+test('본문 생성 요청은 고정한 자료 참조만 보내며 대기 상태를 보여준다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true });
+    await page.getByRole('button', { name: 'AI 보고서 본문 생성', exact: true }).click();
+    await expect(page.locator('#consultingReportContentStatus')).toContainText('생성 대기 중');
+    const calls = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_queue_report_content'));
+    expect(calls).toHaveLength(1); expect(calls[0].data).toEqual({ caseId, expectedCaseRevision: 7, sourceDigest: 'sha256:' + 'b'.repeat(64), factsDigest: 'sha256:' + 'b'.repeat(64), retry: false });
+    await expect(page.locator('#consultingReportGenerateContent')).toBeDisabled();
+});
+test('완성 본문은 여섯 페이지와 계산 후보·근거를 표시하고 HTML을 실행하지 않는다', async ({ page }, testInfo) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'completed' });
+    await expect(page.locator('.consulting-report-content-page')).toHaveCount(6);
+    await expect(page.locator('#consultingReportContentResult img')).toHaveCount(0);
+    await page.locator('.consulting-report-content-paragraph summary').first().click();
+    await expect(page.locator('.consulting-report-content-paragraph details').first()).toContainText('<img src=x');
+    await expect(page.locator('#consultingReportContentResult')).toContainText('실제 합격을 보장하지 않습니다.');
+    expect(await page.locator('#consultingReportContentPanel').evaluate(e => e.scrollWidth <= e.clientWidth + 1)).toBe(true);
+    await page.locator('#consultingReportContentPanel').screenshot({ path: testInfo.outputPath('report-content-review.png') });
+});
+test('저장하지 않은 상담 변경은 새 생성을 잠그며 본문 상태 조회로 입력을 덮어쓰지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true });
+    await page.getByLabel('상담 결론', { exact: true }).fill('아직 저장하지 않은 상담 결론');
+    await expect(page.locator('#consultingReportGenerateContent')).toBeDisabled();
+    await page.getByRole('button', { name: '생성 상태 확인', exact: true }).click();
+    await expect(page.getByLabel('상담 결론', { exact: true })).toHaveValue('아직 저장하지 않은 상담 결론');
+});
+test('생성 대기 자동 조회는 본문 상태만 확인하며 실패 뒤 반복 요청하지 않는다', async ({ page }) => {
+    await page.clock.install(); await prepare(page, { facts: true, withContent: true, contentStatus: 'pending' });
+    const before = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_get_report_source_workspace').length);
+    await page.clock.fastForward(11000);
+    await expect.poll(() => page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_get_report_content').length)).toBe(1);
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_get_report_source_workspace').length)).toBe(before);
+    await page.evaluate(() => { window.__reportSource.failContentGet = true; });
+    await page.clock.fastForward(11000); await expect(page.locator('#consultingReportContentStatus')).toContainText('확인할 수 없습니다');
+    const count = await page.evaluate(() => window.__reportSource.calls.length); await page.clock.fastForward(60000); expect(await page.evaluate(() => window.__reportSource.calls.length)).toBe(count);
+});
+test('실패 원인을 보여주고 재시도 요청을 구분한다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true, contentStatus: 'failed' });
+    await expect(page.locator('#consultingReportContentStatus')).toContainText('AI 인증 설정');
+    await page.getByRole('button', { name: '현재 기준으로 다시 생성', exact: true }).click();
+    expect(await page.evaluate(() => window.__reportSource.calls.find(c => c.type === 'admin_queue_report_content').data.retry)).toBe(true);
+});
+test('생성 요청 중 로그아웃하면 늦은 응답으로 본문과 개인정보가 복구되지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, withContent: true });
+    await page.evaluate(() => { window.__reportSource.deferContent = true; });
+    await page.locator('#consultingReportGenerateContent').click();
+    await expect(page.getByLabel('상담 결론', { exact: true })).toBeDisabled();
+    await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolveContent(); });
+    await expect(page.locator('#consultingReportContentResult')).toBeEmpty();
+    await expect(page.locator('#consultingReportGenerateContent')).toBeDisabled();
 });

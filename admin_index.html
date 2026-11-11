@@ -686,6 +686,12 @@
                             <div id="consultingReportFactsResult"></div>
                         </section>
                     </div>
+                    <section id="consultingReportContentPanel" class="consulting-report-source-section" aria-labelledby="consultingReportContentTitle" aria-busy="false">
+                        <div class="consulting-heading-row"><div><h3 id="consultingReportContentTitle">보고서 본문 작성</h3><p class="consulting-caption">저장한 조사서·상담 정리와 계산된 플랜으로 검수용 본문을 작성합니다.</p></div><div class="consulting-actions"><button id="consultingReportGenerateContent" class="consulting-btn consulting-btn-primary" type="button" onclick="queueConsultingReportContent()" disabled>AI 보고서 본문 생성</button><button id="consultingReportRefreshContent" class="consulting-btn consulting-btn-secondary" type="button" onclick="refreshConsultingReportContent()" disabled>생성 상태 확인</button></div></div>
+                        <p id="consultingReportContentStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <p class="consulting-report-source-notice">내부 검수용 초안입니다. 내용 승인과 PDF 검수·학생 전송은 다음 단계에서 연결됩니다.</p>
+                        <div id="consultingReportContentResult" class="consulting-report-content-pages"></div>
+                    </section>
                     <button id="consultingStudentReport" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReportReview()">기존 분석·보고서 작업 화면 열기</button>
                 </div>
                 <div id="consultingWorkspaceFinal" class="consulting-work-card" data-workspace-pane="final" hidden><h2>파이널 콜</h2><p class="consulting-caption">학생의 가능 시간과 예약·완료 기록을 확인하고 통화를 마무리합니다.</p><button id="consultingStudentFinal" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingFinalCall()">파이널 콜 일정·완료 화면 열기</button></div>
@@ -898,6 +904,7 @@
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
     <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
     <script src="/js/admin/consulting-report-facts.js?v=20261111a"></script>
+    <script src="/js/admin/consulting-report-content.js?v=20261111a"></script>
     <script src="/js/admin/consulting-report-source.js?v=20261111a"></script>
     <script src="/js/admin/consulting-workspace.js?v=20261104a"></script>
 

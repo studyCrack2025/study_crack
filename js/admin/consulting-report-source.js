@@ -42,7 +42,7 @@ function reportSourceRemove(row) {
     button.addEventListener('click', () => { row.remove(); markConsultingReportSourceDirty(); }); row.append(button);
 }
 function updateConsultingReportSourceButtons() {
-    const calculating = typeof consultingReportFactsBusy !== 'undefined' && consultingReportFactsBusy;
+    const calculating = typeof consultingReportFactsBusy !== 'undefined' && consultingReportFactsBusy || typeof consultingReportContentBusy !== 'undefined' && consultingReportContentBusy;
     const editable = consultingReportSource?.canEdit === true && !consultingReportSourceBusy && !calculating;
     consultingReportNode('consultingReportSummaryFields').disabled = !editable;
     consultingReportNode('consultingReportSaveSummary').disabled = !editable;
@@ -50,6 +50,7 @@ function updateConsultingReportSourceButtons() {
     consultingReportNode('consultingReportFreezeSource').disabled = !editable || consultingReportSourceDirty || !consultingReportSource?.readiness?.canFreeze || !consultingReportSource?.currentSummaryRevision;
     consultingReportNode('consultingReportDirty').textContent = consultingReportSourceDirty ? '저장하지 않은 변경사항이 있습니다.' : '';
     if (typeof updateConsultingReportFactsButton === 'function') updateConsultingReportFactsButton();
+    if (typeof updateConsultingReportContentButtons === 'function') updateConsultingReportContentButtons();
 }
 function markConsultingReportSourceDirty() {
     if (!consultingReportSource?.canEdit || consultingReportSourceBusy) return;
@@ -60,6 +61,7 @@ function resetConsultingReportSource() {
     consultingReportSourceRequest?.abort(); consultingReportSourceRequest = null;
     consultingReportSource = null; consultingReportSourceBusy = false; consultingReportSourceDirty = false;
     if (typeof resetConsultingReportFacts === 'function') resetConsultingReportFacts();
+    if (typeof resetConsultingReportContent === 'function') resetConsultingReportContent();
     consultingReportNode('consultingReportSummaryForm').reset();
     for (const id of ['consultingReportReadiness', 'consultingReportQuestions', 'consultingReportClarifications', 'consultingReportComparisons', 'consultingReportEvidence', 'consultingReportAppliedValues', 'consultingReportSurveyChangesBody']) consultingReportNode(id).replaceChildren();
     consultingReportNode('consultingReportSourceBody').hidden = true;
@@ -176,7 +178,7 @@ function renderConsultingReportSource(data, revision) {
     const notice = consultingReportNode('consultingReportSourceNotice'); notice.dataset.state = data.sourceStatus.status;
     notice.textContent = data.sourceStatus.status === 'stale' ? `기준 고정 후 변경된 자료: ${data.sourceStatus.reasons.join(', ')}. 변경 내용을 확인하고 작성 기준을 다시 고정해주세요.`
         : data.sourceStatus.status === 'unverified' ? '입시자료의 현재 상태를 확인하지 못했습니다. 이전에 고정한 기준을 최신 자료로 간주하지 않습니다.'
-            : data.frozen ? `작성 기준 ${data.frozen.revision} · ${formatConsultingDate(data.frozen.frozenAt)}에 고정했습니다. 보고서 본문 작성이나 학생 전송은 아직 시작되지 않았습니다.`
+            : data.frozen ? `작성 기준 ${data.frozen.revision} · ${formatConsultingDate(data.frozen.frozenAt)}에 고정했습니다. 본문 생성 상태는 아래에서 확인할 수 있습니다. 학생에게는 아직 공개되지 않습니다.`
                 : '상담 정리와 필수 자료를 확인한 뒤 작성 기준을 고정할 수 있습니다. 점수·컷·확률의 검수는 별도로 필요합니다.';
     const changes = consultingReportNode('consultingReportSurveyChangesBody'); changes.replaceChildren();
     for (const item of data.differences) changes.append(reportSourceElement('p', `${item.field.join(' · ')}\n상담 정리 당시: ${reportTextValue(item.before)}\n현재 답변: ${reportTextValue(item.after)}`));
@@ -196,6 +198,7 @@ function renderConsultingReportSource(data, revision) {
     consultingReportNode('consultingStudentReport').disabled = Boolean(data.pipelineVersion);
     consultingReportNode('consultingReportSourceBody').hidden = false;
     if (typeof renderConsultingReportFacts === 'function') renderConsultingReportFacts(data.reportFacts);
+    if (typeof renderConsultingReportContent === 'function') { resetConsultingReportContent(); renderConsultingReportContent(data.reportContent); }
     updateConsultingReportSourceButtons();
 }
 
