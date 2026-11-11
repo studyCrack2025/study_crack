@@ -727,6 +727,14 @@
                             </div>
                             <details class="consulting-report-approval-ledger"><summary>본문 승인 이력</summary><ul id="consultingReportApprovalHistory"></ul><button id="consultingReportApprovalMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportApprovals(true)" hidden>이전 승인 이력 더 보기</button></details>
                         </section>
+                        <section id="consultingReportPdfPanel" class="consulting-report-pdf-panel" aria-labelledby="consultingReportPdfTitle" aria-busy="false" hidden>
+                            <div class="consulting-heading-row"><div><h4 id="consultingReportPdfTitle">승인 본문 · 6페이지 PDF</h4><p class="consulting-caption">표지 · 점수 분석 · 기준 지원 범위 · 플랜 A · 플랜 B/C · 최종 제안</p></div><button id="consultingReportPdfRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportPdf()">PDF 상태 확인</button></div>
+                            <p id="consultingReportPdfStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            <div id="consultingReportPdfCurrent"></div>
+                            <button id="consultingReportPdfQueue" type="button" class="consulting-btn consulting-btn-primary" onclick="queueConsultingReportPdf()" hidden disabled>승인 본문으로 PDF 제작 요청</button>
+                            <p class="consulting-report-source-notice">관리자 검수용 파일입니다. PDF 완성본에 대한 세 명의 승인과 학생 전송은 다음 단계에서 연결됩니다.</p>
+                            <details class="consulting-report-pdf-ledger"><summary>이전에 생성한 PDF</summary><ul id="consultingReportPdfHistory"></ul><button id="consultingReportPdfMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportPdf(true)" hidden>이전 PDF 더 보기</button></details>
+                        </section>
                     </section>
                     <button id="consultingStudentReport" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReportReview()">기존 분석·보고서 작업 화면 열기</button>
                 </div>
@@ -943,6 +951,7 @@
     <script src="/js/admin/consulting-report-content.js?v=20261111a"></script>
     <script src="/js/admin/consulting-report-revision.js?v=20261111a"></script>
     <script src="/js/admin/consulting-report-approval.js?v=20261112a"></script>
+    <script src="/js/admin/consulting-report-pdf.js?v=20261112a"></script>
     <script src="/js/admin/consulting-report-source.js?v=20261111a"></script>
     <script src="/js/admin/consulting-workspace.js?v=20261104a"></script>
 

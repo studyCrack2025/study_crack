@@ -20,7 +20,7 @@ function reportApprovalBodyMatches() {
 function updateConsultingReportApprovalButtons() {
     const s = consultingReportApprovalState, view = s.view;
     if (!reportApprovalNode('consultingReportApproveContent')) return;
-    const blocked = consultingReportApprovalBusy || s.loading || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFactsBusy || consultingReportContentBusy || consultingReportRevisionBusy;
+    const blocked = (typeof consultingReportPdfBusy !== 'undefined' && consultingReportPdfBusy) || consultingReportApprovalBusy || s.loading || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFactsBusy || consultingReportContentBusy || consultingReportRevisionBusy;
     const dirtyRequest = typeof consultingReportRevisionState !== 'undefined' && consultingReportRevisionState.dirty;
     const writable = s.fresh && reportApprovalBodyMatches() && !blocked && !dirtyRequest;
     reportApprovalNode('consultingReportApproveContent').disabled = !writable || view?.canApprove !== true || !reportApprovalNode('consultingReportApprovalConfirmed').checked;
@@ -66,7 +66,7 @@ function renderConsultingReportApprovals(view, append = false) {
     reportApprovalNode('consultingReportApprovalConfirmedRow').hidden = !view.canApprove;
     reportApprovalNode('consultingReportApproveContent').hidden = !view.canApprove;
     reportApprovalNode('consultingReportApprovalNext').textContent = view.renderRequest?.eligible
-        ? '세 명이 같은 본문을 승인했습니다. PDF 제작 요청을 기록했습니다. 실제 PDF 생성·완성본 검수는 다음 단계에서 연결됩니다.'
+        ? '세 명이 같은 본문을 승인했습니다. PDF 제작 요청을 기록했습니다. 아래에서 제작 진행과 실제 파일을 확인해주세요.'
         : '세 명의 유효한 승인이 모두 모이면 PDF 제작 요청을 기록합니다. 본문 수정·수정 요청·승인 철회 시 다시 승인을 받습니다.';
     renderReportApprovalHistory(); updateConsultingReportApprovalButtons();
 }
@@ -109,6 +109,7 @@ async function submitConsultingReportApproval(withdraw = false) {
         consultingReportSource.caseRevision = Math.max(consultingReportSource.caseRevision || 0, result.caseRevision || 0);
         s.fresh = true; renderConsultingReportApprovals(result.approval); reportApprovalNode('consultingReportApprovalConfirmed').checked = false;
         if (withdraw) reportApprovalNode('consultingReportApprovalReason').value = '';
+        if (typeof refreshConsultingReportPdf === 'function' && consultingReportPdf.caseId === caseId) await refreshConsultingReportPdf();
         reportApprovalMessage(withdraw ? '승인을 철회했습니다. 현재 본문은 세 명 모두 다시 확인해야 합니다.' : '본인 승인을 등록했습니다.', 'success');
     } catch (error) {
         if (generation !== consultingReportApprovalState.generation) return;

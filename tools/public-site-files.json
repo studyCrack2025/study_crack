@@ -117,6 +117,7 @@
     "js/admin/consulting-report-content.js",
     "js/admin/consulting-report-revision.js",
     "js/admin/consulting-report-approval.js",
+    "js/admin/consulting-report-pdf.js",
     "js/admin/consulting-scheduling.js",
     "js/admin/matching.js",
     "js/admin/modals.js",

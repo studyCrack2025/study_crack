@@ -225,3 +225,11 @@
 #consultingReportApprovalHistory li { min-width:0; padding:14px; border-radius:9px; background:var(--admin-card-bg,#fff); line-height:1.7; overflow-wrap:anywhere; }
 #consultingReportApprovalHistory span { display:block; margin-top:5px; color:var(--admin-muted,#516078); font-size:.8rem; }
 #consultingReportApprovalHistory p { margin:8px 0 0; white-space:pre-wrap; }
+
+.consulting-report-pdf-panel { min-width:0; margin:24px 0 0; padding:clamp(14px,3vw,24px); border:1px solid var(--admin-border,#dce2eb); border-radius:14px; background:var(--admin-surface,#f8faff); }
+.consulting-report-pdf-file { min-width:0; padding:18px; margin:16px 0; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; background:var(--admin-card-bg,#fff); }
+.consulting-report-pdf-file h5 { margin:0 0 12px; font-size:1rem; color:var(--admin-text,#1e293b); }
+.consulting-report-pdf-digest { margin:10px 0 18px; font-size:.75rem; color:var(--admin-muted,#516078); overflow-wrap:anywhere; }
+.consulting-report-pdf-ledger { margin-top:20px; border-top:1px solid var(--admin-border,#dce2eb); }
+.consulting-report-pdf-ledger summary { min-height:44px; padding:14px 0; font-weight:650; cursor:pointer; }
+#consultingReportPdfHistory { margin:0; padding:0; list-style:none; }

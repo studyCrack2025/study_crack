@@ -10,13 +10,14 @@ function resetConsultingReportContent(preserveRevisions = false) {
     consultingReportContentGeneration++; clearTimeout(consultingReportContentPoll); consultingReportContentPoll = null; consultingReportContentPolls = 0;
     consultingReportContent = null; consultingReportContentBusy = false;
     reportContentNode('consultingReportContentResult')?.replaceChildren(); reportContentNode('consultingReportContentPanel')?.setAttribute('aria-busy', 'false');
+    if (typeof resetConsultingReportPdf === 'function') resetConsultingReportPdf();
     if (typeof resetConsultingReportApprovals === 'function') resetConsultingReportApprovals();
     if (!preserveRevisions && typeof resetConsultingReportRevisions === 'function') resetConsultingReportRevisions();
     reportContentMessage(''); updateConsultingReportContentButtons();
 }
 function updateConsultingReportContentButtons() {
     if (!reportContentNode('consultingReportGenerateContent')) return;
-    const blocked = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || (typeof consultingReportRevisionBusy !== 'undefined' && consultingReportRevisionBusy) || consultingReportContentBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFactsBusy;
+    const blocked = (typeof consultingReportPdfBusy !== 'undefined' && consultingReportPdfBusy) || (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || (typeof consultingReportRevisionBusy !== 'undefined' && consultingReportRevisionBusy) || consultingReportContentBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFactsBusy;
     reportContentNode('consultingReportGenerateContent').disabled = blocked || consultingReportContent?.canGenerate !== true;
     reportContentNode('consultingReportRefreshContent').disabled = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportContentBusy || (typeof consultingReportRevisionBusy !== 'undefined' && consultingReportRevisionBusy) || !consultingReportSource?.caseId;
     reportContentNode('consultingReportGenerateContent').textContent = ['failed', 'stale'].includes(consultingReportContent?.status) ? '현재 기준으로 다시 생성' : 'AI 보고서 본문 생성';
@@ -37,6 +38,7 @@ function renderConsultingReportContent(workspace) {
     reportContentMessage(labels[workspace.status] || '본문 상태를 확인해주세요.', ['failed', 'stale'].includes(workspace.status) ? 'error' : workspace.status === 'completed' ? 'success' : '');
     if (typeof bindConsultingReportRevisions === 'function') bindConsultingReportRevisions(workspace);
     if (typeof bindConsultingReportApprovals === 'function') bindConsultingReportApprovals(workspace);
+    if (typeof bindConsultingReportPdf === 'function') bindConsultingReportPdf(workspace);
     const content = workspace.record?.content;
     if (content) {
         if (!content.numericalReady) root.append(reportFactElement('p', '일부 수치·플랜 검수가 남아 있습니다. 이 초안은 승인할 수 없습니다.', 'consulting-report-source-notice'));

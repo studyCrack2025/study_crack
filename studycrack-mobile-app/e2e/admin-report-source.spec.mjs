@@ -75,12 +75,31 @@ async function prepare(page, options = {}) {
             content.approval = state.approvalView();
             state.syncApprovals = () => { content.approval = state.approvalView(); };
         }
+        if (options.withPdf) {
+            const state = window.__reportSource, content = state.ws.reportContent;
+            const file = { artifactId: 'ARTIFACT_123e4567-e89b-12d3-a456-426614174001', requestId: 'REPORT_RENDER_' + 'a'.repeat(40), contentRevision: 1, templateVersion: 'jungsi-six-page-1.0.0', pageCount: 6, bytes: 160000, pdfSha256: 'sha256:' + 'a'.repeat(64), createdAt: '2026-12-08T03:05:00Z', current: true };
+            state.pdfFile = file;
+            state.pdf = { status: options.pdfStatus || 'pending', targetId: 'sha256:' + 'f'.repeat(64), canQueue: !options.readOnly && options.pdfStatus === 'awaiting_renderer', current: options.pdfStatus === 'ready' ? file : null,
+                lastArtifact: options.pdfStatus === 'historical' ? { ...file, current: false } : null, history: ['ready', 'historical'].includes(options.pdfStatus) ? [{ ...file, current: options.pdfStatus === 'ready' }] : [], nextCursor: null,
+                job: { status: options.pdfStatus || 'pending', lastErrorCode: options.pdfStatus === 'failed' ? 'PDF_LAYOUT_OVERFLOW' : null, errorPages: options.pdfStatus === 'failed' ? [4] : [] }, studentPublicationAllowed: false };
+            if (options.pdfStatus === 'historical') state.pdf.status = 'content_approval_required';
+            content.pdf = state.pdf;
+        }
         window.apiFetch = async (_url, request) => {
             const input = JSON.parse(request.body), state = window.__reportSource; state.calls.push(input);
             let data = {};
             if (input.type === 'admin_list_consulting_students') data = { items: [{ applicationId, sourceResponseId: responseId, phase: 'report', studentNameMask: '합*생', phoneMask: '010-****-0000', stateLabel: '상담 완료', nextAction: '상담 정리', updatedAt: summary.savedAt }], nextCursor: null };
             else if (input.type === 'admin_get_consulting_student') data = { application: { applicationId, applicationState: 'CLAIMED', revision: 0, expectedAmount: 300000 }, contact: { studentName: '합성 학생' },
                 student: { applicationId, sourceResponseId: responseId, phase: 'report', stateLabel: '상담 완료', nextAction: '상담 정리', updatedAt: summary.savedAt }, case: { caseId, workflowState: 'WRITTEN_SESSION_COMPLETED' }, permissions: { report: true } };
+            else if (input.type === 'admin_get_report_pdf_workspace') {
+                if (state.deferPdf) await new Promise(resolve => { state.resolvePdf = resolve; });
+                if (state.failPdf) throw new Error('PDF 상태를 조회하지 못했습니다.');
+                data = { caseId, caseRevision: state.ws.caseRevision, ...structuredClone(state.pdf) };
+            } else if (input.type === 'admin_queue_report_pdf') {
+                state.pdf.status = 'pending'; state.pdf.canQueue = false; data = { caseId, ...structuredClone(state.pdf) };
+            } else if (input.type === 'admin_preview_report_pdf') {
+                data = { caseId, artifactId: input.data.artifactId, current: state.pdf.status === 'ready', expiresIn: 60, url: state.badPdfUrl || `https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-${input.data.artifactId}.pdf?signed=1` };
+            }
             else if (input.type === 'admin_get_report_source_workspace') {
                 if (state.deferGet) await new Promise(resolve => { state.resolveGet = () => { state.deferGet = false; resolve(); }; });
                 if (state.failGet) throw Object.assign(new Error('자료를 다시 불러오지 못했습니다.'), { status: 503 });
@@ -149,7 +168,7 @@ async function prepare(page, options = {}) {
             return { json: async () => ({ success: true, data }) };
         };
     }, { caseId, options });
-    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-revision.js', 'js/admin/consulting-report-approval.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-content.js', 'js/admin/consulting-report-revision.js', 'js/admin/consulting-report-approval.js', 'js/admin/consulting-report-pdf.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await page.locator('[data-student-tab="report"]').click();
@@ -488,4 +507,60 @@ test('승인자 이외의 계정은 세 명의 상태를 조회하며 승인·�
     await expect(page.locator('#consultingReportApprovalMeta')).toContainText('조회 전용'); await expect(page.locator('#consultingReportApprovalOwnActions')).toBeHidden();
     await expect(page.locator('#consultingReportApprovalRoles article')).toHaveCount(3);
     expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_approve_report_content'))).toHaveLength(0);
+});
+
+const pdfOptions = { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withApprovals: true, approvedRoles: ['CEO', 'CTO', 'CMO'], withPdf: true };
+test('승인 PDF의 대기부터 완료까지 조회하며 추가 제작이나 학생 발송을 하지 않는다', async ({ page }) => {
+    await page.clock.install(); await prepare(page, pdfOptions);
+    await expect(page.locator('#consultingReportPdfStatus')).toContainText('대기 중');
+    await page.evaluate(() => { const s = window.__reportSource; s.pdf.status = 'ready'; s.pdf.current = s.pdfFile; s.pdf.history = [s.pdfFile]; });
+    await page.clock.fastForward(11000);
+    await expect(page.locator('#consultingReportPdfCurrent')).toContainText('6페이지');
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_queue_report_pdf' || /publish|notification/.test(c.type)))).toHaveLength(0);
+});
+test('구형 승인 건의 제작 요청은 한 번만 제출하고 대기 상태로 전환한다', async ({ page }) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'awaiting_renderer' });
+    await page.locator('#consultingReportPdfQueue').click(); await expect(page.locator('#consultingReportPdfStatus')).toContainText('대기 중');
+    await expect(page.locator('#consultingReportPdfQueue')).toBeHidden();
+    const calls = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_queue_report_pdf'));
+    expect(calls).toHaveLength(1); expect(calls[0].data.confirmed).toBe(true);
+});
+test('저장된 현재 PDF는 선택한 파일만 새 창으로 열고 다운로드도 같은 식별자를 사용한다', async ({ page }) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'ready' });
+    await page.evaluate(() => { window.__pdfOpened = []; window.open = () => ({ opener: window, location: { replace: url => window.__pdfOpened.push(url) }, close: () => {} }); });
+    await page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 미리보기', exact: true }).click();
+    await expect(page.locator('#consultingReportPdfStatus')).toContainText('아직 학생에게 전송되지 않았습니다');
+    await page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 다운로드', exact: true }).click();
+    const calls = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_preview_report_pdf'));
+    expect(calls.map(c => c.data.inline)).toEqual([true, false]); expect(calls[0].data.artifactId).toBe(calls[1].data.artifactId);
+    expect(await page.evaluate(() => window.__pdfOpened.length)).toBe(2);
+});
+test('페이지 넘침은 해당 페이지와 수정 방향을 안내하고 무한 제작을 막는다', async ({ page }) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'failed' });
+    await expect(page.locator('#consultingReportPdfStatus')).toContainText('4페이지'); await expect(page.locator('#consultingReportPdfStatus')).toContainText('승인을 다시');
+    await expect(page.locator('#consultingReportPdfQueue')).toBeHidden();
+});
+test('이전 생성본은 최신 승인본으로 표시하지 않고 읽기 전용 관리자는 제작할 수 없다', async ({ page }) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'historical', readOnly: true });
+    await expect(page.locator('#consultingReportPdfCurrent')).toContainText('이전 생성본'); await expect(page.locator('#consultingReportPdfCurrent')).not.toContainText('현재 승인본');
+    await expect(page.locator('#consultingReportPdfQueue')).toBeHidden();
+});
+test('조회 실패나 학생 전환 이후의 늦은 응답으로 파일 열기가 다시 활성화되지 않는다', async ({ page }) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'ready' });
+    await page.evaluate(() => { window.__reportSource.failPdf = true; }); await page.locator('#consultingReportPdfRefresh').click();
+    await expect(page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 미리보기' })).toBeDisabled();
+    await page.evaluate(() => { window.__reportSource.failPdf = false; window.__reportSource.deferPdf = true; window.refreshConsultingReportPdf(); });
+    await page.evaluate(() => { window.resetConsultingReportSource(); window.__reportSource.resolvePdf(); });
+    await expect(page.locator('#consultingReportPdfPanel')).toBeHidden();
+});
+test('PDF 파일 확인은 작은 화면에서도 넘치지 않고 외부 파일 주소는 거절한다', async ({ page }, testInfo) => {
+    await prepare(page, { ...pdfOptions, pdfStatus: 'ready' });
+    for (const width of [320, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.locator('#consultingReportPdfPanel').evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+        await page.locator('#consultingReportPdfPanel').screenshot({ path: testInfo.outputPath(`pdf-${width}.png`) });
+    }
+    await page.evaluate(() => { window.__reportSource.badPdfUrl = 'https://example.invalid/stolen.pdf'; window.open = () => ({ opener: null, close() {}, location: { replace() { throw new Error('Unsafe navigation'); } } }); });
+    await page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 미리보기' }).click();
+    await expect(page.locator('#consultingReportPdfStatus')).toContainText('주소를 확인하지 못했습니다');
 });
