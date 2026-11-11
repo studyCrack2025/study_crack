@@ -1,5 +1,60 @@
 import { expect, test } from '@playwright/test';
 
+test('운영팀은 ID 입력 없이 본인의 불가 시간만 저장하고 역할별 전체 일정을 확인한다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    const first = { slotId: 'WST_20261207_1000', localDate: '2026-12-07', localTime: '10:00', startAt: '2026-12-07T01:00:00.000Z' };
+    const second = { ...first, slotId: 'WST_20261207_1030', localTime: '10:30', startAt: '2026-12-07T01:30:00.000Z' };
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 },
+        placements: [], confirmed: [{ ...first, counselorId: 'synthetic-admin', teamRole: 'CMO', caseId: 'CASE_22222222-2222-4222-8222-222222222222', studentName: '합*생', revision: 1 }], unassigned: [], hasOpenTimes: true, canManage: true,
+        team: { configured: true, revision: 4, members: [{ counselorId: 'synthetic-admin', role: 'CMO', enabled: true }],
+            self: { role: 'CMO', editable: true, blockedSlots: [], lockedSlots: [second.slotId] }, slots: [first, second] } };
+    await enterConsulting(page);
+    await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    await page.getByText('배정 옵션·나의 불가 시간', { exact: true }).click();
+    await expect(page.locator('#consultingTeamIdentity')).toContainText('CMO');
+    await expect(page.locator('#consultingScheduleBoardBody').getByRole('button', { name: '상담 열기' })).toBeVisible();
+    await expect(page.getByLabel('상담사 ID', { exact: true })).toHaveCount(0);
+    await expect(page.locator('#consultingTeamBlockedSlots').getByRole('checkbox', { name: '10:30' })).toBeDisabled();
+    await page.locator('#consultingTeamBlockedSlots').getByRole('checkbox', { name: '10:00' }).check();
+    await page.getByRole('button', { name: '나의 불가 시간 저장' }).click();
+    await expect.poll(() => state.calls.filter(item => item.type === 'admin_save_own_written_unavailability').length).toBe(1);
+    expect(state.calls.find(item => item.type === 'admin_save_own_written_unavailability').data).toEqual({ expectedRevision: 4, blockedSlots: [first.slotId] });
+    expect(await page.evaluate(() => window.__adminAncillaryCalls)).not.toEqual(expect.arrayContaining(['populateTutorFilter']));
+    expect(await page.evaluate(() => window.__adminAncillaryCalls)).not.toEqual(expect.arrayContaining(['fetchQnaBadgeCount']));
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.screenshot({ path: testInfo.outputPath('admin-team-availability-320.png'), fullPage: true });
+});
+
+test('시간표 권한 403은 자동 재조회를 멈추고 수동 재시도로 복구한다', async ({ page }) => {
+    const state = await prepare(page);
+    await page.clock.install();
+    state.boardError = 403;
+    await enterConsulting(page);
+    await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    await expect(page.locator('#consultingScheduleBoardStatus')).toContainText('자동 재조회를 중지');
+    await page.clock.runFor(65000);
+    expect(state.calls.filter(item => item.type === 'admin_get_written_schedule_board')).toHaveLength(1);
+    state.boardError = 0;
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 }, placements: [], confirmed: [], unassigned: [], hasOpenTimes: false };
+    await page.getByRole('button', { name: '지금 갱신', exact: true }).click();
+    await expect(page.locator('#consultingScheduleBoardStatus')).toContainText('추천 0건');
+});
+
+test('초대 취소 확인은 정확한 문구를 받고 취소된 신청을 별도 분류한다', async ({ page }) => {
+    const state = await prepare(page);
+    Object.assign(state.students[0], { stageVerified: true, activeInviteId: 'INVITE_synthetic' });
+    Object.assign(state.students[0].application, { applicationState: 'INVITED' });
+    await enterConsulting(page); await openStudent(page);
+    page.on('dialog', dialog => dialog.type() === 'prompt' ? dialog.accept('초대 취소') : dialog.accept());
+    await page.getByRole('button', { name: '미사용 초대 취소' }).click();
+    await expect.poll(() => state.calls.filter(item => item.type === 'admin_revoke_consulting_invite').length).toBe(1);
+    expect(state.calls.find(item => item.type === 'admin_revoke_consulting_invite').data.reason).toBe('초대 취소');
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await page.getByRole('button', { name: '보류·거절·초대 취소', exact: true }).click();
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('초대 취소');
+    await expect(page.locator('#consultingDirectoryBody')).not.toContainText('둘*생');
+});
+
 const applicationId = n => `APP_${String(n).padStart(8, '0')}-1111-4111-8111-111111111111`;
 const caseId = 'CASE_22222222-2222-4222-8222-222222222222';
 const record = n => `RESPONSE_SYNTHETIC_${n}`;
@@ -13,12 +68,14 @@ async function prepare(page, hash = '') {
         window.ADMIN_API_URL = '/synthetic-api'; window.Store = { get: () => null };
         window.apiFetch = async (_url, options) => {
             const response = await fetch('/synthetic-api', options);
-            if (!response.ok && JSON.parse(options.body).type === 'admin_export_consulting_students') {
-                throw Object.assign(new Error('Synthetic export error'), { status: response.status });
+            if (!response.ok) {
+                const error = await response.json();
+                throw Object.assign(new Error(error.error || error.message || 'Synthetic API error'), { status: response.status, code: error.code });
             }
             return response;
         };
-        for (const name of ['loadAdminStats', 'populateTutorFilter', 'searchStudents', 'fetchUnreadNotiCount', 'fetchQnaBadgeCount', 'loadMatchingData', 'clearStudentJoinDateRange', 'loadTutorStats', 'loadAllQna']) window[name] = () => {};
+        window.__adminAncillaryCalls = [];
+        for (const name of ['loadAdminStats', 'populateTutorFilter', 'searchStudents', 'fetchUnreadNotiCount', 'fetchQnaBadgeCount', 'loadMatchingData', 'clearStudentJoinDateRange', 'loadTutorStats', 'loadAllQna']) window[name] = () => window.__adminAncillaryCalls.push(name);
     </script>`;
     const document = html.replace('</body>', `${bootstrap}${scripts.map(src => `<script src="/${src}"></script>`).join('')}</body>`);
     const state = { calls: [], emptyFirst: false, deferType: null, resolve: null, failMutation: false, materialError: false, legacyMaterial: false, revisedMaterial: false, confirmed: false };
@@ -26,6 +83,7 @@ async function prepare(page, hash = '') {
     const detail = n => ({ application: { applicationId: applicationId(n), applicationState: n === 2 ? 'CLAIMED' : 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 300000, studentNameMask: '합*생', phoneMask: '010-****-0000' }, contact: { ...contact, studentName: n === 2 ? '둘째 합성 학생' : contact.studentName }, payerRelationship: 'self', contactMethod: 'email', studentStatus: 'senior', sourceResponseId: record(n), originalSubmission: { ...contact }, case: n === 2 ? { caseId, workflowState: 'REPORT_REVIEW', revision: 3 } : null, permissions: { materials: true, schedule: true, report: true, finalCall: true } });
     state.students = [detail(1), detail(2)];
     const summary = (data, n) => {
+        if (data.application.inviteRevoked) return { applicationId: applicationId(n), sourceResponseId: record(n), phase: 'attention', stateLabel: '초대 취소', nextAction: '초대 재발급', updatedAt: '2026-11-11T00:00:00.000Z' };
         const report = data.case?.workflowState === 'REPORT_REVIEW';
         return { applicationId: applicationId(n), sourceResponseId: record(n), caseId: data.case?.caseId || null, studentNameMask: n === 2 ? '둘*생' : '합*생', phoneMask: '010-****-0000', phase: report ? 'report' : data.case || data.application.applicationState === 'INVITED' ? 'onboarding' : 'intake', stateLabel: report ? '보고서 검수' : data.case ? '자료 검수' : data.application.applicationState === 'INVITED' ? '초대 발급·가입 대기' : data.application.inputReviewRequired ? '신청 정보 보완' : '입금 확인 대기', nextAction: report ? '보고서 검수·승인' : '신청 정보·입금 확인', updatedAt: '2026-11-04T00:00:00.000Z' };
     };
@@ -71,6 +129,10 @@ async function prepare(page, hash = '') {
         } else if (request.type === 'admin_get_consulting_student') {
             const index = state.students.findIndex(item => item.application.applicationId === request.data.applicationId);
             data = { ...structuredClone(state.students[index]), student: summary(state.students[index], index + 1) };
+        } else if (request.type === 'admin_revoke_consulting_invite') {
+            const current = state.students.find(item => item.application.applicationId === request.data.applicationId);
+            current.inviteRevoked = true; current.application.inviteRevoked = true; current.application.revision++;
+            data = { result: 'revoked', revision: current.application.revision };
         } else if (request.type === 'admin_review_application_input') {
             const current = state.students[0]; Object.assign(current.contact, request.data.input); Object.assign(current.application, { inputReviewRequired: false, intakeIssues: [], paymentReviewStatus: 'pending', revision: current.application.revision + 1 });
             data = { applicationId: applicationId(1), revision: current.application.revision, inputReviewRequired: false };
@@ -119,7 +181,12 @@ async function prepare(page, hash = '') {
             state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
             data = { caseId, notificationQueued: true };
         } else if (request.type === 'admin_get_written_schedule_board') {
+            if (state.boardError) return route.fulfill({ status: state.boardError, contentType: 'application/json', body: JSON.stringify({ success: false, code: 'FORBIDDEN', error: 'Synthetic unavailable' }) });
             data = state.board;
+        } else if (request.type === 'admin_save_own_written_unavailability') {
+            state.board.team.revision++;
+            state.board.team.self.blockedSlots = request.data.blockedSlots;
+            data = { revision: state.board.team.revision };
         } else if (request.type === 'admin_list_schedule_candidates') {
             data = state.scheduleCandidates;
         } else if (request.type === 'admin_confirm_written_assignment') {
@@ -483,7 +550,7 @@ test('전체 서면상담 추천을 자동 갱신하고 학생이 고른 다른 
     expect(state.calls.find(call => call.type === 'admin_confirm_written_assignment').data).toEqual({
         caseId, counselorId: 'tutor-synthetic', slotId: alternate.slotId, expectedAvailabilityRevision: 2
     });
-    await page.getByText('배정 옵션·상담사 시간 열기', { exact: true }).click();
+    await page.getByText('배정 옵션·나의 불가 시간', { exact: true }).click();
     await page.getByLabel('점심 배정').selectOption('block');
     await page.getByRole('button', { name: '옵션 저장' }).click();
     await expect(page.locator('#consultingScheduleSettingsStatus')).toContainText('배정 옵션을 저장했습니다.');

@@ -255,8 +255,8 @@ window.addEventListener('pagehide', resetConsultingIntake);
 async function revokeConsultingInvite() {
     const current = currentConsultingApplication, application = current?.application;
     if (consultingMutationBusy || !application || application.applicationState !== 'INVITED' || !current.activeInviteId || !current.stageVerified || current.inviteRevoked) return;
-    const reason = prompt('초대 취소 사유를 10자 이상 입력해주세요. 개인정보는 제외하세요.', ''); if (reason === null) return;
-    const normalized = reason.replace(/\s+/g, ' ').trim(); if (normalized.length < 10 || normalized.length > 1000) return setConsultingStatus('사유는 10~1000자로 입력해주세요.', 'error');
+    const reason = prompt('취소하려면 초대 취소를 정확히 입력해주세요.', ''); if (reason === null) return;
+    const normalized = reason; if (normalized !== '초대 취소') return setConsultingStatus('초대 취소를 정확히 입력해주세요.', 'error');
     if (!confirm('미사용 초대를 취소할까요? 기존 링크·코드는 사용할 수 없게 됩니다. 이미 발송 중인 메시지는 회수되지 않으며 입금·이용권 환불은 별도입니다.')) return;
     await runConsultingMutation('admin_revoke_consulting_invite', { applicationId: application.applicationId, expectedRevision: application.revision, reason: normalized, idempotencyKey: crypto.randomUUID() }, '미사용 초대 취소 완료. 환불은 별도 처리이며 필요하면 새 초대를 재발급할 수 있습니다.');
 }

@@ -11,7 +11,7 @@ function SessionPicker({ sessions, value, onChange }) {
 }
 
 export function ConsultingWrittenSessionScreen({ binding }) {
-  const counselorMode = binding.userRole === 'tutor';
+  const counselorMode = ['tutor', 'admin'].includes(binding.userRole);
   const [resource, setResource] = React.useState({ status: 'loading', session: null, sessions: [], note: { body: '', revision: 0 } });
   const [caseId, setCaseId] = React.useState(() => new URLSearchParams(globalThis.location?.search || '').get('caseId') || '');
   const [messages, setMessages] = React.useState([]);

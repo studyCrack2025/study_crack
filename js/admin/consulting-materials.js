@@ -331,8 +331,8 @@ async function openConsultingMaterial(caseId, held) {
             return true;
         }
         const review = data.verification;
-        const canReview = !held && data.case.workflowState === 'MATERIAL_REVIEW' && review?.status === 'pending';
-        const canConfirm = !held && data.surveyReview?.needsReview === true;
+        const canReview = data.canVerify !== false && !held && data.case.workflowState === 'MATERIAL_REVIEW' && review?.status === 'pending';
+        const canConfirm = data.canVerify !== false && !held && data.surveyReview?.needsReview === true;
         currentConsultingMaterial = { ...data, submission, canReview, canConfirm, supplementDraft: new Map() };
         const versionSelect = document.getElementById('consultingSurveyVersion');
         versionSelect.value = 'current';

@@ -58,9 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initAdminPage(userId) {
-    if (typeof readAdminLocation === 'function') { adminNavigationReady = true; restoreAdminNavigation(); }
-    // 초기 데이터 로드
-    loadAdminStats(userId);
+    if (typeof readAdminLocation === 'function') adminNavigationReady = true;
 
     // 상세 페이지에서 돌아온 경우 이전 검색 상태 복원
     const savedSearch = Store.get('lastSearch');
@@ -84,11 +82,9 @@ async function initAdminPage(userId) {
         if (joinedFromEl) joinedFromEl.value = savedSearch.joinedFrom || '';
         if (joinedToEl) joinedToEl.value = savedSearch.joinedTo || '';
     }
-    populateTutorFilter();
-    searchStudents();
     fetchUnreadNotiCount();
-
-    fetchQnaBadgeCount();
+    if (adminNavigationReady) restoreAdminNavigation();
+    else loadAdminStats(userId);
 
     // 검색창에서 엔터키 누르면 검색 실행
     const searchInput = document.getElementById('searchInput');
@@ -107,7 +103,6 @@ async function initAdminPage(userId) {
         });
     });
 
-    setTimeout(() => loadMatchingData(true), 1500);
 
     // CUSTOM 템플릿 선택 시 공지 내용 textarea와 미리보기 실시간 연동
     const noticeContentEl = document.getElementById('noticeContent');
@@ -171,7 +166,9 @@ function showSection(sectionName, options = {}) {
         document.getElementById('section-dashboard').classList.add('active');
         const anchor = document.getElementById('chart-section-anchor');
         if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
-    } else if (sectionName === 'tutors') loadTutorStats();
+    } else if (sectionName === 'students') { populateTutorFilter(); searchStudents(); }
+    else if (sectionName === 'dashboard' || sectionName === 'advanced-stats') loadAdminStats(localStorage.getItem('userId'));
+    else if (sectionName === 'tutors') loadTutorStats();
     else if (sectionName === 'notifications' && !options.deferLoad) { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
     else if (sectionName === 'consulting' && typeof activateConsultingWorkspace === 'function') activateConsultingWorkspace(readAdminLocation());
