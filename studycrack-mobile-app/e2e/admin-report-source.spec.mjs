@@ -24,6 +24,18 @@ async function prepare(page, options = {}) {
             frozen: null, sourceStatus: { status: 'not_frozen', reasons: [] }, history: [{ revision: 1, savedAt: summary.savedAt }], evidenceOptions: [{ id: '01K00000000000000000000001', label: '학생 · 기숙사 이용도 검토할 수 있어요.' }],
             consultation: { status: 'completed', endAt: '2026-12-07T01:30:00.000Z' } };
         window.__reportSource = { ws, calls: [], versions: [structuredClone(summary)], deferGet: options.deferGet, failSave: false, failGet: false };
+        if (options.facts) {
+            const facts = ['ga', 'na', 'da'].map((group, i) => ({ admissionUnitId: 'UNIT_TEST_00' + i, universityName: i === 0 ? '<svg onload=alert(1)> 대학' : '합성대학교', admissionUnitName: '긴 모집단위 이름을 정확하게 확인하는 합성학과', campusName: '합성캠퍼스', admissionGroup: group,
+                convertedScore: 0, maximumScore: 1000, expectedCutoff: i === 2 ? null : { low: 700, point: 710, high: 720 }, cutoffStatistic: i === 2 ? 'unconfirmed' : 'registered_70pct', scoreDelta: i === 2 ? null : -710,
+                probability: i === 2 ? null : { low: 0, point: 0, high: 10 }, reportRisk: { label: i === 2 ? '판단 보류' : '위험', band: i === 2 ? 'unknown' : 'risky', wide: true } }));
+            const plan = { slots: facts.map(f => ({ group: f.admissionGroup, factId: f.admissionUnitId })), complete: true, riskSatisfied: false, reasonCodes: ['RISK_ALLOCATION_NOT_SATISFIED'] };
+            const result = { status: 'partial', numericalReady: false, facts, baseline: { factIds: facts.map(f => f.admissionUnitId) }, planA: plan, planB: { ...plan, reasonCodes: ['TWO_DIFFERENT_ALTERNATIVES_UNAVAILABLE'] }, planC: { alternatives: [], reasonCodes: ['VOCATIONAL_VERIFIED_ALTERNATIVE_UNAVAILABLE'] },
+                scoreAnalysis: { records: [{ area: 'english', subject: '영어', selection: null, grade: 2 }] }, coverage: { evaluated: 3373, eligibleConverted: 3000, regularPlanPool: 2800, exclusions: [{ code: 'EDUCATION_REGIME_UNCONFIRMED', count: 10 }] }, warnings: ['COMMUTE_AND_HOUSING_REVIEW_REQUIRED', 'CUTOFF_OR_PROBABILITY_NOT_AVAILABLE'], preferenceGaps: [{ priority: 1, matchingEligibleCount: 0 }] };
+            Object.assign(ws, { frozen: { revision: 1, frozenAt: summary.savedAt }, pipelineVersion: 'prepared', sourceStatus: { status: 'current', reasons: [] },
+                reportFacts: { status: options.staleFacts ? 'stale' : 'not_calculated', canCalculate: !options.readOnly && !options.staleFacts, sourceRevision: 1, sourceDigest: ws.sourceDigest, revision: 0, record: null } });
+            window.__reportSource.factResult = result;
+            if (options.withFactsResult) Object.assign(ws.reportFacts, { revision: 1, status: options.staleFacts ? 'stale' : 'current', record: { revision: 1, sourceRevision: 1, calculatedAt: summary.savedAt, result } });
+        }
         window.apiFetch = async (_url, request) => {
             const input = JSON.parse(request.body), state = window.__reportSource; state.calls.push(input);
             let data = {};
@@ -48,11 +60,18 @@ async function prepare(page, options = {}) {
             } else if (input.type === 'admin_freeze_report_source') {
                 state.ws.frozen = { revision: 1, frozenAt: '2026-12-08T03:02:00.000Z', references: {} }; state.ws.pipelineVersion = 'prepared'; state.ws.sourceStatus.status = 'current';
                 data = { caseId, frozen: state.ws.frozen, unchanged: false };
+            } else if (input.type === 'admin_calculate_report_facts') {
+                if (state.deferFacts) await new Promise(resolve => { state.resolveFacts = resolve; });
+                if (state.failFacts) throw Object.assign(new Error('원자료가 변경되어 결과를 저장하지 않았습니다.'), { status: 409 });
+                state.ws.caseRevision++;
+                Object.assign(state.ws.reportFacts, { status: 'current', revision: 1, record: { revision: 1, sourceRevision: 1, calculatedAt: summary.savedAt, result: state.factResult } });
+                if (state.failRefreshAfterFacts) state.failGet = true;
+                data = { revision: 1, unchanged: false, result: state.factResult };
             }
             return { json: async () => ({ success: true, data }) };
         };
     }, { caseId, options });
-    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
+    for (const file of ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-report-facts.js', 'js/admin/consulting-report-source.js', 'js/admin/consulting-workspace.js']) await page.addScriptTag({ content: await source(file) });
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
     await page.getByRole('button', { name: '학생 상세', exact: true }).click();
     await page.locator('[data-student-tab="report"]').click();
@@ -165,5 +184,47 @@ test('긴 상담 내용과 입력 폼은 모바일·데스크톱에서 넘치지
         expect(await page.locator('#consultingWorkspaceReport').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
         expect(await page.locator('#consultingReportSaveSummary').evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
         await page.screenshot({ path: testInfo.outputPath(`report-source-${width}.png`), fullPage: true });
+    }
+});
+
+test('계산은 고정 기준만 전송하고 성적·라인·A/B/C에서 0과 미확인 수치·통계 종류를 구분한다', async ({ page }) => {
+    await prepare(page, { facts: true }); await page.locator('#consultingReportCalculateFacts').click();
+    const root = page.locator('#consultingReportFactsResult');
+    await expect(root).toContainText('전체 평가 3,373개'); await expect(root).toContainText('등록자 70% 컷 추정');
+    await expect(root).toContainText('0 / 1,000'); await expect(root).toContainText('0%'); await expect(root).toContainText('판단 보류');
+    for (const index of [1, 3, 4]) await expect(root.locator('tbody tr').first().locator('td').nth(index)).toHaveText('—');
+    await expect(root).toContainText('실제 통학 시간'); await expect(root).toContainText('플랜 A'); await expect(root).toContainText('플랜 B'); await expect(root).toContainText('플랜 C');
+    await expect(root).toContainText('<svg onload=alert(1)> 대학'); await expect(root.locator('svg')).toHaveCount(0);
+    const sent = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'));
+    expect(sent).toHaveLength(1); expect(Object.keys(sent[0].data).sort()).toEqual(['caseId', 'expectedCaseRevision', 'expectedSourceDigest', 'expectedSourceRevision']);
+});
+
+test('계산 중 입력·재실행을 잠그고 세션 종료 뒤 늦게 도착한 결과를 노출하지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true }); await page.evaluate(() => { window.__reportSource.deferFacts = true; });
+    await page.locator('#consultingReportCalculateFacts').click(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+    await expect(page.getByLabel('상담 결론', { exact: true })).toBeDisabled();
+    await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolveFacts(); });
+    await expect(page.locator('#consultingReportFactsResult')).toBeEmpty(); await expect(page.locator('#consultingReportFactsStatus')).toBeEmpty();
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(1);
+});
+
+test('읽기 전용·오래된 기준·저장 전 수정은 계산을 막고 실패는 자동 재전송하지 않는다', async ({ page }) => {
+    await prepare(page, { facts: true, readOnly: true }); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+    await prepare(page, { facts: true, withFactsResult: true, staleFacts: true }); await expect(page.locator('#consultingReportFactsStatus')).toContainText('이전 기준'); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+    await prepare(page, { facts: true }); await page.getByLabel('상담 결론', { exact: true }).fill('저장 전 변경'); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+    await page.evaluate(() => { window.__reportSource.failFacts = true; }); await page.locator('#consultingReportSaveSummary').click();
+    await expect(page.locator('#consultingReportCalculateFacts')).toBeEnabled(); await page.locator('#consultingReportCalculateFacts').click();
+    await expect(page.locator('#consultingReportFactsStatus')).toContainText('원자료가 변경');
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(1);
+});
+
+test('점수·플랜 결과는 모바일과 데스크톱에서 가로 넘침 없이 확인하고 표만 스크롤한다', async ({ page }, testInfo) => {
+    await prepare(page, { facts: true, withFactsResult: true });
+    for (const width of [320, 390, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.locator('#consultingWorkspaceReport').evaluate(n => n.scrollWidth <= n.clientWidth + 1)).toBe(true);
+        expect(await page.locator('#consultingReportCalculateFacts').evaluate(n => n.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+        await page.locator('#consultingReportFactsPanel').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: testInfo.outputPath(`report-facts-${width}.png`), fullPage: true });
     }
 });

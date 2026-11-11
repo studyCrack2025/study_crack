@@ -42,12 +42,14 @@ function reportSourceRemove(row) {
     button.addEventListener('click', () => { row.remove(); markConsultingReportSourceDirty(); }); row.append(button);
 }
 function updateConsultingReportSourceButtons() {
-    const editable = consultingReportSource?.canEdit === true && !consultingReportSourceBusy;
+    const calculating = typeof consultingReportFactsBusy !== 'undefined' && consultingReportFactsBusy;
+    const editable = consultingReportSource?.canEdit === true && !consultingReportSourceBusy && !calculating;
     consultingReportNode('consultingReportSummaryFields').disabled = !editable;
     consultingReportNode('consultingReportSaveSummary').disabled = !editable;
-    consultingReportNode('consultingReportSummaryVersion').disabled = consultingReportSourceBusy;
+    consultingReportNode('consultingReportSummaryVersion').disabled = consultingReportSourceBusy || calculating;
     consultingReportNode('consultingReportFreezeSource').disabled = !editable || consultingReportSourceDirty || !consultingReportSource?.readiness?.canFreeze || !consultingReportSource?.currentSummaryRevision;
     consultingReportNode('consultingReportDirty').textContent = consultingReportSourceDirty ? '저장하지 않은 변경사항이 있습니다.' : '';
+    if (typeof updateConsultingReportFactsButton === 'function') updateConsultingReportFactsButton();
 }
 function markConsultingReportSourceDirty() {
     if (!consultingReportSource?.canEdit || consultingReportSourceBusy) return;
@@ -57,6 +59,7 @@ function resetConsultingReportSource() {
     consultingReportSourceGeneration++;
     consultingReportSourceRequest?.abort(); consultingReportSourceRequest = null;
     consultingReportSource = null; consultingReportSourceBusy = false; consultingReportSourceDirty = false;
+    if (typeof resetConsultingReportFacts === 'function') resetConsultingReportFacts();
     consultingReportNode('consultingReportSummaryForm').reset();
     for (const id of ['consultingReportReadiness', 'consultingReportQuestions', 'consultingReportClarifications', 'consultingReportComparisons', 'consultingReportEvidence', 'consultingReportAppliedValues', 'consultingReportSurveyChangesBody']) consultingReportNode(id).replaceChildren();
     consultingReportNode('consultingReportSourceBody').hidden = true;
@@ -192,6 +195,7 @@ function renderConsultingReportSource(data, revision) {
     renderReportSourceValues(data, content);
     consultingReportNode('consultingStudentReport').disabled = Boolean(data.pipelineVersion);
     consultingReportNode('consultingReportSourceBody').hidden = false;
+    if (typeof renderConsultingReportFacts === 'function') renderConsultingReportFacts(data.reportFacts);
     updateConsultingReportSourceButtons();
 }
 
