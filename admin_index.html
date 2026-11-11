@@ -469,7 +469,11 @@
                     <div class="consulting-heading-row"><h2 id="consultingScheduleChoiceTitle" class="consulting-detail-title">학생별 일정 선택</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="document.getElementById('consultingScheduleChoice').close()">닫기</button></div>
                     <p id="consultingScheduleChoiceStatus" class="consulting-status" role="status"></p>
                     <form id="consultingScheduleChoiceForm" class="consulting-schedule-form" onsubmit="event.preventDefault(); submitConsultingScheduleChoice()" hidden>
-                        <label>가능한 시간 <select name="slot" required></select></label>
+                        <label id="consultingScheduleSingleChoice">가능한 시간 <select name="slot" required></select></label>
+                        <fieldset id="consultingScheduleProposalChoices" class="consulting-schedule-form" hidden disabled>
+                            <legend>제안할 시간 선택 · 최대 5개</legend>
+                            <div id="consultingScheduleProposalOptions" class="consulting-schedule-form"></div>
+                        </fieldset>
                         <div id="consultingScheduleManualFields" class="consulting-schedule-form" hidden>
                             <label class="consulting-schedule-check"><input name="contactConfirmed" type="checkbox"> 학생과 직접 연락해 이 시간에 합의했습니다.</label>
                             <label>변경 사유 (10~500자, 개인정보 제외) <textarea name="reason" minlength="10" maxlength="500" autocomplete="off"></textarea></label>
@@ -620,7 +624,8 @@
             </div>
             <section id="consultingCurrentSession" class="consulting-current-session" hidden>
                 <div id="consultingCurrentSessionCopy"></div>
-                <div class="consulting-actions"><button id="consultingManualSessionBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId, true)">직접 합의 후 수동 변경</button>
+                <div class="consulting-actions"><button id="consultingProposeSessionBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId)">변경 시간 제안</button>
+                    <button id="consultingManualSessionBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId, true)">직접 합의 후 수동 변경</button>
                     <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button></div>
             </section>
             <div class="table-responsive">

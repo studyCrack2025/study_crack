@@ -113,7 +113,12 @@ async function prepare(page, { loggedIn = true } = {}) {
       else if(type==='student_respond_written_reschedule'){
         f.lastResponse=input;
         const change=f.booking.change;
-        if(input.decision==='accept') f.booking.session={...f.booking.session,...change.offer,revision:2};
+        const choices=change.offers || [change.offer];
+        if(input.decision==='accept'){
+          const selected=input.slotId ? choices.find(offer=>offer.slotId===input.slotId&&offer.counselorId===input.counselorId) : choices[0];
+          if(!selected) throw new Error('Unexpected proposed slot');
+          f.booking.session={...f.booking.session,...selected,revision:2};
+        }
         f.booking.change=null; f.booking.changeRevision++;
         data=f.booking;
       }
@@ -860,9 +865,9 @@ test('학생이 마이페이지에서 변경 제안을 수락하고 남은 시�
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/home');
   await page.getByRole('link', { name: /새 상담 시간 제안이 도착했어요/ }).click();
-  await expect(page.getByRole('heading', { name: '운영팀에서 새 상담 시간을 제안했어요' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '상담 일정 변경을 부탁드립니다' })).toBeVisible();
   await fits(page);
-  await page.getByRole('button', { name: '새 시간으로 변경' }).click();
+  await page.getByRole('button', { name: '선택한 시간으로 변경' }).click();
   await expect(page.getByText('새 상담 일정으로 변경됐어요.')).toBeVisible();
   expect(await page.evaluate(() => window.__design.lastResponse)).toEqual({
     expectedSessionRevision: 1, expectedChangeRevision: 3, requestId: 'WCR_synthetic', decision: 'accept'
@@ -875,5 +880,54 @@ test('학생이 마이페이지에서 변경 제안을 수락하고 남은 시�
   expect(await page.evaluate(() => window.__design.lastRequest)).toEqual({
     expectedSessionRevision: 2, expectedChangeRevision: 4, selectedSlots: [{ slotId: 'WST_20261220_1030', priority: 2 }]
   });
+  await fits(page);
+});
+
+test('복수 변경 제안은 학생이 고른 두 번째 시간으로 확정한다', async ({ page }, testInfo) => {
+  const fixture = await prepare(page);
+  fixture.booking = {
+    canRequestChange: true, changeRevision: 3,
+    session: { status: 'booked', revision: 1, startAt: '2026-12-07T02:00:00.000Z', endAt: '2026-12-07T02:30:00.000Z' },
+    change: { kind: 'admin', requestId: 'WCR_synthetic', revision: 3, offers: [
+      { slotId: 'WST_20261208_1000', counselorId: 'tutor-synthetic', startAt: '2026-12-08T01:00:00.000Z', endAt: '2026-12-08T01:30:00.000Z' },
+      { slotId: 'WST_20261220_1030', counselorId: 'tutor-synthetic', startAt: '2026-12-20T01:30:00.000Z', endAt: '2026-12-20T02:00:00.000Z' }
+    ] }
+  };
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/schedule');
+  await expect(page.getByText(/일정 변경으로 번거로움을 드려 죄송합니다/)).toBeVisible();
+  const accept = page.getByRole('button', { name: '선택한 시간으로 변경' });
+  await expect(accept).toBeDisabled();
+  await expect(page.getByRole('radio')).toHaveCount(2);
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('written-change-options-320.png'), fullPage: true });
+  await page.getByRole('radio').nth(1).check();
+  await accept.click();
+  await expect(page.getByText('새 상담 일정으로 변경됐어요.')).toBeVisible();
+  expect(await page.evaluate(() => window.__design.lastResponse)).toEqual({
+    expectedSessionRevision: 1, expectedChangeRevision: 3, requestId: 'WCR_synthetic', decision: 'accept',
+    slotId: 'WST_20261220_1030', counselorId: 'tutor-synthetic'
+  });
+});
+
+test('운영팀 제안에 답하는 중에도 학생이 다른 가능 시간을 재제안한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  fixture.booking = {
+    canRequestChange: true, changeRevision: 3,
+    session: { status: 'booked', revision: 1, startAt: '2026-12-07T02:00:00.000Z', endAt: '2026-12-07T02:30:00.000Z' },
+    change: { kind: 'admin', requestId: 'WCR_synthetic', revision: 3, offers: [
+      { slotId: 'WST_20261208_1000', counselorId: 'tutor-synthetic', startAt: '2026-12-08T01:00:00.000Z', endAt: '2026-12-08T01:30:00.000Z' }
+    ] }
+  };
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/schedule');
+  await page.getByRole('button', { name: '다른 시간 제안하기' }).click();
+  await page.getByRole('button', { name: '10:30' }).last().click();
+  await page.getByRole('button', { name: '변경 요청 보내기' }).click();
+  await expect(page.getByText('변경 요청을 확인 중이에요. 확정 전까지 기존 예약이 유지됩니다.')).toBeVisible();
+  const result = await page.evaluate(() => ({ response: window.__design.lastResponse, request: window.__design.lastRequest, booking: window.__design.booking }));
+  expect(result.response).toBeUndefined();
+  expect(result.request).toEqual({ expectedSessionRevision: 1, expectedChangeRevision: 3, selectedSlots: [{ slotId: 'WST_20261220_1030', priority: 2 }] });
+  expect(result.booking.session.startAt).toBe('2026-12-07T02:00:00.000Z');
   await fits(page);
 });

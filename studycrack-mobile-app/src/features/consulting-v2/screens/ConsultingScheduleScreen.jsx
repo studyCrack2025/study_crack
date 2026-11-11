@@ -5,6 +5,8 @@ import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 
 const dateLabel = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'short' });
 const kstDate = date => dateLabel.format(new Date(`${date}T00:00:00+09:00`));
+const proposalKey = offer => `${offer.slotId}#${offer.counselorId}`;
+const proposalOffers = change => change?.kind === 'admin' ? change.offers || (change.offer ? [change.offer] : []) : [];
 
 function ScheduleTimePicker({ slots, selected, setSelected, saving }) {
   const toggle = slotId => setSelected(current => {
@@ -45,6 +47,7 @@ export function ConsultingScheduleScreen({ binding }) {
   const [message, setMessage] = React.useState('');
   const [editing, setEditing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [chosenProposal, setChosenProposal] = React.useState('');
 
   const load = React.useCallback(async (feedback = '') => {
     setResource(value => ({ ...value, status: 'loading' }));
@@ -55,6 +58,8 @@ export function ConsultingScheduleScreen({ binding }) {
         || slots.data.caseId && slots.data.caseId !== booking.data.caseId) return setResource({ status: 'error' });
     const options = slots.data.slots || [];
     const change = booking.data.change || null;
+    const proposals = proposalOffers(change);
+    setChosenProposal(proposals.length === 1 ? proposalKey(proposals[0]) : '');
     const prior = booking.data.session?.status === 'booked' ? change?.selectedSlots || [] : availability.data.selectedSlots || [];
     const slotIds = new Set(options.map(slot => slot.slotId));
     const valid = prior.filter(slot => slotIds.has(slot.slotId));
@@ -91,9 +96,12 @@ export function ConsultingScheduleScreen({ binding }) {
     } finally { setSaving(false); }
   };
   const respond = async decision => {
+    const selectedOffer = proposalOffers(resource.change).find(offer => proposalKey(offer) === chosenProposal);
+    if (decision === 'accept' && !selectedOffer) return setMessage('변경할 시간을 한 개 선택해주세요.');
     setSaving(true); setMessage('');
     try {
-      const result = await respondWrittenReschedule(binding, { ...revisionData(), requestId: resource.change.requestId, decision });
+      const result = await respondWrittenReschedule(binding, { ...revisionData(), requestId: resource.change.requestId, decision,
+        ...(decision === 'accept' ? { slotId: selectedOffer.slotId, counselorId: selectedOffer.counselorId } : {}) });
       if (result.ok) await load(decision === 'accept' ? '새 상담 일정으로 변경됐어요.' : '기존 상담 일정을 유지했어요.');
       else if (['SLOT_CONFLICT', 'SLOT_UNAVAILABLE', 'REVISION_CONFLICT', 'WRITTEN_CHANGE_EXPIRED'].includes(result.code)) await load(result.error);
       else setMessage(result.error);
@@ -103,7 +111,8 @@ export function ConsultingScheduleScreen({ binding }) {
   if (resource.status === 'loading') return <main className="consulting-v2-center"><p className="consulting-v2-loading">상담 가능 시간을 불러오고 있습니다.</p></main>;
   if (resource.status === 'error') return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>일정을 불러오지 못했습니다</h1><button className="consulting-v2-primary consulting-v2-wide" onClick={() => load()}>다시 시도</button></section></main>;
   const confirmed = formatWrittenSession(resource.booking);
-  const proposed = resource.change?.kind === 'admin' ? formatWrittenSession({ ...resource.change.offer, status: 'booked' }) : null;
+  const proposals = proposalOffers(resource.change);
+  const proposed = proposals.length > 0;
   if (!confirmed && (resource.status !== 'ready' || !resource.editable)) return <main className="consulting-v2-center">
     <section className="consulting-v2-card">
       <h1>{resource.status === 'held' ? '서비스가 일시 보류 중이에요' : '상담 가능 시간을 선택할 수 없는 상태예요'}</h1>
@@ -112,7 +121,7 @@ export function ConsultingScheduleScreen({ binding }) {
     </section>
   </main>;
 
-  const showPicker = !confirmed || (editing && resource.canRequestChange && !proposed);
+  const showPicker = !confirmed || (editing && resource.canRequestChange);
   const count = Object.keys(selected).length;
   const { startDate, endDate } = resource.bookingWindow || {};
   const period = startDate && endDate ? `${kstDate(startDate)} ~ ${kstDate(endDate)}` : '';
@@ -120,10 +129,22 @@ export function ConsultingScheduleScreen({ binding }) {
     <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button>{showPicker && <span>{count}개 선택</span>}</header>
     {confirmed && <section className="consulting-schedule-card">
       <p className="consulting-v2-kicker">서면상담 일정</p><h1>상담 일정이 확정됐습니다</h1><ConfirmedWrittenTime value={confirmed} />
-      {proposed && <>
-        <h2>운영팀에서 새 상담 시간을 제안했어요</h2><ConfirmedWrittenTime value={proposed} />
-        <p className="consulting-v2-status">동의하면 새 시간으로 바뀌어요. 지금 예약을 유지하려면 기존 일정을 선택해주세요.</p>
-        <footer><button type="button" className="consulting-v2-primary" disabled={saving} onClick={() => respond('accept')}>새 시간으로 변경</button>
+      {proposed && !editing && <>
+        <h2>상담 일정 변경을 부탁드립니다</h2>
+        <p className="consulting-v2-status">일정 변경으로 번거로움을 드려 죄송합니다. 아래 후보 중 가능한 시간을 골라주세요. 모두 어려우시면 다른 시간을 제안해 주세요.</p>
+        <fieldset className="consulting-schedule-proposals" disabled={saving}>
+          <legend>변경 가능한 시간</legend>
+          {proposals.map(offer => {
+            const value = formatWrittenSession({ ...offer, status: 'booked' });
+            if (!value) return null;
+            const key = proposalKey(offer);
+            return <label key={key}><input type="radio" name="writtenProposal" checked={chosenProposal === key} onChange={() => setChosenProposal(key)} />
+              <span><strong>{value.date}</strong><span>{value.time}</span></span></label>;
+          })}
+        </fieldset>
+        <p className="consulting-v2-status">새 일정이 확정될 때까지 기존 예약은 유지됩니다.</p>
+        <footer><button type="button" className="consulting-v2-primary" disabled={saving || !chosenProposal} onClick={() => respond('accept')}>선택한 시간으로 변경</button>
+          <button type="button" className="consulting-v2-secondary" disabled={saving} onClick={() => { setEditing(true); setMessage(''); }}>다른 시간 제안하기</button>
           <button type="button" className="consulting-v2-secondary" disabled={saving} onClick={() => respond('decline')}>기존 일정 유지</button></footer>
       </>}
       {resource.change?.kind === 'student' && <p className="consulting-v2-status">변경 요청을 확인 중이에요. 확정 전까지 기존 예약이 유지됩니다.</p>}
@@ -133,6 +154,7 @@ export function ConsultingScheduleScreen({ binding }) {
     {showPicker && <section className="consulting-schedule-card">
       <p className="consulting-v2-kicker">서면상담 일정 · {editing ? '변경 요청' : resource.revision ? '가능 시간 제출 완료' : '가능 시간 선택'}</p>
       <h1>{editing ? '다시 상담할 수 있는 시간을 골라주세요' : '가능한 시간을 선택해주세요'}</h1>
+      {editing && proposed && <p className="consulting-v2-status">편하신 시간을 모두 알려주세요. 운영팀에서 확인해 새 일정을 확정하겠습니다.</p>}
       {period && <p className="consulting-v2-status">{period} · 한국시간</p>}
       <p className="consulting-v2-status">30분 단위로 참석할 수 있는 시간을 모두 골라주세요. 선택한 시간 중 하나로 확정합니다.</p>
       {resource.outsideWindowCount > 0 && <p className="consulting-survey-message" role="status">이전에 고른 시간 중 {resource.outsideWindowCount}개가 현재는 선택할 수 없어요.</p>}

@@ -129,6 +129,12 @@ async function prepare(page, hash = '') {
             state.scheduleCandidates.session = { ...state.scheduleCandidates.session,
                 ...state.scheduleCandidates.manualCandidates.find(slot => slot.slotId === request.data.slotId), revision: 2 };
             data = { session: state.scheduleCandidates.session };
+        } else if (request.type === 'admin_request_written_reschedule') {
+            state.scheduleCandidates.change = { kind: 'admin', requestId: 'WCR_synthetic', revision: 1,
+                offers: state.scheduleCandidates.candidates.filter(slot => request.data.offers.some(offer => offer.slotId === slot.slotId)) };
+            state.scheduleCandidates.changeRevision = 1;
+            state.scheduleCandidates.candidates = [];
+            data = { session: state.scheduleCandidates.session, change: state.scheduleCandidates.change };
         } else if (request.type === 'admin_save_written_schedule_settings') {
             const { expectedRevision, ...settings } = request.data;
             state.board.settings = { ...settings, revision: expectedRevision + 1 };
@@ -508,5 +514,36 @@ test('학생과 직접 합의한 예외 변경은 확인과 사유를 입력한 
     await expect(dialog).not.toBeVisible();
     expect(state.calls.find(call => call.type === 'admin_reschedule_written_session').data).toMatchObject({
         caseId, slotId: manual.slotId, expectedSessionRevision: 1, expectedChangeRevision: 0, mode: 'manual', contactConfirmed: true
+    });
+});
+
+test('관리자는 최초 선택 중 복수 후보를 골라 한 번에 변경 제안을 보낸다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'WRITTEN_SESSION_BOOKED';
+    const candidates = Array.from({ length: 6 }, (_, index) => ({
+        slotId: 'WST_20261208_' + String(10 + index).padStart(2, '0') + '00', startAt: '2026-12-08T' + String(1 + index).padStart(2, '0') + ':00:00.000Z',
+        counselorId: 'tutor-synthetic'
+    }));
+    state.scheduleCandidates = { caseId, candidates, session: { startAt: '2026-12-07T01:00:00.000Z', counselorId: 'tutor-synthetic', revision: 2 },
+        canChange: true, changeRevision: 0 };
+    await enterConsulting(page);
+    await openStudent(page, 1);
+    await page.locator('[data-student-tab="written"]').click();
+    await page.getByRole('button', { name: '변경 시간 제안', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    const choices = dialog.getByRole('checkbox');
+    await expect(dialog.getByRole('combobox')).toHaveCount(0);
+    await expect(choices).toHaveCount(6);
+    for (let index = 0; index < 5; index++) await choices.nth(index).check();
+    await choices.nth(5).click();
+    await expect(choices.nth(5)).not.toBeChecked();
+    await expect(page.locator('#consultingScheduleChoiceStatus')).toContainText('최대 5개');
+    for (let index = 2; index < 5; index++) await choices.nth(index).uncheck();
+    page.once('dialog', dialog => dialog.accept());
+    await dialog.getByRole('button', { name: '선택한 시간들 제안 보내기' }).click();
+    await expect(dialog).not.toBeVisible();
+    expect(state.calls.find(call => call.type === 'admin_request_written_reschedule').data).toEqual({
+        caseId, expectedSessionRevision: 2, expectedChangeRevision: 0,
+        offers: candidates.slice(0, 2).map(({ slotId, counselorId }) => ({ slotId, counselorId }))
     });
 });
