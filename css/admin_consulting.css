@@ -47,8 +47,8 @@
 .consulting-material-meta .consulting-facts > div:last-child { border-bottom:0; }
 .consulting-survey-version-tools { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px 14px; margin-bottom:16px; }
 .consulting-survey-version-tools[hidden] { display:none; }
-.consulting-survey-version-tools label { display:grid; gap:6px; font-weight:700; color:#334155; }
-.consulting-survey-version-tools select { min-height:44px; padding:7px 12px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; font:inherit; }
+.consulting-survey-version-tools label { display:grid; min-width:0; max-width:100%; gap:6px; font-weight:700; color:#334155; }
+.consulting-survey-version-tools select { min-width:0; max-width:100%; min-height:44px; box-sizing:border-box; padding:7px 12px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; font:inherit; }
 .consulting-survey-version-tools p { flex-basis:100%; margin:0; }
 #consultingSurveyHistory, #consultingSurveyChangesSinceReview { margin:0 0 16px; padding:0 12px; border:1px solid #e2e8f0; border-radius:10px; }
 #consultingSurveyHistoryNext { margin:12px 0; }
@@ -130,7 +130,7 @@
 .consulting-next-action { padding:16px; border:1px solid #bfdbfe; border-radius:10px; background:#eff6ff; color:#1e3a8a; font-weight:700; line-height:1.6; }
 .consulting-work-card { padding:22px; border:1px solid #cbd5e1; border-radius:14px; background:#fff; }
 .consulting-work-card h2 { margin-top:0; }
-.consulting-work-card button { margin-top:20px; }
+.consulting-work-card > button { margin-top:20px; }
 .consulting-identifiers, .consulting-admin-tools { margin:14px 0; padding:0 14px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; }
 .consulting-identifiers summary, .consulting-admin-tools summary { min-height:44px; padding:11px 0; color:#334155; font-weight:700; cursor:pointer; }
 .consulting-identifiers .consulting-material-copy { margin-bottom:12px; }
@@ -141,3 +141,102 @@
 .consulting-team-slots label { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 8px; border: 1px solid #dce4ef; border-radius: 8px; cursor: pointer; }
 .consulting-team-slots label:has(input:checked) { background: #edf3ff; border-color: #3156d3; }
 .consulting-team-slots input { width: 18px; height: 18px; }
+.consulting-report-source-fields { min-width:0; margin:0; padding:0; border:0; }
+.consulting-report-source-section { min-width:0; margin-top:24px; padding-top:22px; border-top:1px solid #e2e8f0; }
+.consulting-report-source-section h3 { margin:0 0 12px; color:#1e293b; font-size:1.05rem; }
+.consulting-report-source-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:16px; margin-top:14px; }
+.consulting-report-source-grid > label { display:grid; align-content:start; min-width:0; gap:7px; color:#334155; font-weight:650; line-height:1.55; }
+.consulting-report-source-grid .consulting-contact-confirm { display:flex; align-items:flex-start; font-weight:500; }
+.consulting-report-source-wide { grid-column:1/-1; }
+.consulting-report-source-grid input:not([type="checkbox"]), .consulting-report-source-grid select, .consulting-report-source-grid textarea, .consulting-report-source-entry input, .consulting-report-source-entry select, .consulting-report-source-entry textarea { width:100%; min-width:0; min-height:44px; box-sizing:border-box; padding:10px 12px; border:1px solid #cbd5e1; border-radius:9px; background:#fff; color:#0f172a; font:inherit; }
+.consulting-report-source-fields textarea { resize:vertical; line-height:1.65; }
+.consulting-report-source-stack { display:grid; min-width:0; gap:12px; margin-top:14px; }
+.consulting-report-source-entry { min-width:0; padding:16px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
+.consulting-report-source-entry > label { display:grid; gap:7px; min-width:0; margin:10px 0; color:#334155; font-weight:650; }
+.consulting-report-source-entry > p { margin:6px 0; overflow-wrap:anywhere; white-space:pre-wrap; line-height:1.6; }
+.consulting-report-source-readiness { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:10px; margin:20px 0; padding:0; list-style:none; }
+.consulting-report-source-readiness li { min-width:0; padding:14px; border:1px solid #cbd5e1; border-radius:12px; background:#f8fafc; color:#334155; line-height:1.6; }
+.consulting-report-source-readiness strong, .consulting-report-source-readiness span { display:block; }
+.consulting-report-source-readiness li[data-ready="true"] { border-color:#a7c5b9; background:#f0f9f5; }
+.consulting-report-source-notice { margin:16px 0; padding:14px 16px; border:1px solid #cbd5e1; border-radius:10px; background:#eff6ff; color:#1e3a8a; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+.consulting-report-source-notice[data-state="stale"] { border-color:#e8c885; background:#fffbeb; color:#78350f; }
+.consulting-report-source-evidence { display:flex; min-height:44px; align-items:flex-start; gap:8px; color:#334155; line-height:1.6; }
+.consulting-report-facts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); min-width:0; gap:14px; margin:16px 0; }
+.consulting-report-fact-card { min-width:0; margin:10px 0; padding:16px; border:1px solid #d8e1ed; border-radius:12px; background:#f8fafc; overflow-wrap:anywhere; }
+.consulting-report-fact-card h4 { margin:8px 0; color:#1e293b; font-size:1rem; line-height:1.6; }
+.consulting-report-fact-risk { display:inline-block; margin:8px 0; padding:5px 9px; border-radius:7px; background:#e2e8f0; color:#334155; font-weight:700; font-size:0.85rem; }
+.consulting-report-fact-risk[data-band="stable"], .consulting-report-fact-risk[data-band="appropriate"] { background:#dcf0e8; color:#20563e; }
+.consulting-report-fact-risk[data-band="challenge"], .consulting-report-fact-risk[data-band="risky"] { background:#fae9de; color:#834024; }
+.consulting-report-fact-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,96px),1fr)); min-width:0; gap:10px; margin:16px 0; }
+.consulting-report-fact-metrics dt { color:#526277; font-size:0.78rem; line-height:1.5; }
+.consulting-report-fact-metrics dd { margin:6px 0 0; color:#16253b; font-size:1.02rem; font-weight:750; line-height:1.5; }
+.consulting-report-facts-notes { margin:14px 0; padding-left:20px; color:#5b4a2e; line-height:1.8; overflow-wrap:anywhere; }
+.consulting-report-facts-table-wrap { max-width:100%; overflow-x:auto; border:1px solid #d8e1ed; border-radius:10px; }
+.consulting-report-facts-table { width:100%; min-width:570px; border-collapse:collapse; font-size:0.85rem; }
+.consulting-report-facts-table th, .consulting-report-facts-table td { padding:12px; border-bottom:1px solid #e2e8f0; text-align:left; line-height:1.6; }
+
+.consulting-report-content-pages { display: grid; gap: 24px; margin-top: 18px; min-width: 0; }
+.consulting-report-content-page { padding: clamp(18px, 3vw, 32px); border: 1px solid var(--admin-border, #dce2eb); border-radius: 16px; background: #fff; min-width: 0; overflow-wrap: anywhere; box-shadow: 0 6px 24px rgb(20 35 65 / 4%); }
+.consulting-report-content-paragraph { margin: 18px 0; line-height: 1.85; color: #25334b; }
+.consulting-report-content-paragraph > p { margin: 0 0 8px; white-space: pre-wrap; }
+.consulting-report-content-paragraph details { padding: 10px 14px; border-radius: 8px; background: #f5f7fb; color: #516078; font-size: 12px; }
+.consulting-report-content-paragraph summary { cursor: pointer; font-weight: 600; }
+.consulting-report-content-paragraph details p { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.consulting-report-revision-panel { margin: 20px 0; padding: clamp(14px, 3vw, 24px); border: 1px solid #dce2eb; border-radius: 14px; background: #f8faff; min-width: 0; }
+.consulting-report-revision-panel summary { cursor: pointer; font-weight: 700; padding: 12px 0; }
+.consulting-report-revision-evidence { margin: 16px 0; padding: 12px; border: 1px solid #dce2eb; border-radius: 10px; min-width: 0; }
+.consulting-report-revision-evidence > div { display: grid; gap: 10px; max-height: 300px; overflow: auto; }
+.consulting-report-revision-evidence-row { min-height: 44px; box-sizing: border-box; display: flex; gap: 10px; align-items: flex-start; padding: 10px; background: #fff; border-radius: 8px; }
+.consulting-report-revision-evidence-row > input { flex: 0 0 auto; width: 20px; height: 20px; margin: 3px 0 0; }
+.consulting-report-revision-evidence-row > span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; font-size: 12px; white-space: pre-wrap; }
+.consulting-report-revision-list { display: grid; gap: 10px; padding: 0; list-style: none; margin: 18px 0; }
+.consulting-report-revision-list > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid #dce2eb; border-radius: 10px; background: #fff; min-width: 0; overflow-wrap: anywhere; }
+.consulting-report-revision-list > li > div { flex: 1 1 220px; min-width: 0; }
+.consulting-report-revision-list p { margin: 6px 0; line-height: 1.7; }
+.consulting-report-revision-detail { margin-top: 20px; padding: clamp(14px, 3vw, 24px); background: #fff; border: 1px solid #dce2eb; border-radius: 12px; min-width: 0; overflow-wrap: anywhere; }
+.consulting-report-revision-detail > p { line-height: 1.8; white-space: pre-wrap; }
+.consulting-report-revision-detail > label { display: block; margin-top: 16px; font-weight: 600; }
+.consulting-report-revision-detail textarea { display: block; width: 100%; box-sizing: border-box; min-height: 80px; margin: 8px 0 12px; padding: 10px; border: 1px solid #cad4e2; border-radius: 8px; font: inherit; }
+.consulting-report-revision-change { margin: 18px 0; }
+.consulting-report-revision-diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.consulting-report-revision-diff > div { padding: 16px; border: 1px solid #dce2eb; border-radius: 10px; background: #f5f7fb; min-width: 0; }
+.consulting-report-revision-diff > div[data-side="after"] { border-color: #b8dace; background: #f0faf6; }
+.consulting-report-revision-diff p { white-space: pre-wrap; line-height: 1.9; margin: 10px 0; }
+.consulting-report-revision-diff small { display: block; margin-top: 5px; color: #516078; }
+
+.consulting-report-approval-panel { min-width:0; margin:28px 0 0; padding:clamp(14px,3vw,24px); border:1px solid var(--admin-border,#dce2eb); border-radius:14px; background:var(--admin-surface,#f8faff); }
+.consulting-report-approval-roles { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; margin:18px 0; }
+.consulting-report-approval-role { min-width:0; padding:18px; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; background:var(--admin-card-bg,#fff); overflow-wrap:anywhere; }
+.consulting-report-approval-role h5 { margin:0 0 10px; font-size:1rem; color:var(--admin-text,#1e293b); }
+.consulting-report-approval-role p, .consulting-report-approval-role span { display:block; margin:8px 0; color:var(--admin-muted,#516078); font-size:.82rem; line-height:1.65; }
+.consulting-report-approval-role strong { display:block; margin-top:14px; color:var(--admin-text,#334155); font-size:.92rem; }
+.consulting-report-approval-role[data-state="approved"] { border-color:var(--admin-success-border,#b8dace); background:var(--admin-success-bg,#f0faf6); }
+.consulting-report-approval-blockers { padding-left:20px; color:var(--admin-text,#5b4a2e); line-height:1.8; overflow-wrap:anywhere; }
+.consulting-report-approval-actions:not([hidden]) { display:grid; justify-items:start; gap:16px; }
+.consulting-report-approval-check:not([hidden]) { display:flex; align-items:flex-start; gap:10px; min-height:44px; color:var(--admin-text,#334155); line-height:1.7; }
+.consulting-report-approval-check input { flex:0 0 auto; width:20px; height:20px; margin:3px 0 0; }
+#consultingReportApprovalWithdrawFields { width:100%; min-width:0; }
+#consultingReportApprovalWithdrawFields label { display:block; margin-bottom:8px; color:var(--admin-text,#334155); font-weight:650; }
+#consultingReportApprovalReason { display:block; width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px; border:1px solid var(--admin-border,#cad4e2); border-radius:9px; background:var(--admin-card-bg,#fff); font:inherit; line-height:1.7; resize:vertical; }
+.consulting-report-approval-ledger { margin-top:22px; border-top:1px solid var(--admin-border,#dce2eb); }
+.consulting-report-approval-ledger summary { padding:14px 0; min-height:24px; font-weight:650; cursor:pointer; }
+#consultingReportApprovalHistory { display:grid; gap:10px; padding:0; list-style:none; }
+#consultingReportApprovalHistory li { min-width:0; padding:14px; border-radius:9px; background:var(--admin-card-bg,#fff); line-height:1.7; overflow-wrap:anywhere; }
+#consultingReportApprovalHistory span { display:block; margin-top:5px; color:var(--admin-muted,#516078); font-size:.8rem; }
+#consultingReportApprovalHistory p { margin:8px 0 0; white-space:pre-wrap; }
+
+.consulting-report-pdf-panel { min-width:0; margin:24px 0 0; padding:clamp(14px,3vw,24px); border:1px solid var(--admin-border,#dce2eb); border-radius:14px; background:var(--admin-surface,#f8faff); }
+.consulting-report-pdf-file { min-width:0; padding:18px; margin:16px 0; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; background:var(--admin-card-bg,#fff); }
+.consulting-report-pdf-file h5 { margin:0 0 12px; font-size:1rem; color:var(--admin-text,#1e293b); }
+.consulting-report-pdf-digest { margin:10px 0 18px; font-size:.75rem; color:var(--admin-muted,#516078); overflow-wrap:anywhere; }
+.consulting-report-pdf-ledger { margin-top:20px; border-top:1px solid var(--admin-border,#dce2eb); }
+.consulting-report-pdf-ledger summary { min-height:44px; padding:14px 0; font-weight:650; cursor:pointer; }
+#consultingReportPdfHistory { margin:0; padding:0; list-style:none; }
+
+.consulting-report-pdf-approval { margin-top:24px; padding-top:22px; border-top:1px solid var(--admin-border,#dce2eb); min-width:0; }
+.consulting-report-pdf-approval > h5 { margin:0 0 12px; font-size:1rem; color:var(--admin-text,#1e293b); }
+.consulting-report-pdf-delivery { display:grid; gap:10px; list-style:none; margin:18px 0 0; padding:0; }
+.consulting-report-pdf-delivery li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 16px; padding:14px; border:1px solid var(--admin-border,#dce2eb); border-radius:10px; background:var(--admin-card-bg,#fff); font-size:.85rem; line-height:1.7; }
+.consulting-report-pdf-delivery span { color:var(--admin-muted,#516078); overflow-wrap:anywhere; }
+#consultingReportPdfWithdrawReason { display:block; box-sizing:border-box; width:100%; padding:12px; margin:10px 0; border:1px solid var(--admin-border,#cad4e2); border-radius:9px; font:inherit; line-height:1.7; resize:vertical; }

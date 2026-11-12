@@ -27,6 +27,7 @@ function clearConsultingWorkspaceStudent() {
     if (typeof resetConsultingMaterial === 'function') resetConsultingMaterial();
     if (typeof resetConsultingSchedule === 'function') resetConsultingSchedule();
     if (typeof resetConsultingServiceControl === 'function') resetConsultingServiceControl();
+    if (typeof resetConsultingReportSource === 'function') resetConsultingReportSource();
     for (const id of ['consultingStudentState', 'consultingStudentProgress', 'consultingStudentNextAction', 'consultingStudentIdentifiers']) document.getElementById(id)?.replaceChildren();
     document.getElementById('consultingMaterialAccess').hidden = true;
     document.getElementById('consultingStudentTitle').textContent = '학생 상세';
@@ -387,6 +388,11 @@ async function showConsultingStudentTab(requested) {
     document.querySelectorAll('[data-student-tab]').forEach(button => { button.disabled = !allowed[button.dataset.studentTab]; button.setAttribute('aria-current', button.dataset.studentTab === tab ? 'page' : 'false'); });
     document.querySelectorAll('[data-workspace-pane]').forEach(pane => { pane.hidden = pane.dataset.workspacePane !== tab; });
     if (consultingWorkspaceLoadedTabs.has(tab)) return;
+    if (tab === 'report' && typeof loadConsultingReportSource === 'function') {
+        const loaded = await loadConsultingReportSource(data.case.caseId);
+        if (loaded && consultingWorkspaceStudent?.case?.caseId === data.case.caseId) consultingWorkspaceLoadedTabs.add(tab);
+        return;
+    }
     if (tab === 'materials') {
         const generation = consultingWorkspaceGeneration;
         const loaded = await openConsultingMaterial(data.case.caseId, data.case.serviceHold === true);
