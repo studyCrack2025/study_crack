@@ -95,6 +95,7 @@ async function prepare(page, options = {}) {
                 state.syncPdfApproval = () => { state.pdf.approval = state.pdfApprovalView(); };
                 state.syncPdfApproval();
             }
+            if (options.pdfCorrection) { state.pdf.correction = { latest: { version: 1 }, active: null, canStart: true, changes: [] }; state.pdfPublished = true; state.syncPdfApproval(); }
             content.pdf = state.pdf;
         }
         window.apiFetch = async (_url, request) => {
@@ -119,6 +120,7 @@ async function prepare(page, options = {}) {
                 if (input.type === 'admin_publish_report_pdf') state.pdfPublished = true;
                 state.ws.caseRevision++; state.syncPdfApproval(); data = { caseId, caseRevision: state.ws.caseRevision, approval: structuredClone(state.pdf.approval) };
             }
+            else if (input.type === 'admin_start_report_pdf_correction') { if (state.failCorrectionStart) throw new Error('정정 시작 응답을 확인하지 못했습니다.'); state.pdf.correction.active = { correctionId: 'CORRECTION_' + 'c'.repeat(40), status: 'draft', baseVersion: 1, reason: input.data.reason, category: input.data.category }; state.pdf.correction.canStart = false; state.pdfPublished = false; state.pdfApprovedRoles = []; state.pdfApprovalTarget = 'sha256:' + '7'.repeat(64); state.syncPdfApproval(); state.ws.canEdit = true; state.ws.caseRevision++; data = { caseId, correction: structuredClone(state.pdf.correction.active) }; }
             else if (input.type === 'admin_get_report_source_workspace') {
                 if (state.deferGet) await new Promise(resolve => { state.resolveGet = () => { state.deferGet = false; resolve(); }; });
                 if (state.failGet) throw Object.assign(new Error('자료를 다시 불러오지 못했습니다.'), { status: 503 });
@@ -620,4 +622,18 @@ test('PDF 전송 실패와 로그아웃 뒤 늦은 응답은 자동 재전송이
 test('읽기 전용 계정은 PDF와 세 역할 승인 상태만 조회하며 전송하지 못한다', async ({ page }) => {
     await prepare(page, { readOnly: true, facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO', 'CMO'], pdfOwnRole: null });
     await expect(page.locator('#consultingReportPdfApprovalMeta')).toContainText('조회 전용'); await expect(page.locator('#consultingReportPdfPublish')).toBeDisabled(); await expect(page.locator('#consultingReportPdfApprove')).toBeHidden();
+});
+
+test('공개 후 정정은 사유·기준 버전만 보내고 원본 보존과 새 승인 순서를 안내한다', async ({ page }, testInfo) => {
+    await prepare(page, { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO', 'CMO'], pdfCorrection: true });
+    const start = page.locator('#consultingReportCorrectionStart'); await expect(start).toBeDisabled();
+    await page.locator('#consultingReportCorrectionInput').fill('상담에서 확인한 전공 우선순위의 설명을 바로잡습니다.'); await expect(start).toBeEnabled(); page.once('dialog', dialog => dialog.accept()); await start.click();
+    await expect(page.locator('#consultingReportCorrectionMeta')).toContainText('정정 작업 중'); await expect(page.locator('#consultingReportCorrectionReason')).toContainText('전공 우선순위'); await expect(page.locator('#consultingReportCorrectionGuide')).toContainText('본문 3인 승인'); await expect(page.locator('#consultingReportPdfPublish')).toBeDisabled();
+    const calls = await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_start_report_pdf_correction')); expect(calls).toHaveLength(1); expect(calls[0].data.baseReportVersion).toBe(1); expect(calls[0].data.reason).toContain('설명을 바로잡습니다'); expect(Object.keys(calls[0].data).sort()).toEqual(['baseReportVersion','caseId','category','confirmed','expectedCaseRevision','idempotencyKey','reason']);
+    for (const width of [320,1280]) { await page.setViewportSize({ width, height: 1000 }); expect(await page.locator('#consultingReportCorrectionPanel').evaluate(e => e.scrollWidth <= e.clientWidth + 1)).toBe(true); await page.locator('#consultingReportCorrectionPanel').screenshot({ path: testInfo.outputPath(`report-correction-admin-${width}.png`) }); }
+});
+test('정정 시작 응답 유실은 입력과 요청 키를 유지하고 자동으로 다시 전송하지 않는다', async ({ page }) => {
+    await page.clock.install(); await prepare(page, { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO','CTO','CMO'], pdfCorrection: true });
+    await page.locator('#consultingReportCorrectionInput').fill('오류가 확인된 지원 우선순위의 설명을 바로잡습니다.'); await page.evaluate(() => { window.__reportSource.failCorrectionStart = true; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingReportCorrectionStart').click(); await expect(page.locator('#consultingReportCorrectionStatus')).toContainText('정정 시작 응답'); await page.clock.fastForward('00:01:00'); expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_start_report_pdf_correction').length)).toBe(1);
+    await page.evaluate(() => { window.__reportSource.failCorrectionStart = false; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingReportCorrectionStart').click(); const calls=await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_start_report_pdf_correction')); expect(calls).toHaveLength(2); expect(calls[1].data).toEqual(calls[0].data);
 });

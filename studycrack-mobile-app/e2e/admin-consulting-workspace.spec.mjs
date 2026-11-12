@@ -165,6 +165,16 @@ async function prepare(page, hash = '') {
                     { field: ['qualitative', 'guardianOpinion'], before: '구형 검수 답변', after: '구형 수정 답변' }
                 ] };
             }
+            if (state.correctionScoreDigest) {
+                data.correctionScoreDigest = state.correctionScoreDigest;
+                data.submission.revision = 6;
+                data.surveyReview = { needsReview: true, scoreChanged: true, changes: [] };
+                data.reviewedSubmission = submission;
+                data.verification.verifiedInput = { ...snapshot.scores, records: [
+                    { area: 'korean', subject: '국어', selection: '화법과작문', standardScore: 126, percentile: 90, grade: 2 },
+                    { area: 'english', subject: '영어', grade: 2 }
+                ] };
+            }
             if (state.supplementFields) {
                 data.submission.revision = 0;
                 data.supplementFields = state.supplementFields;
@@ -613,4 +623,27 @@ test('관리자는 최초 선택 중 복수 후보를 골라 한 번에 변경 �
         caseId, expectedSessionRevision: 2, expectedChangeRevision: 0,
         offers: candidates.slice(0, 2).map(({ slotId, counselorId }) => ({ slotId, counselorId }))
     });
+});
+
+
+test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값을 보내고 학생 진행 단계를 유지한다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'FINAL_CALL_BOOKED';
+    state.correctionScoreDigest = 'a'.repeat(64);
+    await enterConsulting(page);
+    await openStudent(page, 1);
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await expect(page.locator('#consultingSurveyReviewNotice')).toContainText('기존 공개 보고서는 그대로 유지');
+    await expect(page.getByLabel('국어 표준점수', { exact: true })).toHaveValue('126');
+    await expect(page.getByLabel('영어 등급', { exact: true })).toHaveValue('2');
+    await page.getByLabel('국어 표준점수', { exact: true }).fill('127');
+    await page.locator('#consultingMaterialReason').fill('성적표를 다시 확인하여 정정합니다.');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: '정정 성적 저장', exact: true }).click();
+    await expect.poll(() => state.calls.filter(call => call.type === 'admin_confirm_v2_survey_revision').length).toBe(1);
+    const sent = state.calls.find(call => call.type === 'admin_confirm_v2_survey_revision');
+    expect(sent.data.expectedCorrectionScoreDigest).toBe('a'.repeat(64));
+    expect(sent.data.verifiedInput.records.find(row => row.area === 'korean').standardScore).toBe(127);
+    expect(state.calls.some(call => call.type === 'admin_verify_v2_materials')).toBe(false);
+    expect(state.students[1].case.workflowState).toBe('FINAL_CALL_BOOKED');
 });

@@ -6,10 +6,13 @@ async function request(binding, type, data = {}, fallbackError, signal) {
   return { ok: true, data: result.data.data };
 }
 
+export const getStudentReportPdfVersions = (binding, cursor, signal) => request(binding, 'student_list_v2_report_pdf_versions', { cursor }, '이전 보고서를 불러오지 못했습니다.', signal);
+
 export const getStudentConsultingReport = (binding, signal) => request(binding, 'student_get_v2_report', {}, '보고서를 불러오지 못했습니다.', signal);
 export function isPublishedPdfReport(report) {
   return Boolean(report?.format === 'approved_pdf_v1' && /^REPORT_[a-f0-9-]{36}$/.test(report.reportId || '') && /^ARTIFACT_[a-f0-9-]{36}$/.test(report.artifactId || '')
     && /^sha256:[a-f0-9]{64}$/.test(report.pdfSha256 || '') && Number.isSafeInteger(report.version) && report.version > 0 && report.version <= 999999
+    && (report.version === 1 || report.correction && Number.isSafeInteger(report.correction.baseVersion) && report.correction.baseVersion === report.version - 1 && typeof report.correction.reason === 'string' && Array.isArray(report.correction.changes) && report.correction.changes.length > 0 && report.correction.changes.every(c => typeof c?.key === 'string' && typeof c?.label === 'string'))
     && report.pageCount === 6 && Number.isSafeInteger(report.bytes) && report.bytes >= 1000 && report.bytes <= 15 * 1024 * 1024 && Number.isSafeInteger(report.contentRevision) && report.contentRevision > 0 && Number.isFinite(Date.parse(report.publishedAt)));
 }
 export async function openPublishedConsultingPdf(binding, report, inline, signal) {

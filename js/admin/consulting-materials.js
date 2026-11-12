@@ -341,7 +341,9 @@ async function openConsultingMaterial(caseId, held) {
         document.getElementById('consultingSurveyVersions').hidden = !Number.isSafeInteger(submission.revision);
         document.getElementById('consultingSurveyHistory').hidden = !Number.isSafeInteger(submission.revision);
         consultingSurveyHistory = Number.isSafeInteger(submission.revision) ? { caseId, loading: false, loaded: false, before: null } : null;
-        document.getElementById('consultingSurveyReviewNotice').textContent = data.surveyReview?.needsReview
+        document.getElementById('consultingSurveyReviewNotice').textContent = data.correctionScoreDigest
+            ? '공개 후 정정 작업 중입니다. 검수 성적을 바꾸면 계산과 승인을 새로 진행하며, 기존 공개 보고서는 그대로 유지됩니다.'
+            : data.surveyReview?.needsReview
             ? data.surveyReview.scoreChanged ? '학생이 성적 입력을 변경했습니다. 첨부 성적표와 대조한 뒤 최신 답변을 확인해 주세요.'
                 : '검수 이후 수정된 답변이 있습니다. 최신 답변을 확인해 주세요.'
             : data.reviewedSubmission ? '현재 답변을 확인했습니다.' : '';
@@ -371,10 +373,10 @@ async function openConsultingMaterial(caseId, held) {
 
         const rawEntry = snapshot.formVersion >= 3;
         if (canReview || (canConfirm && data.surveyReview.scoreChanged)) {
-            renderConsultingVerifiedScores(snapshot.scores, rawEntry, snapshot.formVersion === 4);
+            renderConsultingVerifiedScores(data.correctionScoreDigest ? review?.verifiedInput || snapshot.scores : snapshot.scores, rawEntry, snapshot.formVersion === 4 && !data.correctionScoreDigest);
             document.getElementById('consultingMaterialScoreGuide').hidden = !rawEntry;
-            document.getElementById('consultingMaterialReviewTitle').textContent = canReview ? '검수 성적 입력' : '변경 성적 다시 검수';
-            document.getElementById('consultingMaterialVerifyBtn').textContent = canReview ? '확인 완료 · 일정 선택 열기' : '성적 및 최신 답변 확인';
+            document.getElementById('consultingMaterialReviewTitle').textContent = data.correctionScoreDigest ? '보고서 정정을 위한 성적 재검수' : canReview ? '검수 성적 입력' : '변경 성적 다시 검수';
+            document.getElementById('consultingMaterialVerifyBtn').textContent = data.correctionScoreDigest ? '정정 성적 저장' : canReview ? '확인 완료 · 일정 선택 열기' : '성적 및 최신 답변 확인';
             const resultSelect = document.getElementById('consultingMaterialResult');
             resultSelect.value = 'matched';
             resultSelect.options[0].textContent = rawEntry ? '성적표 확인 완료' : '입력과 일치';
@@ -454,12 +456,13 @@ async function verifyConsultingMaterials() {
     const current = data?.case;
     const reason = document.getElementById('consultingMaterialReason').value.trim();
     if (!current || (!data.canReview && !data.canConfirm) || !reason
-        || !confirm(data.canReview ? '자료 검수를 완료하고 학생에게 상담 가능 시간 입력 단계를 여시겠습니까?' : '성적표와 대조한 결과를 최신 답변에 반영할까요?')) return;
+        || !confirm(data.correctionScoreDigest ? '정정 성적을 반영할까요? 계산과 승인을 다시 진행하며, 기존 공개 보고서는 그대로 유지됩니다.' : data.canReview ? '자료 검수를 완료하고 학생에게 상담 가능 시간 입력 단계를 여시겠습니까?' : '성적표와 대조한 결과를 최신 답변에 반영할까요?')) return;
     const button = document.getElementById('consultingMaterialVerifyBtn');
     button.disabled = true;
     try {
         const result = await requestConsultingAdmin(data.canReview ? 'admin_verify_v2_materials' : 'admin_confirm_v2_survey_revision', {
             caseId: current.caseId, expectedSurveyRevision: data.submission.revision,
+            ...(data.correctionScoreDigest ? { expectedCorrectionScoreDigest: data.correctionScoreDigest } : {}),
             result: document.getElementById('consultingMaterialResult').value, reason,
             differences: document.getElementById('consultingMaterialDifferences').value.split('\n').map(value => value.trim()).filter(Boolean),
             verifiedInput: readConsultingVerifiedScores()

@@ -1,11 +1,14 @@
 let consultingReportPdfBusy = false;
+let consultingReportCorrectionRequest = null;
 let consultingReportPdf = { generation: 0, caseId: null, view: null, history: [], cursor: null, fresh: false, loading: false, polls: 0, timer: null, viewedTarget: null };
 const reportPdfNode = id => document.getElementById(id);
 const reportPdfMessage = (text, state = '') => consultingWorkspaceStatus('consultingReportPdfStatus', text, state);
 function resetConsultingReportPdf() {
     clearTimeout(consultingReportPdf.timer);
     consultingReportPdf = { generation: consultingReportPdf.generation + 1, caseId: null, view: null, history: [], cursor: null, fresh: false, loading: false, polls: 0, timer: null, viewedTarget: null };
-    consultingReportPdfBusy = false;
+    consultingReportPdfBusy = false; consultingReportCorrectionRequest = null;
+    reportPdfNode('consultingReportCorrectionPanel')?.setAttribute('hidden', '');
+    if (reportPdfNode('consultingReportCorrectionInput')) reportPdfNode('consultingReportCorrectionInput').value = '';
     if (reportPdfNode('consultingReportPdfConfirmed')) reportPdfNode('consultingReportPdfConfirmed').checked = false;
     if (reportPdfNode('consultingReportPdfWithdrawReason')) reportPdfNode('consultingReportPdfWithdrawReason').value = '';
     reportPdfNode('consultingReportPdfPanel')?.setAttribute('hidden', '');
@@ -20,7 +23,7 @@ function updateConsultingReportPdfButtons() {
     reportPdfNode('consultingReportPdfRefresh').disabled = blocked || !s.caseId;
     reportPdfNode('consultingReportPdfMore').disabled = blocked;
     for (const button of reportPdfNode('consultingReportPdfPanel').querySelectorAll('[data-pdf-artifact]')) button.disabled = blocked || !s.fresh;
-    const a = s.view?.approval, writable = !blocked && !dirty && s.fresh && !reportPdfNode('consultingReportSummaryVersion')?.value;
+    const a = s.view?.approval, writable = !blocked && !dirty && s.fresh && !(typeof consultingReportRevisionState !== 'undefined' && consultingReportRevisionState.dirty) && !reportPdfNode('consultingReportSummaryVersion')?.value;
     if (reportPdfNode('consultingReportPdfApprove')) {
         reportPdfNode('consultingReportPdfConfirmed').disabled = !writable || !a?.canApprove || s.viewedTarget !== a?.target?.id;
         reportPdfNode('consultingReportPdfApprove').disabled = !writable || !a?.canApprove || s.viewedTarget !== a?.target?.id || !reportPdfNode('consultingReportPdfConfirmed').checked;
@@ -28,6 +31,8 @@ function updateConsultingReportPdfButtons() {
         reportPdfNode('consultingReportPdfWithdraw').disabled = !writable || !a?.canWithdraw || !reportPdfNode('consultingReportPdfWithdrawReason').value.trim();
         reportPdfNode('consultingReportPdfWithdrawReason').disabled = !writable || !a?.canWithdraw;
     }
+    const correction = s.view?.correction;
+    if (reportPdfNode('consultingReportCorrectionStart')) { reportPdfNode('consultingReportCorrectionStart').disabled = !writableCorrection() || !correction?.canStart || reportPdfNode('consultingReportCorrectionInput').value.trim().length < 10; reportPdfNode('consultingReportCorrectionInput').disabled = !writableCorrection() || !correction?.canStart; reportPdfNode('consultingReportCorrectionCategory').disabled = !writableCorrection() || !correction?.canStart; }
     reportPdfNode('consultingReportPdfPanel').setAttribute('aria-busy', String(consultingReportPdfBusy || s.loading));
 }
 function reportPdfArtifactCard(row) {
@@ -62,7 +67,7 @@ function renderConsultingReportPdf(view, append = false) {
     reportPdfNode('consultingReportPdfMore').hidden = !s.cursor;
     reportPdfNode('consultingReportPdfQueue').hidden = !view.canQueue;
     reportPdfNode('consultingReportPdfQueue').textContent = view.status === 'awaiting_renderer' ? '승인 본문으로 PDF 제작 요청' : 'PDF 제작 다시 요청';
-    renderConsultingReportPdfApproval(view.approval);
+    renderConsultingReportPdfApproval(view.approval); renderConsultingReportCorrection(view.correction);
     updateConsultingReportPdfButtons();
     if ((['pending', 'processing'].includes(view.status) || view.approval?.notifications?.some(n => ['pending', 'processing'].includes(n.status))) && s.polls < 30 && !document.hidden) {
         const generation = s.generation; s.timer = setTimeout(() => { if (generation === consultingReportPdf.generation && !document.hidden) { s.polls++; refreshConsultingReportPdf(false, true); } }, 10000);
@@ -132,7 +137,7 @@ function renderConsultingReportPdfApproval(a) {
     reportPdfNode('consultingReportPdfViewHint').hidden = !a.canApprove;
     reportPdfNode('consultingReportPdfApprove').hidden = !a.canApprove;
     reportPdfNode('consultingReportPdfWithdrawFields').hidden = !a.canWithdraw;
-    reportPdfNode('consultingReportPdfPublish').textContent = a.status === 'published' ? '학생에게 전송된 보고서' : '학생에게 보고서 전송';
+    reportPdfNode('consultingReportPdfPublish').textContent = a.status === 'published' ? '학생에게 전송된 보고서' : consultingReportPdf.view?.correction?.active ? '정정본을 학생에게 재전송' : '학생에게 보고서 전송';
     const labels = { published: '보고서를 학생 페이지에 공개했습니다. 채널별 안내 상태는 아래에서 확인해주세요.', approved: '같은 PDF에 세 명의 승인이 모두 모였습니다. 학생에게 전송할 수 있습니다.', awaiting_approvals: '세 명 모두 같은 PDF를 승인해야 전송할 수 있습니다.', blocked: a.blockers?.[0]?.message || '현재 본문과 PDF 상태를 먼저 확인해주세요.' };
     consultingWorkspaceStatus('consultingReportPdfApprovalStatus', labels[a.status] || 'PDF 승인 상태를 확인해주세요.', a.status === 'published' ? 'success' : '');
     const delivery = reportPdfNode('consultingReportPdfDelivery'); delivery.replaceChildren();
@@ -165,6 +170,34 @@ async function submitConsultingReportPdfApproval(withdraw = false) {
 }
 async function publishConsultingReportPdf() {
     updateConsultingReportPdfButtons(); if (reportPdfNode('consultingReportPdfPublish').disabled) return;
-    if (!window.confirm('세 명이 승인한 이 PDF를 학생 페이지에 공개하고 카카오톡·이메일 안내를 요청할까요?')) return;
+    if (!window.confirm(consultingReportPdf.view?.correction?.active ? '기존 PDF를 보존하고 세 명이 승인한 정정본을 학생에게 공개·재안내할까요?' : '세 명이 승인한 이 PDF를 학생 페이지에 공개하고 카카오톡·이메일 안내를 요청할까요?')) return;
     return mutateConsultingReportPdf('admin_publish_report_pdf');
+}
+
+function writableCorrection() {
+    return consultingReportPdf.fresh && !consultingReportPdf.loading && !consultingReportPdfBusy && !consultingReportSourceBusy && !consultingReportSourceDirty && !consultingReportFactsBusy && !consultingReportContentBusy && !consultingReportRevisionBusy && !consultingReportApprovalBusy && !(typeof consultingReportRevisionState !== 'undefined' && consultingReportRevisionState.dirty) && !reportPdfNode('consultingReportSummaryVersion')?.value;
+}
+function renderConsultingReportCorrection(c) {
+    const panel = reportPdfNode('consultingReportCorrectionPanel'); if (!panel) return; panel.hidden = !c?.latest; if (!c?.latest) return;
+    reportPdfNode('consultingReportCorrectionMeta').textContent = `학생 공개본 ${c.latest.version}판 · ${c.active ? '정정 작업 중' : '기존 PDF 보존'}`;
+    reportPdfNode('consultingReportCorrectionFields').hidden = !c.canStart;
+    reportPdfNode('consultingReportCorrectionReason').textContent = c.active ? `학생에게 안내할 사유: ${c.active.reason}` : c.latest.correction ? `최근 정정 사유: ${c.latest.correction.reason}` : '아직 정정한 보고서가 없습니다.';
+    const changes = reportPdfNode('consultingReportCorrectionChanges'); changes.replaceChildren();
+    for (const change of c.changes || []) changes.append(reportFactElement('li', `변경 항목 · ${change.label}`));
+    reportPdfNode('consultingReportCorrectionGuide').textContent = c.active ? '기존 공개본과 상담 일정은 유지됩니다. 자연어 수정 요청 또는 원자료 검수·재계산으로 내용을 고친 뒤 본문 3인 승인 → 새 PDF 생성 → PDF 3인 승인 → 정정본 재전송 순서로 진행해주세요.' : '정정 사유를 먼저 등록합니다. 학생에게는 새 정정본이 완성·승인·전송될 때까지 기존 PDF가 보입니다. 이전 파일은 아래 PDF 이력에서 확인할 수 있습니다.';
+}
+async function startConsultingReportCorrection() {
+    updateConsultingReportPdfButtons(); if (reportPdfNode('consultingReportCorrectionStart').disabled) return;
+    if (!window.confirm('기존 PDF를 보존하고 새 정정 작업을 시작할까요? 사유는 정정본 전송 시 학생에게 공개됩니다.')) return;
+    const s = consultingReportPdf, c = s.view.correction, generation = s.generation, caseId = s.caseId;
+    const input = { reason: reportPdfNode('consultingReportCorrectionInput').value.trim(), category: reportPdfNode('consultingReportCorrectionCategory').value }, signature = JSON.stringify({ caseId, version: c.latest.version, ...input });
+    if (consultingReportCorrectionRequest?.signature !== signature) consultingReportCorrectionRequest = { signature, payload: { caseId, expectedCaseRevision: consultingReportSource.caseRevision, baseReportVersion: c.latest.version, ...input, idempotencyKey: globalThis.crypto.randomUUID(), confirmed: true } };
+    consultingReportPdfBusy = true; updateConsultingReportSourceButtons(); let saved = false;
+    try {
+        await requestConsultingAdmin('admin_start_report_pdf_correction', consultingReportCorrectionRequest.payload);
+        if (generation !== consultingReportPdf.generation || consultingReportSource?.caseId !== caseId) return;
+        consultingReportCorrectionRequest = null; saved = true;
+    } catch (error) { if (generation === consultingReportPdf.generation) consultingWorkspaceStatus('consultingReportCorrectionStatus', error.message || '정정 시작 결과를 확인하지 못했습니다. 작성 자료를 새로 불러와주세요.', 'error'); }
+    finally { if (generation === consultingReportPdf.generation) { consultingReportPdfBusy = false; updateConsultingReportSourceButtons(); } }
+    if (saved) await reloadConsultingReportSource();
 }

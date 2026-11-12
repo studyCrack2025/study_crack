@@ -72,3 +72,8 @@
 .consulting-report-published-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; }
 .consulting-report-published-actions button { flex:1 1 190px; min-height:48px; }
 .consulting-report-published-note { padding-top:20px; border-top:1px solid var(--sc-line-subtle); color:var(--sc-ink-muted); font-size:.85rem; }
+
+.consulting-report-published-history { display:grid; gap:16px; padding:20px 0; border-bottom:1px solid var(--sc-line-subtle); }
+.consulting-report-published-history label { display:grid; gap:8px; color:var(--sc-ink-muted); font-weight:600; }
+.consulting-report-published-history select { width:100%; min-height:48px; padding:10px 12px; border:1px solid var(--sc-line-subtle); border-radius:12px; background:var(--sc-surface-card); color:var(--sc-ink); font:inherit; }
+.consulting-report-published-correction { padding:20px; border:1px solid var(--sc-line-subtle); border-radius:16px; background:var(--sc-surface-subtle); overflow-wrap:anywhere; }

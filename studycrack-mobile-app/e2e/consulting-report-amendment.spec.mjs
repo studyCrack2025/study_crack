@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 const caseId = 'CASE_123e4567-e89b-12d3-a456-426614174000';
 function installApi() {
   window.hasClientSession = () => true;
+  const publishedVersion = version => ({ format: 'approved_pdf_v1', reportId: version === 1 ? window.__amend.reportId : 'REPORT_123e4567-e89b-12d3-a456-426614174003', version, artifactId: version === 1 ? 'ARTIFACT_123e4567-e89b-12d3-a456-426614174002' : 'ARTIFACT_123e4567-e89b-12d3-a456-426614174004', pdfSha256: 'sha256:' + (version === 1 ? 'a' : 'b').repeat(64), bytes: 120000, pageCount: 6, contentRevision: version + 1, publishedAt: '2026-12-08T03:05:00.000Z', correction: version === 1 ? null : { baseVersion: 1, reason: '<img src=x onerror=alert(1)> 상담 우선순위를 바로잡았습니다.', category: 'text', changes: [{ key: 'cover', label: '전략 요약' }] } });
   window.apiFetch = async (_url, options) => {
     const body = JSON.parse(options.body), { type, data } = body, s = window.__amend; s.calls.push(body);
     const reply = (data, status = 200) => new Response(JSON.stringify(status === 200 ? { success: true, data } : { success: false, error: '합성 검사 응답', code: 'AMENDMENT_CONFLICT' }), { status, headers: { 'Content-Type': 'application/json' } });
@@ -22,12 +23,12 @@ function installApi() {
     if (type === 'counselor_submit_report_amendment') { s.row.status = 'review'; s.row.revision++; s.caseRevision++; return reply({}); }
     if (type === 'admin_publish_report_amendment') { if (s.deferPublish) await new Promise(resolve => { window.__amendPublishResolve = resolve; }); if (s.publishConflict) return reply(null, 409); s.row.status = 'published'; s.row.publishedAt = '2026-10-29T01:00:00.000Z'; s.row.revision++; s.caseRevision++; return reply({}); }
     if (type === 'admin_reject_report_amendment') { s.row.status = 'rejected'; s.row.rejectionReason = data.reason; s.caseRevision++; return reply({}); }
-    if (type === 'student_get_v2_report') return reply(s.publishedPdf ? { workflowState: 'FINAL_CALL_SCHEDULING', available: true, report: { format: 'approved_pdf_v1', reportId: s.reportId, version: 1, artifactId: 'ARTIFACT_123e4567-e89b-12d3-a456-426614174002', pdfSha256: 'sha256:' + 'a'.repeat(64), bytes: 120000, pageCount: 6, contentRevision: 2, publishedAt: '2026-12-08T03:05:00.000Z' }, amendments: [] } : { workflowState: 'SERVICE_COMPLETED', report: { reportId: s.reportId, content: { ...s.content, scoreAssessment: '정정된 성적 판단' }, publishedAt: '2026-10-28T01:00:00.000Z', amendmentVersion: 1 }, originalReport: { reportId: s.reportId, content: s.content, publishedAt: '2026-10-28T01:00:00.000Z' }, amendments: [s.row] });
+    if (type === 'student_get_v2_report') return reply(s.publishedPdf ? { workflowState: 'FINAL_CALL_SCHEDULING', available: true, report: publishedVersion(s.corrected ? 2 : 1), versions: s.corrected ? s.historyCursor ? [publishedVersion(2)] : [publishedVersion(2),publishedVersion(1)] : [publishedVersion(1)], nextCursor: s.historyCursor || null, amendments: [] } : { workflowState: 'SERVICE_COMPLETED', report: { reportId: s.reportId, content: { ...s.content, scoreAssessment: '정정된 성적 판단' }, publishedAt: '2026-10-28T01:00:00.000Z', amendmentVersion: 1 }, originalReport: { reportId: s.reportId, content: s.content, publishedAt: '2026-10-28T01:00:00.000Z' }, amendments: [s.row] });
+    if (type === 'student_list_v2_report_pdf_versions') return reply({ versions: [publishedVersion(1)], nextCursor: null });
     if (type === 'student_preview_report_pdf') {
       if (s.deferPdf) await new Promise(resolve => { window.__resolvePublishedPdf = resolve; });
       if (s.failPdf) return reply(null, 500);
-      return reply({ reportId: s.reportId, version: 1, artifactId: 'ARTIFACT_123e4567-e89b-12d3-a456-426614174002', pdfSha256: s.badPdfHash ? 'sha256:' + 'b'.repeat(64) : 'sha256:' + 'a'.repeat(64), expiresIn: 60,
-        url: s.badPdfUrl || 'https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-ARTIFACT_123e4567-e89b-12d3-a456-426614174002.pdf?synthetic=1' });
+      const selected = publishedVersion(data.reportVersion); return reply({ reportId: selected.reportId, version: selected.version, artifactId: selected.artifactId, pdfSha256: s.badPdfHash ? 'sha256:' + 'c'.repeat(64) : selected.pdfSha256, expiresIn: 60, url: s.badPdfUrl || `https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-${selected.artifactId}.pdf?synthetic=1` });
     }
     return reply(null, 400);
   };
@@ -100,4 +101,18 @@ test('PDF 주소 조회 중 세션 종료 뒤 도착한 응답은 파일을 열�
   await expect(page.getByRole('button', { name: '파일 확인 중…', exact: true })).toBeDisabled();
   await page.evaluate(() => { window.__amend.ended = true; window.hasClientSession = () => false; window.dispatchEvent(new Event('studycrack:session-ended')); window.__resolvePublishedPdf(); });
   await expect(page.getByRole('heading', { name: '나의 정시 지원 보고서' })).toHaveCount(0); expect(await page.evaluate(() => window.__openedPdf.length)).toBe(0); expect(await page.evaluate(() => window.__pdfClosed)).toBe(true);
+});
+
+test('학생은 정정 사유·변경 항목과 원본을 구분하고 선택한 공개 버전의 PDF만 연다', async ({ page }, testInfo) => {
+  await prepare(page, 'student', { publishedPdf: true, corrected: true });
+  await expect(page.getByRole('heading', { name: '정정 사유와 변경 항목' })).toBeVisible(); await expect(page.getByText('이전 1판 PDF는 보존됩니다.')).toBeVisible(); await expect(page.locator('.consulting-report-published-correction img')).toHaveCount(0);
+  await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click(); await page.getByLabel('확인할 보고서').selectOption('1'); await expect(page.getByText('이전 보고서를 보고 있습니다.', { exact: false })).toBeVisible(); await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click();
+  const calls = await page.evaluate(() => window.__amend.calls.filter(c => c.type === 'student_preview_report_pdf')); expect(calls.map(c => c.data.reportVersion)).toEqual([2,1]); expect(await page.evaluate(() => window.__openedPdf[0] !== window.__openedPdf[1])).toBe(true);
+  await page.getByRole('button', { name: '최신 보고서 보기', exact: true }).click(); await expect(page.getByLabel('확인할 보고서')).toHaveValue('2');
+  for (const width of [320,1280]) { await page.setViewportSize({ width, height: 1000 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: testInfo.outputPath(`report-correction-student-${width}.png`) }); }
+});
+test('이전 공개본 이력은 명시적으로 더 읽으며 학생이 선택한 버전을 유지한다', async ({ page }) => {
+  await prepare(page, 'student', { publishedPdf: true, corrected: true, historyCursor: 2 });
+  await expect(page.getByLabel('확인할 보고서').locator('option')).toHaveCount(1); await page.getByRole('button', { name: '이전 보고서 더 보기', exact: true }).click(); await expect(page.getByLabel('확인할 보고서').locator('option')).toHaveCount(2); await expect(page.getByLabel('확인할 보고서')).toHaveValue('2');
+  expect(await page.evaluate(() => window.__amend.calls.find(c => c.type === 'student_list_v2_report_pdf_versions').data)).toEqual({ cursor: 2 });
 });
