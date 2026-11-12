@@ -8,7 +8,7 @@ body { margin: 0; background: #f8fafc; }
 .jungsi-landing-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: center; gap: clamp(36px, 7vw, 90px); min-height: 650px; padding: clamp(58px, 9vw, 108px) max(18px, calc((100vw - 1180px) / 2)); overflow: hidden; background: radial-gradient(circle at 82% 20%, #dfe9ff 0, rgba(223, 233, 255, 0) 35%), linear-gradient(155deg, #f8fbff, #edf3ff); }
 .jungsi-landing-hero-copy { position: relative; z-index: 1; }
 .jungsi-landing-kicker { margin: 0 0 14px; color: #3867d6; font-size: 0.87rem; font-weight: 850; letter-spacing: 0.1em; }
-.jungsi-landing-hero h1 { margin: 0; color: #142442; font-size: clamp(2.6rem, 7vw, 5.25rem); line-height: 1.08; letter-spacing: -0.045em; word-break: keep-all; }
+.jungsi-landing-hero h1 { margin: 0; color: #142442; font-size: clamp(2.3rem, 5vw, 3.6rem); line-height: 1.08; letter-spacing: -0.045em; word-break: keep-all; }
 .jungsi-landing-hero-copy > p:not(.jungsi-landing-kicker):not(.jungsi-landing-price) { max-width: 620px; margin: 26px 0 0; color: #52627a; font-size: clamp(1rem, 2vw, 1.16rem); line-height: 1.8; word-break: keep-all; }
 .jungsi-landing-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
 .jungsi-landing-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 166px; min-height: 52px; padding: 0 22px; border-radius: 14px; background: #2856c7; color: #fff; font-weight: 800; text-decoration: none; }

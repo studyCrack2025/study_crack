@@ -26,7 +26,7 @@
             track('consulting_apply_click', 'application_form');
         } else if (link.getAttribute('href') === '/2027-jungsi-consulting/login') {
             track('consulting_login_click', 'existing_applicant');
-        } else if (/^\/jungsi-(score|admission-prediction|percentile)/.test(link.getAttribute('href') || '')) {
+        } else if (/^\/jungsi-(score|admission-prediction|percentile|consulting-timing|gachaejeom)-guide/.test(link.getAttribute('href') || '')) {
             track('consulting_guide_click', 'guide');
         }
     });
@@ -57,8 +57,10 @@
         });
     });
     function selectHashService() {
-        const target = document.getElementById(location.hash.slice(1));
-        selectService(target && document.getElementById('consultingPanel')?.contains(target) ? 1 : 0);
+        const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+        // Consulting is the default panel; only anchors inside the calculator panel open it.
+        const inConsulting = target && document.getElementById('consultingPanel')?.contains(target);
+        selectService(target && !inConsulting && document.getElementById('calculator')?.contains(target) ? 0 : 1);
     }
     if (serviceTabs.length) {
         selectHashService();

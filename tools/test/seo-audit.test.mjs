@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile, stat} from 'node:fs/promises';
 import vm from 'node:vm';
 const read = name => readFile(new URL('../../'+name,import.meta.url),'utf8');
-const pages=['index','service','analysis','payment','qna','jungsi-score-guide','jungsi-admission-prediction-guide','jungsi-percentile-guide'];
+const pages=['index','service','analysis','payment','qna','jungsi-score-guide','jungsi-admission-prediction-guide','jungsi-percentile-guide','jungsi-consulting-timing-guide','jungsi-gachaejeom-guide'];
 test('every indexed page shares a published asset and guide structured data describes visible content',async()=>{
  const policy=JSON.parse(await read('tools/public-site-files.json'));
  for(const name of pages){

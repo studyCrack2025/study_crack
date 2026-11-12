@@ -49,4 +49,16 @@
     <priority>0.6</priority>
   </url>
   <url><loc>https://studycrack.co.kr/2027-jungsi-consulting</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url>
+    <loc>https://studycrack.co.kr/jungsi-consulting-timing-guide</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://studycrack.co.kr/jungsi-gachaejeom-guide</loc>
+    <lastmod>2026-11-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>

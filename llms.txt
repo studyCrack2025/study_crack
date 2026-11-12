@@ -6,11 +6,14 @@
 - [서비스 소개](https://studycrack.co.kr/service): 대학별 점수 분석과 플랜 안내
 - [멤버십](https://studycrack.co.kr/payment): 가격과 플랜 비교
 - [자주 묻는 질문](https://studycrack.co.kr/qna)
+- [2027 정시 컨설팅](https://studycrack.co.kr/2027-jungsi-consulting): 온라인 정시 지원 전략 상담의 진행 과정, 상담 시기와 준비 사항
 
 ## 정시 가이드
 - [정시 환산점수](https://studycrack.co.kr/jungsi-score-guide)
 - [합격예측 결과 해석](https://studycrack.co.kr/jungsi-admission-prediction-guide)
 - [백분위와 입결](https://studycrack.co.kr/jungsi-percentile-guide)
+- [정시 컨설팅 시기와 준비 순서](https://studycrack.co.kr/jungsi-consulting-timing-guide)
+- [수능 가채점 후 정시 준비](https://studycrack.co.kr/jungsi-gachaejeom-guide)
 
 ## 해석 기준
 입시 자료는 해당 학년도 대학 공식 모집요강과 공식 성적을 우선합니다. 가상 계산 예시는 실제 대학 산식이나 합격선이 아닙니다. 개인화 결과와 계정 화면은 공개 안내에 포함하지 않습니다.
