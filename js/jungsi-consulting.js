@@ -22,8 +22,8 @@
         });
     });
     function selectHashService() {
-        const target = document.getElementById(location.hash.slice(1));
-        selectService(target && document.getElementById('consultingPanel')?.contains(target) ? 1 : 0);
+        const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+        selectService(target && document.getElementById('calculator')?.contains(target) ? 0 : 1);
     }
     if (serviceTabs.length) {
         selectHashService();
