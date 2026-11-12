@@ -268,7 +268,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
    9. 커리큘럼 섹션
    ========================================= */
 .curriculum { padding: 48px 0 42px; }
-.curriculum-bg-overlay { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center; background-image: linear-gradient(rgba(26,33,45,.75),rgba(26,33,45,.75)),url('/assets/basic-v2/plan-books.png'); transition: background-image .5s ease-in-out; }
+.curriculum-bg-overlay { position: absolute; inset: 0; z-index: -1; background-size: cover; background-position: center; background-image: linear-gradient(rgba(26,33,45,.75),rgba(26,33,45,.75)),url('/assets/basic-v2/plan-books.webp'); transition: background-image .5s ease-in-out; }
 .curriculum .section-content { display: flex; flex-direction: column; }
 .curriculum .section-heading--light { margin-bottom: clamp(32px, 4vw, 52px); }
 .curriculum-grid { display: grid; grid-template-columns: minmax(0,416px) minmax(0,484px); gap: 60px; align-items: center; }
