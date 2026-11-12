@@ -8,7 +8,7 @@
   if (root.SCMeasurementV2) return;
   var initialized = false, identity = null, identityRevision = 0, lastPage = null;
   var purchases = Object.create(null), first = null;
-  var allowed = /^(cta_click|sign_up|login|score_input_start|score_input_complete|analysis_view|university_recommendation_view|score_impact_view|learning_profile_start|learning_profile_complete|target_university_set|plan_view|begin_checkout|download_report_click|tutorial_begin|tutorial_complete|tutorial_skip)$/;
+  var allowed = /^(consulting_view|calculator_view|consulting_engaged|consulting_apply_click|consulting_login_click|consulting_guide_click|cta_click|sign_up|login|score_input_start|score_input_complete|analysis_view|university_recommendation_view|score_impact_view|learning_profile_start|learning_profile_complete|target_university_set|plan_view|begin_checkout|download_report_click|tutorial_begin|tutorial_complete|tutorial_skip)$/;
   function cleanId(value) {
     if (value === null || value === undefined) return null;
     if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,256}$/.test(value) || /^(undefined|null|guest|anonymous)$/i.test(value)) throw new Error('Expected an opaque internal user ID or null');
@@ -35,9 +35,9 @@
   function safeUrl(value) {
     if (!value) return '';
     var u = new URL(value, root.location.href), query = new URLSearchParams();
-    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','dclid','gbraid','wbraid'].forEach(function(k) {
+    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id','gclid','dclid','gbraid','wbraid'].forEach(function(k) {
       var value = u.searchParams.get(k);
-      if (value && /^[A-Za-z0-9_. /-]{1,200}$/.test(value)) query.set(k,value);
+      if (value && /^[A-Za-z0-9_가-힣. /-]{1,200}$/.test(value)) query.set(k,value);
     });
     return u.origin + u.pathname + (query.toString() ? '?' + query.toString() : '');
   }

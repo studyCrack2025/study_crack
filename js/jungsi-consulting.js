@@ -1,6 +1,36 @@
 (function() {
     'use strict';
 
+    // Public landing only: no student scores, contact details, or form contents.
+    let selectedService = null;
+    function track(name, entry) {
+        if (window.SCTrack) window.SCTrack.event(name, {
+            entry: entry || 'jungsi_landing',
+            analysis_type: selectedService || 'consulting',
+            plan_type: 'jungsi_consulting'
+        });
+    }
+    let visibleSeconds = 0, engaged = false;
+    const engagementTimer = window.setInterval(() => {
+        if (document.visibilityState !== 'visible' || selectedService !== 'consulting') return;
+        if (++visibleSeconds >= 30 && !engaged) {
+            engaged = true;
+            track('consulting_engaged', 'visible_30_seconds');
+            window.clearInterval(engagementTimer);
+        }
+    }, 1000);
+    document.addEventListener('click', event => {
+        const link = event.target.closest('a');
+        if (!link || link.getAttribute('aria-disabled') === 'true') return;
+        if (link.id === 'consultingApply' && /^https:\/\/docs\.google\.com\/forms\//.test(link.href)) {
+            track('consulting_apply_click', 'application_form');
+        } else if (link.getAttribute('href') === '/2027-jungsi-consulting/login') {
+            track('consulting_login_click', 'existing_applicant');
+        } else if (/^\/jungsi-(score|admission-prediction|percentile)/.test(link.getAttribute('href') || '')) {
+            track('consulting_guide_click', 'guide');
+        }
+    });
+
     const serviceTabs = Array.from(document.querySelectorAll('.jungsi-service-tabs [role="tab"]'));
     function selectService(index, updateHash = false) {
         serviceTabs.forEach((tab, i) => {
@@ -9,6 +39,11 @@
             tab.tabIndex = active ? 0 : -1;
             document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
         });
+        const nextService = index === 0 ? 'calculator' : 'consulting';
+        if (selectedService !== nextService) {
+            selectedService = nextService;
+            track(nextService + '_view', updateHash ? 'tab_switch' : 'landing_or_anchor');
+        }
         if (updateHash) history.replaceState(null, '', index === 0 ? '#calculator' : '#consulting');
     }
     serviceTabs.forEach((tab, index) => {
