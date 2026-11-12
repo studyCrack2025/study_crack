@@ -573,8 +573,20 @@
                     <button id="consultingSurveyHistoryNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingSurveyHistory()" hidden>이전 수정 더 보기</button>
                 </details>
                 <section id="consultingMaterialSupplementNotice" class="consulting-material-block" hidden></section>
+                <div class="consulting-survey-review">
+                <aside class="consulting-survey-index" aria-label="조사서 검수 안내">
+                    <p class="consulting-survey-eyebrow">기초조사서 항목</p>
+                    <div id="consultingSurveyIndex" class="consulting-survey-index-items" role="tablist" aria-label="기초조사서 항목"></div>
+                    <details id="consultingSurveyCommentDrafts" class="consulting-survey-comments" hidden>
+                        <summary>작성 중인 보완 코멘트 <span id="consultingSurveyCommentCount">0</span></summary>
+                        <ul id="consultingSurveyCommentList"></ul>
+                        <p>아직 학생에게 전송하지 않았습니다. 보완 요청 미리보기에서 확인 후 보내주세요.</p>
+                    </details>
+                </aside>
+                <div class="consulting-survey-reading">
+                <header class="consulting-survey-heading"><p id="consultingSurveyPosition" class="consulting-survey-eyebrow"></p><h3 id="consultingSurveySectionTitle" tabindex="-1"></h3><p id="consultingSurveySectionGuide"></p></header>
                 <div id="consultingMaterialSurvey" class="consulting-record"></div>
-                <section class="consulting-material-block"><h3>성적표 첨부</h3><div id="consultingMaterialFiles"></div><div id="consultingMaterialFileNote"></div></section>
+                <section id="consultingMaterialAttachments" class="consulting-material-block" hidden><h3>성적표 첨부</h3><div id="consultingMaterialFiles"></div><div id="consultingMaterialFileNote"></div></section>
                 <div id="consultingMaterialVerification" class="consulting-record" hidden></div>
                 <section id="consultingMaterialReviewActions" class="consulting-material-block" hidden>
                 <h3 id="consultingMaterialReviewTitle">검수 성적 입력</h3>
@@ -587,6 +599,9 @@
                     <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="verifyConsultingMaterials()">확인 완료 · 일정 선택 열기</button>
                 </div>
                 </section>
+                <div class="consulting-survey-pager"><button id="consultingSurveyPrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(-1)" disabled>이전 항목</button><button id="consultingSurveyNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(1)" disabled>다음 항목</button></div>
+                </div>
+                </div>
                 <section id="consultingMaterialSupplementActions" class="consulting-material-block" hidden>
                     <h3>조사서 보완 요청</h3>
                     <p id="consultingSupplementStatus" class="consulting-status" role="status">위 답변 옆에서 보완 메모를 작성하세요.</p>

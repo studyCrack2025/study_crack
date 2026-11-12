@@ -336,9 +336,10 @@ test('관리자는 항목별 보완 내용을 미리 확인해 한 번에 보내
     await enterConsulting(page);
     await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click();
     await openStudent(page);
-    await page.getByText('거주 지역 보완 메모 추가', { exact: true }).click();
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
     await page.getByRole('textbox', { name: '거주 지역 보완 메모' }).fill('구 단위로 적어주세요.');
-    await page.getByText('1지망 대학 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.getByLabel('1지망 대학 보완 메모 추가', { exact: true }).click();
     await page.getByRole('textbox', { name: '1지망 대학 보완 메모' }).fill('<img src=x> 캠퍼스를 알려주세요.');
     await page.getByRole('button', { name: '보완 요청 미리보기' }).click();
     const preview = page.getByRole('dialog', { name: '보완 요청 확인' });
@@ -358,6 +359,7 @@ test('관리자는 항목별 보완 내용을 미리 확인해 한 번에 보내
     state.students[1].case.workflowState = 'MATERIAL_REVIEW';
     state.supplement = null;
     await page.reload();
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
     await page.locator('#consultingMaterialReason').fill('공식 성적표 확인 완료');
     page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: '확인 완료 · 일정 선택 열기' }).click();
@@ -386,9 +388,12 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     for (const value of ['이전 답변', '합성 상담 내용', '보호자 의견 예시']) await expect(survey).not.toContainText(value);
     await expect(survey).toContainText('<img src=x onerror=alert(1)>');
     await expect(survey.locator('img')).toHaveCount(0);
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
     await expect(survey.getByRole('row', { name: /^국어 / })).toContainText('공통 76 · 선택 0 · 원점수 76');
+    await page.getByRole('tab', { name: '최종 확인', exact: true }).click();
     await expect(page.getByRole('button', { name: '제출 성적표.pdf 열기' })).toBeEnabled();
     await expect(page.getByRole('button', { name: '검사 중.pdf 열기' })).toBeDisabled();
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
     await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
     await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
     await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toBeDisabled();
@@ -634,6 +639,7 @@ test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값
     await openStudent(page, 1);
     await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
     await expect(page.locator('#consultingSurveyReviewNotice')).toContainText('기존 공개 보고서는 그대로 유지');
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
     await expect(page.getByLabel('국어 표준점수', { exact: true })).toHaveValue('126');
     await expect(page.getByLabel('영어 등급', { exact: true })).toHaveValue('2');
     await page.getByLabel('국어 표준점수', { exact: true }).fill('127');
@@ -646,4 +652,94 @@ test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값
     expect(sent.data.verifiedInput.records.find(row => row.area === 'korean').standardScore).toBe(127);
     expect(state.calls.some(call => call.type === 'admin_verify_v2_materials')).toBe(false);
     expect(state.students[1].case.workflowState).toBe('FINAL_CALL_BOOKED');
+});
+
+
+test('조사서는 학생 화면과 같은7개 항목 중 하나만 보이며 키보드·이전 다음으로 이동한다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await prepare(page); await enterConsulting(page); await openStudent(page, 1);
+    const nav = page.getByRole('tablist', { name: '기초조사서 항목' });
+    await expect(nav.getByRole('tab')).toHaveCount(7);
+    await expect(nav.getByRole('tab', { name: '학생 상태', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#consultingMaterialSurvey [role="tabpanel"]:visible')).toHaveCount(1);
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('학생 상태');
+    await expect(page.locator('#consultingMaterialAttachments')).toBeHidden();
+    await nav.getByRole('tab', { name: '학생 상태', exact: true }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(nav.getByRole('tab', { name: '성적', exact: true })).toBeFocused();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('성적');
+    await page.keyboard.press('End');
+    await expect(nav.getByRole('tab', { name: '최종 확인', exact: true })).toBeFocused();
+    await expect(page.locator('#consultingMaterialAttachments')).toBeVisible();
+    await expect(page.locator('#consultingSurveyNext')).toBeDisabled();
+    await page.locator('#consultingSurveyPrevious').click();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('상담 질문');
+    await expect(page.locator('#consultingSurveySectionTitle')).toBeFocused();
+    await nav.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-sections-1440.png') });
+    for (const width of [768, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        if (width === 320) {
+            const positions = await nav.getByRole('tab').evaluateAll(nodes => nodes.slice(0, 2).map(node => ({ top: node.getBoundingClientRect().top, left: node.getBoundingClientRect().left })));
+            expect(Math.abs(positions[0].top - positions[1].top)).toBeLessThan(1);
+            expect(positions[0].left).toBeLessThan(positions[1].left);
+        }
+        for (const label of ['학생 상태', '성적', '지원 조건', '희망 지원', '지원 전략', '상담 질문', '최종 확인']) {
+            await nav.getByRole('tab', { name: label, exact: true }).click();
+            await expect(page.locator('#consultingMaterialSurvey [role="tabpanel"]:visible')).toHaveCount(1);
+            expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        }
+    }
+    await nav.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-sections-320.png') });
+});
+
+test('보완 코멘트는 항목·버전 전환 후 유지되고 모아보기에서 원래 답변으로 돌아간다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.revisedMaterial = true;
+    state.supplementFields = ['studentStatus.residenceRegion', 'preferences.rankedChoices.0.university'];
+    await enterConsulting(page); await openStudent(page, 1);
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true }).fill('구 단위로 적어주세요.');
+    await expect(page.locator('#consultingSurveyBadge-studentStatus')).toHaveText('작성 1');
+    await page.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.getByLabel('1지망 대학 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '1지망 대학 보완 메모', exact: true }).fill('<img src=x onerror=alert(1)> 캠퍼스 확인');
+    await expect(page.locator('#consultingSurveyCommentCount')).toHaveText('2');
+    await page.locator('#consultingSurveyVersion').selectOption('original');
+    await expect(page.locator('#consultingSurveyCommentDrafts')).toBeHidden();
+    await expect(page.locator('#consultingMaterialSurvey textarea')).toHaveCount(0);
+    await page.locator('#consultingSurveyVersion').selectOption('current');
+    await expect(page.getByRole('textbox', { name: '1지망 대학 보완 메모', exact: true })).toHaveValue('<img src=x onerror=alert(1)> 캠퍼스 확인');
+    await page.locator('#consultingSurveyCommentDrafts > summary').click();
+    await expect(page.locator('#consultingSurveyCommentList')).toContainText('<img src=x onerror=alert(1)>');
+    await expect(page.locator('#consultingSurveyCommentList img')).toHaveCount(0);
+    await page.locator('#consultingSurveyCommentList').getByRole('button', { name: '거주 지역 · 구 단위로 적어주세요.', exact: true }).click();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('학생 상태');
+    await expect(page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true })).toHaveValue('구 단위로 적어주세요.');
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-comments-1440.png') });
+    await page.setViewportSize({ width: 320, height: 1000 });
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-comments-320.png') });
+    await page.getByRole('button', { name: '보완 요청 미리보기', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '보완 요청 확인' })).toContainText('구 단위로 적어주세요.');
+    expect(state.calls.some(call => call.type === 'admin_request_v2_supplement')).toBe(false);
+});
+
+test('이미 보낸 보완 요청은 해당 답변 옆에 표시하고 읽기 상태에서는 새 코멘트를 만들지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'SUPPLEMENT_REQUIRED';
+    state.supplementFields = ['studentStatus.residenceRegion'];
+    state.supplement = { fields: [{ field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 적어주세요.' }] };
+    await enterConsulting(page); await openStudent(page, 1);
+    await expect(page.locator('#consultingSurveyBadge-studentStatus')).toHaveText('보완 요청 1');
+    const note = page.locator('#consultingMaterialSurvey .consulting-survey-requested-note');
+    await expect(note).toContainText('학생에게 요청한 보완');
+    await expect(note).toContainText('<img src=x> 구 단위로 적어주세요.');
+    await expect(note.locator('img')).toHaveCount(0);
+    await expect(page.locator('#consultingMaterialSurvey textarea')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '보완 요청 미리보기', exact: true })).toBeHidden();
 });

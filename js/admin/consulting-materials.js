@@ -62,16 +62,27 @@ function renderConsultingScoreTable(scores, decorate) {
 
 function renderConsultingSurvey(target, snapshot, decorate) {
     const { studentStatus = {}, conditions = {}, preferences = {}, strategy = {}, qualitative = {}, consent = {} } = snapshot;
-    const group = (title, entries) => appendConsultingRecord(target, title, createConsultingFacts(entries, decorate));
+    const section = (key, content) => {
+        const panel = document.createElement('section');
+        panel.id = `consultingSurveyPanel-${key}`;
+        panel.className = 'consulting-survey-section';
+        panel.dataset.surveySection = key;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', `consultingSurveyTab-${key}`);
+        panel.tabIndex = 0;
+        panel.appendChild(content);
+        target.appendChild(panel);
+    };
+    const group = (key, entries) => section(key, createConsultingFacts(entries, decorate));
     const list = (items, separator = ', ') => Array.isArray(items) ? items.join(separator) : '';
     const yesNo = (value, yes, no) => typeof value === 'boolean' ? (value ? yes : no) : null;
-    group('학생 상태', [
+    group('studentStatus', [
         ['지원자 구분', consultingOptionLabel(studentStatus.applicantType, { high_school_senior: '고3 재학생', graduate: '졸업생', qualification_exam: '검정고시' }), 'studentStatus.applicantType'],
         ['졸업 연도', studentStatus.graduationYear, 'studentStatus.graduationYear'],
         ['학교 유형', consultingOptionLabel(studentStatus.schoolType, { general: '일반고', specialized: '특목·특성화고', autonomous: '자율고', other: '기타' }), 'studentStatus.schoolType'],
         ['학교명', studentStatus.schoolName, 'studentStatus.schoolName'], ['거주 지역', studentStatus.residenceRegion, 'studentStatus.residenceRegion']
     ]);
-    appendConsultingRecord(target, '학생 입력 성적', renderConsultingScoreTable(snapshot.scores, decorate));
+    section('scores', renderConsultingScoreTable(snapshot.scores, decorate));
     const commute = conditions.commuteLimit === 'over_120' ? '2시간 이상도 가능'
         : Number.isFinite(conditions.commuteMaxMinutes) ? `${conditions.commuteMaxMinutes}분 이내` : '';
     const conditionsList = [
@@ -80,8 +91,8 @@ function renderConsultingSurvey(target, snapshot, decorate) {
         ['재수 가능성', yesNo(conditions.repeatStudyAllowed, '고려 가능', '고려하지 않음'), 'conditions.repeatStudyAllowed']
     ];
     if (conditions.tuitionBudgetAnnual != null) conditionsList.push(['연간 등록금 상한', formatConsultingMoney(conditions.tuitionBudgetAnnual)]);
-    group('지원 조건', conditionsList);
-    group('희망 지원', Array.isArray(preferences.rankedChoices) ? [
+    group('conditions', conditionsList);
+    group('preferences', Array.isArray(preferences.rankedChoices) ? [
         ...Array.from({ length: 3 }, (_, index) => {
             const { region, university, track } = preferences.rankedChoices[index] || {};
             const fields = index === 0 || preferences.rankedChoices[index]
@@ -95,17 +106,17 @@ function renderConsultingSurvey(target, snapshot, decorate) {
         ['필수 후보', list(preferences.requiredCandidates)], ['제외 후보', list(preferences.excludedCandidates)]
     ]);
     const priorityLabels = { region: '지역', major: '전공', brand: '대학 인지도', employment: '취업', commute: '통학' };
-    group('지원 전략', [
+    group('strategy', [
         ['지원 위험 선호', consultingOptionLabel(strategy.riskTolerance, { safe: '안정 중심', balanced: '균형', challenge: '도전 중심' }), 'strategy.riskTolerance'],
         ['대학 선택 우선순위', Array.isArray(strategy.priorityOrder) ? strategy.priorityOrder.map((key, index) => `${index + 1}. ${consultingOptionLabel(key, priorityLabels)}`).join('\n') : '', 'strategy.priorityOrder']
     ]);
-    group('상담 질문', [
+    group('qualitative', [
         ['상담 주제', formatConsultingSurveyTopics(qualitative.consultationTopics), 'qualitative.consultationTopics'],
         ['비교 중인 선택지와 기준', qualitative.decisionOptions, 'qualitative.decisionOptions'],
         ['상담에서 답을 받고 싶은 질문', list(qualitative.consultationQuestions, '\n'), 'qualitative.consultationQuestions'],
         ['함께 알아야 할 사항', qualitative.specialCircumstances, 'qualitative.specialCircumstances']
     ]);
-    group('최종 확인', [
+    group('consent', [
         ['입력 내용 확인', yesNo(consent.accurateInformation, '확인', '미확인'), 'consent.accurateInformation'],
         ['분석 이용 동의', yesNo(consent.analysisUse, '동의', '미동의'), 'consent.analysisUse']
     ]);
@@ -222,23 +233,167 @@ function consultingSurveyChangeFacts(changes) {
     }));
 }
 
+const consultingSurveyReviewItems = [
+    { key: 'studentStatus', label: '학생 상태', guide: '지원 자격과 학교·거주 정보를 확인하세요.' },
+    { key: 'scores', label: '성적', guide: '학생 입력과 성적표를 대조하고 검수 성적을 확인하세요.' },
+    { key: 'conditions', label: '지원 조건', guide: '통학·기숙사·재수 가능성을 확인하세요.' },
+    { key: 'preferences', label: '희망 지원', guide: '1~3지망 대학·계열과 추가 희망을 확인하세요.' },
+    { key: 'strategy', label: '지원 전략', guide: '위험 선호와 대학 선택 우선순위를 확인하세요.' },
+    { key: 'qualitative', label: '상담 질문', guide: '학생이 비교 중인 선택지와 상담 질문을 확인하세요.' },
+    { key: 'consent', label: '최종 확인', guide: '동의 내용과 첨부한 성적표를 확인하세요.' }
+];
+const consultingSurveyNoteSection = field => field === 'files' ? 'consent' : String(field || '').split('.')[0];
+
+function refreshConsultingSurveyComments() {
+    const data = currentConsultingMaterial;
+    if (!data) return;
+    const current = data.surveyVersion === 'current';
+    const requested = current ? data.supplement?.fields || [] : [];
+    const drafts = current ? [...data.supplementDraft] : [];
+    for (const item of consultingSurveyReviewItems) {
+        const badge = document.getElementById(`consultingSurveyBadge-${item.key}`);
+        if (!badge) continue;
+        const count = drafts.filter(([field]) => consultingSurveyNoteSection(field) === item.key).length;
+        const sent = requested.filter(({ field }) => consultingSurveyNoteSection(field) === item.key).length;
+        badge.textContent = [count ? `작성 ${count}` : '', sent ? `보완 요청 ${sent}` : ''].filter(Boolean).join(' · ');
+        badge.hidden = !count && !sent;
+    }
+    document.getElementById('consultingSurveyCommentDrafts').hidden = !drafts.length;
+    document.getElementById('consultingSurveyCommentCount').textContent = String(drafts.length);
+    const list = document.getElementById('consultingSurveyCommentList');
+    list.replaceChildren();
+    for (const [field, { label, note }] of drafts) {
+        const row = document.createElement('li');
+        const link = document.createElement('button');
+        link.type = 'button';
+        link.textContent = `${label} · ${note.trim()}`;
+        link.addEventListener('click', () => {
+            selectConsultingSurveySection(consultingSurveyNoteSection(field));
+            const editor = [...document.querySelectorAll('[data-supplement-field]')].find(node => node.dataset.supplementField === field);
+            if (editor) { editor.open = true; editor.querySelector('textarea').focus(); }
+        });
+        row.appendChild(link);
+        list.appendChild(row);
+    }
+}
+
+function selectConsultingSurveySection(key, focusTab = false) {
+    const data = currentConsultingMaterial;
+    const index = consultingSurveyReviewItems.findIndex(item => item.key === key);
+    if (!data || index < 0) return;
+    data.surveySection = key;
+    document.querySelectorAll('#consultingSurveyIndex [role="tab"]').forEach(button => {
+        const selected = button.dataset.surveySection === key;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+        if (selected && focusTab) button.focus();
+    });
+    document.querySelectorAll('#consultingMaterialSurvey [data-survey-section]').forEach(panel => { panel.hidden = panel.dataset.surveySection !== key; });
+    const item = consultingSurveyReviewItems[index];
+    document.getElementById('consultingSurveyPosition').textContent = `항목 ${String(index + 1).padStart(2, '0')} / 07`;
+    document.getElementById('consultingSurveySectionTitle').textContent = item.label;
+    document.getElementById('consultingSurveySectionGuide').textContent = item.guide;
+    document.getElementById('consultingMaterialAttachments').hidden = key !== 'consent';
+    const current = data.surveyVersion === 'current';
+    const verification = document.getElementById('consultingMaterialVerification');
+    verification.hidden = key !== 'scores' || !current || !verification.children.length;
+    document.getElementById('consultingMaterialReviewActions').hidden = key !== 'scores' || !current || !(data.canReview || data.canConfirm && data.surveyReview.scoreChanged);
+    const previous = document.getElementById('consultingSurveyPrevious');
+    const next = document.getElementById('consultingSurveyNext');
+    previous.disabled = index === 0;
+    next.disabled = index === consultingSurveyReviewItems.length - 1;
+    previous.textContent = index ? `이전 항목 · ${consultingSurveyReviewItems[index - 1].label}` : '이전 항목';
+    next.textContent = index < consultingSurveyReviewItems.length - 1 ? `다음 항목 · ${consultingSurveyReviewItems[index + 1].label}` : '마지막 항목';
+}
+
+function moveConsultingSurveySection(delta) {
+    if (!currentConsultingMaterial) return;
+    const index = consultingSurveyReviewItems.findIndex(item => item.key === currentConsultingMaterial.surveySection);
+    const item = consultingSurveyReviewItems[index + delta];
+    if (!item) return;
+    selectConsultingSurveySection(item.key);
+    document.getElementById('consultingSurveySectionTitle').focus();
+}
+
+function renderConsultingSurveyIndex() {
+    const index = document.getElementById('consultingSurveyIndex');
+    index.replaceChildren();
+    consultingSurveyReviewItems.forEach((item, position) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'consulting-survey-index-button';
+        button.id = `consultingSurveyTab-${item.key}`;
+        button.dataset.surveySection = item.key;
+        button.setAttribute('role', 'tab');
+        button.setAttribute('aria-label', item.label);
+        button.setAttribute('aria-controls', `consultingSurveyPanel-${item.key}`);
+        const number = document.createElement('span');
+        number.className = 'consulting-survey-index-number';
+        number.setAttribute('aria-hidden', 'true');
+        number.textContent = String(position + 1).padStart(2, '0');
+        const text = document.createElement('span');
+        text.className = 'consulting-survey-index-label';
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        const badge = document.createElement('span');
+        badge.id = `consultingSurveyBadge-${item.key}`;
+        badge.className = 'consulting-survey-index-badge';
+        badge.hidden = true;
+        text.append(label, badge);
+        button.append(number, text);
+        button.addEventListener('click', () => selectConsultingSurveySection(item.key));
+        button.addEventListener('keydown', event => {
+            let target;
+            if (['ArrowDown', 'ArrowRight'].includes(event.key)) target = (position + 1) % consultingSurveyReviewItems.length;
+            else if (['ArrowUp', 'ArrowLeft'].includes(event.key)) target = (position + consultingSurveyReviewItems.length - 1) % consultingSurveyReviewItems.length;
+            else if (event.key === 'Home') target = 0;
+            else if (event.key === 'End') target = consultingSurveyReviewItems.length - 1;
+            if (target === undefined) return;
+            event.preventDefault();
+            selectConsultingSurveySection(consultingSurveyReviewItems[target].key, true);
+        });
+        index.appendChild(button);
+    });
+    refreshConsultingSurveyComments();
+}
+
 function appendConsultingSupplementEditor(target, field, label, data) {
-    if (!data.supplementFields?.includes(field)) return;
+    const requested = data.supplement?.fields?.find(item => item.field === field);
+    if (requested) {
+        const notice = document.createElement('aside');
+        notice.className = 'consulting-survey-requested-note';
+        const heading = document.createElement('strong');
+        heading.textContent = '학생에게 요청한 보완';
+        const copy = document.createElement('p');
+        copy.textContent = requested.note;
+        notice.append(heading, copy);
+        target.appendChild(notice);
+    }
+    if (!data.canReview || !data.supplementFields?.includes(field)) return;
     const details = document.createElement('details');
     details.className = 'consulting-supplement-field';
+    details.dataset.supplementField = field;
     const summary = document.createElement('summary');
     const note = document.createElement('textarea');
     note.maxLength = 500;
     note.setAttribute('aria-label', `${label} 보완 메모`);
+    note.placeholder = '학생이 어느 부분을 어떻게 보완하면 좋을지 적어주세요.';
     note.value = data.supplementDraft.get(field)?.note || '';
     details.open = Boolean(note.value);
-    const refreshLabel = () => { summary.textContent = note.value.trim() ? `${label} 보완 메모 수정` : `${label} 보완 메모 추가`; };
+    const refreshLabel = () => {
+        summary.textContent = note.value.trim() ? '보완 코멘트 수정' : '보완 코멘트 추가';
+        summary.setAttribute('aria-label', `${label} 보완 메모 ${note.value.trim() ? '수정' : '추가'}`);
+        details.dataset.filled = String(Boolean(note.value.trim()));
+    };
     refreshLabel();
     note.addEventListener('input', () => {
         if (note.value.trim()) data.supplementDraft.set(field, { label, note: note.value });
         else data.supplementDraft.delete(field);
         refreshLabel();
-        document.getElementById('consultingSupplementStatus').textContent = `보완 메모 ${data.supplementDraft.size}개 작성 중`;
+        refreshConsultingSurveyComments();
+        const status = document.getElementById('consultingSupplementStatus');
+        const message = `보완 코멘트 ${data.supplementDraft.size}개 작성 중 · 미리보기에서 확인 후 전송하세요.`;
+        if (status.textContent !== message) status.textContent = message;
     });
     details.append(summary, note);
     target.appendChild(details);
@@ -251,14 +406,16 @@ function showConsultingSurveyVersion(version) {
     const submission = original ? data.originalSubmission : reviewed ? data.reviewedSubmission : data.submission;
     if (!submission?.snapshot) return;
     const current = !original && !reviewed;
+    data.surveyVersion = current ? 'current' : version;
     const target = document.getElementById('consultingMaterialSurvey');
-    const decorate = current && data.canReview ? (node, fields, label) => {
+    const decorate = current ? (node, fields, label) => {
         for (const [field, fieldLabel] of Array.isArray(fields) ? fields : [[fields, label]]) {
             appendConsultingSupplementEditor(node, field, fieldLabel, data);
         }
     } : undefined;
     target.replaceChildren();
     renderConsultingSurvey(target, submission.snapshot, decorate);
+    renderConsultingSurveyIndex();
     const files = Array.isArray(submission.fileIds) ? data.files.filter(file => submission.fileIds.includes(file.fileId)) : data.files;
     renderConsultingMaterialFiles(data.case.caseId, files);
     const fileNote = document.getElementById('consultingMaterialFileNote');
@@ -273,7 +430,7 @@ function showConsultingSurveyVersion(version) {
         ...(submission.supplementAttempt > 0 ? [['보완 제출', `${submission.supplementAttempt}회차`]] : [])
     ]));
     document.getElementById('consultingSurveyConfirmBtn').hidden = !current || !data.canConfirm || data.surveyReview.scoreChanged;
-    document.getElementById('consultingMaterialReviewActions').hidden = !current || !(data.canReview || (data.canConfirm && data.surveyReview.scoreChanged));
+    selectConsultingSurveySection(data.surveySection || 'studentStatus');
     document.getElementById('consultingMaterialSupplementActions').hidden = !current || !data.canReview;
 }
 
@@ -354,13 +511,15 @@ async function openConsultingMaterial(caseId, held) {
         }
         const supplementNotice = document.getElementById('consultingMaterialSupplementNotice');
         if (data.supplement) {
-            const title = document.createElement('h3');
-            title.textContent = '학생에게 요청한 보완';
-            supplementNotice.append(title, createConsultingFacts([
+            const ledger = document.createElement('details');
+            const title = document.createElement('summary');
+            title.textContent = `학생에게 요청한 보완 · ${data.supplement.fields?.length || 0}개 항목`;
+            ledger.append(title, createConsultingFacts([
                 ['요청 시각', formatConsultingDate(data.supplement.requestedAt)],
                 ...(data.supplement.reasonText ? [['공통 안내', data.supplement.reasonText]] : []),
                 ...(data.supplement.fields || []).map(({ label, note }) => [label, note])
             ]));
+            supplementNotice.appendChild(ledger);
         }
         showConsultingSurveyVersion('current');
 
@@ -381,6 +540,7 @@ async function openConsultingMaterial(caseId, held) {
             resultSelect.value = 'matched';
             resultSelect.options[0].textContent = rawEntry ? '성적표 확인 완료' : '입력과 일치';
         }
+        selectConsultingSurveySection(currentConsultingMaterial.surveySection || 'studentStatus');
         document.getElementById('consultingMaterialDetail').hidden = false;
         setConsultingMaterialStatus('', 'success');
         return true;
@@ -409,9 +569,13 @@ function closeConsultingMaterialDetail(invalidate = true) {
     document.getElementById('consultingSupplementReason').value = 'OTHER';
     document.getElementById('consultingSupplementStatus').textContent = '위 답변 옆에서 보완 메모를 작성하세요.';
     document.getElementById('consultingMaterialVerification').hidden = true;
+    document.getElementById('consultingMaterialAttachments').hidden = true;
+    document.getElementById('consultingSurveyCommentDrafts').hidden = true;
+    document.getElementById('consultingSurveyCommentDrafts').open = false;
+    for (const id of ['consultingSurveyPrevious', 'consultingSurveyNext']) document.getElementById(id).disabled = true;
     for (const id of ['consultingSurveyVersions', 'consultingSurveyChangesSinceReview', 'consultingSurveyHistory', 'consultingSurveyHistoryNext']) document.getElementById(id).hidden = true;
     for (const id of ['consultingSurveyChangesSinceReview', 'consultingSurveyHistory']) document.getElementById(id).open = false;
-    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingMaterialFiles', 'consultingMaterialVerification', 'consultingVerifiedScores',
+    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingSurveyIndex', 'consultingSurveyCommentList', 'consultingSurveyPosition', 'consultingSurveySectionTitle', 'consultingSurveySectionGuide', 'consultingMaterialFiles', 'consultingMaterialVerification', 'consultingVerifiedScores',
         'consultingMaterialSupplementNotice', 'consultingMaterialFileNote', 'consultingSupplementPreviewContent',
         'consultingSurveyReviewChanges', 'consultingSurveyReviewNotice', 'consultingSurveyHistoryStatus', 'consultingSurveyHistoryEntries']) document.getElementById(id)?.replaceChildren();
     for (const id of ['consultingMaterialReason', 'consultingMaterialDifferences', 'consultingSupplementText']) { const node = document.getElementById(id); if (node) node.value = ''; }
