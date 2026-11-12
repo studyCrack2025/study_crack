@@ -12,7 +12,9 @@ const expectedSitemapUrls = [
   'https://studycrack.co.kr/analysis',
   'https://studycrack.co.kr/payment',
   'https://studycrack.co.kr/qna',
-  'https://studycrack.co.kr/2027-jungsi-consulting'
+  'https://studycrack.co.kr/2027-jungsi-consulting',
+  'https://studycrack.co.kr/jungsi-consulting-timing-guide',
+  'https://studycrack.co.kr/jungsi-gachaejeom-guide'
 ];
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
@@ -23,7 +25,9 @@ const indexedPages = [
   ['analysis.html', 'https://studycrack.co.kr/analysis'],
   ['payment.html', 'https://studycrack.co.kr/payment'],
   ['qna.html', 'https://studycrack.co.kr/qna'],
-  ['jungsi-consulting-2027.html', 'https://studycrack.co.kr/2027-jungsi-consulting']
+  ['jungsi-consulting-2027.html', 'https://studycrack.co.kr/2027-jungsi-consulting'],
+  ['jungsi-consulting-timing-guide.html', 'https://studycrack.co.kr/jungsi-consulting-timing-guide'],
+  ['jungsi-gachaejeom-guide.html', 'https://studycrack.co.kr/jungsi-gachaejeom-guide']
 ];
 
 async function read(relativePath) {

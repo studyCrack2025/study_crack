@@ -7,7 +7,7 @@ function handler(event) {
   if (host !== 'studycrack.co.kr' && host !== 'www.studycrack.co.kr') return request;
   var uri = request.uri;
   var canonical = uri;
-  var pages = ['service', 'analysis', 'payment', 'qna', 'jungsi-score-guide', 'jungsi-admission-prediction-guide', 'jungsi-percentile-guide'];
+  var pages = ['service', 'analysis', 'payment', 'qna', 'jungsi-score-guide', 'jungsi-admission-prediction-guide', 'jungsi-percentile-guide', '2027-jungsi-consulting', 'jungsi-consulting-timing-guide', 'jungsi-gachaejeom-guide'];
   var stripped = uri.replace(/\/+$/, '') || '/';
   if (stripped === '/index.html' || stripped === '/') canonical = '/';
   for (var i = 0; i < pages.length; i++) {
