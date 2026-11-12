@@ -5,6 +5,7 @@ function installApi() {
   window.apiFetch = async (_url, options) => {
     const body = JSON.parse(options.body), { type, data } = body, s = window.__amend; s.calls.push(body);
     const reply = (data, status = 200) => new Response(JSON.stringify(status === 200 ? { success: true, data } : { success: false, error: '합성 검사 응답', code: 'AMENDMENT_CONFLICT' }), { status, headers: { 'Content-Type': 'application/json' } });
+    if (s.ended) return reply(null, 403);
     if (body.reportId) return new Response(JSON.stringify({ success: false, error: '합성 PDF 요청 확인' }), { status: 500 });
     if (type === 'admin_get_final_call_workspace') return reply({ caseId: s.caseId, caseRevision: s.caseRevision, workflowState: 'SERVICE_COMPLETED', candidates: [], counselorId: 'tutor', session: s.session });
     if (type === 'counselor_list_final_calls') return reply({ sessions: [s.session] });
@@ -21,13 +22,20 @@ function installApi() {
     if (type === 'counselor_submit_report_amendment') { s.row.status = 'review'; s.row.revision++; s.caseRevision++; return reply({}); }
     if (type === 'admin_publish_report_amendment') { if (s.deferPublish) await new Promise(resolve => { window.__amendPublishResolve = resolve; }); if (s.publishConflict) return reply(null, 409); s.row.status = 'published'; s.row.publishedAt = '2026-10-29T01:00:00.000Z'; s.row.revision++; s.caseRevision++; return reply({}); }
     if (type === 'admin_reject_report_amendment') { s.row.status = 'rejected'; s.row.rejectionReason = data.reason; s.caseRevision++; return reply({}); }
-    if (type === 'student_get_v2_report') return reply({ workflowState: 'SERVICE_COMPLETED', report: { reportId: s.reportId, content: { ...s.content, scoreAssessment: '정정된 성적 판단' }, publishedAt: '2026-10-28T01:00:00.000Z', amendmentVersion: 1 }, originalReport: { reportId: s.reportId, content: s.content, publishedAt: '2026-10-28T01:00:00.000Z' }, amendments: [s.row] });
+    if (type === 'student_get_v2_report') return reply(s.publishedPdf ? { workflowState: 'FINAL_CALL_SCHEDULING', available: true, report: { format: 'approved_pdf_v1', reportId: s.reportId, version: 1, artifactId: 'ARTIFACT_123e4567-e89b-12d3-a456-426614174002', pdfSha256: 'sha256:' + 'a'.repeat(64), bytes: 120000, pageCount: 6, contentRevision: 2, publishedAt: '2026-12-08T03:05:00.000Z' }, amendments: [] } : { workflowState: 'SERVICE_COMPLETED', report: { reportId: s.reportId, content: { ...s.content, scoreAssessment: '정정된 성적 판단' }, publishedAt: '2026-10-28T01:00:00.000Z', amendmentVersion: 1 }, originalReport: { reportId: s.reportId, content: s.content, publishedAt: '2026-10-28T01:00:00.000Z' }, amendments: [s.row] });
+    if (type === 'student_preview_report_pdf') {
+      if (s.deferPdf) await new Promise(resolve => { window.__resolvePublishedPdf = resolve; });
+      if (s.failPdf) return reply(null, 500);
+      return reply({ reportId: s.reportId, version: 1, artifactId: 'ARTIFACT_123e4567-e89b-12d3-a456-426614174002', pdfSha256: s.badPdfHash ? 'sha256:' + 'b'.repeat(64) : 'sha256:' + 'a'.repeat(64), expiresIn: 60,
+        url: s.badPdfUrl || 'https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-ARTIFACT_123e4567-e89b-12d3-a456-426614174002.pdf?synthetic=1' });
+    }
     return reply(null, 400);
   };
 }
 async function prepare(page, role = 'tutor', extra = {}) {
   await page.addInitScript(({ role, caseId, extra }) => {
     localStorage.setItem('userRole', role);
+    if (extra.publishedPdf) { window.__openedPdf = []; window.open = () => ({ opener: null, location: { replace: url => window.__openedPdf.push(url) }, close: () => { window.__pdfClosed = true; } }); }
     const content = { title: '합성 정시 보고서', executiveSummary: '핵심 요약', scoreAssessment: '최초 성적 판단', candidates: [{ candidateId: 'C1', universityName: '합성 대학', admissionUnitName: '학과', probabilityStatus: 'manual_review', rationale: '확인한 판단' }], applicationStrategy: '지원 전략', risksAndCautions: '주의 사항', finalCallChecklist: '확인할 항목' };
     const row = { version: 1, revision: 2, status: role === 'student' ? 'published' : 'review', category: 'FACTUAL_TEXT_ERROR', reason: '객관적인 모집요강 문구 오류를 바로잡습니다.', evidenceSummary: '공식 모집요강 원문을 대조하여 표기 오류와 적용 범위를 확인했습니다.', references: ['https://example.edu/admissions/2027'], changes: [{ field: 'scoreAssessment', label: '성적 판단', before: content.scoreAssessment, after: '<img src=x onerror=alert(1)> 정정된 성적 판단' }], invalidatedCandidates: [], publishedAt: role === 'student' ? '2026-10-29T01:00:00.000Z' : null };
     window.__amend = { caseId, content, reportId: 'REPORT_123e4567-e89b-12d3-a456-426614174001', role, row: role === 'tutor' ? null : row, caseRevision: 10, calls: [], keys: [], session: { caseId, sessionId: 'FCS_fixture', status: 'completed', revision: 1, startAt: '2026-10-28T01:00:00.000Z', endAt: '2026-10-28T01:30:00.000Z' }, ...extra };
@@ -69,4 +77,27 @@ test('학생은 최신 정정본·원본·변경 이력을 구분하고 해당 P
 });
 test('권한 오류·늦은 조회·로그아웃은 편집과 승인으로 이어지지 않는다', async ({ page }) => {
   await prepare(page, 'tutor', { forbidden: true }); await expect(page.locator('.consulting-amendment-panel [role=alert]')).toContainText('권한과 공개 상태'); await page.evaluate(() => { window.__amend.forbidden = false; window.__amend.deferGet = true; }); await page.getByRole('button', { name: '정정 상태 새로고침', exact: true }).click(); await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__amendResolve(); }); await expect(page.getByRole('button', { name: '정정 초안 저장', exact: true })).toHaveCount(0);
+});
+
+test('공개된 6페이지 PDF의 버전만 요청하고 별도 생성 없이 열며 파이널 콜로 이동한다', async ({ page }, testInfo) => {
+  await prepare(page, 'student', { publishedPdf: true });
+  await expect(page.getByRole('heading', { name: '나의 정시 지원 보고서' })).toBeVisible(); await expect(page.getByText('6페이지 · 보고서 버전 1 · 본문 2')).toBeVisible();
+  await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click(); await expect.poll(() => page.evaluate(() => window.__openedPdf.length)).toBe(1);
+  const requests = await page.evaluate(() => window.__amend.calls.filter(x => x.type === 'student_preview_report_pdf'));
+  expect(requests).toHaveLength(1); expect(requests[0].data).toEqual({ reportVersion: 1, inline: true }); expect(await page.evaluate(() => window.__amend.calls.some(x => x.reportId))).toBe(false);
+  for (const width of [320, 1280]) { await page.setViewportSize({ width, height: 1000 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); await page.screenshot({ path: testInfo.outputPath(`student-published-pdf-${width}.png`) }); }
+  await page.getByRole('button', { name: '파이널 콜 일정·완료 확인', exact: true }).click(); await expect(page).toHaveURL(/\/2027-jungsi-consulting\/final-call/);
+});
+test('PDF 오류와 다른 파일 확인값·외부 주소는 열기를 차단하고 자동 반복하지 않는다', async ({ page }) => {
+  await prepare(page, 'student', { publishedPdf: true, failPdf: true });
+  await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click(); await expect(page.getByRole('status')).toContainText('서버 응답을 확인하지 못했어요'); expect(await page.evaluate(() => window.__openedPdf.length)).toBe(0);
+  await page.evaluate(() => { window.__amend.failPdf = false; window.__amend.badPdfHash = true; }); await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click(); await expect(page.getByRole('status')).toContainText('파일을 확인하지 못했습니다');
+  await page.evaluate(() => { window.__amend.badPdfHash = false; window.__amend.badPdfUrl = 'https://example.invalid/other.pdf'; }); await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click();
+  expect(await page.evaluate(() => window.__openedPdf.length)).toBe(0); expect(await page.evaluate(() => window.__amend.calls.filter(x => x.type === 'student_preview_report_pdf').length)).toBe(3);
+});
+test('PDF 주소 조회 중 세션 종료 뒤 도착한 응답은 파일을 열거나 보고서를 복원하지 않는다', async ({ page }) => {
+  await prepare(page, 'student', { publishedPdf: true, deferPdf: true }); await page.getByRole('button', { name: 'PDF 보고서 열기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '파일 확인 중…', exact: true })).toBeDisabled();
+  await page.evaluate(() => { window.__amend.ended = true; window.hasClientSession = () => false; window.dispatchEvent(new Event('studycrack:session-ended')); window.__resolvePublishedPdf(); });
+  await expect(page.getByRole('heading', { name: '나의 정시 지원 보고서' })).toHaveCount(0); expect(await page.evaluate(() => window.__openedPdf.length)).toBe(0); expect(await page.evaluate(() => window.__pdfClosed)).toBe(true);
 });

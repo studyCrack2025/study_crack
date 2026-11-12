@@ -1,11 +1,23 @@
 import React from 'react';
 import { AdminReport, CounselorReport } from './ConsultingReportWorkspaces.jsx';
-import { downloadConsultingReport, getStudentConsultingReport } from '../report-api.js';
+import { downloadConsultingReport, getStudentConsultingReport, isPublishedPdfReport, openPublishedConsultingPdf } from '../report-api.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { CandidateCards } from './ReportCandidateCards.jsx';
 import { ReportAmendmentHistory } from './ReportAmendmentHistory.jsx';
 import { useFinalCallResource } from '../use-final-call-resource.js';
 
+function PublishedPdfReport({ binding, report, resource }) {
+  const open = async inline => {
+    if (resource.busy) return;
+    const tab = inline ? globalThis.open('about:blank', '_blank') : null; if (tab) tab.opener = null;
+    let opened = false;
+    try {
+      await resource.run(signal => openPublishedConsultingPdf(binding, report, inline, signal), { reload: false, onSuccess: data => { opened = true; if (tab) tab.location.replace(data.url); else globalThis.location.assign(data.url); } });
+    } finally { if (!opened) tab?.close(); }
+  };
+  if (!isPublishedPdfReport(report)) return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>보고서를 확인하지 못했습니다</h1><p>새로고침하여 최신 보고서를 다시 불러와주세요.</p><button type="button" className="consulting-v2-secondary" onClick={resource.reload}>보고서 다시 불러오기</button></section></main>;
+  return <main className="consulting-report"><header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button><strong>정시 컨설팅 보고서</strong></header><article className="consulting-report-document consulting-report-published"><p className="consulting-v2-kicker">STUDYCRACK · 2027 JUNGSI</p><h1>나의 정시 지원 보고서</h1><time>{new Intl.DateTimeFormat('ko-KR', { dateStyle: 'long' }).format(new Date(report.publishedAt))} 공개</time><section className="consulting-report-published-file"><span className="consulting-v2-kicker">최종 검수 완료</span><h2>성적과 상담을 반영한 지원 전략</h2><p>성적 분석부터 가·나·다군 지원 플랜, 최종 확인 사항까지 PDF에 정리했습니다. 보고서를 먼저 살펴보고 파이널 콜에서 함께 확인할 내용을 준비해주세요.</p><p className="consulting-report-published-meta">6페이지 · 보고서 버전 {report.version} · 본문 {report.contentRevision}</p><div className="consulting-report-published-actions"><button type="button" className="consulting-v2-primary" disabled={resource.busy} onClick={() => open(true)}>{resource.busy ? '파일 확인 중…' : 'PDF 보고서 열기'}</button><button type="button" className="consulting-v2-secondary" disabled={resource.busy} onClick={() => open(false)}>PDF 다운로드</button></div></section><section><h2>다음은 파이널 콜입니다</h2><p>지원 조합과 궁금한 점을 정리한 뒤 통화 가능한 시간을 선택해주세요. 최종 지원 전략을 함께 마무리하겠습니다.</p><button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.finalCall)}>파이널 콜 일정·완료 확인</button></section><p className="consulting-report-published-note">보고서의 예상 컷과 합격률은 검토를 돕는 추정치이며 실제 합격을 보장하지 않습니다.</p>{resource.message ? <p role="status" className="consulting-survey-message">{resource.message}</p> : null}</article></main>;
+}
 
 function StudentReport({ binding }) {
   const loader = React.useCallback(signal => getStudentConsultingReport(binding, signal), [binding]);
@@ -14,6 +26,7 @@ function StudentReport({ binding }) {
   const pdf = () => resource.run(signal => downloadConsultingReport(binding, state.report.reportId, state.report.amendmentVersion || 0, signal), { reload: false, onSuccess: data => globalThis.location.assign(data.downloadUrl) });
   if (state.status === 'loading') return <main className="consulting-v2-center"><p className="consulting-v2-loading">보고서를 불러오고 있습니다.</p></main>;
   if (state.status === 'error' || !state.report) return <main className="consulting-v2-center"><section className="consulting-v2-card"><h1>{state.status === 'error' ? '보고서를 불러오지 못했습니다' : '보고서를 준비하고 있습니다'}</h1><p className="consulting-v2-status">{state.error || '승인과 공개가 완료되면 이곳에서 확인할 수 있습니다.'}</p><button className="consulting-v2-secondary consulting-v2-wide" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>진행 현황으로 돌아가기</button></section></main>;
+  if (state.report.format === 'approved_pdf_v1') return <PublishedPdfReport binding={binding} report={state.report} resource={resource} />;
   const { content } = state.report;
   return <main className="consulting-report"><header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button><strong>정시 컨설팅 보고서</strong><button type="button" disabled={resource.busy} onClick={pdf}>{resource.busy ? 'PDF 생성 중…' : 'PDF 받기'}</button></header><article className="consulting-report-document"><p className="consulting-v2-kicker">STUDYCRACK · 2027 JUNGSI</p><h1>{content.title}</h1><time>{new Intl.DateTimeFormat('ko-KR', { dateStyle: 'long' }).format(new Date(state.report.publishedAt))} 공개</time>{resource.data?.originalReport ? <section><h2>{viewOriginal ? '최초 원본' : `정정 ${state.report.amendmentVersion}차 반영본`}</h2><p>{viewOriginal ? '이 원본 이후 공개된 정정본이 있습니다. 최신 판단은 정정본을 확인해주세요.' : '오류 정정 내용을 반영했습니다. 원본과 변경 전후 이력은 계속 확인할 수 있습니다.'}</p><button type="button" className="consulting-v2-secondary" disabled={resource.busy} onClick={() => setViewOriginal(value => !value)}>{viewOriginal ? '최신 정정본 보기' : '최초 원본 보기'}</button></section> : null}<ReportAmendmentHistory items={resource.data?.amendments} /><section><h2>핵심 요약</h2><p>{content.executiveSummary}</p></section><section><h2>성적 판단</h2><p>{content.scoreAssessment}</p></section><section><h2>지원 후보</h2><CandidateCards candidates={content.candidates} /></section><section><h2>지원 전략</h2><p>{content.applicationStrategy}</p></section><section><h2>위험 요소와 유의사항</h2><p>{content.risksAndCautions}</p></section><section><h2>파이널 콜 확인 항목</h2><p>{content.finalCallChecklist}</p></section><button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.finalCall)}>파이널 콜 일정·완료 확인</button>{state.error ? <p role="status">{state.error}</p> : null}</article></main>;
 }

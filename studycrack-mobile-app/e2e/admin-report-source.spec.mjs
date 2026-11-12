@@ -83,6 +83,18 @@ async function prepare(page, options = {}) {
                 lastArtifact: options.pdfStatus === 'historical' ? { ...file, current: false } : null, history: ['ready', 'historical'].includes(options.pdfStatus) ? [{ ...file, current: options.pdfStatus === 'ready' }] : [], nextCursor: null,
                 job: { status: options.pdfStatus || 'pending', lastErrorCode: options.pdfStatus === 'failed' ? 'PDF_LAYOUT_OVERFLOW' : null, errorPages: options.pdfStatus === 'failed' ? [4] : [] }, studentPublicationAllowed: false };
             if (options.pdfStatus === 'historical') state.pdf.status = 'content_approval_required';
+            if (options.pdfApproval) {
+                state.pdfApprovedRoles = options.pdfApprovedRoles || [];
+                state.pdfOwnRole = options.pdfOwnRole === undefined ? 'CMO' : options.pdfOwnRole;
+                state.pdfApprovalView = () => ({ target: { id: state.pdfApprovalTarget || 'sha256:' + '8'.repeat(64), artifactId: file.artifactId, pdfSha256: file.pdfSha256, contentRevision: 1 },
+                    status: state.pdfPublished ? 'published' : state.pdfBlocked ? 'blocked' : state.pdfApprovedRoles.length === 3 ? 'approved' : 'awaiting_approvals', count: state.pdfBlocked ? 0 : state.pdfApprovedRoles.length, ownRole: state.pdfOwnRole,
+                    canApprove: !options.readOnly && Boolean(state.pdfOwnRole) && !state.pdfPublished && !state.pdfBlocked && !state.pdfApprovedRoles.includes(state.pdfOwnRole),
+                    canWithdraw: !options.readOnly && !state.pdfPublished && state.pdfApprovedRoles.includes(state.pdfOwnRole), canPublish: !options.readOnly && Boolean(state.pdfOwnRole) && !state.pdfPublished && !state.pdfBlocked && state.pdfApprovedRoles.length === 3,
+                    roles: ['CEO', 'CTO', 'CMO'].map(role => ({ role, own: role === state.pdfOwnRole, status: !state.pdfBlocked && state.pdfApprovedRoles.includes(role) ? 'approved' : 'pending', approvedAt: state.pdfApprovedRoles.includes(role) ? '2026-12-08T03:05:00.000Z' : null })),
+                    blockers: state.pdfBlocked ? [{ message: '현재 PDF를 다시 확인해주세요.' }] : [], notifications: state.pdfPublished ? ['inapp', 'kakao', 'email'].map(channel => ({ channel, status: channel === 'email' ? 'dead_letter' : 'sent', code: channel === 'email' ? 'NOTIFICATION_DELIVERY_UNCERTAIN' : null })) : [] });
+                state.syncPdfApproval = () => { state.pdf.approval = state.pdfApprovalView(); };
+                state.syncPdfApproval();
+            }
             content.pdf = state.pdf;
         }
         window.apiFetch = async (_url, request) => {
@@ -98,7 +110,14 @@ async function prepare(page, options = {}) {
             } else if (input.type === 'admin_queue_report_pdf') {
                 state.pdf.status = 'pending'; state.pdf.canQueue = false; data = { caseId, ...structuredClone(state.pdf) };
             } else if (input.type === 'admin_preview_report_pdf') {
-                data = { caseId, artifactId: input.data.artifactId, current: state.pdf.status === 'ready', expiresIn: 60, url: state.badPdfUrl || `https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-${input.data.artifactId}.pdf?signed=1` };
+                data = { caseId, artifactId: input.data.artifactId, pdfSha256: state.pdfFile.pdfSha256, current: state.pdf.status === 'ready', expiresIn: 60, url: state.badPdfUrl || `https://synthetic.s3.ap-northeast-2.amazonaws.com/generated_reports/synthetic-student/DEV-${input.data.artifactId}.pdf?signed=1` };
+            } else if (['admin_approve_report_pdf', 'admin_withdraw_report_pdf_approval', 'admin_publish_report_pdf'].includes(input.type)) {
+                if (state.deferPdfMutation) await new Promise(resolve => { state.resolvePdfMutation = resolve; });
+                if (state.failPdfMutation) throw new Error('승인 상태가 바뀌었습니다.');
+                if (input.type === 'admin_approve_report_pdf') state.pdfApprovedRoles = [...new Set([...state.pdfApprovedRoles, state.pdfOwnRole])];
+                if (input.type === 'admin_withdraw_report_pdf_approval') { state.pdfApprovedRoles = []; state.pdfApprovalTarget = 'sha256:' + '9'.repeat(64); }
+                if (input.type === 'admin_publish_report_pdf') state.pdfPublished = true;
+                state.ws.caseRevision++; state.syncPdfApproval(); data = { caseId, caseRevision: state.ws.caseRevision, approval: structuredClone(state.pdf.approval) };
             }
             else if (input.type === 'admin_get_report_source_workspace') {
                 if (state.deferGet) await new Promise(resolve => { state.resolveGet = () => { state.deferGet = false; resolve(); }; });
@@ -563,4 +582,42 @@ test('PDF 파일 확인은 작은 화면에서도 넘치지 않고 외부 파일
     await page.evaluate(() => { window.__reportSource.badPdfUrl = 'https://example.invalid/stolen.pdf'; window.open = () => ({ opener: null, close() {}, location: { replace() { throw new Error('Unsafe navigation'); } } }); });
     await page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 미리보기' }).click();
     await expect(page.locator('#consultingReportPdfStatus')).toContainText('주소를 확인하지 못했습니다');
+});
+
+test('PDF를 직접 확인한 본인만 승인하고 같은 파일의 세 번째 승인 후 명시적으로 학생 전송한다', async ({ page }, testInfo) => {
+    await page.addInitScript(() => { window.open = () => ({ opener: null, location: { replace() {} }, close() {} }); });
+    await prepare(page, { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO'] });
+    const approve = page.locator('#consultingReportPdfApprove'), publish = page.locator('#consultingReportPdfPublish'), confirmed = page.locator('#consultingReportPdfConfirmed');
+    await expect(approve).toBeDisabled(); await expect(publish).toBeDisabled(); await expect(confirmed).toBeDisabled();
+    await page.locator('#consultingReportPdfCurrent').getByRole('button', { name: 'PDF 미리보기', exact: true }).click(); await confirmed.check(); await approve.click();
+    await expect(page.locator('#consultingReportPdfApprovalMeta')).toContainText('3/3 승인'); await expect(publish).toBeEnabled();
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_publish_report_pdf'))).toHaveLength(0);
+    const vote = await page.evaluate(() => window.__reportSource.calls.find(c => c.type === 'admin_approve_report_pdf'));
+    expect(Object.keys(vote.data).sort()).toEqual(['caseId', 'confirmed', 'targetId']);
+    page.once('dialog', dialog => dialog.accept()); await publish.click(); await expect(publish).toBeDisabled();
+    await expect(page.locator('#consultingReportPdfApprovalStatus')).toContainText('학생 페이지에 공개');
+    await expect(page.locator('#consultingReportPdfDelivery')).toContainText('카카오톡'); await expect(page.locator('#consultingReportPdfDelivery')).toContainText('중복 방지를 위해 자동 재발송 중지');
+    for (const width of [320, 1280]) { await page.setViewportSize({ width, height: 1000 }); expect(await page.locator('#consultingReportPdfApproval').evaluate(e => e.scrollWidth <= e.clientWidth + 1)).toBe(true); await page.locator('#consultingReportPdfApproval').screenshot({ path: testInfo.outputPath(`pdf-final-approval-${width}.png`) }); }
+});
+test('PDF 승인 철회는 새 승인 세대를 만들며 파일 교체·저장 전 수정·읽기 전용은 전송을 잠근다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO', 'CMO'] });
+    await expect(page.locator('#consultingReportPdfPublish')).toBeEnabled();
+    await page.locator('#consultingReportPdfWithdrawReason').fill('최종 PDF의 주의 문구를 다시 확인합니다.'); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingReportPdfWithdraw').click();
+    await expect(page.locator('#consultingReportPdfApprovalMeta')).toContainText('0/3 승인'); await expect(page.locator('#consultingReportPdfPublish')).toBeDisabled(); await expect(page.locator('#consultingReportPdfConfirmed')).toBeDisabled();
+    await page.evaluate(() => { const s = window.__reportSource; s.pdfApprovedRoles = ['CEO', 'CTO', 'CMO']; s.syncPdfApproval(); }); await page.locator('#consultingReportPdfRefresh').click();
+    await page.locator('#consultingReportSummaryForm [name="conclusion"]').fill('새 상담 내용은 저장한 뒤 재검수합니다.'); await expect(page.locator('#consultingReportPdfPublish')).toBeDisabled();
+});
+test('PDF 전송 실패와 로그아웃 뒤 늦은 응답은 자동 재전송이나 학생 상세 복원으로 이어지지 않는다', async ({ page }) => {
+    await page.clock.install();
+    await prepare(page, { facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO', 'CMO'] });
+    await page.evaluate(() => { window.__reportSource.failPdfMutation = true; }); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingReportPdfPublish').click();
+    await expect(page.locator('#consultingReportPdfApprovalStatus')).toContainText('PDF 상태 확인'); await page.clock.fastForward('00:01:00');
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_publish_report_pdf'))).toHaveLength(1);
+    await page.evaluate(() => { window.__reportSource.failPdfMutation = false; window.__reportSource.deferPdfMutation = true; }); await page.locator('#consultingReportPdfRefresh').click();
+    page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingReportPdfPublish').click(); await page.evaluate(() => { window.dispatchEvent(new Event('studycrack:session-ended')); window.__reportSource.resolvePdfMutation(); });
+    await expect(page.locator('#consultingReportPdfPanel')).toBeHidden();
+});
+test('읽기 전용 계정은 PDF와 세 역할 승인 상태만 조회하며 전송하지 못한다', async ({ page }) => {
+    await prepare(page, { readOnly: true, facts: true, withFactsResult: true, withContent: true, contentStatus: 'completed', withRevisions: true, withApprovals: true, withPdf: true, pdfStatus: 'ready', pdfApproval: true, pdfApprovedRoles: ['CEO', 'CTO', 'CMO'], pdfOwnRole: null });
+    await expect(page.locator('#consultingReportPdfApprovalMeta')).toContainText('조회 전용'); await expect(page.locator('#consultingReportPdfPublish')).toBeDisabled(); await expect(page.locator('#consultingReportPdfApprove')).toBeHidden();
 });

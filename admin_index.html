@@ -732,7 +732,17 @@
                             <p id="consultingReportPdfStatus" class="consulting-status" role="status" aria-live="polite"></p>
                             <div id="consultingReportPdfCurrent"></div>
                             <button id="consultingReportPdfQueue" type="button" class="consulting-btn consulting-btn-primary" onclick="queueConsultingReportPdf()" hidden disabled>승인 본문으로 PDF 제작 요청</button>
-                            <p class="consulting-report-source-notice">관리자 검수용 파일입니다. PDF 완성본에 대한 세 명의 승인과 학생 전송은 다음 단계에서 연결됩니다.</p>
+                            <section id="consultingReportPdfApproval" class="consulting-report-pdf-approval" aria-labelledby="consultingReportPdfApprovalTitle" hidden>
+                                <h5 id="consultingReportPdfApprovalTitle">완성 PDF 최종 검수</h5><p id="consultingReportPdfApprovalMeta" class="consulting-caption"></p>
+                                <div id="consultingReportPdfApprovalRoles" class="consulting-report-approval-roles"></div>
+                                <p id="consultingReportPdfApprovalStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                                <label id="consultingReportPdfConfirmedRow" class="consulting-report-approval-check"><input id="consultingReportPdfConfirmed" type="checkbox" onchange="updateConsultingReportPdfButtons()" disabled>미리보기로 이 PDF 6페이지와 성적·지원 플랜·표현을 확인했습니다.</label>
+                                <p id="consultingReportPdfViewHint" class="consulting-caption">이 파일의 미리보기를 연 뒤 본인 역할로 승인해주세요.</p>
+                                <div class="consulting-actions"><button id="consultingReportPdfApprove" type="button" class="consulting-btn consulting-btn-primary" onclick="submitConsultingReportPdfApproval()" disabled>내 역할로 PDF 승인</button><button id="consultingReportPdfPublish" type="button" class="consulting-btn consulting-btn-primary" onclick="publishConsultingReportPdf()" disabled>학생에게 보고서 전송</button></div>
+                                <div id="consultingReportPdfWithdrawFields" hidden><label for="consultingReportPdfWithdrawReason">PDF 승인 철회 사유</label><textarea id="consultingReportPdfWithdrawReason" maxlength="1500" rows="2" oninput="updateConsultingReportPdfButtons()"></textarea><button id="consultingReportPdfWithdraw" type="button" class="consulting-btn consulting-btn-secondary" onclick="submitConsultingReportPdfApproval(true)" disabled>본인 PDF 승인 철회</button></div>
+                                <p class="consulting-caption">세 명 모두 같은 PDF를 승인하면 전송할 수 있습니다. 전송 시 학생 페이지에 공개하고 카카오톡·이메일로 안내합니다.</p>
+                                <ul id="consultingReportPdfDelivery" class="consulting-report-pdf-delivery"></ul>
+                            </section>
                             <details class="consulting-report-pdf-ledger"><summary>이전에 생성한 PDF</summary><ul id="consultingReportPdfHistory"></ul><button id="consultingReportPdfMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportPdf(true)" hidden>이전 PDF 더 보기</button></details>
                         </section>
                     </section>
