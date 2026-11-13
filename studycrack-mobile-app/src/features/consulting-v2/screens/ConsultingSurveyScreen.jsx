@@ -9,6 +9,8 @@ import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 import { legacyPreferences, SurveyAnswerView } from './SurveyAnswerView.jsx';
 import { SurveySupplementNotes } from './SurveySupplementNotes.jsx';
+import { SurveyFieldScope, useSurveyFieldAllowed } from './SurveyFieldScope.jsx';
+import { SurveySupplementEditor } from './SurveySupplementEditor.jsx';
 
 const toOptionalNumber = value => value === '' ? null : Number(value);
 const idempotencyKey = prefix => `${prefix}:${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
@@ -16,6 +18,7 @@ const idempotencyKey = prefix => `${prefix}:${globalThis.crypto?.randomUUID?.() 
 const supplementSection = field => field === 'files' ? 'consent' : field.split('.')[0];
 
 function Field({ children, label, field }) {
+  if (!useSurveyFieldAllowed(field)) return null;
   return <label className="consulting-survey-field" data-survey-field={field}><span>{label}</span>{children}</label>;
 }
 
@@ -44,26 +47,28 @@ function ConditionsStep({ snapshot, update, legacy }) {
       </select>
     </Field>}
     {!legacy && !value.commuteLimit && value.commuteMaxMinutes != null && <p className="consulting-score-note">이전에 {value.commuteMaxMinutes}분으로 입력했어요. 현재 선택지에서 다시 골라주세요.</p>}
-    <label className="consulting-survey-check" data-survey-field="conditions.dormitoryAllowed"><input type="checkbox" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /> 기숙사 생활 가능</label>
-    <div>
+    <SurveyFieldScope field="conditions.dormitoryAllowed"><label className="consulting-survey-check" data-survey-field="conditions.dormitoryAllowed"><input type="checkbox" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /> 기숙사 생활 가능</label></SurveyFieldScope>
+    <SurveyFieldScope field="conditions.repeatStudyAllowed"><div>
       <label className="consulting-survey-check" data-survey-field="conditions.repeatStudyAllowed"><input type="checkbox" checked={value.repeatStudyAllowed} aria-describedby="survey-repeat-guide"
         onChange={event => update({ repeatStudyAllowed: event.target.checked })} /> 재수 가능성</label>
       <p id="survey-repeat-guide" className="consulting-score-note">올해 원하는 선택지가 없으면 재수를 고려할 수 있어요.</p>
-    </div>
+    </div></SurveyFieldScope>
   </div>;
 }
 
 function LegacyScoresStep({ value, update, raw }) {
   const change = (index, key, fieldValue) => update({ records: value.records.map((row, rowIndex) => index === rowIndex ? { ...row, [key]: fieldValue } : row) });
+  let inquiry = 0;
   return <div className="consulting-score-list">{value.records.map((row, index) => {
+    const field = `scores.${row.area === 'inquiry' ? `inquiry${++inquiry}` : row.area}`;
     const fields = raw && ['korean', 'math'].includes(row.area) ? [['commonRawScore', '공통 원점수'], ['electiveRawScore', '선택 원점수']]
       : raw ? [['rawScore', '원점수'], ['grade', '등급']] : [['standardScore', '표준점수'], ['percentile', '백분위'], ['grade', '등급']];
-    return <fieldset className="consulting-score-card" key={index}>
+    return <SurveyFieldScope field={field} key={index}><fieldset className="consulting-score-card" data-survey-field={field}>
       <legend>{row.subject}</legend>
       <Field label="과목명"><input maxLength="40" value={row.subject} onChange={event => change(index, 'subject', event.target.value)} /></Field>
       <Field label="선택과목"><input maxLength="40" value={row.selection || ''} onChange={event => change(index, 'selection', event.target.value)} /></Field>
       {fields.map(([field, label]) => <Field key={field} label={label}><input type="number" value={row[field] ?? ''} onChange={event => change(index, field, toOptionalNumber(event.target.value))} /></Field>)}
-    </fieldset>;
+    </fieldset></SurveyFieldScope>;
   })}</div>;
 }
 
@@ -83,7 +88,7 @@ function StrategyStep({ snapshot, update }) {
   };
   return <>
     <Field label="지원 위험 선호" field="strategy.riskTolerance"><select value={value.riskTolerance} onChange={event => update({ riskTolerance: event.target.value })}><option value="">선택</option><option value="safe">안정 중심</option><option value="balanced">균형</option><option value="challenge">도전 중심</option></select></Field>
-    <section className="consulting-priority-list" aria-labelledby="consulting-priority-title" data-survey-field="strategy.priorityOrder">
+    <SurveyFieldScope field="strategy.priorityOrder"><section className="consulting-priority-list" aria-labelledby="consulting-priority-title" data-survey-field="strategy.priorityOrder">
       <h2 id="consulting-priority-title">대학 선택 우선순위</h2>
       <p className="consulting-score-note">가장 중요한 기준을 1순위로 골라주세요. 이미 사용한 순위를 고르면 두 기준의 순위가 서로 바뀝니다.</p>
       {Object.entries(PRIORITY_LABELS).map(([key, label]) => {
@@ -95,7 +100,7 @@ function StrategyStep({ snapshot, update }) {
           </select>
         </label>;
       })}
-    </section>
+    </section></SurveyFieldScope>
   </>;
 }
 
@@ -104,7 +109,7 @@ function QualitativeStep({ snapshot, update }) {
   const topics = value.consultationTopics || [];
   const questions = value.consultationQuestions.length ? value.consultationQuestions : [''];
   return <div className="consulting-survey-grid consulting-survey-grid-single">
-    <fieldset className="consulting-survey-preference-rank" aria-describedby="survey-consultation-topics-guide" data-survey-field="qualitative.consultationTopics">
+    <SurveyFieldScope field="qualitative.consultationTopics"><fieldset className="consulting-survey-preference-rank" aria-describedby="survey-consultation-topics-guide" data-survey-field="qualitative.consultationTopics">
       <legend>상담 주제</legend>
       <p id="survey-consultation-topics-guide" className="consulting-score-note">함께 다루고 싶은 주제를 최대 {MAX_CONSULTATION_TOPICS}개 골라주세요. 선택 항목입니다.</p>
       <div>{Object.entries(CONSULTATION_TOPIC_LABELS).map(([topic, topicLabel]) => {
@@ -116,12 +121,12 @@ function QualitativeStep({ snapshot, update }) {
           }} /> {topicLabel}
         </label>;
       })}</div>
-    </fieldset>
+    </fieldset></SurveyFieldScope>
     <Field label="비교 중인 선택지와 기준 (선택)" field="qualitative.decisionOptions">
       <textarea maxLength={DECISION_OPTIONS_MAX} value={value.decisionOptions || ''} placeholder="A대 인문계열과 B대 사회계열 중 통학과 전공을 기준으로 비교하고 싶어요."
         onChange={event => update({ decisionOptions: event.target.value || undefined })} />
     </Field>
-    <div className="consulting-survey-grid consulting-survey-grid-single" data-survey-field="qualitative.consultationQuestions">
+    <SurveyFieldScope field="qualitative.consultationQuestions"><div className="consulting-survey-grid consulting-survey-grid-single" data-survey-field="qualitative.consultationQuestions">
       <p id="survey-consultation-questions-guide" className="consulting-score-note">답을 받고 싶은 질문을 한 가지 이상 적어 주세요.</p>
       {questions.map((question, index) => <div key={index}>
         <Field label={index ? `추가 질문 ${index}` : '상담에서 답을 받고 싶은 질문'}>
@@ -134,7 +139,7 @@ function QualitativeStep({ snapshot, update }) {
       </div>)}
       {questions.length < MAX_CONSULTATION_QUESTIONS && <button className="consulting-v2-secondary" type="button"
         onClick={() => update({ consultationQuestions: [...questions, ''] })}>질문 추가</button>}
-    </div>
+    </div></SurveyFieldScope>
     <Field label="함께 알아야 할 사항 (선택)" field="qualitative.specialCircumstances">
       <textarea maxLength="1000" value={value.specialCircumstances} placeholder="보호자와 의견이 다른 점이나 지원에 영향을 주는 상황을 적어 주세요."
         onChange={event => update({ specialCircumstances: event.target.value })} />
@@ -144,9 +149,9 @@ function QualitativeStep({ snapshot, update }) {
 
 function ConsentStep({ snapshot, update, fileActions }) {
   return <>
-    <SurveyScoreFiles {...fileActions} />
-    <label className="consulting-survey-check" data-survey-field="consent.accurateInformation"><input type="checkbox" disabled={fileActions.readOnly} checked={snapshot.consent.accurateInformation} onChange={event => update({ accurateInformation: event.target.checked })} /> 입력한 정보가 사실과 같음을 확인합니다.</label>
-    <label className="consulting-survey-check" data-survey-field="consent.analysisUse"><input type="checkbox" disabled={fileActions.readOnly} checked={snapshot.consent.analysisUse} onChange={event => update({ analysisUse: event.target.checked })} /> 컨설팅 분석을 위한 자료 이용에 동의합니다.</label>
+    <SurveyFieldScope field="files"><SurveyScoreFiles {...fileActions} /></SurveyFieldScope>
+    <SurveyFieldScope field="consent.accurateInformation"><label className="consulting-survey-check" data-survey-field="consent.accurateInformation"><input type="checkbox" disabled={fileActions.readOnly} checked={snapshot.consent.accurateInformation} onChange={event => update({ accurateInformation: event.target.checked })} /> 입력한 정보가 사실과 같음을 확인합니다.</label></SurveyFieldScope>
+    <SurveyFieldScope field="consent.analysisUse"><label className="consulting-survey-check" data-survey-field="consent.analysisUse"><input type="checkbox" disabled={fileActions.readOnly} checked={snapshot.consent.analysisUse} onChange={event => update({ analysisUse: event.target.checked })} /> 컨설팅 분석을 위한 자료 이용에 동의합니다.</label></SurveyFieldScope>
   </>;
 }
 
@@ -204,7 +209,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     const target = globalThis.history?.state?.surveyField;
     focusField.current = supplement?.fields?.some(({ field }) => field === target) ? target : null;
     const current = revisionEditing ? submission : saved;
-    const initial = loadSnapshot(current?.snapshot, revisionEditing && legacySubmission(submission));
+    const initial = loadSnapshot(current?.snapshot, Boolean(supplement) || revisionEditing && legacySubmission(submission));
     Object.assign(session, {
       caseId: result.data.caseId,
       workflowState: result.data.workflowState,
@@ -214,7 +219,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
       held: result.data.serviceHold === true,
       snapshot: initial,
       saved: initial,
-      needsFormUpgrade: Boolean(!revisionEditing && saved && saved.snapshot?.formVersion !== SURVEY_FORM_VERSION),
+      needsFormUpgrade: Boolean(!supplement && !revisionEditing && saved && saved.snapshot?.formVersion !== SURVEY_FORM_VERSION),
       previousExamScores: hasPreviousExamScores(saved?.snapshot?.scores),
       revision: Number((revisionEditing ? submission.revision : saved?.draftRevision) || 0)
     });
@@ -264,7 +269,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
   const updateScores = React.useCallback(patch => updateSection('scores', patch), [updateSection]);
   const { key, label, guide } = SURVEY_STEPS[step];
   const fileScan = useSurveyFileScan({
-    binding, draft, session: resource.status === 'ready' && key === 'consent' && !viewOnly && !draft.current?.revisionEditing ? draft.current : null,
+    binding, draft, session: resource.status === 'ready' && (key === 'consent' || draft.current?.supplement?.fields?.some(({ field }) => field === 'files')) && !viewOnly && !draft.current?.revisionEditing ? draft.current : null,
     files, setFiles
   });
   const save = async session => {
@@ -279,7 +284,8 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     setSaveState({ kind: 'saving' });
     const result = await (session.revisionEditing
       ? saveV2SurveyRevision(binding, { expectedSurveyRevision: session.revision, changes })
-      : saveV2SurveyDraft(binding, { expectedDraftRevision: session.revision, snapshot: serialized }));
+      : saveV2SurveyDraft(binding, { expectedDraftRevision: session.revision, snapshot: serialized,
+        ...(session.supplement?.requestId ? { supplementRequestId: session.supplement.requestId } : {}) }));
     if (draft.current !== session) return false;
     if (!result.ok) {
       session.conflict = result.code === 'REVISION_CONFLICT';
@@ -328,7 +334,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     if (result.data.status === 'rejected') showNotice('성적표가 보안 검사에서 거절됐어요. 다른 파일을 첨부해 주세요.', true);
   };
   const upload = file => runAction(async session => {
-    if (files.length >= 3) return showNotice('성적표는 최대 3개까지 등록할 수 있습니다.', true);
+    if (files.filter(file => file.status !== 'linked').length >= 3) return showNotice('새 성적표는 최대 3개까지 등록할 수 있습니다. 필요 없는 새 첨부를 지운 뒤 다시 올려주세요.', true);
     setNotice(null);
     const result = await uploadV2ScoreFile(binding, { caseId: session.caseId, file });
     if (draft.current === session) showUploadResult(result);
@@ -348,21 +354,24 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
   });
   const submit = () => runAction(async session => {
     const supplement = session.workflowState === 'SUPPLEMENT_REQUIRED';
-    const readyFiles = files.filter(file => file.status === 'ready' || (supplement && file.status === 'linked'
+    const keepFiles = supplement && session.supplement?.fields?.length && !session.supplement.fields.some(({ field }) => field === 'files');
+    const readyFiles = keepFiles ? files.filter(file => session.submission?.fileIds?.includes(file.fileId)) : files.filter(file => file.status === 'ready' || (supplement && file.status === 'linked'
       && session.submission?.fileIds?.includes(file.fileId) && !excludedFileIds.includes(file.fileId)));
-    const validation = clientSurveyError(session.snapshot, readyFiles);
+    const validation = supplement ? null : clientSurveyError(session.snapshot, readyFiles);
+    if (supplement && (readyFiles.length < 1 || readyFiles.length > 3)) return showNotice('보안 검사를 통과한 성적표를 1~3개 선택해 주세요. 교체할 기존 첨부는 이번 제출에서 제외할 수 있어요.', true);
     if (validation) {
       setStep(SURVEY_STEPS.findIndex(item => item.key === validation.section));
       return showNotice(validation.message, true);
     }
-    if (!globalThis.confirm?.(supplement ? '보완한 기초조사서를 제출할까요?' : '기초조사서를 최종 제출할까요?')) return;
+    if (!globalThis.confirm?.(supplement ? '보완한 답변을 운영팀에 다시 제출할까요?' : '기초조사서를 최종 제출할까요?')) return;
     if (!(await save(session))) return;
     const fileIds = readyFiles.map(file => file.fileId);
     const submission = [session.revision, ...fileIds].join('|');
     if (session.submitAttempt?.inputs !== submission) {
       session.submitAttempt = { inputs: submission, key: idempotencyKey(supplement ? 'survey-supplement' : 'survey-submit') };
     }
-    const result = await submitV2Survey(binding, { fileIds, expectedDraftRevision: session.revision, idempotencyKey: session.submitAttempt.key }, supplement);
+    const result = await submitV2Survey(binding, { fileIds, expectedDraftRevision: session.revision, idempotencyKey: session.submitAttempt.key,
+      ...(session.supplement?.requestId ? { supplementRequestId: session.supplement.requestId } : {}) }, supplement);
     if (draft.current !== session) return;
     if (result.code === 'REVISION_CONFLICT') {
       session.conflict = true;
@@ -420,7 +429,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
   const session = draft.current;
   const { submission, held, revisionEditing, supplement } = session;
   const needsSupplement = session.workflowState === 'SUPPLEMENT_REQUIRED';
-  const legacy = revisionEditing && legacySubmission(submission);
+  const legacy = (revisionEditing || needsSupplement) && legacySubmission(submission);
   const update = patch => updateSection(key, patch);
   const submittedFiles = files.filter(file => submission?.fileIds?.includes(file.fileId));
   const editFiles = files.filter(file => file.status !== 'linked' || submission?.fileIds?.includes(file.fileId));
@@ -429,6 +438,28 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     onUpload: upload, onConfirmUpload: confirmUpload, onDelete: deleteFile, ...fileScan };
   const isLastStep = step === SURVEY_STEPS.length - 1;
   const changeStep = index => { setNotice(null); setStep(index); };
+  if (needsSupplement && supplement?.fields?.length && !viewOnly) {
+    const selectedFileIds = supplement.fields.some(({ field }) => field === 'files')
+      ? editFiles.filter(file => file.status === 'ready' || file.status === 'linked' && !excludedFileIds.includes(file.fileId)).map(file => file.fileId)
+      : submission?.fileIds || [];
+    const renderField = field => {
+      const section = supplementSection(field), update = patch => updateSection(section, patch);
+      if (section === 'studentStatus') return <StudentStatusStep snapshot={snapshot} update={update} />;
+      if (section === 'conditions') return <ConditionsStep snapshot={snapshot} update={update} legacy={false} />;
+      if (section === 'preferences') return <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />;
+      if (section === 'strategy') return <StrategyStep snapshot={snapshot} update={update} />;
+      if (section === 'qualitative') return <QualitativeStep snapshot={snapshot} update={update} />;
+      if (section === 'consent') return <ConsentStep snapshot={snapshot} update={update} fileActions={fileActions} />;
+      if (section === 'scores') return legacy ? <LegacyScoresStep value={snapshot.scores} update={updateScores} raw={snapshot.formVersion === 3} />
+        : <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} actionBusy={actionBusy} autoConvert={false} />;
+      return null;
+    };
+    return <SurveySupplementEditor supplement={supplement} snapshot={snapshot} submission={submission} selectedFileIds={selectedFileIds}
+      busy={actionBusy} held={held} saveState={saveState} notice={notice} renderField={renderField} fieldsRef={fields} headingRef={heading}
+      onBack={() => navigateConsulting(CONSULTING_ROUTES.materials)} onSubmit={submit}
+      onSave={() => runAction(async current => { if (await save(current)) showNotice('임시 저장했어요. 운영팀에는 아직 재제출되지 않았어요.'); })}
+      onReload={() => { if (mayLeave(session)) load(); }} />;
+  }
   return <main className="consulting-survey">
     <header>
       <button type="button" disabled={actionBusy} onClick={() => navigateConsulting(needsSupplement ? CONSULTING_ROUTES.materials : CONSULTING_ROUTES.home)}>
@@ -486,9 +517,8 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
           : <button type="button" className="consulting-v2-primary" disabled={actionBusy || held || saveState.conflict}
             onClick={!isLastStep ? next : revisionEditing ? () => runAction(async current => {
               if (await save(current)) { setViewOnly(true); showNotice('저장된 답변을 확인할 수 있어요.'); }
-            }) : submit}>{!isLastStep ? '저장하고 다음' : revisionEditing ? '변경 저장' : needsSupplement ? '보완 완료 알리기' : '최종 제출'}</button>}
+            }) : submit}>{!isLastStep ? '저장하고 다음' : revisionEditing ? '변경 저장' : needsSupplement ? '보완 답변 재제출' : '최종 제출'}</button>}
       </footer>
-      {!viewOnly && needsSupplement && !isLastStep && <button className="consulting-v2-secondary consulting-survey-refresh" type="button" disabled={actionBusy || held || saveState.conflict} onClick={submit}>보완 완료 알리기</button>}
       {!viewOnly && submission && <button type="button" className="consulting-v2-secondary consulting-survey-refresh" disabled={actionBusy} onClick={viewSaved}>제출한 답변 보기</button>}
     </section>
   </main>;

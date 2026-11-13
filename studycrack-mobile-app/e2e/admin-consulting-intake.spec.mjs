@@ -67,6 +67,25 @@ async function openDetail(page) {
     await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
 }
 
+test('캠페인 설정이 없어도 신청 상세를 보여주고 금액을 추정하거나 입금 승인을 허용하지 않는다', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => { window.__detail.campaignReady = false; window.__detail.application.expectedAmount = null; });
+    await openDetail(page);
+    await expect(page.locator('#consultingDetailSummary')).toContainText('캠페인 설정 확인 필요');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('신청 내용은 정상적으로 조회했습니다.');
+    await expect(page.locator('#consultingApproveBtn')).toBeDisabled();
+    await page.locator('#consultingPaymentAlternatives > summary').click();
+    await expect(page.locator('#consultingHoldReason')).toBeVisible();
+    await page.locator('#consultingHoldReason').selectOption('PAYMENT_NOT_FOUND');
+    await expect(page.locator('#consultingApproveBtn')).toBeDisabled();
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'))).toHaveLength(0);
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await page.evaluate(() => { window.__detail.campaignReady = true; window.__detail.application.expectedAmount = 300000; });
+    await openDetail(page);
+    await expect(page.locator('#consultingApproveBtn')).toBeEnabled();
+    await expect(page.locator('#consultingDetailSummary')).not.toContainText('캠페인 설정 확인 필요');
+});
+
 async function fillPayment(page) {
     await page.locator('#consultingPaidAmount').fill('300000');
     await page.locator('#consultingPaidAt').fill('2026-10-20T10:00');

@@ -1,22 +1,32 @@
 import { postJson } from '../../shared/api/client.js';
 import { parseHomeResponse } from './contracts.js';
 
-export async function preflightConsultingInvite({ applicationId, fetchImpl = globalThis.fetch, publicApiUrl, signal, token } = {}) {
+export async function preflightConsultingInvite({ applicationId, fetchImpl = globalThis.fetch, publicApiUrl, signal, token, timeoutMs = 15000 } = {}) {
   if (typeof fetchImpl !== 'function' || !publicApiUrl) return { ok: false, code: 'CONFIG_UNAVAILABLE' };
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  signal?.addEventListener('abort', cancel, { once: true });
+  if (signal?.aborted) cancel();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   try {
     const response = await fetchImpl(publicApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'omit',
       referrerPolicy: 'no-referrer',
-      signal,
+      signal: controller.signal,
       body: JSON.stringify({ type: 'public_preflight_v2_consulting_invite', data: { applicationId, token } })
     });
     const body = await response.json().catch(() => null);
+    if (controller.signal.aborted) return { ok: false, code: timedOut ? 'TIMEOUT' : 'REQUEST_ABORTED' };
     if (!response.ok || body?.success !== true || !body.data) return { ok: false, code: body?.code || 'INVITE_UNAVAILABLE', status: response.status };
     return { ok: true, data: body.data };
   } catch (error) {
-    return { ok: false, code: error?.name === 'AbortError' ? 'REQUEST_ABORTED' : 'NETWORK_ERROR' };
+    return { ok: false, code: timedOut ? 'TIMEOUT' : error?.name === 'AbortError' ? 'REQUEST_ABORTED' : 'NETWORK_ERROR' };
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', cancel);
   }
 }
 

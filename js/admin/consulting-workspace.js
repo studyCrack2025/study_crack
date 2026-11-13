@@ -82,12 +82,13 @@ function activateConsultingWorkspace(route) {
     if (phase !== consultingWorkspacePhase) { consultingDirectoryCursor = null; consultingDirectoryNextCursor = null; consultingDirectoryPreviousCursors = []; }
     consultingWorkspacePhase = phase;
     document.querySelectorAll('[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
-    if (route.applicationId && route.sourceResponseId) {
+    if (route.caseId || route.applicationId && route.sourceResponseId) {
         closeConsultingExportDialog();
         document.getElementById('consultingDirectoryPanel').hidden = true;
         document.getElementById('consultingAdminTools').open = false;
         document.getElementById('consultingScheduleBoard').open = false;
-        if (consultingWorkspaceStudent && consultingWorkspaceReference?.applicationId === route.applicationId && consultingWorkspaceReference.sourceResponseId === route.sourceResponseId) return showConsultingStudentTab(route.tab);
+        if (consultingWorkspaceStudent && (route.caseId ? consultingWorkspaceReference?.caseId === route.caseId
+            : consultingWorkspaceReference?.applicationId === route.applicationId && consultingWorkspaceReference.sourceResponseId === route.sourceResponseId)) return showConsultingStudentTab(route.tab);
         return loadConsultingWorkspaceStudent(route);
     }
     consultingWorkspaceGeneration++;
@@ -350,23 +351,25 @@ async function downloadConsultingExport() {
 async function loadConsultingWorkspaceStudent(route) {
     const generation = ++consultingWorkspaceGeneration;
     clearConsultingWorkspaceStudent();
-    consultingWorkspaceReference = { applicationId: route.applicationId, sourceResponseId: route.sourceResponseId };
+    consultingWorkspaceReference = route.caseId ? { caseId: route.caseId } : { applicationId: route.applicationId, sourceResponseId: route.sourceResponseId };
     const panel = document.getElementById('consultingStudentPanel'); panel.hidden = false; panel.setAttribute('aria-busy', 'true');
     panel.scrollIntoView({ block: 'start' });
     consultingWorkspaceStatus('consultingStudentStatus', '학생 정보를 불러오고 있습니다.');
     try {
         const data = await requestConsultingAdmin('admin_get_consulting_student', consultingWorkspaceReference);
         if (generation !== consultingWorkspaceGeneration) return;
-        if (data.student?.applicationId !== route.applicationId || data.student?.sourceResponseId !== route.sourceResponseId || data.application?.applicationId !== route.applicationId || !data.contact || data.case && !/^CASE_[0-9a-f-]{36}$/i.test(data.case.caseId || '')) throw new Error('학생 상세를 확인할 수 없습니다.');
+        if ((route.caseId ? data.case?.caseId !== route.caseId || !/^APP_[0-9a-f-]{36}$/i.test(data.application?.applicationId || '') || data.student?.applicationId !== data.application.applicationId
+            : data.student?.applicationId !== route.applicationId || data.student?.sourceResponseId !== route.sourceResponseId || data.application?.applicationId !== route.applicationId)
+            || !data.contact || data.case && !/^CASE_[0-9a-f-]{36}$/i.test(data.case.caseId || '')) throw new Error('학생 상세를 확인할 수 없습니다.');
         consultingWorkspaceStudent = data;
         document.getElementById('consultingStudentTitle').textContent = `${data.contact.studentName || data.student.studentNameMask} · 학생 상세`;
         document.getElementById('consultingStudentState').textContent = `${data.student.stateLabel}${data.student.held ? ' · 보류 중' : ''} · 최근 변경 ${formatConsultingDate(data.student.updatedAt)}`;
         const progress = document.getElementById('consultingStudentProgress'), phaseIndex = Object.keys(consultingPhaseTitles).indexOf(data.student.phase); progress.replaceChildren();
         Object.entries(consultingPhaseTitles).forEach(([phase, title], index) => { const item = document.createElement('li'); item.textContent = title; item.dataset.progress = index < phaseIndex ? 'complete' : index === phaseIndex ? 'current' : 'upcoming'; if (index === phaseIndex) item.setAttribute('aria-current', 'step'); progress.appendChild(item); });
         const next = document.getElementById('consultingStudentNextAction'); next.textContent = `다음 할 일 · ${data.student.nextAction}`;
-        document.getElementById('consultingStudentIdentifiers').textContent = `신청 ${route.applicationId}${data.case ? `\n케이스 ${data.case.caseId}` : ''}\n신청 수정 버전 ${data.application.revision}`;
+        document.getElementById('consultingStudentIdentifiers').textContent = `신청 ${data.application.applicationId}${data.case ? `\n케이스 ${data.case.caseId}` : ''}\n신청 수정 버전 ${data.application.revision}`;
         for (const id of ['consultingScheduleCaseId', 'consultingReportCaseId', 'consultingServiceCaseId']) document.getElementById(id).value = data.case?.caseId || '';
-        renderConsultingApplication(route.applicationId, data);
+        renderConsultingApplication(data.application.applicationId, data);
         await showConsultingStudentTab(route.tab);
         if (generation !== consultingWorkspaceGeneration) return;
         consultingWorkspaceStatus('consultingStudentStatus', '', 'success');
@@ -375,7 +378,7 @@ async function loadConsultingWorkspaceStudent(route) {
         if (generation !== consultingWorkspaceGeneration) return;
         clearConsultingWorkspaceStudent(); panel.hidden = false;
         consultingWorkspaceStatus('consultingStudentStatus', '학생 상세를 불러오지 못했습니다. 목록으로 돌아가 학생을 다시 선택하거나 정보를 새로고침해주세요.', 'error');
-        consultingWorkspaceReference = { applicationId: route.applicationId, sourceResponseId: route.sourceResponseId };
+        consultingWorkspaceReference = route.caseId ? { caseId: route.caseId } : { applicationId: route.applicationId, sourceResponseId: route.sourceResponseId };
     } finally { if (generation === consultingWorkspaceGeneration) panel.setAttribute('aria-busy', 'false'); }
 }
 async function showConsultingStudentTab(requested) {

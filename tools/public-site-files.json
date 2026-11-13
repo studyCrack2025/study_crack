@@ -111,6 +111,7 @@
     "js/admin/consulting.js",
     "js/admin/consulting-intake.js",
     "js/admin/consulting-materials.js",
+    "js/admin/consulting-supplements.js",
     "js/admin/consulting-operations.js",
     "js/admin/consulting-report-source.js",
     "js/admin/consulting-report-facts.js",

@@ -7,16 +7,28 @@
   <meta name="robots" content="noindex,nofollow">
   <script>
     (function() {
-      try {
-        var params = new URLSearchParams(window.location.hash.slice(1));
-        var applicationId = params.get('app') || '';
-        var token = params.get('invite') || '';
-        if (/^APP_[0-9a-f-]{36}$/i.test(applicationId) && /^[A-Za-z0-9_-]{43}$/.test(token) && crypto && typeof crypto.randomUUID === 'function') {
-          var previous = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null');
-          sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify({ version: 1, applicationId: applicationId, token: token, idempotencyKey: previous && previous.applicationId === applicationId && previous.idempotencyKey ? previous.idempotencyKey : 'claim_' + crypto.randomUUID(), capturedAt: Date.now() }));
-        }
-      } catch (_) {}
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+      function captureInvite() {
+        try {
+          var params = new URLSearchParams(window.location.hash.slice(1));
+          var applicationId = params.get('app') || '';
+          var token = params.get('invite') || '';
+          if (window.location.hash) {
+            var previous = null;
+            try { previous = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null'); } catch (_) {}
+            sessionStorage.removeItem('sc_jungsi_invite_v1');
+            if (/^APP_[0-9a-f-]{36}$/i.test(applicationId) && /^[A-Za-z0-9_-]{43}$/.test(token) && typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+              var sameInvite = previous && previous.applicationId === applicationId && previous.token === token && /^claim_[0-9a-f-]{36}$/i.test(previous.idempotencyKey || '');
+              sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify({ version: 1, applicationId: applicationId, token: token, idempotencyKey: sameInvite ? previous.idempotencyKey : 'claim_' + crypto.randomUUID(), capturedAt: Date.now() }));
+            }
+          }
+        } catch (_) {}
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+      captureInvite();
+      window.addEventListener('hashchange', function() {
+        captureInvite();
+        window.dispatchEvent(new Event('studycrack:consulting-invite-changed'));
+      });
     })();
   </script>
   <title>StudyCrack 2027 정시 컨설팅</title>

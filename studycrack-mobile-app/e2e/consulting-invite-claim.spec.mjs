@@ -14,7 +14,9 @@ const linkedHome = {
   session: null, report: null, alerts: []
 };
 
-async function prepare(page, { loggedIn = true, role = 'student', deferStatus = false, inviteError = '', publicError = '', linked = false } = {}) {
+async function prepare(page, { loggedIn = true, role = 'student', deferStatus = false, deferPublic = false, inviteError = '', publicError = '', linked = false } = {}) {
+  let releasePublic;
+  const publicGate = new Promise(resolve => { releasePublic = resolve; });
   await page.addInitScript(({ loggedIn, role, deferStatus, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome }) => {
     loggedIn = loggedIn || sessionStorage.getItem(fixtureLoginKey) === '1';
     localStorage.setItem('userRole', role);
@@ -45,16 +47,88 @@ async function prepare(page, { loggedIn = true, role = 'student', deferStatus = 
   ` }));
   await page.route('https://api.example.invalid/consulting-public', async route => {
     expect(route.request().postDataJSON().type).toBe('public_preflight_v2_consulting_invite');
-    const status = publicError ? 409 : 200;
+    if (deferPublic) await publicGate;
+    const status = publicError === 'SERVER_ERROR' ? 503 : publicError ? 409 : 200;
     await route.fulfill({ status, json: publicError ? { success: false, code: publicError } : { success: true, data: inviteSummary } });
   });
   await page.goto(inviteUrl, { waitUntil: 'domcontentloaded' });
+  return { releasePublic };
 }
 
 const codeInput = page => page.getByLabel('이메일로 받은 10자리 인증코드');
 const claimButton = page => page.getByRole('button', { name: '유료회원 인증하고 시작하기' });
 const claimCalls = page => page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_claim_v2_consulting_invite'));
 const statusCalls = page => page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_get_v2_consulting_invite_status'));
+
+test('브라우저에 손상된 이전 초대가 있어도 새 링크를 열고, 잘못된 새 링크로 이전 신청을 대신 열지 않는다', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('fixture-old-invite-seeded')) {
+      sessionStorage.setItem('fixture-old-invite-seeded', '1');
+      sessionStorage.setItem('sc_jungsi_invite_v1', '{malformed');
+    }
+  });
+  await prepare(page);
+  await expect(codeInput(page)).toBeVisible();
+  expect((await statusCalls(page))[0].data.applicationId).toBe(applicationId);
+  await codeInput(page).fill('0123456789');
+  const secondApplicationId = 'APP_223e4567-e89b-12d3-a456-426614174000';
+  await page.goto(`${startPath}#app=${secondApplicationId}&invite=${'B'.repeat(43)}`, { waitUntil: 'domcontentloaded' });
+  await expect.poll(async () => (await statusCalls(page)).at(-1)?.data.applicationId).toBe(secondApplicationId);
+  await expect(codeInput(page)).toHaveValue('');
+  const checksBeforeInvalid = (await statusCalls(page)).length;
+  await page.goto(`${startPath}#app=APP_another&invite=invalid`, { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('status')).toContainText('유효한 초대 정보를 찾을 수 없습니다.');
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await statusCalls(page)).toHaveLength(checksBeforeInvalid);
+  expect(await claimCalls(page)).toHaveLength(0);
+});
+
+test('알림톡 첫 진입의 공개 조회가 늦어도 오류 문구나 코드 입력을 미리 표시하지 않는다', async ({ page }) => {
+  const { releasePublic } = await prepare(page, { loggedIn: false, deferPublic: true });
+  await expect(page.getByRole('status')).toHaveText('초대 정보를 확인하고 있습니다.');
+  await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
+  await expect(page.getByRole('heading', { name: '컨설팅 이용 인증' }).locator('..')).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByText(/인증 정보를 확인하지 못했습니다/)).toHaveCount(0);
+  await expect(codeInput(page)).toHaveCount(0);
+  releasePublic();
+  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+});
+
+test('일시적인 조회 실패는 코드 오류로 표시하지 않고 직접 재확인 후 입력을 연다', async ({ page }) => {
+  await prepare(page, { loggedIn: false, publicError: 'SERVER_ERROR' });
+  await expect(page.getByRole('status')).toContainText('인증코드가 잘못된 것은 아닙니다.');
+  await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
+  await page.route('https://api.example.invalid/consulting-public', route => route.fulfill({ json: { success: true, data: inviteSummary } }));
+  await page.getByRole('button', { name: '초대 정보 다시 확인' }).click();
+  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  expect(await claimCalls(page)).toHaveLength(0);
+});
+
+for (const when of ['열 때', '인증할 때']) test(`다른 신청이 연결된 계정은 ${when} 차단하고 이전 조사서로 자동 이동하지 않는다`, async ({ page }) => {
+  await prepare(page, { inviteError: when === '열 때' ? 'CONSULTING_ACCOUNT_ALREADY_LINKED' : '' });
+  if (when === '인증할 때') {
+    await page.evaluate(() => { window.__inviteFixture.claimError = 'CONSULTING_ACCOUNT_ALREADY_LINKED'; });
+    await codeInput(page).fill('0123456789'); await claimButton(page).click();
+  }
+  await expect(page.getByRole('status')).toHaveText('이 학생 계정에는 다른 신청의 컨설팅이 이미 연결되어 있습니다. 이번 신청 학생의 별도 계정으로 로그인해주세요.');
+  await expect(codeInput(page)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '회원가입' })).toHaveAttribute('href', /returnUrl=.*start/);
+  expect(await page.evaluate(key => Boolean(sessionStorage.getItem(key)), inviteKey)).toBe(true);
+  await page.evaluate(() => {
+    window.__inviteFixture.inviteError = 'CONSULTING_ACCOUNT_ALREADY_LINKED';
+    window.__inviteFixture.linked = true;
+    history.pushState(null, '', '/2027-jungsi-consulting/home');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page).toHaveURL(new RegExp(`${startPath}$`));
+  await expect(page.getByRole('button', { name: '이전에 연결한 내 컨설팅 보기' })).toBeVisible();
+  expect(await page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_get_v2_consulting_home'))).toHaveLength(0);
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '이전에 연결한 내 컨설팅 보기' }).click();
+  await expect(page).toHaveURL(new RegExp(`${homePath}$`));
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅' })).toBeVisible();
+  expect(await page.evaluate(key => sessionStorage.getItem(key), inviteKey)).toBeNull();
+});
 
 test('첫 초대 진입은 사용할 학생 계정의 로그인이나 회원가입을 안내한다', async ({ page }) => {
   await prepare(page, { loggedIn: false });
@@ -211,10 +285,14 @@ for (const exit of ['navigate', 'logout']) test(`${exit} 이후 도착한 인증
     }
   }, exit);
   if (exit === 'logout') await expect(page.getByRole('link', { name: '로그인', exact: true })).toBeVisible();
-  else await expect(page.getByRole('heading', { name: '등록된 컨설팅이 없습니다' })).toBeVisible();
+  else {
+    await expect(page).toHaveURL(new RegExp(`${startPath}$`));
+    await expect(codeInput(page)).toHaveValue('');
+    expect(await page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_get_v2_consulting_home'))).toHaveLength(0);
+  }
   await page.evaluate(() => window.__inviteFixture.releaseClaim());
   expect(await page.evaluate(key => sessionStorage.getItem(key) !== null, inviteKey)).toBe(true);
-  await expect(codeInput(page)).toHaveCount(0);
+  await expect(codeInput(page)).toHaveCount(exit === 'logout' ? 0 : 1);
   expect(await claimCalls(page)).toHaveLength(1);
 });
 

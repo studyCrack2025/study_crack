@@ -10,11 +10,17 @@ function readAdminLocation(hash = window.location.hash) {
     const [section, query = '', extra] = hash.replace(/^#/, '').split('?');
     if (!ADMIN_SECTIONS.includes(section) || extra !== undefined) return fallback;
     const params = new URLSearchParams(query);
-    if ([...params.keys()].some(key => !['sub', 'phase', 'student', 'record', 'tab'].includes(key) || params.getAll(key).length !== 1)) return fallback;
+    if ([...params.keys()].some(key => !['sub', 'phase', 'student', 'record', 'case', 'tab'].includes(key) || params.getAll(key).length !== 1)) return fallback;
     if (section === 'qna') return { section, sub: ['waiting', 'read', 'done'].includes(params.get('sub')) ? params.get('sub') : 'waiting' };
     if (section === 'notifications') return { section, sub: ['inbox', 'send', 'sent'].includes(params.get('sub')) ? params.get('sub') : 'inbox' };
     if (section !== 'consulting') return { section };
     const route = { section, phase: ADMIN_CONSULTING_PHASES.includes(params.get('phase')) ? params.get('phase') : 'all' };
+    if (params.has('case')) {
+        if (!/^CASE_[0-9a-f-]{36}$/i.test(params.get('case') || '') || params.has('student') || params.has('record')) return route;
+        route.caseId = params.get('case');
+        if (ADMIN_CONSULTING_TABS.includes(params.get('tab'))) route.tab = params.get('tab');
+        return route;
+    }
     if (params.has('student') || params.has('record')) {
         if (!/^APP_[0-9a-f-]{36}$/i.test(params.get('student') || '') || !/^[A-Za-z0-9_-]{8,200}$/.test(params.get('record') || '')) return route;
         Object.assign(route, { applicationId: params.get('student'), sourceResponseId: params.get('record') });
@@ -30,10 +36,11 @@ function writeAdminLocation(route, replace = false) {
     if (route.phase) params.set('phase', route.phase);
     if (route.applicationId) params.set('student', route.applicationId);
     if (route.sourceResponseId) params.set('record', route.sourceResponseId);
+    if (route.caseId) params.set('case', route.caseId);
     if (route.tab) params.set('tab', route.tab);
     const safe = readAdminLocation(`#${route.section}${params.size ? `?${params}` : ''}`);
     const canonical = new URLSearchParams();
-    for (const [key, field] of [['sub', 'sub'], ['phase', 'phase'], ['student', 'applicationId'], ['record', 'sourceResponseId'], ['tab', 'tab']]) if (safe[field]) canonical.set(key, safe[field]);
+    for (const [key, field] of [['sub', 'sub'], ['phase', 'phase'], ['student', 'applicationId'], ['record', 'sourceResponseId'], ['case', 'caseId'], ['tab', 'tab']]) if (safe[field]) canonical.set(key, safe[field]);
     const hash = `#${safe.section}${canonical.size ? `?${canonical}` : ''}`;
     if (window.location.hash === hash) return;
     window.history[replace ? 'replaceState' : 'pushState'](null, '', `${window.location.pathname}${window.location.search}${hash}`);

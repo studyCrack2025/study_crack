@@ -83,6 +83,21 @@
 .consulting-survey-notes > p + ul { margin-top:16px; }
 .consulting-survey-notes li { display:grid; gap:7px; min-width:0; padding:12px; border-radius:8px; background:var(--sc-surface-card); }
 .consulting-survey-notes li button { justify-self:start; }
+.consulting-supplement-legend { margin-bottom:14px; color:var(--sc-ink-muted); font-size:13px; font-weight:700; }
+.consulting-supplement-items { display:grid; min-width:0; gap:20px; }
+.consulting-supplement-item { display:grid; min-width:0; gap:14px; padding:clamp(14px,3vw,22px); border:1px solid var(--sc-line-subtle); border-radius:12px; }
+.consulting-supplement-item[data-changed="true"] { border-color:var(--sc-action-positive-strong); }
+.consulting-supplement-item-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.consulting-supplement-item-heading h2 { min-width:0; margin:0; color:var(--sc-brand-navy); font-size:18px; line-height:1.5; overflow-wrap:anywhere; }
+.consulting-supplement-item-heading span { padding:5px 8px; border-radius:6px; background:var(--sc-surface-subtle); color:var(--sc-ink-muted); font-size:12px; font-weight:700; }
+.consulting-supplement-item[data-changed="true"] .consulting-supplement-item-heading span { color:var(--sc-action-positive-strong); }
+.consulting-supplement-request { margin:0; padding:12px 14px; border-inline-start:3px solid var(--sc-brand-navy); background:var(--sc-surface-subtle); color:var(--sc-ink); font-size:14px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; }
+.consulting-supplement-before { color:var(--sc-ink-muted); font-size:13px; line-height:1.75; }
+.consulting-supplement-before summary { width:fit-content; padding-block:5px; cursor:pointer; }
+.consulting-supplement-before p { margin:8px 0 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.consulting-supplement-submit-note { margin-top:24px; color:var(--sc-ink-muted); font-size:13px; line-height:1.75; }
+.consulting-supplement-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:12px; margin-top:16px; }
+.consulting-supplement-actions button { min-width:0; min-height:48px; }
 .consulting-survey-save-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-top:18px; padding:12px 14px; border:1px solid var(--sc-line-subtle); border-radius:8px; background:var(--sc-surface-subtle); }
 .consulting-survey-save-error p { min-width:0; margin:0; color:var(--sc-state-danger); font-size:.9rem; line-height:1.65; }
 .consulting-survey-answer-list { display:grid; margin:14px 0 18px; min-width:0; }

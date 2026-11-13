@@ -13,6 +13,10 @@ function consultingPaymentIsEditable(application) {
     return application?.applicationState === 'PAYMENT_REVIEW' && ['pending', 'hold', 'input_review'].includes(application.paymentReviewStatus);
 }
 
+function consultingCampaignNeedsRecovery(data) {
+    return data?.campaignReady === false || !Number.isSafeInteger(data?.application?.expectedAmount) || data.application.expectedAmount <= 0;
+}
+
 function renderConsultingInputReview(data) {
     const original = document.getElementById('consultingOriginalSubmission');
     const entries = [];
@@ -36,7 +40,7 @@ function renderConsultingInputReview(data) {
     document.getElementById('consultingInputIssues').textContent = consultingInputNeedsReview(data.application)
         ? `접수는 저장됐습니다. ${fields.join(' · ') || '신청 정보'} 항목을 원본과 대조하고 아래에서 수정·확인해주세요.`
         : '접수 정보에 오타가 있으면 아래에서 수정·확인해주세요.';
-    document.getElementById('consultingApproveBtn').disabled = consultingInputNeedsReview(data.application);
+    document.getElementById('consultingApproveBtn').disabled = consultingInputNeedsReview(data.application) || consultingCampaignNeedsRecovery(data);
 }
 
 function createConsultingCell(text) {
@@ -58,7 +62,7 @@ function setConsultingIntakeBusy(busy) {
     panel?.setAttribute('aria-busy', String(busy));
     panel?.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = busy; });
     const approve = document.getElementById('consultingApproveBtn');
-    if (approve) approve.disabled = busy || consultingInputNeedsReview(currentConsultingApplication?.application);
+    if (approve) approve.disabled = busy || consultingInputNeedsReview(currentConsultingApplication?.application) || consultingCampaignNeedsRecovery(currentConsultingApplication);
 }
 
 function renderConsultingApplication(applicationId, data) {
@@ -76,6 +80,10 @@ function renderConsultingApplication(applicationId, data) {
         ['입금자와의 관계', [consultingOptionLabel(data.payerRelationship, { self: '본인', parent: '부모님', other: '기타' }), data.payerRelationshipDetail].filter(Boolean).join(' · ')],
         ['예정 금액', formatConsultingMoney(application.expectedAmount)],
         ['입금 확인', consultingOptionLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', input_review: '신청 정보 확인 대기', verified: '승인', rejected: '거절' })]
+    ]));
+    if (data.campaignReady === false) appendConsultingRecord(summary, '캠페인 설정 확인 필요', createConsultingFacts([
+        ['조회 상태', '신청 내용은 정상적으로 조회했습니다.'],
+        ['입금 승인', '캠페인 기본 설정과 금액을 복구한 뒤 상세를 새로고침해주세요. 복구 전에는 승인할 수 없습니다.']
     ]));
     const history = [
         ['접수 시각', formatConsultingDate(application.submittedAt || application.createdAt)],

@@ -16,9 +16,10 @@ import './styles/consulting-v2-session.css';
 import './styles/consulting-v2-report.css';
 import { CONSULTING_ROUTES, navigateConsulting, resolveConsultingRoute } from './route-model.js';
 import { getConsultingRuntimeContext } from '../../shared/browser/mobile-runtime.js';
+import { readConsultingInvite } from './invite-model.js';
 
-function LoginScreen() {
-  return <main className="consulting-v2-center"><section className="consulting-v2-card"><ConsultingBrand /><p className="consulting-v2-kicker">나의 컨설팅 이어가기</p><h1>계정으로 시작하기</h1><p className="consulting-v2-status">StudyCrack 계정으로 로그인하고<br />컨설팅 진행 현황을 확인하세요.</p><div className="consulting-v2-actions"><a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>로그인</a><a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.home)}`}>회원가입</a></div></section></main>;
+function LoginScreen({ returnPath }) {
+  return <main className="consulting-v2-center"><section className="consulting-v2-card"><ConsultingBrand /><p className="consulting-v2-kicker">나의 컨설팅 이어가기</p><h1>계정으로 시작하기</h1><p className="consulting-v2-status">StudyCrack 계정으로 로그인하고<br />컨설팅 진행 현황을 확인하세요.</p><div className="consulting-v2-actions"><a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(returnPath)}`}>로그인</a><a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(returnPath)}`}>회원가입</a></div></section></main>;
 }
 
 function PendingScreen({ label }) {
@@ -30,6 +31,7 @@ const PENDING_LABELS = Object.freeze({ survey: '기초조사서', materials: '�
 export default function ConsultingApp() {
   const [pathname, setPathname] = React.useState(() => globalThis.location?.pathname || CONSULTING_ROUTES.home);
   const [sessionRevision, setSessionRevision] = React.useState(0);
+  const [inviteRevision, setInviteRevision] = React.useState(0);
   const path = React.useRef(pathname);
   const surveyLeave = React.useRef(null);
   React.useEffect(() => {
@@ -43,31 +45,37 @@ export default function ConsultingApp() {
       setPathname(next);
     };
     const sessionChanged = () => { surveyLeave.current = null; setSessionRevision(value => value + 1); };
+    const inviteChanged = () => { setInviteRevision(value => value + 1); };
     const pageRestored = event => { if (event.persisted) { routeChanged(); sessionChanged(); } };
     globalThis.addEventListener?.('popstate', routeChanged);
     globalThis.addEventListener?.('studycrack:session-ended', sessionChanged);
+    globalThis.addEventListener?.('studycrack:consulting-invite-changed', inviteChanged);
     globalThis.addEventListener?.('pageshow', pageRestored);
     return () => {
       globalThis.removeEventListener?.('popstate', routeChanged);
       globalThis.removeEventListener?.('studycrack:session-ended', sessionChanged);
+      globalThis.removeEventListener?.('studycrack:consulting-invite-changed', inviteChanged);
       globalThis.removeEventListener?.('pageshow', pageRestored);
     };
   }, []);
   const route = resolveConsultingRoute(pathname);
   const runtime = React.useMemo(getConsultingRuntimeContext, [sessionRevision]);
   const hasSession = runtime.hasClientSession();
+  const hasPendingInvite = Boolean(readConsultingInvite());
   const binding = runtime;
 
   React.useEffect(() => {
-    if (hasSession && ['login', 'unknown'].includes(route.screen)) navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
+    if (hasSession && hasPendingInvite && route.screen !== 'start') navigateConsulting(CONSULTING_ROUTES.start, { replace: true });
+    else if (hasSession && ['login', 'unknown'].includes(route.screen)) navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
     else if (route.protected && !hasSession) navigateConsulting(CONSULTING_ROUTES.login, { replace: true });
-  }, [hasSession, route.protected, route.screen]);
+  }, [hasSession, hasPendingInvite, route.protected, route.screen]);
 
-  if (route.screen === 'start') return <ConsultingStartScreen binding={binding} hasSession={hasSession} />;
+  if (route.screen === 'start') return <ConsultingStartScreen key={`${sessionRevision}:${inviteRevision}`} binding={binding} hasSession={hasSession} />;
+  if (hasSession && hasPendingInvite) return <main className="consulting-v2-center"><p className="consulting-v2-loading" role="status">받은 초대의 신청 정보를 확인하고 있습니다.</p></main>;
   if (route.screen === 'login' || (route.protected && !hasSession) || route.screen === 'unknown') {
     return hasSession
       ? <main className="consulting-v2-center"><p className="consulting-v2-loading" role="status">나의 컨설팅을 열고 있습니다.</p></main>
-      : <LoginScreen />;
+      : <LoginScreen returnPath={hasPendingInvite ? CONSULTING_ROUTES.start : CONSULTING_ROUTES.home} />;
   }
   if (route.screen === 'home') return <ConsultingHomeScreen binding={binding} />;
   if (route.screen === 'survey') return <ConsultingSurveyScreen binding={binding} leaveGuard={surveyLeave} />;

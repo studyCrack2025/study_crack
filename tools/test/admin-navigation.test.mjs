@@ -34,3 +34,12 @@ test('student selection keeps only opaque references and restores the selected d
     vm.runInContext('adminNavigationReady = true', h.ctx); h.events.hashchange(); assert.deepEqual(h.calls.at(-1), ['section', 'consulting']);
     h.events['studycrack:session-ended'](); h.events.hashchange(); assert.equal(h.calls.length, 1);
 });
+
+test('supplement alerts restore an authorized case detail without accepting mixed or personal references', () => {
+    const h = harness(), caseId = 'CASE_22222222-2222-4222-8222-222222222222';
+    const route = { section: 'consulting', phase: 'onboarding', caseId, tab: 'materials' };
+    h.ctx.write(route);
+    assert.deepEqual(h.json(h.ctx.parse()), route);
+    assert.equal(h.ctx.parse('#consulting?case=private@example.invalid').caseId, undefined);
+    assert.equal(h.ctx.parse(`#consulting?case=${caseId}&student=APP_22222222-2222-4222-8222-222222222222&record=RESPONSE_SYNTHETIC`).caseId, undefined);
+});

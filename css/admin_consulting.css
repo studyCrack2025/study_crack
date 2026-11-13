@@ -278,3 +278,19 @@
 .consulting-report-pdf-delivery li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 16px; padding:14px; border:1px solid var(--admin-border,#dce2eb); border-radius:10px; background:var(--admin-card-bg,#fff); font-size:.85rem; line-height:1.7; }
 .consulting-report-pdf-delivery span { color:var(--admin-muted,#516078); overflow-wrap:anywhere; }
 #consultingReportPdfWithdrawReason { display:block; box-sizing:border-box; width:100%; padding:12px; margin:10px 0; border:1px solid var(--admin-border,#cad4e2); border-radius:9px; font:inherit; line-height:1.7; resize:vertical; }
+.consulting-alert-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; min-height:22px; padding:1px 6px; margin-inline-start:6px; border-radius:99px; background:#c13f4b; color:#fff; font-size:.75rem; font-weight:750; }
+.consulting-alert-badge[hidden] { display:none; }
+.consulting-supplement-alerts { display:grid; gap:12px; margin-bottom:26px; padding:clamp(16px,3vw,24px); border:1px solid var(--admin-border,#dce2eb); border-inline-start:4px solid #234c71; border-radius:14px; background:var(--admin-card-bg,#fff); min-width:0; }
+.consulting-supplement-alerts[hidden] { display:none; }
+.consulting-supplement-alerts h2 { margin:3px 0 0; font-size:1.15rem; color:var(--admin-text,#1e293b); }
+.consulting-supplement-alerts ul { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+.consulting-supplement-alerts li { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px 16px; padding-top:12px; border-top:1px solid var(--admin-border,#dce2eb); }
+.consulting-supplement-alerts li > div { display:grid; min-width:0; gap:5px; overflow-wrap:anywhere; }
+.consulting-supplement-alerts li span { color:var(--admin-muted,#516078); font-size:.82rem; }
+.consulting-supplement-response { padding:18px; margin:18px 0; border:1px solid #bfd8d2; border-radius:12px; background:#f3faf7; }
+.consulting-supplement-response[hidden] { display:none; }
+.consulting-supplement-response h3 { margin:0 0 8px; font-size:1rem; color:#175348; }
+.consulting-supplement-response ul { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 0; padding:0; list-style:none; }
+.consulting-supplement-comparison { margin-top:12px; padding:12px; border:1px solid #bfd8d2; border-radius:9px; background:#f3faf7; font-weight:400; }
+.consulting-supplement-comparison summary { color:#175348; font-size:.85rem; font-weight:700; cursor:pointer; }
+.consulting-supplement-comparison > p { margin:10px 0 0; font-size:.85rem; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }

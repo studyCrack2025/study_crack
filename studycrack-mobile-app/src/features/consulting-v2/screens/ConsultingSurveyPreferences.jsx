@@ -2,6 +2,7 @@ import React from 'react';
 import { getMobileApiBinding } from '../../../shared/browser/mobile-runtime.js';
 import { fetchV2SurveyUniversities } from '../survey-api.js';
 import { ADDITIONAL_PREFERENCE_MAX, EMPTY_RANKED_CHOICE, hasRankedChoice, MAX_RANKED_CHOICES } from '../survey-model.js';
+import { SurveyFieldContext, SurveyFieldScope } from './SurveyFieldScope.jsx';
 
 const TRACKS = [
   '인문·어문', '사회과학', '경영·경제', '자연과학·수학', '공학', '컴퓨터·소프트웨어', '농림·수산·생명',
@@ -77,11 +78,14 @@ function UniversityPicker({ field, university, catalog, query, editing, onSearch
 }
 
 export function ConsultingSurveyPreferences({ value, update }) {
+  const scope = React.useContext(SurveyFieldContext);
+  const needsCatalog = !scope || scope.some(field => field.endsWith('.university'));
   const [catalog, setCatalog] = React.useState({ status: 'loading', universities: [] });
   const [pickers, setPickers] = React.useState([]);
   const [attempt, setAttempt] = React.useState(0);
 
   React.useEffect(() => {
+    if (!needsCatalog) return undefined;
     const controller = new AbortController();
     fetchV2SurveyUniversities({ ...getMobileApiBinding('analysis', 'analysisApiUrl'), signal: controller.signal }).then(result => {
       if (controller.signal.aborted) return;
@@ -89,7 +93,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
       setCatalog({ status: 'ready', universities: result.data });
     });
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, needsCatalog]);
 
   const choices = value.rankedChoices.length ? value.rankedChoices : [EMPTY_RANKED_CHOICE];
   const changeChoice = (index, patch) => update({
@@ -97,18 +101,18 @@ export function ConsultingSurveyPreferences({ value, update }) {
   });
   const changePicker = (index, patch) => setPickers(items => choices.map((_, position) => position === index ? { ...items[position], ...patch } : items[position]));
   return <div className="consulting-survey-preferences">
-    <p className="consulting-score-note"><strong>최대 {MAX_RANKED_CHOICES}지망</strong>까지 적을 수 있어요. 대학을 검색하거나 희망 계열을 골라주세요.</p>
-    {catalog.status === 'loading' && <p className="consulting-score-note" role="status">대학 목록을 불러오고 있어요.</p>}
-    {catalog.status === 'error' && <div className="consulting-score-lookup">
+    {!scope && <p className="consulting-score-note"><strong>최대 {MAX_RANKED_CHOICES}지망</strong>까지 적을 수 있어요. 대학을 검색하거나 희망 계열을 골라주세요.</p>}
+    {needsCatalog && catalog.status === 'loading' && <p className="consulting-score-note" role="status">대학 목록을 불러오고 있어요.</p>}
+    {needsCatalog && catalog.status === 'error' && <div className="consulting-score-lookup">
       <p className="consulting-score-note" role="status">대학 목록을 불러오지 못했어요. 아래 추가 희망에 대학명을 적을 수 있어요.</p>
       <button type="button" className="consulting-v2-secondary" onClick={() => {
         setCatalog({ status: 'loading', universities: [] });
         setAttempt(count => count + 1);
       }}>대학 목록 다시 불러오기</button>
     </div>}
-    {choices.map((choice, index) => <fieldset key={index} className="consulting-survey-preference-rank">
+    {choices.map((choice, index) => (!scope || scope.some(field => field.startsWith(`preferences.rankedChoices.${index}.`))) && <fieldset key={index} className="consulting-survey-preference-rank">
       <legend>{index + 1}지망</legend>
-      <UniversityPicker
+      <SurveyFieldScope field={`preferences.rankedChoices.${index}.university`}><UniversityPicker
         field={`preferences.rankedChoices.${index}.university`}
         university={choice.university} catalog={catalog}
         query={pickers[index]?.query || ''} editing={pickers[index]?.editing === true}
@@ -118,18 +122,18 @@ export function ConsultingSurveyPreferences({ value, update }) {
           changeChoice(index, { university });
           changePicker(index, { editing: false, query: '' });
         }}
-      />
-      <ChoiceSelect label="희망 계열" field={`preferences.rankedChoices.${index}.track`} options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} />
+      /></SurveyFieldScope>
+      <SurveyFieldScope field={`preferences.rankedChoices.${index}.track`}><ChoiceSelect label="희망 계열" field={`preferences.rankedChoices.${index}.track`} options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} /></SurveyFieldScope>
       {choice.region && <p className="consulting-score-note">이전에 입력한 희망 지역 · {choice.region}</p>}
-      {choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {
+      {!scope && choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {
         update({ rankedChoices: choices.filter((_, position) => position !== index) });
         setPickers(items => items.filter((_, position) => position !== index));
       }}>지망 삭제</button>}
     </fieldset>)}
-    {choices.length < MAX_RANKED_CHOICES && <button className="consulting-v2-secondary consulting-survey-add-rank" type="button" disabled={!choices.every(hasRankedChoice)} onClick={() => update({ rankedChoices: [...choices, EMPTY_RANKED_CHOICE] })}>＋ {choices.length + 1}지망 추가</button>}
-    <label className="consulting-survey-field" data-survey-field="preferences.additionalPreference">
+    {!scope && choices.length < MAX_RANKED_CHOICES && <button className="consulting-v2-secondary consulting-survey-add-rank" type="button" disabled={!choices.every(hasRankedChoice)} onClick={() => update({ rankedChoices: [...choices, EMPTY_RANKED_CHOICE] })}>＋ {choices.length + 1}지망 추가</button>}
+    <SurveyFieldScope field="preferences.additionalPreference"><label className="consulting-survey-field" data-survey-field="preferences.additionalPreference">
       <span>추가 희망 (선택)</span>
       <textarea maxLength={ADDITIONAL_PREFERENCE_MAX} placeholder="목록에 없는 희망이나 꼭 검토하고 싶은 대학·학과를 적어주세요." value={value.additionalPreference} onChange={event => update({ additionalPreference: event.currentTarget.value })} />
-    </label>
+    </label></SurveyFieldScope>
   </div>;
 }
