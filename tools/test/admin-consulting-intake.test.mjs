@@ -219,7 +219,9 @@ test('all intake actions lock together and success survives a failed detail refr
     assert.equal(new Date(data.paidAt).toISOString(), data.paidAt);
     pending.resolve({ applicationState: 'INVITED', revision: 2 });
     await approve;
-    assert.equal(get('consultingApproveBtn').disabled, false);
+    assert.equal(get('consultingApproveBtn').disabled, true);
+    await run('approveConsultingPayment()');
+    assert.equal(calls.filter(call => call.type === 'admin_verify_manual_payment').length, 1);
     assert.equal(get('consultingDetailSummary').textContent, '');
     assert.match(get('consultingActionStatus').textContent, /발송 예약 완료/);
     assert.match(get('consultingActionStatus').textContent, /별도 확인/);
