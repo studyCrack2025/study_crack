@@ -58,8 +58,8 @@ test('초대 취소 확인은 정확한 문구를 받고 취소된 신청을 별
 const applicationId = n => `APP_${String(n).padStart(8, '0')}-1111-4111-8111-111111111111`;
 const caseId = 'CASE_22222222-2222-4222-8222-222222222222';
 const record = n => `RESPONSE_SYNTHETIC_${n}`;
-const scripts = ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/notices.js', 'js/admin/consulting.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-materials.js', 'js/admin/consulting-scheduling.js', 'js/admin/consulting-operations.js', 'js/admin/consulting-workspace.js'];
-async function prepare(page, hash = '') {
+const scripts = ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/notices.js', 'js/admin/consulting.js', 'js/admin/consulting-supplements.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-materials.js', 'js/admin/consulting-scheduling.js', 'js/admin/consulting-operations.js', 'js/admin/consulting-workspace.js'];
+async function prepare(page, hash = '', configure = () => {}) {
     const response = await page.request.get('/admin_index.html'); expect(response.ok()).toBe(true);
     const html = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
     const bootstrap = `<script>
@@ -126,8 +126,11 @@ async function prepare(page, hash = '') {
             if (state.exportStatus) return route.fulfill({ status: state.exportStatus, json: { success: false } });
             data = { csv: '\uFEFF"진행 단계","전화번호"\r\n"입금 확인 대기","01000000001"\r\n"보고서 검수","01000000002"\r\n',
                 rowCount: request.data.students.length, fileName: 'jungsi-consulting-20261110T112233Z.csv' };
+        } else if (request.type === 'admin_list_v2_material_review') {
+            if (state.alertError) return route.fulfill({ status: state.alertError, json: { success: false, code: 'FORBIDDEN' } });
+            data = { items: state.supplementAlerts || [], nextCursor: null };
         } else if (request.type === 'admin_get_consulting_student') {
-            const index = state.students.findIndex(item => item.application.applicationId === request.data.applicationId);
+            const index = state.students.findIndex(item => request.data.caseId ? item.case?.caseId === request.data.caseId : item.application.applicationId === request.data.applicationId);
             data = { ...structuredClone(state.students[index]), student: summary(state.students[index], index + 1) };
         } else if (request.type === 'admin_revoke_consulting_invite') {
             const current = state.students.find(item => item.application.applicationId === request.data.applicationId);
@@ -180,6 +183,7 @@ async function prepare(page, hash = '') {
                 data.supplementFields = state.supplementFields;
                 data.supplement = state.supplement;
             }
+            if (state.supplementReview) { data.supplementReview = state.supplementReview; data.submission.revision = 1; data.submission.supplementAttempt = 1; }
         } else if (request.type === 'admin_request_v2_supplement') {
             const current = state.students[1].case;
             current.workflowState = 'SUPPLEMENT_REQUIRED';
@@ -189,6 +193,7 @@ async function prepare(page, hash = '') {
             data = { caseId, notificationQueued: true };
         } else if (request.type === 'admin_verify_v2_materials') {
             state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
+            state.supplementAlerts = [];
             data = { caseId, notificationQueued: true };
         } else if (request.type === 'admin_get_written_schedule_board') {
             if (state.boardError) return route.fulfill({ status: state.boardError, contentType: 'application/json', body: JSON.stringify({ success: false, code: 'FORBIDDEN', error: 'Synthetic unavailable' }) });
@@ -238,6 +243,7 @@ async function prepare(page, hash = '') {
         if (state.failMutation && request.type === 'admin_review_application_input') return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
         await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data, notifications: [], sentNotices: [], tutors: [], students: [] }) });
     });
+    configure(state);
     await page.goto(`/admin${hash}`);
     return state;
 }
@@ -742,4 +748,53 @@ test('이미 보낸 보완 요청은 해당 답변 옆에 표시하고 읽기 �
     await expect(note.locator('img')).toHaveCount(0);
     await expect(page.locator('#consultingMaterialSurvey textarea')).toHaveCount(0);
     await expect(page.getByRole('button', { name: '보완 요청 미리보기', exact: true })).toBeHidden();
+});
+
+test('관리자 첫 진입부터 보완 재제출을 알리고 알림에서 수정 전후를 바로 연다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementAlerts = [{ caseId, studentNameMask: '둘*생', attempt: 1, submittedAt: '2026-11-14T01:00:00.000Z', changedCount: 1 }];
+    state.supplementReview = { attempt: 1, submittedAt: '2026-11-14T01:00:00.000Z', comparisonBasis: 'request', fields: [
+        { field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 적어주세요.', before: '서울', after: '서울 송파구', changed: true },
+        { field: 'qualitative.consultationQuestions', label: '상담에서 답을 받고 싶은 질문', note: '비교할 대학을 적어주세요.', before: ['가군 질문', '나군 질문'], after: ['가군 질문', '나군 질문'], changed: false }
+    ] };
+    await page.goto('/admin');
+    await expect(page.locator('#consultingSupplementAlerts')).toBeVisible();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toHaveText('1');
+    await expect(page.locator('#consultingSupplementAlerts')).toContainText('둘*생 · 1차 보완 답변');
+    await page.getByRole('button', { name: '둘*생 보완 수정 내역 확인' }).click();
+    await expect(page).toHaveURL(/case=CASE_22222222.*tab=materials/);
+    await expect(page.locator('#consultingSupplementResponse')).toContainText('요청 2개 · 수정 1개 · 변경 없음 1개');
+    const comparison = page.locator('#consultingSurveyPanel-studentStatus .consulting-supplement-comparison');
+    await expect(comparison).toContainText('요청 전 답변');
+    await expect(comparison).toContainText('서울 송파구');
+    await expect(comparison).toContainText('<img src=x> 구 단위로 적어주세요.');
+    await expect(comparison.locator('img')).toHaveCount(0);
+    await page.locator('#consultingSupplementResponse').getByRole('button', { name: '상담에서 답을 받고 싶은 질문 · 변경 없음' }).click();
+    await expect(page.locator('#consultingSurveyPanel-qualitative')).toBeVisible();
+    await page.reload();
+    await expect(page.locator('#consultingStudentTitle')).toHaveText('둘째 합성 학생 · 학생 상세');
+    await page.setViewportSize({ width: 320, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('admin-supplement-response-320.png'), fullPage: true });
+});
+
+test('보완 알림은 화면 복귀 때 갱신하고 조회 실패는 자동 반복하지 않는다', async ({ page }) => {
+    await page.clock.install();
+    const state = await prepare(page, '', state => { state.alertError = 403; });
+    await expect(page.locator('#consultingSupplementAlerts')).toContainText('알림을 확인하지 못했습니다');
+    expect(state.calls.filter(item => item.type === 'admin_list_v2_material_review')).toHaveLength(1);
+    await page.clock.runFor(95000);
+    expect(state.calls.filter(item => item.type === 'admin_list_v2_material_review')).toHaveLength(1);
+    state.alertError = 0;
+    state.supplementAlerts = [{ caseId, studentNameMask: '둘*생', attempt: 2, submittedAt: '2026-11-14T01:00:00.000Z', changedCount: 2 }];
+    await page.getByRole('button', { name: '알림 목록 새로고침' }).click();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toHaveText('1');
+    state.supplementAlerts = [];
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(page.locator('#consultingSupplementAlerts')).toBeHidden();
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    await page.clock.runFor(95000);
+    await expect(page.locator('#consultingSupplementAlertList')).toBeEmpty();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toBeHidden();
 });

@@ -83,6 +83,7 @@ async function initAdminPage(userId) {
         if (joinedToEl) joinedToEl.value = savedSearch.joinedTo || '';
     }
     fetchUnreadNotiCount();
+    if (typeof startConsultingSupplementAlerts === 'function') startConsultingSupplementAlerts();
     if (adminNavigationReady) restoreAdminNavigation();
     else loadAdminStats(userId);
 

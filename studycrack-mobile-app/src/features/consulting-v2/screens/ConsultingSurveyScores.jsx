@@ -4,6 +4,7 @@ import { scoreChoiceLabel } from '../../analysis/score-model.js';
 import { applyScoreConversions, clearConvertedScores, EMPTY_SCORE_METRICS, labelScoreRows, scoreConversionBatch } from '../score-entry-model.js';
 import { convertV2SurveyScores } from '../survey-api.js';
 import { FOREIGN_LANGUAGE_SUBJECTS, inquirySubject, isGradeOnlyArea, SPLIT_SCORE_LIMITS, splitRawTotal } from '../survey-model.js';
+import { SurveyFieldContext, SurveyFieldScope } from './SurveyFieldScope.jsx';
 
 const optionGroups = {
   korean: [['', ['화법과작문', '언어와매체']]],
@@ -95,7 +96,8 @@ function ScoreCard({ row, label, field, change }) {
 }
 
 export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores, autoConvert = true }) {
-  const batch = actionBusy || !autoConvert ? null : scoreConversionBatch(value);
+  const scope = React.useContext(SurveyFieldContext);
+  const batch = actionBusy || !autoConvert || scope ? null : scoreConversionBatch(value);
   const batchKey = batch && JSON.stringify(batch);
   React.useEffect(() => {
     if (!batchKey) return undefined;
@@ -122,13 +124,13 @@ export function ConsultingSurveyScores({ value, update, binding, actionBusy, pre
   return <div className="consulting-score-entry">
     <div className="consulting-score-exam"><span>입력 대상</span><strong>2027학년도 수능</strong></div>
     {previousExamScores && <p className="consulting-score-note" role="status">이번 수능에 응시한 성적을 입력해 주세요. 이전에 다른 시험으로 저장한 점수는 가져오지 않았어요.</p>}
-    <div className="consulting-score-tools">
+    {!scope && <div className="consulting-score-tools">
       <div className="consulting-score-subhead"><h2>과목별 성적</h2><span className="consulting-score-pill">선택 입력</span></div>
       <p className="consulting-score-note">국어·수학·탐구는 원점수, 영어·한국사는 등급을 적어주세요. 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>
-    </div>
-    <div className="consulting-score-list">{value.records.map((row, index) =>
-      <ScoreCard key={labels[index]} row={row} label={labels[index]}
-        field={`scores.${row.area === 'inquiry' ? `inquiry${++inquiryNumber}` : row.area}`} change={patch => changeRow(index, patch)} />
-    )}</div>
+    </div>}
+    <div className="consulting-score-list">{value.records.map((row, index) => {
+      const field = `scores.${row.area === 'inquiry' ? `inquiry${++inquiryNumber}` : row.area}`;
+      return <SurveyFieldScope key={labels[index]} field={field}><ScoreCard row={row} label={labels[index]} field={field} change={patch => changeRow(index, patch)} /></SurveyFieldScope>;
+    })}</div>
   </div>;
 }

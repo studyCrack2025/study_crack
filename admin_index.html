@@ -91,7 +91,7 @@
             </li>
 
             <li class="menu-item">
-                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅</a>
+                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅 <span id="consultingSupplementAlertBadge" class="consulting-alert-badge" hidden>0</span></a>
             </li>
 
             <li class="menu-item logout">
@@ -101,6 +101,12 @@
     </nav>
 
     <main class="main-content">
+            <section id="consultingSupplementAlerts" class="consulting-supplement-alerts" aria-labelledby="consultingSupplementAlertTitle" hidden>
+                <div class="consulting-heading-row"><div><p class="consulting-caption">학생 보완 재제출 · 검토 대기</p><h2 id="consultingSupplementAlertTitle">확인할 보완 답변</h2></div><button id="consultingSupplementAlertRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingSupplementAlerts()">알림 목록 새로고침</button></div>
+                <ul id="consultingSupplementAlertList"></ul>
+                <p id="consultingSupplementAlertStatus" class="consulting-caption" role="status" aria-live="polite"></p>
+                <button id="consultingSupplementAlertMore" class="consulting-btn consulting-btn-secondary" type="button" onclick="loadConsultingSupplementAlerts(true)" hidden>다음 보완 알림 보기</button>
+            </section>
             
             <div id="section-dashboard" class="content-section active">
             <h1 class="page-title">📊 전체 요약 & 심층 지표</h1>
@@ -565,6 +571,11 @@
                     <p id="consultingSurveyReviewNotice" class="consulting-caption" aria-live="polite"></p>
                 </div>
                 <div id="consultingMaterialSummary" class="consulting-material-meta"></div>
+                <section id="consultingSupplementResponse" class="consulting-supplement-response" aria-labelledby="consultingSupplementResponseTitle" hidden>
+                    <h3 id="consultingSupplementResponseTitle">학생 보완 답변</h3>
+                    <p id="consultingSupplementResponseSummary" class="consulting-caption"></p>
+                    <ul id="consultingSupplementResponseItems"></ul>
+                </section>
                 <details id="consultingSurveyChangesSinceReview" class="consulting-original" hidden><summary>검수 이후 변경된 항목</summary><div id="consultingSurveyReviewChanges"></div></details>
                 <details id="consultingSurveyHistory" class="consulting-original" ontoggle="openConsultingSurveyHistory(this.open)" hidden>
                     <summary>수정 이력</summary>
@@ -973,6 +984,7 @@
     <script src="/js/admin/matching.js?v=20260524c"></script>
     <script src="/js/admin/modals.js?v=20260524c"></script>
     <script src="/js/admin/consulting.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-supplements.js?v=20261114a"></script>
     <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>

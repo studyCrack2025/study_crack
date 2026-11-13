@@ -21,6 +21,102 @@ const states = [
 ];
 const homeFor = ([workflowState, nextAction, current]) => ({ available: true, workflowState, nextAction, nextDueAt: null, progress: steps.map((step, index) => ({ step, status: index < current ? 'completed' : index === current ? 'current' : 'upcoming' })), session: null, report: null, alerts: [] });
 
+function pendingSupplement(fixture, fields) {
+  const snapshot = createEmptySurvey();
+  Object.assign(snapshot.studentStatus, { applicantType: 'graduate', graduationYear: 2026, schoolName: '기존 학교', residenceRegion: '서울' });
+  snapshot.qualitative.consultationQuestions = ['기존 상담 질문'];
+  snapshot.consent = { accurateInformation: true, analysisUse: true };
+  fixture.survey = { ...fixture.survey, workflowState: 'SUPPLEMENT_REQUIRED',
+    draft: { snapshot, draftRevision: 3 }, submission: { snapshot, fileIds: ['FILE_previous'], revision: 0, submittedAt: '2026-11-10T03:00:00.000Z' },
+    files: [{ fileId: 'FILE_previous', displayName: '기존 성적표.pdf', status: 'linked' }],
+    supplement: { requestId: 'TASK_synthetic', fields } };
+}
+
+test('보완은 요청한 답변만 편집하고 임시 저장과 재제출을 명확히 구분한다', async ({ page }, testInfo) => {
+  const fixture = await prepare(page);
+  pendingSupplement(fixture, [{ field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 적어주세요.' }]);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/survey');
+  await expect(page.getByRole('textbox', { name: '거주 지역', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '학교명', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '상담에서 답을 받고 싶은 질문' })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '수능 성적표 첨부' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '저장하고 다음' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '보완 답변 재제출' })).toBeDisabled();
+  await expect(page.locator('.consulting-supplement-request')).toHaveText('<img src=x> 구 단위로 적어주세요.');
+  await expect(page.locator('.consulting-supplement-request img')).toHaveCount(0);
+  await page.getByRole('textbox', { name: '거주 지역', exact: true }).fill('서울 송파구');
+  await expect(page.locator('.consulting-supplement-item-heading')).toContainText('수정함');
+  expect(await page.evaluate(() => window.__design.saves)).toHaveLength(0);
+  await page.getByRole('button', { name: '임시 저장', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '운영팀에는 아직 재제출되지 않았어요.' })).toBeVisible();
+  expect(await page.evaluate(() => window.__design.submissions)).toHaveLength(0);
+  const save = await page.evaluate(() => window.__design.saves[0]);
+  expect(save.supplementRequestId).toBe('TASK_synthetic');
+  expect(save.snapshot.studentStatus.schoolName).toBe('기존 학교');
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('student-supplement-only-320.png'), fullPage: true });
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '보완 답변 재제출' }).click();
+  await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
+  await expect(page.getByRole('region', { name: '보완 재제출 접수 내역' })).toContainText('거주 지역');
+  await expect(page.getByRole('region', { name: '보완 재제출 접수 내역' })).toContainText('접수 완료');
+  expect(await page.evaluate(() => window.__design.submissions[0].fileIds)).toEqual(['FILE_previous']);
+});
+
+test('성적·지원 조건·희망 계열 보완은 같은 항목의 다른 입력까지 열지 않는다', async ({ page }) => {
+  const fixture = await prepare(page);
+  pendingSupplement(fixture, [
+    { field: 'scores.english', label: '영어 성적', note: '영어 등급을 확인해주세요.' },
+    { field: 'conditions.dormitoryAllowed', label: '기숙사 생활', note: '기숙사 가능 여부를 확인해주세요.' },
+    { field: 'preferences.rankedChoices.0.track', label: '1지망 계열', note: '희망 계열을 선택해주세요.' }
+  ]);
+  await page.goto('/2027-jungsi-consulting/survey');
+  await expect(page.getByRole('group', { name: '영어', exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: '국어', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: '기숙사 생활 가능' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: '재수 가능성' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: '희망 계열' })).toBeVisible();
+  await expect(page.getByRole('searchbox')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '지망 삭제' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /지망 추가/ })).toHaveCount(0);
+  expect(await page.evaluate(() => window.__design.calls.filter(type => type === 'get_univ_list_only'))).toHaveLength(0);
+});
+
+test('성적표만 보완할 때 기존 세 첨부를 보존하고 새 파일로 교체할 수 있다', async ({ page }) => {
+  const fixture = await prepare(page);
+  await page.route('**/__score-photo-upload', route => route.fulfill({ status: 204, body: '' }));
+  pendingSupplement(fixture, [{ field: 'files', label: '성적표 첨부', note: '선명한 성적표로 바꿔주세요.' }]);
+  fixture.survey.files = [1, 2, 3].map(index => ({ fileId: `FILE_old_${index}`, displayName: `기존 성적표 ${index}.pdf`, status: 'linked' }));
+  fixture.survey.submission.fileIds = fixture.survey.files.map(file => file.fileId);
+  await page.goto('/2027-jungsi-consulting/survey');
+  await expect(page.getByRole('textbox', { name: '거주 지역' })).toHaveCount(0);
+  for (const checkbox of await page.getByRole('checkbox', { name: /보완 제출에 포함/ }).all()) await checkbox.uncheck();
+  await page.getByLabel('성적표 파일', { exact: true }).setInputFiles({ name: '교체 성적표.jpeg', mimeType: 'image/jpeg', buffer: Buffer.from('synthetic-upload') });
+  await expect(page.getByText('교체 성적표.jpeg', { exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.photo.status = 'ready'; });
+  await expect(page.getByText('보안 검사 통과', { exact: true })).toBeVisible();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '보완 답변 재제출' }).click();
+  await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
+  const submitted = await page.evaluate(() => window.__design.submissions[0]);
+  expect(submitted.fileIds).toEqual(['FILE_synthetic']);
+  expect(await page.evaluate(() => window.__design.survey.files.filter(file => file.status === 'linked').length)).toBe(3);
+});
+
+test('동의 재확인 보완은 이미 동의한 값을 바꾸지 않고도 명확히 재제출한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  pendingSupplement(fixture, [{ field: 'consent.analysisUse', label: '분석 이용 동의', note: '자료 이용 동의를 다시 확인해주세요.' }]);
+  await page.goto('/2027-jungsi-consulting/survey');
+  await expect(page.getByRole('checkbox', { name: '컨설팅 분석을 위한 자료 이용에 동의합니다.' })).toBeChecked();
+  await expect(page.getByText('내용이 같으면 운영팀에는 변경 없음으로 표시돼요.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('region', { name: '수능 성적표 첨부' })).toHaveCount(0);
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '보완 답변 재제출' }).click();
+  await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
+  expect(await page.evaluate(() => window.__design.survey.submission.snapshot.consent.analysisUse)).toBe(true);
+});
+
 async function prepare(page, { loggedIn = true } = {}) {
   const state = { home: homeFor(states[1]), error: false, defer: false, campaign: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'open', price: 300000, applicationUrl: 'https://docs.google.com/forms/d/e/synthetic/viewform' } };
   state.survey = { caseId: 'CASE_synthetic', workflowState: 'ONBOARDING', draft: null, files: [] };
@@ -98,7 +194,9 @@ async function prepare(page, { loggedIn = true } = {}) {
           return new Response(JSON.stringify({success:false,code:'SERVER_ERROR'}),{status:503});
         }
         f.survey.workflowState='MATERIAL_REVIEW';
-        f.survey.submission={snapshot:f.survey.draft.snapshot,fileIds:input.fileIds,revision:(f.survey.submission?.revision||0)+(type==='student_submit_v2_supplement'?1:0),submittedAt:'2026-11-10T03:30:00.000Z'};
+        const isSupplement=type==='student_submit_v2_supplement';
+        const supplementReceipt=isSupplement?{submittedAt:'2026-11-10T03:30:00.000Z',fields:(f.survey.supplement?.fields||[]).map(({field,label})=>({field,label,changed:true}))}:undefined;
+        f.survey.submission={snapshot:f.survey.draft.snapshot,fileIds:input.fileIds,revision:(f.survey.submission?.revision||0)+(isSupplement?1:0),supplementAttempt:isSupplement?1:0,supplementReceipt,submittedAt:'2026-11-10T03:30:00.000Z'};
         f.survey.supplement=null;
         data={caseId:f.survey.caseId,workflowState:f.survey.workflowState};
       }
@@ -384,16 +482,16 @@ test('제출 대기에서 보완 항목으로 이동해 첨부를 유지하고, 
   await page.getByRole('button', { name: '상담에서 답을 받고 싶은 질문 수정하기' }).click();
   const question = page.getByRole('textbox', { name: '상담에서 답을 받고 싶은 질문' });
   await expect(question).toBeFocused();
-  await expect(page.getByRole('heading', { name: '상담 질문' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '요청받은 답변만 보완해 주세요' })).toBeVisible();
   await question.fill('나군에서 가상대와 예시대의 통학과 계열을 비교하고 싶어요.');
   expect(await page.evaluate(() => window.__design.saves)).toHaveLength(0);
-  const submit = page.getByRole('button', { name: '보완 완료 알리기' });
+  const submit = page.getByRole('button', { name: '보완 답변 재제출' });
   page.once('dialog', dialog => dialog.accept());
   await submit.click();
   await expect(page.getByRole('alert')).toContainText('서버 응답을 확인하지 못했어요.');
   page.once('dialog', dialog => dialog.accept());
   await submit.click();
-  await expect(page.getByRole('heading', { name: '기초조사서가 접수됐어요' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
   const attempts = await page.evaluate(() => window.__design.submissions);
   expect(attempts).toHaveLength(2);
   expect(attempts[0].fileIds).toEqual([fileId]);
