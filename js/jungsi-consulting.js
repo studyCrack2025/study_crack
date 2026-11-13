@@ -17,6 +17,16 @@
         return value && value.campaignSlug === '2027-jungsi-consulting' && value.admissionYear === 2027 && ['open', 'unavailable'].includes(value.enrollmentStatus);
     }
 
+    async function revealServiceLink(event) {
+        if (event.persisted) return;
+        const serviceId = window.location.hash.slice(1);
+        if (!['calculator', 'consulting'].includes(serviceId)) return;
+        await document.fonts?.ready;
+        window.requestAnimationFrame(() => {
+            if (window.location.hash === `#${serviceId}`) document.getElementById(serviceId)?.scrollIntoView({ block: 'start' });
+        });
+    }
+
     async function loadCampaign() {
         try {
             const response = await fetch(CONFIG.api.consultingPublic, {
@@ -42,5 +52,6 @@
 
     syncEntryLinks();
     for (const event of ['pageshow', 'storage', 'studycrack:session-ended']) window.addEventListener(event, syncEntryLinks);
+    window.addEventListener('pageshow', revealServiceLink);
     void loadCampaign();
 })();
