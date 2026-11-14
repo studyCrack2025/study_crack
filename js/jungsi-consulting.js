@@ -39,12 +39,12 @@
             tab.tabIndex = active ? 0 : -1;
             document.getElementById(tab.getAttribute('aria-controls')).hidden = !active;
         });
-        const nextService = index === 0 ? 'calculator' : 'consulting';
+        const nextService = serviceTabs[index].getAttribute('aria-controls') === 'calculator' ? 'calculator' : 'consulting';
         if (selectedService !== nextService) {
             selectedService = nextService;
             track(nextService + '_view', updateHash ? 'tab_switch' : 'landing_or_anchor');
         }
-        if (updateHash) history.replaceState(null, '', index === 0 ? '#calculator' : '#consulting');
+        if (updateHash) history.replaceState(null, '', '#' + nextService);
     }
     serviceTabs.forEach((tab, index) => {
         tab.addEventListener('click', () => selectService(index, true));
@@ -60,7 +60,8 @@
         const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
         // Consulting is the default panel; only anchors inside the calculator panel open it.
         const inConsulting = target && document.getElementById('consultingPanel')?.contains(target);
-        selectService(target && !inConsulting && document.getElementById('calculator')?.contains(target) ? 0 : 1);
+        const panel = target && !inConsulting && document.getElementById('calculator')?.contains(target) ? 'calculator' : 'consultingPanel';
+        selectService(serviceTabs.findIndex(tab => tab.getAttribute('aria-controls') === panel));
     }
     if (serviceTabs.length) {
         selectHashService();

@@ -201,7 +201,14 @@
     "assets/images/seo-share-v1.jpg",
     "css/icons-subset.css",
     "llms.txt",
-    "og-image.jpg"
+    "og-image.jpg",
+    "css/jungsi-landing-visual.css",
+    "js/jungsi-demo.js",
+    "assets/jungsi-2027/brand.svg",
+    "assets/jungsi-2027/calculator-demo.jpg",
+    "assets/jungsi-2027/PretendardVariable.woff2",
+    "assets/jungsi-2027/analyst.webp",
+    "assets/jungsi-2027/reports.webp"
   ],
   "aliases": {
     "basic-preview": "basic-preview.html",
