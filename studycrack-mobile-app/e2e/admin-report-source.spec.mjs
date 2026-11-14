@@ -380,6 +380,26 @@ test('읽기 전용·오래된 기준·저장 전 수정은 계산을 막고 실
     expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(1);
 });
 
+test('입시자료 미준비와 조회 불가를 구분하고 상담 정리를 유지한 채 계산을 대기한다', async ({ page }) => {
+    await prepare(page, { facts: true });
+    const cases = [['REPORT_DATA_RELEASE_NOT_READY', '상담 정리는 계속 저장'], ['REPORT_ADMISSION_STATUS_UNAVAILABLE', '입시자료 상태를 확인하지 못했습니다'], ['REPORT_NUMERICAL_BACKEND_UPDATE_REQUIRED', '공통 계산 기준']];
+    for (const [code, text] of cases) {
+        await page.evaluate(code => { const w = window.__reportSource.ws.reportFacts; w.canCalculate = false; w.calculationBlockers = [code]; renderConsultingReportFacts(w); }, code);
+        await expect(page.locator('#consultingReportFactsStatus')).toContainText(text); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+        await expect(page.getByLabel('상담 결론', { exact: true })).toBeEditable(); await page.evaluate(() => calculateConsultingReportFacts());
+    }
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(0);
+    await page.evaluate(() => { const w = window.__reportSource.ws.reportFacts; w.canCalculate = true; w.calculationBlockers = []; renderConsultingReportFacts(w); });
+    await expect(page.locator('#consultingReportCalculateFacts')).toBeEnabled(); await expect(page.locator('#consultingReportFactsStatus')).toContainText('고정한 기준으로 계산');
+});
+
+test('자료 상태 확인 전의 이전 결과는 오래된 기준 경고와 함께 보존한다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true, staleFacts: true });
+    await page.evaluate(() => { const w = window.__reportSource.ws.reportFacts; w.calculationBlockers = ['REPORT_ADMISSION_STATUS_UNAVAILABLE']; renderConsultingReportFacts(w); });
+    await expect(page.locator('#consultingReportFactsStatus')).toContainText('이전 기준'); await expect(page.locator('#consultingReportFactsStatus')).toContainText('입시자료 상태');
+    await expect(page.locator('#consultingReportFactsResult')).not.toBeEmpty(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+});
+
 test('점수·플랜 결과는 모바일과 데스크톱에서 가로 넘침 없이 확인하고 표만 스크롤한다', async ({ page }, testInfo) => {
     await prepare(page, { facts: true, withFactsResult: true });
     for (const width of [320, 390, 1440]) {

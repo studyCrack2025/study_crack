@@ -27,6 +27,12 @@ function reportFactProbability(fact) {
     return p.qualifier === 'less_than' && p.percent === 1 ? '1% 미만' : p.qualifier === 'more_than' && p.percent === 99 ? '99% 초과' : p.qualifier === 'approximate' ? `약 ${p.percent}%` : '판단 보류';
 }
 const reportFactGroups = { ga: '가군', na: '나군', da: '다군', other: '별도 지원 제도' };
+const reportFactsDataMessages = {
+    REPORT_ADMISSION_STATUS_UNAVAILABLE: '입시자료 상태를 확인하지 못했습니다. 운영 도구에서 준비 상태를 확인한 뒤 작성 자료를 새로고침해주세요.',
+    REPORT_DATA_RELEASE_NOT_READY: '승인된 입시자료가 아직 연결되지 않아 계산을 기다리고 있습니다. 상담 정리는 계속 저장할 수 있습니다.',
+    REPORT_NUMERICAL_BACKEND_UPDATE_REQUIRED: '보고서 공통 계산 기준을 확인하지 못했습니다. 기능 적용 상태를 확인해주세요.'
+};
+const reportFactsWaitingCodes = workspace => Array.isArray(workspace?.calculationBlockers) ? workspace.calculationBlockers.filter(code => Object.hasOwn(reportFactsDataMessages, code)) : [];
 const reportFactReasons = {
     ADMISSION_DATA_NOT_CONFIGURED: '활성 입시자료 연결이 필요합니다.', ACTIVE_DATA_RELEASE_NOT_FOUND: '해당 학년도의 승인된 입시자료가 없습니다.',
     KOREAN_HISTORY_GRADE_REQUIRED: '한국사 등급 검수가 필요합니다.', OFFICIAL_GRADE_MISSING: '영어·한국사·선택 외국어 등급을 확인해주세요.',
@@ -53,7 +59,7 @@ function resetConsultingReportFacts() {
     reportFactStatus(''); updateConsultingReportFactsButton();
 }
 function updateConsultingReportFactsButton() {
-    reportFactsNode('consultingReportCalculateFacts').disabled = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true;
+    reportFactsNode('consultingReportCalculateFacts').disabled = (typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true || reportFactsWaitingCodes(consultingReportFacts).length > 0;
 }
 function reportFactCard(fact, prefix) {
     const card = reportFactElement('article', undefined, 'consulting-report-fact-card');
@@ -92,8 +98,10 @@ function reportFactsPlan(parent, plan, title, description, facts) {
 function renderConsultingReportFacts(workspace) {
     consultingReportFacts = workspace || null; const root = reportFactsNode('consultingReportFactsResult'); root.replaceChildren();
     if (!workspace) { reportFactStatus('작성 기준을 고정하고 최신 계산 기능이 적용됐는지 확인해주세요.'); updateConsultingReportFactsButton(); return; }
-    reportFactStatus(workspace.status === 'running' ? '계산이 진행 중입니다. 잠시 후 작성 자료를 새로고침해주세요.' : workspace.status === 'stale' ? '이전 기준의 계산 결과입니다. 현재 자료로 작성 기준을 다시 고정하고 계산해주세요.'
-        : workspace.record ? `계산 결과 ${workspace.revision} · 기준 ${workspace.record.sourceRevision} · ${formatConsultingDate(workspace.record.calculatedAt)}` : workspace.canCalculate ? '고정한 기준으로 계산할 수 있습니다. 계산은 학생에게 전송되지 않습니다.' : '현재 작성 기준과 계산 실행 권한을 확인해주세요.', workspace.status === 'stale' ? 'error' : '');
+    const waiting = reportFactsWaitingCodes(workspace), waitingText = waiting.map(code => reportFactsDataMessages[code]).join(' ');
+    const stateText = workspace.status === 'running' ? '계산이 진행 중입니다. 잠시 후 작성 자료를 새로고침해주세요.' : workspace.status === 'stale' ? '이전 기준의 계산 결과입니다. 현재 자료로 작성 기준을 다시 고정하고 계산해주세요.'
+        : workspace.record ? `계산 결과 ${workspace.revision} · 기준 ${workspace.record.sourceRevision} · ${formatConsultingDate(workspace.record.calculatedAt)}` : waitingText ? '' : workspace.canCalculate ? '고정한 기준으로 계산할 수 있습니다. 계산은 학생에게 전송되지 않습니다.' : '현재 작성 기준과 계산 실행 권한을 확인해주세요.';
+    reportFactStatus([stateText, waitingText].filter(Boolean).join(' '), workspace.status === 'stale' || waiting.includes('REPORT_ADMISSION_STATUS_UNAVAILABLE') || waiting.includes('REPORT_NUMERICAL_BACKEND_UPDATE_REQUIRED') ? 'error' : '');
     updateConsultingReportFactsButton(); const result = workspace.record?.result; if (!result) return;
     const facts = new Map(result.facts.map(f => [f.admissionUnitId, f]));
     root.append(reportFactElement('p', `전체 평가 ${reportFactNumber(result.coverage.evaluated)}개 · 자격·환산 확인 ${reportFactNumber(result.coverage.eligibleConverted)}개 · 정규 3군 검토 ${reportFactNumber(result.coverage.regularPlanPool)}개`, 'consulting-caption'));
@@ -121,7 +129,7 @@ function renderConsultingReportFacts(workspace) {
     if (!result.planC.alternatives.length) c.append(reportFactElement('p', '현재 기준에서 제안할 검수된 대안이 없습니다.')); reportFactsWarnings(c, result.planC.reasonCodes); root.append(c);
 }
 async function calculateConsultingReportFacts() {
-    if ((typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true) return;
+    if ((typeof consultingReportApprovalBusy !== 'undefined' && consultingReportApprovalBusy) || consultingReportFactsBusy || consultingReportSourceBusy || consultingReportSourceDirty || consultingReportFacts?.canCalculate !== true || reportFactsWaitingCodes(consultingReportFacts).length) return;
     const generation = consultingReportFactsGeneration, source = consultingReportSource;
     consultingReportFactsBusy = true; updateConsultingReportSourceButtons(); reportFactsNode('consultingReportFactsPanel').setAttribute('aria-busy', 'true'); reportFactStatus('전체 후보를 평가하고 점수·지원 플랜을 계산하고 있습니다.');
     try {
