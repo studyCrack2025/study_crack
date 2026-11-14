@@ -502,6 +502,21 @@
                 <ol id="consultingStudentProgress" class="consulting-progress" aria-label="학생 진행 단계"></ol>
                 <div id="consultingStudentNextAction" class="consulting-next-action"></div>
                 <div id="consultingStudentStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div class="consulting-actions"><button id="consultingDeleteApplicationBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="openConsultingApplicationDeletion()" hidden>신청 영구 삭제</button></div>
+                <dialog id="consultingDeleteApplicationDialog" class="consulting-export-dialog" aria-labelledby="consultingDeleteApplicationTitle" aria-describedby="consultingDeleteApplicationScope" oncancel="event.preventDefault(); closeConsultingApplicationDeletion()">
+                    <h2 id="consultingDeleteApplicationTitle">신청 기록을 영구 삭제할까요?</h2>
+                    <p id="consultingDeleteApplicationTarget" class="consulting-caption"></p>
+                    <p id="consultingDeleteApplicationScope">이 신청의 접수·초대·조사서·분석·상담 기록과 연결된 첨부파일·보고서 PDF 원본을 영구 삭제합니다. 파일의 이전 버전도 포함하며 예약 중인 시간은 반납됩니다. 복구할 수 없습니다.</p>
+                    <p class="consulting-caption">다른 신청의 파일, 학생 회원 계정, Google Form 원본 응답, 이미 발송한 카톡·이메일은 유지됩니다. 환불이나 취소 안내는 자동으로 발송하지 않습니다.</p>
+                    <label class="consulting-caption" for="consultingDeleteApplicationConfirmation">계속하려면 ‘신청 영구 삭제’를 정확히 입력해주세요.</label>
+                    <input id="consultingDeleteApplicationConfirmation" type="text" autocomplete="off" maxlength="30" oninput="updateConsultingApplicationDeletion()">
+                    <p id="consultingDeleteApplicationStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                    <div class="consulting-actions">
+                        <button id="consultingDeleteApplicationCancel" type="button" class="consulting-btn consulting-btn-secondary" onclick="closeConsultingApplicationDeletion()">돌아가기</button>
+                        <button id="consultingDeleteApplicationRetry" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingApplicationDeletion()" hidden>삭제 상태 다시 확인</button>
+                        <button id="consultingDeleteApplicationConfirm" type="button" class="consulting-btn consulting-btn-danger" onclick="deleteConsultingApplication()" disabled>신청·원본 영구 삭제</button>
+                    </div>
+                </dialog>
                 <nav class="consulting-student-tabs" aria-label="학생 상세 업무"><button type="button" class="consulting-student-tab" data-student-tab="overview" onclick="selectConsultingStudentTab('overview')">신청·입금</button><button type="button" class="consulting-student-tab" data-student-tab="materials" onclick="selectConsultingStudentTab('materials')">조사서·성적표</button><button type="button" class="consulting-student-tab" data-student-tab="written" onclick="selectConsultingStudentTab('written')">서면상담</button><button type="button" class="consulting-student-tab" data-student-tab="report" onclick="selectConsultingStudentTab('report')">분석·보고서</button><button type="button" class="consulting-student-tab" data-student-tab="final" onclick="selectConsultingStudentTab('final')">파이널 콜</button><button type="button" class="consulting-student-tab" data-student-tab="service" onclick="selectConsultingStudentTab('service')">서비스 관리</button></nav>
                 <p id="consultingMaterialAccess" class="consulting-caption" hidden>조사서·성적표는 자료 검수 권한이 있는 계정에서 볼 수 있습니다.</p>
                 <div id="consultingWorkspaceOverview" data-workspace-pane="overview">
@@ -566,6 +581,7 @@
                 </div>
             </section>
                 <details class="consulting-identifiers"><summary>관리 식별정보</summary><div id="consultingStudentIdentifiers" class="consulting-material-copy"></div></details>
+
             </section>
 </div>
                 <div id="consultingWorkspaceMaterials" data-workspace-pane="materials" hidden aria-busy="false">
