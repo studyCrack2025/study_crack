@@ -113,6 +113,7 @@
     "js/admin/consulting-materials.js",
     "js/admin/consulting-supplements.js",
     "js/admin/consulting-operations.js",
+    "js/admin/consulting-data-readiness.js",
     "js/admin/consulting-report-source.js",
     "js/admin/consulting-report-facts.js",
     "js/admin/consulting-report-content.js",

@@ -442,6 +442,14 @@
                     </details>
                 </details>
             <details id="consultingAdminTools" class="consulting-admin-tools"><summary>운영 도구</summary>
+                <details id="consultingDataReadinessDetails"><summary>입시자료 준비 상태</summary>
+                    <section id="consultingDataReadinessPanel" aria-labelledby="consultingDataReadinessTitle" aria-busy="false">
+                        <div class="consulting-heading-row"><div><h2 id="consultingDataReadinessTitle" class="page-title">계산에 필요한 자료 확인</h2><p class="consulting-caption">승인 입시자료·가능성 기준선·계산기 연결표의 준비 상태를 확인합니다. 조회만으로 자료 승인이나 학생 전송이 진행되지는 않습니다.</p></div><button id="consultingDataReadinessRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingDataReadiness()">준비 상태 확인</button></div>
+                        <p id="consultingDataReadinessStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <ul id="consultingDataReadinessChecks" class="consulting-report-source-readiness" aria-label="입시자료 확인 항목"></ul>
+                        <p id="consultingDataReadinessMeta" class="consulting-caption"></p>
+                    </section>
+                </details>
                             <section id="consultingOperationsPanel" aria-labelledby="consultingOperationsTitle" aria-busy="false">
                 <div class="consulting-heading-row"><div><h2 id="consultingOperationsTitle" class="page-title">운영 대기·실패 확인</h2><p class="consulting-caption">보고서 공개와 알림의 대기·실패 상태를 확인합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations()">운영 목록 새로고침</button></div>
                 <div class="consulting-lookup"><label for="consultingOperationsGroup">확인할 목록</label><select id="consultingOperationsGroup" onchange="loadConsultingOperations()"><option value="review">운영 검토·실패</option><option value="reportDue">공개 시각이 지난 보고서</option><option value="reportOutbox">보고서 알림 처리 대기</option><option value="finalOutbox">파이널 콜 알림 처리 대기</option></select></div>
@@ -989,6 +997,7 @@
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
     <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
+    <script src="/js/admin/consulting-data-readiness.js?v=20261028a"></script>
     <script src="/js/admin/consulting-report-facts.js?v=20261111a"></script>
     <script src="/js/admin/consulting-report-content.js?v=20261111a"></script>
     <script src="/js/admin/consulting-report-revision.js?v=20261111a"></script>
