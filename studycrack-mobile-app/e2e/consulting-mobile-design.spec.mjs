@@ -243,9 +243,9 @@ async function fits(page) {
   expect(box.body).toBeLessThanOrEqual(box.width + 1);
 }
 
-test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽히고 키보드로 FAQ를 조작한다', async ({ page }, testInfo) => {
+test('공개 메인은 여덟 화면 크기에서 두 서비스·신청·과정·문의가 읽히고 키보드로 FAQ를 조작한다', async ({ page }, testInfo) => {
   await prepare(page);
-  for (const width of widths) {
+  for (const width of [...new Set([...widths, 375, 1024])]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/2027-jungsi-consulting');
     await expect(page.locator('#consultingApply')).toHaveText('컨설팅 신청하기');
@@ -254,7 +254,14 @@ test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽�
     await fits(page);
     await expect(page.locator('#consultingPrice')).toHaveText('컨설팅 비용 300,000원');
     expect(await page.locator('.jungsi-landing-header').evaluate(node => node.getBoundingClientRect().height)).toBeLessThanOrEqual(81);
-    expect(await page.locator('#consultingApply').evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(900);
+    expect(await page.locator('.jungsi-landing-actions').evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(900);
+    await expect(page.getByRole('article', { name: '정시 합격 계산기', exact: true })).toBeVisible();
+    await expect(page.getByRole('article', { name: '정시 컨설팅', exact: true })).toBeVisible();
+    await expect(page.locator('#calculator')).toContainText('출시 준비 중');
+    await expect(page.locator('#calculator')).toContainText('예정 이용료 25,000원');
+    await expect(page.locator('#calculator input, #calculator button, [role="tab"]')).toHaveCount(0);
+    const cards = await page.locator('.jungsi-landing-service').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
+    expect(width < 760 ? cards[1] > cards[0] : Math.abs(cards[1] - cards[0]) < 2).toBe(true);
     await expect(page.locator('.jungsi-landing-process li')).toHaveCount(5);
     const circles = await page.locator('.jungsi-landing-step').evaluateAll(nodes => nodes.map(node => { const box = node.getBoundingClientRect(); return Math.abs(box.width - box.height); }));
     expect(circles.every(value => value < 1)).toBe(true);
@@ -262,7 +269,10 @@ test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽�
     expect(width < 760 ? rows[1] > rows[0] : Math.abs(rows[1] - rows[0]) < 2).toBe(true);
     expect(await page.locator('body').evaluate(node => getComputedStyle(node).fontFamily)).toContain('Paperlogy');
     expect(await page.locator('#consultingApply').evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgb(52, 78, 143)');
-    if ([390, 1440].includes(width)) await page.screenshot({ path: testInfo.outputPath(`consulting-landing-${width}.png`), fullPage: true });
+    if ([320, 1440].includes(width)) {
+      await page.screenshot({ path: testInfo.outputPath(`consulting-landing-${width}.png`), fullPage: true });
+      await page.locator('.jungsi-landing-service-grid').screenshot({ path: testInfo.outputPath(`consulting-services-${width}.png`) });
+    }
   }
   const question = page.locator('summary').first();
   await question.focus(); await page.keyboard.press('Enter');
@@ -270,6 +280,53 @@ test('공개 메인은 여섯 화면 크기에서 신청·과정·문의가 읽�
   await expect(page.locator('details').first()).toContainText('10자리 인증코드');
   await page.getByText('소셜 로그인으로도 이용할 수 있나요?', { exact: true }).click();
   await expect(page.getByText('인증코드는 신청할 때 입력한 이메일에서 확인해주세요.', { exact: false })).toBeVisible();
+});
+
+test('메인 정시 버튼은 같은 사이트의 기존 소개 페이지로 연결하고 Basic 진입을 유지한다', async ({ browser, baseURL }, testInfo) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.route('**/*', route => new URL(route.request().url()).origin === new URL(baseURL).origin ? route.continue() : route.abort());
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${baseURL}/`);
+      const entry = page.locator('.hero-main-actions').getByRole('link', { name: '정시 합격 계산기·컨설팅', exact: true });
+      await expect(entry).toHaveAttribute('href', '/2027-jungsi-consulting');
+      await expect(entry).toBeInViewport();
+      await expect(page.locator('.hero-main-actions .basic-preview-entry')).toHaveAttribute('href', '/basic-preview');
+      expect(await page.locator('.hero-main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: testInfo.outputPath(`main-service-entry-${width}.png`) });
+      await entry.click();
+      await expect(page).toHaveURL(`${baseURL}/2027-jungsi-consulting`);
+      await expect(page.locator('#landingTitle')).toContainText('내 점수의 가능성부터,');
+      await expect(page.getByRole('heading', { name: '정시 합격 계산기', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '정시 컨설팅', exact: true })).toBeVisible();
+      for (const policy of ['/terms', '/refund', '/privacy']) {
+        const link = page.locator('.jungsi-landing-policies').locator(`a[href="${policy}"]`);
+        await expect(link).toBeVisible();
+        expect((await page.request.get(policy)).status()).toBe(200);
+      }
+    }
+  } finally { await context.close(); }
+});
+
+test('기존 계산기·컨설팅 해시와 첫 화면 안내는 숨김 탭 없이 해당 서비스로 이동한다', async ({ page }) => {
+  await prepare(page, { loggedIn: false });
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const fragment of ['calculator', 'consulting']) {
+      await page.goto(`/2027-jungsi-consulting#${fragment}`);
+      await expect(page.locator(`#${fragment} h3`)).toBeInViewport();
+      await expect(page.locator('.jungsi-landing-service')).toHaveCount(2);
+      await expect(page.getByRole('link', { name: '신청자 로그인', exact: true })).toHaveAttribute('href', '/2027-jungsi-consulting/login');
+      await page.reload();
+      await expect(page.locator(`#${fragment} h3`)).toBeInViewport();
+      await page.goto('/2027-jungsi-consulting');
+      await page.locator(`.jungsi-landing-actions a[href="#${fragment}"]`).click();
+      await expect(page.locator(`#${fragment} h3`)).toBeInViewport();
+      await fits(page);
+    }
+  }
 });
 
 test('모집 중이 아니거나 신청 URL이 올바르지 않으면 디자인 변경 뒤에도 접수를 열지 않는다', async ({ page }) => {
@@ -280,6 +337,19 @@ test('모집 중이 아니거나 신청 URL이 올바르지 않으면 디자인 
     await expect(page.locator('#consultingApply')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#process');
   }
+});
+
+test('캠페인 조회가 실패해도 서비스 설명은 유지하고 결제·신청을 열지 않는다', async ({ page }) => {
+  await prepare(page, { loggedIn: false });
+  await page.route('https://api.example.invalid/public', route => route.fulfill({ status: 503, json: { success: false } }));
+  const response = page.waitForResponse('https://api.example.invalid/public');
+  await page.goto('/2027-jungsi-consulting');
+  expect((await response).status()).toBe(503);
+  await expect(page.locator('#consultingApply')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('#consultingPrice')).toBeEmpty();
+  await expect(page.locator('#consulting')).toContainText('비용과 모집 여부는 신청 안내를 확인해주세요.');
+  await expect(page.locator('#calculator')).toContainText('출시 준비 중');
+  await expect(page.locator('form, [role="tab"]')).toHaveCount(0);
 });
 
 for (const width of [320, 768, 1440]) test(`홈 14개 상태는 ${width}px에서 현재 행동과 문서 스크롤을 제공한다`, async ({ page }, testInfo) => {
@@ -411,7 +481,7 @@ test('쿠키 로그인 상태에서 서비스 안내와 나의 컨설팅을 오�
   await page.reload();
   await expect(page.getByRole('button', { name: '이어서 작성하기' })).toBeVisible();
   await page.getByRole('link', { name: '서비스 안내', exact: true }).click();
-  const returnLink = page.getByRole('navigation', { name: '정시 컨설팅 메뉴' }).getByRole('link', { name: '나의 컨설팅', exact: true });
+  const returnLink = page.getByRole('navigation', { name: '정시 서비스 메뉴' }).getByRole('link', { name: '나의 컨설팅', exact: true });
   await expect(returnLink).toHaveAttribute('href', '/2027-jungsi-consulting/home');
   await expect(publicLogin).toHaveCount(0);
   await returnLink.click();

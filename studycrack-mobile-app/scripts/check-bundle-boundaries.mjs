@@ -151,6 +151,14 @@ const initialBytes = chunks
 assert.ok(initialBytes <= Math.floor(531 * 1024), `Initial JS grew above the 531 KiB readability budget: ${formatKiB(initialBytes)}`);
 // VP7 adds the public auth brand, service note, and real signup progress styles.
 assert.ok(bootstrapCss.length <= Math.floor(76.8 * 1024), `VP7 bootstrap CSS grew above the 76.8 KiB baseline: ${formatKiB(bootstrapCss.length)}`);
+const calculatorBuild = await build({ root: appRoot, mode: 'jungsi-calculator', logLevel: 'silent', build: { write: false } });
+const calculatorChunks = (calculatorBuild.output || calculatorBuild[0]?.output || []).filter(item => item.type === 'chunk');
+assert.ok(calculatorChunks.some(chunk => chunk.isEntry && chunk.fileName === 'jungsi-calculator.bundle.js'), 'calculator needs its own entry');
+assert.ok(calculatorChunks.every(chunk => !Object.keys(chunk.modules).some(id => /\/src\/(?:app\/MobileApp\.js|features\/consulting-v2\/ConsultingApp\.jsx)$/.test(id))), 'calculator must not boot the main app or consulting journey');
+assert.ok(calculatorChunks.reduce((sum, chunk) => sum + chunk.code.length, 0) < 250 * 1024, 'calculator JS must remain below 250 KiB');
+assert.equal(cacheControlFor('studycrack-mobile-app/dist/jungsi-calculator.bundle.js'), NO_CACHE);
+const calculatorPublication = createPublishCommands('/artifact/site', 'static.example', {}, ['studycrack-mobile-app/dist/jungsi-calculator.bundle.js']);
+assert.ok(calculatorPublication.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js') && args.includes(NO_CACHE)), 'calculator entry must be published with entry caching');
 console.log(
   `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks`
 );

@@ -82,6 +82,16 @@ test('secure random is mandatory and storage failure never returns an authorize 
     blocked.session.setItem = () => { throw new Error('storage unavailable'); };
     assert.throws(() => blocked.api.createSocialLoginUrl({ provider: 'naver' }));
 });
+for (const provider of ['google', 'naver']) test(`${provider}: calculator login returns only to its exact same-site path`, () => {
+    const r = runtime();
+    const returnUrl = '/2027-jungsi-consulting/calculator';
+    const url = new URL(r.api.createSocialLoginUrl({ provider, returnUrl }));
+    const attempt = r.api.consumeSocialLoginAttempt(url.searchParams.get('state'));
+    assert.equal(attempt.returnUrl, returnUrl);
+    for (const forged of ['//evil.invalid/calculator', 'https://evil.invalid/calculator', returnUrl + '?next=//evil.invalid', returnUrl + '/anything']) {
+        assert.throws(() => r.api.createSocialLoginUrl({ provider, returnUrl: forged }), /SOCIAL_START_UNAVAILABLE/);
+    }
+});
 test('a request that cannot be consumed is never accepted', () => {
     const r = runtime();
     const state = new URL(r.api.createSocialLoginUrl({ provider: 'google' })).searchParams.get('state');

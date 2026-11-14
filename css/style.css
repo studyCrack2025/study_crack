@@ -105,8 +105,12 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .hero-title-light { font-weight: 400; display: block; }
 .hero-subtitle { font-size: 18px; color: #fff; line-height: 1.67; max-width: 680px; margin: 0 auto 48px; }
 .hero-subtitle strong { font-weight: 700; }
+.hero-main-actions { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 12px; }
 .hero-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; width: min(100%,352px); padding: 0 20px; border-radius: 4px; background: var(--primary); color: #fff; font-size: 17px; font-weight: 800; transition: background .2s; }
 .hero-cta:hover { transform: translateY(-2px); background: #3d69da; }
+.hero-cta:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.hero-cta--secondary { border: 1px solid rgba(255,255,255,.8); background: #fff; color: #244a91; }
+.hero-cta--secondary:hover { background: #edf3ff; }
 .hero-example-link { display: flex; align-items: center; justify-content: center; width: fit-content; max-width: 100%; min-height: 44px; margin: 14px auto 0; padding: 8px 12px; border-radius: 4px; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.6; text-align: center; text-decoration: underline; text-underline-offset: 5px; }
 .hero-example-link:hover { background: rgba(0,0,0,.18); }
 .hero-example-link:focus-visible { outline: 3px solid #fff; outline-offset: 3px; background: #24365a; }
@@ -688,7 +692,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .hero-title { font-size: clamp(26px, 10vw, 36px); }
     .hero-subtitle { font-size: 15px; }
     .hero-subtitle br { display: none; }
-    .hero-cta { width: 100%; padding: 0 16px; }
+    .hero-cta { width: 100%; max-width: 352px; padding: 0 16px; }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
 
     .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; }
@@ -781,15 +785,4 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .noti-panel { width: calc(100% - 36px); right: 18px; bottom: 140px; max-height: 380px; }
     .modal-content { margin: 15% auto; max-height: 70vh; padding: 20px; }
     .data-error-report-fab { left:14px; bottom:14px; min-height:38px; padding:0 12px; font-size:12px; }
-}
-
-/* Homepage service choices */
-.hero-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
-.hero-actions .hero-cta { width: auto; padding: 0 24px; }
-.hero-cta--secondary { background: #fff; color: #244a91; }
-.hero-cta--secondary:hover { background: #edf3ff; }
-.hero-actions .hero-cta:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-@media (max-width: 600px) {
-  .hero-actions { flex-direction: column; align-items: center; }
-  .hero-actions .hero-cta { width: 100%; max-width: 352px; }
 }

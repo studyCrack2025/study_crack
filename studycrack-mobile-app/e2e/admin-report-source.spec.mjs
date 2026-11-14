@@ -317,6 +317,50 @@ test('계산은 고정 기준만 전송하고 성적·라인·A/B/C에서 0과 �
     expect(sent).toHaveLength(1); expect(Object.keys(sent[0].data).sort()).toEqual(['caseId', 'expectedCaseRevision', 'expectedSourceDigest', 'expectedSourceRevision']);
 });
 
+test('새 계산 기준의 확률·단계·환산 소수는 계산기와 같은 표기로 표시하고 잘못된 응답은 보류한다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true });
+    for (const [point, percent, qualifier, band, label, text] of [[79.999, 79, 'approximate', 'appropriate', '적정', '약 79%'], [0, 1, 'less_than', 'risky', '위험', '1% 미만'], [100, 99, 'more_than', 'stable', '안정', '99% 초과'], [80, 0, 'approximate', 'stable', '안정', '판단 보류']]) {
+        await page.evaluate(({ point, percent, qualifier, band, label }) => {
+            const workspace = window.__reportSource.ws.reportFacts, fact = workspace.record.result.facts[0];
+            fact.convertedScore = 743.123456; fact.probability = { low: point, point, high: point }; fact.reportRisk = { band, label, wide: false };
+            fact.forecast = { status: 'available', validationState: 'passed', riskBand: band, probability: { percent, qualifier } };
+            renderConsultingReportFacts(workspace);
+        }, { point, percent, qualifier, band, label });
+        const card = page.locator('#consultingReportFactsResult .consulting-report-fact-card').first();
+        await expect(card).toContainText('743.123456 / 1,000'); await expect(card.locator('.consulting-report-fact-risk')).toHaveText(label);
+        await expect(card.locator('dl > div').nth(2).locator('dd')).toHaveText(text);
+        await expect(card).toContainText('신뢰구간이 아닙니다.');
+        for (const width of [320, 1440]) {
+            await page.setViewportSize({ width, height: 900 });
+            expect(await card.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        }
+    }
+});
+
+test('입결 지수는 두 기준선·5단계와 함께 표시하고 미검수·손상 수치는 숨긴다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true });
+    for (const [point, band, label] of [[82.7, 'stable', '안정'], [65, 'appropriate', '적정'], [45, 'neutral', '중립'], [25, 'challenge', '도전'], [1, 'risky', '위험'], [null, null, '판단 보류'], [80.5, 'invalid', '판단 보류']]) {
+        await page.evaluate(({ point, band, label }) => {
+            const workspace = window.__reportSource.ws.reportFacts, fact = workspace.record.result.facts[0];
+            fact.possibilityPoint = point; fact.probability = null; fact.expectedCutoff = null;
+            fact.reportRisk = { band, label, wide: false };
+            fact.possibility = { contractVersion: 'cut-reference-public-v1', policyVersion: 'cut-reference-possibility-1.0.0', basis: 'cut_reference_heuristic',
+                status: point === null ? 'unavailable' : 'available', validationState: point === null ? 'not_available' : 'passed', probability: null, empiricallyCalibrated: false,
+                index: point === null ? null : { points: Math.floor(point) }, riskBand: band, reasonCodes: point === null ? ['CUT_REFERENCE_REVIEW_REQUIRED'] : [],
+                admissionUnitId: fact.admissionUnitId, sourceYear: 2026, targetYear: 2027, publicationDigest: 'sha256:'+'a'.repeat(64), referenceDigest: 'sha256:'+'b'.repeat(64) };
+            fact.referenceLines = point === null ? null : { passLine: 60, registered70Line: 65, sourceYear: 2026, targetYear: 2027 };
+            renderConsultingReportFacts(workspace);
+        }, { point, band, label });
+        const card = page.locator('#consultingReportFactsResult .consulting-report-fact-card').first();
+        await expect(card.locator('.consulting-report-fact-risk')).toHaveText(label);
+        await expect(card.locator('dl > div').nth(3).locator('dd')).toHaveText(label === '판단 보류' ? '판단 보류' : `약 ${Math.floor(point)}점 / 100`);
+        await expect(card.locator('dl > div').nth(3).locator('dd')).not.toContainText('%');
+        if (label !== '판단 보류') { await expect(card).toContainText('2026학년도 입결'); await expect(card).toContainText('실제 합격률이 아닌'); }
+        else for (const index of [1, 2]) await expect(card.locator('dl > div').nth(index).locator('dd')).toHaveText('판단 보류');
+        for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await card.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); }
+    }
+});
+
 test('계산 중 입력·재실행을 잠그고 세션 종료 뒤 늦게 도착한 결과를 노출하지 않는다', async ({ page }) => {
     await prepare(page, { facts: true }); await page.evaluate(() => { window.__reportSource.deferFacts = true; });
     await page.locator('#consultingReportCalculateFacts').click(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
@@ -334,6 +378,26 @@ test('읽기 전용·오래된 기준·저장 전 수정은 계산을 막고 실
     await expect(page.locator('#consultingReportCalculateFacts')).toBeEnabled(); await page.locator('#consultingReportCalculateFacts').click();
     await expect(page.locator('#consultingReportFactsStatus')).toContainText('원자료가 변경');
     expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(1);
+});
+
+test('입시자료 미준비와 조회 불가를 구분하고 상담 정리를 유지한 채 계산을 대기한다', async ({ page }) => {
+    await prepare(page, { facts: true });
+    const cases = [['REPORT_DATA_RELEASE_NOT_READY', '상담 정리는 계속 저장'], ['REPORT_ADMISSION_STATUS_UNAVAILABLE', '입시자료 상태를 확인하지 못했습니다'], ['REPORT_NUMERICAL_BACKEND_UPDATE_REQUIRED', '공통 계산 기준']];
+    for (const [code, text] of cases) {
+        await page.evaluate(code => { const w = window.__reportSource.ws.reportFacts; w.canCalculate = false; w.calculationBlockers = [code]; renderConsultingReportFacts(w); }, code);
+        await expect(page.locator('#consultingReportFactsStatus')).toContainText(text); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
+        await expect(page.getByLabel('상담 결론', { exact: true })).toBeEditable(); await page.evaluate(() => calculateConsultingReportFacts());
+    }
+    expect(await page.evaluate(() => window.__reportSource.calls.filter(c => c.type === 'admin_calculate_report_facts'))).toHaveLength(0);
+    await page.evaluate(() => { const w = window.__reportSource.ws.reportFacts; w.canCalculate = true; w.calculationBlockers = []; renderConsultingReportFacts(w); });
+    await expect(page.locator('#consultingReportCalculateFacts')).toBeEnabled(); await expect(page.locator('#consultingReportFactsStatus')).toContainText('고정한 기준으로 계산');
+});
+
+test('자료 상태 확인 전의 이전 결과는 오래된 기준 경고와 함께 보존한다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true, staleFacts: true });
+    await page.evaluate(() => { const w = window.__reportSource.ws.reportFacts; w.calculationBlockers = ['REPORT_ADMISSION_STATUS_UNAVAILABLE']; renderConsultingReportFacts(w); });
+    await expect(page.locator('#consultingReportFactsStatus')).toContainText('이전 기준'); await expect(page.locator('#consultingReportFactsStatus')).toContainText('입시자료 상태');
+    await expect(page.locator('#consultingReportFactsResult')).not.toBeEmpty(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
 });
 
 test('점수·플랜 결과는 모바일과 데스크톱에서 가로 넘침 없이 확인하고 표만 스크롤한다', async ({ page }, testInfo) => {

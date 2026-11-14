@@ -20,6 +20,7 @@ test('current web release includes its new pages and artwork without retired or 
   const contents = new Map(policy.files.map(file => [file, Buffer.alloc(0)]));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.css', Buffer.alloc(0));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.bundle.js', Buffer.alloc(0));
+  contents.set('studycrack-mobile-app/dist/jungsi-calculator.bundle.js', Buffer.alloc(0));
   // Check the actual web sources, not only synthetic packaging fixtures.
   for (const file of policy.files.filter(file => /\.(html|css)$/.test(file) && !file.startsWith('studycrack-mobile'))) {
     contents.set(file, await readFile(new URL(`../../${file}`, import.meta.url)));

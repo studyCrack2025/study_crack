@@ -41,6 +41,24 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--jungsi-blue); 
 .jungsi-landing-report-body strong { display: block; font-size: 14px; font-weight: 700; }
 .jungsi-landing-report-body li p { margin: 4px 0 0; color: var(--jungsi-muted); font-size: 12px; }
 .jungsi-landing-report-bottom { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 8px; border-top: 1px solid var(--jungsi-line); color: var(--jungsi-navy); font-size: 12px; font-weight: 700; }
+.jungsi-landing-services { padding: 32px max(20px, calc((100% - 1080px) / 2)) 0; }
+.jungsi-landing-service-grid { display: grid; gap: 18px; }
+.jungsi-landing-service { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid var(--jungsi-line); border-radius: 12px; background: var(--jungsi-white); }
+.jungsi-landing-service--consulting { border-color: var(--jungsi-navy); }
+.jungsi-landing-service-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 22px; }
+.jungsi-landing-service-label { color: var(--jungsi-navy); font-size: 12px; font-weight: 700; }
+.jungsi-landing-service-status { padding: 4px 10px; border-radius: 4px; background: var(--jungsi-soft); color: var(--jungsi-navy); font-size: 11px; font-weight: 700; }
+.jungsi-landing-service h3 { margin: 0; color: var(--jungsi-navy); font-size: 27px; font-weight: 800; line-height: 1.4; letter-spacing: -0.04em; }
+.jungsi-landing-service-question { margin: 14px 0 0; font-size: 16px; font-weight: 700; line-height: 1.7; }
+.jungsi-landing-service-description { margin: 14px 0 22px; color: var(--jungsi-muted); font-size: 14px; line-height: 1.85; }
+.jungsi-landing-service-details { display: grid; gap: 16px; margin: 0 0 24px; padding: 22px 0; border-block: 1px solid var(--jungsi-line); }
+.jungsi-landing-service-details div { display: grid; gap: 6px; }
+.jungsi-landing-service-details dt { color: var(--jungsi-muted); font-size: 12px; }
+.jungsi-landing-service-details dd { margin: 0; font-size: 14px; font-weight: 500; }
+.jungsi-landing-service-bottom { display: grid; gap: 14px; margin-top: auto; }
+.jungsi-landing-service-bottom .jungsi-landing-price { margin: 0; }
+.jungsi-landing-service-note { margin: 0; color: var(--jungsi-muted); font-size: 12px; line-height: 1.8; }
+.jungsi-landing-service-link { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: var(--jungsi-navy); font-size: 13px; font-weight: 700; }
 .jungsi-landing-intro { padding: 60px 20px 28px; text-align: center; }
 .jungsi-landing-intro h2 { margin: 0; font-size: clamp(26px, 4vw, 36px); font-weight: 700; line-height: 1.45; letter-spacing: -0.04em; }
 .jungsi-landing-intro > p:last-child { margin: 18px 0 0; color: var(--jungsi-muted); font-size: 14px; line-height: 1.85; }
@@ -50,6 +68,11 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--jungsi-blue); 
 .jungsi-landing-card-number { display: block; margin-bottom: 20px; color: var(--jungsi-navy); font-size: 12px; font-weight: 700; }
 .jungsi-landing-principle-grid h3 { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.5; }
 .jungsi-landing-principle-grid p { margin: 14px 0 0; color: var(--jungsi-muted); font-size: 14px; line-height: 1.85; }
+.jungsi-landing-possibility { display: grid; gap: 24px; padding: 0 max(20px, calc((100% - 1080px) / 2)) 64px; }
+.jungsi-landing-possibility h2 { margin: 0; font-size: clamp(26px, 4vw, 36px); font-weight: 700; line-height: 1.45; }
+.jungsi-landing-possibility > div > p:first-child { margin: 0; color: var(--jungsi-muted); font-size: 14px; line-height: 1.85; }
+.jungsi-landing-bands { display: flex; gap: 6px; margin: 22px 0 18px; padding: 0; list-style: none; }
+.jungsi-landing-bands li { flex: 1; padding: 10px 4px; border: 1px solid var(--jungsi-line); border-radius: 4px; background: var(--jungsi-soft); color: var(--jungsi-navy); font-size: 13px; font-weight: 700; text-align: center; }
 .jungsi-landing-process { padding: 52px max(20px, calc((100% - 1080px) / 2)); background: var(--jungsi-soft); }
 .jungsi-landing-section-heading { display: grid; gap: 18px; margin-bottom: 28px; }
 .jungsi-landing-section-heading h2 { margin: 0; font-size: clamp(26px, 4vw, 36px); font-weight: 700; line-height: 1.45; letter-spacing: -0.04em; }
@@ -74,22 +97,29 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--jungsi-blue); 
 .jungsi-landing-cta h2 { margin: 0; font-size: clamp(23px, 3.3vw, 30px); font-weight: 700; line-height: 1.4; }
 .jungsi-landing-cta p:not(.jungsi-landing-kicker) { margin: 14px 0 0; font-size: 13px; line-height: 1.85; }
 .jungsi-landing-cta > a { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 52px; padding: 14px 18px; border-radius: 4px; background: var(--jungsi-white); color: var(--jungsi-navy); font-size: 14px; font-weight: 700; text-align: center; }
-.jungsi-landing-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 24px max(20px, calc((100% - 1080px) / 2)); border-top: 1px solid var(--jungsi-line); }
+.jungsi-landing-footer { display: grid; gap: 18px; padding: 28px max(20px, calc((100% - 1080px) / 2)); border-top: 1px solid var(--jungsi-line); }
+.jungsi-landing-footer-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 .jungsi-landing-footer .jungsi-landing-brand { font-size: 18px; }
-.jungsi-landing-footer p { flex: 1 1 250px; margin: 0; color: var(--jungsi-muted); font-size: 12px; }
-.jungsi-landing-footer > a:last-child { display: inline-flex; align-items: center; min-height: 44px; color: var(--jungsi-muted); font-size: 12px; }
+.jungsi-landing-footer-top p { flex: 1 1 250px; margin: 0; color: var(--jungsi-muted); font-size: 12px; }
+.jungsi-landing-footer-top > a:last-child { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--jungsi-muted); font-size: 12px; }
+.jungsi-landing-business p { margin: 0 0 4px; color: var(--jungsi-muted); font-size: 11px; line-height: 1.9; }
+.jungsi-landing-policies { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.jungsi-landing-policies a { display: inline-flex; align-items: center; min-height: 44px; color: var(--jungsi-muted); font-size: 12px; }
 @media (min-width: 760px) {
   .jungsi-landing-header { min-height: 80px; }
   .jungsi-landing-nav-guide { display: inline-flex; align-items: center; min-height: 44px; color: var(--jungsi-muted); font-size: 13px; }
   .jungsi-landing-login { padding-inline: 18px; font-size: 13px; }
   .jungsi-landing-hero { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 44px; padding-block: 72px; }
   .jungsi-landing-lead { font-size: 15px; }
-  .jungsi-landing-mobile-break { display: none; }
   .jungsi-landing-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 430px; }
+  .jungsi-landing-service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .jungsi-landing-service { padding: 32px; }
+  .jungsi-landing-service-details div { grid-template-columns: 84px minmax(0, 1fr); gap: 16px; }
   .jungsi-landing-intro { padding-top: 88px; padding-bottom: 36px; }
   .jungsi-landing-principle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
   .jungsi-landing-principle-grid article { padding: 28px 24px; }
   .jungsi-landing-principles { padding-bottom: 88px; }
+  .jungsi-landing-possibility { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 64px; padding-bottom: 88px; }
   .jungsi-landing-process { padding-block: 72px; }
   .jungsi-landing-section-heading { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; margin-bottom: 36px; }
   .jungsi-landing-process ol { grid-template-columns: repeat(5, minmax(0, 1fr)); }
