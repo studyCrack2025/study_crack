@@ -61,3 +61,14 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
   if (!validResponse(response.data, scores, targets)) return apiInvalidResponse(response, '환산 결과를 확인하지 못했습니다. 다시 조회해주세요.');
   return { ...response, data: { ...response.data, results: response.data.results.map(row => ({ ...row, forecast: safeForecast(row.forecast, row, response.data) })) } };
 }
+
+export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal }) {
+  const response = await postJson({ apiFetch, url: analysisApiUrl, signal, payload: { type: 'get_calculator_access' }, fallbackError: '이용 상태를 확인하지 못했습니다. 잠시 후 다시 확인해주세요.' });
+  if (!response.ok) return response;
+  const value = response.data;
+  if (!value || value.success !== true || value.contractVersion !== 'jungsi-calculator-access-v1' || value.admissionYear !== 2027
+    || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'none'].includes(value.access.source)
+    || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
+    || !['preparing', 'candidate_check_required'].includes(value.service.state)) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
+  return { ...response, data: { access: { allowed: value.access.allowed, source: value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requestCalculatorConversion } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-api.js';
+import { requestCalculatorAccess, requestCalculatorConversion } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-api.js';
 
 const scores = { admissionYear: 2027, basis: 'official', exam: {} };
 const targets = [{ university: '예시대학교', major: '경영학과' }];
@@ -97,5 +97,27 @@ test('unavailable forecasts never become zero percent and extremes retain an exp
   for (const [percent, qualifier, riskBand] of [[1, 'less_than', 'risky'], [99, 'more_than', 'stable']]) {
     body.results[0].forecast = { ...forecast(body), probability: { percent, qualifier }, riskBand };
     result = await run(body); assert.equal(result.ok, true); assert.deepEqual(result.data.results[0].forecast.probability, { percent, qualifier });
+  }
+});
+
+test('access preflight sends no client identity, drops member records and never enables checkout', async () => {
+  let payload;
+  const result = await requestCalculatorAccess({ analysisApiUrl: '/analysis', apiFetch: async (_, options) => {
+    payload = JSON.parse(options.body);
+    return { ok: true, status: 200, json: async () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
+      access: { allowed: true, source: 'membership', student: { email: 'PRIVATE' } }, service: { state: 'preparing', purchaseAvailable: false }, userId: 'PRIVATE' }) };
+  } });
+  assert.deepEqual(payload, { type: 'get_calculator_access' });
+  assert.deepEqual(result.data, { access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } });
+  assert.equal(JSON.stringify(result.data).includes('PRIVATE'), false);
+});
+
+test('missing or inconsistent preflight data cannot grant access or purchases', async () => {
+  const base = () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } });
+  for (const mutate of [value => { value.admissionYear = 2026; }, value => { value.access.allowed = 'true'; }, value => { value.access.source = 'none'; },
+    value => { value.service.purchaseAvailable = true; }, value => { value.service.state = 'open_for_sales'; }]) {
+    const body = base(); mutate(body);
+    const result = await requestCalculatorAccess({ analysisApiUrl: '/analysis', apiFetch: async () => ({ ok: true, status: 200, json: async () => body }) });
+    assert.equal(result.ok, false); assert.equal(result.code, 'INVALID_RESPONSE');
   }
 });

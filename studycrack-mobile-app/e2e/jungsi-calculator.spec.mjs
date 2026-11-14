@@ -9,7 +9,7 @@ const catalog = [
 
 async function setup(page, { signedIn = true } = {}) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const control = { calls: [], mode: 'ready', release: null, conversionMode: 'ready', conversionRelease: null, forecastMode: 'pending', riskBand: 'stable', probabilityPercent: 82, probabilityQualifier: 'approximate' };
+  const control = { calls: [], mode: 'ready', release: null, conversionMode: 'ready', conversionRelease: null, forecastMode: 'pending', riskBand: 'stable', probabilityPercent: 82, probabilityQualifier: 'approximate', accessMode: 'ready', accessAllowed: true, accessSource: 'membership', accessRelease: null };
   await page.addInitScript(({ signedIn }) => {
     if (signedIn && !localStorage.getItem('userId') && localStorage.getItem('sc_session_ended') !== '1') {
       localStorage.setItem('userId', 'calculator-student-A');
@@ -23,6 +23,16 @@ async function setup(page, { signedIn = true } = {}) {
     const payload = route.request().postDataJSON();
     control.calls.push(payload);
     expect((await route.request().allHeaders()).authorization).toBeUndefined();
+    if (payload.type === 'get_calculator_access') {
+      expect(payload).toEqual({ type: 'get_calculator_access' });
+      if (control.accessMode === 'defer') await new Promise(resolve => { control.accessRelease = resolve; });
+      try {
+        if (control.accessMode === 'error') return await route.fulfill({ status: 503, json: { code: 'CALCULATOR_ACCESS_UNAVAILABLE' } });
+        return await route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
+          access: { allowed: control.accessAllowed, source: control.accessAllowed ? control.accessSource : 'none' },
+          service: { state: 'preparing', purchaseAvailable: control.accessMode === 'invalid' } } });
+      } catch (_) { return; }
+    }
     if (payload.type === 'get_calculator_conversion') {
       expect(Object.keys(payload).sort()).toEqual(['data', 'type']);
       expect(Object.keys(payload.data).sort()).toEqual(['scores', 'targets']);
@@ -136,7 +146,7 @@ test('공식 성적 확인·후보 검색·수정 상태·새로고침은 기존
   await expect(page.getByRole('combobox', { name: '제2외국어·한문 등급' })).toHaveValue('3');
   await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
   await expect(page.getByText('검수 완료 자료에 한해 환산합니다.', { exact: true })).toBeVisible();
-  expect(control.calls.every(call => call.type === 'get_univ_list_only')).toBe(true);
+  expect(control.calls.every(call => ['get_univ_list_only', 'get_calculator_access'].includes(call.type))).toBe(true);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => /calculator|quantitative/i.test(key)))).toEqual([]);
 });
 
@@ -293,6 +303,8 @@ test('승인 대기·변환표 누락·가채점·권한 부족은 가짜 숫자
     await expect(page.locator('.jcalc-score')).toHaveCount(0);
   }
   control.conversionMode = 'ready';
+  await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '기존 이용권으로 조회할 수 있습니다.' })).toBeVisible();
   await fillScores(page, 'raw'); await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
   await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
   await expect(page.getByText(/가채점 변환 자료가 아직 없습니다/)).toBeVisible();
@@ -372,4 +384,82 @@ test('극단 확률은 0%·100% 대신 부등호 의미로 표시하고 새로�
   await page.reload();
   await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
   await expect(page.locator('.jcalc-probability')).toHaveCount(0); await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
+});
+
+test('이용 상태 확인 중에도 입력·검색은 유지되고 결과 조회는 서버 권한 확인 뒤 열린다', async ({ page }) => {
+  const control = await setup(page); control.accessMode = 'defer'; await page.goto(path);
+  await expect(page.getByRole('heading', { name: '이용 권한을 확인하고 있습니다.' })).toBeVisible();
+  await prepareConversion(page);
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeDisabled();
+  await expect.poll(() => Boolean(control.accessRelease)).toBe(true);
+  control.accessMode = 'ready'; control.accessRelease();
+  await expect(page.getByRole('heading', { name: '기존 이용권으로 조회할 수 있습니다.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeEnabled();
+  await expect(page.getByText('검수 자료 준비 중', { exact: true })).toBeVisible();
+});
+
+test('이용권 없음·확인 실패·손상 응답을 구분하며 결제를 호출하지 않고 입력을 보존한다', async ({ page }) => {
+  const control = await setup(page); control.accessAllowed = false; await page.goto(path); await prepareConversion(page);
+  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: '내 이용권 확인', exact: true })).toHaveAttribute('href', '/mypage');
+  for (const mode of ['error', 'invalid']) {
+    control.accessMode = mode;
+    await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '이용 상태를 다시 확인해주세요.' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeDisabled();
+    await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toHaveValue('130');
+  }
+  control.accessMode = 'ready'; control.accessAllowed = true;
+  await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '기존 이용권으로 조회할 수 있습니다.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeEnabled();
+  expect(control.calls.every(call => ['get_univ_list_only', 'get_calculator_access'].includes(call.type))).toBe(true);
+});
+
+test('권한 재확인·실제 조회 중 권한 변경은 이전 수치를 숨기고 자동 재시도하지 않는다', async ({ page }) => {
+  const control = await setup(page); control.forecastMode = 'ready'; await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-probability')).toHaveText('약 82%');
+  control.accessAllowed = false;
+  await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  control.accessAllowed = true;
+  await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeEnabled();
+  control.conversionMode = 'denied';
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(2);
+});
+
+test('중복 클릭과 이용 상태의 늦은 응답은 조회를 반복하거나 다른 계정 권한을 복구하지 않는다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page); control.conversionMode = 'defer';
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).dblclick();
+  await expect.poll(() => Boolean(control.conversionRelease)).toBe(true);
+  expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(1);
+  control.conversionMode = 'ready'; control.conversionRelease();
+  await expect(page.locator('.jcalc-score')).toHaveCount(1);
+  control.accessMode = 'defer';
+  await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+  await expect.poll(() => Boolean(control.accessRelease)).toBe(true);
+  await page.evaluate(() => clearClientSession());
+  await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
+  control.accessMode = 'ready'; control.accessRelease();
+  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toHaveCount(0);
+});
+
+test('다른 화면에서 돌아오면 이용 상태를 재확인하고 연속 focus는 요청을 반복하지 않는다', async ({ page }) => {
+  const control = await setup(page); control.forecastMode = 'ready'; await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-probability')).toHaveText('약 82%');
+  await page.clock.install(); await page.clock.fastForward(31_000);
+  control.accessAllowed = false;
+  await page.evaluate(() => { dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); });
+  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  expect(control.calls.filter(call => call.type === 'get_calculator_access')).toHaveLength(2);
 });
