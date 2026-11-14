@@ -1,6 +1,11 @@
-:root { color-scheme: light; --ink:#17243b; --muted:#56647a; --blue:#315fce; --line:#dce3ef; --panel:#f4f7fc; }
+/* Use the same bundled variable font and moderate weight hierarchy as the Jungsi landing. */
+@font-face { font-family:Pretendard; src:url('/assets/jungsi-2027/PretendardVariable.woff2') format('woff2'); font-weight:45 920; font-display:swap; }
+:root { color-scheme: light; --ink:#17243b; --muted:#56647a; --blue:#315fce; --line:#dce3ef; --panel:#f4f7fc; font-synthesis:none; }
 * { box-sizing:border-box; }
-body { margin:0; background:#fff; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.75; }
+body { margin:0; background:#fff; color:var(--ink); font-family:Pretendard,-apple-system,sans-serif; font-weight:450; line-height:1.75; }
+h1, h2, h3 { font-weight:560; }
+strong, b { font-weight:620; }
+button, input, select, textarea { font:inherit; }
 a { color:var(--blue); text-underline-offset:3px; }
 a:focus-visible { outline:3px solid #f3b51b; outline-offset:3px; }
 .skip-link { position:absolute; left:-9999px; top:0; padding:8px 12px; background:#fff; z-index:2; }
@@ -8,26 +13,26 @@ a:focus-visible { outline:3px solid #f3b51b; outline-offset:3px; }
 .site-header { border-bottom:1px solid var(--line); }
 .site-header-inner, main, footer { width:min(100% - 36px, 820px); margin:0 auto; }
 .site-header-inner { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.brand { color:var(--ink); font-weight:800; text-decoration:none; }
+.brand { color:var(--ink); font-weight:650; text-decoration:none; }
 .home-link { font-size:14px; }
 main { padding:40px 0 64px; }
-.eyebrow { margin:0 0 8px; color:var(--blue); font-size:14px; font-weight:700; }
+.eyebrow { margin:0 0 8px; color:var(--blue); font-size:14px; font-weight:550; }
 h1 { margin:0 0 16px; font-size:clamp(30px,6vw,44px); line-height:1.3; letter-spacing:-.04em; }
 h2 { margin:40px 0 12px; font-size:clamp(22px,4vw,28px); line-height:1.4; letter-spacing:-.025em; }
 h3 { margin:22px 0 8px; font-size:18px; line-height:1.5; }
 p, li { color:var(--muted); }
-.lead { color:var(--ink); font-size:18px; line-height:1.8; }
+.lead { color:var(--ink); font-size:18px; font-weight:500; line-height:1.8; }
 .notice { margin:24px 0; padding:18px 20px; border-left:4px solid var(--blue); border-radius:8px; background:var(--panel); }
 .notice p { margin:0; }
 .steps { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0; list-style:none; counter-reset:step; }
 .steps li { min-width:0; padding:18px; border:1px solid var(--line); border-radius:10px; background:#fff; }
-.steps li::before { counter-increment:step; content:counter(step,decimal-leading-zero); display:block; margin-bottom:6px; color:var(--blue); font-weight:800; }
+.steps li::before { counter-increment:step; content:counter(step,decimal-leading-zero); display:block; margin-bottom:6px; color:var(--blue); font-weight:600; }
 .steps strong { color:var(--ink); }
 .source-list { padding-left:20px; }
 .source-list li { overflow-wrap:anywhere; }
 .cta { margin:36px 0 0; padding:22px; border-radius:12px; background:var(--panel); }
 .cta p { margin:0 0 12px; }
-.cta a { font-weight:800; }
+.cta a { font-weight:550; }
 footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
 @media (max-width:600px) {
   .site-header-inner, main, footer { width:min(100% - 28px, 820px); }
@@ -36,7 +41,7 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
   .lead { font-size:17px; }
 }
 
-.article-meta{color:#475569;font-size:.9rem}.table-scroll{overflow-x:auto;margin:1.5rem 0}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;font-weight:700;margin-bottom:.5rem}th,td{padding:.75rem;border:1px solid #cbd5e1}thead{background:#f1f5f9}
+.article-meta{color:#475569;font-size:.9rem}.table-scroll{overflow-x:auto;margin:1.5rem 0}table{width:100%;border-collapse:collapse;text-align:left}caption{text-align:left;font-weight:560;margin-bottom:.5rem}th{font-weight:560}th,td{padding:.75rem;border:1px solid #cbd5e1}thead{background:#f1f5f9}
 
 /* Score guide reading layout; other intent guides retain their existing layout. */
 .score-guide { background: #f5f7fb; word-break: keep-all; overflow-wrap: break-word; }
@@ -47,7 +52,7 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
 .score-guide p { margin-top: 12px; margin-bottom: 20px; }
 .score-guide .article-meta { font-size: 13px; }
 .score-guide .guide-toc { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0; }
-.score-guide .guide-toc a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); text-decoration: none; font-weight: 650; }
+.score-guide .guide-toc a { padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); text-decoration: none; font-weight: 550; }
 .score-guide .steps { gap: 18px; }
 .score-guide .steps li { padding: 24px; line-height: 1.9; background: #fafbfe; }
 .score-guide .steps strong { display: inline-block; margin-bottom: 8px; }
@@ -74,9 +79,9 @@ footer { padding:20px 0 32px; border-top:1px solid var(--line); color:var(--mute
 .score-guide .topic-card { display: flex; flex-direction: column; align-items: flex-start; padding: 22px 20px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); text-decoration: none; background: #fff; transition: border-color .15s, background .15s; }
 .score-guide .topic-card:hover { background: #f4f7fc; border-color: var(--blue); }
 .score-guide .topic-card.is-current { background: #edf3ff; border-color: #9ab4ee; }
-.score-guide .topic-tag { font-size: 12px; font-weight: 750; color: #315fce; padding: 3px 9px; border-radius: 6px; background: #e4edff; }
+.score-guide .topic-tag { font-size: 12px; font-weight: 550; color: #315fce; padding: 3px 9px; border-radius: 6px; background: #e4edff; }
 .score-guide .topic-card h3 { margin: 16px 0 0; font-size: 19px; line-height: 1.5; }
 .score-guide .topic-card p { font-size: 14px; line-height: 1.7; margin: 12px 0 24px; }
-.score-guide .topic-action { margin-top: auto; font-size: 14px; font-weight: 750; color: var(--blue); }
+.score-guide .topic-action { margin-top: auto; font-size: 14px; font-weight: 550; color: var(--blue); }
 .score-guide #score-article { scroll-margin-top: 24px; }
 @media (max-width:700px) { .score-guide .topic-grid { grid-template-columns: 1fr; } .score-guide .topic-card { padding: 20px; } .score-guide .topic-card h3 { margin-top: 12px; } .score-guide .topic-card p { margin-bottom: 16px; } }
