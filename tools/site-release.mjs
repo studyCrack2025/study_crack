@@ -11,6 +11,7 @@ export const NO_CACHE = 'no-cache, no-store, must-revalidate';
 export const IMMUTABLE = 'public, max-age=31536000, immutable';
 const DIST = 'studycrack-mobile-app/dist';
 const FIXED_ENTRIES = [`${DIST}/studycrack-mobile.bundle.js`, `${DIST}/studycrack-mobile.css`];
+const STABLE_ENTRIES = [...FIXED_ENTRIES, `${DIST}/jungsi-calculator.bundle.js`];
 const GENERATED_FILES = ['release.json', 'js/release.js'];
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
@@ -31,7 +32,7 @@ function isStaticPath(relative) {
 }
 
 export function isBuildPath(relative) {
-  return FIXED_ENTRIES.includes(relative)
+  return STABLE_ENTRIES.includes(relative)
     || /^studycrack-mobile-app\/dist\/chunks\/[\w-]+-[\w-]{8}\.(?:js|css)$/.test(relative)
     || /^studycrack-mobile-app\/dist\/assets\/[\w-]+-[\w-]{8}\.(?:png|jpg|jpeg|svg|webp|woff2?)$/.test(relative);
 }
@@ -99,7 +100,7 @@ function releaseFiles(commit, release) {
 }
 
 export function cacheControlFor(file) {
-  if (['js/config.js', 'js/shared/api.js', 'js/shared/signup-submit.js', 'js/shared/account-recovery.js', ...GENERATED_FILES, ...FIXED_ENTRIES].includes(file)) return NO_CACHE;
+  if (['js/config.js', 'js/shared/api.js', 'js/shared/signup-submit.js', 'js/shared/account-recovery.js', ...GENERATED_FILES, ...STABLE_ENTRIES].includes(file)) return NO_CACHE;
   return /^(?:js\/|css\/|assets\/pwa\/|studycrack-mobile-app\/dist\/(?:chunks|assets)\/)/.test(file) ? IMMUTABLE : NO_CACHE;
 }
 
@@ -221,8 +222,10 @@ export async function verifySiteRelease({ root = repositoryRoot, output, commit,
   return { digest, manifest };
 }
 
-export function createPublishCommands(site, bucket, aliases) {
+export function createPublishCommands(site, bucket, aliases, entries = FIXED_ENTRIES) {
   assert.match(bucket, /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, 'Invalid static bucket');
+  const stableEntries = [...new Set([...FIXED_ENTRIES, ...entries])];
+  assert.ok(stableEntries.every(entry => STABLE_ENTRIES.includes(entry)), 'Unapproved stable build entry');
   const destination = `s3://${bucket}`;
   const sync = (folder, cache) => ['s3', 'sync', path.join(site, folder), `${destination}/${folder}`, '--cache-control', cache, '--only-show-errors'];
   const copy = (file, cache, extra = []) => ['s3', 'cp', path.join(site, file), `${destination}/${file}`, '--cache-control', cache, '--only-show-errors', ...extra];
@@ -231,7 +234,7 @@ export function createPublishCommands(site, bucket, aliases) {
     sync('assets', NO_CACHE), sync('js', IMMUTABLE), sync('css', IMMUTABLE),
     copy('js/config.js', NO_CACHE), copy('js/shared/api.js', NO_CACHE), copy('js/shared/signup-submit.js', NO_CACHE), copy('js/shared/account-recovery.js', NO_CACHE), copy('js/release.js', NO_CACHE),
     [...copy('assets/pwa', IMMUTABLE), '--recursive'],
-    ...FIXED_ENTRIES.map((entry) => copy(entry, NO_CACHE)),
+    ...stableEntries.map((entry) => copy(entry, NO_CACHE)),
     ['s3', 'sync', site, destination, '--exclude', 'assets/*', '--exclude', 'js/*', '--exclude', 'css/*', '--exclude', 'studycrack-mobile-app/*', '--exclude', 'release.json', '--cache-control', NO_CACHE, '--only-show-errors'],
     ['s3', 'cp', site, destination, '--recursive', '--exclude', '*', '--include', '*.html', ...Object.keys(aliases).flatMap((alias) => ['--include', alias]), '--content-type', 'text/html; charset=utf-8', '--cache-control', NO_CACHE, '--only-show-errors'],
     ...[...directoryAliases(aliases)].map(alias => ['s3', 'cp', path.join(site, aliases[alias]), `${destination}/${alias}`, '--content-type', 'text/html; charset=utf-8', '--cache-control', NO_CACHE, '--only-show-errors']),
@@ -256,7 +259,8 @@ async function main() {
     assert.equal(manifest.release, `${process.env.GITHUB_REF_NAME}-${commit.slice(0, 8)}`, 'Artifact branch does not match destination');
     const policy = await loadPublicPolicy();
     for (const args of createPrivateCleanupCommands(process.env.S3_BUCKET || '')) execFileSync('aws', args, { stdio: 'inherit' });
-    for (const args of createPublishCommands(path.join(output, 'site'), process.env.S3_BUCKET || '', policy.aliases)) execFileSync('aws', args, { stdio: 'inherit' });
+    const entries = manifest.files.map(file => file.path).filter(file => STABLE_ENTRIES.includes(file));
+    for (const args of createPublishCommands(path.join(output, 'site'), process.env.S3_BUCKET || '', policy.aliases, entries)) execFileSync('aws', args, { stdio: 'inherit' });
   } else throw new Error('Usage: node tools/site-release.mjs build|verify|publish <artifact-dir> <commit> <release|verified-digest>');
 }
 

@@ -159,6 +159,8 @@
     "js/tutorial.js",
     "jungsi-consulting-2027.html",
     "jungsi-consulting-app.html",
+    "jungsi-calculator-2027.html",
+    "css/jungsi-calculator-app-shell.css",
     "css/jungsi-consulting.css",
     "css/jungsi-consulting-app-shell.css",
     "js/jungsi-consulting.js",
@@ -195,6 +197,7 @@
   "aliases": {
     "basic-preview": "basic-preview.html",
     "2027-jungsi-consulting": "jungsi-consulting-2027.html",
+    "2027-jungsi-consulting/calculator": "jungsi-calculator-2027.html",
     "2027-jungsi-consulting/start": "jungsi-consulting-app.html",
     "2027-jungsi-consulting/login": "jungsi-consulting-app.html",
     "2027-jungsi-consulting/home": "jungsi-consulting-app.html",

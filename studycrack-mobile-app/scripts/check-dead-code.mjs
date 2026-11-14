@@ -20,7 +20,7 @@ async function listModules(directory) {
 
 const parsedModules = new Set();
 const productionModules = new Set();
-const result = await build({
+const auditOptions = {
   root: appRoot,
   logLevel: 'silent',
   plugins: [{
@@ -34,8 +34,10 @@ const result = await build({
     }
   }],
   build: { write: false }
-});
-const outputs = (Array.isArray(result) ? result : [result]).flatMap((item) => item.output || []);
+};
+const builds = [];
+for (const mode of ['production', 'jungsi-calculator']) builds.push(await build({ ...auditOptions, mode }));
+const outputs = builds.flatMap(result => (Array.isArray(result) ? result : [result]).flatMap(item => item.output || []));
 const chunks = outputs.filter((item) => item.type === 'chunk');
 const manifest = JSON.parse(await readFile(path.join(appRoot, 'package.json'), 'utf8'));
 assertProductImportBoundary({
@@ -44,6 +46,7 @@ assertProductImportBoundary({
   outputTexts: outputs.filter((item) => item.type === 'chunk' || item.fileName.endsWith('.css')).map((item) => item.code || String(item.source))
 });
 const removedExports = [];
+const usedExports = new Set();
 
 for (const chunk of chunks) {
   for (const [moduleId, details] of Object.entries(chunk.modules || {})) {
@@ -52,6 +55,7 @@ for (const chunk of chunks) {
     for (const name of details.removedExports || []) {
       removedExports.push(`${path.relative(appRoot, cleanId)}:${name}`);
     }
+    for (const name of details.renderedExports || []) usedExports.add(`${path.relative(appRoot, cleanId)}:${name}`);
   }
 }
 
@@ -61,6 +65,7 @@ const unreachable = sourceModules
   .map((modulePath) => path.relative(appRoot, modulePath));
 
 assert.deepEqual(unreachable, [], `Unreachable production modules:\n${unreachable.join('\n')}`);
-assert.deepEqual(removedExports.sort(), [], `Unused production exports:\n${removedExports.sort().join('\n')}`);
+const unusedExports = [...new Set(removedExports)].filter(name => !usedExports.has(name)).sort();
+assert.deepEqual(unusedExports, [], `Unused production exports:\n${unusedExports.join('\n')}`);
 
 console.log(`Dead-code check passed: ${sourceModules.length} source modules are reachable with no unused exports or archived design imports.`);

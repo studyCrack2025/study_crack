@@ -16,7 +16,7 @@ let _observedSessionEpoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
 function isSafeSocialReturnPath(value) {
     return ['', '/studycrack-mobile', '/studycrack-mobile/', '/studycrack-mobile.html',
         '/studycrack-mobile?screen=accountInfo', '/studycrack-mobile/?screen=accountInfo', '/studycrack-mobile.html?screen=accountInfo',
-        '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home',
+        '/2027-jungsi-consulting/calculator', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home',
         '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule',
         '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'].includes(value);
 }
@@ -222,7 +222,7 @@ function reportSharedDiagnostic(kind, route, status = 0) {
     try { window.STUDYCRACK_DIAGNOSTICS?.record(kind, route, Number.isInteger(status) ? status : 0); } catch (_) {}
 }
 
-const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/jungsi-consulting-app.html', '/2027-jungsi-consulting', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'];
+const PUBLIC_ROUTES_EXACT = ['/', '/login', '/signup', '/tutor/login', '/tutor/signup', '/welcome', '/social-callback', '/admin/login', '/service', '/promo', '/jungsi-consulting-app.html', '/jungsi-calculator-2027.html', '/2027-jungsi-consulting/calculator', '/2027-jungsi-consulting', '/2027-jungsi-consulting/start', '/2027-jungsi-consulting/login', '/2027-jungsi-consulting/home', '/2027-jungsi-consulting/survey', '/2027-jungsi-consulting/materials', '/2027-jungsi-consulting/schedule', '/2027-jungsi-consulting/written-session', '/2027-jungsi-consulting/report', '/2027-jungsi-consulting/final-call'];
 const PUBLIC_ROUTES_PREFIX = ['/mbti_', '/checkout', '/success', '/change-password', '/studycrack-mobile'];
 
 function isPublicRoute(pathname) {

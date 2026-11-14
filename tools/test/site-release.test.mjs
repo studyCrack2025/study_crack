@@ -56,6 +56,22 @@ test('identical inputs produce identical manifest identities', async (t) => {
   assert.equal(first.digest, second.digest);
 });
 
+test('a calculator entry is sealed and published with no-cache only when present in the verified release', async t => {
+  const ctx = await fixture(t);
+  const entry = `${dist}/jungsi-calculator.bundle.js`;
+  await ctx.put(entry, 'export const calculator = true;');
+  const { manifest, digest } = await buildSiteRelease({ ...ctx, commit, release });
+  assert.ok(manifest.files.some(file => file.path === entry));
+  assert.equal(cacheControlFor(entry), NO_CACHE);
+  const previous = createPublishCommands('/artifact/site', 'static.example', policy.aliases);
+  assert.ok(!previous.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js')));
+  const entries = manifest.files.map(file => file.path).filter(file => [entry, `${dist}/studycrack-mobile.bundle.js`, `${dist}/studycrack-mobile.css`].includes(file));
+  const current = createPublishCommands('/artifact/site', 'static.example', policy.aliases, entries);
+  assert.ok(current.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js') && args.includes(NO_CACHE)));
+  assert.throws(() => createPublishCommands('/artifact/site', 'static.example', {}, ['private.js']), /Unapproved stable build entry/);
+  await verifySiteRelease({ ...ctx, commit, expectedDigest: digest });
+});
+
 test('nested clean URLs preserve both parent and child bytes without a file-directory collision', async (t) => {
   const ctx = await fixture(t);
   const aliases = { ...policy.aliases, '2027-jungsi-consulting': 'index.html', '2027-jungsi-consulting/start': 'studycrack-mobile.html', '2027-jungsi-consulting/start/help': 'index.html' };
