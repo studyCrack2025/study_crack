@@ -2,7 +2,13 @@ let consultingReportFacts = null;
 let consultingReportFactsBusy = false;
 let consultingReportFactsGeneration = 0;
 const reportFactsNode = id => document.getElementById(id);
-const reportFactNumber = n => typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR', { maximumFractionDigits: 3 }) : '미확인';
+const reportFactNumber = n => typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR', { maximumFractionDigits: 6 }) : '미확인';
+function reportFactProbability(fact) {
+    if (!Object.hasOwn(fact, 'forecast')) return fact.probability ? reportFactNumber(fact.probability.point) + '%' : '판단 보류';
+    const f = fact.forecast, p = f?.probability;
+    if (!fact.probability || f?.status !== 'available' || f.validationState !== 'passed' || f.riskBand !== fact.reportRisk?.band || !p || !Number.isInteger(p.percent) || p.percent < 1 || p.percent > 99) return '판단 보류';
+    return p.qualifier === 'less_than' && p.percent === 1 ? '1% 미만' : p.qualifier === 'more_than' && p.percent === 99 ? '99% 초과' : p.qualifier === 'approximate' ? `약 ${p.percent}%` : '판단 보류';
+}
 const reportFactGroups = { ga: '가군', na: '나군', da: '다군', other: '별도 지원 제도' };
 const reportFactReasons = {
     ADMISSION_DATA_NOT_CONFIGURED: '활성 입시자료 연결이 필요합니다.', ACTIVE_DATA_RELEASE_NOT_FOUND: '해당 학년도의 승인된 입시자료가 없습니다.',
@@ -38,11 +44,11 @@ function reportFactCard(fact, prefix) {
     const dl = reportFactElement('dl', undefined, 'consulting-report-fact-metrics');
     const rows = [['예상 환산점수', reportFactNumber(fact.convertedScore) + ' / ' + reportFactNumber(fact.maximumScore)],
         [fact.cutoffStatistic === 'registered_70pct' ? '등록자 70% 컷 추정' : fact.cutoffStatistic === 'final_admitted' ? '최종 합격선 추정' : '예상컷 · 종류 미확인', reportFactNumber(fact.expectedCutoff?.point)],
-        ['예상 합격률', fact.probability ? reportFactNumber(fact.probability.point) + '%' : '판단 보류']];
+        ['예상 합격률', reportFactProbability(fact)]];
     for (const [label, value] of rows) { const cell = document.createElement('div'); cell.append(reportFactElement('dt', label), reportFactElement('dd', value)); dl.append(cell); }
     card.append(dl);
     if (fact.expectedCutoff) card.append(reportFactElement('p', `예상컷 범위 ${reportFactNumber(fact.expectedCutoff.low)}~${reportFactNumber(fact.expectedCutoff.high)} · 같은 환산 척도 차이 ${reportFactNumber(fact.scoreDelta)}`, 'consulting-caption'));
-    if (fact.probability) card.append(reportFactElement('p', `합격률 범위 ${reportFactNumber(fact.probability.low)}~${reportFactNumber(fact.probability.high)}% · 참고 추정치`, 'consulting-caption'));
+    if (fact.probability) card.append(reportFactElement('p', `컷 시나리오별 추정 범위 ${reportFactNumber(fact.probability.low)}~${reportFactNumber(fact.probability.high)}% · 합격 확률의 신뢰구간이 아닙니다.`, 'consulting-caption'));
     return card;
 }
 function reportFactsWarnings(parent, codes) {

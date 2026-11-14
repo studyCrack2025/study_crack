@@ -317,6 +317,26 @@ test('계산은 고정 기준만 전송하고 성적·라인·A/B/C에서 0과 �
     expect(sent).toHaveLength(1); expect(Object.keys(sent[0].data).sort()).toEqual(['caseId', 'expectedCaseRevision', 'expectedSourceDigest', 'expectedSourceRevision']);
 });
 
+test('새 계산 기준의 확률·단계·환산 소수는 계산기와 같은 표기로 표시하고 잘못된 응답은 보류한다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true });
+    for (const [point, percent, qualifier, band, label, text] of [[79.999, 79, 'approximate', 'appropriate', '적정', '약 79%'], [0, 1, 'less_than', 'risky', '위험', '1% 미만'], [100, 99, 'more_than', 'stable', '안정', '99% 초과'], [80, 0, 'approximate', 'stable', '안정', '판단 보류']]) {
+        await page.evaluate(({ point, percent, qualifier, band, label }) => {
+            const workspace = window.__reportSource.ws.reportFacts, fact = workspace.record.result.facts[0];
+            fact.convertedScore = 743.123456; fact.probability = { low: point, point, high: point }; fact.reportRisk = { band, label, wide: false };
+            fact.forecast = { status: 'available', validationState: 'passed', riskBand: band, probability: { percent, qualifier } };
+            renderConsultingReportFacts(workspace);
+        }, { point, percent, qualifier, band, label });
+        const card = page.locator('#consultingReportFactsResult .consulting-report-fact-card').first();
+        await expect(card).toContainText('743.123456 / 1,000'); await expect(card.locator('.consulting-report-fact-risk')).toHaveText(label);
+        await expect(card.locator('dl > div').nth(2).locator('dd')).toHaveText(text);
+        await expect(card).toContainText('신뢰구간이 아닙니다.');
+        for (const width of [320, 1440]) {
+            await page.setViewportSize({ width, height: 900 });
+            expect(await card.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        }
+    }
+});
+
 test('계산 중 입력·재실행을 잠그고 세션 종료 뒤 늦게 도착한 결과를 노출하지 않는다', async ({ page }) => {
     await prepare(page, { facts: true }); await page.evaluate(() => { window.__reportSource.deferFacts = true; });
     await page.locator('#consultingReportCalculateFacts').click(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();
