@@ -9,7 +9,7 @@ const catalog = [
 
 async function setup(page, { signedIn = true } = {}) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const control = { calls: [], mode: 'ready', release: null };
+  const control = { calls: [], mode: 'ready', release: null, conversionMode: 'ready', conversionRelease: null, forecastMode: 'pending', riskBand: 'stable', probabilityPercent: 82, probabilityQualifier: 'approximate' };
   await page.addInitScript(({ signedIn }) => {
     if (signedIn && !localStorage.getItem('userId') && localStorage.getItem('sc_session_ended') !== '1') {
       localStorage.setItem('userId', 'calculator-student-A');
@@ -22,8 +22,18 @@ async function setup(page, { signedIn = true } = {}) {
   await page.route('**/__calculator-analysis', async route => {
     const payload = route.request().postDataJSON();
     control.calls.push(payload);
-    expect(payload).toEqual({ type: 'get_univ_list_only' });
     expect((await route.request().allHeaders()).authorization).toBeUndefined();
+    if (payload.type === 'get_calculator_conversion') {
+      expect(Object.keys(payload).sort()).toEqual(['data', 'type']);
+      expect(Object.keys(payload.data).sort()).toEqual(['scores', 'targets']);
+      if (control.conversionMode === 'defer') await new Promise(resolve => { control.conversionRelease = resolve; });
+      try {
+        if (control.conversionMode === 'error') return await route.fulfill({ status: 503, json: { code: 'CALCULATOR_TEMPORARILY_UNAVAILABLE' } });
+        if (control.conversionMode === 'denied') return await route.fulfill({ status: 402, json: { code: 'CALCULATOR_ACCESS_REQUIRED' } });
+        return await route.fulfill({ json: conversionResponse(payload, control) });
+      } catch (_) { return; }
+    }
+    expect(payload).toEqual({ type: 'get_univ_list_only' });
     if (control.mode === 'defer') await new Promise(resolve => { control.release = resolve; });
     try {
       if (control.mode === 'error') return await route.fulfill({ status: 503, json: { error: 'Unavailable' } });
@@ -32,6 +42,33 @@ async function setup(page, { signedIn = true } = {}) {
     } catch (_) {}
   });
   return control;
+}
+
+function conversionResponse(payload, control) {
+  const mode = control.conversionMode;
+  const release = { dataReleaseId: 'ADMISSION_RELEASE_2027_BROWSER_TEST', contentDigest: `sha256:${'a'.repeat(64)}`, formulaVersion: 'formula-1.0.0', eligibilityRuleVersion: 'eligibility-1.0.0' };
+  return { success: true, contractVersion: 'jungsi-calculator-conversion-v1', admissionYear: mode === 'invalid' ? 2026 : 2027, basis: payload.data.scores.basis, scoreSource: 'self_reported', scoreDigest: `sha256:${'b'.repeat(64)}`, release: mode === 'pending' ? null : release,
+    results: payload.data.targets.map(target => {
+      const option = { admissionUnitId: 'UNIT_BROWSER_EXAMPLE', campusName: '글로벌캠퍼스', unitName: target.major, trackName: '수능 일반전형', admissionGroup: 'na' };
+      const row = { university: target.university, major: target.major, status: 'available', choices: [option], selected: option, reasonCodes: [], convertedScore: 743.1256, maximumScore: 1000 };
+      if (mode === 'choice') row.choices.push({ ...option, admissionUnitId: 'UNIT_BROWSER_SECOND', admissionGroup: 'da' });
+      if (mode === 'choice' && !target.admissionUnitId) Object.assign(row, { status: 'choice_required', selected: null, reasonCodes: ['UNIT_SELECTION_REQUIRED'], convertedScore: null, maximumScore: null });
+      if (target.admissionUnitId) row.selected = row.choices.find(choice => choice.admissionUnitId === target.admissionUnitId);
+      const reason = payload.data.scores.basis === 'raw' ? 'RAW_SCOREBOARD_NOT_RELEASED' : mode === 'pending' ? 'DATA_RELEASE_NOT_READY' : mode === 'missing-table' ? 'SCORE_LOOKUP_NOT_FOUND' : null;
+      if (reason) Object.assign(row, { status: 'unavailable', reasonCodes: [reason], convertedScore: null, maximumScore: null });
+      if (control.forecastMode !== 'legacy') {
+        row.forecast = { status: 'unavailable', probability: null, riskBand: null,
+          reasonCodes: [row.status !== 'available' ? 'FORECAST_CONVERSION_NOT_AVAILABLE' : control.forecastMode === 'range' ? 'FORECAST_SCORE_OUTSIDE_VALIDATED_RANGE' : 'FORECAST_PUBLICATION_NOT_APPROVED'],
+          policyVersion: 'calculator-forecast-publication-1.0.0', riskPolicyVersion: 'admission-risk-1.0.0' };
+        if (row.status === 'available' && ['ready', 'invalid', 'mismatch'].includes(control.forecastMode)) Object.assign(row.forecast, {
+          status: 'available', probability: { percent: control.probabilityPercent, qualifier: control.probabilityQualifier }, riskBand: control.riskBand, reasonCodes: [],
+          modelVersion: 'probability-1.0.0', publicationId: 'CALCULATOR_FORECAST_2027_BROWSER_TEST', validatedAt: '2026-11-01T00:00:00.000Z',
+          validationState: control.forecastMode === 'invalid' ? 'failed' : 'passed', dataReleaseId: release.dataReleaseId,
+          admissionUnitId: control.forecastMode === 'mismatch' ? 'UNIT_OTHER_MAJOR' : row.selected.admissionUnitId
+        });
+      }
+      return row;
+    }) };
 }
 
 async function fits(page) {
@@ -98,7 +135,7 @@ test('공식 성적 확인·후보 검색·수정 상태·새로고침은 기존
   await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toHaveValue('130');
   await expect(page.getByRole('combobox', { name: '제2외국어·한문 등급' })).toHaveValue('3');
   await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
-  await expect(page.getByText('분석 결과는 준비 중입니다.', { exact: true })).toBeVisible();
+  await expect(page.getByText('검수 완료 자료에 한해 환산합니다.', { exact: true })).toBeVisible();
   expect(control.calls.every(call => call.type === 'get_univ_list_only')).toBe(true);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => /calculator|quantitative/i.test(key)))).toEqual([]);
 });
@@ -185,7 +222,8 @@ test('로그아웃·다른 계정·늦은 목록 응답은 이전 학생 성적�
 });
 
 test('전용 화면은 여섯 화면 크기에서 실제 폰트와 문서 스크롤·선택한 대학을 유지한다', async ({ page }, testInfo) => {
-  await setup(page);
+  const control = await setup(page); control.forecastMode = 'ready';
+  await page.addInitScript(() => sessionStorage.removeItem('sc_jungsi_calculator_v1:calculator-student-A'));
   for (const width of [320, 375, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(path);
@@ -193,9 +231,145 @@ test('전용 화면은 여섯 화면 크기에서 실제 폰트와 문서 스크
     expect(await page.evaluate(() => Array.from(document.fonts).some(font => font.family === 'Paperlogy' && font.status === 'loaded'))).toBe(true);
     await fits(page);
     await selectGlobal(page);
+    await page.getByRole('searchbox', { name: '학과명 검색', exact: true }).fill('컴퓨터');
+    await page.getByRole('button', { name: '컴퓨터공학부 후보에 추가', exact: true }).click();
+    await fillScores(page);
+    await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.locator('.jcalc-score > strong')).toHaveText('743.1256점');
     await fits(page);
     await page.locator('.jcalc-footer').scrollIntoViewIfNeeded();
     await expect(page.locator('.jcalc-footer')).toBeInViewport();
     if ([320, 1440].includes(width)) await page.screenshot({ path: testInfo.outputPath(`jungsi-calculator-${width}.png`), fullPage: true });
   }
+});
+
+async function prepareConversion(page) {
+  await fillScores(page); await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+  await selectGlobal(page);
+  await page.getByRole('searchbox', { name: '학과명 검색', exact: true }).fill('컴퓨터');
+  await page.getByRole('button', { name: '컴퓨터공학부 후보에 추가', exact: true }).click();
+}
+
+test('환산 결과는 실제 점수·기준 만점·캠퍼스·전형·군·버전을 표시하고 수정·새로고침 후 재조회한다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score > strong')).toHaveText('743.1256점');
+  await expect(page.getByText(/기준 만점 1,000점/)).toBeVisible();
+  await expect(page.locator('.jcalc-result-context')).toContainText('수능 일반전형 · 나군');
+  await page.getByText('적용한 자료 버전', { exact: true }).click();
+  await expect(page.getByText(/ADMISSION_RELEASE_2027_BROWSER_TEST/)).toBeVisible();
+  await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129');
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '환산점수·확률 조회', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score')).toHaveCount(1);
+  const calls = control.calls.filter(call => call.type === 'get_calculator_conversion');
+  expect(calls).toHaveLength(2); expect(calls[1].data.scores.exam.kor.std).toBe(129);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+});
+
+test('복수 전형은 임의 계산하지 않고 전형·모집군을 고른 뒤 조회한다', async ({ page }) => {
+  const control = await setup(page); control.conversionMode = 'choice';
+  await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.getByText('캠퍼스·전형·모집군을 선택한 뒤 다시 조회해주세요.', { exact: true })).toBeVisible();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await page.getByRole('combobox', { name: /컴퓨터공학부 전형 선택$/ }).selectOption('UNIT_BROWSER_SECOND');
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-result-context')).toContainText('다군');
+  expect(control.calls.at(-1).data.targets[0].admissionUnitId).toBe('UNIT_BROWSER_SECOND');
+});
+
+test('승인 대기·변환표 누락·가채점·권한 부족은 가짜 숫자 없이 이유를 안내한다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page);
+  for (const [mode, message] of [['pending', '운영 승인을 기다리고'], ['missing-table', '등급표 또는 탐구 변환표'], ['denied', 'Basic·Starter·Standard·Pro']]) {
+    control.conversionMode = mode;
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.getByText(new RegExp(message))).toBeVisible();
+    await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  }
+  control.conversionMode = 'ready';
+  await fillScores(page, 'raw'); await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.getByText(/가채점 변환 자료가 아직 없습니다/)).toBeVisible();
+  expect(control.calls.at(-1).data.scores.exam.kor.std).toBeUndefined();
+});
+
+test('서버 실패·잘못된 연도 응답은 입력을 보존하고 재조회할 수 있다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page);
+  for (const mode of ['error', 'invalid']) {
+    control.conversionMode = mode;
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.getByRole('alert')).toBeVisible(); await expect(page.locator('.jcalc-score')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toHaveValue('130');
+  }
+  control.conversionMode = 'ready'; await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score')).toHaveCount(1);
+});
+
+test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page);
+  control.forecastMode = 'ready';
+  control.conversionMode = 'defer';
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect.poll(() => Boolean(control.conversionRelease)).toBe(true);
+  await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('128');
+  control.conversionMode = 'ready'; control.conversionRelease();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await expect(page.locator('.jcalc-probability')).toHaveCount(0);
+  await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+  control.conversionRelease = null; control.conversionMode = 'defer';
+  await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+  await expect.poll(() => Boolean(control.conversionRelease)).toBe(true);
+  await page.evaluate(() => { localStorage.setItem('userId', 'calculator-student-C'); dispatchEvent(new StorageEvent('storage', { key: 'userId' })); });
+  control.conversionMode = 'ready'; control.conversionRelease();
+  await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toBeVisible();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await expect(page.locator('.jcalc-probability')).toHaveCount(0);
+});
+
+test('검증된 확률과 다섯 단계는 서버 분류를 표시하고 실제 합격 보장으로 표현하지 않는다', async ({ page }) => {
+  const control = await setup(page); control.forecastMode = 'ready'; await page.goto(path); await prepareConversion(page);
+  for (const [riskBand, percent, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '중립'], ['challenge', 30, '도전'], ['risky', 15, '위험']]) {
+    control.riskBand = riskBand; control.probabilityPercent = percent;
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.locator('.jcalc-probability')).toHaveText(`약 ${percent}%`);
+    await expect(page.locator('.jcalc-forecast-badge')).toHaveText(label);
+    await expect(page.getByRole('list', { name: '지원 가능성 5단계' }).locator('[aria-current="true"]')).toHaveText(label);
+    await expect(page.getByText('입력 성적과 검증된 모델에 따른 추정치입니다. 합격을 보장하지 않습니다.', { exact: true })).toBeVisible();
+  }
+  await page.getByText('확률 자료 기준', { exact: true }).click();
+  await expect(page.getByText(/CALCULATOR_FORECAST_2027_BROWSER_TEST/)).toBeVisible();
+  const draft = await page.evaluate(() => sessionStorage.getItem('sc_jungsi_calculator_v1:calculator-student-A'));
+  expect(draft).not.toContain('probability'); expect(draft).not.toContain('forecast');
+  await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129');
+  await expect(page.locator('.jcalc-probability')).toHaveCount(0); await expect(page.getByRole('list', { name: '지원 가능성 5단계' })).toHaveCount(0);
+});
+
+test('검증 부족·다른 모집단위·손상 응답·구 백엔드는 환산점수를 보존하고 확률과 분류를 비운다', async ({ page }) => {
+  const control = await setup(page); await page.goto(path); await prepareConversion(page);
+  for (const [mode, message] of [['pending', '공개 검증이 완료되지'], ['range', '검증한 점수 범위를 벗어나'], ['invalid', '확률 결과를 확인하지'], ['mismatch', '확률 결과를 확인하지'], ['legacy', '확률 조회 기능을 준비']]) {
+    control.forecastMode = mode;
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.locator('.jcalc-forecast-note')).toContainText(message);
+    await expect(page.locator('.jcalc-score > strong')).toHaveText('743.1256점');
+    await expect(page.locator('.jcalc-forecast-badge')).toHaveText('판단 보류');
+    await expect(page.locator('.jcalc-probability')).toHaveCount(0); await expect(page.getByRole('list', { name: '지원 가능성 5단계' })).toHaveCount(0);
+  }
+});
+
+test('극단 확률은 0%·100% 대신 부등호 의미로 표시하고 새로고침 뒤 결과를 복원하지 않는다', async ({ page }) => {
+  const control = await setup(page); control.forecastMode = 'ready'; await page.goto(path); await prepareConversion(page);
+  for (const [percent, qualifier, riskBand, expected] of [[1, 'less_than', 'risky', '1% 미만'], [99, 'more_than', 'stable', '99% 초과']]) {
+    control.probabilityPercent = percent; control.probabilityQualifier = qualifier; control.riskBand = riskBand;
+    await page.getByRole('button', { name: '환산점수·확률 조회', exact: true }).click();
+    await expect(page.locator('.jcalc-probability')).toHaveText(expected);
+  }
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
+  await expect(page.locator('.jcalc-probability')).toHaveCount(0); await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
 });

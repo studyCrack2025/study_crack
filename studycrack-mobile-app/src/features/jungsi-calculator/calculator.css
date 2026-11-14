@@ -63,7 +63,7 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-major > div { flex: 1 1 180px; min-width: 0; }
 .jcalc-summary h2 small { color: var(--sc-ink-muted); font-size: 14px; font-weight: 400; }
 .jcalc-candidates { display: grid; gap: 12px; margin: 24px 0; padding: 0; list-style: none; }
-.jcalc-candidates li { display: grid; gap: 6px; min-width: 0; padding-bottom: 16px; border-bottom: 1px solid var(--sc-line-subtle); }
+.jcalc-candidates > li { display: grid; gap: 6px; min-width: 0; padding-bottom: 16px; border-bottom: 1px solid var(--sc-line-subtle); }
 .jcalc-candidates strong { color: var(--sc-brand-navy); font-size: 15px; }
 .jcalc-candidates span { font-size: 14px; }
 .jcalc-candidates small { color: var(--sc-ink-muted); font-size: 11px; }
@@ -71,6 +71,30 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-release-note { margin-top: 24px; padding: 20px 16px; border-radius: 8px; background: var(--sc-surface-subtle); color: var(--sc-brand-navy); }
 .jcalc-release-note strong { font-size: 14px; }
 .jcalc-release-note p { margin: 10px 0 0; color: var(--sc-ink-muted); font-size: 12px; line-height: 1.85; }
+.jcalc-calculate { width: 100%; margin-top: 8px; }
+.jcalc-result { display: grid; gap: 12px; padding-top: 8px; }
+.jcalc-result-context { margin: 0; color: var(--sc-ink-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.jcalc-result-message { margin: 0; padding: 12px; border-radius: 6px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 12px; line-height: 1.85; }
+.jcalc-score { display: grid; gap: 8px; padding: 16px 12px; border: 1px solid var(--sc-line-subtle); border-radius: 8px; background: var(--sc-surface-subtle); }
+.jcalc-score > span { color: var(--sc-brand-navy); font-size: 12px; }
+.jcalc-score > strong { color: var(--sc-brand-navy); font-size: 30px; font-weight: 800; letter-spacing: -0.04em; overflow-wrap: anywhere; }
+.jcalc-score > strong small { margin-left: 4px; font-size: 14px; font-weight: 400; }
+.jcalc-score > small { font-size: 10px; line-height: 1.8; }
+.jcalc-result-version { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+.jcalc-result-version summary { padding: 12px 0; cursor: pointer; }
+.jcalc-forecast { display: grid; gap: 12px; margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--sc-line-subtle); }
+.jcalc-forecast-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.jcalc-forecast-head p { margin: 0; color: var(--sc-ink); font-size: 12px; font-weight: 700; }
+.jcalc-forecast-badge { padding: 5px 8px; border: 1px solid var(--sc-line-subtle); border-radius: 4px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 12px; font-weight: 700; }
+.jcalc-forecast[data-risk="stable"] .jcalc-forecast-badge, .jcalc-forecast[data-risk="appropriate"] .jcalc-forecast-badge { background: var(--sc-surface-positive); color: var(--sc-action-positive-strong); }
+.jcalc-forecast[data-risk="neutral"] .jcalc-forecast-badge { background: var(--sc-surface-subtle); color: var(--sc-brand-navy); }
+.jcalc-forecast[data-risk="challenge"] .jcalc-forecast-badge { background: var(--sc-surface-threshold); color: var(--sc-ink); }
+.jcalc-forecast[data-risk="risky"] .jcalc-forecast-badge { background: var(--sc-surface-urgent); color: var(--sc-action-urgent-strong); }
+.jcalc-probability { margin: 0; color: var(--sc-brand-navy); font-size: 32px; font-weight: 800; line-height: 1.5; letter-spacing: -0.04em; }
+.jcalc-risk-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; margin: 0; padding: 0; list-style: none; }
+.jcalc-risk-scale li { min-width: 0; padding: 8px 2px; border-radius: 3px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); text-align: center; font-size: 10px; }
+.jcalc-risk-scale [aria-current="true"] { background: var(--sc-brand-navy); color: var(--sc-on-brand); font-weight: 700; }
+.jcalc-forecast-note { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.85; }
 .jcalc-login { max-width: 600px; }
 .jcalc-login-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .jcalc-login-actions a { flex: 1 1 180px; }
