@@ -109,8 +109,8 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .hero-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; width: min(100%,352px); padding: 0 20px; border-radius: 4px; background: var(--primary); color: #fff; font-size: 17px; font-weight: 800; transition: background .2s; }
 .hero-cta:hover { transform: translateY(-2px); background: #3d69da; }
 .hero-cta:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-.hero-cta--secondary { border: 1px solid rgba(255,255,255,.8); background: rgba(15,30,56,.5); }
-.hero-cta--secondary:hover { background: rgba(15,30,56,.8); }
+.hero-cta--secondary { border: 1px solid rgba(255,255,255,.8); background: #fff; color: #244a91; }
+.hero-cta--secondary:hover { background: #edf3ff; }
 .hero-example-link { display: flex; align-items: center; justify-content: center; width: fit-content; max-width: 100%; min-height: 44px; margin: 14px auto 0; padding: 8px 12px; border-radius: 4px; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.6; text-align: center; text-decoration: underline; text-underline-offset: 5px; }
 .hero-example-link:hover { background: rgba(0,0,0,.18); }
 .hero-example-link:focus-visible { outline: 3px solid #fff; outline-offset: 3px; background: #24365a; }
@@ -692,7 +692,7 @@ body.tutorial-lock { overflow: hidden !important; touch-action: none; }
     .hero-title { font-size: clamp(26px, 10vw, 36px); }
     .hero-subtitle { font-size: 15px; }
     .hero-subtitle br { display: none; }
-    .hero-cta { width: 100%; padding: 0 16px; }
+    .hero-cta { width: 100%; max-width: 352px; padding: 0 16px; }
     .section-heading h2, .effects-header h2, .section-header h2, .problem__copy h2, .cta-content h3 { font-size: clamp(20px, 8vw, 28px); }
 
     .process-list { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding-bottom: 16px; padding-inline: 20px; scroll-padding-inline: 20px; }
