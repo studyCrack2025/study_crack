@@ -89,8 +89,8 @@ function Workspace({ owner }) {
       <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} /></div>
     <aside className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>
       <p className="jcalc-note" role="status">{confirmed ? changed ? '성적 수정 중 · 입력 성적을 다시 확인해주세요.' : `${confirmed.basis === 'official' ? '성적표' : '가채점 원점수'} 기준 · 성적 입력 확인 완료` : '성적을 확인하고 비교할 후보를 담아보세요.'}</p>
-      <button className="jcalc-primary jcalc-calculate" type="button" disabled={!allowed || !confirmed || changed || !candidates.length || conversion.status === 'loading'} onClick={calculate}>{conversion.status === 'loading' ? '분석 자료 확인 중…' : '환산점수·확률 조회'}</button>
-      <p className="jcalc-note" role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 확률 검증 상태를 확인하고 있습니다.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '조회에는 Basic 이상 이용권이 필요합니다. 이용 안내에서 현재 이용권을 확인해주세요.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</p>
+      <button className="jcalc-primary jcalc-calculate" type="button" disabled={!allowed || !confirmed || changed || !candidates.length || conversion.status === 'loading'} onClick={calculate}>{conversion.status === 'loading' ? '분석 자료 확인 중…' : '환산점수·가능성 조회'}</button>
+      <p className="jcalc-note" role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 입결 기준선 검수 상태를 확인하고 있습니다.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '조회에는 Basic 이상 이용권이 필요합니다. 이용 안내에서 현재 이용권을 확인해주세요.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</p>
       {!allowed && <a className="jcalc-text-button" href="#jcalc-access-status">이용 안내 확인하기</a>}
       {conversion.status === 'error' && <p className="jcalc-error" role="alert">{conversion.error}</p>}
       {candidates.length ? <ul className="jcalc-candidates">{candidates.map(item => <li key={candidateKey(item)}><strong>{item.university}</strong><span>{item.major}</span>
@@ -98,7 +98,7 @@ function Workspace({ owner }) {
         <CalculatorResult result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(item))} current={conversion.status === 'ready' && !changed} selectedId={unitSelections[candidateKey(item)]} onSelect={value => { invalidate(); setUnitSelections(previous => ({ ...previous, [candidateKey(item)]: value })); }} />
         <button className="jcalc-text-button" type="button" aria-label={`${item.university} ${item.major} 후보 삭제`} onClick={() => changeCandidates(candidates.filter(candidate => candidateKey(candidate) !== candidateKey(item)))}>후보 삭제</button></li>)}</ul> : <p className="jcalc-state">선택한 후보가 없습니다.<br />대학과 학과를 검색해 담아주세요.</p>}
       {conversion.status === 'ready' && conversion.data?.release && <details className="jcalc-result-version"><summary>적용한 자료 버전</summary><p>2027학년도 · {conversion.data.release.formulaVersion}<br />{conversion.data.release.dataReleaseId}</p></details>}
-      <div className="jcalc-release-note"><strong>검수 완료 자료에 한해 환산합니다.</strong><p>환산점수와 예상 합격 확률의 검증 상태를 각각 확인합니다. 예상 확률과 5단계는 자료·모델 검증을 통과한 후보에만 표시하며, 자료가 부족하면 판단을 보류합니다.</p></div>
+      <div className="jcalc-release-note"><strong>검수 완료 자료에 한해 환산합니다.</strong><p>환산점수와 입결 기준선의 검수 상태를 각각 확인합니다. 가능성 지수와 5단계는 검수를 통과한 후보에만 표시하며, 자료가 부족하면 판단을 보류합니다. 지수는 실제 합격률이 아닙니다.</p></div>
       <p className="jcalc-note">{!owner || !saved ? '이 브라우저에서 초안을 보관할 수 없습니다. 현재 화면을 벗어나면 입력이 초기화될 수 있습니다.' : '확인한 성적과 선택 후보는 같은 계정·현재 탭에서만 이어집니다. 다른 화면의 저장 성적은 변경하지 않습니다.'}</p>
     </aside>
   </div></>;

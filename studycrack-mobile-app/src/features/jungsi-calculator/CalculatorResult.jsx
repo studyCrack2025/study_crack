@@ -27,6 +27,6 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
     {current ? result.status === 'available' ? <div className="jcalc-score"><span>내 환산점수</span><strong>{formatted(result.convertedScore)}<small>점</small></strong><small>기준 만점 {formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.</small></div>
       : <p className="jcalc-result-message">{result.status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
       : <p className="jcalc-result-message">입력 조건이 바뀌었습니다. 환산점수를 다시 조회해주세요.</p>}
-    {current && <CalculatorForecast forecast={result.forecast} />}
+    {current && <CalculatorForecast possibility={result.possibility} />}
   </div>;
 }

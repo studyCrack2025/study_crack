@@ -53,50 +53,49 @@ test('an aborted calculation cannot return a result even if the transport resolv
   assert.equal(result.ok, false); assert.equal(result.code, 'REQUEST_ABORTED');
 });
 
-function forecast(body) {
-  return { status: 'available', probability: { percent: 82, qualifier: 'approximate' }, riskBand: 'stable', reasonCodes: [],
-    policyVersion: 'calculator-forecast-publication-1.0.0', riskPolicyVersion: 'admission-risk-1.0.0', modelVersion: 'probability-1.0.0',
-    publicationId: 'CALCULATOR_FORECAST_2027_TEST', validatedAt: '2026-11-01T00:00:00.000Z', validationState: 'passed',
+function possibility(body) {
+  return { contractVersion: 'cut-reference-public-v1', policyVersion: 'cut-reference-possibility-1.0.0', basis: 'cut_reference_heuristic',
+    status: 'available', validationState: 'passed', index: { points: 82 }, riskBand: 'stable', reasonCodes: [], probability: null, empiricallyCalibrated: false,
+    publicationId: 'CUT_RELEASE_TEST', publicationDigest: `sha256:${'c'.repeat(64)}`, referenceDigest: `sha256:${'d'.repeat(64)}`,
+    sourceYear: 2026, targetYear: 2027, validatedAt: '2026-11-01T00:00:00.000Z',
     dataReleaseId: body.release.dataReleaseId, admissionUnitId: body.results[0].selected.admissionUnitId };
 }
 
-test('validated probability carries its explicit release/unit and five-band classification', async () => {
-  const body = response(); body.results[0].forecast = forecast(body);
-  const result = await run(body);
-  assert.equal(result.ok, true); assert.equal(result.data.results[0].forecast.riskBand, 'stable');
-  assert.deepEqual(result.data.results[0].forecast.probability, { percent: 82, qualifier: 'approximate' });
+test('reviewed index carries its source year, target year and five-band classification', async () => {
+  const body = response(); body.results[0].possibility = possibility(body);
+  const result = await run(body), row = result.data.results[0];
+  assert.equal(result.ok, true); assert.equal(row.possibility.riskBand, 'stable'); assert.deepEqual(row.possibility.index, { points: 82 });
+  assert.equal(row.possibility.sourceYear, 2026); assert.equal(row.possibility.targetYear, 2027);
 });
 
-test('legacy backend responses keep converted scores and explicitly withhold probability', async () => {
-  const result = await run(response());
-  assert.equal(result.ok, true); assert.equal(result.data.results[0].convertedScore, 743.1256);
-  assert.equal(result.data.results[0].forecast.probability, null);
-  assert.deepEqual(result.data.results[0].forecast.reasonCodes, ['FORECAST_BACKEND_UPDATE_REQUIRED']);
+test('old probability fields cannot become possibility points; converted scores remain available', async () => {
+  const body = response(); body.results[0].forecast = { status: 'available', probability: { percent: 99 }, riskBand: 'stable' };
+  const result = await run(body), row = result.data.results[0];
+  assert.equal(result.ok, true); assert.equal(row.convertedScore, 743.1256); assert.equal(row.forecast, undefined);
+  assert.equal(row.possibility.index, null); assert.deepEqual(row.possibility.reasonCodes, ['CUT_REFERENCE_BACKEND_UPDATE_REQUIRED']);
 });
 
-test('malformed/unvalidated/wrong-unit or release forecasts suppress only probability and classification', async () => {
-  const mutations = [
-    row => { row.forecast.validationState = 'failed'; }, row => { row.forecast.status = 'unavailable'; },
-    row => { row.forecast.dataReleaseId = 'ADMISSION_RELEASE_2027_OTHER'; }, row => { row.forecast.admissionUnitId = 'UNIT_OTHER_MAJOR'; },
-    row => { row.forecast.riskBand = 'unknown'; }, row => { row.forecast.probability.percent = 100; },
-    row => { row.forecast.probability.percent = 0; }, row => { row.forecast.probability.percent = NaN; },
-    row => { row.forecast.probability.qualifier = 'more_than'; }, row => { row.forecast.modelVersion = null; },
-    row => { row.forecast.reasonCodes = ['FORECAST_VALIDATION_NOT_PASSED']; }, row => { row.forecast.policyVersion = 'unreviewed'; }
-  ];
+test('unreviewed, malformed, different unit/release, measured-probability or invalid-year indices are hidden', async () => {
+  const mutations = [p => { p.validationState = 'failed'; }, p => { p.status = 'unavailable'; }, p => { p.dataReleaseId = 'ADMISSION_RELEASE_2027_OTHER'; },
+    p => { p.admissionUnitId = 'UNIT_OTHER_MAJOR'; }, p => { p.riskBand = 'unknown'; }, p => { p.index.points = 100; }, p => { p.index.points = 0; },
+    p => { p.index.points = NaN; }, p => { p.index.points = 82.4; }, p => { p.index.percent = 82; }, p => { p.probability = { percent: 82 }; },
+    p => { p.empiricallyCalibrated = true; }, p => { p.reasonCodes = ['CUT_REFERENCE_REVIEW_REQUIRED']; }, p => { p.policyVersion = 'unreviewed'; },
+    p => { p.publicationDigest = null; }, p => { p.referenceDigest = null; }, p => { p.sourceYear = 2028; }, p => { p.targetYear = 2026; }];
   for (const mutate of mutations) {
-    const body = response(); body.results[0].forecast = forecast(body); mutate(body.results[0]);
+    const body = response(); body.results[0].possibility = possibility(body); mutate(body.results[0].possibility);
     const result = await run(body), row = result.data.results[0];
-    assert.equal(result.ok, true); assert.equal(row.convertedScore, 743.1256);
-    assert.equal(row.forecast.probability, null); assert.equal(row.forecast.riskBand, null);
+    assert.equal(result.ok, true); assert.equal(row.convertedScore, 743.1256); assert.equal(row.possibility.index, null); assert.equal(row.possibility.riskBand, null);
   }
 });
 
-test('unavailable forecasts never become zero percent and extremes retain an explicit inequality', async () => {
-  const body = response(); body.results[0].forecast = { ...forecast(body), status: 'unavailable', probability: null, riskBand: null, reasonCodes: ['FORECAST_UNIT_NOT_VALIDATED'] };
-  let result = await run(body); assert.equal(result.data.results[0].forecast.probability, null);
-  for (const [percent, qualifier, riskBand] of [[1, 'less_than', 'risky'], [99, 'more_than', 'stable']]) {
-    body.results[0].forecast = { ...forecast(body), probability: { percent, qualifier }, riskBand };
-    result = await run(body); assert.equal(result.ok, true); assert.deepEqual(result.data.results[0].forecast.probability, { percent, qualifier });
+test('missing data remains null while reviewed extreme points stay points', async () => {
+  const body = response(); body.results[0].possibility = { ...possibility(body), status: 'unavailable', validationState: 'not_available', index: null, riskBand: null,
+    dataReleaseId: null, admissionUnitId: null, publicationId: null, publicationDigest: null, referenceDigest: null, sourceYear: null, targetYear: null, validatedAt: null,
+    reasonCodes: ['CUT_REFERENCE_REVIEW_REQUIRED'] };
+  let result = await run(body); assert.equal(result.data.results[0].possibility.index, null);
+  for (const [points, riskBand] of [[1, 'risky'], [99, 'stable']]) {
+    body.results[0].possibility = { ...possibility(body), index: { points }, riskBand };
+    result = await run(body); assert.deepEqual(result.data.results[0].possibility.index, { points });
   }
 });
 

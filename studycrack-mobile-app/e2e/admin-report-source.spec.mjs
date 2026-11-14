@@ -337,6 +337,30 @@ test('새 계산 기준의 확률·단계·환산 소수는 계산기와 같은 
     }
 });
 
+test('입결 지수는 두 기준선·5단계와 함께 표시하고 미검수·손상 수치는 숨긴다', async ({ page }) => {
+    await prepare(page, { facts: true, withFactsResult: true });
+    for (const [point, band, label] of [[82.7, 'stable', '안정'], [65, 'appropriate', '적정'], [45, 'neutral', '중립'], [25, 'challenge', '도전'], [1, 'risky', '위험'], [null, null, '판단 보류'], [80.5, 'invalid', '판단 보류']]) {
+        await page.evaluate(({ point, band, label }) => {
+            const workspace = window.__reportSource.ws.reportFacts, fact = workspace.record.result.facts[0];
+            fact.possibilityPoint = point; fact.probability = null; fact.expectedCutoff = null;
+            fact.reportRisk = { band, label, wide: false };
+            fact.possibility = { contractVersion: 'cut-reference-public-v1', policyVersion: 'cut-reference-possibility-1.0.0', basis: 'cut_reference_heuristic',
+                status: point === null ? 'unavailable' : 'available', validationState: point === null ? 'not_available' : 'passed', probability: null, empiricallyCalibrated: false,
+                index: point === null ? null : { points: Math.floor(point) }, riskBand: band, reasonCodes: point === null ? ['CUT_REFERENCE_REVIEW_REQUIRED'] : [],
+                admissionUnitId: fact.admissionUnitId, sourceYear: 2026, targetYear: 2027, publicationDigest: 'sha256:'+'a'.repeat(64), referenceDigest: 'sha256:'+'b'.repeat(64) };
+            fact.referenceLines = point === null ? null : { passLine: 60, registered70Line: 65, sourceYear: 2026, targetYear: 2027 };
+            renderConsultingReportFacts(workspace);
+        }, { point, band, label });
+        const card = page.locator('#consultingReportFactsResult .consulting-report-fact-card').first();
+        await expect(card.locator('.consulting-report-fact-risk')).toHaveText(label);
+        await expect(card.locator('dl > div').nth(3).locator('dd')).toHaveText(label === '판단 보류' ? '판단 보류' : `약 ${Math.floor(point)}점 / 100`);
+        await expect(card.locator('dl > div').nth(3).locator('dd')).not.toContainText('%');
+        if (label !== '판단 보류') { await expect(card).toContainText('2026학년도 입결'); await expect(card).toContainText('실제 합격률이 아닌'); }
+        else for (const index of [1, 2]) await expect(card.locator('dl > div').nth(index).locator('dd')).toHaveText('판단 보류');
+        for (const width of [320, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await card.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true); }
+    }
+});
+
 test('계산 중 입력·재실행을 잠그고 세션 종료 뒤 늦게 도착한 결과를 노출하지 않는다', async ({ page }) => {
     await prepare(page, { facts: true }); await page.evaluate(() => { window.__reportSource.deferFacts = true; });
     await page.locator('#consultingReportCalculateFacts').click(); await expect(page.locator('#consultingReportCalculateFacts')).toBeDisabled();

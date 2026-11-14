@@ -34,6 +34,7 @@ function installApi() {
   };
 }
 async function prepare(page, role = 'tutor', extra = {}) {
+  await page.context().setOffline(false);
   await page.addInitScript(({ role, caseId, extra }) => {
     localStorage.setItem('userRole', role);
     if (extra.publishedPdf) { window.__openedPdf = []; window.open = () => ({ opener: null, location: { replace: url => window.__openedPdf.push(url) }, close: () => { window.__pdfClosed = true; } }); }

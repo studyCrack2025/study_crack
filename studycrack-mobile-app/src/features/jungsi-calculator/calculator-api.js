@@ -6,27 +6,26 @@ const unit = value => value && /^UNIT_[A-Z0-9][A-Z0-9_-]{2,71}$/.test(value.admi
   && ['campusName', 'unitName', 'trackName'].every(key => text(value[key])) && ['ga', 'na', 'da'].includes(value.admissionGroup);
 const digest = value => /^sha256:[a-f0-9]{64}$/.test(value || '');
 const riskBands = new Set(['stable', 'appropriate', 'neutral', 'challenge', 'risky']);
-const forecastUnavailable = code => ({ status: 'unavailable', probability: null, riskBand: null, reasonCodes: [code] });
+const possibilityUnavailable = code => ({ status: 'unavailable', index: null, riskBand: null, reasonCodes: [code] });
 
-function safeForecast(value, row, body) {
-  if (value === undefined) return forecastUnavailable(row.status === 'available' ? 'FORECAST_BACKEND_UPDATE_REQUIRED' : 'FORECAST_CONVERSION_NOT_AVAILABLE');
-  const invalid = () => forecastUnavailable('FORECAST_RESPONSE_INVALID');
-  if (!value || !['available', 'unavailable'].includes(value.status) || value.policyVersion !== 'calculator-forecast-publication-1.0.0'
-    || value.riskPolicyVersion !== 'admission-risk-1.0.0' || !Array.isArray(value.reasonCodes) || value.reasonCodes.length > 12
-    || value.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))) return invalid();
-  if (value.status === 'unavailable') return value.probability === null && value.riskBand === null && value.reasonCodes.length
-    ? forecastUnavailable(value.reasonCodes[0]) : invalid();
-  const probability = value.probability;
-  if (row.status !== 'available' || body.basis !== 'official' || !body.release || value.dataReleaseId !== body.release.dataReleaseId
-    || value.admissionUnitId !== row.selected?.admissionUnitId || value.validationState !== 'passed' || value.reasonCodes.length
-    || !/^probability-\d+\.\d+\.\d+$/.test(value.modelVersion || '') || !/^CALCULATOR_FORECAST_2027_[A-Z0-9][A-Z0-9_-]{2,47}$/.test(value.publicationId || '')
-    || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt)) || !riskBands.has(value.riskBand)
-    || !probability || !Number.isInteger(probability.percent) || probability.percent < 1 || probability.percent > 99
-    || !['approximate', 'less_than', 'more_than'].includes(probability.qualifier)
-    || probability.qualifier === 'less_than' && (probability.percent !== 1 || value.riskBand !== 'risky')
-    || probability.qualifier === 'more_than' && (probability.percent !== 99 || value.riskBand !== 'stable')) return invalid();
-  return { status: 'available', probability: { percent: probability.percent, qualifier: probability.qualifier }, riskBand: value.riskBand,
-    reasonCodes: [], modelVersion: value.modelVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
+function safePossibility(value, row, body) {
+  if (value === undefined) return possibilityUnavailable('CUT_REFERENCE_BACKEND_UPDATE_REQUIRED');
+  const invalid = () => possibilityUnavailable('CUT_REFERENCE_RESPONSE_INVALID');
+  if (!value || value.contractVersion !== 'cut-reference-public-v1' || value.policyVersion !== 'cut-reference-possibility-1.0.0'
+    || value.basis !== 'cut_reference_heuristic' || value.probability !== null || value.empiricallyCalibrated !== false
+    || !Array.isArray(value.reasonCodes) || value.reasonCodes.length > 12 || value.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))) return invalid();
+  if (value.status === 'unavailable') return value.index === null && value.riskBand === null && value.validationState === 'not_available'
+    && value.reasonCodes.length && ['dataReleaseId', 'admissionUnitId', 'publicationId', 'publicationDigest', 'referenceDigest', 'sourceYear', 'targetYear', 'validatedAt'].every(key => value[key] === null)
+    ? possibilityUnavailable(value.reasonCodes[0]) : invalid();
+  if (value.status !== 'available' || row.status !== 'available' || body.basis !== 'official' || !body.release
+    || value.dataReleaseId !== body.release.dataReleaseId || value.admissionUnitId !== row.selected?.admissionUnitId
+    || value.validationState !== 'passed' || value.reasonCodes.length || !riskBands.has(value.riskBand)
+    || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99
+    || !/^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '') || !digest(value.publicationDigest) || !digest(value.referenceDigest)
+    || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear > 2027 || value.targetYear !== 2027
+    || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
+  return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
+    sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
 }
 
 function validResponse(body, scores, targets) {
@@ -59,7 +58,9 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
     return response;
   }
   if (!validResponse(response.data, scores, targets)) return apiInvalidResponse(response, '환산 결과를 확인하지 못했습니다. 다시 조회해주세요.');
-  return { ...response, data: { ...response.data, results: response.data.results.map(row => ({ ...row, forecast: safeForecast(row.forecast, row, response.data) })) } };
+  return { ...response, data: { ...response.data, results: response.data.results.map(row => {
+    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data) }; delete safe.forecast; return safe;
+  }) } };
 }
 
 export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal }) {

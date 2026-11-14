@@ -3,6 +3,23 @@ let consultingReportFactsBusy = false;
 let consultingReportFactsGeneration = 0;
 const reportFactsNode = id => document.getElementById(id);
 const reportFactNumber = n => typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR', { maximumFractionDigits: 6 }) : '미확인';
+const reportFactBandLabels = { stable: '안정', appropriate: '적정', neutral: '중립', challenge: '도전', risky: '위험' };
+function reportFactIndexReady(fact) {
+    const p = fact.possibility, lines = fact.referenceLines;
+    return p?.contractVersion === 'cut-reference-public-v1' && p.policyVersion === 'cut-reference-possibility-1.0.0'
+        && p.status === 'available' && p.validationState === 'passed' && p.basis === 'cut_reference_heuristic'
+        && p.empiricallyCalibrated === false && p.probability === null && p.reasonCodes?.length === 0
+        && p.admissionUnitId === fact.admissionUnitId && Number.isInteger(p.index?.points) && p.index.points >= 1 && p.index.points <= 99
+        && Number.isFinite(fact.possibilityPoint) && p.index.points === Math.floor(fact.possibilityPoint)
+        && reportFactBandLabels[p.riskBand] && p.riskBand === fact.reportRisk?.band
+        && /^sha256:[a-f0-9]{64}$/.test(p.publicationDigest || '') && /^sha256:[a-f0-9]{64}$/.test(p.referenceDigest || '')
+        && Number.isFinite(lines?.passLine) && Number.isFinite(lines?.registered70Line) && lines.passLine < lines.registered70Line
+        && lines.sourceYear === p.sourceYear && lines.targetYear === p.targetYear && p.targetYear === 2027
+        && Number.isInteger(p.sourceYear) && p.sourceYear >= 2000 && p.sourceYear <= p.targetYear;
+}
+function reportFactPossibility(fact) {
+    return reportFactIndexReady(fact) ? `약 ${fact.possibility.index.points}점 / 100` : '판단 보류';
+}
 function reportFactProbability(fact) {
     if (!Object.hasOwn(fact, 'forecast')) return fact.probability ? reportFactNumber(fact.probability.point) + '%' : '판단 보류';
     const f = fact.forecast, p = f?.probability;
@@ -21,7 +38,8 @@ const reportFactReasons = {
     COMMUTE_AND_HOUSING_REVIEW_REQUIRED: '실제 통학 시간과 기숙사 이용 가능 여부는 별도로 확인해야 합니다.',
     ADDITIONAL_HARD_CONDITIONS_REVIEW_REQUIRED: '자유롭게 적은 추가 필수 조건과 상담 내용을 각 후보에 대조해주세요.',
     PRESTIGE_EMPLOYMENT_DATA_NOT_INFERRED: '검수 자료가 없는 대학 평판·취업률은 순위 점수로 추정하지 않았습니다.',
-    CUTOFF_OR_PROBABILITY_NOT_AVAILABLE: '일부 후보의 예상컷·확률은 자료 또는 모델 검수가 필요합니다.',
+    CUTOFF_OR_PROBABILITY_NOT_AVAILABLE: '일부 후보의 입결 기준선·가능성 판단은 자료 검수가 필요합니다.',
+    CUT_REFERENCE_INDEX_NOT_EMPIRICAL_PROBABILITY: '가능성 지수는 입결 기준선에 따른 100점 척도입니다. 실제 합격률이 아니며 합격을 보장하지 않습니다.',
     RISK_ALLOCATION_NOT_SATISFIED: '현재 후보만으로는 확인된 위험 배분을 충족하지 못했습니다.', ADMISSION_GROUP_CANDIDATE_MISSING: '일부 모집군에 유효한 후보가 없습니다.',
     TWO_DIFFERENT_ALTERNATIVES_UNAVAILABLE: '조건을 유지하면서 A와 두 곳 이상 다른 대안을 확보하지 못해 일부 후보가 겹칩니다.',
     PLAN_C_RATIONALE_REQUIRED: '다른 진학 경로를 제안할 상담 근거를 먼저 정리해주세요.'
@@ -40,15 +58,20 @@ function updateConsultingReportFactsButton() {
 function reportFactCard(fact, prefix) {
     const card = reportFactElement('article', undefined, 'consulting-report-fact-card');
     card.append(reportFactElement('p', prefix || reportFactGroups[fact.admissionGroup], 'consulting-eyebrow'), reportFactElement('h4', `${fact.universityName} · ${fact.admissionUnitName}`), reportFactElement('p', fact.campusName, 'consulting-caption'));
-    const risk = reportFactElement('p', `${fact.reportRisk?.label || '판단 보류'}${fact.reportRisk?.wide ? ' · 변동 폭 큼' : ''}`, 'consulting-report-fact-risk'); risk.dataset.band = fact.reportRisk?.band || 'unknown'; card.append(risk);
+    const indexMode = Object.hasOwn(fact, 'possibility'), indexReady = indexMode && reportFactIndexReady(fact);
+    const riskLabel = indexMode ? indexReady ? reportFactBandLabels[fact.possibility.riskBand] : '판단 보류' : fact.reportRisk?.label || '판단 보류';
+    const risk = reportFactElement('p', `${riskLabel}${!indexMode && fact.reportRisk?.wide ? ' · 변동 폭 큼' : ''}`, 'consulting-report-fact-risk'); risk.dataset.band = indexMode ? indexReady ? fact.possibility.riskBand : 'unknown' : fact.reportRisk?.band || 'unknown'; card.append(risk);
     const dl = reportFactElement('dl', undefined, 'consulting-report-fact-metrics');
     const rows = [['예상 환산점수', reportFactNumber(fact.convertedScore) + ' / ' + reportFactNumber(fact.maximumScore)],
-        [fact.cutoffStatistic === 'registered_70pct' ? '등록자 70% 컷 추정' : fact.cutoffStatistic === 'final_admitted' ? '최종 합격선 추정' : '예상컷 · 종류 미확인', reportFactNumber(fact.expectedCutoff?.point)],
-        ['예상 합격률', reportFactProbability(fact)]];
+        ...(indexMode ? [['합격권 기준선', indexReady ? reportFactNumber(fact.referenceLines.passLine) : '판단 보류'],
+            ['등록자 70% 기준선', indexReady ? reportFactNumber(fact.referenceLines.registered70Line) : '판단 보류'], ['가능성 지수', reportFactPossibility(fact)]] : [
+            [fact.cutoffStatistic === 'registered_70pct' ? '등록자 70% 컷 추정' : fact.cutoffStatistic === 'final_admitted' ? '최종 합격선 추정' : '예상컷 · 종류 미확인', reportFactNumber(fact.expectedCutoff?.point)],
+            ['예상 합격률', reportFactProbability(fact)]])];
     for (const [label, value] of rows) { const cell = document.createElement('div'); cell.append(reportFactElement('dt', label), reportFactElement('dd', value)); dl.append(cell); }
     card.append(dl);
-    if (fact.expectedCutoff) card.append(reportFactElement('p', `예상컷 범위 ${reportFactNumber(fact.expectedCutoff.low)}~${reportFactNumber(fact.expectedCutoff.high)} · 같은 환산 척도 차이 ${reportFactNumber(fact.scoreDelta)}`, 'consulting-caption'));
-    if (fact.probability) card.append(reportFactElement('p', `컷 시나리오별 추정 범위 ${reportFactNumber(fact.probability.low)}~${reportFactNumber(fact.probability.high)}% · 합격 확률의 신뢰구간이 아닙니다.`, 'consulting-caption'));
+    if (indexReady) card.append(reportFactElement('p', `${fact.possibility.sourceYear}학년도 입결 · ${fact.possibility.targetYear}학년도 반영 기준 · 실제 합격률이 아닌 가능성 지수`, 'consulting-caption'));
+    if (!indexMode && fact.expectedCutoff) card.append(reportFactElement('p', `예상컷 범위 ${reportFactNumber(fact.expectedCutoff.low)}~${reportFactNumber(fact.expectedCutoff.high)} · 같은 환산 척도 차이 ${reportFactNumber(fact.scoreDelta)}`, 'consulting-caption'));
+    if (!indexMode && fact.probability) card.append(reportFactElement('p', `컷 시나리오별 추정 범위 ${reportFactNumber(fact.probability.low)}~${reportFactNumber(fact.probability.high)}% · 합격 확률의 신뢰구간이 아닙니다.`, 'consulting-caption'));
     return card;
 }
 function reportFactsWarnings(parent, codes) {
