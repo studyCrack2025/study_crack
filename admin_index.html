@@ -591,7 +591,6 @@
                 <h2 id="consultingMaterialDetailTitle" class="consulting-detail-title">제출한 기초조사서</h2>
                 <div id="consultingSurveyVersions" class="consulting-survey-version-tools" hidden>
                     <label>답변 버전<select id="consultingSurveyVersion" onchange="showConsultingSurveyVersion(this.value)"><option value="current">현재 답변</option><option value="original">최초 제출</option><option value="reviewed">검수한 답변</option></select></label>
-                    <button id="consultingSurveyConfirmBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="confirmConsultingSurveyRevision()" hidden>최신 답변 확인</button>
                     <p id="consultingSurveyReviewNotice" class="consulting-caption" aria-live="polite"></p>
                 </div>
                 <div id="consultingMaterialSummary" class="consulting-material-meta"></div>
@@ -624,26 +623,27 @@
                 <section id="consultingMaterialAttachments" class="consulting-material-block" hidden><h3>성적표 첨부</h3><div id="consultingMaterialFiles"></div><div id="consultingMaterialFileNote"></div></section>
                 <div id="consultingMaterialVerification" class="consulting-record" hidden></div>
                 <section id="consultingMaterialReviewActions" class="consulting-material-block" hidden>
-                <h3 id="consultingMaterialReviewTitle">검수 성적 입력</h3>
-                <p id="consultingMaterialScoreGuide" class="consulting-caption" hidden>첨부된 성적표의 과목과 공식 성적을 확인해 입력하세요.</p>
-                <div id="consultingVerifiedScores" class="consulting-score-editor"></div>
-                <div class="consulting-actions consulting-material-actions">
-                    <label>검수 결과<select id="consultingMaterialResult"><option value="matched">입력과 일치</option><option value="corrected">운영자 정정</option></select></label>
-                    <label class="consulting-material-reason">처리 사유<textarea id="consultingMaterialReason" maxlength="500" placeholder="검수 근거를 기록하세요"></textarea></label>
-                    <label class="consulting-material-reason">차이점(한 줄에 하나)<textarea id="consultingMaterialDifferences" maxlength="3000" placeholder="정정한 항목이 있다면 기록하세요"></textarea></label>
-                    <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="verifyConsultingMaterials()">확인 완료 · 일정 선택 열기</button>
-                </div>
+                    <details id="consultingScoreEditorDetails" class="consulting-original">
+                        <summary id="consultingMaterialReviewTitle">공식 성적 확인·정정</summary>
+                        <p id="consultingMaterialScoreGuide" class="consulting-caption">성적표와 대조할 때만 펼쳐 입력하세요. 없는 점수는 조사서 승인에 필요하지 않습니다.</p>
+                        <div id="consultingVerifiedScores" class="consulting-score-editor" oninput="refreshConsultingScoreChanges()" onchange="refreshConsultingScoreChanges()"></div>
+                        <p id="consultingScoreChanges" class="consulting-caption" aria-live="polite"></p>
+                        <button id="consultingAddForeignScoreBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingForeignScore()" hidden>응시한 제2외국어·한문 추가</button>
+                        <label class="consulting-material-reason">정정 사유 (값을 바꿀 때만)<textarea id="consultingMaterialReason" maxlength="500" placeholder="정정한 이유를 적어주세요."></textarea></label>
+                        <p id="consultingScoreReviewStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="verifyConsultingMaterials()">공식 성적 확인·저장</button>
+                    </details>
                 </section>
                 <div class="consulting-survey-pager"><button id="consultingSurveyPrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(-1)" disabled>이전 항목</button><button id="consultingSurveyNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(1)" disabled>다음 항목</button></div>
                 </div>
                 </div>
-                <section id="consultingMaterialSupplementActions" class="consulting-material-block" hidden>
-                    <h3>조사서 보완 요청</h3>
-                    <p id="consultingSupplementStatus" class="consulting-status" role="status">위 답변 옆에서 보완 메모를 작성하세요.</p>
+                <section id="consultingMaterialSupplementActions" class="consulting-material-block consulting-survey-decision" hidden aria-labelledby="consultingSurveyDecisionTitle">
+                    <h3 id="consultingSurveyDecisionTitle">조사서 검토</h3>
+                    <p id="consultingSurveyApprovalStatus" class="consulting-caption" aria-live="polite"></p>
+                    <p id="consultingSupplementStatus" class="consulting-status" role="status"></p>
                     <div class="consulting-actions consulting-material-actions">
-                        <label>보완 사유<select id="consultingSupplementReason"><option value="OTHER">답변 추가 확인</option><option value="SCORE_DOCUMENT_UNREADABLE">성적표 판독 불가</option><option value="SCORE_INPUT_MISMATCH">입력과 성적표 불일치</option><option value="MISSING_SCORE_PAGE">성적표 페이지 누락</option></select></label>
-                        <label class="consulting-material-reason">공통 안내 (선택)<textarea id="consultingSupplementText" maxlength="500" placeholder="모든 요청 항목에 해당하는 안내가 있다면 적어주세요."></textarea></label>
-                        <button id="consultingSupplementPreviewBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="previewConsultingSupplement()">보완 요청 미리보기</button>
+                        <button id="consultingSurveyConfirmBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingSurvey()">조사서 승인 · 일정 선택 열기</button>
+                        <button id="consultingSupplementPreviewBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="previewConsultingSupplement()" hidden>보완 요청 미리보기</button>
                     </div>
                 </section>
                 <dialog id="consultingSupplementPreview" class="consulting-supplement-preview" aria-labelledby="consultingSupplementPreviewTitle">

@@ -8,7 +8,7 @@ const helpers = await readFile(new URL('../../js/admin/consulting.js', import.me
 const policy = JSON.parse(await readFile(new URL('../public-site-files.json', import.meta.url), 'utf8'));
 
 test('student detail links material read and review actions without a second list', () => {
-    for (const type of ['admin_get_v2_material_detail', 'admin_request_v2_supplement', 'admin_verify_v2_materials']) assert.match(client, new RegExp(type));
+    for (const type of ['admin_get_v2_material_detail', 'admin_request_v2_supplement', 'admin_approve_v2_survey', 'admin_review_v2_scores']) assert.match(client, new RegExp(type));
     assert.match(html, /consultingWorkspaceMaterials/);
     assert.doesNotMatch(html, /consultingMaterialReviewBody/);
     assert.match(html, /\/js\/admin\/consulting-materials\.js/);
