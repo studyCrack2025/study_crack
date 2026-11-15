@@ -656,6 +656,37 @@
                     </div>
                 </dialog>
             </section>
+            <details id="consultingReferenceExperiment" class="consulting-reference" ontoggle="openConsultingReference(this.open)" hidden>
+                <summary>2026 참고자료로 추천 실험</summary>
+                <p id="consultingReferenceNotice" class="consulting-reference-notice">표준점수·백분위·등급을 직접 입력해 군별 A/B안을 비교합니다. 학생 답변과 공식 보고서에는 반영하지 않습니다.</p>
+                <p id="consultingReferenceBasis" class="consulting-caption"></p>
+                <div id="consultingReferenceStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReference(true, true)">자료 다시 불러오기</button>
+                <form id="consultingReferenceForm" class="consulting-reference-form" onsubmit="runConsultingReference(event)" hidden aria-busy="false">
+                    <h3>수동 실험 성적</h3>
+                    <div id="consultingReferenceScores" class="consulting-reference-scores"></div>
+                    <div class="consulting-reference-filters">
+                        <label>희망 계열<select id="consultingReferenceStream" onchange="invalidateConsultingReference()"></select></label>
+                        <label>지원 성향<select id="consultingReferenceRisk" onchange="invalidateConsultingReference()"><option value="safe">안정 우선</option><option value="balanced">균형 있게</option><option value="challenge">도전 포함</option></select></label>
+                    </div>
+                    <div id="consultingReferenceUniversities" class="consulting-reference-filters"></div>
+                    <p class="consulting-caption">모집군 참고값은 2026 기준입니다. 군을 직접 지정하면 관리자 실험 지정으로 표시합니다. 성별·실기·학생부·통학 등 추가 조건은 별도로 확인해주세요.</p>
+                    <div id="consultingReferenceOverrides" class="consulting-reference-overrides"></div>
+                    <div class="consulting-reference-filters"><label>전체 계산 후보에서 대학·학과 찾기<input id="consultingReferenceQuery" type="search" maxlength="100" placeholder="예: 경영학과, 서울대학교" oninput="invalidateConsultingReference()"></label></div>
+                    <button id="consultingReferenceRun" type="submit" class="consulting-btn consulting-btn-primary">A/B 추천 실험</button>
+                </form>
+                <section id="consultingReferenceResults" class="consulting-reference-results" aria-label="추천 실험 결과" hidden>
+                    <h3>가·나·다군 비교</h3>
+                    <p id="consultingReferenceStats" class="consulting-caption"></p>
+                    <div id="consultingReferencePlans"></div>
+                    <details class="consulting-reference-ledger"><summary>계산 후보 전체 검색·실험용 군 지정</summary>
+                        <p class="consulting-caption">위 검색창에 대학·학과를 입력하고 추천 실험을 누르면 전체 계산 후보에서 찾습니다. 검색은 A/B안의 후보 풀을 줄이지 않습니다.</p>
+                        <div class="consulting-reference-table-wrap"><table class="consulting-reference-table"><caption>보유 자료로 계산한 후보와 모집군 기준</caption><thead><tr><th scope="col">대학·학과</th><th scope="col">환산점수</th><th scope="col">합격권 / 70% 컷</th><th scope="col">참고 분류</th><th scope="col">모집군 기준</th><th scope="col">실험용 군</th></tr></thead><tbody id="consultingReferenceCandidates"></tbody></table></div>
+                        <div class="consulting-reference-pagination"><button id="consultingReferencePrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="pageConsultingReference(-1)">이전 후보</button><span id="consultingReferencePage"></span><button id="consultingReferenceNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="pageConsultingReference(1)">다음 후보</button></div>
+                    </details>
+                    <details class="consulting-reference-ledger"><summary>제외·확인 필요 사유</summary><ul id="consultingReferenceExcluded"></ul><p class="consulting-caption">참고 분류는 기존 추정컷과의 위치 비교입니다. 실제 합격 확률을 뜻하지 않습니다.</p></details>
+                </section>
+            </details>
 </div>
                 <div id="consultingWorkspaceWritten" data-workspace-pane="written" hidden>            <div class="consulting-heading-row consulting-schedule-heading">
                 <div>
@@ -1011,6 +1042,7 @@
     <script src="/js/admin/consulting-supplements.js?v=20261114a"></script>
     <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-reference.js?v=20261115a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
     <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
     <script src="/js/admin/consulting-data-readiness.js?v=20261028a"></script>

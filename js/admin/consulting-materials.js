@@ -533,6 +533,7 @@ async function openConsultingMaterial(caseId, held) {
         const data = await requestConsultingAdmin('admin_get_v2_material_detail', { caseId });
         if (requestId !== consultingMaterialRequest) return false;
         if (data.case?.caseId !== caseId || !Array.isArray(data.files)) throw new Error('자료 응답을 확인할 수 없습니다.');
+        if (typeof prepareConsultingReference === 'function') prepareConsultingReference(caseId);
         const submission = data.submission?.snapshot ? data.submission : data.originalSubmission;
         const snapshot = submission?.snapshot;
         if (!snapshot) {
@@ -611,6 +612,7 @@ async function openConsultingMaterial(caseId, held) {
 
 function closeConsultingMaterialDetail(invalidate = true) {
     if (invalidate) consultingMaterialRequest++;
+    if (typeof resetConsultingReference === 'function') resetConsultingReference();
     currentConsultingMaterial = null;
     consultingSurveyHistory = null;
     document.getElementById('consultingWorkspaceMaterials').setAttribute('aria-busy', 'false');

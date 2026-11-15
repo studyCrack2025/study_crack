@@ -121,6 +121,7 @@
     "js/admin/consulting-report-facts.js",
     "js/admin/consulting-report-content.js",
     "js/admin/consulting-report-revision.js",
+    "js/admin/consulting-reference.js",
     "js/admin/consulting-report-approval.js",
     "js/admin/consulting-report-pdf.js",
     "js/admin/consulting-intake.js",
