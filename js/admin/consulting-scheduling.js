@@ -255,7 +255,7 @@ async function loadConsultingScheduleBoard(feedback = '', refresh = false) {
         populateConsultingScheduleSettings(data.settings);
         const counts = `추천 ${data.placements.length}건 · 확정 ${data.confirmed.length}건 · 배정 대기 ${data.unassigned.length}건`;
         const notes = [feedback, counts, data.limited ? '후보가 많아 계산 범위 안에서 찾은 조합을 표시합니다.' : '',
-            data.hasOpenTimes ? '' : '선택 가능한 시간이 없습니다. 운영팀 계정과 불가 시간 설정을 확인하세요.'].filter(Boolean);
+            data.hasOpenTimes ? '' : '현재 배정 가능한 담당자가 없습니다. 운영팀 계정과 불가 시간을 확인해주세요. 학생은 가능한 시간을 먼저 제출할 수 있습니다.'].filter(Boolean);
         status(notes.join(' '), 'success');
     } catch (error) {
         consultingScheduleBoardFailures++;

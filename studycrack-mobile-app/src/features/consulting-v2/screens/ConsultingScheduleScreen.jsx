@@ -157,9 +157,10 @@ export function ConsultingScheduleScreen({ binding }) {
       {editing && proposed && <p className="consulting-v2-status">편하신 시간을 모두 알려주세요. 운영팀에서 확인해 새 일정을 확정하겠습니다.</p>}
       {period && <p className="consulting-v2-status">{period} · 한국시간</p>}
       <p className="consulting-v2-status">30분 단위로 참석할 수 있는 시간을 모두 골라주세요. 선택한 시간 중 하나로 확정합니다.</p>
+      <p className="consulting-v2-status">가능한 시간을 먼저 제출해주세요. 운영팀이 담당자와 일정을 확인한 뒤 확정해드립니다.</p>
       {resource.outsideWindowCount > 0 && <p className="consulting-survey-message" role="status">이전에 고른 시간 중 {resource.outsideWindowCount}개가 현재는 선택할 수 없어요.</p>}
       {resource.slots.length ? <ScheduleTimePicker slots={resource.slots} selected={selected} setSelected={setSelected} saving={saving} />
-        : <p className="consulting-v2-status">지금 선택할 수 있는 시간이 없어요. 운영팀에서 시간표를 열면 다시 확인해주세요.</p>}
+        : <p className="consulting-v2-status">지금 선택할 수 있는 시간이 없어요. 선택 기간과 예약 현황을 확인하거나 운영팀에 문의해주세요.</p>}
       {message && <p className="consulting-survey-message" role="status">{message}</p>}
       <footer><button className="consulting-v2-primary" type="button" disabled={saving || !resource.slots.length} onClick={save}>{saving ? '저장 중…' : editing ? '변경 요청 보내기' : '가능 시간 저장'}</button>
         {editing && <button type="button" className="consulting-v2-secondary" disabled={saving} onClick={() => setEditing(false)}>닫기</button>}</footer>
