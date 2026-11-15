@@ -530,7 +530,7 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
     await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
     await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toHaveCount(0);
-    await expect(page.getByRole('spinbutton', { name: '영어 등급' })).toHaveValue(String(snapshot.scores.records.find(row => row.area === 'english').grade));
+    await expect(page.getByRole('spinbutton', { name: '영어 등급' })).toHaveValue('2');
     await expect(page.locator('#consultingVerifiedScores')).toContainText('제2외국어·한문 · 학생 입력 독일어Ⅰ 4등급');
     await expect(page.getByRole('combobox', { name: '제2외국어·한문 과목명' })).toHaveValue('독일어Ⅰ');
     await page.getByRole('combobox', { name: '제2외국어·한문 과목명' }).selectOption('독일어Ⅰ');
