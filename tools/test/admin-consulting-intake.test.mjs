@@ -61,7 +61,7 @@ function setup() {
             append(...children) { this.children.push(...children); },
             replaceChildren(...children) { this.ownText = ''; this.children = children; },
             setAttribute(name, value) { this[name] = value; },
-            focus() {}, scrollIntoView() {},
+            focus() {}, scrollIntoView() {}, showModal() { this.open = true; }, close() { this.open = false; },
             addEventListener(type, handler) { this.listeners[type] = handler; },
             querySelectorAll() { return [...nodes.values()]; }
         };

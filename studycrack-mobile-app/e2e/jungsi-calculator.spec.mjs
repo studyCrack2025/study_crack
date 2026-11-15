@@ -9,6 +9,7 @@ const catalog = [
 
 async function setup(page, { signedIn = true } = {}) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('https://www.googletagmanager.com/**', route => route.abort());
   const control = { calls: [], mode: 'ready', release: null, conversionMode: 'ready', conversionRelease: null, possibilityMode: 'pending', riskBand: 'stable', indexPoints: 82, accessMode: 'ready', accessAllowed: true, accessSource: 'membership', accessRelease: null };
   await page.addInitScript(({ signedIn }) => {
     if (signedIn && !localStorage.getItem('userId') && localStorage.getItem('sc_session_ended') !== '1') {
@@ -117,7 +118,9 @@ async function selectGlobal(page) {
 test('비로그인 진입은 코드 요구 없이 로그인 복귀를 안내하고 보호 API를 호출하지 않는다', async ({ page }) => {
   const control = await setup(page, { signedIn: false });
   await page.goto('/2027-jungsi-consulting#calculator');
-  await page.getByRole('link', { name: '성적 입력·대학 검색', exact: true }).click();
+  await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: '오픈 준비 중 ↗', exact: true })).toBeDisabled();
+  await page.goto(path);
   await expect(page).toHaveURL(new RegExp(path + '$'));
   await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
   await expect(page.getByRole('link', { name: '로그인하고 시작하기' })).toHaveAttribute('href', `/login?returnUrl=${encodeURIComponent(path)}`);

@@ -2,6 +2,8 @@ let currentConsultingApplication = null;
 let currentConsultingMutationKeys = null;
 let consultingApplicationRequest = 0;
 let consultingMutationBusy = false;
+let consultingApplicationDeletion = null;
+let consultingApplicationDeletionGeneration = 0;
 const consultingInputFields = { studentName: 'consultingContactStudentName', phone: 'consultingContactPhone', email: 'consultingContactEmail', payerName: 'consultingContactPayerName', payerRelationship: 'consultingContactRelationship', contactMethod: 'consultingContactMethod', studentStatus: 'consultingContactStudentStatus' };
 const consultingInputLabels = { studentName: '학생 이름', phone: '전화번호', email: '이메일', payerName: '입금자명', payerRelationship: '입금자와의 관계', contactMethod: '연락 방법', studentStatus: '학생 상태', payerRelationshipDetail: '입금자 관계 기타 내용', contactMethodDetail: '연락 방법 기타 내용' };
 
@@ -118,10 +120,12 @@ function renderConsultingApplication(applicationId, data) {
     document.getElementById('consultingRevokeBtn').hidden = data.stageVerified !== true || data.inviteRevoked === true || application.applicationState !== 'INVITED';
     document.getElementById('consultingInviteActions').hidden = application.applicationState !== 'INVITED' || !data.activeInviteId;
     document.getElementById('consultingApplicationDetail').hidden = false;
+    document.getElementById('consultingDeleteApplicationBtn').hidden = data.deletion?.available !== true;
     setConsultingStatus('', 'success');
 }
 
 function closeConsultingDetail() {
+    resetConsultingApplicationDeletion();
     ++consultingApplicationRequest;
     currentConsultingApplication = null;
     currentConsultingMutationKeys = null;
@@ -148,6 +152,110 @@ function closeConsultingDetail() {
     for (const id of ['consultingApplicationDetail', 'consultingPaymentActions', 'consultingInviteActions', 'consultingInputEditor']) {
         const element = document.getElementById(id);
         if (element) element.hidden = true;
+    }
+}
+
+function resetConsultingApplicationDeletion() {
+    consultingApplicationDeletionGeneration++;
+    consultingApplicationDeletion?.waitController?.abort();
+    consultingApplicationDeletion = null;
+    document.getElementById('consultingDeleteApplicationDialog')?.close();
+    const input = document.getElementById('consultingDeleteApplicationConfirmation'); if (input) input.value = '';
+    for (const id of ['consultingDeleteApplicationTarget', 'consultingDeleteApplicationStatus']) document.getElementById(id)?.replaceChildren();
+    const button = document.getElementById('consultingDeleteApplicationBtn'); if (button) button.hidden = true;
+}
+function closeConsultingApplicationDeletion() {
+    if (consultingApplicationDeletion?.busy && !consultingApplicationDeletion.waiting) return;
+    resetConsultingApplicationDeletion();
+    const button = document.getElementById('consultingDeleteApplicationBtn');
+    if (button && currentConsultingApplication?.deletion?.available === true) { button.hidden = false; button.focus(); }
+}
+function updateConsultingApplicationDeletion() {
+    const state = consultingApplicationDeletion;
+    document.getElementById('consultingDeleteApplicationConfirm').disabled = !state?.preview || state.busy || document.getElementById('consultingDeleteApplicationConfirmation').value !== '신청 영구 삭제';
+}
+async function openConsultingApplicationDeletion() {
+    if (consultingMutationBusy || consultingApplicationDeletion?.busy || currentConsultingApplication?.deletion?.available !== true || !consultingWorkspaceReference?.sourceResponseId) return;
+    resetConsultingApplicationDeletion();
+    const generation = consultingApplicationDeletionGeneration, reference = { applicationId: currentConsultingApplication.application.applicationId, sourceResponseId: consultingWorkspaceReference.sourceResponseId };
+    consultingApplicationDeletion = { reference, preview: null, busy: false };
+    const dialog = document.getElementById('consultingDeleteApplicationDialog'), status = document.getElementById('consultingDeleteApplicationStatus');
+    document.getElementById('consultingDeleteApplicationBtn').hidden = false;
+    document.getElementById('consultingDeleteApplicationTarget').textContent = `${currentConsultingApplication.contact.studentName || '선택한 학생'} · ${currentConsultingApplication.contact.phone || ''}`;
+    document.getElementById('consultingDeleteApplicationRetry').hidden = true;
+    document.getElementById('consultingDeleteApplicationCancel').disabled = false;
+    document.getElementById('consultingDeleteApplicationConfirmation').disabled = false;
+    updateConsultingApplicationDeletion(); dialog.showModal(); status.textContent = '삭제 대상과 현재 상태를 확인하고 있습니다.'; status.dataset.state = 'loading';
+    try {
+        const preview = await requestConsultingAdmin('admin_preview_consulting_application_delete', reference);
+        if (generation !== consultingApplicationDeletionGeneration) return;
+        if (preview.storageIncluded !== true || preview.applicationId !== reference.applicationId || preview.confirmation !== '신청 영구 삭제' || typeof preview.previewToken !== 'string' || !preview.previewToken || preview.previewToken.length > 2400 || typeof preview.resume !== 'boolean' || typeof preview.includesCase !== 'boolean'
+            || !Number.isSafeInteger(preview.deletedCount) || preview.deletedCount < 0 || preview.recordCount !== null && (!Number.isSafeInteger(preview.recordCount) || preview.recordCount < 1)) throw new Error('삭제 범위를 확인하지 못했습니다.');
+        consultingApplicationDeletion.preview = preview;
+        status.textContent = preview.resume ? `삭제가 진행 중인 신청입니다. 이미 정리한 ${preview.deletedCount}개 기록에 이어 남은 파일과 기록을 삭제합니다.` : `약 ${preview.recordCount}개 DB 기록과 이 신청에 연결된 첨부·PDF 원본이 대상입니다.${preview.includesCase ? ' 조사서와 상담·보고서도 포함됩니다.' : ' 아직 연결된 컨설팅 케이스는 없습니다.'}`;
+        status.dataset.state = ''; document.getElementById('consultingDeleteApplicationConfirmation').focus();
+    } catch (_error) {
+        if (generation !== consultingApplicationDeletionGeneration) return;
+        status.textContent = '삭제 대상 확인에 실패했습니다. 서버 적용·권한·현재 신청 상태를 확인한 뒤 다시 시도해주세요. 삭제 요청은 보내지 않았습니다.'; status.dataset.state = 'error';
+        document.getElementById('consultingDeleteApplicationRetry').hidden = false;
+    }
+    if (generation === consultingApplicationDeletionGeneration) updateConsultingApplicationDeletion();
+}
+async function deleteConsultingApplication() {
+    const state = consultingApplicationDeletion, generation = consultingApplicationDeletionGeneration;
+    if (!state?.preview || state.busy || document.getElementById('consultingDeleteApplicationConfirmation').value !== '신청 영구 삭제') return;
+    state.busy = true; updateConsultingApplicationDeletion();
+    for (const id of ['consultingDeleteApplicationConfirmation', 'consultingDeleteApplicationCancel']) document.getElementById(id).disabled = true;
+    const status = document.getElementById('consultingDeleteApplicationStatus'); status.dataset.state = 'loading';
+    try {
+        let deletedCount = state.preview.deletedCount;
+        for (let step = 0; step < 1000; step++) {
+            status.textContent = `신청의 원본 파일과 기록을 정리하고 있습니다. 현재 ${deletedCount}개 DB 기록을 정리했습니다.`;
+            const result = await requestConsultingAdmin('admin_delete_consulting_application', { ...state.reference, previewToken: state.preview.previewToken, confirmation: '신청 영구 삭제' });
+            if (generation !== consultingApplicationDeletionGeneration) return;
+            if (result.applicationId !== state.reference.applicationId || typeof result.complete !== 'boolean' || !Number.isSafeInteger(result.deletedCount) || result.deletedCount < 0 || result.complete && result.storageComplete !== true) throw new Error('삭제 결과를 확인하지 못했습니다.');
+            if (!result.complete) {
+                if (typeof result.previewToken !== 'string' || !result.previewToken || result.previewToken.length > 2400) throw new Error('삭제 확인을 갱신하지 못했습니다.');
+                state.preview.previewToken = result.previewToken;
+            }
+            if (result.complete) {
+                consultingExportStudents.delete(state.reference.applicationId);
+                resetConsultingApplicationDeletion();
+                const navigation = consultingWorkspaceNavigate({}, true), workspaceGeneration = consultingWorkspaceGeneration;
+                await navigation;
+                if (workspaceGeneration !== consultingWorkspaceGeneration || readAdminLocation().section !== 'consulting') return;
+                const listFailed = document.getElementById('consultingDirectoryStatus').dataset.state === 'error';
+                consultingWorkspaceStatus('consultingDirectoryStatus', listFailed ? '신청·원본 영구 삭제는 완료했습니다. 학생 목록을 불러오지 못했으니 목록을 새로고침해주세요.' : '선택한 신청의 DB 기록과 첨부·PDF 원본을 영구 삭제했습니다.', listFailed ? 'error' : 'success');
+                return;
+            }
+            deletedCount = result.deletedCount;
+            if (result.retryAfterSeconds !== undefined) {
+                if (!Number.isSafeInteger(result.retryAfterSeconds) || result.retryAfterSeconds < 1 || result.retryAfterSeconds > 1200) throw new Error('삭제 대기 시간을 확인하지 못했습니다.');
+                const until = new Date(Date.now() + result.retryAfterSeconds * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                status.textContent = `진행 중이던 파일 작업이 끝나기를 기다리고 있습니다. ${until} 이후 자동으로 이어서 정리합니다. 지금 창을 닫아도 나중에 같은 신청에서 다시 시작할 수 있습니다.`;
+                state.waiting = true; state.waitController = new AbortController();
+                document.getElementById('consultingDeleteApplicationCancel').disabled = false;
+                const continued = await new Promise(resolve => {
+                    const timer = setTimeout(() => resolve(true), result.retryAfterSeconds * 1000);
+                    state.waitController.signal.addEventListener('abort', () => { clearTimeout(timer); resolve(false); }, { once: true });
+                });
+                if (!continued || generation !== consultingApplicationDeletionGeneration) return;
+                state.waiting = false; document.getElementById('consultingDeleteApplicationCancel').disabled = true;
+                const renewed = await requestConsultingAdmin('admin_preview_consulting_application_delete', state.reference);
+                if (generation !== consultingApplicationDeletionGeneration) return;
+                if (renewed.applicationId !== state.reference.applicationId || renewed.storageIncluded !== true || renewed.resume !== true || typeof renewed.previewToken !== 'string' || !renewed.previewToken || renewed.previewToken.length > 2400) throw new Error('삭제 대상이 변경되었습니다.');
+                state.preview = renewed;
+            }
+        }
+        throw new Error('남은 삭제 기록을 확인해주세요.');
+    } catch (_error) {
+        if (generation !== consultingApplicationDeletionGeneration) return;
+        state.busy = false; state.waiting = false; state.preview = null;
+        status.textContent = '삭제 완료를 확인하지 못했습니다. 일부 파일·기록은 이미 삭제되었을 수 있습니다. ‘삭제 상태 다시 확인’으로 남은 원본과 기록을 확인한 뒤 이어서 처리해주세요.'; status.dataset.state = 'error';
+        document.getElementById('consultingDeleteApplicationRetry').hidden = false;
+        document.getElementById('consultingDeleteApplicationCancel').disabled = false;
+        document.getElementById('consultingDeleteApplicationConfirmation').disabled = false;
+        updateConsultingApplicationDeletion();
     }
 }
 
