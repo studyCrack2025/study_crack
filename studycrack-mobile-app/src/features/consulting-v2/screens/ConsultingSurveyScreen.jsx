@@ -1,7 +1,7 @@
 import React from 'react';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { clientSurveyError, COMMUTE_OPTIONS, CONSULTATION_TOPIC_LABELS, createEmptySurvey, currentConsultationAnswers, DECISION_OPTIONS_MAX, hasPreviousExamScores,
-  MAX_CONSULTATION_QUESTIONS, MAX_CONSULTATION_TOPICS, normalizeSurveyDraft, PRIORITY_LABELS, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
+  MAX_CONSULTATION_QUESTIONS, MAX_CONSULTATION_TOPICS, normalizeSurveyDraft, PRIORITY_LABELS, QUALIFICATION_YEAR_RANGE, surveySaveSnapshot, SURVEY_FORM_VERSION, SURVEY_STEPS } from '../survey-model.js';
 import { confirmV2ScoreUpload, deleteV2ScoreFile, getV2SurveyDraft, getV2SurveySchema, saveV2SurveyDraft, saveV2SurveyRevision, submitV2Survey, uploadV2ScoreFile } from '../survey-api.js';
 import { useSurveyFileScan } from '../use-survey-file-scan.js';
 import { ConsultingSurveyPreferences } from './ConsultingSurveyPreferences.jsx';
@@ -9,7 +9,7 @@ import { ConsultingSurveyScores } from './ConsultingSurveyScores.jsx';
 import { SurveyScoreFiles } from './SurveyScoreFiles.jsx';
 import { legacyPreferences, SurveyAnswerView } from './SurveyAnswerView.jsx';
 import { SurveySupplementNotes } from './SurveySupplementNotes.jsx';
-import { SurveyFieldScope, useSurveyFieldAllowed } from './SurveyFieldScope.jsx';
+import { SurveyFieldContext, SurveyFieldScope, useSurveyFieldAllowed } from './SurveyFieldScope.jsx';
 import { SurveySupplementEditor } from './SurveySupplementEditor.jsx';
 
 const toOptionalNumber = value => value === '' ? null : Number(value);
@@ -24,18 +24,34 @@ function Field({ children, label, field }) {
 
 function StudentStatusStep({ snapshot, update }) {
   const value = snapshot.studentStatus;
-  return <div className="consulting-survey-grid">
-    <Field label="지원자 구분" field="studentStatus.applicantType"><select value={value.applicantType} onChange={event => update({ applicantType: event.target.value })}><option value="">선택</option><option value="high_school_senior">고3 재학생</option><option value="graduate">졸업생</option><option value="qualification_exam">검정고시</option></select></Field>
-    <Field label="졸업 연도" field="studentStatus.graduationYear"><input type="number" min="2020" max="2027" value={value.graduationYear ?? ''} onChange={event => update({ graduationYear: toOptionalNumber(event.target.value) })} /></Field>
-    <Field label="학교 유형" field="studentStatus.schoolType"><select value={value.schoolType} onChange={event => update({ schoolType: event.target.value })}><option value="">선택</option><option value="general">일반고</option><option value="specialized">특목·특성화고</option><option value="autonomous">자율고</option><option value="other">기타</option></select></Field>
-    <Field label="학교명" field="studentStatus.schoolName"><input maxLength="80" value={value.schoolName} onChange={event => update({ schoolName: event.target.value })} /></Field>
-    <Field label="거주 지역" field="studentStatus.residenceRegion"><input maxLength="40" placeholder="예: 서울 송파구" value={value.residenceRegion} onChange={event => update({ residenceRegion: event.target.value })} /></Field>
+  const scope = React.useContext(SurveyFieldContext);
+  const qualification = value.applicantType === 'qualification_exam';
+  return <div className="consulting-student-status">
+    <SurveyFieldScope field="studentStatus.applicantType"><fieldset className="consulting-survey-options">
+      <legend>지원자 구분</legend>
+      <div>{[['high_school_senior', '고3 재학생'], ['graduate', '졸업생'], ['qualification_exam', '검정고시']].map(([key, label]) => <label key={key}>
+        <input type="radio" name="survey-applicant-type" value={key} checked={value.applicantType === key} onChange={() => update({ applicantType: key })} /><span>{label}</span>
+      </label>)}</div>
+    </fieldset></SurveyFieldScope>
+    {qualification && <p className="consulting-survey-context">학교 정보는 입력하지 않아요. 합격 연도는 비워 두어도 괜찮아요.{(value.schoolName || value.schoolType) && ' 앞서 입력한 학교 정보는 보존돼요.'}</p>}
+    <div className="consulting-survey-grid consulting-student-details">
+      {qualification ? <>
+        <Field label="검정고시 합격 연도 (선택)" field="studentStatus.qualificationExamYear"><input type="number" inputMode="numeric" min={QUALIFICATION_YEAR_RANGE.min} max={QUALIFICATION_YEAR_RANGE.max} placeholder="비워 두어도 괜찮아요" value={value.qualificationExamYear ?? ''} onChange={event => update({ qualificationExamYear: toOptionalNumber(event.target.value) })} /></Field>
+        {scope && ['graduationYear', 'schoolType', 'schoolName'].map(field => <SurveyFieldScope key={field} field={`studentStatus.${field}`}><p className="consulting-score-note" data-survey-field={`studentStatus.${field}`}>{({ graduationYear: '졸업 연도', schoolType: '학교 유형', schoolName: '학교명' })[field]}는 검정고시 지원자에게 해당하지 않아요.</p></SurveyFieldScope>)}
+      </> : <>
+        <Field label={value.applicantType === 'high_school_senior' ? '졸업 예정 연도' : '졸업 연도'} field="studentStatus.graduationYear"><input type="number" inputMode="numeric" min="2020" max="2027" value={value.graduationYear ?? ''} onChange={event => update({ graduationYear: toOptionalNumber(event.target.value) })} /></Field>
+        <Field label="학교 유형" field="studentStatus.schoolType"><select value={value.schoolType} onChange={event => update({ schoolType: event.target.value })}><option value="">선택</option><option value="general">일반고</option><option value="specialized">특목·특성화고</option><option value="autonomous">자율고</option><option value="other">기타</option></select></Field>
+        <Field label="학교명" field="studentStatus.schoolName"><input maxLength="80" value={value.schoolName} onChange={event => update({ schoolName: event.target.value })} /></Field>
+        {scope && <SurveyFieldScope field="studentStatus.qualificationExamYear"><p className="consulting-score-note">검정고시 합격 연도는 검정고시 지원자만 입력해요.</p></SurveyFieldScope>}
+      </>}
+      <Field label="거주 지역" field="studentStatus.residenceRegion"><input maxLength="40" placeholder="예: 서울 송파구" value={value.residenceRegion} onChange={event => update({ residenceRegion: event.target.value })} /></Field>
+    </div>
   </div>;
 }
 
 function ConditionsStep({ snapshot, update, legacy }) {
   const value = snapshot.conditions;
-  return <div className="consulting-survey-grid consulting-survey-grid-single">
+  return <div className="consulting-survey-conditions">
     {legacy ? <Field label="최대 편도 통학 시간 (분)"><input type="number" min="0" max="300" value={value.commuteMaxMinutes ?? ''} onChange={event => update({ commuteMaxMinutes: toOptionalNumber(event.target.value) })} /></Field>
     : <Field label="최대 편도 통학 시간" field="conditions.commuteLimit">
       <select value={value.commuteLimit} onChange={event => {
@@ -47,12 +63,10 @@ function ConditionsStep({ snapshot, update, legacy }) {
       </select>
     </Field>}
     {!legacy && !value.commuteLimit && value.commuteMaxMinutes != null && <p className="consulting-score-note">이전에 {value.commuteMaxMinutes}분으로 입력했어요. 현재 선택지에서 다시 골라주세요.</p>}
-    <SurveyFieldScope field="conditions.dormitoryAllowed"><label className="consulting-survey-check" data-survey-field="conditions.dormitoryAllowed"><input type="checkbox" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /> 기숙사 생활 가능</label></SurveyFieldScope>
-    <SurveyFieldScope field="conditions.repeatStudyAllowed"><div>
-      <label className="consulting-survey-check" data-survey-field="conditions.repeatStudyAllowed"><input type="checkbox" checked={value.repeatStudyAllowed} aria-describedby="survey-repeat-guide"
-        onChange={event => update({ repeatStudyAllowed: event.target.checked })} /> 재수 가능성</label>
-      <p id="survey-repeat-guide" className="consulting-score-note">올해 원하는 선택지가 없으면 재수를 고려할 수 있어요.</p>
-    </div></SurveyFieldScope>
+    <div className="consulting-condition-choices">
+      <SurveyFieldScope field="conditions.dormitoryAllowed"><label className="consulting-condition-choice" data-survey-field="conditions.dormitoryAllowed"><input type="checkbox" aria-label="기숙사 생활 가능" aria-describedby="survey-dormitory-guide" checked={value.dormitoryAllowed} onChange={event => update({ dormitoryAllowed: event.target.checked })} /><span><strong>기숙사 생활 가능</strong><small id="survey-dormitory-guide">통학이 어려운 대학도 함께 검토할 수 있어요.</small></span></label></SurveyFieldScope>
+      <SurveyFieldScope field="conditions.repeatStudyAllowed"><label className="consulting-condition-choice" data-survey-field="conditions.repeatStudyAllowed"><input type="checkbox" aria-label="재수 가능성" aria-describedby="survey-repeat-guide" checked={value.repeatStudyAllowed} onChange={event => update({ repeatStudyAllowed: event.target.checked })} /><span><strong>재수 가능성</strong><small id="survey-repeat-guide">올해 원하는 선택지가 없으면 재수를 고려할 수 있어요.</small></span></label></SurveyFieldScope>
+    </div>
   </div>;
 }
 
@@ -86,22 +100,27 @@ function StrategyStep({ snapshot, update }) {
     [next[index], next[target]] = [next[target], next[index]];
     update({ priorityOrder: next });
   };
-  return <>
-    <Field label="지원 위험 선호" field="strategy.riskTolerance"><select value={value.riskTolerance} onChange={event => update({ riskTolerance: event.target.value })}><option value="">선택</option><option value="safe">안정 중심</option><option value="balanced">균형</option><option value="challenge">도전 중심</option></select></Field>
+  return <div className="consulting-survey-strategy">
+    <SurveyFieldScope field="strategy.riskTolerance"><fieldset className="consulting-survey-options">
+      <legend>지원 성향</legend>
+      <div>{[['safe', '안정 중심'], ['balanced', '균형'], ['challenge', '도전 중심']].map(([key, label]) => <label key={key}>
+        <input type="radio" name="survey-risk-tolerance" value={key} checked={value.riskTolerance === key} onChange={() => update({ riskTolerance: key })} /><span>{label}</span>
+      </label>)}</div>
+    </fieldset></SurveyFieldScope>
     <SurveyFieldScope field="strategy.priorityOrder"><section className="consulting-priority-list" aria-labelledby="consulting-priority-title" data-survey-field="strategy.priorityOrder">
       <h2 id="consulting-priority-title">대학 선택 우선순위</h2>
       <p className="consulting-score-note">가장 중요한 기준을 1순위로 골라주세요. 이미 사용한 순위를 고르면 두 기준의 순위가 서로 바뀝니다.</p>
       {Object.entries(PRIORITY_LABELS).map(([key, label]) => {
         const rank = value.priorityOrder.indexOf(key);
         return <label className="consulting-priority-row" key={key} data-first={rank === 0 || undefined}>
-          <span>{label}</span>
+          <span><b>{rank + 1}</b>{label}</span>
           <select aria-label={`${label} 순위`} value={rank} onChange={event => changeRank(key, Number(event.currentTarget.value))}>
             {value.priorityOrder.map((item, position) => <option key={item} value={position}>{position + 1}순위</option>)}
           </select>
         </label>;
       })}
     </section></SurveyFieldScope>
-  </>;
+  </div>;
 }
 
 function QualitativeStep({ snapshot, update }) {

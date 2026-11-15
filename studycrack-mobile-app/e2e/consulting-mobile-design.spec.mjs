@@ -109,7 +109,7 @@ test('동의 재확인 보완은 이미 동의한 값을 바꾸지 않고도 명
   pendingSupplement(fixture, [{ field: 'consent.analysisUse', label: '분석 이용 동의', note: '자료 이용 동의를 다시 확인해주세요.' }]);
   await page.goto('/2027-jungsi-consulting/survey');
   await expect(page.getByRole('checkbox', { name: '컨설팅 분석을 위한 자료 이용에 동의합니다.' })).toBeChecked();
-  await expect(page.getByText('내용이 같으면 운영팀에는 변경 없음으로 표시돼요.', { exact: false })).toBeVisible();
+  await expect(page.getByText('운영팀에는 변경 없음으로 표시돼요.', { exact: false })).toBeVisible();
   await expect(page.getByRole('region', { name: '수능 성적표 첨부' })).toHaveCount(0);
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: '보완 답변 재제출' }).click();
@@ -282,6 +282,146 @@ test('공개 메인은 여덟 화면 크기에서 운영과 같은 탭·가격·
   await question.focus(); await page.keyboard.press('Enter');
   await expect(page.locator('#faq details').first()).toHaveAttribute('open', '');
   await expect(page.locator('#faq details').first().locator('p')).not.toBeEmpty();
+});
+
+test('홈페이지·정시 소개·연결 가이드는 같은 로컬 서체를 쓰고 작은 안내문도 읽을 수 있다', async ({ page }) => {
+  await prepare(page);
+  for (const url of ['/', '/2027-jungsi-consulting#calculator', '/jungsi-score-guide']) {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto(url);
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('body')).toHaveCSS('font-family', /Paperlogy/);
+    expect(await page.evaluate(() => document.fonts.check('400 16px Paperlogy', '합격 대학 25,000원'))).toBe(true);
+    await fits(page);
+  }
+  await page.goto('/2027-jungsi-consulting#calculator');
+  await page.evaluate(() => document.fonts.ready);
+  for (const selector of ['#calculator .fine', '#calculator .demo-context', '.photo-note']) {
+    const text = page.locator(selector).first();
+    const ratio = await text.evaluate(element => {
+      const values = value => (value.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+      const light = rgb => rgb.map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+      let parent = element, background = 'rgba(0, 0, 0, 0)';
+      while (parent && background === 'rgba(0, 0, 0, 0)') { background = getComputedStyle(parent).backgroundColor; parent = parent.parentElement; }
+      const foreground = light(values(getComputedStyle(element).color)), back = light(values(background === 'rgba(0, 0, 0, 0)' ? 'rgb(255,255,255)' : background));
+      return (Math.max(foreground, back) + .05) / (Math.min(foreground, back) + .05);
+    });
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+    expect(await text.evaluate(e => parseFloat(getComputedStyle(e).fontSize))).toBeGreaterThanOrEqual(12);
+  }
+  expect(await page.locator('.login').evaluate(e => e.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+});
+
+test('학생 상태는 같은 높이의 입력을 제공하고 검정고시 전환·저장 후에도 기존 학교정보를 보존한다', async ({ page }, testInfo) => {
+  const fixture = await prepare(page);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/2027-jungsi-consulting/survey');
+    await page.getByRole('radio', { name: '졸업생', exact: true }).check();
+    await page.getByRole('textbox', { name: '학교명', exact: true }).fill('보존할 가상고');
+    const heights = await page.locator('.consulting-student-details input,.consulting-student-details select').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().height));
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
+    await fits(page);
+    if (width === 1440) await page.screenshot({ path: testInfo.outputPath('student-status-1440.png'), fullPage: true });
+    await page.getByRole('radio', { name: '검정고시', exact: true }).check();
+    await expect(page.getByLabel('학교명', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('학교 유형', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('spinbutton', { name: '졸업 연도', exact: true })).toHaveCount(0);
+    await page.getByLabel('검정고시 합격 연도 (선택)', { exact: true }).fill('2015');
+    await page.getByLabel('거주 지역', { exact: true }).fill('서울');
+    await fits(page);
+    if (width === 320) await page.screenshot({ path: testInfo.outputPath('student-qualification-320.png'), fullPage: true });
+    await page.getByRole('button', { name: '저장하고 다음' }).click();
+    await expect(page.getByRole('heading', { name: '성적', exact: true })).toBeVisible();
+    const saved = await page.evaluate(() => window.__design.survey);
+    expect(saved.draft.snapshot.studentStatus).toMatchObject({ applicantType: 'qualification_exam', qualificationExamYear: 2015, schoolName: '보존할 가상고' });
+    fixture.survey = saved;
+    await page.reload();
+    await expect(page.getByLabel('검정고시 합격 연도 (선택)', { exact: true })).toHaveValue('2015');
+    await page.getByRole('radio', { name: '졸업생', exact: true }).check();
+    await expect(page.getByLabel('학교명', { exact: true })).toHaveValue('보존할 가상고');
+  }
+});
+
+test('지원 조건·희망 지원·지원 전략은 화면 폭에 맞게 묶이고 저장한 선택을 유지한다', async ({ page }, testInfo) => {
+  await prepare(page);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/2027-jungsi-consulting/survey');
+    const next = page.getByRole('button', { name: '저장하고 다음' });
+    await next.click(); await next.click();
+    const commute = page.getByRole('combobox', { name: '최대 편도 통학 시간' });
+    expect(await commute.evaluate(e => e.getBoundingClientRect().width)).toBeLessThanOrEqual(360);
+    const choices = await page.locator('.consulting-condition-choice').evaluateAll(nodes => nodes.map(n => { const r = n.getBoundingClientRect(); return { top: r.top, left: r.left, height: r.height }; }));
+    expect(choices).toHaveLength(2);
+    if (width > 640) expect(Math.abs(choices[0].top - choices[1].top)).toBeLessThan(1);
+    else expect(choices[1].top).toBeGreaterThan(choices[0].top);
+    await commute.selectOption('90');
+    await page.getByRole('checkbox', { name: '기숙사 생활 가능', exact: true }).check();
+    await fits(page);
+    await page.screenshot({ path: testInfo.outputPath(`student-conditions-${width}.png`), fullPage: true });
+    await next.click();
+    const first = page.getByRole('group', { name: '1지망', exact: true });
+    await first.getByRole('searchbox', { name: '대학명 검색' }).fill('가상대');
+    await first.getByRole('button', { name: /가상대학교/ }).click();
+    await first.getByRole('combobox', { name: '희망 계열' }).selectOption('공학');
+    const boxes = await first.locator('.consulting-preference-fields > *').evaluateAll(nodes => nodes.map(n => { const r = n.getBoundingClientRect(); return { top: r.top, left: r.left, width: r.width }; }));
+    if (width > 640) { expect(Math.abs(boxes[0].top - boxes[1].top)).toBeLessThan(1); expect(boxes[0].width).toBeGreaterThan(boxes[1].width); }
+    else expect(boxes[1].top).toBeGreaterThan(boxes[0].top);
+    await fits(page);
+    await page.screenshot({ path: testInfo.outputPath(`student-preferences-${width}.png`), fullPage: true });
+    await next.click();
+    await page.getByRole('radio', { name: '도전 중심', exact: true }).check();
+    await page.getByRole('combobox', { name: '통학 순위' }).selectOption('0');
+    const heights = await page.locator('.consulting-priority-row select').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().height));
+    expect(heights.every(height => height >= 44)).toBe(true);
+    await fits(page);
+    await page.screenshot({ path: testInfo.outputPath(`student-strategy-${width}.png`), fullPage: true });
+    await next.click();
+    const draft = await page.evaluate(() => window.__design.survey.draft.snapshot);
+    expect(draft.conditions).toMatchObject({ commuteLimit: '90', dormitoryAllowed: true });
+    expect(draft.preferences.rankedChoices[0]).toMatchObject({ university: '가상대학교', track: '공학' });
+    expect(draft.strategy).toMatchObject({ riskTolerance: 'challenge', priorityOrder: ['commute', 'major', 'brand', 'employment', 'region'] });
+  }
+});
+
+test('검정고시는 졸업·합격연도 공란으로 최종 제출하고 제출한 답변에도 선택 연도로 표시한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  const snapshot = createEmptySurvey();
+  Object.assign(snapshot.studentStatus, { applicantType: 'qualification_exam', graduationYear: null, residenceRegion: '서울' });
+  snapshot.conditions.commuteLimit = '60';
+  snapshot.preferences.rankedChoices = [{ region: '', university: '', track: '공학' }];
+  snapshot.strategy.riskTolerance = 'balanced';
+  snapshot.qualitative.consultationQuestions = ['지원 조합을 비교하고 싶어요.'];
+  snapshot.consent = { accurateInformation: true, analysisUse: true };
+  fixture.survey.draft = { snapshot, draftRevision: 0 };
+  fixture.survey.files = [{ fileId: 'FILE_ready', displayName: '합성 성적표.pdf', status: 'ready' }];
+  await page.goto('/2027-jungsi-consulting/survey');
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: '저장하고 다음' }).click();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '최종 제출', exact: true }).click();
+  await expect(page).toHaveURL(/\/materials$/);
+  fixture.survey = await page.evaluate(() => window.__design.survey);
+  expect(fixture.survey.submission.snapshot.studentStatus.graduationYear).toBeNull();
+  expect(fixture.survey.submission.snapshot.studentStatus.qualificationExamYear).toBeUndefined();
+  await page.goto('/2027-jungsi-consulting/survey');
+  const answers = page.locator('.consulting-survey-answer-list');
+  await expect(answers).toContainText('검정고시 합격 연도 (선택)');
+  await expect(answers).toContainText('입력하지 않음');
+  await expect(answers).not.toContainText('졸업 연도');
+});
+
+test('검정고시에 해당하지 않는 과거 보완 요청은 확인 후 재제출할 수 있다', async ({ page }) => {
+  const fixture = await prepare(page);
+  pendingSupplement(fixture, [{ field: 'studentStatus.graduationYear', label: '졸업 연도', note: '이전 요청입니다.' }]);
+  for (const row of [fixture.survey.draft, fixture.survey.submission]) row.snapshot.studentStatus.applicantType = 'qualification_exam';
+  await page.goto('/2027-jungsi-consulting/survey');
+  await expect(page.getByText('현재 지원자 구분에 해당 없음', { exact: true })).toBeVisible();
+  await expect(page.getByRole('spinbutton')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '보완 답변 재제출' })).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: '보완 답변 재제출' }).click();
+  await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
 });
 
 test('메인 정시 링크는 운영과 같은 계산기 탭으로 연결하고 Basic 진입을 유지한다', async ({ browser, baseURL }, testInfo) => {

@@ -12,4 +12,7 @@ VER="$1"
 find . -name '*.html' -print0 \
   | xargs -0 perl -pi -e 's{(href="/css/[^"?]+\.css)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g; s{(src="/js/[^"?]+\.js)(?:\?v=[^"]*)?"}{$1?v='"$VER"'"}g'
 
+find . -name '*.css' -print0 \
+  | xargs -0 perl -pi -e 's{(\@import\s+url\(["\x27](?:\./|\.\./|/css/)[^"\x27?]+\.css)(?:\?v=[^"\x27]*)?(["\x27]\))}{$1?v='"$VER"'$2}g'
+
 echo "Updated local /css and /js asset query version to: $VER"

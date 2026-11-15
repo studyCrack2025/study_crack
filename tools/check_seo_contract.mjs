@@ -19,9 +19,15 @@ const expectedSitemapUrls = [
 const indexedPages = [
   ['index.html', 'https://studycrack.co.kr/'],
   ['service.html', 'https://studycrack.co.kr/service'],
+  ['jungsi-score-guide.html', 'https://studycrack.co.kr/jungsi-score-guide'],
+  ['jungsi-admission-prediction-guide.html', 'https://studycrack.co.kr/jungsi-admission-prediction-guide'],
+  ['jungsi-percentile-guide.html', 'https://studycrack.co.kr/jungsi-percentile-guide'],
   ['analysis.html', 'https://studycrack.co.kr/analysis'],
   ['payment.html', 'https://studycrack.co.kr/payment'],
-  ['qna.html', 'https://studycrack.co.kr/qna']
+  ['qna.html', 'https://studycrack.co.kr/qna'],
+  ['jungsi-consulting-2027.html', 'https://studycrack.co.kr/2027-jungsi-consulting'],
+  ['jungsi-consulting-timing-guide.html', 'https://studycrack.co.kr/jungsi-consulting-timing-guide'],
+  ['jungsi-gachaejeom-guide.html', 'https://studycrack.co.kr/jungsi-gachaejeom-guide']
 ];
 
 async function read(relativePath) {
@@ -175,7 +181,7 @@ for (const [fileName, canonicalUrl] of indexedPages) {
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
 
-const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.png');
+const targetImage = startTags(home, 'img').filter((tag) => tag.src === '/assets/basic-v2/proof-classroom.webp');
 assert.equal(targetImage.length, 1, 'the target homepage image must appear exactly once as an img element');
 assert.equal(targetImage[0].alt, '', 'the decorative classroom background must use an empty alt attribute');
 assert.ok(String(targetImage[0].class || '').split(/\s+/).includes('bg-img'), 'the classroom image must remain a decorative background');

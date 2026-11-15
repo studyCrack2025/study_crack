@@ -29,6 +29,12 @@ function display(key, value) {
 }
 
 function entries(section, value) {
+  if (section === 'studentStatus') return [
+    ['지원자 구분', display('applicantType', value.applicantType)],
+    ...(value.applicantType === 'qualification_exam' ? [['검정고시 합격 연도 (선택)', value.qualificationExamYear ?? '입력하지 않음']]
+      : [[value.applicantType === 'high_school_senior' ? '졸업 예정 연도' : '졸업 연도', value.graduationYear], ['학교 유형', display('schoolType', value.schoolType)], ['학교명', value.schoolName]]),
+    ['거주 지역', value.residenceRegion]
+  ];
   if (section === 'scores') {
     const { examYear, examType, records } = value;
     return [

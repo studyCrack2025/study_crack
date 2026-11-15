@@ -17,6 +17,10 @@ export const isGradeOnlyArea = area => ['english', 'korean_history', 'foreign_la
 export const PRIORITY_LABELS = Object.freeze({ region: '지역', major: '전공', brand: '대학 인지도', employment: '취업', commute: '통학' });
 export const SURVEY_FORM_VERSION = 4;
 export const CONSULTING_SURVEY_EXAM = Object.freeze({ examYear: 2026, examType: 'csat' });
+export const QUALIFICATION_YEAR_RANGE = Object.freeze({ min: 1900, max: CONSULTING_SURVEY_EXAM.examYear });
+export const isSchoolFieldInapplicable = (snapshot, field) => snapshot.studentStatus?.applicantType === 'qualification_exam'
+  ? ['studentStatus.graduationYear', 'studentStatus.schoolType', 'studentStatus.schoolName'].includes(field)
+  : field === 'studentStatus.qualificationExamYear';
 export const SPLIT_SCORE_LIMITS = { korean: [76, 24], math: [74, 26] };
 export const splitRawTotal = (common, elective) => common == null || elective == null ? null : common + elective;
 export const COMMUTE_OPTIONS = Object.freeze([
@@ -132,8 +136,11 @@ export function normalizeSurveyDraft(snapshot) {
 
 export function surveySaveSnapshot(snapshot) {
   const { consultationTopics, decisionOptions, specialCircumstances, consultationQuestions } = currentConsultationAnswers(snapshot.qualitative);
+  const studentStatus = { ...snapshot.studentStatus };
+  if (studentStatus.qualificationExamYear == null) delete studentStatus.qualificationExamYear;
   return {
     ...snapshot,
+    studentStatus,
     scores: {
       ...snapshot.scores,
       records: snapshot.scores.records.filter(row => row.area !== 'foreign_language' || row.subject || row.grade != null)
@@ -150,7 +157,8 @@ export function surveySaveSnapshot(snapshot) {
 export function clientSurveyError(snapshot, readyFiles) {
   const issue = (section, message) => ({ section, message });
   if (!snapshot.studentStatus.applicantType) return issue('studentStatus', '지원자 구분을 선택해주세요.');
-  if (!integerInRange(snapshot.studentStatus.graduationYear, 2020, 2027)) return issue('studentStatus', '졸업 연도를 2020~2027 사이로 입력해주세요.');
+  if (snapshot.studentStatus.applicantType !== 'qualification_exam' && !integerInRange(snapshot.studentStatus.graduationYear, 2020, 2027)) return issue('studentStatus', '졸업 연도를 2020~2027 사이로 입력해주세요.');
+  if (snapshot.studentStatus.qualificationExamYear != null && !integerInRange(snapshot.studentStatus.qualificationExamYear, QUALIFICATION_YEAR_RANGE.min, QUALIFICATION_YEAR_RANGE.max)) return issue('studentStatus', `검정고시 합격 연도를 ${QUALIFICATION_YEAR_RANGE.min}~${QUALIFICATION_YEAR_RANGE.max} 사이로 입력하거나 비워주세요.`);
   if (!hasText(snapshot.studentStatus.residenceRegion)) return issue('studentStatus', '거주 지역을 입력해주세요.');
   if (!isConsultingSurveyExam(snapshot.scores)) return issue('scores', '2027학년도 수능 성적을 입력해주세요.');
   const scoreError = surveyRawScoreError(snapshot.scores.records);
