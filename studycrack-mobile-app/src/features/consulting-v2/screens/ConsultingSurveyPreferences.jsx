@@ -112,6 +112,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
     </div>}
     {choices.map((choice, index) => (!scope || scope.some(field => field.startsWith(`preferences.rankedChoices.${index}.`))) && <fieldset key={index} className="consulting-survey-preference-rank">
       <legend>{index + 1}지망</legend>
+      <div className="consulting-preference-fields">
       <SurveyFieldScope field={`preferences.rankedChoices.${index}.university`}><UniversityPicker
         field={`preferences.rankedChoices.${index}.university`}
         university={choice.university} catalog={catalog}
@@ -124,6 +125,7 @@ export function ConsultingSurveyPreferences({ value, update }) {
         }}
       /></SurveyFieldScope>
       <SurveyFieldScope field={`preferences.rankedChoices.${index}.track`}><ChoiceSelect label="희망 계열" field={`preferences.rankedChoices.${index}.track`} options={TRACKS} value={choice.track} onChange={track => changeChoice(index, { track })} /></SurveyFieldScope>
+      </div>
       {choice.region && <p className="consulting-score-note">이전에 입력한 희망 지역 · {choice.region}</p>}
       {!scope && choices.length > 1 && <button className="consulting-v2-secondary" type="button" aria-label={`${index + 1}지망 삭제`} onClick={() => {
         update({ rankedChoices: choices.filter((_, position) => position !== index) });

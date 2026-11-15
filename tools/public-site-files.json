@@ -221,7 +221,15 @@
     "assets/jungsi-2027/calculator-demo.jpg",
     "assets/jungsi-2027/PretendardVariable.woff2",
     "assets/jungsi-2027/analyst.webp",
-    "assets/jungsi-2027/reports.webp"
+    "assets/jungsi-2027/reports.webp",
+    "css/brand-foundation.css",
+    "assets/fonts/paperlogy/paperlogy-400-extended-694f1a76bf.woff2",
+    "assets/fonts/paperlogy/paperlogy-700-core-b07f17cd0e.woff2",
+    "assets/fonts/paperlogy/paperlogy-800-core-4588ad2ba3.woff2",
+    "assets/fonts/paperlogy/OFL.txt",
+    "assets/fonts/paperlogy/paperlogy-700-extended-61b2f0c5a6.woff2",
+    "assets/fonts/paperlogy/paperlogy-800-extended-0cc434a0c9.woff2",
+    "assets/fonts/paperlogy/paperlogy-400-core-03b5e721b1.woff2"
   ],
   "aliases": {
     "2027-jungsi-consulting/calculator": "jungsi-calculator-2027.html",

@@ -34,6 +34,19 @@ async function fixture(t) {
   return { root, output, put, html };
 }
 
+test('shared local font imports receive the release version without changing source or external imports', async (t) => {
+  const ctx = await fixture(t);
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ ...policy, files: [...policy.files, 'css/brand-foundation.css'] }));
+  const source = '@import url("./brand-foundation.css?v=old");\n@import url("https://example.invalid/fonts.css");\n';
+  await ctx.put('css/main.css', source);
+  await ctx.put('css/brand-foundation.css', ':root{--font:Paperlogy}');
+  await buildSiteRelease({ ...ctx, commit, release });
+  const published = await readFile(path.join(ctx.output, 'site/css/main.css'), 'utf8');
+  assert.match(published, /brand-foundation\.css\?v=dev-aaaaaaaa/);
+  assert.match(published, /https:\/\/example.invalid\/fonts\.css"/);
+  assert.equal(await readFile(path.join(ctx.root, 'css/main.css'), 'utf8'), source);
+});
+
 test('only approved files are copied, versioned and sealed without changing source', async (t) => {
   const ctx = await fixture(t);
   const { digest, manifest } = await buildSiteRelease({ ...ctx, commit, release });

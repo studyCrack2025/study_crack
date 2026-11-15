@@ -155,7 +155,8 @@ async function prepare(page, hash = '', configure = () => {}) {
             if (state.materialError) return route.fulfill({ status: 503, json: { success: false } });
             const current = state.students[1].case;
             const pending = current.workflowState === 'MATERIAL_REVIEW';
-            const submission = { submittedAt: '2026-11-04T00:00:00.000Z', snapshot };
+            const submission = { submittedAt: '2026-11-04T00:00:00.000Z', snapshot: state.qualificationStatus
+                ? { ...snapshot, studentStatus: { ...snapshot.studentStatus, ...state.qualificationStatus } } : snapshot };
             data = {
                 case: current,
                 submission: state.legacyMaterial || current.workflowState === 'SURVEY_DRAFT' ? null : submission,
@@ -767,6 +768,18 @@ test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값
     expect(state.students[1].case.workflowState).toBe('FINAL_CALL_BOOKED');
 });
 
+
+test('검정고시 관리자 상세는 합격연도를 별도로 보여주고 보존된 학교정보를 혼동하지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.qualificationStatus = { applicantType: 'qualification_exam', qualificationExamYear: 2015 };
+    await enterConsulting(page); await openStudent(page, 1);
+    const panel = page.locator('#consultingSurveyPanel-studentStatus');
+    await expect(panel).toContainText('검정고시 합격 연도 (선택)');
+    await expect(panel).toContainText('2015');
+    await expect(panel).not.toContainText('2027');
+    await expect(panel).not.toContainText('가상고');
+    await expect(panel).not.toContainText('졸업 연도');
+});
 
 test('조사서는 학생 화면과 같은7개 항목 중 하나만 보이며 키보드·이전 다음으로 이동한다', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 1000 });

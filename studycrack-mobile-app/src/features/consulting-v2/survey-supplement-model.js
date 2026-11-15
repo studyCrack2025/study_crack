@@ -21,6 +21,6 @@ export function supplementAnswerText(value) {
 
 export function supplementFieldChanged(field, before, after, beforeFiles, afterFiles) {
   const value = field === 'files' ? [[...beforeFiles].sort(), [...afterFiles].sort()]
-    : [supplementAnswer(before, field), supplementAnswer(after, field)];
+    : [supplementAnswer(before, field) ?? null, supplementAnswer(after, field) ?? null];
   return JSON.stringify(value[0]) !== JSON.stringify(value[1]);
 }
