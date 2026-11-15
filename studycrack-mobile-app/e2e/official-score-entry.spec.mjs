@@ -265,37 +265,27 @@ async function mockOctoberConversion(page) {
   return { requests, makeReady: () => { ready = true; } };
 }
 
-test('10월 성적 공지는 이전 달 숨김 기록과 분리하고 10월 입력으로 연결한다', async ({ page, baseURL }) => {
+test('홈페이지의 새 컨설팅 안내는 과거 성적 공지 숨김 기록과 분리하고 소개 페이지로 연결한다', async ({ page, baseURL }) => {
   const previewOrigin = new URL(baseURL).origin;
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (url.origin === previewOrigin) return route.continue();
-    if (url.pathname.endsWith('/amazon-cognito-identity.min.js')) {
-      return route.fulfill({ contentType: 'application/javascript', body: cognitoBrowserSdk });
-    }
+    if (url.pathname.endsWith('/amazon-cognito-identity.min.js')) return route.fulfill({ contentType: 'application/javascript', body: cognitoBrowserSdk });
     return route.abort();
   });
-  await page.addInitScript(() => localStorage.setItem('septemberMockUpdateHideUntil', String(Date.now() + 86_400_000)));
-  await page.clock.install();
+  await page.addInitScript(() => {
+    for (const key of ['septemberMockUpdateHideUntil', 'october2026ScoreUpdateHideUntil']) localStorage.setItem(key, String(Date.now() + 86_400_000));
+  });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  const dialog = page.getByRole('dialog', { name: '10월 성적 업데이트' });
+  const dialog = page.getByRole('dialog', { name: /지원할 대학,\s*선택할 이유까지\./ });
   await expect(dialog).toBeVisible();
-  const link = dialog.getByRole('link', { name: '10월 성적 입력하기' });
-  await expect(link).toHaveAttribute('href', '/survey?exam=oct');
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(dialog).toBeVisible();
+  await expect(page.locator('#scoreUpdateBanner-modal')).toHaveCount(0);
+  const link = dialog.getByRole('link', { name: '컨설팅 자세히 보기' });
+  await expect(link).toHaveAttribute('href', '/2027-jungsi-consulting#consulting');
   await link.click();
-  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fsurvey%3Fexam%3Doct$/);
-
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await dialog.getByRole('button', { name: '3일간 보지 않기' }).click();
-  await expect(dialog).toBeHidden();
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.clock.runFor(600);
-  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting#consulting$/);
+  await expect(page.locator('#consultingPanel')).toBeVisible();
+  await expect(page.locator('#calculator')).toBeHidden();
 });
 
 test('웹 조사서 10월 링크는 자료 미준비 시 입력을 유지하고 소수 백분위를 저장한다', async ({ page }) => {
