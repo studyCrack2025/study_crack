@@ -730,12 +730,16 @@ test('제출 대기에서 보완 항목으로 이동해 첨부를 유지하고, 
   await page.getByRole('button', { name: '진행 상태 다시 확인' }).click();
   await page.getByRole('button', { name: '서면상담 가능 시간 선택' }).click();
   await expect(page).toHaveURL(/\/schedule$/);
-  const slots = page.locator('.consulting-schedule-days button');
-  await expect(slots).toHaveCount(6);
-  for (const slot of await slots.all()) await slot.click();
+  const dates = page.getByRole('group', { name: '상담 날짜', exact: true }).locator('button:enabled');
+  await expect(dates).toHaveCount(3);
+  for (const date of await dates.all()) {
+    await date.click();
+    for (const slot of await page.locator('.consulting-schedule-time-grid button').all()) await slot.click();
+  }
   await page.getByRole('button', { name: '가능 시간 저장' }).click();
   await expect(page.getByText('서면상담 일정 · 가능 시간 제출 완료')).toBeVisible();
-  await expect(page.getByText(/가능 시간을 저장했습니다/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: '가능 시간을 전달했어요' })).toBeVisible();
+  await expect(page.getByText('3일 · 6개 시간', { exact: true })).toBeVisible();
   await fits(page);
 });
 
@@ -1200,6 +1204,7 @@ test('학생이 마이페이지에서 변경 제안을 수락하고 남은 시�
   });
   await page.getByRole('button', { name: '일정 변경 요청' }).click();
   await expect(page.getByText(/^12월 7일.*~.*12월 20일.*한국시간$/)).toBeVisible();
+  await page.getByRole('button', { name: /12월 20일.*개 선택/ }).click();
   await page.getByRole('button', { name: '10:30' }).last().click();
   await page.getByRole('button', { name: '변경 요청 보내기' }).click();
   await expect(page.getByText('변경 요청을 확인 중이에요. 확정 전까지 기존 예약이 유지됩니다.')).toBeVisible();
@@ -1248,6 +1253,7 @@ test('운영팀 제안에 답하는 중에도 학생이 다른 가능 시간을 
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto('/2027-jungsi-consulting/schedule');
   await page.getByRole('button', { name: '다른 시간 제안하기' }).click();
+  await page.getByRole('button', { name: /12월 20일.*개 선택/ }).click();
   await page.getByRole('button', { name: '10:30' }).last().click();
   await page.getByRole('button', { name: '변경 요청 보내기' }).click();
   await expect(page.getByText('변경 요청을 확인 중이에요. 확정 전까지 기존 예약이 유지됩니다.')).toBeVisible();

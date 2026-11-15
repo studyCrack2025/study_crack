@@ -93,7 +93,7 @@ test('확정 조사서로 성적 재입력 없이 A/B/C안을 자동 비교하�
 test('위험도와 검색 조건 변경은 이전 결과를 폐기하고 성적 없이 자동 재계산한다', async ({ page }) => {
     const state = await prepare(page); await open(page);
     await expect(page.locator('#consultingReferenceResults')).toBeVisible();
-    await page.getByLabel('지원 성향', { exact: true }).selectOption('safe');
+    await page.locator('#consultingReferenceRisk').selectOption('safe');
     await expect.poll(() => state.calls.filter(x => x.type === 'admin_run_reference_experiment').length).toBe(2);
     expect(state.calls.filter(x => x.type === 'admin_run_reference_experiment').at(-1).data.input.risk).toBe('safe');
     await page.getByLabel('전체 계산 후보에서 대학·학과 찾기').fill('합성');
