@@ -48,7 +48,8 @@ export async function loadPublicPolicy(root = repositoryRoot) {
   }
   for (const [alias, source] of Object.entries(policy.aliases || {})) {
     assertSafePath(alias);
-    assert.ok(!path.extname(alias) && !policy.files.includes(alias), `Invalid clean URL: ${alias}`);
+    const htmlAlias = /^[a-zA-Z0-9_-]+\.html$/.test(alias);
+    assert.ok((!path.extname(alias) || htmlAlias) && !policy.files.includes(alias), `Invalid public URL alias: ${alias}`);
     assert.ok(policy.files.includes(source) && source.endsWith('.html'), `Invalid clean URL source: ${alias}`);
     assert.ok(!/^(?:js|css|assets|studycrack-mobile-app|docs|backend-backup|tools)\//.test(alias), `Reserved clean URL: ${alias}`);
   }
