@@ -154,14 +154,17 @@ async function prepare(page, hash = '', configure = () => {}) {
         } else if (request.type === 'admin_get_v2_material_detail') {
             if (state.materialError) return route.fulfill({ status: 503, json: { success: false } });
             const current = state.students[1].case;
-            const pending = current.workflowState === 'MATERIAL_REVIEW';
+            const pending = !state.scoreReviewed && (current.workflowState === 'MATERIAL_REVIEW' || state.surveyApproved);
             const submission = { submittedAt: '2026-11-04T00:00:00.000Z', snapshot: state.qualificationStatus
                 ? { ...snapshot, studentStatus: { ...snapshot.studentStatus, ...state.qualificationStatus } } : snapshot };
             data = {
                 case: current,
+                scoreReviewDigest: 'sha256:' + 'c'.repeat(64),
+                canReviewScores: !['SURVEY_DRAFT', 'REPORT_SCHEDULED', 'SERVICE_COMPLETED'].includes(current.workflowState),
+                surveyReview: { approved: Boolean(state.surveyApproved), canApprove: current.workflowState === 'MATERIAL_REVIEW', scoreChanged: false, needsReview: false },
                 submission: state.legacyMaterial || current.workflowState === 'SURVEY_DRAFT' ? null : submission,
                 originalSubmission: state.legacyMaterial ? { ...submission, snapshot: { ...snapshot, formVersion: undefined, preferences: { desiredMajors: ['국문학'], desiredTracks: ['인문'], requiredCandidates: ['가상대'] }, conditions: { commuteMaxMinutes: 90, tuitionBudgetAnnual: 3000000 } } } : null,
-                verification: pending ? { status: 'pending', studentInput: snapshot.scores } : { status: 'matched', verifiedInput: { ...snapshot.scores, records: [{ area: 'english', subject: '영어', grade: 3 }] } },
+                verification: pending ? { status: 'pending', studentInput: snapshot.scores } : { status: 'matched', verifiedInput: state.verifiedScores || { ...snapshot.scores, records: [{ area: 'english', subject: '영어', grade: 3 }] } },
                 files: [{ fileId: 'FILE_synthetic', status: 'linked', displayName: '제출 성적표.pdf' }, { fileId: 'FILE_waiting', status: 'quarantined', displayName: '검사 중.pdf' }]
             };
             if (state.revisedMaterial) {
@@ -201,6 +204,16 @@ async function prepare(page, hash = '', configure = () => {}) {
                 field, label: field === 'studentStatus.residenceRegion' ? '거주 지역' : '1지망 대학', note
             })) };
             data = { caseId, notificationQueued: true };
+        } else if (request.type === 'admin_approve_v2_survey') {
+            if (state.revisedMaterial) state.confirmed = true;
+            state.surveyApproved = true;
+            if (state.students[1].case.workflowState === 'MATERIAL_REVIEW') state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
+            state.supplementAlerts = [];
+            data = { caseId, workflowState: state.students[1].case.workflowState, notificationQueued: !state.revisedMaterial };
+        } else if (request.type === 'admin_review_v2_scores') {
+            state.scoreReviewed = true;
+            state.verifiedScores = request.data.verifiedInput;
+            data = { caseId, workflowState: state.students[1].case.workflowState };
         } else if (request.type === 'admin_verify_v2_materials') {
             state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
             state.supplementAlerts = [];
@@ -473,12 +486,16 @@ test('관리자는 항목별 보완 내용을 미리 확인해 한 번에 보내
     state.students[1].case.workflowState = 'MATERIAL_REVIEW';
     state.supplement = null;
     await page.reload();
-    await page.getByRole('tab', { name: '성적', exact: true }).click();
-    await page.locator('#consultingMaterialReason').fill('공식 성적표 확인 완료');
+    await page.getByRole('tab', { name: '지원 조건', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReason')).toBeHidden();
     page.once('dialog', dialog => dialog.accept());
-    await page.getByRole('button', { name: '확인 완료 · 일정 선택 열기' }).click();
+    await page.getByRole('button', { name: '조사서 승인 · 일정 선택 열기' }).click();
     await expect(page.locator('#consultingMaterialStatus')).toContainText('학생의 상담 가능 시간 선택을 열었습니다.');
-    expect(state.calls.filter(({ type }) => type === 'admin_verify_v2_materials')).toHaveLength(1);
+    const approvals = state.calls.filter(({ type }) => type === 'admin_approve_v2_survey');
+    expect(approvals).toHaveLength(1);
+    expect(approvals[0].data).toEqual({ caseId, expectedSurveyRevision: 0 });
+    expect(state.calls.some(({ type }) => type === 'admin_verify_v2_materials' || type === 'admin_review_v2_scores')).toBe(false);
+    await expect(page.locator('#consultingSurveyApprovalStatus')).toContainText('공식 성적 미확인');
 });
 
 test('관리자 메뉴·Q&A 상태·공지 하위 메뉴는 실제 새로고침 뒤에도 유지한다', async ({ page }) => {
@@ -508,16 +525,18 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
     await expect(page.getByRole('button', { name: '제출 성적표.pdf 열기' })).toBeEnabled();
     await expect(page.getByRole('button', { name: '검사 중.pdf 열기' })).toBeDisabled();
     await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReason')).toBeHidden();
+    await page.getByText('공식 성적 확인·정정', { exact: true }).click();
     await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
     await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
-    await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toBeDisabled();
-    await expect(page.getByRole('spinbutton', { name: '영어 등급' })).toHaveValue('');
+    await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toHaveCount(0);
+    await expect(page.getByRole('spinbutton', { name: '영어 등급' })).toHaveValue('2');
     await expect(page.locator('#consultingVerifiedScores')).toContainText('제2외국어·한문 · 학생 입력 독일어Ⅰ 4등급');
-    await expect(page.getByRole('combobox', { name: '제2외국어·한문 과목명' })).toHaveValue('');
+    await expect(page.getByRole('combobox', { name: '제2외국어·한문 과목명' })).toHaveValue('독일어Ⅰ');
     await page.getByRole('combobox', { name: '제2외국어·한문 과목명' }).selectOption('독일어Ⅰ');
     await page.getByRole('spinbutton', { name: '제2외국어·한문 등급' }).fill('4');
     await expect(page.getByRole('textbox', { name: '탐구 1 과목명' })).toHaveValue('');
-    await expect(page.getByLabel('검수 결과').locator('option').first()).toHaveText('성적표 확인 완료');
+    await expect(page.getByLabel('검수 결과', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '신청·입금', exact: true }).click(); await page.reload();
     await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
     state.students[1].case.workflowState = 'REPORT_REVIEW';
@@ -603,9 +622,10 @@ test('현재·최초·검수본을 전환하고 수정 이력을 확인한 뒤 �
     await expect(history.locator('img')).toHaveCount(0);
     expect(state.calls.filter(call => call.type === 'admin_list_v2_survey_changes').map(call => call.data.before)).toEqual([undefined, 2]);
     expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    page.once('dialog', dialog => dialog.accept());
     await confirm.click();
     await expect(page.locator('#consultingMaterialStatus')).toContainText('최신 답변을 확인했습니다.');
-    expect(state.calls.find(call => call.type === 'admin_confirm_v2_survey_revision').data).toEqual({ caseId, expectedSurveyRevision: 6 });
+    expect(state.calls.find(call => call.type === 'admin_approve_v2_survey').data).toEqual({ caseId, expectedSurveyRevision: 6 });
     await versions.selectOption('reviewed');
     await expect(answers).toContainText('부산');
 });
@@ -754,6 +774,7 @@ test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값
     await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
     await expect(page.locator('#consultingSurveyReviewNotice')).toContainText('기존 공개 보고서는 그대로 유지');
     await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await page.getByText('보고서 정정을 위한 성적 재검수', { exact: true }).click();
     await expect(page.getByLabel('국어 표준점수', { exact: true })).toHaveValue('126');
     await expect(page.getByLabel('영어 등급', { exact: true })).toHaveValue('2');
     await page.getByLabel('국어 표준점수', { exact: true }).fill('127');
@@ -917,4 +938,32 @@ test('보완 알림은 화면 복귀 때 갱신하고 조회 실패는 자동 �
     await page.clock.runFor(95000);
     await expect(page.locator('#consultingSupplementAlertList')).toBeEmpty();
     await expect(page.locator('#consultingSupplementAlertBadge')).toBeHidden();
+});
+
+
+test('조사서 승인과 성적 확인은 분리되며 보완 메모가 남으면 승인을 막는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementFields = ['studentStatus.residenceRegion'];
+    await enterConsulting(page);
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click();
+    await openStudent(page);
+    const approve = page.getByRole('button', { name: '조사서 승인 · 일정 선택 열기' });
+    await expect(approve).toBeVisible();
+    await expect(page.getByRole('heading', { name: '조사서 보완 요청', exact: true })).toHaveCount(0);
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
+    const note = page.getByRole('textbox', { name: '거주 지역 보완 메모' });
+    await note.fill('거주 지역을 추가 확인합니다.');
+    await expect(approve).toBeDisabled();
+    await expect(page.locator('#consultingSupplementStatus')).toContainText('보완');
+    await note.fill('');
+    await expect(approve).toBeEnabled();
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReviewActions')).not.toContainText('일정 선택');
+    await page.getByText('공식 성적 확인·정정', { exact: true }).click();
+    await page.getByRole('button', { name: '공식 성적 확인·저장', exact: true }).click();
+    await expect(page.locator('#consultingScoreReviewStatus')).toContainText('국어');
+    expect(state.calls.some(call => call.type === 'admin_review_v2_scores')).toBe(false);
+    await page.setViewportSize({ width: 320, height: 720 });
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
 });

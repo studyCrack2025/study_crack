@@ -52,7 +52,7 @@ function renderConsultingScoreTable(scores, decorate) {
             ['공통', record.commonRawScore], ['선택', record.electiveRawScore], ['원점수', record.rawScore],
             ['표준점수', record.standardScore], ['백분위', record.percentile], ['등급', record.grade]
         ].filter(([, value]) => value != null).map(([label, value]) => `${label} ${value}`);
-        const score = createConsultingCell(values.join(' · ') || '—');
+        const score = createConsultingCell(values.join(' · ') || '미입력');
         decorate?.(score, field, `${area} 성적`);
         row.append(createConsultingCell(area), createConsultingCell(subject || '—'), score);
     }
@@ -129,7 +129,7 @@ function renderConsultingVerifiedScores(scores, rawEntry, gradeEntry) {
     const target = document.getElementById('consultingVerifiedScores');
     target.innerHTML = '';
     const records = [...(scores?.records || [])];
-    if (gradeEntry && !records.some(record => record.area === 'foreign_language')) records.push({ area: 'foreign_language' });
+    document.getElementById('consultingAddForeignScoreBtn').hidden = !gradeEntry || records.some(record => record.area === 'foreign_language');
     consultingScoreRows(records).forEach(({ record, area }) => {
         const row = document.createElement('div');
         row.className = 'consulting-score-editor-row';
@@ -156,15 +156,22 @@ function renderConsultingVerifiedScores(scores, rawEntry, gradeEntry) {
             const placeholder = ({ subject: '과목명', selection: '선택과목', standardScore: '표준점수', percentile: '백분위', grade: '등급' })[field];
             const emptyInquiry = rawEntry && field === 'subject' && record.area === 'inquiry' && /^탐구\s*[12]$/u.test(record.subject);
             input.disabled = rawEntry && (absolute && field !== 'subject' && field !== 'grade' || record.area === 'inquiry' && field === 'selection');
-            input.value = input.disabled || emptyInquiry || (gradeEntry && absolute && (field === 'grade' || subjectSelect)) ? '' : record[field] ?? '';
+            input.value = input.disabled || emptyInquiry ? '' : record[field] ?? '';
             input.placeholder = placeholder;
             input.setAttribute('aria-label', `${area} ${placeholder}`);
-            row.appendChild(input);
+            const fieldLabel = document.createElement('label');
+            fieldLabel.className = 'consulting-score-editor-field';
+            const title = document.createElement('span');
+            title.textContent = placeholder;
+            fieldLabel.hidden = input.disabled;
+            fieldLabel.append(title, input);
+            row.appendChild(fieldLabel);
         });
         target.appendChild(row);
     });
     target.dataset.examYear = String(scores?.examYear || '');
     target.dataset.examType = String(scores?.examType || '');
+    refreshConsultingScoreChanges();
 }
 
 function renderConsultingMaterialFiles(caseId, files) {
@@ -281,6 +288,7 @@ function refreshConsultingSurveyComments() {
         row.appendChild(link);
         list.appendChild(row);
     }
+    refreshConsultingSurveyDecision();
 }
 
 function selectConsultingSurveySection(key, focusTab = false) {
@@ -303,7 +311,7 @@ function selectConsultingSurveySection(key, focusTab = false) {
     const current = data.surveyVersion === 'current';
     const verification = document.getElementById('consultingMaterialVerification');
     verification.hidden = key !== 'scores' || !current || !verification.children.length;
-    document.getElementById('consultingMaterialReviewActions').hidden = key !== 'scores' || !current || !(data.canReview || data.canConfirm && data.surveyReview.scoreChanged);
+    document.getElementById('consultingMaterialReviewActions').hidden = key !== 'scores' || !current || !data.canScoreReview;
     const previous = document.getElementById('consultingSurveyPrevious');
     const next = document.getElementById('consultingSurveyNext');
     previous.disabled = index === 0;
@@ -482,9 +490,9 @@ function showConsultingSurveyVersion(version) {
         ...(reviewed && data.surveyReview?.reviewedAt ? [['검수 시각', formatConsultingDate(data.surveyReview.reviewedAt)]] : []),
         ...(submission.supplementAttempt > 0 ? [['보완 제출', `${submission.supplementAttempt}회차`]] : [])
     ]));
-    document.getElementById('consultingSurveyConfirmBtn').hidden = !current || !data.canConfirm || data.surveyReview.scoreChanged;
+    refreshConsultingSurveyDecision();
     selectConsultingSurveySection(data.surveySection || consultingSurveyNoteSection(data.supplementReview?.fields?.find(item => item.changed)?.field || 'studentStatus'));
-    document.getElementById('consultingMaterialSupplementActions').hidden = !current || !data.canReview;
+    refreshConsultingSurveyDecision();
 }
 
 async function loadConsultingSurveyHistory() {
@@ -533,6 +541,7 @@ async function openConsultingMaterial(caseId, held) {
         const data = await requestConsultingAdmin('admin_get_v2_material_detail', { caseId });
         if (requestId !== consultingMaterialRequest) return false;
         if (data.case?.caseId !== caseId || !Array.isArray(data.files)) throw new Error('자료 응답을 확인할 수 없습니다.');
+        if (typeof prepareConsultingReference === 'function') prepareConsultingReference(caseId);
         const submission = data.submission?.snapshot ? data.submission : data.originalSubmission;
         const snapshot = submission?.snapshot;
         if (!snapshot) {
@@ -541,9 +550,11 @@ async function openConsultingMaterial(caseId, held) {
             return true;
         }
         const review = data.verification;
-        const canReview = data.canVerify !== false && !held && data.case.workflowState === 'MATERIAL_REVIEW' && review?.status === 'pending';
+        const canReview = data.canVerify !== false && !held && data.case.workflowState === 'MATERIAL_REVIEW';
         const canConfirm = data.canVerify !== false && !held && data.surveyReview?.needsReview === true;
-        currentConsultingMaterial = { ...data, submission, canReview, canConfirm, supplementDraft: new Map() };
+        const canScoreReview = data.canVerify !== false && !held && (data.canReviewScores === true || Boolean(data.correctionScoreDigest) || data.canReviewScores === undefined && (canReview || canConfirm && data.surveyReview.scoreChanged));
+        const canApproveSurvey = data.canVerify !== false && !held && !data.correctionScoreDigest && (data.surveyReview?.canApprove ?? (canReview || canConfirm));
+        currentConsultingMaterial = { ...data, submission, canReview, canConfirm, canScoreReview, canApproveSurvey, supplementDraft: new Map(), mutating: false };
         renderConsultingSupplementResponse(data);
         const versionSelect = document.getElementById('consultingSurveyVersion');
         versionSelect.value = 'current';
@@ -585,14 +596,11 @@ async function openConsultingMaterial(caseId, held) {
         verification.hidden = !verification.children.length;
 
         const rawEntry = snapshot.formVersion >= 3;
-        if (canReview || (canConfirm && data.surveyReview.scoreChanged)) {
-            renderConsultingVerifiedScores(data.correctionScoreDigest ? review?.verifiedInput || snapshot.scores : snapshot.scores, rawEntry, snapshot.formVersion === 4 && !data.correctionScoreDigest);
-            document.getElementById('consultingMaterialScoreGuide').hidden = !rawEntry;
-            document.getElementById('consultingMaterialReviewTitle').textContent = data.correctionScoreDigest ? '보고서 정정을 위한 성적 재검수' : canReview ? '검수 성적 입력' : '변경 성적 다시 검수';
-            document.getElementById('consultingMaterialVerifyBtn').textContent = data.correctionScoreDigest ? '정정 성적 저장' : canReview ? '확인 완료 · 일정 선택 열기' : '성적 및 최신 답변 확인';
-            const resultSelect = document.getElementById('consultingMaterialResult');
-            resultSelect.value = 'matched';
-            resultSelect.options[0].textContent = rawEntry ? '성적표 확인 완료' : '입력과 일치';
+        if (canScoreReview) {
+            const verifiedScores = review?.verifiedInput && (data.correctionScoreDigest || !data.surveyReview?.scoreChanged) ? review.verifiedInput : null;
+            renderConsultingVerifiedScores(verifiedScores || snapshot.scores, rawEntry, snapshot.formVersion === 4 && !data.correctionScoreDigest);
+            document.getElementById('consultingMaterialReviewTitle').textContent = data.correctionScoreDigest ? '보고서 정정을 위한 성적 재검수' : '공식 성적 확인·정정';
+            document.getElementById('consultingMaterialVerifyBtn').textContent = data.correctionScoreDigest ? '정정 성적 저장' : '공식 성적 확인·저장';
         }
         selectConsultingSurveySection(currentConsultingMaterial.surveySection || 'studentStatus');
         document.getElementById('consultingMaterialDetail').hidden = false;
@@ -611,6 +619,7 @@ async function openConsultingMaterial(caseId, held) {
 
 function closeConsultingMaterialDetail(invalidate = true) {
     if (invalidate) consultingMaterialRequest++;
+    if (typeof resetConsultingReference === 'function') resetConsultingReference();
     currentConsultingMaterial = null;
     consultingSurveyHistory = null;
     document.getElementById('consultingWorkspaceMaterials').setAttribute('aria-busy', 'false');
@@ -620,7 +629,7 @@ function closeConsultingMaterialDetail(invalidate = true) {
     document.getElementById('consultingMaterialSupplementActions').hidden = true;
     const preview = document.getElementById('consultingSupplementPreview');
     if (preview.open) preview.close();
-    document.getElementById('consultingSupplementReason').value = 'OTHER';
+    document.getElementById('consultingScoreEditorDetails').open = false;
     document.getElementById('consultingSupplementStatus').textContent = '위 답변 옆에서 보완 메모를 작성하세요.';
     document.getElementById('consultingMaterialVerification').hidden = true;
     document.getElementById('consultingMaterialAttachments').hidden = true;
@@ -630,9 +639,9 @@ function closeConsultingMaterialDetail(invalidate = true) {
     for (const id of ['consultingSurveyVersions', 'consultingSurveyChangesSinceReview', 'consultingSurveyHistory', 'consultingSurveyHistoryNext', 'consultingSupplementResponse']) document.getElementById(id).hidden = true;
     for (const id of ['consultingSurveyChangesSinceReview', 'consultingSurveyHistory']) document.getElementById(id).open = false;
     for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingSurveyIndex', 'consultingSurveyCommentList', 'consultingSurveyPosition', 'consultingSurveySectionTitle', 'consultingSurveySectionGuide', 'consultingMaterialFiles', 'consultingMaterialVerification', 'consultingVerifiedScores',
-        'consultingMaterialSupplementNotice', 'consultingMaterialFileNote', 'consultingSupplementPreviewContent', 'consultingSupplementResponseSummary', 'consultingSupplementResponseItems',
+        'consultingMaterialSupplementNotice', 'consultingMaterialFileNote', 'consultingSupplementPreviewContent', 'consultingSurveyApprovalStatus', 'consultingScoreChanges', 'consultingScoreReviewStatus', 'consultingSupplementResponseSummary', 'consultingSupplementResponseItems',
         'consultingSurveyReviewChanges', 'consultingSurveyReviewNotice', 'consultingSurveyHistoryStatus', 'consultingSurveyHistoryEntries']) document.getElementById(id)?.replaceChildren();
-    for (const id of ['consultingMaterialReason', 'consultingMaterialDifferences', 'consultingSupplementText']) { const node = document.getElementById(id); if (node) node.value = ''; }
+    for (const id of ['consultingMaterialReason']) { const node = document.getElementById(id); if (node) node.value = ''; }
 }
 function resetConsultingMaterial() { closeConsultingMaterialDetail(); setConsultingMaterialStatus(''); }
 
@@ -668,64 +677,140 @@ function readConsultingVerifiedScores() {
     };
 }
 
-async function verifyConsultingMaterials() {
-    const requestId = consultingMaterialRequest;
+function refreshConsultingSurveyDecision() {
     const data = currentConsultingMaterial;
-    const current = data?.case;
-    const reason = document.getElementById('consultingMaterialReason').value.trim();
-    if (!current || (!data.canReview && !data.canConfirm) || !reason
-        || !confirm(data.correctionScoreDigest ? '정정 성적을 반영할까요? 계산과 승인을 다시 진행하며, 기존 공개 보고서는 그대로 유지됩니다.' : data.canReview ? '자료 검수를 완료하고 학생에게 상담 가능 시간 입력 단계를 여시겠습니까?' : '성적표와 대조한 결과를 최신 답변에 반영할까요?')) return;
-    const button = document.getElementById('consultingMaterialVerifyBtn');
-    button.disabled = true;
+    if (!data) return;
+    const current = data.surveyVersion === 'current';
+    document.getElementById('consultingMaterialSupplementActions').hidden = !current;
+    const approve = document.getElementById('consultingSurveyConfirmBtn');
+    approve.hidden = !data.canApproveSurvey;
+    approve.disabled = data.mutating || data.supplementDraft.size > 0;
+    approve.textContent = data.canReview ? '조사서 승인 · 일정 선택 열기' : '최신 답변 확인';
+    const supplement = document.getElementById('consultingSupplementPreviewBtn');
+    supplement.hidden = !data.canReview || !data.supplementDraft.size;
+    supplement.disabled = data.mutating;
+    document.getElementById('consultingMaterialVerifyBtn').disabled = data.mutating;
+    document.getElementById('consultingSupplementBtn').disabled = data.mutating;
+    document.getElementById('consultingSurveyVersion').disabled = data.mutating;
+    const approved = data.surveyReview?.approved ?? (!data.canReview && !data.canConfirm);
+    const scores = ['matched', 'corrected'].includes(data.verification?.status) && !data.surveyReview?.scoreChanged;
+    document.getElementById('consultingSurveyApprovalStatus').textContent = [
+        approved ? '현재 조사서 확인 완료' : data.canApproveSurvey ? '현재 조사서 승인 대기' : '현재 단계에서는 조사서를 읽을 수 있습니다.',
+        scores ? '공식 성적 확인 완료' : '공식 성적 미확인 · 성적 확인은 별도로 진행합니다.'
+    ].join(' · ');
+    document.getElementById('consultingSupplementStatus').textContent = data.supplementDraft.size
+        ? `보완 메모 ${data.supplementDraft.size}개를 전송하거나 정리한 뒤 승인하세요.` : '';
+}
+
+function setConsultingMaterialBusy(data, busy) {
+    if (currentConsultingMaterial !== data) return;
+    data.mutating = busy;
+    refreshConsultingSurveyDecision();
+}
+
+function addConsultingForeignScore() {
+    const data = currentConsultingMaterial;
+    if (!data?.canScoreReview || data.mutating) return;
+    const scores = readConsultingVerifiedScores();
+    if (!scores.records.some(record => record.area === 'foreign_language')) scores.records.push({ area: 'foreign_language' });
+    renderConsultingVerifiedScores(scores, data.submission.snapshot.formVersion >= 3, true);
+}
+
+function validateConsultingScoreReview(scores) {
+    for (const { record, area } of consultingScoreRows(scores.records)) {
+        const missing = [];
+        if (!record.subject) missing.push('과목명');
+        if (!Number.isInteger(record.grade) || record.grade < 1 || record.grade > 9) missing.push('등급(1~9)');
+        if (['korean', 'math', 'inquiry'].includes(record.area)) {
+            if (record.area !== 'inquiry' && !record.selection) missing.push('선택과목');
+            for (const [field, label, max] of [['standardScore', '표준점수', 200], ['percentile', '백분위', 100]]) {
+                if (!Number.isInteger(record[field]) || record[field] < 0 || record[field] > max) missing.push(label);
+            }
+        }
+        if (missing.length) return `${area} ${missing.join(' · ')}을 확인해 주세요. 조사서 승인은 아래에서 따로 진행할 수 있습니다.`;
+    }
+    return '';
+}
+
+function consultingScoreDifferences(scores) {
+    const data = currentConsultingMaterial;
+    const before = data?.verification?.verifiedInput?.records || data?.submission?.snapshot?.scores?.records || [];
+    const differences = [], seen = new Map();
+    for (const { record, area } of consultingScoreRows(scores.records)) {
+        const index = seen.get(record.area) || 0;
+        seen.set(record.area, index + 1);
+        const original = before.filter(row => row.area === record.area)[index];
+        if (!original) continue;
+        for (const [field, label] of [['subject', '과목명'], ['selection', '선택과목'], ['standardScore', '표준점수'], ['percentile', '백분위'], ['grade', '등급']]) {
+            if (original[field] == null || original[field] === '' || field === 'subject' && /^탐구\s*[12]$/u.test(original[field])) continue;
+            if (String(original[field]).trim() !== String(record[field] ?? '').trim()) differences.push(`${area} ${label}: ${original[field]} → ${record[field] ?? '미입력'}`);
+        }
+    }
+    if (before.some(row => row.area === 'foreign_language') && !scores.records.some(row => row.area === 'foreign_language')) differences.push('제2외국어·한문: 응시 성적을 미응시로 정정');
+    return differences;
+}
+
+function refreshConsultingScoreChanges() {
+    const differences = consultingScoreDifferences(readConsultingVerifiedScores());
+    document.getElementById('consultingScoreChanges').textContent = differences.length ? `변경 항목 · ${differences.join(' / ')}` : '';
+}
+
+async function verifyConsultingMaterials() {
+    const requestId = consultingMaterialRequest, data = currentConsultingMaterial;
+    if (!data?.canScoreReview || data.mutating || data.surveyVersion !== 'current') return;
+    const scores = readConsultingVerifiedScores(), reason = document.getElementById('consultingMaterialReason').value.trim();
+    const status = document.getElementById('consultingScoreReviewStatus');
+    const error = validateConsultingScoreReview(scores);
+    if (error) { status.textContent = error; status.dataset.state = 'error'; return; }
+    const differences = consultingScoreDifferences(scores);
+    if (differences.length && !reason) { status.textContent = '값을 바꾼 이유를 정정 사유에 적어주세요.'; status.dataset.state = 'error'; return; }
+    if (!confirm(data.correctionScoreDigest ? '정정 성적을 반영할까요? 계산과 승인을 다시 진행하며, 기존 공개 보고서는 그대로 유지됩니다.' : '성적표와 대조한 공식 성적을 저장할까요? 상담 일정은 그대로 유지됩니다.')) return;
+    setConsultingMaterialBusy(data, true);
     try {
-        const result = await requestConsultingAdmin(data.canReview ? 'admin_verify_v2_materials' : 'admin_confirm_v2_survey_revision', {
-            caseId: current.caseId, expectedSurveyRevision: data.submission.revision,
-            ...(data.correctionScoreDigest ? { expectedCorrectionScoreDigest: data.correctionScoreDigest } : {}),
-            result: document.getElementById('consultingMaterialResult').value, reason,
-            differences: document.getElementById('consultingMaterialDifferences').value.split('\n').map(value => value.trim()).filter(Boolean),
-            verifiedInput: readConsultingVerifiedScores()
+        const correction = Boolean(data.correctionScoreDigest);
+        const result = await requestConsultingAdmin(correction ? 'admin_confirm_v2_survey_revision' : 'admin_review_v2_scores', {
+            caseId: data.case.caseId, expectedSurveyRevision: data.submission.revision ?? 0,
+            ...(correction ? { expectedCorrectionScoreDigest: data.correctionScoreDigest, result: differences.length ? 'corrected' : data.verification?.status || 'matched', differences } : { expectedScoreDigest: data.scoreReviewDigest }),
+            reason, verifiedInput: scores
         });
         if (requestId !== consultingMaterialRequest) return;
         closeConsultingMaterialDetail();
-        if (await refreshConsultingWorkspaceStudent()) setConsultingMaterialStatus(data.canReview
-            ? `학생의 상담 가능 시간 선택을 열었습니다.${result.notificationQueued ? ' 알림톡 발송을 요청했습니다.' : ''}`
-            : '성적과 최신 답변을 확인했습니다.', 'success');
-        if (typeof refreshConsultingSupplementAlerts === 'function') refreshConsultingSupplementAlerts();
+        if (await refreshConsultingWorkspaceStudent()) setConsultingMaterialStatus(result.unchanged ? '저장된 성적과 같습니다.' : '성적을 확인했습니다. 조사서 승인과 상담 일정은 그대로 유지됩니다.', 'success');
     } catch (error) {
         if (requestId !== consultingMaterialRequest) return;
-        setConsultingMaterialStatus(error.message || '자료 검수를 완료하지 못했습니다.', 'error');
-    } finally {
-        button.disabled = false;
-    }
+        status.textContent = error.message || '성적을 저장하지 못했습니다.';
+        status.dataset.state = 'error';
+    } finally { setConsultingMaterialBusy(data, false); }
 }
 
-async function confirmConsultingSurveyRevision() {
-    const requestId = consultingMaterialRequest;
-    const data = currentConsultingMaterial;
-    if (!data?.canConfirm || data.surveyReview.scoreChanged) return;
-    const button = document.getElementById('consultingSurveyConfirmBtn');
-    button.disabled = true;
+async function approveConsultingSurvey() {
+    const requestId = consultingMaterialRequest, data = currentConsultingMaterial;
+    if (!data?.canApproveSurvey || data.mutating || data.surveyVersion !== 'current') return;
+    if (data.supplementDraft.size) { refreshConsultingSurveyDecision(); return; }
+    if (!confirm(data.canReview ? '현재 조사서를 승인하고 학생의 상담 가능 시간 선택을 열까요? 공식 성적 확인은 별도로 진행합니다.' : '현재 조사서를 확인한 답변으로 승인할까요? 상담 일정은 그대로 유지됩니다.')) return;
+    setConsultingMaterialBusy(data, true);
     try {
-        await requestConsultingAdmin('admin_confirm_v2_survey_revision', { caseId: data.case.caseId, expectedSurveyRevision: data.submission.revision });
+        const result = await requestConsultingAdmin('admin_approve_v2_survey', { caseId: data.case.caseId, expectedSurveyRevision: data.submission.revision ?? 0 });
         if (requestId !== consultingMaterialRequest) return;
         closeConsultingMaterialDetail();
-        if (await refreshConsultingWorkspaceStudent()) setConsultingMaterialStatus('최신 답변을 확인했습니다.', 'success');
+        if (await refreshConsultingWorkspaceStudent()) setConsultingMaterialStatus(result.unchanged ? '이미 승인한 조사서입니다. 현재 진행 상태를 확인해 주세요.'
+            : result.workflowState === 'AVAILABILITY_REQUIRED' ? `학생의 상담 가능 시간 선택을 열었습니다.${result.notificationQueued ? ' 알림톡 발송을 요청했습니다.' : ''}`
+            : '최신 답변을 확인했습니다.', 'success');
+        if (typeof refreshConsultingSupplementAlerts === 'function') refreshConsultingSupplementAlerts();
     } catch (error) {
-        if (requestId === consultingMaterialRequest) setConsultingMaterialStatus(error.message || '최신 답변을 확인하지 못했습니다.', 'error');
-    } finally {
-        button.disabled = false;
-    }
+        if (requestId === consultingMaterialRequest) setConsultingMaterialStatus(error.message || '조사서를 승인하지 못했습니다.', 'error');
+    } finally { setConsultingMaterialBusy(data, false); }
 }
 
 function readConsultingSupplement(data) {
-    const reasonText = document.getElementById('consultingSupplementText').value.trim();
+    const reasonText = '';
     const notes = Array.from(data.supplementDraft, ([field, { label, note }]) => ({ field, label, note: note.trim() }));
     return { reasonText, notes };
 }
 
 function previewConsultingSupplement() {
     const data = currentConsultingMaterial;
-    if (!data?.canReview || document.getElementById('consultingMaterialSupplementActions').hidden) return;
+    if (!data?.canReview || data.mutating || document.getElementById('consultingMaterialSupplementActions').hidden) return;
     const { reasonText, notes } = readConsultingSupplement(data);
     const status = document.getElementById('consultingSupplementStatus');
     if (!reasonText && !notes.length) { status.textContent = '보완 메모 또는 공통 안내를 작성해 주세요.'; return; }
@@ -743,15 +828,15 @@ async function requestConsultingSupplement() {
     const data = currentConsultingMaterial;
     const current = data?.case;
     const preview = document.getElementById('consultingSupplementPreview');
-    if (!current || !data.canReview || !preview.open) return;
+    if (!current || !data.canReview || data.mutating || !preview.open) return;
     const { reasonText, notes } = readConsultingSupplement(data);
     const button = document.getElementById('consultingSupplementBtn');
     if (button.disabled) return;
-    button.disabled = true;
+    setConsultingMaterialBusy(data, true);
     try {
         const result = await requestConsultingAdmin('admin_request_v2_supplement', {
             caseId: current.caseId, expectedSurveyRevision: data.submission.revision,
-            reasonCode: document.getElementById('consultingSupplementReason').value, reasonText,
+            reasonCode: 'OTHER', reasonText,
             ...(notes.length ? { fieldNotes: notes.map(({ field, note }) => ({ field, note })) } : {})
         });
         if (requestId !== consultingMaterialRequest) return;
@@ -763,7 +848,7 @@ async function requestConsultingSupplement() {
         preview.close();
         setConsultingMaterialStatus(error.message || '보완 요청을 처리하지 못했습니다.', 'error');
     } finally {
-        button.disabled = false;
+        setConsultingMaterialBusy(data, false);
     }
 }
 
