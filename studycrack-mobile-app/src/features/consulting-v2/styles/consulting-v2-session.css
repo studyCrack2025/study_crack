@@ -21,6 +21,7 @@
 .consulting-written-messages article { flex-shrink:0; align-self:flex-start; max-width:min(86%,620px); min-width:80px; padding:12px 14px; border:1px solid var(--sc-line-subtle); border-radius:14px 14px 14px 3px; background:var(--sc-surface-card); color:var(--sc-ink); overflow-wrap:anywhere; }
 .consulting-written-messages article[data-owner="me"] { align-self:flex-end; border-radius:14px 14px 3px 14px; border-color:var(--sc-brand-navy); background:var(--sc-brand-navy); color:var(--sc-on-brand); }
 .consulting-written-messages article[data-delivery="failed"] { border-style:dashed; }
+.consulting-written-messages article[data-reply-selected="true"] { outline:3px solid var(--sc-action-positive-strong); outline-offset:2px; }
 .consulting-written-messages article strong { display:block; margin-bottom:6px; font-size:.74rem; }
 .consulting-written-messages article p { margin:0; white-space:pre-wrap; line-height:1.6; }
 .consulting-written-messages article time { display:block; margin-top:8px; font-size:.69rem; text-align:right; }
@@ -74,8 +75,29 @@
 .consulting-chat-photo-dialog > img { max-width:100%; max-height:78dvh; margin:auto; object-fit:contain; }
 .consulting-chat-finished { padding:16px; color:var(--sc-brand-navy); background:var(--sc-surface-positive); font-size:.82rem; line-height:1.6; }
 .consulting-chat-finished p { margin:8px 0; }
+.consulting-reply-toolbar { flex-shrink:0; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 16px; border-bottom:1px solid var(--sc-line-subtle); font-size:.78rem; }
+.consulting-reply-toolbar button { min-height:40px; padding:6px 10px; border:1px solid var(--sc-line-strong); border-radius:8px; background:var(--sc-surface-card); color:var(--sc-brand-navy); font:inherit; cursor:pointer; }
+.consulting-reply-pick { display:block; min-height:36px; margin:0 0 8px; padding:6px 10px; border:1px solid currentColor; border-radius:6px; background:transparent; color:inherit; font:inherit; font-size:.74rem; cursor:pointer; }
+.consulting-reply-panel { min-width:0; display:var(--consulting-reply-display,grid); gap:12px; padding:18px; border:1px solid var(--sc-line-subtle); border-radius:14px; background:var(--sc-surface-card); font-size:.85rem; overflow-wrap:anywhere; }
+.consulting-reply-panel > p,.consulting-reply-panel > small,.consulting-reply-panel [role="status"] { margin:0; color:var(--sc-ink-muted); font-size:.78rem; line-height:1.65; }
+.consulting-reply-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.consulting-reply-preview { min-width:0; max-height:230px; overflow-y:auto; padding:10px; border:1px solid var(--sc-line-subtle); border-radius:8px; }
+.consulting-reply-preview summary { min-height:28px; color:var(--sc-brand-navy); cursor:pointer; }
+.consulting-reply-preview ol { padding-left:20px; }
+.consulting-reply-preview li { margin-top:12px; }
+.consulting-reply-preview li p { margin:4px 0; white-space:pre-wrap; line-height:1.65; }
+.consulting-reply-panel .consulting-reply-notice { padding:8px; border-radius:8px; background:var(--sc-surface-positive); color:var(--sc-action-positive-strong); }
+.consulting-reply-card { min-width:0; padding:12px; display:grid; gap:10px; border:1px solid var(--sc-line-strong); border-radius:10px; }
+.consulting-reply-card h3 { margin:0; font-size:.9rem; color:var(--sc-brand-navy); }
+.consulting-reply-card p { margin:0; white-space:pre-wrap; line-height:1.75; }
+.consulting-reply-card small { color:var(--sc-ink-muted); font-size:.72rem; line-height:1.6; }
+.consulting-reply-checks { padding:10px; border-radius:8px; background:var(--sc-surface-subtle); line-height:1.7; }
+.consulting-reply-checks ul { margin:8px 0 0; padding-left:18px; }
+.consulting-reply-choice { display:grid; gap:8px; padding:12px; border:1px solid var(--sc-line-strong); border-radius:8px; line-height:1.65; }
+.consulting-reply-choice p { margin:0; }
 .consulting-written[data-tab="chat"] { --consulting-chat-tools-display:var(--consulting-mobile-tools-hidden,grid); }
-.consulting-written[data-tab="preparation"] { --consulting-chat-display:var(--consulting-mobile-chat-hidden,flex); --consulting-chat-notes-display:var(--consulting-mobile-notes-hidden,grid); }
-.consulting-written[data-tab="notes"] { --consulting-chat-display:var(--consulting-mobile-chat-hidden,flex); --consulting-chat-materials-display:var(--consulting-mobile-materials-hidden,block); }
-@media (max-width:760px) { body[data-app-surface="consulting-2027"]:has(.consulting-written) { --consulting-chat-page-padding:8px; --consulting-written-heading-display:none; --consulting-manager-columns:minmax(0,1fr); --consulting-chat-tabs-display:flex; --consulting-manager-offset:144px; --consulting-chat-switcher-wrap:wrap; --consulting-chat-panel-min:320px; --consulting-mobile-tools-hidden:none; --consulting-mobile-chat-hidden:none; --consulting-mobile-notes-hidden:none; --consulting-mobile-materials-hidden:none; } }
+.consulting-written[data-tab="preparation"] { --consulting-chat-display:var(--consulting-mobile-chat-hidden,flex); --consulting-chat-notes-display:var(--consulting-mobile-notes-hidden,grid); --consulting-reply-display:var(--consulting-mobile-reply-hidden,grid); }
+.consulting-written[data-tab="notes"] { --consulting-chat-display:var(--consulting-mobile-chat-hidden,flex); --consulting-chat-materials-display:var(--consulting-mobile-materials-hidden,block); --consulting-reply-display:var(--consulting-mobile-reply-hidden,grid); }
+.consulting-written[data-tab="reply"] { --consulting-chat-display:var(--consulting-mobile-chat-hidden,flex); --consulting-chat-materials-display:var(--consulting-mobile-materials-hidden,block); --consulting-chat-notes-display:var(--consulting-mobile-notes-hidden,grid); }
+@media (max-width:760px) { body[data-app-surface="consulting-2027"]:has(.consulting-written) { --consulting-chat-page-padding:8px; --consulting-written-heading-display:none; --consulting-manager-columns:minmax(0,1fr); --consulting-chat-tabs-display:flex; --consulting-manager-offset:144px; --consulting-chat-switcher-wrap:wrap; --consulting-chat-panel-min:320px; --consulting-mobile-tools-hidden:none; --consulting-mobile-chat-hidden:none; --consulting-mobile-notes-hidden:none; --consulting-mobile-materials-hidden:none; --consulting-mobile-reply-hidden:none; } }
 @media (max-height:560px) { body[data-app-surface="consulting-2027"]:has(.consulting-written-layout) { --consulting-chat-log-min:36px; --consulting-chat-meta-padding:8px 12px; --consulting-chat-meta-details-display:none; --consulting-chat-textarea-min:48px; --consulting-chat-privacy-display:none; --consulting-chat-label-display:none; --consulting-chat-panel-min:240px; } }
