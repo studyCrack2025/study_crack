@@ -56,9 +56,14 @@ export function useWrittenReplySuggestions(binding, session, messages, enabled) 
       if (accept(result)) job.timer = setTimeout(poll, 1500);
     };
     const data = { caseId: job.caseId, expectedSessionId: job.sessionId, clientRequestId: createClientMessageId(), startMessageId: range.start, endMessageId: range.end };
-    let result = await createWrittenReply(binding, data, job.controller.signal);
-    if (!current()) return;
-    if (!result.ok && (!result.status || result.code === 'TIMEOUT')) result = await createWrittenReply(binding, data, job.controller.signal);
+    const discardLate = result => {
+      if (result.ok && /^REPLY_[a-f0-9]{64}$/.test(result.data?.jobId || '')) void cancelWrittenReply(binding, { caseId: job.caseId, expectedSessionId: job.sessionId, jobId: result.data.jobId });
+    };
+    // 생성 응답이 늦게 도착해도 취소한 초안을 다시 표시하지 않습니다.
+    let result = await createWrittenReply(binding, data);
+    if (!current()) { discardLate(result); return; }
+    if (!result.ok && (!result.status || result.code === 'TIMEOUT')) result = await createWrittenReply(binding, data);
+    if (!current()) { discardLate(result); return; }
     if (accept(result)) job.timer = setTimeout(poll, 1000);
   };
   const cancel = () => { cancelActive(); setState({ ...empty, error: terminal.cancelled }); };
