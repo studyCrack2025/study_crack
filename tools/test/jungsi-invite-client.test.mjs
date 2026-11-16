@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { preflightConsultingInvite } from '../../studycrack-mobile-app/src/features/consulting-v2/api.js';
+import { preflightConsultingInvite, resolveConsultingInvite } from '../../studycrack-mobile-app/src/features/consulting-v2/api.js';
 import vm from 'node:vm';
 
 const html = await readFile(new URL('../../jungsi-consulting-app.html', import.meta.url), 'utf8');
@@ -9,6 +9,60 @@ const client = await readFile(new URL('../../studycrack-mobile-app/src/features/
 const shared = await readFile(new URL('../../js/shared/api.js', import.meta.url), 'utf8');
 const auth = await readFile(new URL('../../js/auth.js', import.meta.url), 'utf8');
 const policy = JSON.parse(await readFile(new URL('../public-site-files.json', import.meta.url), 'utf8'));
+
+function inviteBinding({ verified = true, failures = [], signal } = {}) {
+    const calls = [];
+    const options = {
+        signedInStudent: true, hasClientSession: () => true, signal,
+        verifySession: async () => { calls.push('verify'); return verified; },
+        consultingApiUrl: 'https://example.invalid/private', publicApiUrl: 'https://example.invalid/public',
+        apiFetch: async (_url, request) => {
+            calls.push(JSON.parse(request.body).type);
+            const code = failures.shift();
+            return new Response(JSON.stringify(code ? { success: false, code } : { success: true, data: { linked: false } }), { status: code === 'AUTH_EXPIRED' ? 401 : code ? 409 : 200 });
+        },
+        fetchImpl: async () => { calls.push('public'); return new Response(JSON.stringify({ success: true, data: { valid: true } })); }
+    };
+    return { calls, options };
+}
+
+test('invite status waits for session verification and never sends a claim request', async () => {
+    const { calls, options } = inviteBinding();
+    const result = await resolveConsultingInvite(options);
+    assert.equal(result.signedInStudent, true);
+    assert.deepEqual(calls, ['verify', 'student_get_v2_consulting_invite_status']);
+});
+
+test('expired session falls back to public invite checking without rejecting the invite', async () => {
+    for (const setup of [{ verified: false }, { failures: ['AUTH_EXPIRED'] }]) {
+        const { calls, options } = inviteBinding(setup);
+        const result = await resolveConsultingInvite(options);
+        assert.equal(result.ok, true);
+        assert.equal(result.signedInStudent, false);
+        assert.equal(calls.at(-1), 'public');
+        assert.equal(calls.includes('student_claim_v2_consulting_invite'), false);
+    }
+});
+
+test('session recovery retries only the read once, and does not hide genuine invite failures', async () => {
+    for (const failures of [['AUTH_RETRY_REQUIRED'], ['AUTH_RETRY_REQUIRED', 'AUTH_RETRY_REQUIRED'], ['INVITE_EXPIRED']]) {
+        const count = failures[0] === 'AUTH_RETRY_REQUIRED' ? 2 : 1;
+        const final = failures.at(-1), repeated = failures.length === 2;
+        const { calls, options } = inviteBinding({ failures: [...failures] });
+        const result = await resolveConsultingInvite(options);
+        assert.equal(calls.length, count + 1);
+        assert.equal(result.code || '', repeated ? 'INVITE_UNAVAILABLE' : final === 'INVITE_EXPIRED' ? final : '');
+        assert.equal(calls.includes('public'), false);
+    }
+});
+
+test('a cancelled session check cannot start an invite lookup', async () => {
+    const controller = new AbortController();
+    const { calls, options } = inviteBinding({ signal: controller.signal });
+    options.verifySession = async () => { controller.abort(); return true; };
+    assert.equal((await resolveConsultingInvite(options)).code, 'REQUEST_ABORTED');
+    assert.deepEqual(calls, []);
+});
 
 test('the invite fragment is captured before assets load and removed from the visible URL', () => {
     const capture = html.indexOf("window.location.hash.slice(1)");

@@ -44,6 +44,30 @@ export async function getConsultingInviteStatus({ apiFetch, applicationId, consu
     : { ok: false, code: result.code, status: result.status };
 }
 
+export async function resolveConsultingInvite(options = {}) {
+  let signedInStudent = Boolean(options.signedInStudent);
+  const cancelled = () => ({ ok: false, code: 'REQUEST_ABORTED', signedInStudent: false });
+  try {
+    if (options.signal?.aborted) return cancelled();
+    if (signedInStudent && typeof options.verifySession === 'function') {
+      signedInStudent = await options.verifySession({ preserveTransientErrors: true }) === true && options.hasClientSession?.() === true;
+    }
+    if (options.signal?.aborted) return cancelled();
+    let result;
+    if (signedInStudent) {
+      result = await getConsultingInviteStatus(options);
+      if (options.signal?.aborted) return cancelled();
+      if (result.code === 'AUTH_RETRY_REQUIRED') result = await getConsultingInviteStatus(options);
+      if (result.status === 401 || result.code === 'AUTH_EXPIRED') signedInStudent = false;
+    }
+    if (options.signal?.aborted) return cancelled();
+    if (!signedInStudent) result = await preflightConsultingInvite(options);
+    return { ...result, ...(result.code === 'AUTH_RETRY_REQUIRED' ? { code: 'INVITE_UNAVAILABLE' } : {}), signedInStudent };
+  } catch (_error) {
+    return options.signal?.aborted ? cancelled() : { ok: false, code: 'INVITE_UNAVAILABLE', signedInStudent: false };
+  }
+}
+
 export async function claimConsultingInvite({ apiFetch, applicationId, code, consultingApiUrl, idempotencyKey, signal, token } = {}) {
   const result = await postJson({
     apiFetch,

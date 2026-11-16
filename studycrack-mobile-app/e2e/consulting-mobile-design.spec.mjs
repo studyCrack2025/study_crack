@@ -639,8 +639,8 @@ test('쿠키 로그인 상태에서 서비스 안내와 나의 컨설팅을 오�
   await page.reload();
   await expect(page.getByRole('button', { name: '이어서 작성하기' })).toBeVisible();
   await page.getByRole('link', { name: '서비스 안내', exact: true }).click();
-  const returnLink = page.getByRole('link', { name: '이용자 로그인 ↗', exact: true });
-  await expect(returnLink).toHaveAttribute('href', '/2027-jungsi-consulting/login');
+  const returnLink = page.getByRole('link', { name: '내 컨설팅 ↗', exact: true });
+  await expect(returnLink).toHaveAttribute('href', '/2027-jungsi-consulting/home');
   await returnLink.click();
   await page.getByRole('button', { name: '이어서 작성하기' }).click();
   await expect(page.getByRole('heading', { name: '학생 상태', exact: true })).toBeVisible();

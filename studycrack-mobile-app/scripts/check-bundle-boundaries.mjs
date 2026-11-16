@@ -48,6 +48,7 @@ const initialModules = new Set(
     .flatMap((chunk) => Object.keys(chunk.modules))
 );
 const deferredModuleSuffixes = [
+  '/src/shared/browser/consulting-runtime.js',
   '/src/components/StudyOverviewCard.jsx',
   '/src/features/study/overview-presentation.js',
   '/src/app/presentation-context.js',

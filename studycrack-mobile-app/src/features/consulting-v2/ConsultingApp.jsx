@@ -15,7 +15,7 @@ import './styles/consulting-v2-schedule.css';
 import './styles/consulting-v2-session.css';
 import './styles/consulting-v2-report.css';
 import { CONSULTING_ROUTES, navigateConsulting, resolveConsultingRoute } from './route-model.js';
-import { getConsultingRuntimeContext } from '../../shared/browser/mobile-runtime.js';
+import { getConsultingRuntimeContext } from '../../shared/browser/consulting-runtime.js';
 import { readConsultingInvite } from './invite-model.js';
 
 function LoginScreen({ returnPath }) {

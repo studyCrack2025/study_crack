@@ -88,3 +88,13 @@ test('확정 예약의 보류 제한과 세션 종료 후 늦은 응답을 처�
 test('보류 운영 항목은 케이스를 채운 서비스 제어 화면에 연결한다', async ({ page }) => {
     await serviceFixture(page); await page.evaluate(() => { window.__detail.destination = 'serviceControl'; }); await detail(page); await page.getByRole('button', { name: '관련 업무 화면 열기' }).click(); await expect(page.locator('#consultingServiceCaseId')).toHaveValue(caseId); await expect(page.locator('#consultingServiceDetail')).toBeVisible(); expect(await page.evaluate(() => window.__calls.filter(x => x.type === 'admin_get_consulting_service_control').length)).toBe(2);
 });
+
+test('삭제한 신청의 정리 상태는 일반 학생 상세를 다시 열지 않고 읽기 전용으로 확인한다', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => { window.__detail = { applicationId: 'APP_11111111-1111-4111-8111-111111111111', caseId: null, readOnly: true, label: '삭제한 신청의 파일·기록 정리', status: 'cleanup_retrying', attempts: 2, createdAt: '2026-11-16T00:00:00Z' }; });
+    await page.locator('#consultingOperationsGroup').selectOption('applicationDeletion');
+    await expect(page.locator('#consultingOperationsBody')).toContainText('자동 재시도 중');
+    await expect(page.locator('#consultingOperationsBody')).toContainText('재시도 2회');
+    await expect(page.locator('#consultingOperationsBody button')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_get_consulting_operation').length)).toBe(0);
+});

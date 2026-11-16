@@ -40,7 +40,7 @@
 <nav class="jungsi-service-tabs" role="tablist" aria-label="상품 선택">
 <button type="button" id="consultingTab" role="tab" aria-controls="consultingPanel" aria-selected="true">정시 컨설팅</button>
 <button type="button" id="calculatorTab" role="tab" aria-controls="calculator" aria-selected="false" tabindex="-1">합격 계산기</button>
-</nav><a class="login" href="/2027-jungsi-consulting/login">이용자 로그인 ↗</a></div></header>
+</nav><a class="login" id="consultingAccountLink" href="/2027-jungsi-consulting/login" aria-live="polite">이용자 로그인 ↗</a></div></header>
 <main id="main">
 <div id="consultingPanel" class="consulting" role="tabpanel" aria-labelledby="consultingTab" tabindex="0">
 <section class="hero" id="consulting" aria-labelledby="landingTitle"><img width="1536" height="1024" class="hero-photo" src="/assets/jungsi-2027/analyst.webp" alt="" fetchpriority="high"><div class="hero-wash"></div><div class="wrap hero-inner"><div class="hero-copy"><p class="eyebrow">2027 정시 컨설팅</p><h1 id="landingTitle" class="hero-title">지원할 대학,<br><em>선택할 이유까지.</em></h1><p class="intro">내 조건에 맞는 지원 후보와 선택 근거를<br>보고서와 전화 상담으로 정리하세요.</p><div class="hero-facts"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M8 10l3 3 5-5"/></svg>온라인 진행</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5"/></svg>맞춤 보고서</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3l3 4-2 3a16 16 0 006 6l3-2 4 3c-1 4-4 5-7 3A22 22 0 014 10C2 7 3 4 7 3z"/></svg>전화 상담</span></div><div class="hero-price" id="consultingPrice"><strong aria-label="얼리버드 가격 20만원">20<span>만원</span></strong><span class="old"><span class="sr-only">정상가 </span><del>30만원</del></span><span class="discount">10만원 혜택</span></div><div class="hero-note"><span>11/19 접수 시작</span><a href="#offer">선착순 70명 · 혜택 조건 ↗</a></div><div class="hero-actions"><a id="consultingApply" class="primary-action" href="#process" aria-disabled="true">모집 준비 중<span aria-hidden="true">↗</span></a><a href="#benefits">무엇을 받을 수 있나요? ↓</a></div></div></div><span class="image-note">연출 이미지</span>
@@ -103,7 +103,12 @@
 <details class="business"><summary>사업자 정보</summary><p>스터디크랙 · 대표 김태윤 · 사업자등록번호 201-61-00623<br>서울특별시 서대문구 이화여대길 50-12, 102-201<br><a href="tel:07081281126">070-8128-1126</a> · <a href="mailto:contact@studycrack.co.kr">contact@studycrack.co.kr</a></p>
 </details><p class="photo-note">메인 배경 사진은 AI 연출 이미지입니다. 시연 화면은 제공받은 실제 서비스 이미지입니다.<br>© 2026 StudyCrack. All rights reserved.</p></div>
 </footer>
+<dialog id="jungsi-policy-dialog" class="jungsi-policy-dialog" aria-labelledby="jungsiPolicyTitle">
+<header class="jungsi-policy-head"><h2 id="jungsiPolicyTitle">이용 안내</h2><button type="button" class="jungsi-policy-close" aria-label="규정 닫기" autofocus>×</button></header>
+<div class="jungsi-policy-body" tabindex="0" aria-label="규정 본문"><p id="jungsiPolicyStatus" role="status"></p><div id="jungsiPolicyContent"></div><button type="button" class="jungsi-policy-retry" hidden>다시 불러오기</button></div>
+</dialog>
 <script src="/js/config.js"></script>
+<script src="/js/shared/api.js"></script>
 <script src="/js/jungsi-consulting.js"></script>
 </body>
 </html>

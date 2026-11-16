@@ -40,10 +40,11 @@ function renderConsultingOperations(items) {
     if (!body) return;
     body.replaceChildren();
     if (!items.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = 5; cell.textContent = '표시할 항목이 없습니다. 다음 페이지가 있으면 계속 확인해주세요.'; cell.className = 'empty-msg'; row.appendChild(cell); body.appendChild(row); return; }
-    const states = { open: '확인 대기', pending_review: '검수 대기', pending: '자동 처리 대기', processing: '자동 처리 중', held: '재검수 필요', completed: '완료', retry_requested: '재처리 요청됨', dead_letter: '실패 확인' };
+    const states = { open: '확인 대기', pending_review: '검수 대기', pending: '자동 처리 대기', processing: '자동 처리 중', held: '재검수 필요', completed: '완료', retry_requested: '재처리 요청됨', dead_letter: '실패 확인', cleanup_waiting: '접근 차단됨 · 파일 정리 대기', cleanup_retrying: '접근 차단됨 · 자동 재시도 중' };
     for (const item of items) {
         const row = document.createElement('tr');
-        for (const value of [formatConsultingDate(item.createdAt), String(item.caseId || '').slice(-8), item.label, states[item.status] || '상태 확인']) { const cell = document.createElement('td'); cell.textContent = String(value || '-'); row.appendChild(cell); }
+        for (const value of [formatConsultingDate(item.createdAt), String(item.applicationId || item.caseId || '').slice(-8), item.label, states[item.status] || '상태 확인']) { const cell = document.createElement('td'); cell.textContent = String(value || '-'); row.appendChild(cell); }
+        if (item.readOnly === true) { const cell = document.createElement('td'); cell.textContent = `서버에서 자동 처리 · 재시도 ${Number(item.attempts) || 0}회`; row.appendChild(cell); body.appendChild(row); continue; }
         const cell = document.createElement('td'), button = document.createElement('button'); button.type = 'button'; button.className = 'consulting-btn consulting-btn-secondary'; button.textContent = '내용 확인'; button.addEventListener('click', () => loadConsultingOperation(item)); cell.appendChild(button); row.appendChild(cell); body.appendChild(row);
     }
 }
