@@ -150,6 +150,15 @@
 .consulting-supplement-field textarea { display:block; box-sizing:border-box; width:100%; min-height:100px; margin-top:8px; padding:10px; border:1px solid #94a3b8; border-radius:8px; background:#fff; color:#0f172a; font:inherit; line-height:1.65; resize:vertical; }
 .consulting-supplement-preview { width:min(600px,calc(100% - 32px)); max-height:80dvh; padding:20px; border:1px solid #cbd5e1; border-radius:14px; color:#0f172a; overflow:auto; }
 .consulting-supplement-preview::backdrop { background:#0f172a80; }
+.consulting-schedule-recommendations { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:16px; margin:16px 0; }
+.consulting-schedule-card { display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; padding:22px; border:1px solid #dce4ef; border-radius:16px; background:#fff; }
+.consulting-schedule-card h3 { margin:0; font-size:14px; color:#3156d3; }
+.consulting-schedule-card strong { color:#14213d; font-size:18px; overflow-wrap:anywhere; }
+.consulting-schedule-card p { margin:0; }
+.consulting-schedule-card button { margin-top:auto; }
+.consulting-schedule-policies { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.consulting-schedule-policies button[aria-pressed="true"] { background:#edf3ff; border-color:#3156d3; color:#243b80; }
+.consulting-schedule-picker { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; }
 .consulting-schedule-heading { margin:0 0 18px; }
 .consulting-schedule-tools { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:16px; margin:18px 0; }
 .consulting-schedule-tools section { padding:18px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; }
