@@ -14,18 +14,24 @@ const linkedHome = {
   session: null, report: null, alerts: []
 };
 
-async function prepare(page, { loggedIn = true, role = 'student', deferStatus = false, deferPublic = false, inviteError = '', publicError = '', linked = false } = {}) {
+async function prepare(page, { loggedIn = true, role = 'student', deferStatus = false, deferPublic = false, deferSession = false, sessionResult = null, inviteError = '', publicError = '', linked = false } = {}) {
   let releasePublic;
   const publicGate = new Promise(resolve => { releasePublic = resolve; });
-  await page.addInitScript(({ loggedIn, role, deferStatus, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome }) => {
+  await page.addInitScript(({ loggedIn, role, deferStatus, deferSession, sessionResult, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome }) => {
     loggedIn = loggedIn || sessionStorage.getItem(fixtureLoginKey) === '1';
     localStorage.setItem('userRole', role);
     if (loggedIn) localStorage.setItem('userEmail', 'student-account@example.invalid');
-    window.__inviteFixture = { loggedIn, calls: [], inviteError, linked, deferStatus, inviteSummary, linkedHome, claimError: '', deferClaim: false };
-  }, { loggedIn, role, deferStatus, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome });
+    window.__inviteFixture = { loggedIn, calls: [], inviteError, linked, deferStatus, deferSession, sessionResult, inviteSummary, linkedHome, claimError: '', deferClaim: false };
+  }, { loggedIn, role, deferStatus, deferSession, sessionResult, inviteError, linked, fixtureLoginKey, inviteSummary, linkedHome });
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG = { api: { consulting: 'https://api.example.invalid/consulting', consultingPublic: 'https://api.example.invalid/consulting-public' } };` }));
   await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
     window.hasClientSession = () => window.__inviteFixture.loggedIn;
+    if (window.__inviteFixture.sessionResult !== null) window.tryRefreshToken = async () => {
+      const fixture = window.__inviteFixture;
+      if (fixture.deferSession) await new Promise(resolve => { fixture.releaseSession = resolve; });
+      if (fixture.sessionResult === 'unavailable') throw new Error('temporary connection failure');
+      return fixture.sessionResult;
+    };
     window.apiFetch = async (_url, options) => {
       const request = JSON.parse(options.body), fixture = window.__inviteFixture;
       fixture.calls.push(request);
@@ -149,6 +155,56 @@ test('로그인해도 초대 확인이 끝나기 전에는 코드를 제출할 �
   await expect.poll(() => page.evaluate(() => typeof window.__inviteFixture.releaseStatus)).toBe('function');
   await page.evaluate(() => window.__inviteFixture.releaseStatus());
   await expect(codeInput(page)).toBeVisible();
+});
+
+test('알림톡에서 로그인 확인이 늦어도 중립 대기 화면을 유지하고 확인 후에만 코드를 받는다', async ({ page }, testInfo) => {
+  await prepare(page, { deferSession: true, sessionResult: true });
+  await expect.poll(() => page.evaluate(() => typeof window.__inviteFixture.releaseSession)).toBe('function');
+  await expect(page.getByRole('status')).toHaveText('초대 정보를 확인하고 있습니다.');
+  await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
+  await expect(page.getByRole('link', { name: '로그인', exact: true })).toHaveCount(0);
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await statusCalls(page)).toHaveLength(0);
+  await page.screenshot({ path: testInfo.outputPath('invite-session-checking.png'), fullPage: true });
+  await page.evaluate(() => window.__inviteFixture.releaseSession());
+  await expect(codeInput(page)).toBeVisible();
+  expect(await statusCalls(page)).toHaveLength(1);
+  expect(await claimCalls(page)).toHaveLength(0);
+});
+
+test('남은 프로필만 있고 세션이 만료되면 초대는 보존하고 빨간 오류 없이 로그인으로 안내한다', async ({ page }) => {
+  await prepare(page, { sessionResult: false });
+  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
+  await expect(page.getByRole('link', { name: '로그인', exact: true })).toBeVisible();
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await statusCalls(page)).toHaveLength(0);
+  expect(await claimCalls(page)).toHaveLength(0);
+  expect(await page.evaluate(key => Boolean(sessionStorage.getItem(key)), inviteKey)).toBe(true);
+});
+
+test('로그인 확인의 일시 장애는 중립 재확인을 제공하며 자동 인증을 반복하지 않는다', async ({ page }) => {
+  await prepare(page, { sessionResult: 'unavailable' });
+  await expect(page.getByRole('status')).toContainText('인증코드가 잘못된 것은 아닙니다.');
+  await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
+  await page.evaluate(() => { window.__inviteFixture.sessionResult = true; });
+  await page.getByRole('button', { name: '초대 정보 다시 확인' }).click();
+  await expect(codeInput(page)).toBeVisible();
+  expect(await statusCalls(page)).toHaveLength(1);
+  expect(await claimCalls(page)).toHaveLength(0);
+});
+
+test('로그인 확인 중 로그아웃하면 늦게 온 응답으로 코드 입력을 열지 않는다', async ({ page }) => {
+  await prepare(page, { deferSession: true, sessionResult: true });
+  await expect.poll(() => page.evaluate(() => typeof window.__inviteFixture.releaseSession)).toBe('function');
+  await page.evaluate(() => {
+    window.__inviteFixture.loggedIn = false;
+    window.dispatchEvent(new Event('studycrack:session-ended'));
+    window.__inviteFixture.releaseSession();
+  });
+  await expect(page.getByRole('link', { name: '로그인', exact: true })).toBeVisible();
+  await expect(codeInput(page)).toHaveCount(0);
+  expect(await statusCalls(page)).toHaveLength(0);
 });
 
 test('이미 연결한 초대는 처음 인증한 학생으로 로그인하면 코드 없이 기존 진행 현황으로 들어간다', async ({ page }) => {

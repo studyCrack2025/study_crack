@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsultingBrand } from '../ConsultingBrand.jsx';
-import { claimConsultingInvite, getConsultingInviteStatus, preflightConsultingInvite } from '../api.js';
+import { claimConsultingInvite, resolveConsultingInvite } from '../api.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { inviteErrorMessage, safeInviteSummary } from './presentation.js';
 import { INVITE_KEY, readConsultingInvite, retryableInviteFailure } from '../invite-model.js';
@@ -18,6 +18,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const [code, setCode] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [canClaim, setCanClaim] = React.useState(false);
+  const [verifiedSession, setVerifiedSession] = React.useState(false);
   const [linkedInvite, setLinkedInvite] = React.useState(false);
   const [accountConflict, setAccountConflict] = React.useState(false);
   const [checking, setChecking] = React.useState(Boolean(invite));
@@ -25,7 +26,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const [checkRevision, setCheckRevision] = React.useState(0);
   const claimRequest = React.useRef(null);
   const staffSession = hasSession && (binding.userRole === 'admin' || binding.userRole === 'tutor');
-  const showCodeForm = invite && hasSession && !staffSession && canClaim && !checking;
+  const showCodeForm = invite && hasSession && verifiedSession && !staffSession && canClaim && !checking;
   const readyMessage = staffSession
     ? '관리자 또는 상담사 계정으로 로그인되어 있습니다. 시크릿 창에서 받은 링크를 열고 컨설팅을 이용할 학생 계정으로 로그인해주세요.'
     : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.' : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
@@ -36,6 +37,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setSubmitting(false);
     setCode('');
     setCanClaim(false);
+    setVerifiedSession(false);
     setLinkedInvite(false);
     setAccountConflict(false);
     setRetryable(false);
@@ -45,10 +47,11 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setTone('');
     setStatus('초대 정보를 확인하고 있습니다.');
     const controller = new AbortController();
-    const signedInStudent = hasSession && !staffSession;
-    const checkInvite = signedInStudent ? getConsultingInviteStatus : preflightConsultingInvite;
-    checkInvite({ ...binding, ...invite, signal: controller.signal }).then(result => {
-      if (controller.signal.aborted || (signedInStudent && !binding.hasClientSession())) return;
+    resolveConsultingInvite({ ...binding, ...invite, signedInStudent: hasSession && !staffSession, signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return;
+      const signedInStudent = result.signedInStudent;
+      if (signedInStudent && !binding.hasClientSession()) return;
+      setVerifiedSession(signedInStudent);
       setChecking(false);
       if (!result.ok) {
         if (retryableInviteFailure(result)) {
@@ -77,7 +80,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       setSummary(safeSummary);
       setTone('');
       setCanClaim(true);
-      setStatus(readyMessage);
+      setStatus(signedInStudent || staffSession ? readyMessage : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
     });
     return () => { controller.abort(); claimRequest.current?.abort(); claimRequest.current = null; };
   }, [binding, hasSession, invite, readyMessage, staffSession, checkRevision]);
@@ -114,6 +117,14 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     claimRequest.current = null;
     setSubmitting(false);
     if (!result.ok) {
+      if (result.status === 401 || result.code === 'AUTH_EXPIRED') {
+        setVerifiedSession(false);
+        setCanClaim(false);
+        setCode('');
+        setTone('');
+        setStatus('로그인 상태를 다시 확인해주세요. 받은 초대는 유지되며 로그인 후 인증을 이어갈 수 있어요.');
+        return;
+      }
       if (result.code === 'CONSULTING_ACCOUNT_ALREADY_LINKED') {
         setAccountConflict(true);
         setCanClaim(false);
@@ -136,7 +147,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     <ConsultingBrand />
     <p className="consulting-v2-kicker">초대받은 계정으로 시작하기</p>
     <h1 id="consultingStartTitle">컨설팅 이용 인증</h1>
-    <p className="consulting-v2-status" data-tone={tone || undefined} role="status">{status}</p>
+    <p className="consulting-v2-status" data-tone={!checking && tone || undefined} role="status">{checking ? '초대 정보를 확인하고 있습니다.' : status}</p>
     {checking ? <p className="consulting-v2-status">신청 정보와 이용 상태를 불러오고 있어요. 잠시만 기다려주세요.</p> : null}
     {retryable ? <button type="button" className="consulting-v2-secondary consulting-v2-wide" disabled={checking} onClick={() => setCheckRevision(value => value + 1)}>초대 정보 다시 확인</button> : null}
     {summary ? <div className="consulting-v2-summary">
@@ -144,8 +155,8 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       <p><span>신청 전화번호</span><strong>{summary.maskedPhone}</strong></p>
       <p><span>인증 기한</span><strong>{new Date(summary.expiresAt).toLocaleString('ko-KR')}</strong></p>
     </div> : null}
-    {invite && (!hasSession || ((linkedInvite || accountConflict) && !staffSession)) ? <div className="consulting-v2-actions">
-      <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>{hasSession ? '다른 학생 계정으로 로그인' : '로그인'}</a>
+    {invite && !checking && !retryable && (!hasSession || !verifiedSession && !staffSession || ((linkedInvite || accountConflict) && !staffSession)) ? <div className="consulting-v2-actions">
+      <a className="consulting-v2-primary" href={`/login?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>{verifiedSession ? '다른 학생 계정으로 로그인' : '로그인'}</a>
       {!linkedInvite ? <a className="consulting-v2-secondary" href={`/signup?returnUrl=${encodeURIComponent(CONSULTING_ROUTES.start)}`}>회원가입</a> : null}
     </div> : null}
     {showCodeForm ? <form className="consulting-v2-form" onSubmit={submit}>
