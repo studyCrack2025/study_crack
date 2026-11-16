@@ -22,17 +22,25 @@ async function prepare(page) {
     await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body }));
     await page.route('https://www.googletagmanager.com/**', route => route.abort());
     await page.route('https://fonts.googleapis.com/**', route => route.abort());
-    const state = { calls: [], early: false, getError: 0, runError: 0, defer: false, release: null, empty: false, blocked: false };
+    const state = { calls: [], early: false, getError: 0, runError: 0, defer: false, release: null, empty: false, blocked: false, requireStandards: false, standardSupport: true };
     const currentCase = n => ({ caseId: caseId(n), workflowState: state.early ? 'ONBOARDING' : 'AVAILABILITY_REQUIRED', revision: 1 });
     const students = [1, 2].map(n => ({ applicationId: appId(n), sourceResponseId: `SYNTHETIC_RESPONSE_${n}`, caseId: caseId(n), studentNameMask: `합성학생${n}`, phoneMask: '010-****-0000', phase: 'onboarding', stateLabel: '자료 확인', nextAction: '기초조사서 확인', updatedAt: '2026-11-15T00:00:00Z' }));
-    const referenceRecords = [{ area: 'korean', selection: '언어와 매체', rawScore: 80, commonRawScore: 60, electiveRawScore: 20 }, { area: 'math', selection: '확률과통계', rawScore: 80, commonRawScore: 60, electiveRawScore: 20 }, { area: 'inquiry', subject: '물리학Ⅰ', rawScore: 40 }, { area: 'inquiry', subject: '지구과학Ⅰ', rawScore: 40 }, { area: 'english', grade: 2 }];
+    const referenceRecords = [{ area: 'korean', selection: '언어와 매체', rawScore: 80, commonRawScore: 60, electiveRawScore: 20 }, { area: 'math', selection: '확률과통계', rawScore: 80, commonRawScore: 60, electiveRawScore: 20 }, { area: 'inquiry', subject: '물리학Ⅰ', rawScore: 40 }, { area: 'inquiry', subject: '지구과학Ⅰ', rawScore: 40 }, { area: 'english', grade: 2 }, { area: 'korean_history', grade: 1 }];
     const snapshot = { formVersion: 4, studentStatus: { applicantType: 'high_school_senior', schoolType: 'general', schoolName: '가상고', residenceRegion: '서울', graduationYear: 2027 }, conditions: { commuteLimit: 'over_120', dormitoryAllowed: false, repeatStudyAllowed: true }, preferences: { rankedChoices: [{ university: '합성대학교', track: '공학' }], additionalPreference: '' }, strategy: { riskTolerance: 'balanced', priorityOrder: ['major', 'brand', 'region', 'commute', 'employment'] }, qualitative: { consultationTopics: ['group_plan'], decisionOptions: '합성 질문' }, consent: { accurateInformation: true, analysisUse: true }, scores: { examYear: 2026, examType: 'csat', records: [{ area: 'english', subject: '영어', grade: 2 }] } };
-    const options = id => ({ contractVersion: 'consulting-local-reference-v1', action: 'options', dataVersion: version, rawDataVersion: version, automaticSurveySupported: true, automaticSurvey: { available: !state.early, sourceToken: token, revision: 0, records: referenceRecords, risk: 'balanced', message: '최신 기초조사서를 확정하면 자동 추천을 확인할 수 있습니다.' }, sourceToken: token, caseId: id, surveyRevision: 0, hasSubmittedSurvey: !state.early, initialRecords: state.early ? [] : referenceRecords, initialUniversities: [], initialStream: '', risk: 'balanced', totalPrograms: 500, automaticGroupReferences: 100, universities: ['합성대학교', '다른대학교'], streams: ['자연/공학', '인문사회'], inquiries: ['물리학1', '지구과학1', '사회문화'], scoreRows: [{ subject: '국어', rows: [[133, 96, 1], [132, 95, 2]] }, { subject: '수학(미적분)', rows: [[128, 96, 1]] }, { subject: '물리학1', rows: [[66, 96, 1]] }, { subject: '지구과학1', rows: [[65, 95, 1]] }], warning: '2026 참고자료로 추천 동작을 실험합니다. 실제 합격 확률이 아닙니다.' });
+    const options = id => ({ contractVersion: 'consulting-local-reference-v1', action: 'options', dataVersion: version, rawDataVersion: version, automaticSurveySupported: true, standardReferenceSupported: state.standardSupport, automaticSurvey: { available: !state.early, sourceToken: token, revision: 0, records: referenceRecords, risk: 'balanced', message: '최신 기초조사서를 확정하면 자동 추천을 확인할 수 있습니다.' }, sourceToken: token, caseId: id, surveyRevision: 0, hasSubmittedSurvey: !state.early, initialRecords: state.early ? [] : referenceRecords, initialUniversities: [], initialStream: '', risk: 'balanced', totalPrograms: 500, automaticGroupReferences: 100, universities: ['합성대학교', '다른대학교'], streams: ['자연/공학', '인문사회'], inquiries: ['물리학1', '지구과학1', '사회문화'], scoreRows: [{ subject: '국어', rows: [[133, 96, 1], [132, 95, 2]] }, { subject: '수학(확통)', rows: [[128, 96, 1], [126, 94, 2]] }, { subject: '물리학1', rows: [[66, 96, 1], [65, 93, 2]] }, { subject: '지구과학1', rows: [[65, 95, 1], [63, 89, 2]] }], warning: '2026 참고자료로 추천 동작을 실험합니다. 실제 합격 확률이 아닙니다.' });
     const result = request => {
+        const standards = request.data.referenceScores || {};
+        const keys = ['kor', 'math', 'inq1', 'inq2'];
+        const missing = state.requireStandards ? keys.filter(key => !Object.hasOwn(standards, key)).map((key, index) => ({ scoreKey: key, code: 'REFERENCE_RAW_MAPPING_UNAVAILABLE', message: `${key}: 해당 원점수의 2026 참고 대응자료가 준비되지 않았습니다.` })) : [];
+        const tables = [0, 1, 2, 3].map(index => options(request.data.caseId).scoreRows[index].rows);
+        const scoreSummary = referenceRecords.map((row, index) => {
+            const selected = tables[index]?.find(value => value[0] === standards[keys[index]]);
+            return selected ? { ...row, scoreKey: keys[index], standardScore: selected[0], percentile: selected[1], grade: selected[2], scoreBasis: 'reference_standard' } : row;
+        });
         const candidates = Array.from({ length: 3 }, (_, index) => ({ id: candidateId(index + 1), university: '합성대학교', program: index ? `합성학과${index}` : '<img src=x onerror=window.__injected=1>', score: 333 + index, passCut: 320, top70Cut: 340, margin: 13, position: .65, band: '적정', probability: null, group: index ? ['가', '나', '다'][index] : null, groupBasis: index ? '2026_reference' : 'unconfirmed', groupEvidence: index ? [{ page: 1 }] : null }));
         for (const override of request.data.input.groupOverrides) { const row = candidates.find(x => x.id === override.candidateId); if (row) Object.assign(row, { group: override.group, groupBasis: 'admin_experiment' }); }
         const plan = ['가', '나', '다'].map((group, index) => ({ group, candidate: state.empty ? null : { ...candidates[index], group, groupBasis: '2026_reference' }, reason: state.empty ? '조건에 맞는 후보가 없습니다.' : '합성 비교 근거' }));
-        return { contractVersion: 'consulting-local-reference-v1', action: 'runSurvey', dataVersion: version, rawDataVersion: version, status: state.blocked ? 'blocked' : 'ready', scoreSummary: referenceRecords, missing: state.blocked ? [{ message: '국어: 해당 원점수의 2026 참고 대응자료가 준비되지 않았습니다.' }] : [], sourceToken: token, caseId: request.data.caseId, plans: { A: plan, B: plan, C: plan, distinctGroups: 0 }, stats: { total: 500, calculated: 400, excluded: 100, excludedByReason: { ADMISSION_FORMULA_REVIEW_REQUIRED: 100 }, groupPending: 300 }, candidates: state.empty ? [] : candidates, matchingCandidates: state.empty ? 0 : 36, page: request.data.input.page, hasNextPage: !state.empty && request.data.input.page === 0 };
+        return { contractVersion: 'consulting-local-reference-v1', action: 'runSurvey', dataVersion: version, rawDataVersion: version, status: state.blocked || missing.length ? 'blocked' : 'ready', scoreSummary, scoreBasis: Object.keys(standards).length ? 'reference_standard' : 'survey_raw', missing: state.blocked ? [{ message: '국어: 해당 원점수의 2026 참고 대응자료가 준비되지 않았습니다.' }] : missing, sourceToken: token, caseId: request.data.caseId, plans: { A: plan, B: plan, C: plan, distinctGroups: 0 }, stats: { total: 500, calculated: 400, excluded: 100, excludedByReason: { ADMISSION_FORMULA_REVIEW_REQUIRED: 100 }, groupPending: 300 }, candidates: state.empty ? [] : candidates, matchingCandidates: state.empty ? 0 : 36, page: request.data.input.page, hasNextPage: !state.empty && request.data.input.page === 0 };
     };
     await page.route('**/synthetic-reference-api', async route => {
         const request = route.request().postDataJSON(); state.calls.push(request); let data;
@@ -106,7 +114,7 @@ test('위험도와 검색 조건 변경은 이전 결과를 폐기하고 성적 
 });
 
 test('대응자료 미확보와 확정 상태 변경을 구분하며 무한 재시도하지 않는다', async ({ page }) => {
-    const state = await prepare(page); state.blocked = true; await open(page);
+    const state = await prepare(page); state.standardSupport = false; state.blocked = true; await open(page);
     await expect(page.locator('#consultingReferenceStatus')).toContainText('국어');
     await expect(page.locator('#consultingReferenceStatus')).toContainText('대응자료');
     await expect(page.locator('#consultingReferenceResults')).toBeHidden();
@@ -139,4 +147,74 @@ test('학생 전환 뒤 도착한 이전 학생의 자동 추천은 표시하지
     await page.locator('#consultingReferenceExperiment > summary').click();
     await expect(page.locator('#consultingReferenceResults')).toBeVisible();
     expect(state.calls.filter(x => x.type === 'admin_run_reference_experiment').at(-1).data.caseId).toBe(caseId(2));
+});
+
+async function enterReferenceStandards(page) {
+    for (const [key, value] of [['kor', '133'], ['math', '128'], ['inq1', '66'], ['inq2', '65']]) await page.locator(`[data-reference-standard="${key}"]`).selectOption(value);
+}
+
+test('원점수 대응표가 없어도 별도 표준점수와 2026 백분위·등급으로 실험하며 부분 입력 중 재요청하지 않는다', async ({ page }, testInfo) => {
+    const state = await prepare(page); state.requireStandards = true; await open(page);
+    await expect(page.locator('#consultingReferenceStandard')).toBeVisible();
+    await expect(page.locator('[data-reference-standard]')).toHaveCount(4);
+    await expect(page.locator('#consultingReferenceStatus')).toContainText('실험용 표준점수');
+    await expect(page.locator('#consultingReferenceRun')).toBeDisabled();
+    await page.clock.install();
+    await page.locator('[data-reference-standard="kor"]').selectOption('133');
+    await page.locator('[data-reference-standard="math"]').selectOption('128');
+    await page.clock.runFor(1500);
+    expect(state.calls.filter(call => call.type === 'admin_run_reference_experiment')).toHaveLength(1);
+    await expect(page.locator('#consultingReferenceStandardInputs')).toContainText('2026 참고 백분위 96 · 1등급');
+    await enterReferenceStandards(page); await page.clock.runFor(400);
+    await expect(page.locator('#consultingReferenceResults')).toBeVisible();
+    await expect(page.locator('#consultingReferencePlans article')).toHaveCount(9);
+    const sent = state.calls.filter(call => call.type === 'admin_run_reference_experiment').at(-1).data;
+    expect(sent.referenceScores).toEqual({ kor: 133, math: 128, inq1: 66, inq2: 65 });
+    expect(sent.input.scores).toBeUndefined(); expect(sent.scoreSource).toBe('approved_survey');
+    await expect(page.locator('#consultingReferenceScores')).toContainText('공통 원점수');
+    await expect(page.locator('#consultingReferenceScores')).toContainText('2026 참고 표준점수');
+    await expect(page.locator('#consultingReferenceStatus')).toContainText('원점수는 변경하지 않았습니다');
+    expect(state.calls.filter(call => /save|verify|approve|publish/.test(call.type))).toHaveLength(0);
+    for (const [name, width] of [['desktop', 1280], ['mobile', 375]]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.locator('#consultingReferenceStandard').scrollIntoViewIfNeeded();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`reference-standard-${name}.png`) });
+    }
+    await page.locator('[data-reference-standard="kor"]').selectOption(''); await page.clock.runFor(1500);
+    await expect(page.locator('#consultingReferenceResults')).toBeHidden();
+    await expect(page.locator('#consultingReferenceRun')).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_run_reference_experiment')).toHaveLength(2);
+});
+
+test('실험 점수는 자료 재조회·학생 전환·로그아웃 뒤 남지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.requireStandards = true; await open(page);
+    await expect(page.locator('[data-reference-standard]')).toHaveCount(4);
+    await enterReferenceStandards(page);
+    await expect(page.locator('#consultingReferenceResults')).toBeVisible();
+    await page.getByRole('button', { name: '자료 다시 불러오기', exact: true }).click();
+    await expect(page.locator('[data-reference-standard="kor"]')).toHaveValue('');
+    await expect(page.locator('#consultingReferenceResults')).toBeHidden();
+    expect(state.calls.filter(call => call.type === 'admin_run_reference_experiment').at(-1).data.referenceScores).toBeUndefined();
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await page.locator('#consultingDirectoryBody tr').nth(1).getByRole('button', { name: '학생 상세' }).click();
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await page.locator('#consultingReferenceExperiment > summary').click();
+    await expect(page.locator('[data-reference-standard="kor"]')).toHaveValue('');
+    expect(state.calls.filter(call => call.type === 'admin_run_reference_experiment').at(-1).data.caseId).toBe(caseId(2));
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    await expect(page.locator('#consultingReferenceExperiment')).toBeHidden();
+    await expect(page.locator('[data-reference-standard]')).toHaveCount(0);
+});
+
+test('실험 표준점수 입력 뒤 조사서·자료 버전이 바뀌면 결과와 실험값을 폐기한다', async ({ page }) => {
+    const state = await prepare(page); state.requireStandards = true; await open(page);
+    await expect(page.locator('[data-reference-standard]')).toHaveCount(4);
+    await enterReferenceStandards(page); await expect(page.locator('#consultingReferenceResults')).toBeVisible();
+    state.runError = 409; await page.locator('#consultingReferenceRisk').selectOption('safe');
+    await expect(page.locator('#consultingReferenceStatus')).toContainText('기준을 갱신');
+    await expect(page.locator('#consultingReferenceResults')).toBeHidden();
+    await expect(page.locator('#consultingReferenceStandard')).toBeHidden();
+    await expect(page.locator('[data-reference-standard]')).toHaveCount(0);
+    await expect(page.locator('#consultingReferenceRun')).toBeDisabled();
 });

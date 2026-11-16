@@ -24,6 +24,10 @@
 .consulting-reference-scores { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:14px; margin:18px 0; }
 .consulting-reference-score { min-width:0; margin:0; padding:16px; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; }
 .consulting-reference-score legend { padding:0 6px; font-weight:700; color:var(--admin-text,#1e293b); }
+.consulting-reference-standard { margin:20px 0; padding:18px; border:1px solid var(--admin-border,#dce2eb); border-radius:12px; background:var(--admin-surface,#f1f5f9); line-height:1.7; }
+.consulting-reference-standard h3 { margin:0 0 10px; font-size:1.05rem; }
+.consulting-reference-standard p { margin:8px 0; overflow-wrap:anywhere; }
+.consulting-reference-standard output { display:block; min-height:1.7em; font-size:.85rem; color:var(--admin-muted,#516078); }
 .consulting-reference select, .consulting-reference input { width:100%; min-width:0; min-height:44px; box-sizing:border-box; padding:10px; border:1px solid var(--admin-border,#cbd5e1); border-radius:8px; background:var(--admin-card-bg,#fff); color:var(--admin-text,#1e293b); font:inherit; font-size:1rem; }
 .consulting-reference-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,70px),1fr)); gap:8px; margin-top:14px; }
 .consulting-reference label { display:grid; align-content:start; gap:7px; min-width:0; font-size:.85rem; color:var(--admin-text,#334155); }

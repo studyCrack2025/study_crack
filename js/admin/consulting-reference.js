@@ -11,13 +11,13 @@ function resetConsultingReference() {
     const panel = document.getElementById('consultingReferenceExperiment');
     if (!panel) return;
     panel.hidden = true; panel.open = false;
-    for (const id of ['consultingReferenceForm', 'consultingReferenceResults']) document.getElementById(id).hidden = true;
-    for (const id of ['consultingReferenceScores', 'consultingReferencePlans', 'consultingReferenceCandidates', 'consultingReferenceOverrides', 'consultingReferenceExcluded']) document.getElementById(id).replaceChildren();
+    for (const id of ['consultingReferenceForm', 'consultingReferenceResults', 'consultingReferenceStandard']) document.getElementById(id).hidden = true;
+    for (const id of ['consultingReferenceScores', 'consultingReferenceStandardInputs', 'consultingReferencePlans', 'consultingReferenceCandidates', 'consultingReferenceOverrides', 'consultingReferenceExcluded']) document.getElementById(id).replaceChildren();
     consultingWorkspaceStatus('consultingReferenceStatus', '');
 }
 function prepareConsultingReference(caseId) {
     resetConsultingReference();
-    consultingReferenceState = { caseId, catalog: null, groups: new Map(), result: null, page: 0 };
+    consultingReferenceState = { caseId, catalog: null, groups: new Map(), result: null, page: 0, referenceScores: {}, standardKeys: [] };
     document.getElementById('consultingReferenceExperiment').hidden = false;
 }
 function referenceNode(tag, text, className) {
@@ -41,6 +41,8 @@ function invalidateConsultingReference() {
     document.getElementById('consultingReferenceResults').hidden = true;
     document.getElementById('consultingReferenceForm').setAttribute('aria-busy', 'false');
     if (!state.catalog?.automaticSurvey?.available) return;
+    document.getElementById('consultingReferenceRun').disabled = referenceStandardIncomplete(state);
+    if (referenceStandardIncomplete(state)) { consultingWorkspaceStatus('consultingReferenceStatus', '표준점수를 모두 선택하면 2026 수능표의 백분위·등급으로 추천을 계산합니다.'); return; }
     consultingWorkspaceStatus('consultingReferenceStatus', '지원 조건을 반영하고 있습니다.');
     consultingReferenceTimer = setTimeout(() => { consultingReferenceTimer = null; if (state === consultingReferenceState) runConsultingReference(); }, 350);
 }
@@ -55,7 +57,51 @@ function renderReferenceScoreSummary(records) {
             if (row[field] != null) facts.push([label, String(row[field])]);
         }
         fieldset.appendChild(createConsultingFacts(facts)); container.appendChild(fieldset);
+        if (row.scoreBasis === 'reference_standard') fieldset.appendChild(referenceNode('p', '실험용 표준점수 · 2026 수능 참고표', 'consulting-caption'));
     }
+}
+function referenceStandardIncomplete(state) { return state.standardKeys.some(key => !Object.hasOwn(state.referenceScores, key)); }
+function referenceScoreFields(records) {
+    let inquiry = 0;
+    return records.flatMap(row => {
+        const key = row.area === 'korean' ? 'kor' : row.area === 'math' ? 'math' : row.area === 'inquiry' ? `inq${++inquiry}` : null;
+        return key && ['kor', 'math', 'inq1', 'inq2'].includes(key) ? [{ ...row, scoreKey: key }] : [];
+    });
+}
+function referenceStandardRows(catalog, row) {
+    const compact = value => String(value || '').normalize('NFKC').replace(/\s/g, '');
+    const choice = compact(row.selection), subject = compact(row.subject);
+    const math = ['확통', '확률과통계'].includes(choice) ? '수학(확통)' : ['미적', '미적분'].includes(choice) ? '수학(미적분)' : choice === '기하' ? '수학(기하)' : '';
+    const matches = (catalog.scoreRows || []).filter(area => compact(area.subject) === (row.scoreKey === 'kor' ? '국어' : row.scoreKey === 'math' ? math : subject.replace(/ii/gi, '2').replace(/i/gi, '1')));
+    if (matches.length !== 1) return [];
+    const rows = matches[0].rows || [], max = row.scoreKey.startsWith('inq') ? 100 : 200;
+    return rows.filter(value => Array.isArray(value) && value.length === 3 && value.every(Number.isInteger) && value[0] >= 0 && value[0] <= max && value[1] >= 0 && value[1] <= 100 && value[2] >= 1 && value[2] <= 9 && rows.filter(other => other[0] === value[0]).length === 1);
+}
+function renderReferenceStandardInputs(missing) {
+    const state = consultingReferenceState;
+    if (!state.catalog.standardReferenceSupported) return false;
+    const records = referenceScoreFields(state.catalog.automaticSurvey.records);
+    const available = records.filter(row => missing.some(item => item.scoreKey === row.scoreKey && ['REFERENCE_RAW_MAPPING_UNAVAILABLE', 'RAW_SCORE_REQUIRED', 'REFERENCE_STANDARD_MAPPING_UNAVAILABLE'].includes(item.code)) && referenceStandardRows(state.catalog, row).length);
+    if (!available.length) return false;
+    const container = document.getElementById('consultingReferenceStandardInputs'); container.replaceChildren();
+    state.standardKeys = available.map(row => row.scoreKey);
+    for (const row of available) {
+        const title = `${{ kor: '국어', math: '수학', inq1: '탐구 1', inq2: '탐구 2' }[row.scoreKey]} · ${row.selection || row.subject}`;
+        const label = referenceNode('label', `${title} 표준점수`), rows = referenceStandardRows(state.catalog, row);
+        const select = referenceSelect([['', '표준점수 선택'], ...rows.map(value => [String(value[0]), String(value[0])])], `${title} 표준점수`, Object.hasOwn(state.referenceScores, row.scoreKey) ? String(state.referenceScores[row.scoreKey]) : '');
+        select.dataset.referenceStandard = row.scoreKey; select.required = true;
+        const output = referenceNode('output');
+        const preview = () => { const selected = rows.find(value => String(value[0]) === select.value); output.textContent = selected ? `2026 참고 백분위 ${selected[1]} · ${selected[2]}등급` : '선택하면 백분위·등급이 표시됩니다.'; };
+        select.addEventListener('change', () => {
+            if (state !== consultingReferenceState) return;
+            if (select.value === '') delete state.referenceScores[row.scoreKey]; else state.referenceScores[row.scoreKey] = Number(select.value);
+            preview(); invalidateConsultingReference();
+        });
+        preview(); label.append(select, output); container.appendChild(label);
+    }
+    document.getElementById('consultingReferenceStandard').hidden = false;
+    document.getElementById('consultingReferenceRun').disabled = referenceStandardIncomplete(state);
+    return true;
 }
 function renderReferenceScoreInputs(catalog) {
     renderReferenceScoreSummary(catalog.automaticSurvey.records);
@@ -76,10 +122,12 @@ async function openConsultingReference(open, reload = false) {
     clearTimeout(consultingReferenceTimer); consultingReferenceTimer = null;
     const generation = ++consultingReferenceGeneration;
     consultingReferenceRequest?.abort(); const request = new AbortController(); consultingReferenceRequest = request;
-    state.result = null;
+    state.result = null; state.referenceScores = {}; state.standardKeys = [];
+    document.getElementById('consultingReferenceStandard').hidden = true;
+    document.getElementById('consultingReferenceStandardInputs').replaceChildren();
     document.getElementById('consultingReferenceForm').hidden = true;
     document.getElementById('consultingReferenceResults').hidden = true;
-    consultingWorkspaceStatus('consultingReferenceStatus', '확정 조사서의 원점수와 지원 전략을 불러오고 있습니다.');
+    consultingWorkspaceStatus('consultingReferenceStatus', '확정 조사서 성적과 지원 전략을 불러오고 있습니다.');
     try {
         const data = await requestConsultingAdmin('admin_get_reference_experiment', { caseId: state.caseId }, request.signal);
         if (state !== consultingReferenceState || generation !== consultingReferenceGeneration) return;
@@ -161,33 +209,36 @@ async function runConsultingReference(event, page = 0) {
     clearTimeout(consultingReferenceTimer); consultingReferenceTimer = null;
     const state = consultingReferenceState, form = document.getElementById('consultingReferenceForm');
     if (!state?.catalog?.automaticSurvey?.available) return;
+    if (referenceStandardIncomplete(state)) { consultingWorkspaceStatus('consultingReferenceStatus', '실험용 표준점수를 모두 선택해주세요.'); return; }
     const generation = ++consultingReferenceGeneration;
     consultingReferenceRequest?.abort(); const request = new AbortController(); consultingReferenceRequest = request;
     document.getElementById('consultingReferenceResults').hidden = true;
     form.setAttribute('aria-busy', 'true'); document.getElementById('consultingReferenceRun').disabled = true;
-    consultingWorkspaceStatus('consultingReferenceStatus', '확정 조사서 원점수로 A/B/C안을 계산하고 있습니다.');
+    consultingWorkspaceStatus('consultingReferenceStatus', '2026 참고 성적으로 A/B/C안을 계산하고 있습니다.');
     try {
         const catalog = state.catalog;
-        const data = await requestConsultingAdmin('admin_run_reference_experiment', { caseId: state.caseId, scoreSource: 'approved_survey', sourceToken: catalog.automaticSurvey.sourceToken, dataVersion: catalog.dataVersion, rawDataVersion: catalog.rawDataVersion, input: referenceInput(state, page) }, request.signal);
+        const data = await requestConsultingAdmin('admin_run_reference_experiment', { caseId: state.caseId, scoreSource: 'approved_survey', sourceToken: catalog.automaticSurvey.sourceToken, dataVersion: catalog.dataVersion, rawDataVersion: catalog.rawDataVersion, input: referenceInput(state, page), ...(Object.keys(state.referenceScores).length ? { referenceScores: { ...state.referenceScores } } : {}) }, request.signal);
         if (state !== consultingReferenceState || generation !== consultingReferenceGeneration) return;
         if (data.caseId !== state.caseId || data.sourceToken !== catalog.automaticSurvey.sourceToken || data.dataVersion !== catalog.dataVersion || data.rawDataVersion !== catalog.rawDataVersion || !Array.isArray(data.scoreSummary)) throw new Error('Invalid automatic result');
         renderReferenceScoreSummary(data.scoreSummary);
         if (data.status === 'blocked') {
             state.result = null;
-            consultingWorkspaceStatus('consultingReferenceStatus', `자동 추천 준비 필요: ${(data.missing || []).map(x => x.message).join(' ')}`, 'error');
+            const fallback = renderReferenceStandardInputs(data.missing || []);
+            const otherMissing = (data.missing || []).filter(item => !state.standardKeys.includes(item.scoreKey));
+            consultingWorkspaceStatus('consultingReferenceStatus', fallback ? `원점수 대응자료가 없는 과목은 아래에서 실험용 표준점수를 선택해주세요.${otherMissing.length ? ` ${otherMissing.map(x => x.message).join(' ')}` : ''}` : `자동 추천 준비 필요: ${(data.missing || []).map(x => x.message).join(' ')}`, fallback && !otherMissing.length ? '' : 'error');
             return;
         }
         if (data.status !== 'ready' || ['A', 'B', 'C'].some(key => !Array.isArray(data.plans?.[key]) || data.plans[key].length !== 3)) throw new Error('Invalid automatic plans');
         state.result = data; state.page = data.page; renderReferenceResults(data);
         document.getElementById('consultingReferenceResults').hidden = false;
-        consultingWorkspaceStatus('consultingReferenceStatus', '확정 조사서 기준 A/B/C 추천을 불러왔습니다. 조건을 바꾸면 자동으로 다시 비교합니다.');
+        consultingWorkspaceStatus('consultingReferenceStatus', data.scoreBasis === 'reference_standard' ? '실험용 표준점수와 2026 수능표 기준 A/B/C 추천입니다. 학생이 제출한 원점수는 변경하지 않았습니다.' : '확정 조사서 기준 A/B/C 추천을 불러왔습니다. 조건을 바꾸면 자동으로 다시 비교합니다.');
     } catch (error) {
         if (state !== consultingReferenceState || generation !== consultingReferenceGeneration) return;
         state.result = null;
-        if (error.status === 409) { state.catalog = null; consultingWorkspaceStatus('consultingReferenceStatus', '조사서 확정 상태나 참고자료가 바뀌었습니다. 자료 다시 불러오기로 기준을 갱신해주세요.', 'error'); }
+        if (error.status === 409) { state.catalog = null; state.referenceScores = {}; state.standardKeys = []; document.getElementById('consultingReferenceStandard').hidden = true; document.getElementById('consultingReferenceStandardInputs').replaceChildren(); consultingWorkspaceStatus('consultingReferenceStatus', '조사서 확정 상태나 참고자료가 바뀌었습니다. 자료 다시 불러오기로 기준을 갱신해주세요.', 'error'); }
         else consultingWorkspaceStatus('consultingReferenceStatus', error.status === 400 ? error.message || '조사서 성적과 지원 조건을 확인해주세요.' : error.status === 403 ? '개발 환경의 관리자 권한을 확인해주세요.' : '자동 추천을 완료하지 못했습니다. 다시 계산으로 재시도해주세요.', 'error');
     } finally {
-        if (generation === consultingReferenceGeneration) { consultingReferenceRequest = null; document.getElementById('consultingReferenceRun').disabled = !state.catalog; form.setAttribute('aria-busy', 'false'); }
+        if (generation === consultingReferenceGeneration) { consultingReferenceRequest = null; document.getElementById('consultingReferenceRun').disabled = !state.catalog || referenceStandardIncomplete(state); form.setAttribute('aria-busy', 'false'); }
     }
 }
 function pageConsultingReference(delta) { if (consultingReferenceState?.result) return runConsultingReference(null, Math.max(0, consultingReferenceState.page + delta)); }

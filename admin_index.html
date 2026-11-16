@@ -665,13 +665,19 @@
             </section>
             <details id="consultingReferenceExperiment" class="consulting-reference" ontoggle="openConsultingReference(this.open)" hidden>
                 <summary>2026 참고자료로 추천 실험</summary>
-                <p id="consultingReferenceNotice" class="consulting-reference-notice">확정 기초조사서의 원점수와 지원 전략으로 A/B/C안을 자동 비교합니다. 2026 참고자료를 사용하는 실험입니다.</p>
+                <p id="consultingReferenceNotice" class="consulting-reference-notice">확정 기초조사서와 2026 참고 성적으로 A/B/C안을 비교합니다. 원점수 대응자료가 없으면 실험용 표준점수를 별도로 입력할 수 있습니다.</p>
                 <p id="consultingReferenceBasis" class="consulting-caption"></p>
                 <div id="consultingReferenceStatus" class="consulting-status" role="status" aria-live="polite"></div>
                 <button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReference(true, true)">자료 다시 불러오기</button>
                 <form id="consultingReferenceForm" class="consulting-reference-form" onsubmit="runConsultingReference(event)" hidden aria-busy="false">
                     <h3>확정 조사서 성적</h3>
                     <div id="consultingReferenceScores" class="consulting-reference-scores"></div>
+                    <section id="consultingReferenceStandard" class="consulting-reference-standard" aria-labelledby="consultingReferenceStandardTitle" hidden>
+                        <h3 id="consultingReferenceStandardTitle">2026 참고 표준점수로 실험</h3>
+                        <p>보유한 2026 수능표는 표준점수에 대응하는 백분위·등급 자료입니다. 원점수를 자동 변환할 자료가 없는 과목은 비교할 표준점수를 선택해주세요. 백분위·등급은 해당 과목의 2026 수능표에서 채웁니다.</p>
+                        <p class="consulting-caption">아래 점수는 이번 실험에만 적용됩니다. 학생이 제출한 원점수와 공식 확인 성적은 바뀌지 않으며, 학생을 전환하거나 자료를 다시 불러오면 초기화됩니다.</p>
+                        <div id="consultingReferenceStandardInputs" class="consulting-reference-filters"></div>
+                    </section>
                     <div class="consulting-reference-filters">
                         <label>희망 계열<select id="consultingReferenceStream" onchange="invalidateConsultingReference()"></select></label>
                         <label>지원 성향<select id="consultingReferenceRisk" onchange="invalidateConsultingReference()"><option value="safe">안정 우선</option><option value="balanced">균형 있게</option><option value="challenge">도전 포함</option></select></label>
