@@ -9,6 +9,8 @@ let consultingScheduleChoiceGeneration = 0;
 let consultingScheduleChoice = null;
 let consultingScheduleSaving = false;
 let consultingScheduleBoardFailures = 0;
+let consultingScheduleBoardData = null;
+let consultingSchedulePolicy = 'operator_first';
 let consultingScheduleCanManage = false;
 let consultingTeamAvailability = null;
 const consultingTeamNames = new Map();
@@ -84,20 +86,40 @@ function consultingCandidateLabel(data) {
     return (data.change?.kind || data.changeKind) === 'student' ? '이 시간으로 변경 확정' : '이 시간 학생에게 제안';
 }
 
+const consultingSchedulePolicyLabels = { operator_first: '담당 우선', earliest_first: '빠른 일정 우선' };
+const consultingRecommendationMessages = {
+    no_submission: '학생이 제출한 상담 가능 시간이 없습니다.',
+    team_missing: '운영팀 연결 설정이 필요합니다. 제출된 학생 시간은 보존되어 있습니다.',
+    no_eligible_operator: '배정 가능한 운영팀 계정이 없습니다. 계정 활성 상태와 배정 권한을 확인해주세요.',
+    period_changed: '학생이 선택한 시간이 현재 운영 기간에 포함되지 않습니다. 가능 시간을 다시 확인해주세요.',
+    no_open_slot: '학생이 선택한 시간에 배정 가능한 담당자가 없습니다. 확정 일정과 불가 시간을 확인해주세요.',
+    shared_schedule: '다른 학생의 선택 시간과 함께 조정이 필요합니다. 직접 선택에서 가능한 시간을 확인할 수 있습니다.',
+    waiting_student: '학생이 현재 변경 제안에 답하기를 기다리고 있습니다.'
+};
 function renderConsultingScheduleCandidates(data) {
     const body = consultingScheduleNode('consultingScheduleCandidatesBody');
     if (!body) return;
     body.replaceChildren();
-    if (!data.candidates?.length) {
-        body.append(consultingScheduleGroup(data.change?.kind === 'admin' ? '학생이 제안에 답하면 새 일정을 확인할 수 있습니다.' : '현재 가능한 배정 후보가 없습니다.', 4));
-        return;
+    const recommendations = data.recommendations || (data.candidates || []).slice(0, 2);
+    if (!recommendations.length) {
+        const note = document.createElement('p');
+        note.textContent = consultingRecommendationMessages[data.recommendationStatus] || (data.change?.kind === 'admin' ? consultingRecommendationMessages.waiting_student : '현재 가능한 배정 후보가 없습니다.');
+        body.append(note); return;
     }
-    for (const candidate of data.candidates) {
+    for (const candidate of recommendations.slice(0, 2)) {
+        const card = document.createElement('article'); card.className = 'consulting-schedule-card';
+        const title = document.createElement('h3'), time = document.createElement('strong'), person = document.createElement('p'), reason = document.createElement('p');
+        const strategies = candidate.strategies || [];
+        title.textContent = strategies.length > 1 ? '두 기준 공통 추천' : consultingSchedulePolicyLabels[strategies[0]] || '배정 가능 일정';
+        time.textContent = consultingWrittenDateTime(candidate.startAt);
+        person.textContent = `담당 · ${consultingCounselorLabel(candidate)}`;
+        reason.className = 'consulting-caption';
+        reason.textContent = strategies.length > 1 ? '담당과 시간을 우선한 두 결과가 같습니다.' : strategies[0] === 'operator_first' ? '운영팀 담당 순서를 우선해 선택했습니다.' : strategies[0] === 'earliest_first' ? '전체 학생의 빠른 배정을 우선해 선택했습니다.' : '학생이 선택한 가능 시간입니다.';
         const proposing = data.session && !data.change;
-        const action = consultingScheduleButton(proposing ? '변경 후보 선택' : consultingCandidateLabel(data),
+        const action = consultingScheduleButton(proposing ? '이 시간 변경 제안' : consultingCandidateLabel(data),
             button => proposing ? openConsultingScheduleChoice(data.caseId, false, candidate) : saveConsultingScheduleCandidate(data, candidate, button, 'detail'), true);
         action.disabled = data.canManage === false;
-        body.append(consultingScheduleRow([consultingWrittenDateTime(candidate.startAt), consultingCounselorLabel(candidate), candidate.lunch ? '점심 시간' : '학생 선택 시간', action]));
+        card.append(title, time, person, reason, action); body.append(card);
     }
 }
 
@@ -114,7 +136,9 @@ async function loadConsultingScheduleCandidates() {
         currentConsultingSchedule = data;
         renderConsultingCurrentSession(data);
         renderConsultingScheduleCandidates(data);
-        setConsultingScheduleStatus(`선택할 수 있는 후보 ${data.candidates.length}건을 확인했습니다.`, 'success');
+        const count = (data.recommendations || data.candidates || []).length;
+        consultingScheduleNode('consultingScheduleManual').open = false;
+        setConsultingScheduleStatus(count ? `추천 일정 ${Math.min(count, 2)}개 · 전체 학생의 가능 시간과 확정 일정을 함께 반영했습니다.${data.limited ? ' 계산 범위 안에서 찾은 조합입니다.' : ''}` : consultingRecommendationMessages[data.recommendationStatus] || '추천 가능한 일정이 없습니다.', count ? 'success' : '');
     } catch (error) {
         if (generation !== consultingScheduleGeneration) return;
         currentConsultingSchedule = null;
@@ -137,6 +161,17 @@ function toggleConsultingScheduleBoard() {
     if (scheduleBoardIsOpen()) return loadConsultingScheduleBoard();
     consultingScheduleBoardGeneration++;
     consultingScheduleBoardLoading = false;
+}
+
+function selectConsultingSchedulePolicy(policy) {
+    if (!Object.hasOwn(consultingSchedulePolicyLabels, policy)) return;
+    consultingSchedulePolicy = policy;
+    document.querySelectorAll('[data-schedule-policy]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.schedulePolicy === policy)));
+    if (consultingScheduleBoardData) {
+        const data = consultingScheduleBoardData, plan = data.plans?.find(item => item.policy === policy) || data;
+        renderConsultingScheduleBoard({ ...data, ...plan });
+        setConsultingScheduleStatus(`${consultingSchedulePolicyLabels[policy]} · 추천 ${plan.placements.length}건 · 확정 ${data.confirmed.length}건 · 배정 대기 ${plan.unassigned.length}건${plan.limited ? ' · 계산 범위 안에서 찾은 조합입니다.' : ''}`, 'success', 'consultingScheduleBoardStatus');
+    }
 }
 
 function renderConsultingScheduleBoard(data) {
@@ -250,13 +285,15 @@ async function loadConsultingScheduleBoard(feedback = '', refresh = false) {
         consultingScheduleBoardFailures = 0;
         consultingScheduleCanManage = data.canManage !== false;
         populateConsultingTeamAvailability(data.team);
-        const fingerprint = JSON.stringify([data.placements, data.unassigned, data.confirmed, data.team?.members, consultingScheduleCanManage]);
+        consultingScheduleBoardData = data;
+        const plan = data.plans?.find(item => item.policy === consultingSchedulePolicy) || data;
+        const fingerprint = JSON.stringify([data.plans, data.placements, data.unassigned, data.confirmed, data.team?.members, consultingScheduleCanManage]);
         if (fingerprint !== consultingScheduleBoardFingerprint) {
-            renderConsultingScheduleBoard(data);
+            renderConsultingScheduleBoard({ ...data, ...plan });
             consultingScheduleBoardFingerprint = fingerprint;
         }
         populateConsultingScheduleSettings(data.settings);
-        const counts = `추천 ${data.placements.length}건 · 확정 ${data.confirmed.length}건 · 배정 대기 ${data.unassigned.length}건`;
+        const counts = `${consultingSchedulePolicyLabels[consultingSchedulePolicy]} · 추천 ${plan.placements.length}건 · 확정 ${data.confirmed.length}건 · 배정 대기 ${plan.unassigned.length}건`;
         const notes = [feedback, counts, data.limited ? '후보가 많아 계산 범위 안에서 찾은 조합을 표시합니다.' : '',
             data.hasOpenTimes ? '' : '현재 배정 가능한 담당자가 없습니다. 운영팀 계정과 불가 시간을 확인해주세요. 학생은 가능한 시간을 먼저 제출할 수 있습니다.'].filter(Boolean);
         status(notes.join(' '), 'success');
@@ -264,6 +301,8 @@ async function loadConsultingScheduleBoard(feedback = '', refresh = false) {
         consultingScheduleBoardFailures++;
         nextPoll = [401, 403].includes(error.status) ? null : Math.min(120000, 20000 * 2 ** consultingScheduleBoardFailures);
         if (generation === consultingScheduleBoardGeneration) {
+            consultingScheduleCanManage = false;
+            consultingScheduleBoardData = null;
             for (const button of consultingScheduleNode('consultingScheduleBoardBody').querySelectorAll('button')) button.disabled = true;
             status(nextPoll === null ? '현재 계정의 시간표 조회 권한을 확인해주세요. 자동 재조회를 중지했습니다. 설정 적용 후 지금 갱신을 눌러주세요.' : `${error.message || '전체 시간표를 불러오지 못했습니다.'} 잠시 뒤 다시 확인합니다.`, 'error');
         }
@@ -296,82 +335,94 @@ async function saveConsultingScheduleSettings() {
 }
 
 async function openConsultingScheduleChoice(caseId, manual = false, preselected) {
-    const dialog = consultingScheduleNode('consultingScheduleChoice');
-    const form = consultingScheduleNode('consultingScheduleChoiceForm');
-    const manualFields = consultingScheduleNode('consultingScheduleManualFields');
-    const proposalFields = consultingScheduleNode('consultingScheduleProposalChoices');
-    const status = (message, state) => setConsultingScheduleStatus(message, state, 'consultingScheduleChoiceStatus');
-    const generation = ++consultingScheduleChoiceGeneration;
-    consultingScheduleChoice = null;
-    form.reset();
-    form.hidden = true;
-    manualFields.hidden = !manual;
-    proposalFields.hidden = true;
-    proposalFields.disabled = true;
-    form.elements.contactConfirmed.required = manual;
-    form.elements.reason.required = manual;
+    const dialog = consultingScheduleNode('consultingScheduleChoice'), form = consultingScheduleNode('consultingScheduleChoiceForm');
+    consultingScheduleChoiceGeneration++;
+    form.reset(); form.hidden = true;
+    consultingScheduleChoice = { caseId, manual, offers: new Map() };
     consultingScheduleNode('consultingScheduleChoiceTitle').textContent = manual ? '학생과 합의한 시간으로 변경' : '학생별 일정 선택';
-    status('가능한 시간을 확인하고 있습니다.', 'loading');
     if (!dialog.open) dialog.showModal();
+    await loadConsultingScheduleChoiceDate(preselected?.startAt ? new Date(Date.parse(preselected.startAt) + 9 * 3600000).toISOString().slice(0, 10) : undefined, preselected);
+}
+async function loadConsultingScheduleChoiceDate(date, preselected) {
+    const dialog = consultingScheduleNode('consultingScheduleChoice'), form = consultingScheduleNode('consultingScheduleChoiceForm'), prior = consultingScheduleChoice;
+    if (!prior || !dialog.open) return;
+    const generation = ++consultingScheduleChoiceGeneration;
+    prior.loading = true;
+    const status = (message, state = '') => setConsultingScheduleStatus(message, state, 'consultingScheduleChoiceStatus');
+    for (const field of ['date', 'slot', 'counselor']) form.elements[field].disabled = true;
+    consultingScheduleNode('consultingScheduleChoiceSubmit').disabled = true;
+    consultingScheduleNode('consultingScheduleProposalAdd').disabled = true;
+    status('선택한 날짜의 가능 시간을 확인하고 있습니다.', 'loading');
     try {
-        const data = await requestConsultingAdmin('admin_list_schedule_candidates', { caseId, ...(manual ? { includeManual: true } : {}) });
+        const data = await requestConsultingAdmin('admin_list_schedule_candidates', { caseId: prior.caseId, view: 'manual', ...(date ? { date } : {}), ...(prior.manual ? { includeManual: true } : {}) });
         if (generation !== consultingScheduleChoiceGeneration || !dialog.open) return;
-        const choices = manual ? data.manualCandidates : data.candidates;
-        const proposalMode = Boolean(data.session && !data.change && !manual);
-        consultingScheduleChoice = { data, choices, manual, proposalMode };
-        consultingScheduleNode('consultingScheduleSingleChoice').hidden = proposalMode;
-        form.elements.slot.disabled = proposalMode;
-        proposalFields.hidden = !proposalMode;
-        proposalFields.disabled = !proposalMode;
-        const proposals = consultingScheduleNode('consultingScheduleProposalOptions');
-        proposals.replaceChildren();
-        if (proposalMode) choices.forEach((choice, index) => {
-            const label = document.createElement('label');
-            label.className = 'consulting-schedule-check';
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.value = String(index);
-            input.checked = choice.slotId === preselected?.slotId && choice.counselorId === preselected?.counselorId;
-            input.addEventListener('change', () => {
-                const checked = [...proposals.querySelectorAll('input:checked')];
-                const duplicate = checked.some(other => other !== input && choices[Number(other.value)].slotId === choice.slotId);
-                if (checked.length > 5 || input.checked && duplicate) {
-                    input.checked = false;
-                    status(duplicate ? '같은 시각은 상담사 한 명만 선택해주세요.' : '변경 후보는 최대 5개까지 선택해주세요.', 'error');
-                } else status(`${checked.length}개 선택 · 학생이 수락하면 새 일정으로 변경됩니다.`, '');
-            });
-            label.append(input, document.createTextNode(`${consultingWrittenDateTime(choice.startAt)} · ${consultingCounselorLabel(choice)}`));
-            proposals.append(label);
-        });
-        const prompt = new Option('가능 시간 선택', '');
-        const options = choices.map((choice, index) => new Option(`${consultingWrittenDateTime(choice.startAt)} · ${consultingCounselorLabel(choice)}${choice.lunch ? ' · 점심' : ''}`, String(index)));
-        form.elements.slot.replaceChildren(prompt, ...options);
-        form.hidden = !choices.length;
-        consultingScheduleNode('consultingScheduleChoiceSubmit').textContent = manual ? '합의한 일정으로 변경 확정'
-            : proposalMode ? '선택한 시간들 제안 보내기' : consultingCandidateLabel(data);
-        status(data.change?.kind === 'admin' && !manual ? '학생이 현재 제안에 답하기를 기다리고 있습니다.' : choices.length
-            ? manual ? '학생과 직접 합의한 경우에만 확정하세요. 처리하면 진행 중인 변경 요청은 종료됩니다.'
-                : proposalMode ? '학생이 처음 선택한 시간입니다. 최대 5개를 제안할 수 있고, 학생이 다른 가능 시간을 다시 알려줄 수도 있습니다.' : '학생이 선택한 가능 시간입니다.'
-            : '현재 비어 있는 선택 시간이 없습니다. 학생과 직접 조율한 경우 학생 상세의 수동 변경에서 확정할 수 있습니다.', '');
+        const all = (prior.manual ? data.manualCandidates : data.candidates) || [];
+        const day = slot => slot.localDate || new Date(Date.parse(slot.startAt) + 9 * 3600000).toISOString().slice(0, 10);
+        const dates = data.choiceDates || [...new Set(all.map(day))].sort().map(value => ({ date: value }));
+        const selectedDate = data.selectedDate || date || dates[0]?.date;
+        const choices = all.filter(slot => day(slot) === selectedDate).sort((a, b) => a.startAt.localeCompare(b.startAt) || ({ CMO: 0, CEO: 1, CTO: 2 }[a.teamRole] ?? 3) - ({ CMO: 0, CEO: 1, CTO: 2 }[b.teamRole] ?? 3) || a.counselorId.localeCompare(b.counselorId));
+        const changed = prior.data && ['availabilityRevision', 'changeRevision'].some(key => prior.data[key] !== data[key]) || prior.data && prior.data.session?.revision !== data.session?.revision;
+        const offers = changed ? new Map() : prior.offers;
+        const proposalMode = Boolean(data.session && !data.change && !prior.manual);
+        consultingScheduleChoice = { ...prior, data, choices, offers, proposalMode, loading: false };
+        form.elements.date.replaceChildren(...dates.map(item => new Option(consultingWrittenDate(`${item.date}T00:00:00+09:00`), item.date)));
+        form.elements.date.value = selectedDate || ''; form.elements.date.disabled = !dates.length;
+        const times = [...new Map(choices.map(slot => [slot.slotId, slot])).values()];
+        form.elements.slot.replaceChildren(new Option('시간 선택', ''), ...times.map(slot => new Option(`${consultingWrittenTime(slot.startAt)}${slot.lunch ? ' · 점심' : ''}`, slot.slotId)));
+        form.elements.slot.disabled = !choices.length;
+        form.elements.slot.value = choices.some(slot => slot.slotId === preselected?.slotId) ? preselected.slotId : '';
+        consultingScheduleNode('consultingScheduleManualFields').hidden = !prior.manual;
+        for (const field of ['contactConfirmed', 'reason']) { form.elements[field].required = prior.manual; form.elements[field].disabled = !prior.manual; }
+        const proposals = consultingScheduleNode('consultingScheduleProposalChoices'); proposals.hidden = !proposalMode; proposals.disabled = !proposalMode;
+        form.elements.slot.required = !proposalMode; form.elements.counselor.required = !proposalMode;
+        consultingScheduleNode('consultingScheduleProposalAdd').disabled = !choices.length;
+        form.hidden = false;
+        renderConsultingScheduleChoiceCounselors(preselected?.counselorId);
+        renderConsultingScheduleProposals();
+        consultingScheduleNode('consultingScheduleChoiceSubmit').textContent = prior.manual ? '합의한 일정으로 변경 확정' : proposalMode ? '선택한 시간들 제안 보내기' : consultingCandidateLabel(data);
+        status(changed ? '시간 정보가 변경되어 선택한 변경 후보를 비웠습니다. 최신 시간에서 다시 선택해주세요.' : data.change?.kind === 'admin' && !prior.manual ? '학생의 변경 제안 응답을 기다리고 있습니다.' : choices.length ? prior.manual ? '직접 합의한 시간만 확정하세요. 기존 변경 요청은 종료됩니다.' : proposalMode ? '날짜와 시간을 골라 최대 5개를 후보에 추가하세요.' : '날짜·시간·담당자를 선택한 뒤 확정하세요.' : '이 날짜에 배정 가능한 시간이 없습니다. 다른 날짜를 확인해주세요.');
     } catch (error) {
-        if (generation === consultingScheduleChoiceGeneration) status(error.message || '후보를 불러오지 못했습니다.', 'error');
+        if (generation !== consultingScheduleChoiceGeneration) return;
+        form.hidden = true; status(error.message || '가능 시간을 불러오지 못했습니다. 창을 닫고 다시 확인해주세요.', 'error');
     }
 }
-
+function renderConsultingScheduleChoiceCounselors(preselected) {
+    const choice = consultingScheduleChoice, form = consultingScheduleNode('consultingScheduleChoiceForm');
+    const rows = choice?.choices?.filter(row => row.slotId === form.elements.slot.value) || [];
+    form.elements.counselor.replaceChildren(...rows.map(row => new Option(consultingCounselorLabel(row), row.counselorId)));
+    if (rows.some(row => row.counselorId === preselected)) form.elements.counselor.value = preselected;
+    form.elements.counselor.disabled = !rows.length;
+    consultingScheduleNode('consultingScheduleChoiceSubmit').disabled = choice?.data?.canManage === false || (choice?.proposalMode ? !choice.offers.size : !rows.length);
+    consultingScheduleNode('consultingScheduleProposalAdd').disabled = choice?.data?.canManage === false || !rows.length;
+}
+function renderConsultingScheduleProposals() {
+    const choice = consultingScheduleChoice, body = consultingScheduleNode('consultingScheduleProposalOptions'); body.replaceChildren();
+    for (const [id, slot] of choice?.offers || []) {
+        const row = document.createElement('div'); row.className = 'consulting-heading-row';
+        const label = document.createElement('span'); label.textContent = `${consultingWrittenDateTime(slot.startAt)} · ${consultingCounselorLabel(slot)}`;
+        row.append(label, consultingScheduleButton('삭제', () => { choice.offers.delete(id); renderConsultingScheduleProposals(); renderConsultingScheduleChoiceCounselors(); })); body.append(row);
+    }
+    if (choice?.proposalMode) consultingScheduleNode('consultingScheduleChoiceSubmit').disabled = choice.data.canManage === false || !choice.offers.size;
+}
+function addConsultingScheduleProposal() {
+    const choice = consultingScheduleChoice, form = consultingScheduleNode('consultingScheduleChoiceForm');
+    const slot = choice?.choices?.find(row => row.slotId === form.elements.slot.value && row.counselorId === form.elements.counselor.value);
+    if (!choice?.proposalMode || choice.loading || !slot || choice.data.canManage === false) return;
+    if (choice.offers.has(slot.slotId) || choice.offers.size >= 5) return setConsultingScheduleStatus(choice.offers.has(slot.slotId) ? '같은 시각은 한 번만 선택해주세요.' : '변경 후보는 최대 5개까지 선택해주세요.', 'error', 'consultingScheduleChoiceStatus');
+    choice.offers.set(slot.slotId, slot); renderConsultingScheduleProposals();
+    setConsultingScheduleStatus(`${choice.offers.size}개 선택 · 학생이 수락하면 새 일정으로 변경됩니다.`, '', 'consultingScheduleChoiceStatus');
+}
 async function submitConsultingScheduleChoice() {
-    const form = consultingScheduleNode('consultingScheduleChoiceForm');
-    const selected = form.elements.slot.value;
-    const choice = consultingScheduleChoice;
-    if (choice?.proposalMode) {
-        const offers = [...consultingScheduleNode('consultingScheduleProposalOptions').querySelectorAll('input:checked')]
-            .map(input => choice.choices[Number(input.value)]);
-        if (!offers.length) return setConsultingScheduleStatus('제안할 시간을 한 개 이상 선택해주세요.', 'error', 'consultingScheduleChoiceStatus');
+    const form = consultingScheduleNode('consultingScheduleChoiceForm'), choice = consultingScheduleChoice;
+    if (!choice || choice.loading || choice.data?.canManage === false) return;
+    if (choice.proposalMode) {
+        const offers = [...choice.offers.values()];
+        if (!offers.length) return;
         return saveConsultingScheduleCandidate(choice.data, offers[0], consultingScheduleNode('consultingScheduleChoiceSubmit'), 'choice', null, offers);
     }
-    const slot = selected && choice?.choices[Number(selected)];
+    const slot = choice.choices.find(row => row.slotId === form.elements.slot.value && row.counselorId === form.elements.counselor.value);
     if (!slot || !form.reportValidity()) return;
-    await saveConsultingScheduleCandidate(choice.data, slot, consultingScheduleNode('consultingScheduleChoiceSubmit'), 'choice',
-        choice.manual ? { mode: 'manual', contactConfirmed: form.elements.contactConfirmed.checked, reason: form.elements.reason.value } : null);
+    await saveConsultingScheduleCandidate(choice.data, slot, consultingScheduleNode('consultingScheduleChoiceSubmit'), 'choice', choice.manual ? { mode: 'manual', contactConfirmed: form.elements.contactConfirmed.checked, reason: form.elements.reason.value } : null);
 }
 
 async function saveConsultingScheduleCandidate(data, candidate, button, source, manual = null, offers) {
@@ -443,7 +494,11 @@ function openConsultingFinalCall() {
 
 function resetConsultingSchedule() {
     consultingScheduleGeneration++;
+    consultingScheduleChoiceGeneration++;
+    consultingScheduleChoice = null;
+    consultingScheduleNode('consultingScheduleChoice')?.close();
     currentConsultingSchedule = null;
+    const manualPanel = consultingScheduleNode('consultingScheduleManual'); if (manualPanel) manualPanel.open = false;
     renderConsultingCurrentSession(null);
     consultingScheduleNode('consultingScheduleCandidatesBody')?.replaceChildren();
     const input = consultingScheduleNode('consultingScheduleCaseId'); if (input) input.value = '';
@@ -456,6 +511,9 @@ function resetConsultingScheduleBoard() {
     consultingScheduleBoardGeneration++;
     consultingScheduleBoardLoading = false;
     consultingScheduleBoardFingerprint = '';
+    consultingScheduleBoardData = null;
+    consultingSchedulePolicy = 'operator_first';
+    document.querySelectorAll('[data-schedule-policy]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.schedulePolicy === consultingSchedulePolicy)));
     consultingScheduleSettingsRevision = null;
     consultingScheduleNode('consultingScheduleBoard').open = false;
     consultingScheduleNode('consultingScheduleBoardBody').replaceChildren();

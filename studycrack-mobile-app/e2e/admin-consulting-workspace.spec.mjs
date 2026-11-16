@@ -228,7 +228,17 @@ async function prepare(page, hash = '', configure = () => {}) {
             state.board.team.self.blockedSlots = request.data.blockedSlots;
             data = { revision: state.board.team.revision };
         } else if (request.type === 'admin_list_schedule_candidates') {
-            data = state.scheduleCandidates;
+            data = { ...state.scheduleCandidates };
+            if (request.data.view === 'manual') {
+                if (state.deferScheduleDate && state.deferScheduleDate === request.data.date) await new Promise(resolve => { state.releaseScheduleDate = resolve; });
+                const choices = (request.data.includeManual ? data.manualCandidates : data.candidates) || [];
+                const day = slot => slot.localDate || new Date(Date.parse(slot.startAt) + 9 * 3600000).toISOString().slice(0, 10);
+                data.choiceDates = [...new Set(choices.map(day))].sort().map(date => ({ date }));
+                data.selectedDate = request.data.date || data.choiceDates[0]?.date;
+                const rows = choices.filter(slot => day(slot) === data.selectedDate);
+                data.candidates = request.data.includeManual ? [] : rows;
+                data.manualCandidates = request.data.includeManual ? rows : [];
+            } else data.recommendations ||= (data.candidates || []).slice(0, 2);
         } else if (request.type === 'admin_confirm_written_assignment') {
             state.board = { ...state.board, placements: [], confirmed: [{ ...state.board.placements[0], ...state.scheduleCandidates.candidates.find(slot => slot.slotId === request.data.slotId), revision: 1 }] };
             data = { session: state.board.confirmed[0] };
@@ -693,7 +703,7 @@ test('전체 서면상담 추천을 자동 갱신하고 학생이 고른 다른 
     expect(state.calls.filter(call => call.type === 'admin_confirm_written_assignment')).toHaveLength(0);
     await board.getByRole('button', { name: '다른 시간 보기' }).click();
     const choice = page.getByRole('dialog', { name: '학생별 일정 선택' });
-    await choice.getByLabel('가능한 시간').selectOption('1');
+    await choice.getByLabel('가능한 시간').selectOption(alternate.slotId);
     page.once('dialog', dialog => dialog.accept());
     await choice.getByRole('button', { name: '이 시간 확정', exact: true }).click();
     await expect(choice).not.toBeVisible();
@@ -721,7 +731,7 @@ test('학생과 직접 합의한 예외 변경은 확인과 사유를 입력한 
     await page.locator('[data-student-tab="written"]').click();
     await page.getByRole('button', { name: '직접 합의 후 수동 변경' }).click();
     const dialog = page.getByRole('dialog', { name: '학생과 합의한 시간으로 변경' });
-    await dialog.getByLabel('가능한 시간').selectOption('0');
+    await dialog.getByLabel('가능한 시간').selectOption(manual.slotId);
     const submit = dialog.getByRole('button', { name: '합의한 일정으로 변경 확정' });
     await submit.click();
     expect(state.calls.filter(call => call.type === 'admin_reschedule_written_session')).toHaveLength(0);
@@ -749,14 +759,16 @@ test('관리자는 최초 선택 중 복수 후보를 골라 한 번에 변경 �
     await page.locator('[data-student-tab="written"]').click();
     await page.getByRole('button', { name: '변경 시간 제안', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
-    const choices = dialog.getByRole('checkbox');
-    await expect(dialog.getByRole('combobox')).toHaveCount(0);
-    await expect(choices).toHaveCount(6);
-    for (let index = 0; index < 5; index++) await choices.nth(index).check();
-    await choices.nth(5).click();
-    await expect(choices.nth(5)).not.toBeChecked();
+    await expect(dialog.getByLabel('날짜', { exact: true })).toHaveCount(1);
+    for (let index = 0; index < 5; index++) {
+        await dialog.getByLabel('가능한 시간').selectOption(candidates[index].slotId);
+        await dialog.getByRole('button', { name: '선택한 시간을 후보에 추가' }).click();
+    }
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[5].slotId);
+    await dialog.getByRole('button', { name: '선택한 시간을 후보에 추가' }).click();
     await expect(page.locator('#consultingScheduleChoiceStatus')).toContainText('최대 5개');
-    for (let index = 2; index < 5; index++) await choices.nth(index).uncheck();
+    await expect(page.locator('#consultingScheduleProposalOptions').getByRole('button', { name: '삭제', exact: true })).toHaveCount(5);
+    for (let index = 4; index >= 2; index--) await page.locator('#consultingScheduleProposalOptions').getByRole('button', { name: '삭제', exact: true }).nth(index).click();
     page.once('dialog', dialog => dialog.accept());
     await dialog.getByRole('button', { name: '선택한 시간들 제안 보내기' }).click();
     await expect(dialog).not.toBeVisible();
@@ -979,4 +991,70 @@ test('새 상담 메시지는 목록에서 바로 열고 학생 상세에서도 
     await page.locator('#consultingDirectoryBody tr').nth(1).getByRole('button', { name: '학생 상세' }).click();
     await page.getByRole('button', { name: '서면상담', exact: true }).click();
     await expect(page.getByRole('link', { name: '서면상담 대화 열기 →' })).toHaveAttribute('href', '/2027-jungsi-consulting/written-session?caseId=' + caseId);
+});
+
+
+test('학생 상세는 두 기준 추천만 표시하고 수동은 날짜·시간·담당으로 접어 두며 공통 추천은 한 장이다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'SCHEDULING';
+    const slot = (date, time, role) => ({ slotId: 'WST_' + date.replaceAll('-', '') + '_' + time.replace(':', ''), localDate: date,
+        startAt: date + 'T' + time + ':00+09:00', counselorId: role, teamRole: role });
+    const candidates = ['2026-12-07', '2026-12-08'].flatMap(date => ['10:00', '10:30'].flatMap(time => ['CMO', 'CEO', 'CTO'].map(role => slot(date, time, role))));
+    const a = { ...candidates[6], strategies: ['operator_first'] }, b = { ...candidates[1], strategies: ['earliest_first'] };
+    state.scheduleCandidates = { caseId, candidates, recommendations: [a, b], recommendationVersion: 1, availabilityRevision: 2, canManage: true, session: null };
+    await enterConsulting(page); await openStudent(page, 1); await page.locator('[data-student-tab="written"]').click();
+    const cards = page.locator('.consulting-schedule-card'); await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toContainText('담당 우선'); await expect(cards.nth(1)).toContainText('빠른 일정 우선');
+    await expect(page.locator('#consultingScheduleManual')).not.toHaveAttribute('open', '');
+    await expect(page.getByRole('button', { name: '날짜와 시간 선택', exact: true })).toBeHidden();
+    for (const width of [1280, 375, 320]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        await cards.first().scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath(`two-schedule-cards-${width}.png`) });
+    }
+    await page.getByText('직접 다른 시간 선택', { exact: true }).click();
+    await page.getByRole('button', { name: '날짜와 시간 선택', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await expect(dialog.getByLabel('날짜', { exact: true }).locator('option')).toHaveCount(2);
+    await expect(dialog.getByLabel('가능한 시간').locator('option')).toHaveCount(3);
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[0].slotId);
+    await expect(dialog.getByLabel('담당자', { exact: true })).toHaveValue('CMO');
+    await dialog.getByLabel('날짜', { exact: true }).selectOption('2026-12-08');
+    await expect(dialog.getByLabel('가능한 시간').locator('option').nth(1)).toHaveAttribute('value', candidates[6].slotId);
+    expect(state.calls.filter(call => /confirm|reschedule/.test(call.type))).toHaveLength(0);
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+    state.scheduleCandidates.recommendations = [{ ...a, strategies: ['operator_first', 'earliest_first'] }];
+    await page.getByRole('button', { name: '후보 조회', exact: true }).click();
+    await expect(cards).toHaveCount(1); await expect(cards.first()).toContainText('두 기준 공통 추천');
+});
+
+test('전체 시간표는 두 전체 배치안을 전환해도 학생 행을 늘리거나 추가 조회하지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    const base = { caseId, studentName: '합*생', availabilityRevision: 2, sessionRevision: null, changeKind: null, counselorId: 'CMO', teamRole: 'CMO', slotId: 'WST_20261208_1000', startAt: '2026-12-08T01:00:00Z' };
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 },
+        placements: [base], unassigned: [], confirmed: [], plans: [{ policy: 'operator_first', placements: [base], unassigned: [] }, { policy: 'earliest_first', placements: [{ ...base, startAt: '2026-12-07T01:00:00Z', counselorId: 'CEO', teamRole: 'CEO' }], unassigned: [] }], hasOpenTimes: true };
+    await enterConsulting(page); await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    const body = page.locator('#consultingScheduleBoardBody'); await expect(body).toContainText('CMO');
+    const calls = state.calls.filter(call => call.type === 'admin_get_written_schedule_board').length;
+    await page.getByRole('button', { name: '빠른 일정 우선', exact: true }).click();
+    await expect(body).toContainText('CEO'); await expect(body).not.toContainText('CMO');
+    await expect(body.getByRole('button', { name: '다른 시간 보기' })).toHaveCount(1);
+    expect(state.calls.filter(call => call.type === 'admin_get_written_schedule_board')).toHaveLength(calls);
+});
+
+test('날짜 조회 중 확정이 잠기고 닫은 뒤 늦은 응답은 다른 학생 화면을 복원하지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].case.workflowState = 'SCHEDULING';
+    const candidates = ['07', '08'].map(day => ({ slotId: `WST_202612${day}_1000`, startAt: `2026-12-${day}T01:00:00Z`, counselorId: 'CMO', teamRole: 'CMO' }));
+    state.scheduleCandidates = { caseId, candidates, recommendations: [candidates[0]], availabilityRevision: 2, session: null };
+    await enterConsulting(page); await openStudent(page, 1); await page.locator('[data-student-tab="written"]').click();
+    await page.getByText('직접 다른 시간 선택', { exact: true }).click(); await page.getByRole('button', { name: '날짜와 시간 선택', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[0].slotId);
+    state.deferScheduleDate = '2026-12-08'; await dialog.getByLabel('날짜', { exact: true }).selectOption(state.deferScheduleDate);
+    await expect.poll(() => Boolean(state.releaseScheduleDate)).toBe(true);
+    await expect(dialog.getByRole('button', { name: '이 시간 확정', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click(); state.releaseScheduleDate();
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click(); await openStudent(page, 0);
+    await expect(dialog).not.toBeVisible();
+    expect(state.calls.filter(call => call.type === 'admin_confirm_written_assignment')).toHaveLength(0);
 });
