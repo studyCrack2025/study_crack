@@ -114,6 +114,8 @@ async function prepare(page, hash = '', configure = () => {}) {
                 nextCursor: first && (state.emptyFirst || (state.splitPages && items.length > 1)) ? 'synthetic_cursor' : null,
                 exportLimit: state.exportLimit || null
             };
+        } else if (request.type === 'admin_list_written_unread') {
+            data = { items: state.writtenAlerts || [], hasMore: false };
         } else if (request.type === 'admin_get_consulting_export_columns') {
             data = { columns: [
                 { id: 'application_id', label: '신청 ID', group: '접수·진행' },
@@ -966,4 +968,15 @@ test('조사서 승인과 성적 확인은 분리되며 보완 메모가 남으�
     expect(state.calls.some(call => call.type === 'admin_review_v2_scores')).toBe(false);
     await page.setViewportSize({ width: 320, height: 720 });
     expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+});
+
+
+test('새 상담 메시지는 목록에서 바로 열고 학생 상세에서도 대화 기록으로 연결한다', async ({ page }) => {
+    const state = await prepare(page); state.writtenAlerts = [{ caseId }]; state.students[1].case.hasWrittenSession = true;
+    await enterConsulting(page);
+    await expect(page.getByRole('region', { name: '새 상담 메시지' })).toContainText('확인할 상담 메시지');
+    await expect(page.getByRole('region', { name: '새 상담 메시지' }).getByRole('link')).toHaveAttribute('href', '/2027-jungsi-consulting/written-session?caseId=' + caseId);
+    await page.locator('#consultingDirectoryBody tr').nth(1).getByRole('button', { name: '학생 상세' }).click();
+    await page.getByRole('button', { name: '서면상담', exact: true }).click();
+    await expect(page.getByRole('link', { name: '서면상담 대화 열기 →' })).toHaveAttribute('href', '/2027-jungsi-consulting/written-session?caseId=' + caseId);
 });

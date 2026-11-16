@@ -153,12 +153,15 @@ function renderConsultingScheduleBoard(data) {
         actions.className = 'consulting-actions';
         if (!row.confirmed) actions.append(consultingScheduleButton(consultingCandidateLabel(row), button => saveConsultingScheduleCandidate(row, row, button, 'board'), true));
         actions.append(consultingScheduleButton(row.confirmed ? '일정 변경' : '다른 시간 보기', () => openConsultingScheduleChoice(row.caseId)));
-        if (row.confirmed && row.counselorId === localStorage.getItem('userId')) actions.append(consultingScheduleButton('상담 열기',
-            () => window.location.assign(`/2027-jungsi-consulting/written-session?caseId=${encodeURIComponent(row.caseId)}`)));
+        if (row.confirmed && (row.counselorId === localStorage.getItem('userId') || localStorage.getItem('userRole') === 'admin')) {
+            const chat = consultingScheduleButton(row.counselorId === localStorage.getItem('userId') ? '상담 열기' : '대화 기록 보기',
+                () => window.location.assign(`/2027-jungsi-consulting/written-session?caseId=${encodeURIComponent(row.caseId)}`));
+            chat.dataset.consultingReadLink = 'true'; actions.append(chat);
+        }
         const label = row.confirmed
             ? row.proposed ? `확정 · 변경 제안 ${row.proposedOptions?.length || 1}개 응답 대기` : row.changeKind === 'student' ? '확정 · 학생 변경 요청' : '확정'
             : row.changeKind === 'student' ? '변경 추천' : '추천';
-        for (const button of actions.querySelectorAll('button')) button.disabled = !consultingScheduleCanManage;
+        for (const button of actions.querySelectorAll('button')) button.disabled = button.dataset.consultingReadLink !== 'true' && !consultingScheduleCanManage;
         fragment.append(consultingScheduleRow([consultingWrittenTime(row.startAt), studentLabel(row), consultingCounselorLabel(row), label, actions]));
     }
     if (data.unassigned.length) fragment.append(consultingScheduleGroup('배정 대기', 5));

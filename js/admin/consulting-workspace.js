@@ -11,6 +11,7 @@ let consultingExportPage = [];
 let consultingExportColumns = [];
 let consultingExportRequest = null;
 let consultingExportBusy = false;
+let consultingWrittenUnreadTimer = null;
 const consultingExportStudents = new Map();
 const consultingExportColumnIds = new Set();
 const consultingPhaseTitles = { intake: '접수·입금', onboarding: '가입·조사서', written: '서면상담', report: '분석·보고서', final: '파이널 콜', completed: '완료' };
@@ -20,6 +21,9 @@ function consultingWorkspaceStatus(id, message, state = '') {
     if (node) { node.textContent = message; node.dataset.state = state; }
 }
 function clearConsultingWorkspaceStudent() {
+    clearTimeout(consultingWrittenUnreadTimer);
+    const chatLink = document.getElementById('consultingWrittenChatLink');
+    if (chatLink) { chatLink.hidden = true; chatLink.removeAttribute('href'); }
     consultingWorkspaceStudent = null;
     consultingWorkspaceReference = null;
     consultingWorkspaceLoadedTabs.clear();
@@ -43,6 +47,8 @@ function resetConsultingWorkspace() {
     resetConsultingExport();
     clearConsultingWorkspaceStudent();
     document.getElementById('consultingDirectoryBody')?.replaceChildren();
+    document.getElementById('consultingWrittenUnread')?.replaceChildren();
+    if (document.getElementById('consultingWrittenUnread')) document.getElementById('consultingWrittenUnread').hidden = true;
     consultingWorkspaceStatus('consultingDirectoryStatus', '');
     document.getElementById('consultingAdminTools').open = false;
     document.getElementById('consultingDirectoryPanel').setAttribute('aria-busy', 'false');
@@ -124,6 +130,7 @@ function renderConsultingDirectory(items, empty = '이 페이지에 해당 단�
     }
 }
 async function loadConsultingDirectory() {
+    clearTimeout(consultingWrittenUnreadTimer);
     const generation = ++consultingWorkspaceGeneration, phase = consultingWorkspacePhase;
     const panel = document.getElementById('consultingDirectoryPanel'); panel.setAttribute('aria-busy', 'true');
     document.getElementById('consultingDirectoryPrevious').disabled = true;
@@ -139,6 +146,7 @@ async function loadConsultingDirectory() {
         if (!consultingExportLimit) resetConsultingExport();
         consultingDirectoryNextCursor = data.nextCursor || null;
         renderConsultingDirectory(data.items);
+        void loadConsultingWrittenUnread(generation, data.items);
         document.getElementById('consultingDirectoryPage').textContent = `${consultingDirectoryPreviousCursors.length + 1}페이지 · ${data.items.length}명`;
         consultingWorkspaceStatus('consultingDirectoryStatus', `${phase === 'all' ? '전체 신청' : phase === 'attention' ? '보류·거절·초대 취소' : consultingPhaseTitles[phase]} · 현재 페이지 ${data.items.length}명${data.unavailableCount ? ' · 연결 정보 확인이 필요한 신청이 있습니다.' : ''}${consultingDirectoryNextCursor ? ' · 다음 페이지가 있습니다.' : ''}`, data.unavailableCount ? 'error' : 'success');
     } catch (_error) {
@@ -149,6 +157,25 @@ async function loadConsultingDirectory() {
     } finally {
         if (generation === consultingWorkspaceGeneration) { panel.setAttribute('aria-busy', 'false'); document.getElementById('consultingDirectoryPrevious').disabled = !consultingDirectoryPreviousCursors.length; document.getElementById('consultingDirectoryNext').disabled = !consultingDirectoryNextCursor; }
     }
+}
+async function loadConsultingWrittenUnread(generation, students) {
+    const panel = document.getElementById('consultingWrittenUnread');
+    if (!panel || generation !== consultingWorkspaceGeneration || document.hidden || document.getElementById('consultingDirectoryPanel').hidden || !document.getElementById('section-consulting')?.offsetParent) return;
+    try {
+        const data = await requestConsultingAdmin('admin_list_written_unread', {});
+        if (generation !== consultingWorkspaceGeneration) return;
+        if (!Array.isArray(data.items) || data.items.length > 25 || data.items.some(row => !/^CASE_[0-9a-f-]{36}$/i.test(row?.caseId || ''))) return;
+        panel.replaceChildren(); panel.hidden = !data.items.length;
+        if (data.items.length) {
+            const title = document.createElement('strong'); title.textContent = `확인할 상담 메시지 · ${data.items.length}${data.hasMore ? '+' : ''}건`; panel.append(title);
+            data.items.forEach((row, index) => {
+                const link = document.createElement('a'), student = students.find(item => item.caseId === row.caseId);
+                link.textContent = `${student?.studentNameMask || `상담 ${index + 1}`} · 대화 보기`;
+                link.href = `/2027-jungsi-consulting/written-session?caseId=${encodeURIComponent(row.caseId)}`; panel.append(link);
+            });
+        }
+        consultingWrittenUnreadTimer = setTimeout(() => loadConsultingWrittenUnread(generation, students), 30000);
+    } catch (_error) { if (generation === consultingWorkspaceGeneration) panel.hidden = true; }
 }
 function nextConsultingDirectoryPage() {
     if (!consultingDirectoryNextCursor) return;
@@ -369,6 +396,10 @@ async function loadConsultingWorkspaceStudent(route) {
         const next = document.getElementById('consultingStudentNextAction'); next.textContent = `다음 할 일 · ${data.student.nextAction}`;
         document.getElementById('consultingStudentIdentifiers').textContent = `신청 ${data.application.applicationId}${data.case ? `\n케이스 ${data.case.caseId}` : ''}\n신청 수정 버전 ${data.application.revision}`;
         for (const id of ['consultingScheduleCaseId', 'consultingReportCaseId', 'consultingServiceCaseId']) document.getElementById(id).value = data.case?.caseId || '';
+        const chatLink = document.getElementById('consultingWrittenChatLink');
+        if (chatLink && data.case && (data.case.hasWrittenSession || ['WRITTEN_SESSION_BOOKED', 'WRITTEN_SESSION_COMPLETED', 'REPORT_DRAFT', 'REPORT_REVIEW', 'REPORT_PUBLISHED', 'FINAL_CALL_BOOKED', 'COMPLETED'].includes(data.case.workflowState))) {
+            chatLink.href = `/2027-jungsi-consulting/written-session?caseId=${encodeURIComponent(data.case.caseId)}`; chatLink.hidden = false;
+        }
         renderConsultingApplication(data.application.applicationId, data);
         await showConsultingStudentTab(route.tab);
         if (generation !== consultingWorkspaceGeneration) return;

@@ -329,3 +329,7 @@
 .consulting-supplement-comparison { margin-top:12px; padding:12px; border:1px solid #bfd8d2; border-radius:9px; background:#f3faf7; font-weight:400; }
 .consulting-supplement-comparison summary { color:#175348; font-size:.85rem; font-weight:700; cursor:pointer; }
 .consulting-supplement-comparison > p { margin:10px 0 0; font-size:.85rem; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.consulting-written-unread { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:14px 0; padding:16px; border:1px solid var(--line,#d8e2f1); border-radius:10px; background:var(--surface,#fff); }
+.consulting-written-unread[hidden] { display:none; }
+.consulting-written-unread > strong { width:100%; color:var(--primary,#344e8f); font-size:.9rem; }
+.consulting-written-unread > a { display:inline-flex; align-items:center; min-height:40px; padding:8px 12px; border:1px solid var(--line,#d8e2f1); border-radius:8px; color:var(--primary,#344e8f); font-size:.85rem; }

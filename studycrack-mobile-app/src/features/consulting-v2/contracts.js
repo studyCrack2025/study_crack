@@ -32,6 +32,7 @@ export function parseHomeResponse(body) {
     ...(value.serviceHold === true ? { serviceHold: true } : {}),
     workflowState: value.workflowState,
     ...(value.writtenChangePending === true ? { writtenChangePending: true } : {}),
+    ...(value.writtenUnread === true ? { writtenUnread: true } : {}),
     nextAction: value.nextAction,
     nextDueAt: value.nextDueAt,
     progress: Object.freeze(progress),

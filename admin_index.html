@@ -461,6 +461,7 @@
             </details>
                 <nav class="consulting-phases" aria-label="컨설팅 진행 단계"><button type="button" class="consulting-phase" data-phase="all" onclick="selectConsultingPhase('all')">전체</button><button type="button" class="consulting-phase" data-phase="intake" onclick="selectConsultingPhase('intake')">01 접수·입금</button><button type="button" class="consulting-phase" data-phase="onboarding" onclick="selectConsultingPhase('onboarding')">02 가입·조사서</button><button type="button" class="consulting-phase" data-phase="written" onclick="selectConsultingPhase('written')">03 서면상담</button><button type="button" class="consulting-phase" data-phase="report" onclick="selectConsultingPhase('report')">04 분석·보고서</button><button type="button" class="consulting-phase" data-phase="final" onclick="selectConsultingPhase('final')">05 파이널 콜</button><button type="button" class="consulting-phase" data-phase="completed" onclick="selectConsultingPhase('completed')">완료</button><button type="button" class="consulting-phase" data-phase="attention" onclick="selectConsultingPhase('attention')">보류·거절·초대 취소</button></nav>
                 <div id="consultingDirectoryStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <section id="consultingWrittenUnread" class="consulting-written-unread" aria-label="새 상담 메시지" hidden></section>
                 <div id="consultingDirectoryExportTools" class="consulting-export-tools" hidden>
                     <div class="consulting-export-actions"><strong id="consultingExportCount" aria-live="polite"></strong><button id="consultingExportPageSelect" type="button" class="consulting-btn consulting-btn-secondary" onclick="toggleConsultingExportPage()">현재 페이지 선택</button><button id="consultingExportClear" type="button" class="consulting-btn consulting-btn-secondary" onclick="clearConsultingExportStudents()">선택 해제</button></div>
                     <button id="consultingExportOpen" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingExportDialog()">CSV 내보내기</button>
@@ -695,6 +696,7 @@
                 </div>
             </div>
             <div id="consultingScheduleStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <p><a id="consultingWrittenChatLink" class="consulting-btn consulting-btn-primary" hidden>서면상담 대화 열기 →</a></p>
             <div class="consulting-schedule-tools">
                 <section>
                     <h3>선택 학생의 일정 후보</h3>

@@ -14,22 +14,26 @@ test('배정된 관리자 계정은 학생 API 없이 운영자 서면상담 화
       window.__adminWritten={calls:[],messages:[]};
       window.apiFetch=async(_url,options)=>{
         const request=JSON.parse(options.body);const s=window.__adminWritten;s.calls.push(request);
-        const session={caseId:'${caseId}',sessionId:'SESSION_synthetic',status:'open',entryAllowed:true,writable:true,
+        const session={caseId:'${caseId}',sessionId:'SESSION_synthetic',status:'open',entryAllowed:true,writable:true,canManage:true,
           startAt:'2099-12-07T01:00:00.000Z',endAt:'2099-12-07T01:30:00.000Z'};
         let data={};
         if(request.type==='counselor_list_written_sessions')data={sessions:[session]};
         else if(request.type==='counselor_get_written_session')data={session,note:{body:'상담 정리',revision:0}};
+        else if(request.type==='counselor_get_written_preparation')data={preparation:null};
+        else if(request.type==='counselor_mark_written_read')data={marked:true};
         else if(request.type==='counselor_list_written_messages')data={messages:s.messages,nextCursor:null,hasMore:false};
         else if(request.type==='counselor_send_written_message'){
-          const message={messageId:'01K00000000000000000000001',senderRole:'counselor',body:request.data.body,createdAt:'2099-12-07T01:05:00.000Z'};
+          const message={messageId:'01K00000000000000000000001',senderRole:'counselor',body:request.data.body,clientMessageId:request.data.clientMessageId,createdAt:'2099-12-07T01:05:00.000Z'};
           s.messages.push(message);data={message,duplicate:false};
         }
         return new Response(JSON.stringify({success:true,data}),{status:200,headers:{'Content-Type':'application/json'}});
       };
     ` }));
     await page.goto(`/2027-jungsi-consulting/written-session?caseId=${caseId}`);
+    await page.getByRole('button', { name: '메모', exact: true }).click();
     await expect(page.getByRole('heading', { name: '상담사 전용' })).toBeVisible();
     await expect(page.getByLabel('내부 메모')).toHaveValue('상담 정리');
+    await page.getByRole('button', { name: '대화', exact: true }).click();
     await page.locator('.consulting-written-chat footer textarea').fill('운영팀 상담 답변');
     await page.getByRole('button', { name: '전송', exact: true }).click();
     await expect(page.locator('.consulting-written-messages')).toContainText('운영팀 상담 답변');

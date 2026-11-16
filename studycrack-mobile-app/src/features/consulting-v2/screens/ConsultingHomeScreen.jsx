@@ -48,6 +48,7 @@ export function ConsultingHomeScreen({ binding }) {
         <button className="consulting-v2-secondary" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.finalCall)}>통화 완료 확인</button>
       </div> : null}
     </section>
+    {resource.data.writtenUnread && !held ? <section className="consulting-v2-home-help" aria-label="새 상담 메시지"><a href={CONSULTING_ROUTES.writtenSession} onClick={event => { event.preventDefault(); navigateConsulting(CONSULTING_ROUTES.writtenSession); }}><span><strong>새 상담 메시지가 도착했어요</strong><small>서면상담 대화에서 확인해주세요.</small></span><span aria-hidden="true">→</span></a></section> : null}
     {alerts.length ? <section className="consulting-v2-alerts" aria-label="알림">{alerts.map(alert => <p key={alert}>{alert}</p>)}</section> : null}
     {!held && workflowState === 'WRITTEN_SESSION_BOOKED' && <section className="consulting-v2-home-help" aria-label="서면상담 일정">
       <a href={CONSULTING_ROUTES.schedule} onClick={event => { event.preventDefault(); navigateConsulting(CONSULTING_ROUTES.schedule); }}><span><strong>{resource.data.writtenChangePending ? '새 상담 시간 제안이 도착했어요' : '상담 일정 확인·변경'}</strong><small>{resource.data.writtenChangePending ? '제안된 시간을 확인하고 답해주세요.' : '확정 시간을 확인하고 필요하면 일정을 변경할 수 있어요.'}</small></span><span aria-hidden="true">→</span></a>
