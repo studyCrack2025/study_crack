@@ -37,6 +37,7 @@ async function prepare(page) {
     await page.route('**/synthetic-reference-api', async route => {
         const request = route.request().postDataJSON(); state.calls.push(request); let data;
         if (request.type === 'admin_list_consulting_students') data = { items: students, nextCursor: null };
+        else if (request.type === 'admin_list_written_unread') data = { items: [], hasMore: false };
         else if (request.type === 'admin_get_notifications') data = { notifications: [], unreadCount: 0 };
         else if (request.type === 'admin_list_v2_material_review') data = { items: [], nextCursor: null };
         else if (request.type === 'admin_get_consulting_student') {
