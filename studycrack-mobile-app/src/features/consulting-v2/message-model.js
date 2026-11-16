@@ -8,7 +8,7 @@ export function mergeWrittenMessages(current = [], incoming = []) {
 }
 
 export function nextWrittenPollDelay({ changed, unchangedCount = 0 }) {
-  if (changed) return 3000;
+  if (changed) return 2000;
   return unchangedCount >= 2 ? 10000 : 5000;
 }
 

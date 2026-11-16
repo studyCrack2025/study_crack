@@ -1,4 +1,4 @@
-function getBrowser() {
+export function getBrowser() {
   return typeof window === 'undefined' ? null : window;
 }
 

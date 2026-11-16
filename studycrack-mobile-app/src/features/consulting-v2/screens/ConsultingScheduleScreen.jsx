@@ -1,41 +1,13 @@
 import React from 'react';
 import { getWrittenAvailability, getWrittenBooking, listWrittenSlots, requestWrittenReschedule, respondWrittenReschedule, submitWrittenAvailability } from '../schedule-api.js';
-import { formatWrittenSession, groupWrittenSlots, validateWrittenSelection } from '../schedule-model.js';
+import { formatWrittenSession, validateWrittenSelection } from '../schedule-model.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
+import { WrittenAvailabilityPicker, WrittenAvailabilitySaved } from './WrittenAvailabilityPicker.jsx';
 
 const dateLabel = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'short' });
 const kstDate = date => dateLabel.format(new Date(`${date}T00:00:00+09:00`));
 const proposalKey = offer => `${offer.slotId}#${offer.counselorId}`;
 const proposalOffers = change => change?.kind === 'admin' ? change.offers || (change.offer ? [change.offer] : []) : [];
-
-function ScheduleTimePicker({ slots, selected, setSelected, saving }) {
-  const toggle = slotId => setSelected(current => {
-    if (!current[slotId]) return { ...current, [slotId]: 2 };
-    const next = { ...current };
-    delete next[slotId];
-    return next;
-  });
-  return <div className="consulting-schedule-days">{groupWrittenSlots(slots).map(group => {
-    const all = group.slots.every(slot => selected[slot.slotId]);
-    return <section key={group.date}>
-      <h2>{kstDate(group.date)}</h2>
-      <label><input type="checkbox" checked={all} disabled={saving} onChange={() => setSelected(current => {
-        const next = { ...current };
-        for (const slot of group.slots) {
-          if (all) delete next[slot.slotId];
-          else next[slot.slotId] = next[slot.slotId] || 2;
-        }
-        return next;
-      })} /> 이 날의 모든 시간 선택</label>
-      <div>{group.slots.map(slot => {
-        const active = Boolean(selected[slot.slotId]);
-        return <article className={active ? 'is-selected' : ''} key={slot.slotId}>
-          <button type="button" disabled={saving} aria-pressed={active} onClick={() => toggle(slot.slotId)}>{slot.localTime}</button>
-        </article>;
-      })}</div>
-    </section>;
-  })}</div>;
-}
 
 function ConfirmedWrittenTime({ value }) {
   return <div className="consulting-schedule-confirmed"><strong>{value.date}</strong><span>{value.time}</span><small>한국시간 · 30분</small></div>;
@@ -46,6 +18,7 @@ export function ConsultingScheduleScreen({ binding }) {
   const [selected, setSelected] = React.useState({});
   const [message, setMessage] = React.useState('');
   const [editing, setEditing] = React.useState(false);
+  const [choosing, setChoosing] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [chosenProposal, setChosenProposal] = React.useState('');
 
@@ -61,13 +34,14 @@ export function ConsultingScheduleScreen({ binding }) {
     const proposals = proposalOffers(change);
     setChosenProposal(proposals.length === 1 ? proposalKey(proposals[0]) : '');
     const prior = booking.data.session?.status === 'booked' ? change?.selectedSlots || [] : availability.data.selectedSlots || [];
+    const byId = new Map(options.map(slot => [slot.slotId, slot]));
     const slotIds = new Set(options.map(slot => slot.slotId));
     const valid = prior.filter(slot => slotIds.has(slot.slotId));
     setSelected(Object.fromEntries(valid.map(slot => [slot.slotId, slot.priority || 2])));
     setMessage(feedback);
     setResource({ status: 'ready', slots: options, bookingWindow: slots.data.window, revision: availability.data.revision || 0,
       booking: booking.data.session || null, change, changeRevision: booking.data.changeRevision || 0, canRequestChange: booking.data.canRequestChange === true,
-      editable: availability.data.editable !== false, outsideWindowCount: prior.length - valid.length });
+      editable: availability.data.editable !== false, submittedSlots: prior.map(slot => ({ ...byId.get(slot.slotId), ...slot })), outsideWindowCount: prior.length - valid.length });
   }, [binding]);
   React.useEffect(() => { load(); }, [load]);
 
@@ -90,8 +64,8 @@ export function ConsultingScheduleScreen({ binding }) {
         setResource(value => ({ ...value, change: result.data.change, changeRevision: result.data.changeRevision, outsideWindowCount: 0 }));
         setMessage('변경 요청을 보냈어요. 운영팀이 확정할 때까지 기존 예약이 유지됩니다.');
       } else {
-        setResource(value => ({ ...value, revision: result.data.revision, outsideWindowCount: 0 }));
-        setMessage('가능 시간을 저장했습니다. 운영자가 일정을 확정하면 알려드릴게요.');
+        setResource(value => ({ ...value, revision: result.data.revision, submittedSlots: (result.data.selectedSlots || validation.selectedSlots).map(slot => ({ ...value.slots.find(option => option.slotId === slot.slotId), ...slot })), outsideWindowCount: 0 }));
+        setChoosing(false);
       }
     } finally { setSaving(false); }
   };
@@ -121,12 +95,15 @@ export function ConsultingScheduleScreen({ binding }) {
     </section>
   </main>;
 
-  const showPicker = !confirmed || (editing && resource.canRequestChange);
+  const showSaved = !confirmed && resource.revision > 0 && !choosing;
+  const showPicker = (!confirmed && !showSaved) || (editing && resource.canRequestChange);
   const count = Object.keys(selected).length;
   const { startDate, endDate } = resource.bookingWindow || {};
   const period = startDate && endDate ? `${kstDate(startDate)} ~ ${kstDate(endDate)}` : '';
   return <main className="consulting-schedule">
     <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button>{showPicker && <span>{count}개 선택</span>}</header>
+    {showSaved && <WrittenAvailabilitySaved slots={resource.submittedSlots} outsideWindowCount={resource.outsideWindowCount}
+      onEdit={() => { setChoosing(true); setMessage(''); }} onHome={() => navigateConsulting(CONSULTING_ROUTES.home)} />}
     {confirmed && <section className="consulting-schedule-card">
       <p className="consulting-v2-kicker">서면상담 일정</p><h1>상담 일정이 확정됐습니다</h1><ConfirmedWrittenTime value={confirmed} />
       {proposed && !editing && <>
@@ -156,14 +133,13 @@ export function ConsultingScheduleScreen({ binding }) {
       <h1>{editing ? '다시 상담할 수 있는 시간을 골라주세요' : '가능한 시간을 선택해주세요'}</h1>
       {editing && proposed && <p className="consulting-v2-status">편하신 시간을 모두 알려주세요. 운영팀에서 확인해 새 일정을 확정하겠습니다.</p>}
       {period && <p className="consulting-v2-status">{period} · 한국시간</p>}
-      <p className="consulting-v2-status">30분 단위로 참석할 수 있는 시간을 모두 골라주세요. 선택한 시간 중 하나로 확정합니다.</p>
-      <p className="consulting-v2-status">가능한 시간을 먼저 제출해주세요. 운영팀이 담당자와 일정을 확인한 뒤 확정해드립니다.</p>
+      <p className="consulting-schedule-intro">날짜별로 가능한 시간을 모두 골라주세요.<br />선택한 시간 중 하나로 상담을 확정해드려요.</p>
       {resource.outsideWindowCount > 0 && <p className="consulting-survey-message" role="status">이전에 고른 시간 중 {resource.outsideWindowCount}개가 현재는 선택할 수 없어요.</p>}
-      {resource.slots.length ? <ScheduleTimePicker slots={resource.slots} selected={selected} setSelected={setSelected} saving={saving} />
+      {resource.slots.length ? <WrittenAvailabilityPicker slots={resource.slots} window={resource.bookingWindow} selected={selected} setSelected={setSelected} saving={saving} />
         : <p className="consulting-v2-status">지금 선택할 수 있는 시간이 없어요. 선택 기간과 예약 현황을 확인하거나 운영팀에 문의해주세요.</p>}
       {message && <p className="consulting-survey-message" role="status">{message}</p>}
-      <footer><button className="consulting-v2-primary" type="button" disabled={saving || !resource.slots.length} onClick={save}>{saving ? '저장 중…' : editing ? '변경 요청 보내기' : '가능 시간 저장'}</button>
-        {editing && <button type="button" className="consulting-v2-secondary" disabled={saving} onClick={() => setEditing(false)}>닫기</button>}</footer>
+      <footer className="consulting-schedule-save-bar"><span>총 {count}개 시간 선택</span><button className="consulting-v2-primary" type="button" disabled={saving || !resource.slots.length} onClick={save}>{saving ? '저장 중…' : editing ? '변경 요청 보내기' : '가능 시간 저장'}</button>
+        {(editing || choosing) && <button type="button" className="consulting-v2-secondary" disabled={saving} onClick={() => { if (choosing) load(); setEditing(false); setChoosing(false); }}>닫기</button>}</footer>
     </section>}
   </main>;
 }

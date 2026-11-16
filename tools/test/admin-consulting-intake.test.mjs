@@ -60,6 +60,7 @@ function setup() {
             appendChild(child) { this.children.push(child); },
             append(...children) { this.children.push(...children); },
             replaceChildren(...children) { this.ownText = ''; this.children = children; },
+            removeAttribute(name) { delete this[name]; },
             setAttribute(name, value) { this[name] = value; },
             focus() {}, scrollIntoView() {}, showModal() { this.open = true; }, close() { this.open = false; },
             addEventListener(type, handler) { this.listeners[type] = handler; },
@@ -73,7 +74,7 @@ function setup() {
         document: { getElementById: get, createElement: element, querySelectorAll: () => [] },
         CONFIG: { api: { consulting: '/synthetic/consulting' } },
         ADMIN_CONSULTING_PHASES: ['all', 'intake', 'onboarding'],
-        Intl, Date, console,
+        Intl, Date, console, setTimeout, clearTimeout,
         confirm: () => true, prompt: () => '',
         apiFetch: async (url, options) => {
             const request = JSON.parse(options.body);

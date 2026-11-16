@@ -6,7 +6,7 @@ import { actionPathForState } from '../src/features/consulting-v2/progress-model
 const a = { messageId: '01K00000000000000000000000', senderRole: 'student', createdAt: '2026-10-08T01:00:00.000Z', body: '<script>alert(1)</script>' };
 const b = { messageId: '01K00000000000000000000001', senderRole: 'counselor', createdAt: '2026-10-08T01:00:01.000Z', body: '답변' };
 assert.deepEqual(mergeWrittenMessages([b], [a, b]).map(item => item.messageId), [a.messageId, b.messageId]);
-assert.equal(nextWrittenPollDelay({ changed: true, unchangedCount: 4 }), 3000);
+assert.equal(nextWrittenPollDelay({ changed: true, unchangedCount: 4 }), 2000);
 assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 1 }), 5000);
 assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 2 }), 10000);
 assert.match(createClientMessageId(), /^[0-9a-f-]{36}$/i);
@@ -14,7 +14,13 @@ assert.equal(actionPathForState('WRITTEN_SESSION_BOOKED'), '/2027-jungsi-consult
 
 const screen = await readFile(new URL('../src/features/consulting-v2/screens/ConsultingWrittenSessionScreen.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(screen, /dangerouslySetInnerHTML|innerHTML/);
-assert.match(screen, /visibilitychange/);
-assert.match(screen, /pendingSend/);
+const hook = await readFile(new URL('../src/features/consulting-v2/use-written-chat.js', import.meta.url), 'utf8');
+assert.match(hook, /visibilitychange/);
+assert.match(hook, /pendingSend/);
+assert.match(hook, /AbortController/);
+assert.match(hook, /markWrittenRead/);
+assert.match(screen, /WrittenChatPhoto/);
+assert.match(screen, /사진 선택/);
+assert.match(screen, /사진의 수험번호/);
 assert.match(screen, /상담사 전용/);
 console.log('consulting v2 written session contracts passed');

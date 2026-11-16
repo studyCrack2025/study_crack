@@ -9,13 +9,13 @@ const slots = Array.from({ length: 14 }, (_, day) => {
         return { slotId: `WST_${localDate.replaceAll('-', '')}_${localTime.replace(':', '')}`, localDate, localTime, startAt, endAt: new Date(Date.parse(startAt) + 1800000).toISOString(), timezone: 'Asia/Seoul' };
     });
 }).flat();
-async function prepare(page, { empty = false, stale = false } = {}) {
+async function prepare(page, { empty = false, stale = false, closedDay = false, failSave = false } = {}) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.route('https://www.googletagmanager.com/**', route => route.abort());
     await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.CONFIG={api:{consulting:'/api/consulting'}};` }));
     await page.route('**/js/shared/api.js*', route => route.fulfill({ contentType: 'application/javascript', body: `
       localStorage.setItem('userRole','student');window.hasClientSession=()=>true;
-      window.__availability={slots:${JSON.stringify(empty ? [] : slots)},revision:0,selected:[],saves:[],calls:[],stale:${stale}};
+      window.__availability={slots:${JSON.stringify(empty ? [] : closedDay ? slots.filter(slot => slot.localDate !== '2026-12-08') : slots)},revision:0,selected:[],saves:[],calls:[],stale:${stale},failSave:${failSave}};
       const saved=JSON.parse(sessionStorage.getItem('availability-test-record')||'null');
       if(saved)Object.assign(window.__availability,saved);
       window.apiFetch=async(_url,options)=>{
@@ -25,28 +25,40 @@ async function prepare(page, { empty = false, stale = false } = {}) {
         else if(r.type==='student_get_v2_written_booking')data={caseId:'${caseId}',session:null,change:null,changeRevision:0};
         else if(r.type==='student_submit_v2_written_availability'){
           s.saves.push(r.data);
+          if(s.failSave){s.failSave=false;return new Response(JSON.stringify({success:false,code:'INTERNAL_SERVER_ERROR',error:'저장하지 못했습니다. 다시 시도해주세요.'}),{status:500});}
           if(s.stale){s.stale=false;s.slots=s.slots.filter(x=>x.slotId!==r.data.selectedSlots[0].slotId);return new Response(JSON.stringify({success:false,code:'INVALID_AVAILABILITY_SLOT',error:'선택한 시간이 먼저 마감되었습니다.'}),{status:400});}
-          s.revision++;s.selected=r.data.selectedSlots;sessionStorage.setItem('availability-test-record',JSON.stringify({revision:s.revision,selected:s.selected}));data={caseId:'${caseId}',workflowState:'SCHEDULING',revision:s.revision,selectedSlots:s.selected};
-        } else throw new Error('Unexpected availability request');
+          s.revision++;s.selected=r.data.selectedSlots.map(slot=>({...s.slots.find(option=>option.slotId===slot.slotId),...slot}));sessionStorage.setItem('availability-test-record',JSON.stringify({revision:s.revision,selected:s.selected}));data={caseId:'${caseId}',workflowState:'SCHEDULING',revision:s.revision,selectedSlots:s.selected};
+        } else if(r.type==='student_get_v2_consulting_home')data={available:false};
+        else throw new Error('Unexpected availability request');
         return new Response(JSON.stringify({success:true,data}),{status:200});
       };
     ` }));
 }
 
-for (const width of [375, 1440]) test(`학생은 담당자 설정 없이 전체 기간에서 시간을 골라 저장하고 다시 볼 수 있다 (${width}px)`, async ({ page }, testInfo) => {
+for (const width of [320, 375, 1440]) test(`학생은 날짜를 바꿔도 선택을 유지하고 저장 완료·수정·다시 열기를 확인한다 (${width}px)`, async ({ page }, testInfo) => {
     await prepare(page); await page.setViewportSize({ width, height: 900 });
     await page.goto('/2027-jungsi-consulting/schedule');
     await expect(page.getByRole('heading', { name: '가능한 시간을 선택해주세요' })).toBeVisible();
-    await expect(page.locator('.consulting-schedule-days section')).toHaveCount(14);
-    await expect(page.locator('.consulting-schedule-days article button')).toHaveCount(280);
-    await expect(page.getByText('가능한 시간을 먼저 제출해주세요. 운영팀이 담당자와 일정을 확인한 뒤 확정해드립니다.')).toBeVisible();
+    const dates = page.getByRole('group', { name: '상담 날짜', exact: true }).getByRole('button');
+    const times = page.locator('.consulting-schedule-time-grid button');
+    await expect(dates).toHaveCount(14);
+    await expect(times).toHaveCount(20);
+    expect((await page.locator('.consulting-schedule-picker').boundingBox()).height).toBeLessThan(700);
     expect(await page.evaluate(() => window.__availability.saves)).toHaveLength(0);
-    await page.locator('.consulting-schedule-days section').first().getByRole('checkbox').check();
+    await page.getByRole('checkbox', { name: '이 날의 모든 시간 선택' }).check();
     await expect(page.getByText('20개 선택', { exact: true })).toBeVisible();
-    const last = page.locator('.consulting-schedule-days section').last();
-    await last.getByRole('button', { name: '19:30', exact: true }).click();
+    await dates.last().click();
+    await page.getByRole('button', { name: '19:30', exact: true }).click();
+    await dates.first().click();
+    await expect(page.getByRole('button', { name: '10:00', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    for (const tag of ['small', 'strong', 'span']) await expect(dates.first().locator(tag)).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(dates.last().locator('span')).toHaveCSS('color', 'rgb(93, 109, 131)');
+    await page.screenshot({ path: testInfo.outputPath(`compact-availability-${width}.png`), fullPage: true });
     await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
-    await expect(page.getByText('가능 시간을 저장했습니다. 운영자가 일정을 확정하면 알려드릴게요.')).toBeVisible();
+    const saved = page.getByRole('heading', { name: '가능 시간을 전달했어요' });
+    await expect(saved).toBeVisible(); await expect(saved).toBeFocused();
+    await expect(page.locator('.consulting-schedule-picker')).toHaveCount(0);
+    await expect(page.getByText('2일 · 21개 시간', { exact: true })).toBeVisible();
     const writes = await page.evaluate(() => window.__availability.saves);
     expect(writes).toHaveLength(1); expect(writes[0].selectedSlots).toHaveLength(21);
     expect(writes[0].expectedAvailabilityRevision).toBe(0);
@@ -54,25 +66,54 @@ for (const width of [375, 1440]) test(`학생은 담당자 설정 없이 전체 
     expect(await page.evaluate(() => window.__availability.calls.some(type=>type.startsWith('admin_')))).toBe(false);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath(`student-availability-saved-${width}.png`) });
-    await page.locator('.consulting-schedule').evaluate(element => element.scrollIntoView());
-    await page.screenshot({ path: testInfo.outputPath(`student-availability-start-${width}.png`) });
     await page.reload();
+    await expect(saved).toBeVisible();
+    await page.getByText('선택한 시간 보기', { exact: true }).click();
+    await expect(page.locator('.consulting-schedule-saved-details')).toContainText('19:30');
+    await page.getByRole('button', { name: '선택 시간 수정', exact: true }).click();
     await expect(page.getByText('21개 선택', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: '10:00', exact: true }).click();
+    await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
+    await expect(page.getByText('2일 · 20개 시간', { exact: true })).toBeVisible();
+    const update = await page.evaluate(() => window.__availability.saves);
+    expect(update).toHaveLength(1); expect(update[0].expectedAvailabilityRevision).toBe(1);
+    await page.getByRole('button', { name: '선택 시간 수정', exact: true }).click();
+    await page.getByRole('button', { name: '10:30', exact: true }).click();
+    await page.getByRole('button', { name: '닫기', exact: true }).click();
+    await expect(page.getByText('2일 · 20개 시간', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => window.__availability.saves)).toHaveLength(1);
+    await page.getByRole('button', { name: '진행 현황으로 돌아가기', exact: true }).click();
+    await expect(page).toHaveURL(/\/2027-jungsi-consulting\/home$/);
 });
 
 test('마지막 자리가 마감되면 최신 시간표로 갱신해 다른 시간을 제출하고 중복 자동 저장하지 않는다', async ({ page }) => {
     await prepare(page, { stale: true });
     await page.goto('/2027-jungsi-consulting/schedule');
-    await page.locator('.consulting-schedule-days section').first().getByRole('button', { name: '10:00', exact: true }).click();
+    await page.getByRole('button', { name: '10:00', exact: true }).click();
     await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
     await expect(page.getByText('가능 시간이 바뀌었어요. 최신 시간표에서 다시 선택해주세요.')).toBeVisible();
-    await expect(page.locator('.consulting-schedule-days article button')).toHaveCount(279);
+    await expect(page.locator('.consulting-schedule-time-grid button')).toHaveCount(19);
     expect(await page.evaluate(() => window.__availability.saves)).toHaveLength(1);
-    await page.locator('.consulting-schedule-days section').first().getByRole('button', { name: '10:30', exact: true }).click();
+    await page.getByRole('button', { name: '10:30', exact: true }).click();
     await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
     await expect(page.getByText('서면상담 일정 · 가능 시간 제출 완료')).toBeVisible();
     const writes = await page.evaluate(() => window.__availability.saves);
     expect(writes).toHaveLength(2); expect(writes[1].selectedSlots).toEqual([{ slotId: 'WST_20261207_1030', priority: 2 }]);
+});
+
+test('마감된 날짜는 비활성으로 남고 저장 실패 시 선택을 유지한 뒤 재시도한다', async ({ page }) => {
+    await prepare(page, { closedDay: true, failSave: true });
+    await page.goto('/2027-jungsi-consulting/schedule');
+    await expect(page.getByRole('button', { name: /12월 8일.*선택 가능한 시간 없음/ })).toBeDisabled();
+    await page.getByRole('button', { name: '10:00', exact: true }).click();
+    await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
+    await expect(page.getByRole('status')).toHaveText('서버 응답을 확인하지 못했어요. 잠시 후 다시 시도해주세요.');
+    await expect(page.getByRole('button', { name: '10:00', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('heading', { name: '가능 시간을 전달했어요' })).toHaveCount(0);
+    await page.getByRole('button', { name: '가능 시간 저장', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '가능 시간을 전달했어요' })).toBeVisible();
+    const writes = await page.evaluate(() => window.__availability.saves);
+    expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
 });
 
 test('실제로 선택 시간이 없을 때 담당자 입력을 요구하지 않고 기간·예약 확인을 안내한다', async ({ page }) => {
