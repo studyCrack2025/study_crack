@@ -453,7 +453,7 @@
                 </details>
                             <section id="consultingOperationsPanel" aria-labelledby="consultingOperationsTitle" aria-busy="false">
                 <div class="consulting-heading-row"><div><h2 id="consultingOperationsTitle" class="page-title">운영 대기·실패 확인</h2><p class="consulting-caption">보고서 공개와 알림의 대기·실패 상태를 확인합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations()">운영 목록 새로고침</button></div>
-                <div class="consulting-lookup"><label for="consultingOperationsGroup">확인할 목록</label><select id="consultingOperationsGroup" onchange="loadConsultingOperations()"><option value="review">운영 검토·실패</option><option value="reportDue">공개 시각이 지난 보고서</option><option value="reportOutbox">보고서 알림 처리 대기</option><option value="finalOutbox">파이널 콜 알림 처리 대기</option></select></div>
+                <div class="consulting-lookup"><label for="consultingOperationsGroup">확인할 목록</label><select id="consultingOperationsGroup" onchange="loadConsultingOperations()"><option value="review">운영 검토·실패</option><option value="reportDue">공개 시각이 지난 보고서</option><option value="reportOutbox">보고서 알림 처리 대기</option><option value="finalOutbox">파이널 콜 알림 처리 대기</option><option value="applicationDeletion">삭제한 신청의 파일·기록 정리</option></select></div>
                 <div id="consultingOperationsStatus" class="consulting-status" role="status" aria-live="polite"></div>
                 <div class="table-responsive"><table class="student-table consulting-table"><thead><tr><th>기록 시각</th><th>관리번호</th><th>확인 항목</th><th>상태</th><th>확인</th></tr></thead><tbody id="consultingOperationsBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 운영 상태를 불러옵니다.</td></tr></tbody></table></div>
                 <button id="consultingOperationsNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations(true)" disabled>다음 페이지</button>
@@ -514,6 +514,7 @@
                     <h2 id="consultingDeleteApplicationTitle">신청 기록을 영구 삭제할까요?</h2>
                     <p id="consultingDeleteApplicationTarget" class="consulting-caption"></p>
                     <p id="consultingDeleteApplicationScope">이 신청의 접수·초대·조사서·분석·상담 기록과 연결된 첨부파일·보고서 PDF 원본을 영구 삭제합니다. 파일의 이전 버전도 포함하며 예약 중인 시간은 반납됩니다. 복구할 수 없습니다.</p>
+                    <p class="consulting-caption">확인하면 신청을 즉시 목록에서 제거하고 접근을 차단합니다. 파일과 남은 기록은 화면을 닫아도 서버에서 자동으로 정리합니다. 삭제 요청 이후에는 취소할 수 없습니다.</p>
                     <p class="consulting-caption">다른 신청의 파일, 학생 회원 계정, Google Form 원본 응답, 이미 발송한 카톡·이메일은 유지됩니다. 환불이나 취소 안내는 자동으로 발송하지 않습니다.</p>
                     <label class="consulting-caption" for="consultingDeleteApplicationConfirmation">계속하려면 ‘신청 영구 삭제’를 정확히 입력해주세요.</label>
                     <input id="consultingDeleteApplicationConfirmation" type="text" autocomplete="off" maxlength="30" oninput="updateConsultingApplicationDeletion()">
