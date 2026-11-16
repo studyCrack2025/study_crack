@@ -2,11 +2,12 @@ import { expect, test } from '@playwright/test';
 
 const caseId = 'CASE_123e4567-e89b-42d3-a456-426614174000', otherCase = 'CASE_123e4567-e89b-42d3-a456-426614174009';
 const sessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174001';
+const otherSessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174009';
 const message = (index, senderRole, body) => ({ messageId: `01K00000000000000000${String(index).padStart(7, '0')}`, sessionId, senderRole, body, createdAt: new Date().toISOString() });
 const bodies = ['희망 대학의 반영 기준과 확인된 성적을 함께 살펴보고, 현재 자료로 판단하기 어려운 부분부터 정리해보겠습니다.', '지원 방향이 고민되셨겠어요. 원하는 조건과 성적을 차근차근 비교하면서, 먼저 확인해야 할 자료를 함께 정리해볼게요.'];
 function fixture() { return { calls: [], messages: [message(1, 'student', '원점수를 기준으로 지원 방향을 어떻게 정하면 좋을까요?'), message(2, 'counselor', '어떤 기준을 가장 중요하게 생각하나요?'), message(3, 'student', '지역과 전공을 함께 고려하고 싶어요.')], enabled: true, complete: true, jobs: new Map(), polls: 0, sequence: 3 }; }
 function session(s, selectedCase = caseId) {
-  return { caseId: selectedCase, sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly, readOnly: Boolean(s.readOnly), canManage: !s.readOnly, canSuggestReplies: s.enabled && !s.readOnly, replyContextVersion: s.version || 'v1' };
+  return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly, readOnly: Boolean(s.readOnly), canManage: !s.readOnly, canSuggestReplies: s.enabled && !s.readOnly, replyContextVersion: s.version || 'v1' };
 }
 async function enter(page, s, { desktop = false } = {}) {
   if (desktop) await page.setViewportSize({ width: 1200, height: 900 });
@@ -110,12 +111,19 @@ test('취소와 권한 거절은 추천을 끝내며 초안은 전송하지 않�
 });
 test('상담 전환 중 이전 학생의 진행 작업과 결과를 정리한다', async ({ page }) => {
   const s = fixture(); s.complete = false; s.twoCases = true; await enter(page, s); await recent(page); await generate(page);
-  await page.getByLabel('상담 선택', { exact: true }).selectOption(otherCase);
+  const chooseSession = page.getByRole('combobox', { name: '상담 선택', exact: true });
+  await expect(chooseSession).toBeVisible();
+  await expect(chooseSession.locator('option')).toHaveCount(2);
+  await expect(chooseSession).toHaveValue(caseId);
+  await chooseSession.selectOption(otherCase);
+  await expect(chooseSession).toHaveValue(otherCase);
+  await expect.poll(() => new URL(page.url()).searchParams.get('caseId')).toBe(otherCase);
   s.complete = true;
   await expect(page.getByRole('heading', { name: '서면상담', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '답변 추천', exact: true }).click();
   await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toHaveCount(0);
   await expect.poll(() => s.calls.filter(call => call.type === 'counselor_cancel_written_reply').length).toBe(1);
+  expect(s.calls.find(call => call.type === 'counselor_cancel_written_reply').data).toMatchObject({ caseId, expectedSessionId: sessionId });
   expect(sent(s)).toHaveLength(0);
 });
 test('2분 종료 이후 대기를 계속하지 않고 작성과 수동 전송은 가능하다', async ({ page }) => {
