@@ -5,6 +5,9 @@ import { createClientMessageId, mergeWrittenMessages, nextWrittenPollDelay } fro
 
 const denied = result => [401, 403, 404].includes(result.status);
 const foreground = () => document.visibilityState !== 'hidden' && navigator.onLine !== false;
+const recordDuration = (name, started) => {
+  try { performance.clearMeasures(name); performance.measure(name, { start: started, end: performance.now() }); } catch { /* Timing never blocks messages. */ }
+};
 
 export function useWrittenChat(binding, caseId, manager) {
   const browser = getBrowser();
@@ -15,9 +18,9 @@ export function useWrittenChat(binding, caseId, manager) {
   const live = React.useRef(false), refreshRef = React.useRef(() => {}), readThrough = React.useRef(''), readJob = React.useRef(null);
   const merge = React.useCallback(incoming => {
     const next = mergeWrittenMessages(messagesRef.current, incoming);
-    messagesRef.current = next; setMessages(next);
+    if (next !== messagesRef.current) { messagesRef.current = next; setMessages(next); }
     const received = new Set(incoming.map(item => item.clientMessageId));
-    setOutbox(value => value.filter(item => !received.has(item.clientMessageId)));
+    if (received.size) setOutbox(value => { const remaining = value.filter(item => !received.has(item.clientMessageId)); return remaining.length === value.length ? value : remaining; });
   }, []);
 
   React.useEffect(() => {
@@ -39,6 +42,7 @@ export function useWrittenChat(binding, caseId, manager) {
       if (!foreground()) { setConnection(navigator.onLine === false ? 'offline' : 'paused'); return; }
       if (running) { repeat = true; return; }
       running = true; controller = new AbortController();
+      const started = performance.now();
       let delay = 10000;
       try {
         let result;
@@ -60,7 +64,7 @@ export function useWrittenChat(binding, caseId, manager) {
               if (incoming.length) cursor = result.data.nextCursor || incoming.at(-1).messageId;
               if (result.data.session) acceptSession(result.data.session);
               unchangedCount = incoming.length ? 0 : unchangedCount + 1;
-              delay = result.data.hasMore ? 0 : nextWrittenPollDelay({ changed: Boolean(incoming.length), unchangedCount });
+              delay = result.data.hasMore ? 0 : nextWrittenPollDelay({ changed: Boolean(incoming.length), unchangedCount, writable: sessionRef.current.writable });
               if (!result.data.hasMore && sessionRef.current.status === 'completed') stopped = true;
               else if (sessionRef.current.readOnly) delay = 30000;
             }
@@ -83,6 +87,7 @@ export function useWrittenChat(binding, caseId, manager) {
       } catch (error) {
         if (!controller.signal.aborted && !error.sessionChanged) { failures++; setConnection('reconnecting'); setResource(value => value.session ? value : { ...value, status: 'error', error: '상담 연결을 확인하지 못했어요. 다시 연결해주세요.' }); delay = Math.min(30000, 2000 * 2 ** Math.min(failures, 4)); }
       } finally {
+        recordDuration('consulting-chat-poll', started);
         running = false;
         if (live.current && (!controller.signal.aborted || repeat && foreground())) { schedule(repeat ? 0 : delay); repeat = false; }
       }
@@ -100,16 +105,17 @@ export function useWrittenChat(binding, caseId, manager) {
   const attempt = async item => {
     if (pendingSend.current.has(item.clientMessageId)) return;
     const controller = new AbortController(); pendingSend.current.set(item.clientMessageId, controller);
+    const started = performance.now();
     setOutbox(value => value.map(row => row.clientMessageId === item.clientMessageId ? { ...row, status: 'sending', error: '' } : row));
     try {
       const request = manager ? sendCounselorWrittenMessage : sendStudentWrittenMessage;
       const result = await request(binding, { ...(manager ? { caseId } : {}), body: item.body, clientMessageId: item.clientMessageId, expectedSessionId: item.sessionId, ...(item.attachments.length ? { attachmentIds: item.attachments.map(file => file.fileId) } : {}) }, controller.signal);
       if (!live.current || controller.signal.aborted) return;
-      if (result.ok) merge([result.data.message]);
+      if (result.ok) { merge([result.data.message]); refreshRef.current(); }
       else setOutbox(value => value.map(row => row.clientMessageId === item.clientMessageId ? { ...row, status: 'failed', error: result.error } : row));
     } catch {
       if (live.current && !controller.signal.aborted) setOutbox(value => value.map(row => row.clientMessageId === item.clientMessageId ? { ...row, status: 'failed', error: '연결을 확인하고 다시 보내주세요.' } : row));
-    } finally { pendingSend.current.delete(item.clientMessageId); }
+    } finally { recordDuration('consulting-chat-send', started); pendingSend.current.delete(item.clientMessageId); }
   };
   const send = (body, attachments = []) => {
     if (!sessionRef.current?.writable || connection === 'denied' || body.length > 2000 || !body.trim() && !attachments.length) return false;

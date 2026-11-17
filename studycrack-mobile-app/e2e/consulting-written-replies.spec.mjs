@@ -24,16 +24,24 @@ async function enter(page, s, { desktop = false } = {}) {
     else if (type === 'counselor_list_written_messages') result = { session: session(s, data.caseId), messages: data.caseId === otherCase ? [] : s.messages.filter(row => !data.afterMessageId || row.messageId > data.afterMessageId), hasMore: false };
     else if (type === 'counselor_mark_written_read') result = { marked: true };
     else if (type === 'counselor_get_written_preparation') result = { preparation: null };
+    else if (type === 'counselor_get_active_written_reply') {
+      let job = [...s.jobs.values()].findLast(row => row.caseId === data.caseId && row.expectedSessionId === data.expectedSessionId && ['queued', 'running'].includes(row.status));
+      if (job && job.contextVersion !== (s.version || 'v1')) { job.status = 'stale'; job = null; }
+      result = { reply: job || null, retryAfterMs: job ? 110000 : s.cooldownMs || 0, reason: job ? 'running' : s.cooldownMs ? 'cooldown' : 'ready' };
+    }
     else if (type === 'counselor_create_written_reply') {
+      if (s.busyOnce) { s.busyOnce = false; s.cooldownMs = 3000; return route.fulfill({ status: 429, json: { success: false, code: 'REPLY_BUSY' } }); }
       const jobId = `REPLY_${String(s.jobs.size + 1).padStart(64, 'a')}`;
-      const job = { jobId, status: 'queued', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: 2 };
+      const job = { jobId, status: 'queued', caseId: data.caseId, expectedSessionId: data.expectedSessionId, contextVersion: s.version || 'v1', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: 2 };
       s.jobs.set(jobId, job); result = { reply: job };
     } else if (type === 'counselor_get_written_reply') {
       s.polls++;
       if (s.denied) return route.fulfill({ status: 403, json: { success: false, code: 'FORBIDDEN' } });
       const job = s.jobs.get(data.jobId);
-      result = { reply: { ...job, status: s.terminal || (s.complete ? 'succeeded' : 'running'), ...(s.complete && !s.terminal ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'] } : {}) } };
-    } else if (type === 'counselor_cancel_written_reply') result = { reply: { ...s.jobs.get(data.jobId), status: 'cancelled' } };
+      const status = ['cancelled', 'stale', 'failed'].includes(job.status) ? job.status : s.terminal || (s.complete ? 'succeeded' : 'running');
+      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'] } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
+      result = { reply: job };
+    } else if (type === 'counselor_cancel_written_reply') { const job = s.jobs.get(data.jobId); job.status = 'cancelled'; result = { reply: job }; }
     else if (type === 'counselor_send_written_message') {
       const row = { ...message(++s.sequence, 'counselor', data.body), clientMessageId: data.clientMessageId }; s.messages.push(row); result = { message: row };
     } else throw new Error(`Unexpected written reply fixture request: ${type}`);
@@ -145,4 +153,38 @@ test('백엔드 준비 전과 읽기 전용 상담에서는 추천 호출과 입
   await expect(page.getByLabel('상담 메시지', { exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toHaveCount(0);
   expect(s.calls.filter(call => call.type.includes('written_reply'))).toHaveLength(0);
+});
+
+test('새로고침 뒤 진행 중인 같은 상담 추천을 이어 확인하고 작업을 중복 생성하지 않는다', async ({ page }) => {
+  const s = fixture(); s.complete = false; await enter(page, s); await recent(page); await generate(page);
+  await expect(panel(page).getByRole('button', { name: '추천 생성 취소' })).toBeVisible();
+  const created = s.calls.find(call => call.type === 'counselor_create_written_reply').data;
+  await page.reload(); await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page).getByRole('button', { name: '추천 생성 취소' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+  expect(s.jobs.size).toBe(1);
+  s.complete = true;
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_get_written_reply').every(call => call.data.expectedSessionId === created.expectedSessionId)).toBe(true);
+  expect(sent(s)).toHaveLength(0);
+});
+
+test('재요청 간격 제한은 남은 시간을 표시하고 연타를 막으며 시간이 지나면 직접 재시도한다', async ({ page }) => {
+  await page.clock.install(); const s = fixture(); s.busyOnce = true; await enter(page, s, { desktop: true });
+  await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page).getByRole('button', { name: /초 뒤 추천 가능/ })).toBeDisabled();
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+  await page.clock.fastForward(3001); s.cooldownMs = 0;
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeEnabled();
+  await generate(page); await page.clock.fastForward(1001);
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  expect(s.jobs.size).toBe(1); expect(sent(s)).toHaveLength(0);
+});
+
+test('추천 실패는 작업 잠금 안내 대신 서버가 확인한 원인을 표시한다', async ({ page }) => {
+  const s = fixture(); s.terminal = 'failed'; s.failureCode = 'REPLY_SECRET_INVALID';
+  await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page)).toContainText('AI 연결 설정 형식을 확인해야 합니다.');
+  await expect(panel(page)).not.toContainText('진행 중인 추천을 기다리거나');
+  expect(sent(s)).toHaveLength(0);
 });

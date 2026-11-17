@@ -10,6 +10,7 @@ import { WrittenPreparation, WRITTEN_CHECKLIST } from '../components/WrittenChat
 import { useWrittenReplySuggestions } from '../use-written-reply-suggestions.js';
 import { mergeReplyDraft } from '../written-reply-model.js';
 import { WrittenReplySuggestions } from '../components/WrittenReplySuggestions.jsx';
+import { installWrittenChatViewport, shouldSendWrittenEnter } from '../written-chat-layout.js';
 
 const dateLabel = value => { const date = new Date(value); return Number.isFinite(+date) ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date) : ''; };
 const connectionLabels = { connecting: '연결 중', connected: '연결됨', paused: '연결 일시 중지', offline: '인터넷 연결을 확인해주세요', reconnecting: '다시 연결하는 중', denied: '접근 권한 확인 필요', changed: '상담 일정 변경됨' };
@@ -27,6 +28,7 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
   const [checklist, setChecklist] = React.useState({ questionsAddressed: false, scoresConfirmed: false, followUpCaptured: false });
   const [working, setWorking] = React.useState(false), [newCount, setNewCount] = React.useState(0);
   const scroll = React.useRef(null), room = React.useRef(null), picker = React.useRef(null), bottom = React.useRef(true), seen = React.useRef(new Set());
+  const composing = React.useRef(false), compositionEndedAt = React.useRef(-Infinity), sendingDraft = React.useRef(false);
   const unsaved = Boolean(draft || photos.items.length || outbox.length || note !== null && note !== savedNote);
   const latestRead = React.useRef(() => {});
   latestRead.current = () => { if (bottom.current && (!manager || tab === 'chat' || innerWidth > 760)) void chat.markRead(messages.at(-1)?.messageId); };
@@ -39,11 +41,9 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
     return () => browser.removeEventListener('beforeunload', unload);
   }, [unsaved]);
   React.useEffect(() => {
-    const viewport = browser.visualViewport;
-    const resize = () => { room.current?.style.setProperty('--consulting-chat-height', `${viewport?.height || innerHeight}px`); if (bottom.current) scroll.current?.scrollTo({ top: scroll.current.scrollHeight }); };
-    viewport?.addEventListener('resize', resize); resize();
-    return () => viewport?.removeEventListener('resize', resize);
+    return installWrittenChatViewport(browser, room.current, () => { if (bottom.current) scroll.current?.scrollTo({ top: scroll.current.scrollHeight }); });
   }, [resource.status]);
+  React.useEffect(() => { sendingDraft.current = false; }, [draft, photos.items]);
   React.useLayoutEffect(() => {
     const incoming = messages.filter(item => !seen.current.has(item.messageId));
     messages.forEach(item => seen.current.add(item.messageId));
@@ -62,10 +62,12 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
   }, []);
   const leave = action => { if (!unsaved || browser.confirm('전송하거나 저장하지 않은 내용이 있어요. 이 화면을 나갈까요?')) action(); };
   const send = () => {
-    if (!session?.writable || photos.busy || !draft.trim() && !photos.items.length) return;
+    if (sendingDraft.current || !session?.writable || photos.busy || !draft.trim() && !photos.items.length) return;
     const attachments = photos.items.map(item => ({ ...item.metadata, fileId: item.fileId }));
     bottom.current = true;
+    sendingDraft.current = true;
     if (chat.send(draft, attachments)) { photos.take(); setDraft(''); setFeedback(''); }
+    else sendingDraft.current = false;
   };
   const selectReplyRange = () => { suggestion.beginSelection(); setTab('chat'); };
   const generateReply = () => { void suggestion.generate(); setTab('reply'); };
@@ -101,7 +103,7 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
     {manager ? <div className="consulting-chat-switcher">{sessions.length > 1 ? <label className="consulting-session-picker">상담 선택<select value={caseId} onChange={event => leave(() => onChoose(event.target.value))}>{!sessions.some(row => row.caseId === caseId) ? <option value={caseId}>검수 중인 상담</option> : null}{sessions.map(row => <option key={row.caseId} value={row.caseId}>{dateLabel(row.startAt)}</option>)}</select></label> : null}<nav className="consulting-chat-tabs" aria-label="상담 화면"><button type="button" aria-pressed={tab === 'chat'} onClick={() => setTab('chat')}>대화</button>{replyAllowed ? <button type="button" aria-pressed={tab === 'reply'} onClick={() => setTab('reply')}>답변 추천</button> : null}<button type="button" aria-pressed={tab === 'preparation'} onClick={() => setTab('preparation')}>자료</button><button type="button" aria-pressed={tab === 'notes'} onClick={() => setTab('notes')}>메모</button></nav></div> : null}
     <div className="consulting-written-layout"><section className="consulting-written-chat">
       <div className="consulting-written-meta"><h1>서면상담</h1><p>{dateLabel(session.startAt)} ~ {formatWrittenMessageTime(session.endAt)} · 한국시간</p><span>{finished ? '상담 완료 · 기록 보관' : session.observer ? '운영진 검수 · 읽기 전용' : session.serviceHold ? '서비스 보류 · 읽기 전용' : session.readOnly ? '상담 종료 · 읽기 전용' : canWrite ? '상담 진행 중' : '시작 시각에 대화가 열립니다'}</span></div>
-      {replyAllowed ? <div className="consulting-reply-toolbar">{suggestion.selecting ? <><span>{suggestion.range?.end ? `${suggestion.selected.length}개 메시지 선택` : suggestion.range?.start ? '끝 메시지를 선택해주세요.' : '시작 메시지를 선택해주세요.'}</span><button type="button" disabled={Boolean(suggestion.issue)} onClick={generateReply}>선택 범위로 추천</button><button type="button" onClick={suggestion.clear}>선택 닫기</button></> : <button type="button" onClick={selectReplyRange}>대화를 선택해 답변 추천</button>}</div> : null}
+      {replyAllowed ? <div className="consulting-reply-toolbar">{suggestion.selecting ? <><span>{suggestion.range?.end ? `${suggestion.selected.length}개 메시지 선택` : suggestion.range?.start ? '끝 메시지를 선택해주세요.' : '시작 메시지를 선택해주세요.'}</span><button type="button" disabled={Boolean(suggestion.issue) || ['pending', 'checking'].includes(suggestion.phase) || suggestion.retrySeconds > 0} onClick={generateReply}>선택 범위로 추천</button><button type="button" onClick={suggestion.clear}>선택 닫기</button></> : <button type="button" onClick={selectReplyRange}>대화를 선택해 답변 추천</button>}</div> : null}
       {['denied', 'reconnecting', 'offline', 'changed'].includes(connection) ? <div className="consulting-written-feedback">{connection === 'changed' ? '상담 일정이 변경됐어요. 미전송 내용을 확인하고 변경된 상담을 다시 열어주세요.' : connection === 'denied' ? '접근 권한을 확인한 뒤 다시 연결해주세요.' : '연결을 복구하면 마지막 대화부터 불러와요.'}<button type="button" onClick={() => leave(chat.refresh)}>다시 연결</button></div> : null}
       {!session.entryAllowed ? <div className="consulting-written-empty"><strong>상담을 준비하고 있어요</strong><p>{dateLabel(session.entryAt || new Date(Date.parse(session.startAt) - 600000))}부터 입장할 수 있어요.</p><p>궁금한 점과 함께 살펴볼 사진을 준비해주세요. 시간이 되면 이 화면이 자동으로 열립니다.</p></div> : <div ref={scroll} className="consulting-written-messages" role="log" aria-label="상담 대화" aria-live="polite" onScroll={() => { const node = scroll.current; bottom.current = node.scrollHeight - node.scrollTop - node.clientHeight < 72; if (bottom.current) { setNewCount(0); latestRead.current(); } }}>
         {!messages.length && !outbox.length ? <div className="consulting-written-empty">{canWrite ? '궁금한 점을 보내주세요. 텍스트와 사진으로 함께 살펴볼게요.' : '아직 작성된 메시지가 없습니다.'}</div> : null}
@@ -109,7 +111,7 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
         {outbox.map(item => <article key={item.clientMessageId} data-owner="me" data-delivery={item.status}><strong>내 메시지</strong>{item.body ? <p>{item.body}</p> : null}{item.attachments.map(file => <WrittenChatPhoto key={file.fileId} binding={binding} caseId={session.caseId} file={file} />)}<small>{item.status === 'sending' ? '전송 중…' : item.error || '전송하지 못했어요.'}</small>{item.status === 'failed' ? <div><button type="button" disabled={!canWrite} onClick={() => chat.retry(item)}>다시 보내기</button><button type="button" onClick={() => chat.discard(item)}>미전송 표시 지우기</button></div> : null}</article>)}
       </div>}
       {newCount ? <button className="consulting-chat-new" type="button" onClick={() => { bottom.current = true; scroll.current?.scrollTo({ top: scroll.current.scrollHeight, behavior: 'smooth' }); setNewCount(0); latestRead.current(); }}>새 메시지 {newCount}개 ↓</button> : null}
-      {session.entryAllowed ? <footer><label className="consulting-chat-input-label" htmlFor="written-message">상담 메시지</label><textarea id="written-message" value={draft} maxLength="2000" disabled={!canWrite} onChange={event => setDraft(event.target.value)} placeholder={canWrite ? '궁금한 점을 입력해주세요. 줄바꿈으로 이어서 쓸 수 있어요.' : '현재는 메시지를 작성할 수 없습니다.'} />
+      {session.entryAllowed ? <footer><label className="consulting-chat-input-label" htmlFor="written-message">상담 메시지</label><textarea id="written-message" value={draft} maxLength="2000" disabled={!canWrite} onFocus={() => { if (canWrite) chat.refresh(); }} onChange={event => setDraft(event.target.value)} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; compositionEndedAt.current = Date.now(); }} onKeyDown={event => { if (shouldSendWrittenEnter(event, { manager, composing: composing.current, compositionEndedAt: compositionEndedAt.current })) { event.preventDefault(); send(); } }} placeholder={canWrite ? manager ? 'Enter로 전송 · Shift+Enter로 줄바꿈' : '궁금한 점을 입력해주세요. 줄바꿈으로 이어서 쓸 수 있어요.' : '현재는 메시지를 작성할 수 없습니다.'} />
         {photos.items.length ? <ul className="consulting-chat-uploads">{photos.items.map(item => <li key={item.key}><img src={item.preview} alt="선택한 사진 미리보기" /><div><strong>{item.file.name}</strong><span>{({ uploading: '업로드 중…', checking: '보안 확인 중…', ready: '전송 가능', failed: '확인 필요' })[item.phase]}</span>{item.error ? <p role="status">{item.error}</p> : null}<div>{item.phase === 'failed' ? <button type="button" disabled={!canWrite} onClick={() => photos.retry(item)}>{item.paused ? '계속 확인' : '첨부 다시 시도'}</button> : null}<button type="button" onClick={() => photos.remove(item)}>첨부 취소</button></div></div></li>)}</ul> : null}
         {photos.notice ? <p role="status">{photos.notice}</p> : null}<input ref={picker} type="file" accept="image/jpeg,image/png" multiple hidden aria-label="상담 사진 선택" onChange={event => { photos.add(event.target.files); event.target.value = ''; }} />
         <div className="consulting-chat-compose-actions"><button type="button" className="consulting-chat-attach" disabled={!canWrite || photos.items.length >= 3} onClick={() => picker.current.click()}>＋ 사진</button><small>{draft.length}/2000</small><button type="button" disabled={!canWrite || photos.busy || !draft.trim() && !photos.items.length} onClick={send}>전송</button></div><p className="consulting-chat-privacy">JPEG·PNG 3장까지 · 사진의 수험번호 등 불필요한 개인정보는 가려주세요.</p>

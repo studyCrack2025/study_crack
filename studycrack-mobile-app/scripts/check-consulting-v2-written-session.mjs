@@ -6,9 +6,12 @@ import { actionPathForState } from '../src/features/consulting-v2/progress-model
 const a = { messageId: '01K00000000000000000000000', senderRole: 'student', createdAt: '2026-10-08T01:00:00.000Z', body: '<script>alert(1)</script>' };
 const b = { messageId: '01K00000000000000000000001', senderRole: 'counselor', createdAt: '2026-10-08T01:00:01.000Z', body: '답변' };
 assert.deepEqual(mergeWrittenMessages([b], [a, b]).map(item => item.messageId), [a.messageId, b.messageId]);
-assert.equal(nextWrittenPollDelay({ changed: true, unchangedCount: 4 }), 2000);
-assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 1 }), 5000);
-assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 2 }), 10000);
+assert.equal(nextWrittenPollDelay({ changed: true, unchangedCount: 4, writable: true }), 1000);
+assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 1, writable: true }), 1000);
+assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 20, writable: true }), 1000);
+assert.equal(nextWrittenPollDelay({ changed: true, writable: false }), 2000);
+assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 1, writable: false }), 5000);
+assert.equal(nextWrittenPollDelay({ changed: false, unchangedCount: 2, writable: false }), 10000);
 assert.match(createClientMessageId(), /^[0-9a-f-]{36}$/i);
 assert.equal(actionPathForState('WRITTEN_SESSION_BOOKED'), '/2027-jungsi-consulting/written-session');
 

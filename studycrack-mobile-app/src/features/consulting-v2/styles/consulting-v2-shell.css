@@ -1,6 +1,6 @@
-html.jungsi-app-root { height: auto; min-height: 100%; overflow: visible; overscroll-behavior: auto; }
-body[data-app-surface="consulting-2027"] { height: auto; margin: 0; min-height: 100svh; overflow: visible; background: var(--sc-surface-canvas); color: var(--sc-ink); font-family: "Paperlogy", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Noto Sans KR", system-ui, sans-serif; }
-body[data-app-surface="consulting-2027"] #root { height: auto; min-height: 100svh; }
+html.jungsi-app-root { height: var(--consulting-page-height,auto); min-height: var(--consulting-page-min-height,100%); overflow: var(--consulting-page-overflow,visible); overscroll-behavior: var(--consulting-page-overscroll,auto); }
+body[data-app-surface="consulting-2027"] { height: var(--consulting-page-height,auto); margin: 0; min-height: var(--consulting-page-min-height,100svh); overflow: var(--consulting-page-overflow,visible); background: var(--sc-surface-canvas); color: var(--sc-ink); font-family: "Paperlogy", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Noto Sans KR", system-ui, sans-serif; }
+body[data-app-surface="consulting-2027"] #root { height: var(--consulting-page-height,auto); min-height: var(--consulting-page-min-height,100svh); }
 body[data-app-surface="consulting-2027"] * { box-sizing: border-box; }
 body[data-app-surface="consulting-2027"] a:focus-visible, body[data-app-surface="consulting-2027"] button:focus-visible { outline: 3px solid var(--sc-focus-ring); outline-offset: 4px; }
 .consulting-v2-brand { display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; min-height: 44px; color: var(--sc-ink); text-decoration: none; }
