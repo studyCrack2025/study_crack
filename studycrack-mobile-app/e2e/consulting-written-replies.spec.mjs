@@ -3,13 +3,14 @@ import { expect, test } from '@playwright/test';
 const caseId = 'CASE_123e4567-e89b-42d3-a456-426614174000', otherCase = 'CASE_123e4567-e89b-42d3-a456-426614174009';
 const sessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174001';
 const otherSessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174009';
-const message = (index, senderRole, body) => ({ messageId: `01K00000000000000000${String(index).padStart(7, '0')}`, sessionId, senderRole, body, createdAt: new Date().toISOString() });
+const message = (index, senderRole, body) => ({ messageId: `01K${String(index).padStart(23, '0')}`, sessionId, senderRole, body, createdAt: new Date().toISOString() });
 const bodies = ['희망 대학의 반영 기준과 확인된 성적을 함께 살펴보고, 현재 자료로 판단하기 어려운 부분부터 정리해보겠습니다.', '지원 방향이 고민되셨겠어요. 원하는 조건과 성적을 차근차근 비교하면서, 먼저 확인해야 할 자료를 함께 정리해볼게요.'];
 function fixture() { return { calls: [], messages: [message(1, 'student', '원점수를 기준으로 지원 방향을 어떻게 정하면 좋을까요?'), message(2, 'counselor', '어떤 기준을 가장 중요하게 생각하나요?'), message(3, 'student', '지역과 전공을 함께 고려하고 싶어요.')], enabled: true, complete: true, jobs: new Map(), polls: 0, sequence: 3 }; }
 function session(s, selectedCase = caseId) {
   return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly, readOnly: Boolean(s.readOnly), canManage: !s.readOnly, canSuggestReplies: s.enabled && !s.readOnly, replyContextVersion: s.version || 'v1' };
 }
 async function enter(page, s, { desktop = false } = {}) {
+  for (const row of s.messages) expect(row.messageId, '추천 fixture는 실제 26자리 메시지 ID를 사용한다').toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   if (desktop) await page.setViewportSize({ width: 1200, height: 900 });
   const css = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css'); expect(css.ok()).toBe(true);
   const faces = (await css.text()).match(/@font-face\s*\{[^}]*\}/g) || []; expect(faces.length).toBeGreaterThan(0);
@@ -161,10 +162,14 @@ test('새로고침 뒤 진행 중인 같은 상담 추천을 이어 확인하고
   const created = s.calls.find(call => call.type === 'counselor_create_written_reply').data;
   await page.reload(); await page.getByRole('button', { name: '답변 추천', exact: true }).click();
   await expect(panel(page).getByRole('button', { name: '추천 생성 취소' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_get_active_written_reply')).toHaveLength(2);
+  expect(s.calls.filter(call => call.type === 'counselor_cancel_written_reply')).toHaveLength(0);
+  await expect(panel(page)).toContainText('지역과 전공을 함께 고려하고 싶어요.');
   expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
   expect(s.jobs.size).toBe(1);
   s.complete = true;
   await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_get_written_reply').every(call => call.data.jobId === [...s.jobs.keys()][0])).toBe(true);
   expect(s.calls.filter(call => call.type === 'counselor_get_written_reply').every(call => call.data.expectedSessionId === created.expectedSessionId)).toBe(true);
   expect(sent(s)).toHaveLength(0);
 });
