@@ -3,13 +3,14 @@ import { expect, test } from '@playwright/test';
 const caseId = 'CASE_123e4567-e89b-42d3-a456-426614174000', otherCase = 'CASE_123e4567-e89b-42d3-a456-426614174009';
 const sessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174001';
 const otherSessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174009';
-const message = (index, senderRole, body) => ({ messageId: `01K00000000000000000${String(index).padStart(7, '0')}`, sessionId, senderRole, body, createdAt: new Date().toISOString() });
+const message = (index, senderRole, body) => ({ messageId: `01K${String(index).padStart(23, '0')}`, sessionId, senderRole, body, createdAt: new Date().toISOString() });
 const bodies = ['희망 대학의 반영 기준과 확인된 성적을 함께 살펴보고, 현재 자료로 판단하기 어려운 부분부터 정리해보겠습니다.', '지원 방향이 고민되셨겠어요. 원하는 조건과 성적을 차근차근 비교하면서, 먼저 확인해야 할 자료를 함께 정리해볼게요.'];
 function fixture() { return { calls: [], messages: [message(1, 'student', '원점수를 기준으로 지원 방향을 어떻게 정하면 좋을까요?'), message(2, 'counselor', '어떤 기준을 가장 중요하게 생각하나요?'), message(3, 'student', '지역과 전공을 함께 고려하고 싶어요.')], enabled: true, complete: true, jobs: new Map(), polls: 0, sequence: 3 }; }
 function session(s, selectedCase = caseId) {
   return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly, readOnly: Boolean(s.readOnly), canManage: !s.readOnly, canSuggestReplies: s.enabled && !s.readOnly, replyContextVersion: s.version || 'v1' };
 }
 async function enter(page, s, { desktop = false } = {}) {
+  for (const row of s.messages) expect(row.messageId, '추천 fixture는 실제 26자리 메시지 ID를 사용한다').toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
   if (desktop) await page.setViewportSize({ width: 1200, height: 900 });
   const css = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css'); expect(css.ok()).toBe(true);
   const faces = (await css.text()).match(/@font-face\s*\{[^}]*\}/g) || []; expect(faces.length).toBeGreaterThan(0);
@@ -24,16 +25,24 @@ async function enter(page, s, { desktop = false } = {}) {
     else if (type === 'counselor_list_written_messages') result = { session: session(s, data.caseId), messages: data.caseId === otherCase ? [] : s.messages.filter(row => !data.afterMessageId || row.messageId > data.afterMessageId), hasMore: false };
     else if (type === 'counselor_mark_written_read') result = { marked: true };
     else if (type === 'counselor_get_written_preparation') result = { preparation: null };
+    else if (type === 'counselor_get_active_written_reply') {
+      let job = [...s.jobs.values()].findLast(row => row.caseId === data.caseId && row.expectedSessionId === data.expectedSessionId && ['queued', 'running'].includes(row.status));
+      if (job && job.contextVersion !== (s.version || 'v1')) { job.status = 'stale'; job = null; }
+      result = { reply: job || null, retryAfterMs: job ? 110000 : s.cooldownMs || 0, reason: job ? 'running' : s.cooldownMs ? 'cooldown' : 'ready' };
+    }
     else if (type === 'counselor_create_written_reply') {
+      if (s.busyOnce) { s.busyOnce = false; s.cooldownMs = 3000; return route.fulfill({ status: 429, json: { success: false, code: 'REPLY_BUSY' } }); }
       const jobId = `REPLY_${String(s.jobs.size + 1).padStart(64, 'a')}`;
-      const job = { jobId, status: 'queued', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: 2 };
+      const job = { jobId, status: 'queued', caseId: data.caseId, expectedSessionId: data.expectedSessionId, contextVersion: s.version || 'v1', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: 2 };
       s.jobs.set(jobId, job); result = { reply: job };
     } else if (type === 'counselor_get_written_reply') {
       s.polls++;
       if (s.denied) return route.fulfill({ status: 403, json: { success: false, code: 'FORBIDDEN' } });
       const job = s.jobs.get(data.jobId);
-      result = { reply: { ...job, status: s.terminal || (s.complete ? 'succeeded' : 'running'), ...(s.complete && !s.terminal ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'] } : {}) } };
-    } else if (type === 'counselor_cancel_written_reply') result = { reply: { ...s.jobs.get(data.jobId), status: 'cancelled' } };
+      const status = ['cancelled', 'stale', 'failed'].includes(job.status) ? job.status : s.terminal || (s.complete ? 'succeeded' : 'running');
+      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'] } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
+      result = { reply: job };
+    } else if (type === 'counselor_cancel_written_reply') { const job = s.jobs.get(data.jobId); job.status = 'cancelled'; result = { reply: job }; }
     else if (type === 'counselor_send_written_message') {
       const row = { ...message(++s.sequence, 'counselor', data.body), clientMessageId: data.clientMessageId }; s.messages.push(row); result = { message: row };
     } else throw new Error(`Unexpected written reply fixture request: ${type}`);
@@ -145,4 +154,42 @@ test('백엔드 준비 전과 읽기 전용 상담에서는 추천 호출과 입
   await expect(page.getByLabel('상담 메시지', { exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toHaveCount(0);
   expect(s.calls.filter(call => call.type.includes('written_reply'))).toHaveLength(0);
+});
+
+test('새로고침 뒤 진행 중인 같은 상담 추천을 이어 확인하고 작업을 중복 생성하지 않는다', async ({ page }) => {
+  const s = fixture(); s.complete = false; await enter(page, s); await recent(page); await generate(page);
+  await expect(panel(page).getByRole('button', { name: '추천 생성 취소' })).toBeVisible();
+  const created = s.calls.find(call => call.type === 'counselor_create_written_reply').data;
+  await page.reload(); await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page).getByRole('button', { name: '추천 생성 취소' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_get_active_written_reply')).toHaveLength(2);
+  expect(s.calls.filter(call => call.type === 'counselor_cancel_written_reply')).toHaveLength(0);
+  await expect(panel(page)).toContainText('지역과 전공을 함께 고려하고 싶어요.');
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+  expect(s.jobs.size).toBe(1);
+  s.complete = true;
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_get_written_reply').every(call => call.data.jobId === [...s.jobs.keys()][0])).toBe(true);
+  expect(s.calls.filter(call => call.type === 'counselor_get_written_reply').every(call => call.data.expectedSessionId === created.expectedSessionId)).toBe(true);
+  expect(sent(s)).toHaveLength(0);
+});
+
+test('재요청 간격 제한은 남은 시간을 표시하고 연타를 막으며 시간이 지나면 직접 재시도한다', async ({ page }) => {
+  await page.clock.install(); const s = fixture(); s.busyOnce = true; await enter(page, s, { desktop: true });
+  await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page).getByRole('button', { name: /초 뒤 추천 가능/ })).toBeDisabled();
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+  await page.clock.fastForward(3001); s.cooldownMs = 0;
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeEnabled();
+  await generate(page); await page.clock.fastForward(1001);
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  expect(s.jobs.size).toBe(1); expect(sent(s)).toHaveLength(0);
+});
+
+test('추천 실패는 작업 잠금 안내 대신 서버가 확인한 원인을 표시한다', async ({ page }) => {
+  const s = fixture(); s.terminal = 'failed'; s.failureCode = 'REPLY_SECRET_INVALID';
+  await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page)).toContainText('AI 연결 설정 형식을 확인해야 합니다.');
+  await expect(panel(page)).not.toContainText('진행 중인 추천을 기다리거나');
+  expect(sent(s)).toHaveLength(0);
 });

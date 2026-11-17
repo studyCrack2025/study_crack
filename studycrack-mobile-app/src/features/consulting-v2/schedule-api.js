@@ -2,7 +2,12 @@ import { postJson } from '../../shared/api/client.js';
 
 async function request(binding, type, data, fallbackError) {
   const result = await postJson({ apiFetch: binding.apiFetch, url: binding.consultingApiUrl, fallbackError, payload: { type, data } });
-  if (!result.ok || result.data?.success !== true || !result.data.data) return { ok: false, error: result.error || fallbackError, code: result.data?.code || result.code };
+  if (!result.ok || result.data?.success !== true || !result.data.data) {
+    const code = result.data?.code || result.code;
+    const error = code === 'WRITTEN_CHANGE_DEADLINE_PASSED'
+      ? '일정 변경 요청은 상담 시작 2시간 전까지만 가능합니다. 이후에는 운영팀에 문의해주세요.' : result.error || fallbackError;
+    return { ok: false, error, code };
+  }
   return { ok: true, data: result.data.data };
 }
 

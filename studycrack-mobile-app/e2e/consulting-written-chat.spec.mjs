@@ -8,7 +8,7 @@ function session(s, role, selectedCase = caseId) {
   return { caseId: selectedCase, sessionId: 'SESSION_123e4567-e89b-42d3-a456-426614174001', counselorId: 'operator', status: s.phase === 'completed' ? 'completed' : 'open',
     serverTime: new Date().toISOString(), startAt: new Date(Date.now() - 3600000).toISOString(), endAt: new Date(Date.now() - 60000).toISOString(),
     entryAllowed: s.phase !== 'before', writable: s.phase === 'open' && role !== 'observer', serviceHold: s.phase === 'held', readOnly: ['completed', 'held'].includes(s.phase) || role === 'observer', observer: role === 'observer', canManage: role === 'manager',
-    otherReadThroughId: s.sentRead[role === 'student' ? 'manager' : 'student'] || null };
+    otherReadThroughId: s.sentRead[role === 'student' ? 'manager' : 'student'] || null, ...s.sessionTimes };
 }
 async function install(page, role, s) {
   const cssResponse = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css');
@@ -31,6 +31,7 @@ async function install(page, role, s) {
     else if (type.endsWith('send_written_message')) {
       let message = s.messages.find(item => item.clientMessageId === data.clientMessageId);
       if (!message) { message = { messageId: '01K00000000000000000' + String(++s.sequence).padStart(7, '0'), sessionId: session(s, role).sessionId, senderRole: role === 'student' ? 'student' : 'counselor', body: data.body, createdAt: new Date().toISOString(), clientMessageId: data.clientMessageId, ...(data.attachmentIds?.length ? { attachments: data.attachmentIds.map(id => s.files[id]) } : {}) }; s.messages.push(message); }
+      if (s.deferSend) await new Promise(resolve => { s.releaseSend = resolve; });
       if (s.failSend) { s.failSend = false; status = 500; } result = { message };
     } else if (type.endsWith('mark_written_read')) { s.sentRead[role] = data.throughMessageId; result = { marked: true }; }
     else if (type === 'counselor_get_written_preparation') result = { preparation: { scores: { records: [{ subject: '영어', grade: 2 }] }, conditions: { repeatStudyAllowed: true }, qualitative: { consultationQuestions: ['가군 지원 조합을 비교해주세요.'] } } };
@@ -50,6 +51,16 @@ async function install(page, role, s) {
 async function enter(page, role, state) { await install(page, role, state); await page.goto(`/2027-jungsi-consulting/written-session${role === 'student' ? '' : '?caseId=' + caseId}`); await expect(page.getByRole('heading', { name: '서면상담', exact: true })).toBeVisible(); }
 async function send(page, body) { await page.getByLabel('상담 메시지', { exact: true }).fill(body); await page.getByRole('button', { name: '전송', exact: true }).click(); }
 async function fits(page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); }
+
+test('학생 상담 시간과 입장 대기 시각을 한국시간 24시간제로 통일한다', async ({ page }, testInfo) => {
+  const s = fixture(); s.phase = 'before';
+  s.sessionTimes = { startAt: '2026-11-17T08:00:00.000Z', endAt: '2026-11-17T08:30:00.000Z', entryAt: '2026-11-17T07:50:00.000Z' };
+  await page.setViewportSize({ width: 320, height: 900 }); await enter(page, 'student', s);
+  await expect(page.locator('.consulting-written-meta p')).toHaveText('11월 17일 17:00 ~ 17:30 · 한국시간');
+  await expect(page.getByText('11월 17일 16:50부터 입장할 수 있어요.')).toBeVisible();
+  await expect(page.locator('.consulting-written-meta')).not.toContainText(/오전|오후/);
+  await fits(page); await page.screenshot({ path: testInfo.outputPath('written-waiting-24-hour-320.png'), fullPage: true });
+});
 
 test('학생과 담당자 대화·실제 읽음·비공개 메모·완료가 연결되고 모바일 탭이 분리된다', async ({ page, browser }, testInfo) => {
   const s = fixture(), managerContext = await browser.newContext({ viewport: page.viewportSize() }), manager = await managerContext.newPage();
@@ -135,6 +146,75 @@ test('키보드에 가까운 낮은 화면에서도 입력과 전송이 가려�
   const sendButton = page.getByRole('button', { name: '전송', exact: true });
   const box = await sendButton.boundingBox(); expect(box.y + box.height).toBeLessThanOrEqual(430); await sendButton.click();
   await expect(page.getByRole('log')).toContainText('낮은 화면에서 전송'); await fits(page); await page.screenshot({ path: testInfo.outputPath('written-low-viewport.png'), fullPage: true });
+});
+
+test('문서 높이가 그대로인 키보드 열림과 화면 pan에서도 입력·전송·대화를 보이는 영역 안에 유지한다', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const viewport = Object.assign(new EventTarget(), { height: 844, width: 390, offsetTop: 0, offsetLeft: 0 });
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport });
+  });
+  const s = fixture(); await enter(page, 'student', s);
+  await page.getByLabel('상담 메시지', { exact: true }).fill('키보드를 올려도 입력과 대화를 같이 봅니다.');
+  await page.evaluate(() => { Object.assign(visualViewport, { height: 310, offsetTop: 100 }); visualViewport.dispatchEvent(new Event('resize')); visualViewport.dispatchEvent(new Event('scroll')); });
+  await expect(page.locator('.consulting-written')).toHaveAttribute('data-compact', 'true');
+  await expect.poll(() => page.locator('.consulting-written').evaluate(node => node.getBoundingClientRect().top)).toBe(100);
+  expect(await page.evaluate(() => innerHeight)).toBe(844);
+  const input = await page.getByLabel('상담 메시지', { exact: true }).boundingBox();
+  const button = await page.getByRole('button', { name: '전송', exact: true }).boundingBox();
+  const log = await page.getByRole('log').boundingBox();
+  expect(input.y).toBeGreaterThanOrEqual(100); expect(button.y + button.height).toBeLessThanOrEqual(410); expect(log.height).toBeGreaterThan(30);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('written-visual-viewport-keyboard.png'), fullPage: true });
+  await page.evaluate(() => { Object.assign(visualViewport, { height: 844, offsetTop: 0 }); visualViewport.dispatchEvent(new Event('resize')); });
+  await expect(page.locator('.consulting-written')).toHaveAttribute('data-compact', 'false');
+});
+
+test('관리자 Enter는 한 번만 전송하고 Shift+Enter·한글 조합·내부 메모는 전송하지 않는다', async ({ page }) => {
+  const s = fixture(); await page.setViewportSize({ width: 1200, height: 820 }); await enter(page, 'manager', s);
+  const input = page.getByLabel('상담 메시지', { exact: true });
+  await input.fill('관리자 답변');
+  await input.dispatchEvent('keydown', { key: 'Enter', keyCode: 229, isComposing: true });
+  await input.press('Shift+Enter');
+  await expect(input).toHaveValue('관리자 답변\n');
+  expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(0);
+  await input.press('Enter'); await expect(input).toHaveValue(''); await input.press('Enter');
+  await expect(page.getByRole('log')).toContainText('관리자 답변');
+  expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(1);
+  await page.getByLabel('내부 메모').fill('메모 줄바꿈'); await page.getByLabel('내부 메모').press('Enter');
+  expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(1);
+});
+
+test('학생 휴대폰 Enter는 줄바꿈을 유지한다', async ({ page }) => {
+  const s = fixture(); await enter(page, 'student', s);
+  const input = page.getByLabel('상담 메시지', { exact: true });
+  await input.fill('학생 질문'); await input.press('Enter');
+  await expect(input).toHaveValue('학생 질문\n');
+  expect(s.calls.filter(call => call.type === 'student_send_written_message')).toHaveLength(0);
+});
+
+test('진행 중인 채팅은 대화가 없어도 다음 1초 조회로 새 답변을 받는다', async ({ page }) => {
+  await page.clock.install(); const s = fixture(); await enter(page, 'student', s);
+  await expect(page.getByText('연결됨', { exact: true })).toBeVisible();
+  const before = s.calls.filter(call => call.type === 'student_list_written_messages').length;
+  s.messages.push({ messageId: '01K00000000000000000000001', senderRole: 'counselor', body: '다음 초에 확인할 새 답변', createdAt: new Date().toISOString(), clientMessageId: 'new-reply' });
+  await page.clock.fastForward(1001);
+  await expect(page.getByRole('log')).toContainText('다음 초에 확인할 새 답변');
+  expect(s.calls.filter(call => call.type === 'student_list_written_messages')).toHaveLength(before + 1);
+});
+
+test('송신 말풍선은 응답 전에 보이고 서버 확인은 다음 수신 조회를 기다리지 않는다', async ({ page }) => {
+  const s = fixture(); await enter(page, 'manager', s);
+  s.holdCase = caseId; s.deferSend = true;
+  await send(page, '응답을 기다리면서도 바로 보이는 답변');
+  await expect(page.getByRole('log')).toContainText('응답을 기다리면서도 바로 보이는 답변');
+  await expect(page.getByLabel('상담 메시지', { exact: true })).toHaveValue('');
+  await expect(page.getByRole('log')).toContainText('전송 중…');
+  await expect.poll(() => typeof s.releaseSend).toBe('function');
+  s.releaseSend();
+  await expect(page.getByRole('log')).toContainText('전송됨');
+  expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(1);
+  s.holdCase = null; s.releaseReply?.();
 });
 
 test('학생을 바꾸면 초안과 늦게 도착한 이전 대화가 새 상담에 섞이지 않는다', async ({ page }) => {

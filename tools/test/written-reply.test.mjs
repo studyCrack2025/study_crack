@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectedReplyMessages, replyRangeIssue, mergeReplyDraft, validReplyJob } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-model.js';
-import { createWrittenReply, getWrittenReply, cancelWrittenReply } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-api.js';
+import { selectedReplyMessages, replyRangeIssue, mergeReplyDraft, validReplyJob, validReplyAvailability, replyFailureMessage } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-model.js';
+import { createWrittenReply, getWrittenReply, cancelWrittenReply, getActiveWrittenReply } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-api.js';
 
 const messages = [{ messageId: 'a', senderRole: 'student', body: '질문' }, { messageId: 'b', senderRole: 'counselor', body: '답변' }, { messageId: 'c', senderRole: 'student', body: '추가 질문' }];
 test('range includes intervening counselor context without silently expanding on later messages', () => {
@@ -36,4 +36,26 @@ test('another request result or partial drafts cannot be offered for insertion',
   assert.equal(validReplyJob(job, { range: { start: 'a', end: 'c' } }), false);
   assert.equal(validReplyJob(job, { jobId: `REPLY_${'b'.repeat(64)}` }), false);
   assert.equal(validReplyJob({ ...job, drafts: job.drafts.slice(0, 1) }), false);
+});
+
+test('active status is a read-only scoped request, retries one recovered authentication read, and never creates work', async () => {
+  const calls = []; let reads = 0;
+  const binding = { consultingApiUrl: 'https://example.invalid', apiFetch: async (_, options) => {
+    calls.push(JSON.parse(options.body));
+    if (++reads === 1) throw Object.assign(new Error('recover read'), { code: 'AUTH_RETRY_REQUIRED', status: 409 });
+    return { ok: true, status: 200, json: async () => ({ success: true, data: { reply: null, retryAfterMs: 3000, reason: 'cooldown' } }) };
+  } };
+  const result = await getActiveWrittenReply(binding, { caseId: 'case', expectedSessionId: 'session' });
+  assert.equal(result.ok, true); assert.equal(result.data.retryAfterMs, 3000);
+  assert.deepEqual(calls, Array(2).fill({ type: 'counselor_get_active_written_reply', data: { caseId: 'case', expectedSessionId: 'session' } }));
+});
+
+test('active response validation accepts bounded waits and real message ranges, not malformed jobs or arbitrary provider errors', () => {
+  const reply = { jobId: `REPLY_${'a'.repeat(64)}`, status: 'running', startMessageId: '01K00000000000000000000001', endMessageId: '01K00000000000000000000003' };
+  assert.equal(validReplyAvailability({ reply, retryAfterMs: 110000, reason: 'running' }), true);
+  assert.equal(validReplyAvailability({ reply: null, retryAfterMs: 0, reason: 'ready' }), true);
+  for (const patch of [{ retryAfterMs: -1 }, { retryAfterMs: 120001 }, { retryAfterMs: '1000' }, { reason: 'unknown' }, { reply: { ...reply, startMessageId: 'invalid' } }, { reply: { ...reply, startMessageId: reply.endMessageId, endMessageId: reply.startMessageId } }]) assert.equal(validReplyAvailability({ reply, retryAfterMs: 0, reason: 'running', ...patch }), false);
+  assert.match(replyFailureMessage('REPLY_MODEL_INVALID'), /모델 설정/);
+  assert.match(replyFailureMessage('REPLY_SECRET_UNAVAILABLE'), /접근 권한/);
+  assert.ok(!replyFailureMessage('private provider response').includes('private provider response'));
 });
