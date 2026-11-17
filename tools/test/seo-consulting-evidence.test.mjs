@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+const html=await readFile(new URL('../../jungsi-consulting-2027.html',import.meta.url),'utf8');
+const normalize=s=>s.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+test('consulting structured answers and offer remain grounded in visible service content',()=>{
+ const blocks=[...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(m=>JSON.parse(m[1]));
+ const faq=blocks.find(x=>x['@type']==='FAQPage');
+ const section=html.split('<div class="faq-list">')[1].split('</div>\n</section>')[0];
+ const visible=[...section.matchAll(/<summary>(.*?)<\/summary><p>(.*?)<\/p>/gs)].map(m=>({name:normalize(m[1]),text:normalize(m[2])}));
+ assert.deepEqual(faq.mainEntity.map(x=>({name:x.name,text:x.acceptedAnswer.text})),visible);
+ const service=blocks.find(x=>x['@type']==='Service');
+ const page=blocks.find(x=>x['@type']==='WebPage');
+ assert.equal(page.mainEntity['@id'],service['@id']);
+ assert.equal(service.offers.price,'300000');
+ assert.match(service.offers.description,/200,000원/);
+ assert.match(service.offers.description,/12월 18일/);
+ assert.match(service.offers.description,/결제·입금 완료 순 선착순 70명/);
+ assert.equal([...html.matchAll(/<h1\b/g)].length,1);
+ assert.match(html,/<h1[^>]*>정시컨설팅/);
+ assert.match(html,/href="https:\/\/www\.adiga\.kr\/cct\/stp\/guide\/novicePopupMain.do"/);
+ assert.doesNotMatch(JSON.stringify(blocks),/aggregateRating|reviewRating/);
+});
