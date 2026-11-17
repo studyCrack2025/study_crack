@@ -37,8 +37,8 @@ export function installWrittenChatViewport(browser, element, onResize = () => {}
   };
 }
 
-export function shouldSendWrittenEnter(event, { manager, composing = false, compositionEndedAt = -Infinity, now = Date.now() } = {}) {
-  return Boolean(manager && event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat
+export function shouldSendWrittenEnter(event, { composing = false, compositionEndedAt = -Infinity, now = Date.now() } = {}) {
+  return Boolean(event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && !event.repeat
     && !composing && !event.isComposing && !event.nativeEvent?.isComposing && event.keyCode !== 229 && event.nativeEvent?.keyCode !== 229
     && now - compositionEndedAt >= 50);
 }

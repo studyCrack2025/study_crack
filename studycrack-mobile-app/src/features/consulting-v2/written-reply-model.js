@@ -15,6 +15,17 @@ const failureMessages = {
   REPLY_OUTPUT_INVALID: '추천답변 검증을 통과하지 못했습니다. 다시 추천해주세요.'
 };
 export const replyFailureMessage = code => failureMessages[code] || '추천을 만들지 못했습니다. 대화 범위를 확인하고 다시 시도해주세요.';
+export function writtenReplyUnavailableReason(session, connection) {
+  if (!session) return '상담 정보를 불러온 뒤 추천을 사용할 수 있습니다.';
+  if (connection === 'denied') return '상담 접근 권한을 확인한 뒤 다시 연결해주세요.';
+  if (connection === 'changed') return '상담 일정이 변경되었습니다. 변경된 상담을 다시 열어주세요.';
+  if (session.observer || session.canManage !== true) return '배정된 상담 담당자만 추천답변을 생성할 수 있습니다.';
+  if (session.serviceHold) return '서비스 보류 중에는 추천을 생성할 수 없습니다.';
+  if (session.status === 'completed') return '완료된 상담은 기록 조회만 가능합니다.';
+  if (session.writable !== true) return '상담 진행 시간에 추천답변을 생성할 수 있습니다.';
+  if (session.canSuggestReplies !== true) return 'AI 추천 연결이 활성화되지 않았습니다. 다시 확인해도 같다면 운영 설정을 확인해주세요.';
+  return '';
+}
 export function validReplyAvailability(value) {
   return Boolean(value && ['ready', 'running', 'cooldown'].includes(value.reason)
     && Number.isFinite(value.retryAfterMs) && value.retryAfterMs >= 0 && value.retryAfterMs <= 110000

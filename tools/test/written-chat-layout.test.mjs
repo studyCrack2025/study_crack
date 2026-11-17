@@ -50,18 +50,17 @@ test('fallback resize and disposal restore the document and cannot run a queued 
   assert.equal(f.frames.size, 0);
 });
 
-test('manager Enter sends, while student Enter and modified Enter remain text editing', () => {
-  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { manager: true }), true);
-  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { manager: false }), false);
-  for (const key of ['shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'repeat']) assert.equal(shouldSendWrittenEnter({ key: 'Enter', [key]: true }, { manager: true }), false);
-  assert.equal(shouldSendWrittenEnter({ key: 'a' }, { manager: true }), false);
+test('the shared student and manager composer sends on plain Enter and preserves modified Enter editing', () => {
+  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }), true);
+  for (const key of ['shiftKey', 'ctrlKey', 'altKey', 'metaKey', 'repeat']) assert.equal(shouldSendWrittenEnter({ key: 'Enter', [key]: true }), false);
+  assert.equal(shouldSendWrittenEnter({ key: 'a' }), false);
 });
 
 test('Korean composition, Safari key229 and its final Enter never submit the draft', () => {
-  for (const event of [{ key: 'Enter', isComposing: true }, { key: 'Enter', keyCode: 229 }, { key: 'Enter', nativeEvent: { isComposing: true } }, { key: 'Enter', nativeEvent: { keyCode: 229 } }]) assert.equal(shouldSendWrittenEnter(event, { manager: true }), false);
-  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { manager: true, composing: true }), false);
-  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { manager: true, now: 1000, compositionEndedAt: 990 }), false);
-  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { manager: true, now: 1100, compositionEndedAt: 990 }), true);
+  for (const event of [{ key: 'Enter', isComposing: true }, { key: 'Enter', keyCode: 229 }, { key: 'Enter', nativeEvent: { isComposing: true } }, { key: 'Enter', nativeEvent: { keyCode: 229 } }]) assert.equal(shouldSendWrittenEnter(event), false);
+  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { composing: true }), false);
+  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { now: 1000, compositionEndedAt: 990 }), false);
+  assert.equal(shouldSendWrittenEnter({ key: 'Enter' }, { now: 1100, compositionEndedAt: 990 }), true);
 });
 
 test('empty or duplicate polling preserves message identity, while changed text and attachments update it', () => {
