@@ -7,7 +7,7 @@ const message = (index, senderRole, body) => ({ messageId: `01K${String(index).p
 const bodies = ['희망 대학의 반영 기준과 확인된 성적을 함께 살펴보고, 현재 자료로 판단하기 어려운 부분부터 정리해보겠습니다.', '지원 방향이 고민되셨겠어요. 원하는 조건과 성적을 차근차근 비교하면서, 먼저 확인해야 할 자료를 함께 정리해볼게요.'];
 function fixture() { return { calls: [], messages: [message(1, 'student', '원점수를 기준으로 지원 방향을 어떻게 정하면 좋을까요?'), message(2, 'counselor', '어떤 기준을 가장 중요하게 생각하나요?'), message(3, 'student', '지역과 전공을 함께 고려하고 싶어요.')], enabled: true, complete: true, jobs: new Map(), polls: 0, sequence: 3 }; }
 function session(s, selectedCase = caseId) {
-  return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly, readOnly: Boolean(s.readOnly), canManage: !s.readOnly, canSuggestReplies: s.enabled && !s.readOnly, replyContextVersion: s.version || 'v1' };
+  return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly && !s.observer, readOnly: Boolean(s.readOnly || s.observer), observer: Boolean(s.observer), canManage: !s.observer, ...(s.omitCapability ? {} : { canSuggestReplies: s.enabled && !s.observer }), replyContextVersion: s.version || 'v1' };
 }
 async function enter(page, s, { desktop = false } = {}) {
   for (const row of s.messages) expect(row.messageId, '추천 fixture는 실제 26자리 메시지 ID를 사용한다').toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
@@ -146,14 +146,48 @@ test('2분 종료 이후 대기를 계속하지 않고 작성과 수동 전송�
   await page.getByRole('button', { name: '전송', exact: true }).click();
   await expect.poll(() => sent(s).length).toBe(1);
 });
-test('백엔드 준비 전과 읽기 전용 상담에서는 추천 호출과 입력 도구가 나타나지 않는다', async ({ page }) => {
+test('추천 연결이 준비되지 않아도 진입점과 패널은 유지하고 생성은 제한한다', async ({ page }) => {
   const s = fixture(); s.enabled = false; await enter(page, s);
-  await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '대화를 선택해 답변 추천' })).toHaveCount(0);
-  s.enabled = true; s.readOnly = true; await page.reload();
-  await expect(page.getByLabel('상담 메시지', { exact: true })).toBeDisabled();
-  await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '대화를 선택해 답변 추천' })).toBeDisabled();
+  await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page)).toBeVisible();
+  await expect(panel(page)).toContainText('AI 추천 연결이 활성화되지 않았습니다.');
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeDisabled();
+  await expect(panel(page).getByRole('button', { name: '최근 학생 질문 선택' })).toBeDisabled();
   expect(s.calls.filter(call => call.type.includes('written_reply'))).toHaveLength(0);
+  s.enabled = true;
+  await panel(page).getByRole('button', { name: '추천 연결 다시 확인' }).click();
+  await expect(panel(page).getByRole('button', { name: '최근 학생 질문 선택' })).toBeEnabled();
+  await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  await expect(panel(page).getByRole('heading', { name: '공감·설명형' })).toBeVisible();
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+  expect(sent(s)).toHaveLength(0);
+});
+
+test('서버 활성화 응답이 누락되어도 추천 탭을 지우지 않고 확인 경로를 제공한다', async ({ page }) => {
+  const s = fixture(); s.omitCapability = true; await enter(page, s);
+  await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page)).toContainText('AI 추천 연결이 활성화되지 않았습니다.');
+  await expect(panel(page).getByRole('button', { name: '추천 연결 다시 확인' })).toBeVisible();
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeDisabled();
+  expect(s.calls.filter(call => call.type.includes('written_reply'))).toHaveLength(0);
+  expect(sent(s)).toHaveLength(0);
+});
+
+test('읽기 전용이나 검수 상담도 추천 불가 사유를 표시하고 생성·전송하지 않는다', async ({ page }) => {
+  const s = fixture(); s.readOnly = true; await enter(page, s);
+  await expect(page.getByLabel('상담 메시지', { exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page)).toContainText('상담 진행 시간에');
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeDisabled();
+  s.readOnly = false; s.observer = true; await page.reload();
+  await page.getByRole('button', { name: '답변 추천', exact: true }).click();
+  await expect(panel(page)).toContainText('배정된 상담 담당자만');
+  await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeDisabled();
+  expect(s.calls.filter(call => call.type.includes('written_reply'))).toHaveLength(0);
+  expect(sent(s)).toHaveLength(0);
 });
 
 test('새로고침 뒤 진행 중인 같은 상담 추천을 이어 확인하고 작업을 중복 생성하지 않는다', async ({ page }) => {

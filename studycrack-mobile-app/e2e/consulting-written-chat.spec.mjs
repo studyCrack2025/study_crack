@@ -30,7 +30,7 @@ async function install(page, role, s) {
     else if (type.endsWith('list_written_messages')) { if (s.holdCase && s.holdCase === data.caseId) await new Promise(resolve => { s.releaseReply = resolve; }); const messages = s.messages.filter(item => (!item.caseId || item.caseId === (data.caseId || caseId)) && (!data.afterMessageId || item.messageId > data.afterMessageId)); result = { messages, nextCursor: messages.at(-1)?.messageId || data.afterMessageId || null, hasMore: false, session: session(s, role, data.caseId || caseId) }; }
     else if (type.endsWith('send_written_message')) {
       let message = s.messages.find(item => item.clientMessageId === data.clientMessageId);
-      if (!message) { message = { messageId: '01K00000000000000000' + String(++s.sequence).padStart(7, '0'), sessionId: session(s, role).sessionId, senderRole: role === 'student' ? 'student' : 'counselor', body: data.body, createdAt: new Date().toISOString(), clientMessageId: data.clientMessageId, ...(data.attachmentIds?.length ? { attachments: data.attachmentIds.map(id => s.files[id]) } : {}) }; s.messages.push(message); }
+      if (!message) { message = { messageId: '01K' + String(++s.sequence).padStart(23, '0'), sessionId: session(s, role).sessionId, senderRole: role === 'student' ? 'student' : 'counselor', body: data.body, createdAt: new Date().toISOString(), clientMessageId: data.clientMessageId, ...(data.attachmentIds?.length ? { attachments: data.attachmentIds.map(id => s.files[id]) } : {}) }; s.messages.push(message); }
       if (s.deferSend) await new Promise(resolve => { s.releaseSend = resolve; });
       if (s.failSend) { s.failSend = false; status = 500; } result = { message };
     } else if (type.endsWith('mark_written_read')) { s.sentRead[role] = data.throughMessageId; result = { marked: true }; }
@@ -65,6 +65,8 @@ test('학생 상담 시간과 입장 대기 시각을 한국시간 24시간제�
 test('학생과 담당자 대화·실제 읽음·비공개 메모·완료가 연결되고 모바일 탭이 분리된다', async ({ page, browser }, testInfo) => {
   const s = fixture(), managerContext = await browser.newContext({ viewport: page.viewportSize() }), manager = await managerContext.newPage();
   await enter(page, 'student', s); await enter(manager, 'manager', s);
+  await expect(page.getByRole('button', { name: '답변 추천', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '답변 추천', exact: true })).toHaveCount(0);
   await page.bringToFront(); await send(page, '<script>실행되지 않는 질문</script>'); await manager.bringToFront();
   await expect(manager.getByRole('log')).toContainText('실행되지 않는 질문', { timeout: 12000 });
   await send(manager, '가·나·다군 조합을 같이 살펴볼게요.'); await page.bringToFront();
@@ -113,6 +115,8 @@ test('검사 대기·거절 사진은 전송을 막고 취소 후 글만 보낼 
   await page.getByLabel('상담 사진 선택').setInputFiles({ name: '사진.jpg', mimeType: 'image/jpeg', buffer: png });
   await expect(page.locator('.consulting-chat-uploads')).toContainText('보안 확인 중');
   await page.getByLabel('상담 메시지', { exact: true }).fill('글은 작성 가능'); await expect(page.getByRole('button', { name: '전송', exact: true })).toBeDisabled();
+  await page.getByLabel('상담 메시지', { exact: true }).press('Enter');
+  expect(s.calls.filter(call => call.type === 'student_send_written_message')).toHaveLength(0);
   s.photoState = 'rejected'; await expect(page.locator('.consulting-chat-uploads')).toContainText('안전하게 열 수 없는 사진', { timeout: 8000 });
   await page.getByRole('button', { name: '첨부 취소' }).click(); await page.getByRole('button', { name: '전송', exact: true }).click();
   await expect(page.getByRole('log')).toContainText('글은 작성 가능'); expect(s.calls.some(call => call.type === 'consulting_delete_written_photo')).toBe(true);
@@ -185,12 +189,25 @@ test('관리자 Enter는 한 번만 전송하고 Shift+Enter·한글 조합·내
   expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(1);
 });
 
-test('학생 휴대폰 Enter는 줄바꿈을 유지한다', async ({ page }) => {
+test('학생도 Enter로 한 번만 전송하고 Shift+Enter·한글 조합은 줄바꿈과 입력을 유지한다', async ({ page }) => {
   const s = fixture(); await enter(page, 'student', s);
   const input = page.getByLabel('상담 메시지', { exact: true });
-  await input.fill('학생 질문'); await input.press('Enter');
+  await expect(input).toHaveAttribute('enterkeyhint', 'send');
+  await expect(input).toHaveAttribute('placeholder', 'Enter로 전송 · Shift+Enter로 줄바꿈');
+  await input.fill('학생 질문');
+  await input.dispatchEvent('keydown', { key: 'Enter', keyCode: 229, isComposing: true });
+  await expect(input).toHaveValue('학생 질문');
+  await input.press('Shift+Enter');
   await expect(input).toHaveValue('학생 질문\n');
   expect(s.calls.filter(call => call.type === 'student_send_written_message')).toHaveLength(0);
+  await input.press('Enter'); await expect(input).toHaveValue(''); await input.press('Enter');
+  await expect(page.getByRole('log')).toContainText('학생 질문');
+  const calls = s.calls.filter(call => call.type === 'student_send_written_message');
+  expect(calls).toHaveLength(1);
+  expect(calls[0].data.body).toBe('학생 질문');
+  expect(calls[0].data.expectedSessionId).toBe(session(s, 'student').sessionId);
+  expect(s.messages).toHaveLength(1);
+  expect(s.messages[0].messageId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
 });
 
 test('진행 중인 채팅은 대화가 없어도 다음 1초 조회로 새 답변을 받는다', async ({ page }) => {

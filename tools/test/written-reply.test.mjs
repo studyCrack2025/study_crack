@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectedReplyMessages, replyRangeIssue, mergeReplyDraft, validReplyJob, validReplyAvailability, replyFailureMessage } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-model.js';
+import { selectedReplyMessages, replyRangeIssue, mergeReplyDraft, validReplyJob, validReplyAvailability, replyFailureMessage, writtenReplyUnavailableReason } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-model.js';
 import { createWrittenReply, getWrittenReply, cancelWrittenReply, getActiveWrittenReply } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-api.js';
 
 const messages = [{ messageId: 'a', senderRole: 'student', body: '질문' }, { messageId: 'b', senderRole: 'counselor', body: '답변' }, { messageId: 'c', senderRole: 'student', body: '추가 질문' }];
+test('a visible recommendation panel still requires explicit server permission for an assigned, writable consultation', () => {
+  const session = { canManage: true, canSuggestReplies: true, writable: true, status: 'open' };
+  assert.equal(writtenReplyUnavailableReason(session, 'connected'), '');
+  assert.equal(writtenReplyUnavailableReason(session, 'reconnecting'), '', 'a temporary reconnect must not abandon an active recommendation');
+  for (const canSuggestReplies of [undefined, false, 'true']) assert.match(writtenReplyUnavailableReason({ ...session, canSuggestReplies }, 'connected'), /AI 추천 연결/);
+  for (const patch of [{ observer: true }, { canManage: false }, { canManage: undefined }]) assert.match(writtenReplyUnavailableReason({ ...session, ...patch }, 'connected'), /배정된 상담 담당자/);
+  assert.match(writtenReplyUnavailableReason({ ...session, writable: false }, 'connected'), /상담 진행 시간/);
+  assert.match(writtenReplyUnavailableReason({ ...session, serviceHold: true }, 'connected'), /서비스 보류/);
+  assert.match(writtenReplyUnavailableReason({ ...session, status: 'completed' }, 'connected'), /완료된 상담/);
+  assert.match(writtenReplyUnavailableReason(session, 'denied'), /접근 권한/);
+  assert.match(writtenReplyUnavailableReason(session, 'changed'), /상담 일정/);
+  assert.match(writtenReplyUnavailableReason(null, 'connecting'), /상담 정보/);
+});
 test('range includes intervening counselor context without silently expanding on later messages', () => {
   const range = { start: 'a', end: 'b' };
   assert.deepEqual(selectedReplyMessages(messages, range), messages.slice(0, 2));
