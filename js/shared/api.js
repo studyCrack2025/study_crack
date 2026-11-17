@@ -34,9 +34,21 @@ function readJungsiInviteTransient() {
     try {
         const value = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null');
         if (value?.version === 1 && /^APP_[0-9a-f-]{36}$/i.test(value.applicationId || '')
-            && /^[A-Za-z0-9_-]{43}$/.test(value.token || '')) return value;
+            && /^[A-Za-z0-9_-]{43}$/.test(value.token || '')
+            && /^claim_[0-9a-f-]{36}$/i.test(value.idempotencyKey || '')) {
+            return { version: 1, applicationId: value.applicationId, token: value.token, idempotencyKey: value.idempotencyKey,
+                ...(Number.isSafeInteger(value.capturedAt) ? { capturedAt: value.capturedAt } : {}) };
+        }
     } catch (_) {}
     return null;
+}
+
+function isJungsiInviteContinuation(attempt) {
+    const pathname = window.location.pathname || '';
+    const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
+    return pathname === '/2027-jungsi-consulting/start'
+        || ((pathname === '/login' || pathname === '/signup') && returnUrl === '/2027-jungsi-consulting/start')
+        || (pathname === '/social-callback' && attempt?.returnUrl === '/2027-jungsi-consulting/start');
 }
 
 function readSocialLoginAttempt() {
@@ -132,7 +144,8 @@ function notifyClientSessionEnded() {
     if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent('studycrack:session-ended'));
 }
 
-function invalidateClientSession() {
+function invalidateClientSession({ preserveInvite = false } = {}) {
+    const invite = preserveInvite ? readJungsiInviteTransient() : null;
     _clientSessionGeneration += 1;
     const controller = _sharedRefreshController;
     _sharedRefreshController = null;
@@ -142,6 +155,7 @@ function invalidateClientSession() {
     controller?.abort();
     for (const request of _sessionRequests) request.abort();
     sessionStorage.clear();
+    if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
     notifyClientSessionEnded();
 }
 
@@ -167,12 +181,7 @@ function completeClientLogin(data, scope) {
 if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sessionStorage.getItem(SESSION_EPOCH_KEY) !== _observedSessionEpoch)) {
     // 유효한 새 로그인 요청만 남기고 이전 인증 정보는 모두 제거한다.
     const attempt = sessionStorage.getItem(SESSION_EPOCH_KEY) === _observedSessionEpoch ? readSocialLoginAttempt() : null;
-    const pathname = window.location.pathname || '';
-    const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '';
-    const preserveInvite = pathname === '/2027-jungsi-consulting/start'
-        || ((pathname === '/login' || pathname === '/signup') && returnUrl === '/2027-jungsi-consulting/start')
-        || (pathname === '/social-callback' && attempt?.returnUrl === '/2027-jungsi-consulting/start');
-    const invite = preserveInvite ? readJungsiInviteTransient() : null;
+    const invite = isJungsiInviteContinuation(attempt) ? readJungsiInviteTransient() : null;
     sessionStorage.clear();
     if (attempt) sessionStorage.setItem(SOCIAL_ATTEMPT_KEY, JSON.stringify(attempt));
     if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
@@ -253,7 +262,7 @@ function enforceClientSessionOnPageShow(event) {
     const epoch = localStorage.getItem(SESSION_EPOCH_KEY) || '';
     if (_observedSessionEpoch !== epoch) {
         _observedSessionEpoch = epoch;
-        invalidateClientSession();
+        invalidateClientSession({ preserveInvite: !isClientSessionEnded() && isJungsiInviteContinuation(readSocialLoginAttempt()) });
         if (currentPath.startsWith('/studycrack-mobile')) window.location.replace(`${currentPath}?screen=authLogin`);
         else if (!isPublic) window.location.replace(getRoleLoginPath());
         return;

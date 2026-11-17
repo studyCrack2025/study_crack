@@ -35,7 +35,14 @@ export function formatWrittenSession(session) {
   const end = new Date(session.endAt);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
   const date = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'short' }).format(start);
-  const time = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(start);
-  const endTime = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(end);
+  const time = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(start);
+  const endTime = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(end);
   return { date, time: `${time}–${endTime}` };
+}
+
+export function writtenChangeRemaining(booking, fallbackTime = Date.now()) {
+  const provided = Date.parse(booking.changeRequestDeadline);
+  const deadline = Number.isFinite(provided) ? provided : Date.parse(booking.session?.startAt) - 7200000;
+  const serverTime = Number.isFinite(Date.parse(booking.serverTime)) ? Date.parse(booking.serverTime) : fallbackTime;
+  return deadline - serverTime;
 }

@@ -11,7 +11,7 @@ import { useWrittenReplySuggestions } from '../use-written-reply-suggestions.js'
 import { mergeReplyDraft } from '../written-reply-model.js';
 import { WrittenReplySuggestions } from '../components/WrittenReplySuggestions.jsx';
 
-const dateLabel = value => { const date = new Date(value); return Number.isFinite(+date) ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date) : ''; };
+const dateLabel = value => { const date = new Date(value); return Number.isFinite(+date) ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date) : ''; };
 const connectionLabels = { connecting: '연결 중', connected: '연결됨', paused: '연결 일시 중지', offline: '인터넷 연결을 확인해주세요', reconnecting: '다시 연결하는 중', denied: '접근 권한 확인 필요', changed: '상담 일정 변경됨' };
 
 function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {

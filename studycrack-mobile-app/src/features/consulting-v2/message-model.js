@@ -15,7 +15,7 @@ export function nextWrittenPollDelay({ changed, unchangedCount = 0 }) {
 export function formatWrittenMessageTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
+  return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
 }
 
 export function createClientMessageId() {
