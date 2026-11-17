@@ -1,4 +1,5 @@
 import React from 'react';
+import { getBrowser } from '../../../shared/browser/mobile-runtime.js';
 import { getWrittenAvailability, getWrittenBooking, listWrittenSlots, requestWrittenReschedule, respondWrittenReschedule, submitWrittenAvailability } from '../schedule-api.js';
 import { formatWrittenSession, validateWrittenSelection, writtenChangeRemaining } from '../schedule-model.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
@@ -14,6 +15,7 @@ function ConfirmedWrittenTime({ value }) {
 }
 
 export function ConsultingScheduleScreen({ binding }) {
+  const browser = getBrowser();
   const [resource, setResource] = React.useState({ status: 'loading' });
   const [selected, setSelected] = React.useState({});
   const [message, setMessage] = React.useState('');
@@ -59,9 +61,9 @@ export function ConsultingScheduleScreen({ binding }) {
       else timer = setTimeout(check, Math.min(60000, Math.max(1, resource.changeDeadlineClock - performance.now() + 1)));
     };
     check();
-    window.addEventListener('focus', check); document.addEventListener('visibilitychange', check);
-    return () => { clearTimeout(timer); window.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check); };
-  }, [canRequestNow, resource.changeDeadlineClock]);
+    browser.addEventListener('focus', check); document.addEventListener('visibilitychange', check);
+    return () => { clearTimeout(timer); browser.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check); };
+  }, [browser, canRequestNow, resource.changeDeadlineClock]);
   const canRequestChange = !changeClosed && canRequestNow();
   const revisionData = () => ({ expectedSessionRevision: resource.booking.revision, expectedChangeRevision: resource.changeRevision });
   const save = async () => {

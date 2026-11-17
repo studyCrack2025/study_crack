@@ -8,7 +8,7 @@ function session(s, role, selectedCase = caseId) {
   return { caseId: selectedCase, sessionId: 'SESSION_123e4567-e89b-42d3-a456-426614174001', counselorId: 'operator', status: s.phase === 'completed' ? 'completed' : 'open',
     serverTime: new Date().toISOString(), startAt: new Date(Date.now() - 3600000).toISOString(), endAt: new Date(Date.now() - 60000).toISOString(),
     entryAllowed: s.phase !== 'before', writable: s.phase === 'open' && role !== 'observer', serviceHold: s.phase === 'held', readOnly: ['completed', 'held'].includes(s.phase) || role === 'observer', observer: role === 'observer', canManage: role === 'manager',
-    otherReadThroughId: s.sentRead[role === 'student' ? 'manager' : 'student'] || null };
+    otherReadThroughId: s.sentRead[role === 'student' ? 'manager' : 'student'] || null, ...s.sessionTimes };
 }
 async function install(page, role, s) {
   const cssResponse = await page.request.get('/studycrack-mobile-app/dist/studycrack-mobile.css');
@@ -50,6 +50,16 @@ async function install(page, role, s) {
 async function enter(page, role, state) { await install(page, role, state); await page.goto(`/2027-jungsi-consulting/written-session${role === 'student' ? '' : '?caseId=' + caseId}`); await expect(page.getByRole('heading', { name: '서면상담', exact: true })).toBeVisible(); }
 async function send(page, body) { await page.getByLabel('상담 메시지', { exact: true }).fill(body); await page.getByRole('button', { name: '전송', exact: true }).click(); }
 async function fits(page) { expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true); }
+
+test('학생 상담 시간과 입장 대기 시각을 한국시간 24시간제로 통일한다', async ({ page }, testInfo) => {
+  const s = fixture(); s.phase = 'before';
+  s.sessionTimes = { startAt: '2026-11-17T08:00:00.000Z', endAt: '2026-11-17T08:30:00.000Z', entryAt: '2026-11-17T07:50:00.000Z' };
+  await page.setViewportSize({ width: 320, height: 900 }); await enter(page, 'student', s);
+  await expect(page.locator('.consulting-written-meta p')).toHaveText('11월 17일 17:00 ~ 17:30 · 한국시간');
+  await expect(page.getByText('11월 17일 16:50부터 입장할 수 있어요.')).toBeVisible();
+  await expect(page.locator('.consulting-written-meta')).not.toContainText(/오전|오후/);
+  await fits(page); await page.screenshot({ path: testInfo.outputPath('written-waiting-24-hour-320.png'), fullPage: true });
+});
 
 test('학생과 담당자 대화·실제 읽음·비공개 메모·완료가 연결되고 모바일 탭이 분리된다', async ({ page, browser }, testInfo) => {
   const s = fixture(), managerContext = await browser.newContext({ viewport: page.viewportSize() }), manager = await managerContext.newPage();
