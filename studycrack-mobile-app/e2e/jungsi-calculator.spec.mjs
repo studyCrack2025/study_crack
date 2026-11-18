@@ -64,6 +64,8 @@ function conversionResponse(payload, control) {
       const row = { university: target.university, major: target.major, status: 'available', choices: [option], selected: option, reasonCodes: [], convertedScore: 743.1256, maximumScore: 1000 };
       if (['raw-points', 'missing-maximum', 'unknown-scale'].includes(mode)) Object.assign(row, { maximumScore: null,
         ...(mode !== 'missing-maximum' ? { scoreScale: mode === 'raw-points' ? 'raw_points' : 'unknown' } : {}) });
+      if (['component', 'component-exact', 'component-unknown'].includes(mode)) Object.assign(row, { scoreScope: 'csat_component',
+        precisionPolicy: mode === 'component-exact' ? 'exact_integer_domain' : mode === 'component' ? 'published' : 'unknown' });
       if (mode === 'choice') row.choices.push({ ...option, admissionUnitId: 'UNIT_BROWSER_SECOND', admissionGroup: 'da' });
       if (mode === 'choice' && !target.admissionUnitId) Object.assign(row, { status: 'choice_required', selected: null, reasonCodes: ['UNIT_SELECTION_REQUIRED'], convertedScore: null, maximumScore: null });
       if (target.admissionUnitId) row.selected = row.choices.find(choice => choice.admissionUnitId === target.admissionUnitId);
@@ -121,7 +123,7 @@ test('비로그인 진입은 코드 요구 없이 로그인 복귀를 안내하�
   const control = await setup(page, { signedIn: false });
   await page.goto('/2027-jungsi-consulting#calculator');
   await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: '오픈 준비 중 ↗', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: '계산기 신청하기', exact: true })).toHaveAttribute('href', '#application');
   await page.goto(path);
   await expect(page).toHaveURL(new RegExp(path + '$'));
   await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
@@ -317,6 +319,21 @@ test('복수 전형은 임의 계산하지 않고 전형·모집군을 고른 �
   expect(control.calls.at(-1).data.targets[0].admissionUnitId).toBe('UNIT_BROWSER_SECOND');
 });
 
+test('수능 성분과 미공표 소수점 정책은 최종 총점과 구분해 표시한다', async ({ page }) => {
+  const control = await setup(page); control.conversionMode = 'component';
+  await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.getByText('내 수능 환산점수', { exact: true })).toBeVisible();
+  await expect(page.getByText('수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.', { exact: true })).toBeVisible();
+  control.conversionMode = 'component-exact';
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.getByText('공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.', { exact: true })).toBeVisible();
+  control.conversionMode = 'component-unknown';
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await expect(page.getByText('환산 결과를 확인하지 못했습니다. 다시 조회해주세요.', { exact: true })).toBeVisible();
+});
+
 test('승인 대기·변환표 누락·가채점·권한 부족은 가짜 숫자 없이 이유를 안내한다', async ({ page }) => {
   const control = await setup(page); await page.goto(path); await prepareConversion(page);
   for (const [mode, message] of [['pending', '운영 승인을 기다리고'], ['missing-table', '등급표 또는 탐구 변환표'], ['denied', 'Basic·Starter·Standard·Pro']]) {
@@ -425,7 +442,7 @@ test('이용 상태 확인 중에도 입력·검색은 유지되고 결과 조�
 
 test('이용권 없음·확인 실패·손상 응답을 구분하며 결제를 호출하지 않고 입력을 보존한다', async ({ page }) => {
   const control = await setup(page); control.accessAllowed = false; await page.goto(path); await prepareConversion(page);
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toBeDisabled();
   await expect(page.getByRole('link', { name: '내 이용권 확인', exact: true })).toHaveAttribute('href', '/mypage');
   for (const mode of ['error', 'invalid']) {
@@ -448,14 +465,14 @@ test('권한 재확인·실제 조회 중 권한 변경은 이전 수치를 숨�
   await expect(page.locator('.jcalc-probability')).toHaveText('약 82점 / 100');
   control.accessAllowed = false;
   await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   control.accessAllowed = true;
   await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toBeEnabled();
   control.conversionMode = 'denied';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(2);
 });
@@ -484,7 +501,7 @@ test('다른 화면에서 돌아오면 이용 상태를 재확인하고 연속 f
   await page.clock.install(); await page.clock.fastForward(31_000);
   control.accessAllowed = false;
   await page.evaluate(() => { dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); });
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_access')).toHaveLength(2);
 });

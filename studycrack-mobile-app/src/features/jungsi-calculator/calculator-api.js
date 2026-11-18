@@ -44,6 +44,7 @@ function validResponse(body, scores, targets) {
       || row.selected !== null && (!unit(row.selected) || !row.choices.some(value => ['admissionUnitId', 'campusName', 'unitName', 'trackName', 'admissionGroup'].every(key => value[key] === row.selected[key])))) return false;
     if (row.status === 'available') return body.release !== null && scores.basis === 'official' && row.selected !== null
       && (!target.admissionUnitId || row.selected.admissionUnitId === target.admissionUnitId)
+      && (row.scoreScope === undefined ? row.precisionPolicy === undefined : row.scoreScope === 'csat_component' && ['published', 'exact_integer_domain'].includes(row.precisionPolicy))
       && Number.isFinite(row.convertedScore) && (row.maximumScore === null ? row.scoreScale === 'raw_points'
         : Number.isFinite(row.maximumScore) && row.maximumScore > 0 && row.scoreScale === undefined) && row.reasonCodes.length === 0;
     return row.convertedScore === null && row.maximumScore === null && row.reasonCodes.length > 0;

@@ -281,7 +281,7 @@ for (const code of ['FORBIDDEN', 'AUTH_RETRY_REQUIRED']) test(`${code} 응답은
 test('코드 오류 뒤 신청과 다른 이메일의 학생 계정으로 초대를 정상 인증한다', async ({ page }, testInfo) => {
   await prepare(page);
   await expect(codeInput(page)).toBeVisible();
-  await expect(page.getByRole('status')).toContainText('현재 로그인한 학생 계정에 컨설팅이 연결됩니다.');
+  await expect(page.getByRole('status')).toContainText('현재 로그인한 학생 계정에 신청 상품이 연결됩니다.');
   await expect(page.getByText('신청 이메일', { exact: true })).toBeVisible();
   await expect(page.getByText('s***@naver.com', { exact: true })).toBeVisible();
   await page.evaluate(() => { window.__inviteFixture.claimError = 'INVITE_INVALID'; });
@@ -295,7 +295,7 @@ test('코드 오류 뒤 신청과 다른 이메일의 학생 계정으로 초대
   expect(firstCall.data).not.toHaveProperty('email');
   expect(firstCall.data).not.toHaveProperty('phone');
   await codeInput(page).fill('1234567890');
-  await expect(page.getByRole('status')).toHaveText('신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.');
+  await expect(page.getByRole('status')).toHaveText('신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 신청 상품이 연결됩니다.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
@@ -317,7 +317,7 @@ test('브라우저가 이전 화면을 복원하면 실패 문구와 코드가 �
   await expect(page.getByRole('status')).toHaveAttribute('data-tone', 'error');
   const count = (await statusCalls(page)).length;
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
-  await expect(page.getByRole('status')).toHaveText('신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.');
+  await expect(page.getByRole('status')).toHaveText('신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 신청 상품이 연결됩니다.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await expect(codeInput(page)).toHaveValue('');
   expect(await statusCalls(page)).toHaveLength(count + 1);

@@ -429,7 +429,7 @@ test('검정고시에 해당하지 않는 과거 보완 요청은 확인 후 재
   await expect(page.getByRole('heading', { name: '보완 답변이 재접수됐어요' })).toBeVisible();
 });
 
-test('메인 정시 링크는 운영과 같은 계산기 탭으로 연결하고 Basic 진입을 유지한다', async ({ browser, baseURL }, testInfo) => {
+test('메인 정시 링크는 서비스 안내로 연결하고 Basic 진입을 유지한다', async ({ browser, baseURL }, testInfo) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   try {
     const page = await context.newPage();
@@ -437,15 +437,15 @@ test('메인 정시 링크는 운영과 같은 계산기 탭으로 연결하고 
     for (const width of [320, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${baseURL}/`);
-      const entry = page.locator('.hero-main-content').getByRole('link', { name: '정시 합격 계산·컨설팅 →', exact: true });
-      await expect(entry).toHaveAttribute('href', '/2027-jungsi-consulting#calculator');
+      const entry = page.locator('.hero-main-content').getByRole('link', { name: '2027 정시컨설팅 비용·상담 안내 →', exact: true });
+      await expect(entry).toHaveAttribute('href', '/2027-jungsi-consulting');
       await expect(entry).toBeInViewport();
       await expect(page.locator('.hero-main-content .basic-preview-entry')).toHaveAttribute('href', '/basic-preview');
       expect(await page.locator('.hero-main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: testInfo.outputPath(`main-service-entry-${width}.png`) });
       await entry.click();
-      await expect(page).toHaveURL(`${baseURL}/2027-jungsi-consulting#calculator`);
-      await expect(page.locator('#landingTitle')).toContainText('지원할 대학,');
+      await expect(page).toHaveURL(`${baseURL}/2027-jungsi-consulting`);
+      await expect(page.locator('#landingTitle')).toContainText('정시컨설팅,');
       for (const policy of ['/terms', '/refund', '/privacy']) {
         const link = page.locator('.footer').locator(`a[href="${policy}"]`);
         await expect(link).toBeVisible(); expect((await page.request.get(policy)).status()).toBe(200);
