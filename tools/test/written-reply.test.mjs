@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedReplyMessages, replyRangeIssue, mergeReplyDraft, validReplyJob, validReplyAvailability, replyFailureMessage, writtenReplyUnavailableReason } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-model.js';
 import { createWrittenReply, getWrittenReply, cancelWrittenReply, getActiveWrittenReply } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-api.js';
+import { readFileSync } from 'node:fs';
+import { validReplyEvidence, unitEvidenceSources } from '../../studycrack-mobile-app/src/features/consulting-v2/written-reply-evidence.js';
 
 const messages = [{ messageId: 'a', senderRole: 'student', body: '질문' }, { messageId: 'b', senderRole: 'counselor', body: '답변' }, { messageId: 'c', senderRole: 'student', body: '추가 질문' }];
 test('a visible recommendation panel still requires explicit server permission for an assigned, writable consultation', () => {
@@ -73,4 +75,22 @@ test('active response validation accepts bounded waits and real message ranges, 
   assert.match(replyFailureMessage('REPLY_MODEL_INVALID'), /모델 설정/);
   assert.match(replyFailureMessage('REPLY_SECRET_UNAVAILABLE'), /접근 권한/);
   assert.ok(!replyFailureMessage('private provider response').includes('private provider response'));
+});
+test('typed evidence binds visible units and original source roles while old completed replies stay compatible', () => {
+  const sample = JSON.parse(readFileSync(new URL('../../studycrack-mobile-app/e2e/fixtures/written-reply-evidence.json', import.meta.url)));
+  const job = { jobId: 'REPLY_' + 'a'.repeat(64), status: 'succeeded', ...sample };
+  assert.equal(validReplyJob(job), true); assert.equal(validReplyEvidence(sample.evidence), true);
+  const unit = sample.evidence.units[0];
+  assert.deepEqual(unitEvidenceSources(sample.evidence, unit, 'score').flatMap(doc => doc.roles), ['환산점수 계산']);
+  assert.ok(unitEvidenceSources(sample.evidence, unit, 'cut_comparison').some(doc => doc.roles.includes('등록자 70% 추정선')));
+  for (const mutate of [
+    value => value.units[0].proof.cut.scaleId = 'CANONICAL_' + 'f'.repeat(64),
+    value => value.documents[0].url = 'javascript:alert(1)',
+    value => value.units[0].proof.cut.passSourceIds = ['SOURCE_UNKNOWN'],
+    value => value.uses[0].claims[0].admissionUnitId = 'UNIT_UNKNOWN',
+    value => value.units[0].referenceLines.targetYear = 2026,
+    value => value.release = { releaseId: {} }, value => value.units[0] = null, value => value.documents[0] = null, value => value.uses[0].claims[0] = null
+  ]) { const evidence = structuredClone(sample.evidence); mutate(evidence); assert.equal(validReplyJob({ ...job, evidence }), false); }
+  const old = { ...job }; delete old.evidence;
+  assert.equal(validReplyJob(old), true);
 });

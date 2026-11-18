@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+const numericalReply = JSON.parse(readFileSync(new URL('./fixtures/written-reply-evidence.json', import.meta.url)));
 
 const caseId = 'CASE_123e4567-e89b-42d3-a456-426614174000', otherCase = 'CASE_123e4567-e89b-42d3-a456-426614174009';
 const sessionId = 'SESSION_123e4567-e89b-42d3-a456-426614174001';
@@ -40,7 +43,7 @@ async function enter(page, s, { desktop = false } = {}) {
       if (s.denied) return route.fulfill({ status: 403, json: { success: false, code: 'FORBIDDEN' } });
       const job = s.jobs.get(data.jobId);
       const status = ['cancelled', 'stale', 'failed'].includes(job.status) ? job.status : s.terminal || (s.complete ? 'succeeded' : 'running');
-      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'], ...(s.grounding ? { grounding: s.grounding } : {}) } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
+      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'], ...(s.grounding ? { grounding: s.grounding } : {}), ...(s.numerical ? s.numerical : {}) } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
       result = { reply: job };
     } else if (type === 'counselor_cancel_written_reply') { const job = s.jobs.get(data.jobId); job.status = 'cancelled'; result = { reply: job }; }
     else if (type === 'counselor_send_written_message') {
@@ -257,5 +260,52 @@ test('추천 근거는 성적 기준·분석 후보·자료 수를 표시하고 
   const s = fixture(); s.grounding = { status: 'partial', scoreBasis: 'historical_reference', referenceYear: 2026, candidateCount: 3, sourceCount: 2, reasonCodes: ['CUT_REFERENCE_REVIEW_REQUIRED'] };
   await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
   await expect(panel(page)).toContainText('2026 수능 참고 성적 · 분석 후보 3개 · 입시 근거 2건');
+  expect(sent(s)).toHaveLength(0);
+});
+
+for (const desktop of [false, true]) test(`추천 수치의 학과·학년도·컷 통계와 원문은 초안별 근거를 펼쳐 확인한다 (${desktop ? '넓은 화면' : '모바일'})`, async ({ page }, testInfo) => {
+  const s = fixture(); s.numerical = structuredClone(numericalReply);
+  await page.setViewportSize({ width: 360, height: 800 }); await enter(page, s, { desktop });
+  if (!desktop) await recent(page); else await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click();
+  await generate(page);
+  const first = panel(page).locator('.consulting-reply-card').first(), evidence = first.locator('.consulting-reply-evidence');
+  await expect(first.getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  await expect(evidence).not.toHaveAttribute('open', '');
+  await expect(evidence.getByRole('heading', { name: '합성대학교', exact: true })).not.toBeVisible();
+  await evidence.locator(':scope > summary').click();
+  await expect(evidence.getByRole('heading', { name: '합성대학교', exact: true })).toBeVisible();
+  await expect(evidence).toContainText('합성캠퍼스 · 합성공학과'); await expect(evidence).toContainText('2027학년도 · 가군');
+  await expect(evidence).toContainText('63점'); await expect(evidence).toContainText('60점'); await expect(evidence).toContainText('65점');
+  await expect(evidence).toContainText('등록자 70% 추정선'); await expect(evidence).toContainText('2026학년도 자료를 2027학년도 환산 척도');
+  await expect(evidence).toContainText('17쪽'); await expect(evidence.getByRole('link', { name: '원문 확인 ↗' }).first()).toHaveAttribute('href', 'https://admission.example.ac.kr/guide.pdf');
+  await expect(evidence.getByRole('link', { name: '원문 확인 ↗' }).first()).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(evidence).not.toContainText('다른합성대학교');
+  await evidence.getByText('사용한 자료 버전', { exact: true }).click(); await expect(evidence).toContainText('ADMISSION_RELEASE_SYNTHETIC');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('reply-evidence-' + (desktop ? 'desktop' : 'mobile') + '.png'), fullPage: true });
+  await first.getByRole('button', { name: '이 답변을 입력창으로' }).click();
+  await expect(page.getByLabel('상담 메시지', { exact: true })).toHaveValue(numericalReply.drafts[0].body);
+  expect(sent(s)).toHaveLength(0); expect(numericalReply.drafts[0].body).not.toContain('SOURCE_');
+});
+
+test('출처가 맞지 않는 수치 응답은 초안이나 가져오기 버튼으로 제공하지 않는다', async ({ page }) => {
+  const s = fixture(); s.numerical = structuredClone(numericalReply);
+  s.numerical.evidence.units[0].proof.cut.passSourceIds = ['SOURCE_UNKNOWN'];
+  await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page)).toContainText('추천 응답을 확인하지 못했습니다.');
+  await expect(panel(page).getByRole('button', { name: '이 답변을 입력창으로' })).toHaveCount(0); expect(sent(s)).toHaveLength(0);
+});
+
+test('검수 자료가 없으면 수치 없는 초안을 유지하고 근거 부족을 명확하게 표시한다', async ({ page }) => {
+  const s = fixture(), sample = structuredClone(numericalReply);
+  sample.drafts = bodies.map((body, index) => ({ style: index ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] }));
+  sample.evidence = { ...sample.evidence, release: null, units: [], documents: [], uses: ['core', 'empathic'].map(style => ({ style, claims: [] })) };
+  s.numerical = sample;
+  await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  const first = panel(page).locator('.consulting-reply-card').first();
+  await expect(first.getByRole('button', { name: '이 답변을 입력창으로' })).toBeEnabled();
+  const evidence = first.locator('.consulting-reply-evidence'); await evidence.locator(':scope > summary').click();
+  await expect(evidence).toContainText('이 초안에는 대학·학과별 수치를 사용하지 않았습니다.');
+  await expect(evidence.locator('.consulting-reply-unit')).toHaveCount(0); await expect(evidence.getByRole('link')).toHaveCount(0);
   expect(sent(s)).toHaveLength(0);
 });

@@ -1,0 +1,164 @@
+{
+  "drafts": [
+    {
+      "style": "core",
+      "body": "희망 계열과 지원 성향을 함께 비교해보겠습니다.\n\n2027학년도 합성대학교 합성캠퍼스 합성공학과(가군)의 2026학년도 수능 참고 성적 기준 환산점수는 63점(100점 만점)입니다. 2026학년도 자료를 2027학년도 환산 척도에 맞춘 합격권 추정선은 60점, 등록자 70% 추정선은 65점입니다. 합격권 추정선 대비 3점 높습니다. 가능성 지수는 55(중립)이며 실제 합격 확률은 아닙니다.\n\n다른 모집군의 대안과 함께 결정해주세요.",
+      "sourceRefs": [
+        "M01",
+        "S1"
+      ]
+    },
+    {
+      "style": "empathic",
+      "body": "선택 폭을 넓혀 다른 후보도 비교해볼 수 있습니다.\n\n2027학년도 다른합성대학교 합성캠퍼스 합성경영학과(나군)의 2026학년도 수능 참고 성적 기준 환산점수는 86점(100점 만점)입니다.\n\n기숙사와 전공 선호를 확인하고 지원안을 정리하겠습니다.",
+      "sourceRefs": [
+        "M01",
+        "S1"
+      ]
+    }
+  ],
+  "checks": [
+    "기숙사 이용과 전공 선호를 확인해주세요."
+  ],
+  "evidence": {
+    "version": "written-reply-evidence-v1",
+    "scoreBasis": "historical_reference",
+    "referenceYear": 2026,
+    "release": {
+      "releaseId": "ADMISSION_RELEASE_SYNTHETIC",
+      "contentDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "formulaVersion": "formula-1.0.0",
+      "eligibilityRuleVersion": "eligibility-1.0.0"
+    },
+    "units": [
+      {
+        "admissionUnitId": "UNIT_SYNTHETIC_000",
+        "universityName": "합성대학교",
+        "campusName": "합성캠퍼스",
+        "admissionUnitName": "합성공학과",
+        "admissionGroup": "ga",
+        "admissionYear": 2027,
+        "convertedScore": 63,
+        "maximumScore": 100,
+        "referenceLines": {
+          "passLine": 60,
+          "registered70Line": 65,
+          "sourceYear": 2026,
+          "targetYear": 2027
+        },
+        "possibilityIndex": 55,
+        "riskBand": "neutral",
+        "proof": {
+          "formulaId": "FORMULA_SYNTHETIC_0",
+          "scaleId": "CANONICAL_1111111111111111111111111111111111111111111111111111111111111111",
+          "scoreSourceIds": [
+            "SOURCE_SCORE_0"
+          ],
+          "cut": {
+            "scaleId": "CANONICAL_1111111111111111111111111111111111111111111111111111111111111111",
+            "passStatistic": "admission_line_estimate",
+            "registered70Statistic": "registered_70pct_estimate",
+            "passSourceIds": [
+              "SOURCE_CUT_0"
+            ],
+            "registered70SourceIds": [
+              "SOURCE_CUT_0"
+            ]
+          },
+          "bindingDigest": "sha256:0d042ad18f96d8cc50a849b1710ef4eb2df526dec537ab1639f6370471ce65e0"
+        }
+      },
+      {
+        "admissionUnitId": "UNIT_SYNTHETIC_001",
+        "universityName": "다른합성대학교",
+        "campusName": "합성캠퍼스",
+        "admissionUnitName": "합성경영학과",
+        "admissionGroup": "na",
+        "admissionYear": 2027,
+        "convertedScore": 86,
+        "maximumScore": 100,
+        "referenceLines": {
+          "passLine": 70,
+          "registered70Line": 80,
+          "sourceYear": 2026,
+          "targetYear": 2027
+        },
+        "possibilityIndex": 85,
+        "riskBand": "stable",
+        "proof": {
+          "formulaId": "FORMULA_SYNTHETIC_1",
+          "scaleId": "CANONICAL_2222222222222222222222222222222222222222222222222222222222222222",
+          "scoreSourceIds": [
+            "SOURCE_SCORE_1"
+          ],
+          "cut": {
+            "scaleId": "CANONICAL_2222222222222222222222222222222222222222222222222222222222222222",
+            "passStatistic": "admission_line_estimate",
+            "registered70Statistic": "registered_70pct_estimate",
+            "passSourceIds": [
+              "SOURCE_CUT_1"
+            ],
+            "registered70SourceIds": [
+              "SOURCE_CUT_1"
+            ]
+          },
+          "bindingDigest": "sha256:f7b3b17cf2b784a60f14a3a22077d0aa5a663d01a222d0ea2690aec466d1cfcc"
+        }
+      }
+    ],
+    "documents": [
+      {
+        "sourceId": "SOURCE_SCORE_0",
+        "title": "합성 모집요강",
+        "admissionYear": 2027,
+        "page": 5,
+        "checksum": "1111111111111111111111111111111111111111111111111111111111111111",
+        "url": "https://admission.example.ac.kr/guide.pdf"
+      },
+      {
+        "sourceId": "SOURCE_CUT_0",
+        "title": "합성 입결 검수자료",
+        "admissionYear": 2026,
+        "page": 17,
+        "checksum": "2222222222222222222222222222222222222222222222222222222222222222",
+        "url": "https://admission.example.ac.kr/guide.pdf"
+      },
+      {
+        "sourceId": "SOURCE_SCORE_1",
+        "title": "합성 모집요강",
+        "admissionYear": 2027,
+        "page": 5,
+        "checksum": "2222222222222222222222222222222222222222222222222222222222222222",
+        "url": "https://admission.example.ac.kr/guide.pdf"
+      },
+      {
+        "sourceId": "SOURCE_CUT_1",
+        "title": "합성 입결 검수자료",
+        "admissionYear": 2026,
+        "page": 17,
+        "checksum": "3333333333333333333333333333333333333333333333333333333333333333",
+        "url": "https://admission.example.ac.kr/guide.pdf"
+      }
+    ],
+    "uses": [
+      {
+        "style": "core",
+        "claims": [
+          {
+            "admissionUnitId": "UNIT_SYNTHETIC_000",
+            "kind": "cut_comparison"
+          }
+        ]
+      },
+      {
+        "style": "empathic",
+        "claims": [
+          {
+            "admissionUnitId": "UNIT_SYNTHETIC_001",
+            "kind": "score"
+          }
+        ]
+      }
+    ]
+  }
+}
