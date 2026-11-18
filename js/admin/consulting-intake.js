@@ -78,6 +78,8 @@ function renderConsultingApplication(applicationId, data) {
         ['학생 상태', consultingOptionLabel(data.studentStatus, { senior: '고3', graduate: '재수 이상', ged: '검정고시', other: '기타' })]
     ]));
     appendConsultingRecord(summary, '입금 정보', createConsultingFacts([
+        ['신청 상품', application.productName || '정시 컨설팅'],
+        ['신청 경로', application.intakeSource === 'website' ? '사이트 신청' : '구글폼'],
         ['입금자명', contact.payerName],
         ['입금자와의 관계', [consultingOptionLabel(data.payerRelationship, { self: '본인', parent: '부모님', other: '기타' }), data.payerRelationshipDetail].filter(Boolean).join(' · ')],
         ['예정 금액', formatConsultingMoney(application.expectedAmount)],

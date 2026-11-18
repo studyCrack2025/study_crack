@@ -30,6 +30,16 @@ function isSafeAuthReturnPath(value) {
     } catch (_) { return false; }
 }
 
+function readSiteEnrollmentTransient() {
+    try {
+        const value = JSON.parse(sessionStorage.getItem('sc_jungsi_application_v1') || 'null');
+        if (value?.version !== 1 || !/^web_[0-9a-f-]{36}$/i.test(value.requestKey || '') || !/^[A-Za-z0-9_-]{43}$/.test(value.token || '')
+            || !['consulting', 'calculator'].includes(value.productType) || !Number.isSafeInteger(value.capturedAt)
+            || value.capturedAt > Date.now() || Date.now() - value.capturedAt > 86400000) return null;
+        return { version: 1, requestKey: value.requestKey, token: value.token, productType: value.productType, capturedAt: value.capturedAt };
+    } catch (_) { return null; }
+}
+
 function readJungsiInviteTransient() {
     try {
         const value = JSON.parse(sessionStorage.getItem('sc_jungsi_invite_v1') || 'null');
@@ -146,6 +156,7 @@ function notifyClientSessionEnded() {
 
 function invalidateClientSession({ preserveInvite = false } = {}) {
     const invite = preserveInvite ? readJungsiInviteTransient() : null;
+    const enrollment = readSiteEnrollmentTransient();
     _clientSessionGeneration += 1;
     const controller = _sharedRefreshController;
     _sharedRefreshController = null;
@@ -155,6 +166,7 @@ function invalidateClientSession({ preserveInvite = false } = {}) {
     controller?.abort();
     for (const request of _sessionRequests) request.abort();
     sessionStorage.clear();
+    if (enrollment) sessionStorage.setItem('sc_jungsi_application_v1', JSON.stringify(enrollment));
     if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
     notifyClientSessionEnded();
 }
@@ -182,7 +194,9 @@ if (isClientSessionEnded() || (sessionStorage.getItem(SESSION_EPOCH_KEY) && sess
     // 유효한 새 로그인 요청만 남기고 이전 인증 정보는 모두 제거한다.
     const attempt = sessionStorage.getItem(SESSION_EPOCH_KEY) === _observedSessionEpoch ? readSocialLoginAttempt() : null;
     const invite = isJungsiInviteContinuation(attempt) ? readJungsiInviteTransient() : null;
+    const enrollment = readSiteEnrollmentTransient();
     sessionStorage.clear();
+    if (enrollment) sessionStorage.setItem('sc_jungsi_application_v1', JSON.stringify(enrollment));
     if (attempt) sessionStorage.setItem(SOCIAL_ATTEMPT_KEY, JSON.stringify(attempt));
     if (invite) sessionStorage.setItem('sc_jungsi_invite_v1', JSON.stringify(invite));
 }
@@ -322,7 +336,9 @@ function clearClientSession() {
         }
         keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch (_) { /* localStorage 접근 실패는 무시 */ }
+    const enrollment = readSiteEnrollmentTransient();
     sessionStorage.clear();
+    if (enrollment) sessionStorage.setItem('sc_jungsi_application_v1', JSON.stringify(enrollment));
 }
 
 // Legacy alias.

@@ -17,5 +17,5 @@ export function safeInviteSummary(value) {
   const maskedEmail = typeof value.maskedEmail === 'string' && value.maskedEmail.length <= 120 ? value.maskedEmail : '';
   const maskedPhone = typeof value.maskedPhone === 'string' && value.maskedPhone.length <= 40 ? value.maskedPhone : '';
   const expiresAt = typeof value.expiresAt === 'string' && !Number.isNaN(Date.parse(value.expiresAt)) ? value.expiresAt : '';
-  return maskedEmail && maskedPhone && expiresAt ? { maskedEmail, maskedPhone, expiresAt } : null;
+  return maskedEmail && maskedPhone && expiresAt ? { maskedEmail, maskedPhone, expiresAt, ...(value.productType === 'calculator' ? { productType: 'calculator' } : {}) } : null;
 }

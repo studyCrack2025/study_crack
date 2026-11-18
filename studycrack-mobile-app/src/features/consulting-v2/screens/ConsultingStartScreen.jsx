@@ -5,9 +5,10 @@ import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 import { inviteErrorMessage, safeInviteSummary } from './presentation.js';
 import { INVITE_KEY, readConsultingInvite, retryableInviteFailure } from '../invite-model.js';
 
-function openConsultingHome() {
+function openConsultingHome(productType) {
   globalThis.sessionStorage?.removeItem(INVITE_KEY);
-  navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
+  if (productType === 'calculator') globalThis.location.assign('/2027-jungsi-consulting/calculator');
+  else navigateConsulting(CONSULTING_ROUTES.home, { replace: true });
 }
 
 export function ConsultingStartScreen({ binding, hasSession }) {
@@ -29,7 +30,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const showCodeForm = invite && hasSession && verifiedSession && !staffSession && canClaim && !checking;
   const readyMessage = staffSession
     ? '관리자 또는 상담사 계정으로 로그인되어 있습니다. 시크릿 창에서 받은 링크를 열고 컨설팅을 이용할 학생 계정으로 로그인해주세요.'
-    : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 컨설팅이 연결됩니다.' : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
+    : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 신청 상품이 연결됩니다.' : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
 
   React.useEffect(() => {
     claimRequest.current?.abort();
@@ -42,7 +43,10 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setAccountConflict(false);
     setRetryable(false);
     setSummary(null);
-    if (!invite) { setChecking(false); return undefined; }
+    if (!invite) {
+      if (globalThis.readSiteEnrollmentTransient?.()) { globalThis.location.replace('/2027-jungsi-consulting#application'); return undefined; }
+      setChecking(false); return undefined;
+    }
     setChecking(true);
     setTone('');
     setStatus('초대 정보를 확인하고 있습니다.');
@@ -68,7 +72,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
         return;
       }
       if (signedInStudent && result.data.linked) {
-        openConsultingHome();
+        openConsultingHome(result.data?.productType);
         return;
       }
       const safeSummary = safeInviteSummary(result.data);
@@ -140,13 +144,13 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       setStatus(retryableInviteFailure(result) ? '인증 결과를 아직 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 눌러주세요. 같은 요청으로 확인하며 자동 제출하지 않아요.' : inviteErrorMessage(result.code, result.status));
       return;
     }
-    openConsultingHome();
+    openConsultingHome(result.data?.productType);
   };
 
   return <main className="consulting-v2-center"><section className="consulting-v2-card" aria-labelledby="consultingStartTitle" aria-busy={checking || submitting}>
     <ConsultingBrand />
     <p className="consulting-v2-kicker">초대받은 계정으로 시작하기</p>
-    <h1 id="consultingStartTitle">컨설팅 이용 인증</h1>
+    <h1 id="consultingStartTitle">{summary?.productType === 'calculator' ? '합격 계산기 이용 인증' : '컨설팅 이용 인증'}</h1>
     <p className="consulting-v2-status" data-tone={!checking && tone || undefined} role="status">{checking ? '초대 정보를 확인하고 있습니다.' : status}</p>
     {checking ? <p className="consulting-v2-status">신청 정보와 이용 상태를 불러오고 있어요. 잠시만 기다려주세요.</p> : null}
     {retryable ? <button type="button" className="consulting-v2-secondary consulting-v2-wide" disabled={checking} onClick={() => setCheckRevision(value => value + 1)}>초대 정보 다시 확인</button> : null}

@@ -1,0 +1,26 @@
+.jungsi-enrollment-open { overflow:hidden; }
+.jungsi-enrollment { width:min(560px,calc(100% - 24px)); max-height:calc(100dvh - 24px); padding:24px; border:1px solid #dce3eb; border-radius:12px; background:#fff; color:#20334b; font-family:var(--sc-marketing-font,system-ui,sans-serif); overflow:auto; }
+.jungsi-enrollment::backdrop { background:rgba(15,23,42,.6); }
+.jungsi-enrollment [hidden] { display:none; }
+.jungsi-enrollment-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.jungsi-enrollment-head h2 { margin:8px 0 12px; font-size:23px; line-height:1.4; }
+.jungsi-enrollment-head button { min-width:44px; min-height:44px; font-size:26px; }
+.jungsi-enrollment p { font-size:14px; line-height:1.7; word-break:keep-all; }
+.jungsi-enrollment-status { min-height:24px; }
+.jungsi-enrollment-status[data-state="error"] { color:#9f2727; }
+.jungsi-enrollment-price { font-weight:700; }
+.jungsi-enrollment-fields { display:grid; gap:14px; margin:0; padding:0; border:0; min-width:0; }
+.jungsi-enrollment-fields>label { display:grid; gap:7px; font-size:14px; font-weight:700; }
+.jungsi-enrollment-fields input:not([type="checkbox"]), .jungsi-enrollment-fields select { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid #adbccc; border-radius:4px; background:#fff; color:#20334b; font:inherit; font-size:16px; }
+.jungsi-enrollment-fields .jungsi-enrollment-consent { display:flex; align-items:flex-start; gap:10px; font-size:13px; font-weight:400; line-height:1.6; }
+.jungsi-enrollment-consent input { flex-shrink:0; width:20px; height:20px; margin:0; }
+.jungsi-enrollment a { text-decoration:underline; text-underline-offset:3px; }
+.jungsi-enrollment-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+.jungsi-enrollment-actions :is(a,button) { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:10px 16px; border:1px solid #344e8f; border-radius:4px; color:#344e8f; font:inherit; font-size:14px; text-decoration:none; }
+.jungsi-enrollment-submit { display:inline-flex; align-items:center; justify-content:center; width:100%; min-height:46px; margin-top:18px; padding:10px 16px; border:1px solid #344e8f; border-radius:4px; background:#344e8f; color:#fff; font:inherit; font-size:14px; font-weight:700; }
+.jungsi-enrollment :disabled { opacity:.65; cursor:wait; }
+.jungsi-enrollment :focus-visible { outline:3px solid #4c79ee; outline-offset:3px; }
+.jungsi-enrollment-receipt dl { display:grid; gap:8px; margin:20px 0; }
+.jungsi-enrollment-receipt dt { font-size:13px; color:#526176; }
+.jungsi-enrollment-receipt dd { margin:0 0 8px; overflow-wrap:anywhere; line-height:1.6; }
+.jungsi-enrollment-note { padding:14px; border-radius:6px; background:#f1f4fb; }

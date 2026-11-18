@@ -254,7 +254,7 @@ test('공개 메인은 여덟 화면 크기에서 운영과 같은 탭·가격·
   for (const width of [...new Set([...widths, 375, 1024])]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/2027-jungsi-consulting#consulting');
-    await expect(page.locator('#consultingApply')).toHaveText('컨설팅 신청하기');
+    await expect(page.locator('#consultingApply')).toContainText('컨설팅 신청하기');
     await page.evaluate(() => document.fonts.ready);
     await fits(page);
     await expect(page.getByRole('tab', { name: '정시 컨설팅', exact: true })).toHaveAttribute('aria-selected', 'true');
@@ -273,7 +273,7 @@ test('공개 메인은 여덟 화면 크기에서 운영과 같은 탭·가격·
     await expect(page.locator('#calculator')).toBeVisible(); await expect(page.locator('#consultingPanel')).toBeHidden();
     await expect(page.locator('#calculator .hero-title')).toContainText('내 성적으로,');
     await expect(page.locator('#calculator .hero-price')).toContainText('25,000원');
-    await expect(page.getByRole('button', { name: '오픈 준비 중 ↗', exact: true })).toBeDisabled();
+    await expect(page.locator('#calculatorApply')).toHaveAttribute('href', '#application');
     await expect(page.locator('#calculator input, #calculator select, #calculator form')).toHaveCount(0);
     for (const image of ['.hero-photo', '.demo-window img']) {
       const element = page.locator('#calculator').locator(image);
@@ -495,24 +495,27 @@ test('계산기 시연 이미지는 원본 열기·확대·닫기를 키보드�
   await dialog.getByRole('button', { name: '시연 화면 닫기' }).click(); await expect(opener).toBeFocused();
 });
 
-test('모집 중이 아니거나 신청 URL이 올바르지 않으면 디자인 변경 뒤에도 접수를 열지 않는다', async ({ page }) => {
+test('구글폼이 닫혔거나 URL이 잘못돼도 사이트 진입은 유지하며 외부 주소를 열지 않는다', async ({ page }) => {
   const state = await prepare(page);
   for (const patch of [{ enrollmentStatus: 'unavailable' }, { enrollmentStatus: 'open', applicationUrl: 'javascript:alert(1)' }]) {
     Object.assign(state.campaign, patch); await page.goto('/2027-jungsi-consulting');
-    await expect(page.locator('#consultingApply')).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#process');
+    await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
+    await expect(page.locator('#jungsiGoogleForm')).toBeHidden();
   }
 });
 
-test('캠페인 조회가 실패해도 서비스·가격 조건을 유지하고 결제·신청을 열지 않는다', async ({ page }) => {
+test('조회 실패 시 사이트 신청 진입에서 안내·입금 전 차단과 재시도를 제공한다', async ({ page }) => {
   await prepare(page, { loggedIn: false });
   await page.route('https://api.example.invalid/public', route => route.fulfill({ status: 503, json: { success: false } }));
   const response = page.waitForResponse('https://api.example.invalid/public'); await page.goto('/2027-jungsi-consulting');
-  expect((await response).status()).toBe(503); await expect(page.locator('#consultingApply')).toHaveAttribute('aria-disabled', 'true');
+  expect((await response).status()).toBe(503); await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
   await expect(page.locator('#consultingPrice')).toContainText('20만원'); await expect(page.locator('#offer')).toContainText('70');
   await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
-  await expect(page.getByRole('button', { name: '오픈 준비 중 ↗', exact: true })).toBeDisabled();
-  await expect(page.locator('form')).toHaveCount(0);
+  await expect(page.locator('#calculatorApply')).toHaveAttribute('href', '#application');
+  await page.locator('#calculatorApply').click();
+  await expect(page.locator('#jungsiEnrollmentFields input').first()).toBeDisabled();
+  await expect(page.locator('#jungsiEnrollmentRetry')).toBeVisible();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeHidden();
 });
 
 for (const width of [320, 768, 1440]) test(`홈 14개 상태는 ${width}px에서 현재 행동과 문서 스크롤을 제공한다`, async ({ page }, testInfo) => {
