@@ -274,3 +274,27 @@ test('서비스 보류 중에는 대화와 내부 메모·완료 모두 읽기 �
   await expect(page.getByLabel('내부 메모')).toBeDisabled();
   await expect(page.getByRole('button', { name: '상담 완료 및 기록 고정' })).toBeDisabled();
 });
+
+for (const role of ['student', 'manager']) test(`${role} 입력창은 기본 높이를 유지하고 다섯 줄로 펼쳐도 글·커서·전송을 보존한다`, async ({ page }, testInfo) => {
+  const s = fixture(); await page.setViewportSize({ width: 360, height: 740 }); await enter(page, role, s);
+  const composer = page.getByLabel('상담 메시지', { exact: true });
+  const body = '첫 번째 질문입니다.\n두 번째 줄도 확인해주세요.\n세 번째 줄입니다.\n네 번째 줄입니다.\n다섯 번째 줄입니다.\n여섯 번째 줄은 스크롤합니다.';
+  await composer.fill(body);
+  await composer.evaluate(node => { node.focus(); node.setSelectionRange(4, 9); });
+  const initial = (await composer.boundingBox()).height;
+  const expand = page.getByRole('button', { name: '입력창 넓히기', exact: true }); await expect(expand).toHaveAttribute('aria-expanded', 'false');
+  await expand.click();
+  await expect(composer).toBeFocused(); await expect(composer).toHaveValue(body);
+  expect(await composer.evaluate(node => [node.selectionStart, node.selectionEnd])).toEqual([4, 9]);
+  const metrics = await composer.evaluate(node => { const css = getComputedStyle(node); return { visible: node.clientHeight - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom), line: parseFloat(css.lineHeight), scroll: node.scrollHeight, height: node.clientHeight }; });
+  expect(metrics.visible).toBeGreaterThanOrEqual(metrics.line * 5 - 1); expect(metrics.scroll).toBeGreaterThan(metrics.height);
+  expect(s.calls.filter(call => call.type.endsWith('send_written_message'))).toHaveLength(0);
+  await page.getByRole('button', { name: '입력창 접기', exact: true }).click();
+  expect((await composer.boundingBox()).height).toBeCloseTo(initial, 0); await expect(composer).toHaveValue(body);
+  await page.getByRole('button', { name: '입력창 넓히기', exact: true }).click();
+  await page.setViewportSize({ width: 360, height: 480 }); await fits(page);
+  const send = page.getByRole('button', { name: '전송', exact: true }); await expect(send).toBeInViewport();
+  await send.click(); await expect(composer).toHaveValue('');
+  await expect(page.getByRole('button', { name: '입력창 접기', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  await page.screenshot({ path: testInfo.outputPath(`written-composer-five-lines-${role}.png`), fullPage: true });
+});

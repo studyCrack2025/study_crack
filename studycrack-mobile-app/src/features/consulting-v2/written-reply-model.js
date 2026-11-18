@@ -14,6 +14,21 @@ const failureMessages = {
   REPLY_PROVIDER_INVALID: 'AI 응답 형식을 확인하지 못했습니다. 다시 추천해주세요.',
   REPLY_OUTPUT_INVALID: '추천답변 검증을 통과하지 못했습니다. 다시 추천해주세요.'
 };
+Object.assign(failureMessages, {
+  REPLY_GROUNDING_UNAVAILABLE: '입시 분석 자료를 불러오지 못했습니다. 분석 연결과 조회 권한을 확인해주세요.',
+  REPLY_GROUNDING_INVALID: '입시 분석 근거의 형식을 확인하지 못했습니다. 운영팀에서 연결 버전을 확인해주세요.',
+  REPLY_GROUNDING_STAGE_MISMATCH: '입시 분석 연결 환경이 일치하지 않습니다. 운영 설정을 확인해주세요.',
+  REPLY_GROUNDING_BUDGET_EXCEEDED: '선택한 대화와 분석 자료가 너무 많습니다. 질문 범위를 줄여 다시 추천해주세요.',
+  REPLY_GROUNDING_CHANGED: '추천 중 입시자료가 변경되었습니다. 최신 자료로 다시 추천해주세요.',
+  REPLY_EVIDENCE_INVALID: '답변의 수치와 출처가 일치하는지 확인하지 못했습니다. 새로 추천해주세요.'
+});
+export function replyGroundingLabel(value) {
+  if (!value || !['ready', 'partial', 'unavailable'].includes(value.status)) return '';
+  const basis = { official_reviewed: '검수 성적', historical_reference: '2026 수능 참고 성적', student_reported: '학생 입력 성적', unavailable: '성적 근거 확인 필요' }[value.scoreBasis];
+  if (!basis || !Number.isInteger(value.candidateCount) || value.candidateCount < 0 || value.candidateCount > 12 || !Number.isInteger(value.sourceCount) || value.sourceCount < 0 || value.sourceCount > 48) return '';
+  if (value.reasonCodes?.includes('ANALYSIS_CONNECTION_NOT_CONFIGURED')) return '입시자료 연결 전 · 조사서와 대화 기준 답변';
+  return `${basis} · 분석 후보 ${value.candidateCount}개 · 입시 근거 ${value.sourceCount}건${value.status === 'ready' ? '' : ' · 일부 근거 확인 필요'}`;
+}
 export const replyFailureMessage = code => failureMessages[code] || '추천을 만들지 못했습니다. 대화 범위를 확인하고 다시 시도해주세요.';
 export function writtenReplyUnavailableReason(session, connection) {
   if (!session) return '상담 정보를 불러온 뒤 추천을 사용할 수 있습니다.';
@@ -55,8 +70,10 @@ export function validReplyJob(job, { range, jobId } = {}) {
       || range && (job.startMessageId !== range.start || job.endMessageId !== range.end)
       || !['queued', 'running', 'succeeded', 'failed', 'cancelled', 'expired', 'stale'].includes(job.status)) return false;
   if (job.status !== 'succeeded') return true;
+  if (job.evidence !== undefined && !validReplyEvidence(job.evidence)) return false;
   return Array.isArray(job.drafts) && job.drafts.length === 2 && job.drafts.every((row, index) => row.style === ['core', 'empathic'][index]
     && typeof row.body === 'string' && row.body.length >= 20 && row.body.length <= 900 && Array.isArray(row.sourceRefs) && row.sourceRefs.length > 0
     && row.sourceRefs.every(ref => ref === 'S1' || /^M(?:0[1-9]|[12]\d|30)$/.test(ref)))
     && Array.isArray(job.checks) && job.checks.length <= 3 && job.checks.every(text => typeof text === 'string' && text.length <= 180);
 }
+import { validReplyEvidence } from './written-reply-evidence.js';
