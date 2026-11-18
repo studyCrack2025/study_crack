@@ -58,6 +58,7 @@
 .consulting-score-card { display:grid; gap:11px; min-width:0; margin:0; padding:clamp(10px,2.1vw,17px); border:1px solid var(--sc-line-subtle); border-radius:12px; }
 .consulting-score-card legend { padding:0 6px; color:var(--sc-ink-strong); font-weight:750; }
 .consulting-score-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.consulting-score-results { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
 .consulting-score-card .consulting-survey-field { min-width:0; gap:4px; font-size:13px; }
 .consulting-score-card :is(input,select) { min-width:0; padding-inline:8px; }
 .consulting-score-total { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0; padding:9px 10px; border-radius:8px; background:var(--sc-surface-subtle); color:var(--sc-brand-navy); font-size:13px; font-weight:700; }

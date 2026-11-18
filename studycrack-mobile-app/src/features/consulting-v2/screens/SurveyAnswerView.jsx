@@ -1,5 +1,6 @@
 import React from 'react';
 import { CONSULTATION_TOPIC_LABELS, PRIORITY_LABELS } from '../survey-model.js';
+import { scoreConversionLabel } from '../score-entry-model.js';
 
 const choices = {
   high_school_senior: '고3 재학생', graduate: '졸업생', qualification_exam: '검정고시',
@@ -42,7 +43,7 @@ function entries(section, value) {
       ...(records || []).filter(row => row.area !== 'foreign_language' || row.subject).map(row => [
         row.subject || scoreNames[row.area],
         [row.selection, ...Object.entries(scoreFields).filter(([key]) => row[key] != null).map(([key, label]) => `${label} ${row[key]}`),
-          row.conversionAdmissionYear ? `${row.conversionAdmissionYear}학년도 수능${row.conversionAdmissionYear < examYear + 1 ? ' 참고' : ' 기준'}` : ''].filter(Boolean).join(' · ')
+          scoreConversionLabel(row)].filter(Boolean).join(' · ')
       ])
     ];
   }
