@@ -10,7 +10,9 @@ test('a visible recommendation panel still requires explicit server permission f
   assert.equal(writtenReplyUnavailableReason(session, 'reconnecting'), '', 'a temporary reconnect must not abandon an active recommendation');
   for (const canSuggestReplies of [undefined, false, 'true']) assert.match(writtenReplyUnavailableReason({ ...session, canSuggestReplies }, 'connected'), /AI 추천 연결/);
   for (const patch of [{ observer: true }, { canManage: false }, { canManage: undefined }]) assert.match(writtenReplyUnavailableReason({ ...session, ...patch }, 'connected'), /배정된 상담 담당자/);
-  assert.match(writtenReplyUnavailableReason({ ...session, writable: false }, 'connected'), /상담 진행 시간/);
+  assert.match(writtenReplyUnavailableReason({ ...session, writable: false }, 'connected'), /시작 10분 전/);
+  assert.equal(writtenReplyUnavailableReason({ ...session, writable: false, canCompose: true }, 'connected'), '', 'preparation enables suggestions without granting transmission');
+  assert.match(writtenReplyUnavailableReason({ ...session, writable: true, canCompose: false }, 'connected'), /시작 10분 전/);
   assert.match(writtenReplyUnavailableReason({ ...session, serviceHold: true }, 'connected'), /서비스 보류/);
   assert.match(writtenReplyUnavailableReason({ ...session, status: 'completed' }, 'connected'), /완료된 상담/);
   assert.match(writtenReplyUnavailableReason(session, 'denied'), /접근 권한/);

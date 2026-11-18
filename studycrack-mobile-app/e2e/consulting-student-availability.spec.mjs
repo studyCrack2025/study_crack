@@ -39,6 +39,10 @@ for (const width of [320, 375, 1440]) test(`학생은 날짜를 바꿔도 선택
     await prepare(page); await page.setViewportSize({ width, height: 900 });
     await page.goto('/2027-jungsi-consulting/schedule');
     await expect(page.getByRole('heading', { name: '가능한 시간을 선택해주세요' })).toBeVisible();
+    const entryNote = page.locator('small').filter({ hasText: '상담 시작 10분 전부터 입장해 질문을 미리 보낼 수 있어요.' });
+    await expect(entryNote).toBeVisible();
+    await expect(entryNote).toContainText('상담사 답변은 예약된 시작 시각부터');
+    expect(await entryNote.evaluate(node => parseFloat(getComputedStyle(node).fontSize))).toBeLessThan(await page.locator('.consulting-schedule-intro').evaluate(node => parseFloat(getComputedStyle(node).fontSize)));
     const dates = page.getByRole('group', { name: '상담 날짜', exact: true }).getByRole('button');
     const times = page.locator('.consulting-schedule-time-grid button');
     await expect(dates).toHaveCount(14);
