@@ -62,6 +62,8 @@ function conversionResponse(payload, control) {
     results: payload.data.targets.map(target => {
       const option = { admissionUnitId: 'UNIT_BROWSER_EXAMPLE', campusName: '글로벌캠퍼스', unitName: target.major, trackName: '수능 일반전형', admissionGroup: 'na' };
       const row = { university: target.university, major: target.major, status: 'available', choices: [option], selected: option, reasonCodes: [], convertedScore: 743.1256, maximumScore: 1000 };
+      if (['raw-points', 'missing-maximum', 'unknown-scale'].includes(mode)) Object.assign(row, { maximumScore: null,
+        ...(mode !== 'missing-maximum' ? { scoreScale: mode === 'raw-points' ? 'raw_points' : 'unknown' } : {}) });
       if (mode === 'choice') row.choices.push({ ...option, admissionUnitId: 'UNIT_BROWSER_SECOND', admissionGroup: 'da' });
       if (mode === 'choice' && !target.admissionUnitId) Object.assign(row, { status: 'choice_required', selected: null, reasonCodes: ['UNIT_SELECTION_REQUIRED'], convertedScore: null, maximumScore: null });
       if (target.admissionUnitId) row.selected = row.choices.find(choice => choice.admissionUnitId === target.admissionUnitId);
@@ -286,6 +288,21 @@ test('환산 결과는 실제 점수·기준 만점·캠퍼스·전형·군·버
   await page.reload();
   await expect(page.getByRole('heading', { name: '지원 후보 1 / 6' })).toBeVisible();
   await expect(page.locator('.jcalc-score')).toHaveCount(0);
+});
+
+test('만점 없는 점수축은 명시된 응답만 표시하고 만점 누락·알 수 없는 척도는 거부한다', async ({ page }) => {
+  const control = await setup(page); control.conversionMode = 'raw-points';
+  await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score > strong')).toHaveText('743.1256점');
+  await expect(page.getByText('별도 기준 만점이 없는 점수입니다.', { exact: true })).toBeVisible();
+  await expect(page.getByText(/기준 만점 1,000점/)).toHaveCount(0);
+  for (const mode of ['missing-maximum', 'unknown-scale']) {
+    control.conversionMode = mode;
+    await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+    await expect(page.locator('.jcalc-score')).toHaveCount(0);
+    await expect(page.getByText('환산 결과를 확인하지 못했습니다. 다시 조회해주세요.', { exact: true })).toBeVisible();
+  }
 });
 
 test('복수 전형은 임의 계산하지 않고 전형·모집군을 고른 뒤 조회한다', async ({ page }) => {

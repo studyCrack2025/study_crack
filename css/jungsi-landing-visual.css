@@ -483,3 +483,39 @@ OTHER DEALINGS IN THE FONT SOFTWARE.*/
 @media (max-width:700px) {
 #consulting,#calculator { scroll-margin-top:102px; }
 }
+/* Public service explanation and source-backed selection criteria. */
+.service-summary{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;padding-top:48px;padding-bottom:48px;border-bottom:1px solid var(--line)}
+.service-summary h2{font-size:25px;font-weight:600;letter-spacing:-.7px;margin:10px 0 16px}
+.service-summary p:not(.eyebrow){font-size:14px;color:var(--muted);line-height:1.85}
+.service-facts{margin:0;display:grid;gap:0}
+.service-facts>div{display:grid;grid-template-columns:82px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.service-facts>div:last-child{border:0}
+.service-facts dt{font-size:12px;color:var(--muted);padding-top:3px}
+.service-facts dd{font-size:13px;line-height:1.7;margin:0}
+.service-facts a{color:var(--blue);white-space:nowrap;font-size:11px}
+.evidence-section{background:var(--wash)}
+.evidence-section h2{font-size:32px}
+.criteria-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:42px}
+.criteria-grid article{border-top:1px solid #bfcfe3;padding-top:20px}
+.criteria-grid h3{font-size:21px;margin:15px 0 12px}
+.criteria-grid p,.criteria-sources p{font-size:14px;color:var(--muted);line-height:1.85}
+.criteria-grid a{display:inline-block;margin-top:18px;font-size:12px;color:var(--blue)}
+.criteria-sources{margin-top:40px;padding-top:25px;border-top:1px solid var(--line);max-width:920px}
+.criteria-sources h3{font-size:16px;margin-bottom:10px}
+.criteria-sources a{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.criteria-sources p+p{margin-top:10px}
+.criteria-sources .source-meta{font-size:11px;margin-bottom:18px}
+@media(max-width:700px) {
+.service-summary{display:block;padding-top:32px;padding-bottom:32px}
+.service-summary h2{font-size:22px}
+.service-summary p:not(.eyebrow){font-size:13px}
+.service-facts{margin-top:22px}
+.service-facts>div{grid-template-columns:68px 1fr;gap:10px}
+.service-facts dd{font-size:12px}
+.evidence-section h2{font-size:26px}
+.criteria-grid{grid-template-columns:1fr;gap:26px}
+.criteria-grid h3{font-size:19px;margin:10px 0}
+.criteria-grid p,.criteria-sources p{font-size:13px}
+.criteria-grid a{margin-top:12px}
+.criteria-sources{margin-top:28px}
+}

@@ -44,7 +44,8 @@ function validResponse(body, scores, targets) {
       || row.selected !== null && (!unit(row.selected) || !row.choices.some(value => ['admissionUnitId', 'campusName', 'unitName', 'trackName', 'admissionGroup'].every(key => value[key] === row.selected[key])))) return false;
     if (row.status === 'available') return body.release !== null && scores.basis === 'official' && row.selected !== null
       && (!target.admissionUnitId || row.selected.admissionUnitId === target.admissionUnitId)
-      && Number.isFinite(row.convertedScore) && Number.isFinite(row.maximumScore) && row.maximumScore > 0 && row.reasonCodes.length === 0;
+      && Number.isFinite(row.convertedScore) && (row.maximumScore === null ? row.scoreScale === 'raw_points'
+        : Number.isFinite(row.maximumScore) && row.maximumScore > 0 && row.scoreScale === undefined) && row.reasonCodes.length === 0;
     return row.convertedScore === null && row.maximumScore === null && row.reasonCodes.length > 0;
   });
 }
@@ -68,7 +69,7 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
   if (!response.ok) return response;
   const value = response.data;
   if (!value || value.success !== true || value.contractVersion !== 'jungsi-calculator-access-v1' || value.admissionYear !== 2027
-    || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'none'].includes(value.access.source)
+    || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'purchase', 'none'].includes(value.access.source)
     || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
     || !['preparing', 'candidate_check_required'].includes(value.service.state)) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
   return { ...response, data: { access: { allowed: value.access.allowed, source: value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };

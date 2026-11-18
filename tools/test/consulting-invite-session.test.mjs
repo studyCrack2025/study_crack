@@ -93,3 +93,21 @@ for (const method of ['password', 'social']) test(`${method} login still preserv
     assert.deepEqual(JSON.parse(r.session.getItem(inviteKey)), invite);
     assert.equal(r.local.getItem(inviteKey), null);
 });
+
+test('guest application continuation keeps only bounded receipt credentials through login and never keeps PII', () => {
+    const r = runtime('/signup?returnUrl=' + encodeURIComponent(startPath));
+    const value = { version: 1, requestKey: 'web_123e4567-e89b-12d3-a456-426614174000', token: 'B'.repeat(43), productType: 'calculator', capturedAt: Date.now(), email: 'must-not-survive@example.invalid' };
+    r.session.setItem('sc_jungsi_application_v1', JSON.stringify(value));
+    r.api.beginClientLogin();
+    const stored = JSON.parse(r.session.getItem('sc_jungsi_application_v1'));
+    assert.equal(stored.requestKey, value.requestKey); assert.equal(stored.productType, 'calculator'); assert.equal(Object.hasOwn(stored, 'email'), false);
+    r.api.clearClientSession(); assert.deepEqual(JSON.parse(r.session.getItem('sc_jungsi_application_v1')), stored);
+});
+
+test('expired or malformed guest receipt is not carried across authentication', () => {
+    for (const patch of [{ capturedAt: Date.now() - 86400001 }, { token: 'guess' }, { productType: 'unknown' }, { capturedAt: Date.now() + 60000 }]) {
+        const r = runtime();
+        r.session.setItem('sc_jungsi_application_v1', JSON.stringify({ version: 1, requestKey: 'web_123e4567-e89b-12d3-a456-426614174000', token: 'B'.repeat(43), productType: 'calculator', capturedAt: Date.now(), ...patch }));
+        r.api.beginClientLogin(); assert.equal(r.session.getItem('sc_jungsi_application_v1'), null);
+    }
+});

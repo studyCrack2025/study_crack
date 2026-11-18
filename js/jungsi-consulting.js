@@ -22,7 +22,7 @@
     document.addEventListener('click', event => {
         const link = event.target.closest('a');
         if (!link || link.getAttribute('aria-disabled') === 'true') return;
-        if (link.id === 'consultingApply' && /^https:\/\/docs\.google\.com\/forms\//.test(link.href)) {
+        if (link.id === 'consultingApply' || link.id === 'jungsiGoogleForm') {
             track('consulting_apply_click', 'application_form');
         } else if (link.getAttribute('href') === '/2027-jungsi-consulting/login') {
             track('consulting_login_click', 'existing_applicant');
@@ -57,6 +57,7 @@
         });
     });
     function selectHashService() {
+        if (location.hash === '#application' && selectedService) return;
         const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
         // Consulting is the default panel; only anchors inside the calculator panel open it.
         const inConsulting = target && document.getElementById('consultingPanel')?.contains(target);
@@ -181,7 +182,7 @@
     });
     policyRetry.addEventListener('click', () => { void loadPolicy(selectedPolicy); });
 
-    const apply = document.getElementById('consultingApply');
+    const apply = document.getElementById('jungsiGoogleForm');
 
     function isSafeCampaign(value) {
         return value && value.campaignSlug === '2027-jungsi-consulting' && value.admissionYear === 2027 && ['open', 'unavailable'].includes(value.enrollmentStatus);
@@ -202,7 +203,8 @@
             // Promotional eligibility is described in the landing; a base price must not erase those terms.
             if (campaign.enrollmentStatus === 'open' && typeof campaign.applicationUrl === 'string' && /^https:\/\/docs\.google\.com\/forms\//.test(campaign.applicationUrl)) {
                 apply.href = campaign.applicationUrl;
-                apply.textContent = '컨설팅 신청하기';
+                apply.dataset.available = 'true';
+                apply.hidden = document.getElementById('jungsiEnrollment')?.dataset.productType === 'calculator';
                 apply.target = '_blank';
                 apply.rel = 'noopener noreferrer';
                 apply.removeAttribute('aria-disabled');
