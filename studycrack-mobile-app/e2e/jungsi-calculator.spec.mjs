@@ -121,7 +121,7 @@ test('비로그인 진입은 코드 요구 없이 로그인 복귀를 안내하�
   const control = await setup(page, { signedIn: false });
   await page.goto('/2027-jungsi-consulting#calculator');
   await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('button', { name: '오픈 준비 중 ↗', exact: true })).toBeDisabled();
+  await expect(page.getByRole('link', { name: '계산기 신청하기', exact: true })).toHaveAttribute('href', '#application');
   await page.goto(path);
   await expect(page).toHaveURL(new RegExp(path + '$'));
   await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
@@ -425,7 +425,7 @@ test('이용 상태 확인 중에도 입력·검색은 유지되고 결과 조�
 
 test('이용권 없음·확인 실패·손상 응답을 구분하며 결제를 호출하지 않고 입력을 보존한다', async ({ page }) => {
   const control = await setup(page); control.accessAllowed = false; await page.goto(path); await prepareConversion(page);
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toBeDisabled();
   await expect(page.getByRole('link', { name: '내 이용권 확인', exact: true })).toHaveAttribute('href', '/mypage');
   for (const mode of ['error', 'invalid']) {
@@ -448,14 +448,14 @@ test('권한 재확인·실제 조회 중 권한 변경은 이전 수치를 숨�
   await expect(page.locator('.jcalc-probability')).toHaveText('약 82점 / 100');
   control.accessAllowed = false;
   await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   control.accessAllowed = true;
   await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toBeEnabled();
   control.conversionMode = 'denied';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(2);
 });
@@ -484,7 +484,7 @@ test('다른 화면에서 돌아오면 이용 상태를 재확인하고 연속 f
   await page.clock.install(); await page.clock.fastForward(31_000);
   control.accessAllowed = false;
   await page.evaluate(() => { dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); });
-  await expect(page.getByRole('heading', { name: '조회에는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
   await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_access')).toHaveLength(2);
 });
