@@ -53,7 +53,7 @@ test('소개 페이지는 실제 로그인 확인 중 대기하고 확인된 세
   await expect(link).toHaveText('로그인 확인 중…');
   await expect(link).toHaveAttribute('aria-busy', 'true');
   releaseAuth();
-  await expect(link).toHaveText('내 컨설팅 ↗');
+  await expect(link).toHaveText('나의 컨설팅 ↗');
   await expect(link).toHaveAttribute('href', '/2027-jungsi-consulting/home');
   expect(authCalls.map(call => call.type)).toEqual(['silent_refresh']);
   await page.evaluate(() => window.clearClientSession());

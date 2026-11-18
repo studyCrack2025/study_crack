@@ -166,9 +166,9 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       <button type="submit" disabled={submitting}>{submitting ? '확인 중…' : '유료회원 인증하고 시작하기'}</button>
     </form> : null}
     {accountConflict ? <div className="consulting-v2-form"><p className="consulting-v2-status">현재 계정에서 로그아웃한 뒤 이번 신청 학생의 계정으로 로그인해주세요. 새 신청은 아직 연결되지 않았고 기존 조사서도 변경되지 않았습니다.</p>
-      <button className="consulting-v2-secondary" type="button" onClick={() => { if (globalThis.confirm('새 신청을 연결하지 않고, 이 계정에 이전에 연결한 컨설팅으로 이동할까요?')) openConsultingHome(); }}>이전에 연결한 내 컨설팅 보기</button>
+      <button className="consulting-v2-secondary" type="button" onClick={() => { if (globalThis.confirm('새 신청을 연결하지 않고, 이 계정에 이전에 연결한 컨설팅으로 이동할까요?')) openConsultingHome(); }}>이전에 연결한 나의 컨설팅 보기</button>
     </div> : null}
-    {hasSession && !staffSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>내 진행 현황 보기</button> : null}
+    {hasSession && !staffSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>나의 컨설팅</button> : null}
     <button className="consulting-v2-link" type="button" onClick={clearInvite}>이 초대 정보 지우기</button>
   </section></main>;
 }

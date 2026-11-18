@@ -86,7 +86,7 @@ for (const width of [320, 375, 1440]) test(`학생은 날짜를 바꿔도 선택
     await page.getByRole('button', { name: '닫기', exact: true }).click();
     await expect(page.getByText('2일 · 20개 시간', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.__availability.saves)).toHaveLength(1);
-    await page.getByRole('button', { name: '진행 현황으로 돌아가기', exact: true }).click();
+    await page.getByRole('button', { name: '나의 컨설팅', exact: true }).click();
     await expect(page).toHaveURL(/\/2027-jungsi-consulting\/home$/);
 });
 

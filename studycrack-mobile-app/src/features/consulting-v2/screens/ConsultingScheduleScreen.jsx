@@ -126,7 +126,7 @@ export function ConsultingScheduleScreen({ binding }) {
   const { startDate, endDate } = resource.bookingWindow || {};
   const period = startDate && endDate ? `${kstDate(startDate)} ~ ${kstDate(endDate)}` : '';
   return <main className="consulting-schedule">
-    <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button>{showPicker && <span>{count}개 선택</span>}</header>
+    <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 나의 컨설팅</button>{showPicker && <span>{count}개 선택</span>}</header>
     {showSaved && <WrittenAvailabilitySaved slots={resource.submittedSlots} outsideWindowCount={resource.outsideWindowCount}
       onEdit={() => { setChoosing(true); setMessage(''); }} onHome={() => navigateConsulting(CONSULTING_ROUTES.home)} />}
     {confirmed && <section className="consulting-schedule-card">

@@ -68,7 +68,7 @@ export function WrittenAvailabilitySaved({ slots, outsideWindowCount, onEdit, on
     <details className="consulting-schedule-saved-details"><summary>선택한 시간 보기</summary><dl>{groups.map(group => <div key={group.date}>
       <dt>{dayLabel(group.date)}</dt><dd>{group.slots.map(slot => slot.localTime).join(' · ')}</dd>
     </div>)}</dl></details>
-    <footer><button className="consulting-v2-primary" type="button" onClick={onHome}>진행 현황으로 돌아가기</button>
+    <footer><button className="consulting-v2-primary" type="button" onClick={onHome}>나의 컨설팅</button>
       <button className="consulting-v2-secondary" type="button" onClick={onEdit}>선택 시간 수정</button></footer>
   </section>;
 }

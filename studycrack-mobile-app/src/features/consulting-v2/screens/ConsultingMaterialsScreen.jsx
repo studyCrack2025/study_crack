@@ -74,7 +74,7 @@ export function ConsultingMaterialsScreen({ binding }) {
         {(submission || !held) && <button className={status.action ? 'consulting-v2-secondary' : 'consulting-v2-primary'} type="button" onClick={() => edit()}>
           {held ? '제출한 답변 보기' : needsSupplement ? '요청한 항목 보완하기' : submission ? '내 답변 보기·수정' : '기초조사서 작성하기'}
         </button>}
-        <button className="consulting-v2-secondary" type="button" disabled={resource.status === 'loading'} onClick={load}>{resource.status === 'loading' ? '상태 확인 중…' : '진행 상태 다시 확인'}</button>
+        <button className="consulting-v2-secondary" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>나의 컨설팅</button>
       </div>
     </section>
   </main>;

@@ -639,7 +639,7 @@ test('쿠키 로그인 상태에서 서비스 안내와 나의 컨설팅을 오�
   await page.reload();
   await expect(page.getByRole('button', { name: '이어서 작성하기' })).toBeVisible();
   await page.getByRole('link', { name: '서비스 안내', exact: true }).click();
-  const returnLink = page.getByRole('link', { name: '내 컨설팅 ↗', exact: true });
+  const returnLink = page.getByRole('link', { name: '나의 컨설팅 ↗', exact: true });
   await expect(returnLink).toHaveAttribute('href', '/2027-jungsi-consulting/home');
   await returnLink.click();
   await page.getByRole('button', { name: '이어서 작성하기' }).click();
@@ -674,6 +674,7 @@ test('기초조사 7개 입력 단계와 자료·일정·서면상담은 320px�
 
 test('제출 대기에서 보완 항목으로 이동해 첨부를 유지하고, 확인 후 가능한 시간을 제출한다', async ({ page }, testInfo) => {
   const fixture = await prepare(page);
+  fixture.home = homeFor(states.find(row => row[0] === 'MATERIAL_REVIEW'));
   await page.setViewportSize({ width: 320, height: 900 });
   const snapshot = createEmptySurvey();
   Object.assign(snapshot.studentStatus, { applicantType: 'graduate', graduationYear: 2026, residenceRegion: '서울' });
@@ -691,17 +692,31 @@ test('제출 대기에서 보완 항목으로 이동해 첨부를 유지하고, 
   await expect(page.getByText('제출 시각')).toBeVisible();
   await expect(page.getByRole('button', { name: '내 답변 보기·수정' })).toBeVisible();
   await expect(page.getByRole('button', { name: '서면상담 가능 시간 선택' })).toHaveCount(0);
+  const beforeHome = await page.evaluate(() => ({ reads: window.__design.calls.filter(type => type === 'student_get_v2_survey_draft').length, homes: window.__design.calls.filter(type => type === 'student_get_v2_consulting_home').length }));
+  await page.getByRole('button', { name: '나의 컨설팅', exact: true }).click();
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting\/home$/);
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅', exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__design.calls.filter(type => type === 'student_get_v2_consulting_home').length)).toBe(beforeHome.homes + 1);
+  expect(await page.evaluate(() => window.__design.calls.filter(type => type === 'student_get_v2_survey_draft').length)).toBe(beforeHome.reads);
+  expect(await page.evaluate(() => window.__design.submissions)).toHaveLength(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/materials$/);
+  await expect(page.getByRole('heading', { name: '기초조사서가 접수됐어요' })).toBeVisible();
 
-  await page.evaluate(() => {
+  await page.evaluate(home => {
     const fixture = window.__design;
+    fixture.home = home;
     fixture.survey.workflowState = 'SUPPLEMENT_REQUIRED';
     fixture.survey.supplement = { fields: [
       { field: 'qualitative.consultationQuestions', label: '상담에서 답을 받고 싶은 질문', note: '나군에서 비교할 대학을 적어주세요.' },
       { field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 알려주세요.' }
     ] };
     fixture.failSupplementOnce = true;
-  });
-  await page.getByRole('button', { name: '진행 상태 다시 확인' }).click();
+  }, homeFor(states.find(row => row[0] === 'SUPPLEMENT_REQUIRED')));
+  await page.getByRole('button', { name: '나의 컨설팅', exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await page.getByRole('button', { name: '보완 요청 확인', exact: true }).click();
+  await expect(page).toHaveURL(/\/materials$/);
   const notes = page.getByRole('region', { name: '보완 요청 내용' });
   await expect(notes).toContainText('<img src=x> 구 단위로 알려주세요.');
   await expect(notes.locator('img')).toHaveCount(0);
@@ -726,8 +741,12 @@ test('제출 대기에서 보완 항목으로 이동해 첨부를 유지하고, 
   expect(attempts[1]).toEqual(attempts[0]);
   await expect(page.getByRole('region', { name: '보완 요청 내용' })).toHaveCount(0);
 
-  await page.evaluate(() => { window.__design.survey.workflowState = 'AVAILABILITY_REQUIRED'; });
-  await page.getByRole('button', { name: '진행 상태 다시 확인' }).click();
+  await page.evaluate(home => { window.__design.survey.workflowState = 'AVAILABILITY_REQUIRED'; window.__design.home = home; }, homeFor(states.find(row => row[0] === 'AVAILABILITY_REQUIRED')));
+  await page.getByRole('button', { name: '나의 컨설팅', exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole('button', { name: '가능 시간 선택하기', exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/materials$/);
   await page.getByRole('button', { name: '서면상담 가능 시간 선택' }).click();
   await expect(page).toHaveURL(/\/schedule$/);
   const dates = page.getByRole('group', { name: '상담 날짜', exact: true }).locator('button:enabled');

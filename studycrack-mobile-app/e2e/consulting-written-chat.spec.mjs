@@ -211,14 +211,19 @@ test('학생도 Enter로 한 번만 전송하고 Shift+Enter·한글 조합은 �
 });
 
 test('학생은 시작 전 사전 입장에서도 질문을 전송하고 사진을 준비할 수 있다', async ({ page }) => {
-  const s = fixture(), at = Date.now(); s.phase = 'preparing';
+  const s = fixture(), at = Date.parse('2026-11-18T03:50:00.000Z'); s.phase = 'preparing';
   s.sessionTimes = { serverTime: new Date(at).toISOString(), startAt: new Date(at + 600000).toISOString(), endAt: new Date(at + 2400000).toISOString() };
   await enter(page, 'student', s);
-  await expect(page.locator('.consulting-written-meta')).toContainText('사전 질문 접수 중');
+  await expect(page.getByRole('button', { name: '← 나의 컨설팅', exact: true })).toBeVisible();
+  const notice = page.locator('.consulting-written-meta');
+  await expect(notice).toContainText('사전 입장 시간입니다. 질문은 미리 보내실 수 있으며,');
+  await expect(notice.locator('strong')).toHaveText('상담사 답변은 13:00부터 시작됩니다.');
+  await expect(notice).not.toContainText('상담 진행 중');
   await expect(page.getByRole('button', { name: '＋ 사진', exact: true })).toBeEnabled();
   const input = page.getByLabel('상담 메시지', { exact: true });
   await input.fill('입장 후 미리 보내는 학생 질문'); await input.press('Enter');
   await expect(input).toHaveValue(''); await expect(page.getByRole('log')).toContainText('입장 후 미리 보내는 학생 질문');
+  await expect(notice.locator('strong')).toHaveText('상담사 답변은 13:00부터 시작됩니다.');
   const calls = s.calls.filter(call => call.type === 'student_send_written_message');
   expect(calls).toHaveLength(1); expect(calls[0].data.body).toBe('입장 후 미리 보내는 학생 질문');
   expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(0);
