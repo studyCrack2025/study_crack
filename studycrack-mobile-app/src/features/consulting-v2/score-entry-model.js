@@ -10,18 +10,26 @@ export function labelScoreRows(records) {
 }
 
 export function clearConvertedScores(row) {
-  return { ...(row.convertedFromRaw ? EMPTY_SCORE_METRICS : {}), convertedFromRaw: undefined, confirmed: false };
+  return { ...(row.convertedFromRaw ? EMPTY_SCORE_METRICS : row.conversionAdmissionYear ? { percentile: null, grade: null } : {}),
+    convertedFromRaw: undefined, conversionAdmissionYear: undefined, confirmed: false };
 }
 
-export function scoreConversionBatch(value) {
+export function scoreConversionBatch(value, fields, allowRaw = true) {
   if (!isConsultingSurveyExam(value)) return null;
+  let inquiryNumber = 0;
   const entries = value.records.flatMap((row, index) => {
-    if (isGradeOnlyArea(row.area) || hasReportMetrics(row)) return [];
+    const field = `scores.${row.area === 'inquiry' ? `inquiry${++inquiryNumber}` : row.area}`;
+    if (isGradeOnlyArea(row.area) || fields && !fields.includes(field)) return [];
     const { area, subject, selection, commonRawScore, electiveRawScore } = row;
     const split = Object.hasOwn(SPLIT_SCORE_LIMITS, area);
     const rawScore = split ? splitRawTotal(commonRawScore, electiveRawScore) : row.rawScore;
-    if (!Number.isInteger(rawScore) || (split && !selection?.trim()) || (area === 'inquiry' && !inquirySubject(row))) return [];
-    return [{ index, input: { area, subject, selection, rawScore, commonRawScore, electiveRawScore } }];
+    if ((split && !selection?.trim()) || (area === 'inquiry' && !inquirySubject(row))) return [];
+    const standard = row.standardScore != null && !row.convertedFromRaw;
+    if (!standard && !allowRaw) return [];
+    if (standard ? row.percentile != null && row.grade != null : hasReportMetrics(row)) return [];
+    if (!standard && !Number.isInteger(rawScore)) return [];
+    return [{ index, input: { area, subject, selection, rawScore, commonRawScore, electiveRawScore,
+      ...(standard ? { standardScore: row.standardScore } : {}) } }];
   });
   if (!entries.length) return null;
   return { examType: value.examType, examYear: value.examYear, entries };
@@ -29,13 +37,15 @@ export function scoreConversionBatch(value) {
 
 export function applyScoreConversions(records, entries, results) {
   const updated = records.slice();
-  entries.forEach(({ index }, order) => {
+  entries.forEach(({ index, input }, order) => {
     const row = records[index];
     const result = results[order];
     if (row.convertedFromRaw || result?.status !== 'converted') return;
     const metrics = usableMetrics(result.metrics);
     if (metrics.grade == null || metrics.standardScore == null || metrics.percentile == null) return;
-    updated[index] = { ...row, ...metrics, convertedFromRaw: true, confirmed: false };
+    if (input.standardScore != null && input.standardScore !== metrics.standardScore) return;
+    const conversionAdmissionYear = [2026, 2027].includes(result.conversionAdmissionYear) ? result.conversionAdmissionYear : undefined;
+    updated[index] = { ...row, ...metrics, convertedFromRaw: input.standardScore == null || undefined, conversionAdmissionYear, confirmed: false };
   });
   return updated.some((row, index) => row !== records[index]) ? updated : null;
 }

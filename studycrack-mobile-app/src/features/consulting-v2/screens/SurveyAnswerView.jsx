@@ -41,7 +41,8 @@ function entries(section, value) {
       ['시험', [examType === 'csat' && examYear ? `${examYear + 1}학년도` : examYear, examNames[examType]].filter(Boolean).join(' ')],
       ...(records || []).filter(row => row.area !== 'foreign_language' || row.subject).map(row => [
         row.subject || scoreNames[row.area],
-        [row.selection, ...Object.entries(scoreFields).filter(([key]) => row[key] != null).map(([key, label]) => `${label} ${row[key]}`)].filter(Boolean).join(' · ')
+        [row.selection, ...Object.entries(scoreFields).filter(([key]) => row[key] != null).map(([key, label]) => `${label} ${row[key]}`),
+          row.conversionAdmissionYear ? `${row.conversionAdmissionYear}학년도 수능${row.conversionAdmissionYear < examYear + 1 ? ' 참고' : ' 기준'}` : ''].filter(Boolean).join(' · ')
       ])
     ];
   }

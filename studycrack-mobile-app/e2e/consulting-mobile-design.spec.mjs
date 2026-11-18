@@ -151,9 +151,11 @@ async function prepare(page, { loggedIn = true } = {}) {
       }
       else if(type==='student_convert_v2_survey_scores'){
         f.conversions.push(input);
+        if(f.deferScore){f.deferScore=false;await new Promise(resolve=>{f.releaseScore=resolve;});}
+        if(f.failScoreOnce){f.failScoreOnce=false;return new Response(JSON.stringify({success:false,code:'SCORE_CONVERSION_UNAVAILABLE'}),{status:503});}
         data={results:input.records.map(row=>{
           if(f.scoreboardUnavailable) return {status:'board_unavailable'};
-          return {status:'converted',metrics:{standardScore:138,percentile:100,grade:1}};
+          return {status:'converted',metrics:{standardScore:row.standardScore ?? 138,percentile:100,grade:1},conversionAdmissionYear:row.standardScore != null ? 2026 : 2027};
         })};
       }
       else if(type==='consulting_create_score_upload') {
@@ -910,7 +912,7 @@ test('구형 상담 답변은 숨기고 새 비교 기준과 다른 탭의 상�
   await fits(page);
 });
 
-test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는 학생 화면에 표시하지 않는다', async ({ page }, testInfo) => {
+test('국어·수학 공통과 선택 원점수를 유지하고 표준점수·자동 조회 수치를 확인한다', async ({ page }, testInfo) => {
   const fixture = await prepare(page);
   const snapshot = createEmptySurvey();
   snapshot.formVersion = 2;
@@ -934,7 +936,8 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
     await expect(group.getByRole('spinbutton', { name: '원점수', exact: true })).toHaveCount(0);
   }
   await expect(korean).toContainText('이전에 저장한 총점은 91점');
-  await expect(page.getByRole('spinbutton', { name: /표준점수|백분위|등급/ })).toHaveCount(0);
+  await expect(page.getByRole('spinbutton', { name: '표준점수 (선택)', exact: true })).toHaveCount(4);
+  await expect(page.getByRole('spinbutton', { name: /백분위|등급/ })).toHaveCount(0);
   for (const [area, grade] of [['영어', '2'], ['한국사', '9']]) {
     const group = page.getByRole('group', { name: area, exact: true });
     await expect(group.getByRole('combobox', { name: '등급' })).toHaveValue(grade);
@@ -949,6 +952,8 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   await korean.getByRole('spinbutton', { name: '선택 원점수', exact: true }).fill('22');
   await expect(korean.locator('.consulting-score-total')).toHaveText('원점수 합계 98점');
   await expect.poll(() => page.evaluate(() => window.__design.conversions.some(call => call.records.some(row => row.area === 'korean' && row.rawScore === 98)))).toBe(true);
+  await expect(korean.getByRole('spinbutton', { name: '표준점수 (선택)', exact: true })).toHaveValue('138');
+  await expect(korean.getByRole('status')).toContainText('백분위 100 · 1등급');
   expect(await page.evaluate(() => window.__design.survey.draft?.snapshot.scores.records[0].convertedFromRaw)).toBeUndefined();
   await expect(korean.getByRole('checkbox')).toHaveCount(0);
   await page.evaluate(() => { window.__design.scoreboardUnavailable = true; });
@@ -978,6 +983,51 @@ test('국어·수학 공통과 선택 원점수를 저장하고 환산 수치는
   expect(await page.evaluate(() => window.__design.survey.draft.snapshot.scores.records.some(row => row.area === 'foreign_language'))).toBe(false);
   const conversions = await page.evaluate(() => window.__design.conversions);
   expect(conversions.every(({ examYear, examType }) => examYear === 2026 && examType === 'csat')).toBe(true);
+});
+
+test('표준점수만 입력해 2026 참고값을 저장하고 늦은 응답·조회 실패에도 입력값을 보존한다', async ({ page }, testInfo) => {
+  await prepare(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/survey');
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  await next.click();
+  const korean = page.getByRole('group', { name: '국어', exact: true });
+  const standard = korean.getByRole('spinbutton', { name: '표준점수 (선택)', exact: true });
+  await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('언어와매체');
+  await page.evaluate(() => { window.__design.deferScore = true; });
+  await standard.fill('146');
+  await expect.poll(() => page.evaluate(() => typeof window.__design.releaseScore)).toBe('function');
+  await standard.fill('147');
+  await page.evaluate(() => { window.__design.releaseScore(); });
+  await expect(korean.getByRole('status')).toHaveText('2026학년도 수능 참고 · 백분위 100 · 1등급');
+  await expect(standard).toHaveValue('147');
+  await expect(korean.getByRole('spinbutton', { name: '공통 원점수', exact: true })).toHaveValue('');
+  await expect(korean.getByRole('spinbutton', { name: '선택 원점수', exact: true })).toHaveValue('');
+  const math = page.getByRole('group', { name: '수학', exact: true });
+  await page.evaluate(() => { window.__design.failScoreOnce = true; });
+  await math.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('미적분');
+  const mathStandard = math.getByRole('spinbutton', { name: '표준점수 (선택)', exact: true });
+  await mathStandard.fill('138');
+  await expect(page.getByText('백분위·등급을 불러오지 못했어요. 입력한 점수는 유지됩니다.')).toBeVisible();
+  await expect(mathStandard).toHaveValue('138');
+  await page.getByRole('button', { name: '다시 확인', exact: true }).click();
+  await expect(math.getByRole('status')).toHaveText('2026학년도 수능 참고 · 백분위 100 · 1등급');
+  await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('consulting-standard-reference-320.png'), fullPage: true });
+  await next.click();
+  await expect(page.getByRole('heading', { name: '지원 조건', exact: true })).toBeVisible();
+  const saved = await page.evaluate(() => window.__design.survey.draft.snapshot.scores);
+  expect(saved).toMatchObject({ examYear: 2026, examType: 'csat' });
+  expect(saved.records[0]).toMatchObject({ standardScore: 147, percentile: 100, grade: 1, conversionAdmissionYear: 2026, confirmed: false });
+  expect(saved.records[0]).not.toHaveProperty('convertedFromRaw');
+  expect(saved.records[0].rawScore ?? null).toBeNull();
+  await page.getByRole('button', { name: '이전', exact: true }).click();
+  await expect(standard).toHaveValue('147');
+  await expect(korean.getByRole('status')).toContainText('2026학년도 수능 참고');
+  await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('화법과작문');
+  await expect(standard).toHaveValue('');
+  await expect(korean.getByRole('status')).not.toContainText('2026학년도 수능 참고');
+  await expect(mathStandard).toHaveValue('138');
 });
 
 test('성적은 직접 입력하고 최종 확인에서 기존 첨부와 새 파일의 상태를 표시한다', async ({ page }, testInfo) => {
@@ -1191,7 +1241,7 @@ test('기존 모의평가 초안의 점수는 수능으로 복사하지 않고 �
   await expect(page.getByText(/이전에 다른 시험으로 저장한 점수는 가져오지 않았어요/)).toBeVisible();
   const korean = page.getByRole('group', { name: '국어', exact: true });
   await expect(korean.getByRole('spinbutton', { name: '공통 원점수', exact: true })).toHaveValue('');
-  await expect(korean.getByRole('spinbutton', { name: '표준점수', exact: true })).toHaveCount(0);
+  await expect(korean.getByRole('spinbutton', { name: '표준점수 (선택)', exact: true })).toHaveValue('');
   await next.click();
   await expect(page.getByText('이전에 45분으로 입력했어요.', { exact: false })).toBeVisible();
   await expect(page.getByLabel('최대 편도 통학 시간')).toHaveValue('');

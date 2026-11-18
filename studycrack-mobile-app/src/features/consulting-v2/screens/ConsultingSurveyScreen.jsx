@@ -470,7 +470,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
       if (section === 'qualitative') return <QualitativeStep snapshot={snapshot} update={update} />;
       if (section === 'consent') return <ConsentStep snapshot={snapshot} update={update} fileActions={fileActions} />;
       if (section === 'scores') return legacy ? <LegacyScoresStep value={snapshot.scores} update={updateScores} raw={snapshot.formVersion === 3} />
-        : <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} actionBusy={actionBusy} autoConvert={false} />;
+        : <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} actionBusy={actionBusy} />;
       return null;
     };
     return <SurveySupplementEditor supplement={supplement} snapshot={snapshot} submission={submission} selectedFileIds={selectedFileIds}
@@ -505,7 +505,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
         {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
         {key === 'scores' && (legacy ? <LegacyScoresStep value={snapshot.scores} update={updateScores} raw={snapshot.formVersion === 3} />
           : <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} actionBusy={actionBusy}
-            autoConvert={!revisionEditing} previousExamScores={!revisionEditing && session.previousExamScores} />)}
+            autoConvertRaw={!revisionEditing} previousExamScores={!revisionEditing && session.previousExamScores} />)}
         {key === 'conditions' && <ConditionsStep snapshot={snapshot} update={update} legacy={legacy && !snapshot.formVersion} />}
         {key === 'preferences' && (legacy && !snapshot.formVersion ? <LegacyPreferencesStep value={snapshot.preferences} update={update} /> : <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />)}
         {key === 'strategy' && <StrategyStep snapshot={snapshot} update={update} />}
