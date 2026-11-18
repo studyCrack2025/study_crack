@@ -64,7 +64,7 @@ export function useWrittenChat(binding, caseId, manager) {
               if (incoming.length) cursor = result.data.nextCursor || incoming.at(-1).messageId;
               if (result.data.session) acceptSession(result.data.session);
               unchangedCount = incoming.length ? 0 : unchangedCount + 1;
-              delay = result.data.hasMore ? 0 : nextWrittenPollDelay({ changed: Boolean(incoming.length), unchangedCount, writable: sessionRef.current.writable });
+              delay = result.data.hasMore ? 0 : nextWrittenPollDelay({ changed: Boolean(incoming.length), unchangedCount, writable: sessionRef.current.writable, preparing: sessionRef.current.canCompose === true });
               if (!result.data.hasMore && sessionRef.current.status === 'completed') stopped = true;
               else if (sessionRef.current.readOnly) delay = 30000;
             }

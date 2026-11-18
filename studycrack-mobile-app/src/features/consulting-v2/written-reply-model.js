@@ -22,7 +22,7 @@ export function writtenReplyUnavailableReason(session, connection) {
   if (session.observer || session.canManage !== true) return '배정된 상담 담당자만 추천답변을 생성할 수 있습니다.';
   if (session.serviceHold) return '서비스 보류 중에는 추천을 생성할 수 없습니다.';
   if (session.status === 'completed') return '완료된 상담은 기록 조회만 가능합니다.';
-  if (session.writable !== true) return '상담 진행 시간에 추천답변을 생성할 수 있습니다.';
+  if ((session.canCompose ?? session.writable) !== true) return '상담 시작 10분 전부터 추천답변을 생성할 수 있습니다.';
   if (session.canSuggestReplies !== true) return 'AI 추천 연결이 활성화되지 않았습니다. 다시 확인해도 같다면 운영 설정을 확인해주세요.';
   return '';
 }

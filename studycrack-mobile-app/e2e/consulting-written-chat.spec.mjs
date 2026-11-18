@@ -7,7 +7,7 @@ function fixture() { return { messages: [], calls: [], files: {}, sequence: 0, p
 function session(s, role, selectedCase = caseId) {
   return { caseId: selectedCase, sessionId: 'SESSION_123e4567-e89b-42d3-a456-426614174001', counselorId: 'operator', status: s.phase === 'completed' ? 'completed' : 'open',
     serverTime: new Date().toISOString(), startAt: new Date(Date.now() - 3600000).toISOString(), endAt: new Date(Date.now() - 60000).toISOString(),
-    entryAllowed: s.phase !== 'before', writable: s.phase === 'open' && role !== 'observer', serviceHold: s.phase === 'held', readOnly: ['completed', 'held'].includes(s.phase) || role === 'observer', observer: role === 'observer', canManage: role === 'manager',
+    entryAllowed: s.phase !== 'before', canCompose: ['preparing', 'open'].includes(s.phase) && role !== 'observer', writable: (s.phase === 'open' || s.phase === 'preparing' && role === 'student') && role !== 'observer', serviceHold: s.phase === 'held', readOnly: ['completed', 'held'].includes(s.phase) || role === 'observer', observer: role === 'observer', canManage: role === 'manager',
     otherReadThroughId: s.sentRead[role === 'student' ? 'manager' : 'student'] || null, ...s.sessionTimes };
 }
 async function install(page, role, s) {
@@ -208,6 +208,25 @@ test('학생도 Enter로 한 번만 전송하고 Shift+Enter·한글 조합은 �
   expect(calls[0].data.expectedSessionId).toBe(session(s, 'student').sessionId);
   expect(s.messages).toHaveLength(1);
   expect(s.messages[0].messageId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+});
+
+test('학생은 시작 전 사전 입장에서도 질문을 전송하고 사진을 준비할 수 있다', async ({ page }) => {
+  const s = fixture(), at = Date.parse('2026-11-18T03:50:00.000Z'); s.phase = 'preparing';
+  s.sessionTimes = { serverTime: new Date(at).toISOString(), startAt: new Date(at + 600000).toISOString(), endAt: new Date(at + 2400000).toISOString() };
+  await enter(page, 'student', s);
+  await expect(page.getByRole('button', { name: '← 나의 컨설팅', exact: true })).toBeVisible();
+  const notice = page.locator('.consulting-written-meta');
+  await expect(notice).toContainText('사전 입장 시간입니다. 질문은 미리 보내실 수 있으며,');
+  await expect(notice.locator('strong')).toHaveText('상담사 답변은 13:00부터 시작됩니다.');
+  await expect(notice).not.toContainText('상담 진행 중');
+  await expect(page.getByRole('button', { name: '＋ 사진', exact: true })).toBeEnabled();
+  const input = page.getByLabel('상담 메시지', { exact: true });
+  await input.fill('입장 후 미리 보내는 학생 질문'); await input.press('Enter');
+  await expect(input).toHaveValue(''); await expect(page.getByRole('log')).toContainText('입장 후 미리 보내는 학생 질문');
+  await expect(notice.locator('strong')).toHaveText('상담사 답변은 13:00부터 시작됩니다.');
+  const calls = s.calls.filter(call => call.type === 'student_send_written_message');
+  expect(calls).toHaveLength(1); expect(calls[0].data.body).toBe('입장 후 미리 보내는 학생 질문');
+  expect(s.calls.filter(call => call.type === 'counselor_send_written_message')).toHaveLength(0);
 });
 
 test('진행 중인 채팅은 대화가 없어도 다음 1초 조회로 새 답변을 받는다', async ({ page }) => {

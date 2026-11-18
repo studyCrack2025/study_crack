@@ -57,7 +57,7 @@ function ChoiceField({ row, label, change }) {
   </>;
 }
 
-function ScoreCard({ row, label, field, change }) {
+function ScoreCard({ row, label, field, change, lookup, pending }) {
   if (isGradeOnlyArea(row.area)) {
     const foreign = row.area === 'foreign_language';
     return <fieldset className="consulting-score-card" data-survey-field={field}>
@@ -92,29 +92,42 @@ function ScoreCard({ row, label, field, change }) {
       <p className="consulting-score-total">원점수 합계 <strong>{total == null ? '—' : `${total}점`}</strong></p>
       {legacyTotal && <p className="consulting-score-note">이전에 저장한 총점은 {row.rawScore}점이에요. 공통·선택 점수를 입력하면 새 합계로 저장해요.</p>}
     </> : <NumberField label="원점수" max={50} value={row.rawScore} onChange={rawScore => change({ ...clearConvertedScores(row), rawScore })} />}
+    <NumberField label="표준점수 (선택)" max={row.area === 'inquiry' ? 100 : 200} value={row.standardScore} onChange={standardScore => change({
+      standardScore, percentile: null, grade: null, convertedFromRaw: undefined, conversionAdmissionYear: undefined, confirmed: false
+    })} />
+    {row.percentile != null && row.grade != null ? <p className="consulting-score-note" role="status">
+      {row.conversionAdmissionYear ? `${row.conversionAdmissionYear}학년도 수능${row.conversionAdmissionYear < 2027 ? ' 참고' : ' 기준'} · ` : ''}백분위 {row.percentile} · {row.grade}등급
+    </p> : <p className="consulting-score-note" role="status">{pending ? '백분위와 등급을 확인하고 있어요.'
+      : lookup?.status === 'board_unavailable' || lookup?.status === 'score_unavailable' ? row.standardScore != null ? '해당 표준점수를 기준표에서 확인할 수 없어요. 과목과 점수를 확인해 주세요.' : '원점수 대응자료가 아직 없어 표준점수를 함께 입력하면 백분위·등급을 확인할 수 있어요.'
+        : '표준점수가 있으면 함께 적어주세요. 백분위와 등급을 자동으로 확인해요.'}</p>}
   </fieldset>;
 }
 
-export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores, autoConvert = true }) {
+export function ConsultingSurveyScores({ value, update, binding, actionBusy, previousExamScores, autoConvertRaw = true }) {
   const scope = React.useContext(SurveyFieldContext);
-  const batch = actionBusy || !autoConvert || scope ? null : scoreConversionBatch(value);
+  const [lookup, setLookup] = React.useState(null);
+  const [retry, setRetry] = React.useState(0);
+  const batch = actionBusy ? null : scoreConversionBatch(value, scope, autoConvertRaw);
   const batchKey = batch && JSON.stringify(batch);
   React.useEffect(() => {
     if (!batchKey) return undefined;
     let active = true;
     const timer = setTimeout(async () => {
+      setLookup({ key: batchKey, phase: 'pending' });
       const { examYear, examType, entries } = JSON.parse(batchKey);
       const response = await convertV2SurveyScores(binding, { examYear, examType, records: entries.map(entry => entry.input) });
       const results = response.data?.results;
-      if (!active || !response.ok || !Array.isArray(results) || results.length !== entries.length) return;
+      if (!active) return;
+      if (!response.ok || !Array.isArray(results) || results.length !== entries.length) { setLookup({ key: batchKey, phase: 'error' }); return; }
+      setLookup({ key: batchKey, phase: 'done', results });
       update(current => {
-        if (JSON.stringify(scoreConversionBatch(current)) !== batchKey) return null;
+        if (JSON.stringify(scoreConversionBatch(current, scope, autoConvertRaw)) !== batchKey) return null;
         const records = applyScoreConversions(current.records, entries, results);
         return records ? { records } : null;
       });
     }, 650);
     return () => { active = false; clearTimeout(timer); };
-  }, [batchKey, binding, update]);
+  }, [batchKey, binding, update, scope, autoConvertRaw, retry]);
 
   const labels = labelScoreRows(value.records);
   let inquiryNumber = 0;
@@ -126,11 +139,15 @@ export function ConsultingSurveyScores({ value, update, binding, actionBusy, pre
     {previousExamScores && <p className="consulting-score-note" role="status">이번 수능에 응시한 성적을 입력해 주세요. 이전에 다른 시험으로 저장한 점수는 가져오지 않았어요.</p>}
     {!scope && <div className="consulting-score-tools">
       <div className="consulting-score-subhead"><h2>과목별 성적</h2><span className="consulting-score-pill">선택 입력</span></div>
-      <p className="consulting-score-note">국어·수학·탐구는 원점수, 영어·한국사는 등급을 적어주세요. 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>
+      <p className="consulting-score-note">국어·수학·탐구는 원점수를 적고, 표준점수가 있으면 함께 입력해 주세요. 영어·한국사는 등급, 제2외국어·한문은 응시했다면 과목과 등급을 선택해 주세요.</p>
     </div>}
+    {lookup?.key === batchKey && lookup.phase === 'error' && <div className="consulting-score-lookup" role="status"><p className="consulting-score-note">백분위·등급을 불러오지 못했어요. 입력한 점수는 유지됩니다.</p><button type="button" onClick={() => setRetry(value => value + 1)}>다시 확인</button></div>}
     <div className="consulting-score-list">{value.records.map((row, index) => {
       const field = `scores.${row.area === 'inquiry' ? `inquiry${++inquiryNumber}` : row.area}`;
-      return <SurveyFieldScope key={labels[index]} field={field}><ScoreCard row={row} label={labels[index]} field={field} change={patch => changeRow(index, patch)} /></SurveyFieldScope>;
+      const position = batch?.entries.findIndex(entry => entry.index === index) ?? -1;
+      const currentLookup = lookup?.key === batchKey && position >= 0;
+      return <SurveyFieldScope key={labels[index]} field={field}><ScoreCard row={row} label={labels[index]} field={field} change={patch => changeRow(index, patch)}
+        lookup={currentLookup ? lookup.results?.[position] : null} pending={currentLookup && lookup.phase === 'pending'} /></SurveyFieldScope>;
     })}</div>
   </div>;
 }

@@ -127,10 +127,10 @@ for (const when of ['열 때', '인증할 때']) test(`다른 신청이 연결�
     window.dispatchEvent(new PopStateEvent('popstate'));
   });
   await expect(page).toHaveURL(new RegExp(`${startPath}$`));
-  await expect(page.getByRole('button', { name: '이전에 연결한 내 컨설팅 보기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '이전에 연결한 나의 컨설팅 보기' })).toBeVisible();
   expect(await page.evaluate(() => window.__inviteFixture.calls.filter(call => call.type === 'student_get_v2_consulting_home'))).toHaveLength(0);
   page.once('dialog', dialog => dialog.accept());
-  await page.getByRole('button', { name: '이전에 연결한 내 컨설팅 보기' }).click();
+  await page.getByRole('button', { name: '이전에 연결한 나의 컨설팅 보기' }).click();
   await expect(page).toHaveURL(new RegExp(`${homePath}$`));
   await expect(page.getByRole('heading', { name: '나의 정시 컨설팅' })).toBeVisible();
   expect(await page.evaluate(key => sessionStorage.getItem(key), inviteKey)).toBeNull();

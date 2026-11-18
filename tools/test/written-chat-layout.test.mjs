@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { installWrittenChatViewport, shouldSendWrittenEnter } from '../../studycrack-mobile-app/src/features/consulting-v2/written-chat-layout.js';
-import { mergeWrittenMessages } from '../../studycrack-mobile-app/src/features/consulting-v2/message-model.js';
+import { mergeWrittenMessages, nextWrittenPollDelay } from '../../studycrack-mobile-app/src/features/consulting-v2/message-model.js';
 
 function viewportFixture(withViewport = true) {
   const root = new Map(), attrs = new Map(), styles = new Map(), frames = new Map(), scrolls = [];
@@ -68,4 +68,9 @@ test('empty or duplicate polling preserves message identity, while changed text 
   assert.equal(mergeWrittenMessages(current, []), current);
   assert.equal(mergeWrittenMessages(current, [{ ...current[0] }]), current);
   for (const patch of [{ body: '수정된 질문' }, { attachments: [{ fileId: 'file-1' }] }]) assert.notEqual(mergeWrittenMessages(current, [{ ...current[0], ...patch }]), current);
+});
+
+test('preparing managers receive early questions every second without being allowed to transmit', () => {
+  assert.equal(nextWrittenPollDelay({ writable: false, preparing: true, unchangedCount: 20 }), 1000);
+  assert.equal(nextWrittenPollDelay({ writable: false, preparing: false, unchangedCount: 20 }), 10000);
 });

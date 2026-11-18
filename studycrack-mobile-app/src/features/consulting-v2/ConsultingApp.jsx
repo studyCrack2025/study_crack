@@ -23,7 +23,7 @@ function LoginScreen({ returnPath }) {
 }
 
 function PendingScreen({ label }) {
-  return <main className="consulting-v2-center"><section className="consulting-v2-card"><p className="consulting-v2-kicker">2027 정시 컨설팅</p><h1>{label}</h1><p className="consulting-v2-status">이 단계의 입력 화면은 다음 구현 순서에서 연결됩니다.</p><button className="consulting-v2-secondary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>진행 현황으로 돌아가기</button></section></main>;
+  return <main className="consulting-v2-center"><section className="consulting-v2-card"><p className="consulting-v2-kicker">2027 정시 컨설팅</p><h1>{label}</h1><p className="consulting-v2-status">이 단계의 입력 화면은 다음 구현 순서에서 연결됩니다.</p><button className="consulting-v2-secondary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>나의 컨설팅</button></section></main>;
 }
 
 const PENDING_LABELS = Object.freeze({ survey: '기초조사서', materials: '자료 확인', schedule: '상담 일정 선택', writtenSession: '서면 상담', report: '컨설팅 보고서', finalCall: '파이널 콜' });

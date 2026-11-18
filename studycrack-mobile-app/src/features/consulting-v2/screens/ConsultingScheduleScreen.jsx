@@ -126,11 +126,12 @@ export function ConsultingScheduleScreen({ binding }) {
   const { startDate, endDate } = resource.bookingWindow || {};
   const period = startDate && endDate ? `${kstDate(startDate)} ~ ${kstDate(endDate)}` : '';
   return <main className="consulting-schedule">
-    <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 진행 현황</button>{showPicker && <span>{count}개 선택</span>}</header>
+    <header><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>← 나의 컨설팅</button>{showPicker && <span>{count}개 선택</span>}</header>
     {showSaved && <WrittenAvailabilitySaved slots={resource.submittedSlots} outsideWindowCount={resource.outsideWindowCount}
       onEdit={() => { setChoosing(true); setMessage(''); }} onHome={() => navigateConsulting(CONSULTING_ROUTES.home)} />}
     {confirmed && <section className="consulting-schedule-card">
       <p className="consulting-v2-kicker">서면상담 일정</p><h1>상담 일정이 확정됐습니다</h1><ConfirmedWrittenTime value={confirmed} />
+      <p className="consulting-v2-status"><small>상담 시작 10분 전부터 입장해 질문을 미리 보낼 수 있어요. 상담사 답변은 예약된 시작 시각부터 도착합니다.</small></p>
       {resource.booking.status === 'booked' && <p className="consulting-v2-status">{performance.now() > resource.changeDeadlineClock
         ? '일정 변경 요청이 마감됐어요. 상담 시작 2시간 전까지만 요청할 수 있으며, 이후에는 운영팀에 문의해주세요.'
         : '일정 변경 요청은 상담 시작 2시간 전까지 가능해요.'}</p>}
@@ -162,6 +163,7 @@ export function ConsultingScheduleScreen({ binding }) {
       {editing && proposed && <p className="consulting-v2-status">편하신 시간을 모두 알려주세요. 운영팀에서 확인해 새 일정을 확정하겠습니다.</p>}
       {period && <p className="consulting-v2-status">{period} · 한국시간</p>}
       <p className="consulting-schedule-intro">날짜별로 가능한 시간을 모두 골라주세요.<br />선택한 시간 중 하나로 상담을 확정해드려요.</p>
+      <p className="consulting-v2-status"><small>상담 시작 10분 전부터 입장해 질문을 미리 보낼 수 있어요. 상담사 답변은 예약된 시작 시각부터 도착합니다.</small></p>
       {resource.outsideWindowCount > 0 && <p className="consulting-survey-message" role="status">이전에 고른 시간 중 {resource.outsideWindowCount}개가 현재는 선택할 수 없어요.</p>}
       {resource.slots.length ? <WrittenAvailabilityPicker slots={resource.slots} window={resource.bookingWindow} selected={selected} setSelected={setSelected} saving={saving} />
         : <p className="consulting-v2-status">지금 선택할 수 있는 시간이 없어요. 선택 기간과 예약 현황을 확인하거나 운영팀에 문의해주세요.</p>}

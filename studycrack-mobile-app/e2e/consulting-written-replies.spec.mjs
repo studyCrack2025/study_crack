@@ -7,7 +7,7 @@ const message = (index, senderRole, body) => ({ messageId: `01K${String(index).p
 const bodies = ['희망 대학의 반영 기준과 확인된 성적을 함께 살펴보고, 현재 자료로 판단하기 어려운 부분부터 정리해보겠습니다.', '지원 방향이 고민되셨겠어요. 원하는 조건과 성적을 차근차근 비교하면서, 먼저 확인해야 할 자료를 함께 정리해볼게요.'];
 function fixture() { return { calls: [], messages: [message(1, 'student', '원점수를 기준으로 지원 방향을 어떻게 정하면 좋을까요?'), message(2, 'counselor', '어떤 기준을 가장 중요하게 생각하나요?'), message(3, 'student', '지역과 전공을 함께 고려하고 싶어요.')], enabled: true, complete: true, jobs: new Map(), polls: 0, sequence: 3 }; }
 function session(s, selectedCase = caseId) {
-  return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: 'open', startAt: new Date(Date.now() - 60000).toISOString(), endAt: new Date(Date.now() + 1800000).toISOString(), serverTime: new Date().toISOString(), entryAllowed: true, writable: !s.readOnly && !s.observer, readOnly: Boolean(s.readOnly || s.observer), observer: Boolean(s.observer), canManage: !s.observer, ...(s.omitCapability ? {} : { canSuggestReplies: s.enabled && !s.observer }), replyContextVersion: s.version || 'v1' };
+  return { caseId: selectedCase, sessionId: selectedCase === otherCase ? otherSessionId : sessionId, counselorId: 'operator', status: s.preparing ? 'booked' : 'open', startAt: s.startAt || new Date(Date.now() - 60000).toISOString(), endAt: s.endAt || new Date(Date.now() + 1800000).toISOString(), serverTime: s.serverTime || new Date().toISOString(), entryAllowed: true, canCompose: !s.readOnly && !s.observer, writable: !s.readOnly && !s.observer && !s.preparing, readOnly: Boolean(s.readOnly || s.observer), observer: Boolean(s.observer), canManage: !s.observer, ...(s.omitCapability ? {} : { canSuggestReplies: s.enabled && !s.observer }), replyContextVersion: s.version || 'v1' };
 }
 async function enter(page, s, { desktop = false } = {}) {
   for (const row of s.messages) expect(row.messageId, '추천 fixture는 실제 26자리 메시지 ID를 사용한다').toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
@@ -33,7 +33,7 @@ async function enter(page, s, { desktop = false } = {}) {
     else if (type === 'counselor_create_written_reply') {
       if (s.busyOnce) { s.busyOnce = false; s.cooldownMs = 3000; return route.fulfill({ status: 429, json: { success: false, code: 'REPLY_BUSY' } }); }
       const jobId = `REPLY_${String(s.jobs.size + 1).padStart(64, 'a')}`;
-      const job = { jobId, status: 'queued', caseId: data.caseId, expectedSessionId: data.expectedSessionId, contextVersion: s.version || 'v1', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: 2 };
+      const job = { jobId, status: 'queued', caseId: data.caseId, expectedSessionId: data.expectedSessionId, contextVersion: s.version || 'v1', startMessageId: data.startMessageId, endMessageId: data.endMessageId, messageCount: s.messages.filter(row => row.messageId >= data.startMessageId && row.messageId <= data.endMessageId).length };
       s.jobs.set(jobId, job); result = { reply: job };
     } else if (type === 'counselor_get_written_reply') {
       s.polls++;
@@ -180,7 +180,7 @@ test('읽기 전용이나 검수 상담도 추천 불가 사유를 표시하고 
   const s = fixture(); s.readOnly = true; await enter(page, s);
   await expect(page.getByLabel('상담 메시지', { exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '답변 추천', exact: true }).click();
-  await expect(panel(page)).toContainText('상담 진행 시간에');
+  await expect(panel(page)).toContainText('상담 시작 10분 전부터');
   await expect(panel(page).getByRole('button', { name: '추천답변 생성', exact: true })).toBeDisabled();
   s.readOnly = false; s.observer = true; await page.reload();
   await page.getByRole('button', { name: '답변 추천', exact: true }).click();
@@ -226,4 +226,29 @@ test('추천 실패는 작업 잠금 안내 대신 서버가 확인한 원인을
   await expect(panel(page)).toContainText('AI 연결 설정 형식을 확인해야 합니다.');
   await expect(panel(page)).not.toContainText('진행 중인 추천을 기다리거나');
   expect(sent(s)).toHaveLength(0);
+});
+
+test('관리자는 사전 질문으로 추천을 받아 초안을 준비하지만 예약 시각 이후 명시적으로만 전송한다', async ({ page }) => {
+  await page.clock.install();
+  const s = fixture(); s.preparing = true; s.startAt = new Date(Date.now() + 600000).toISOString(); s.endAt = new Date(Date.parse(s.startAt) + 1800000).toISOString();
+  s.messages = s.messages.filter(row => row.senderRole === 'student');
+  await enter(page, s, { desktop: true });
+  await expect(page.locator('.consulting-written-meta')).toContainText('상담 준비 중');
+  const input = page.getByLabel('상담 메시지', { exact: true }), send = page.getByRole('button', { name: '전송', exact: true });
+  await expect(input).toBeEnabled(); await expect(send).toBeDisabled();
+  await input.fill('미리 작성하는 답변'); await input.press('Enter');
+  await expect(input).toHaveValue('미리 작성하는 답변'); expect(sent(s)).toHaveLength(0);
+  await input.fill('');
+  await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page).getByRole('heading', { name: '핵심 전달형' })).toBeVisible();
+  await expect(panel(page).getByRole('heading', { name: '공감·설명형' })).toBeVisible();
+  await panel(page).getByRole('button', { name: '이 답변을 입력창으로' }).first().click();
+  await expect(input).toHaveValue(bodies[0]); await input.press('Enter');
+  await expect(input).toHaveValue(bodies[0]); await expect(send).toBeDisabled(); expect(sent(s)).toHaveLength(0);
+  s.preparing = false; s.serverTime = s.startAt;
+  await page.clock.fastForward(1001); await expect(send).toBeEnabled();
+  await expect(input).toHaveValue(bodies[0]); expect(sent(s)).toHaveLength(0);
+  await input.press('Enter'); await expect(input).toHaveValue('');
+  await expect.poll(() => sent(s).length).toBe(1); expect(sent(s)[0].data.body).toBe(bodies[0]);
+  expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
 });

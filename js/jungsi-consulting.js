@@ -86,7 +86,7 @@
             const verified = typeof window.tryRefreshToken === 'function' && await window.tryRefreshToken({ preserveTransientErrors: true });
             if (revision !== accountCheck) return;
             if (scope && !window.isClientSessionCurrent(scope)) { render('이용자 로그인 ↗', loginPath); return; }
-            render(verified ? '내 컨설팅 ↗' : '이용자 로그인 ↗', verified ? '/2027-jungsi-consulting/home' : loginPath);
+            render(verified ? '나의 컨설팅 ↗' : '이용자 로그인 ↗', verified ? '/2027-jungsi-consulting/home' : loginPath);
         } catch (_) {
             if (revision === accountCheck) render('컨설팅으로 이동 ↗', loginPath);
         }

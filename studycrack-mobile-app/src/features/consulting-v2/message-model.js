@@ -9,8 +9,8 @@ export function mergeWrittenMessages(current = [], incoming = []) {
   return next.length === current.length && next.every((item, index) => item === current[index]) ? current : next;
 }
 
-export function nextWrittenPollDelay({ changed, unchangedCount = 0, writable = true }) {
-  if (writable) return 1000;
+export function nextWrittenPollDelay({ changed, unchangedCount = 0, writable = true, preparing = false }) {
+  if (writable || preparing) return 1000;
   if (changed) return 2000;
   return unchangedCount >= 2 ? 10000 : 5000;
 }
