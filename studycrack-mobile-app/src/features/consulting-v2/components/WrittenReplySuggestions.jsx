@@ -1,7 +1,7 @@
 import React from 'react';
-import { mergeReplyDraft } from '../written-reply-model.js';
+import { mergeReplyDraft, replyGroundingLabel } from '../written-reply-model.js';
 
-const sourceLabel = ref => ref === 'S1' ? '확정 조사서' : `선택 대화 ${Number(ref.slice(1))}`;
+const sourceLabel = ref => ref === 'S1' ? '학생 정보·분석 근거' : `선택 대화 ${Number(ref.slice(1))}`;
 export function WrittenReplySuggestions({ suggestion, draft, onSelectRange, onApply, unavailable = '', onReconnect }) {
   const [pending, setPending] = React.useState(null);
   const busy = ['pending', 'checking'].includes(suggestion.phase);
@@ -10,6 +10,7 @@ export function WrittenReplySuggestions({ suggestion, draft, onSelectRange, onAp
   const apply = mode => { if (onApply(pending, mode)) setPending(null); };
   return <section className="consulting-reply-panel" aria-label="답변 추천"><h2>답변 추천</h2>
     <p>선택 대화와 확정 조사서를 참고해 두 가지 초안을 만듭니다. 내용을 검토하고 수정한 뒤 전송해주세요.</p>
+    {replyGroundingLabel(suggestion.reply?.grounding) ? <p role="status">{replyGroundingLabel(suggestion.reply.grounding)}</p> : null}
     {unavailable ? <div role="status"><p>{unavailable}</p><button type="button" onClick={onReconnect}>추천 연결 다시 확인</button></div> : null}
     <div className="consulting-reply-actions"><button type="button" disabled={busy || Boolean(unavailable)} onClick={onSelectRange}>대화 범위 선택</button><button type="button" disabled={busy || Boolean(unavailable)} onClick={suggestion.recent}>최근 학생 질문 선택</button></div>
     <p>{suggestion.selected.length ? `선택한 대화 ${suggestion.selected.length}개 · ${suggestion.selected.reduce((sum, row) => sum + (row.body?.length || 0), 0)}자` : '최대 30개 메시지 · 12,000자'}</p>

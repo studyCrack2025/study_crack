@@ -40,7 +40,7 @@ async function enter(page, s, { desktop = false } = {}) {
       if (s.denied) return route.fulfill({ status: 403, json: { success: false, code: 'FORBIDDEN' } });
       const job = s.jobs.get(data.jobId);
       const status = ['cancelled', 'stale', 'failed'].includes(job.status) ? job.status : s.terminal || (s.complete ? 'succeeded' : 'running');
-      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'] } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
+      Object.assign(job, { status, ...(status === 'succeeded' ? { drafts: bodies.map((body, i) => ({ style: i ? 'empathic' : 'core', body, sourceRefs: ['M01', 'S1'] })), checks: ['공식 모집요강에서 반영 기준을 확인해주세요.'], ...(s.grounding ? { grounding: s.grounding } : {}) } : {}), ...(status === 'failed' && s.failureCode ? { resultCode: s.failureCode } : {}) });
       result = { reply: job };
     } else if (type === 'counselor_cancel_written_reply') { const job = s.jobs.get(data.jobId); job.status = 'cancelled'; result = { reply: job }; }
     else if (type === 'counselor_send_written_message') {
@@ -251,4 +251,11 @@ test('관리자는 사전 질문으로 추천을 받아 초안을 준비하지�
   await input.press('Enter'); await expect(input).toHaveValue('');
   await expect.poll(() => sent(s).length).toBe(1); expect(sent(s)[0].data.body).toBe(bodies[0]);
   expect(s.calls.filter(call => call.type === 'counselor_create_written_reply')).toHaveLength(1);
+});
+
+test('추천 근거는 성적 기준·분석 후보·자료 수를 표시하고 가져오기 전에는 전송하지 않는다', async ({ page }) => {
+  const s = fixture(); s.grounding = { status: 'partial', scoreBasis: 'historical_reference', referenceYear: 2026, candidateCount: 3, sourceCount: 2, reasonCodes: ['CUT_REFERENCE_REVIEW_REQUIRED'] };
+  await enter(page, s, { desktop: true }); await panel(page).getByRole('button', { name: '최근 학생 질문 선택' }).click(); await generate(page);
+  await expect(panel(page)).toContainText('2026 수능 참고 성적 · 분석 후보 3개 · 입시 근거 2건');
+  expect(sent(s)).toHaveLength(0);
 });
