@@ -202,7 +202,9 @@
             if (!campaign) return;
             // Promotional eligibility is described in the landing; a base price must not erase those terms.
             if (campaign.enrollmentStatus === 'open' && typeof campaign.applicationUrl === 'string' && /^https:\/\/docs\.google\.com\/forms\//.test(campaign.applicationUrl)) {
-                apply.href = campaign.applicationUrl;
+                apply.href = window.SCConsultingAttribution && campaign.attributionFormEntry
+                    ? await window.SCConsultingAttribution.decorate(campaign.applicationUrl, campaign.attributionFormEntry)
+                    : campaign.applicationUrl;
                 apply.dataset.available = 'true';
                 apply.hidden = document.getElementById('jungsiEnrollment')?.dataset.productType === 'calculator';
                 apply.target = '_blank';

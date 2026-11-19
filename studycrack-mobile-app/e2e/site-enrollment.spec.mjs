@@ -3,12 +3,18 @@ import { expect, test } from '@playwright/test';
 const applicationId = 'APP_123e4567-e89b-12d3-a456-426614174000';
 const bankTransfer = { bankName: '시험은행', accountNumber: '000-000-000000', accountHolder: '시험사업자' };
 async function prepare(page, options = {}) {
-  const state = { submits: [], application: null, amount: 200000, ...options };
+  const state = { submits: [], attributionRequests: [], application: null, amount: 200000, ...options };
   await page.route('**/gtm.js*', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: "window.IS_LOCAL=false;window.CONFIG={api:{consultingPublic:'/__enrollment',consulting:'/__consulting',auth:'/__auth'}};" }));
   await page.route('**/__enrollment', async route => {
     const { type, data } = route.request().postDataJSON();
-    if (type === 'get_v2_consulting_campaign') return route.fulfill({ json: { success: true, data: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'open', applicationUrl: 'https://docs.google.com/forms/d/e/synthetic/viewform' } } });
+    if (type === 'get_v2_consulting_campaign') return route.fulfill({ json: { success: true, data: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'open', ...(state.attribution ? { attributionFormEntry: 'entry.123456' } : {}), applicationUrl: 'https://docs.google.com/forms/d/e/synthetic/viewform' } } });
+    if (type === 'create_consulting_ad_attribution') {
+      state.attributionRequests.push(data);
+      if (state.deferAttribution) await new Promise(resolve => { state.releaseAttribution = resolve; });
+      if (state.failAttribution) return route.fulfill({ status: 503, json: { success: false } });
+      return route.fulfill({ json: { success: true, data: { token: 'synthetic-signed-token', expiresAt: '2030-01-01T00:00:00.000Z' } } });
+    }
     if (type === 'get_site_enrollment') {
       if (state.unavailable) return route.fulfill({ status: 503, json: { success: false, code: 'CALCULATOR_DATA_NOT_READY' } });
       expect(data.formVersion).toBe(2);
@@ -208,4 +214,36 @@ test('두 상품 신청은 작은 화면에서도 가로 넘침 없이 마지막
     await page.screenshot({ path: testInfo.outputPath(`${productType}-application-320.png`) });
     await page.getByRole('button', { name: '신청 창 닫기' }).click();
   }
+});
+
+
+test('광고 토큰 조회가 늦어도 계산기 모달에 구글폼을 노출하지 않고 사이트 신청을 유지한다', async ({ page }) => {
+  const state = await prepare(page, { attribution: true, deferAttribution: true });
+  await expect.poll(() => state.attributionRequests.length).toBe(1);
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
+  await page.locator('#calculatorApply').click();
+  await expect(page.locator('#jungsiEnrollmentPrice')).toContainText('25,000원');
+  state.releaseAttribution();
+  await expect(page.locator('#jungsiGoogleForm')).toHaveAttribute('data-available', 'true');
+  await expect(page.locator('#jungsiGoogleForm')).toBeHidden();
+  await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  await page.getByRole('tab', { name: '정시 컨설팅', exact: true }).click();
+  await page.locator('#consultingApply').click();
+  await expect(page.locator('#jungsiGoogleForm')).toBeVisible();
+  const href = await page.locator('#jungsiGoogleForm').getAttribute('href');
+  expect(new URL(href).searchParams.get('entry.123456')).toBe('synthetic-signed-token');
+  await expect(page.locator('#jungsiGoogleForm')).toHaveText('기존 구글폼으로 컨설팅 신청');
+  await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
+  expect(state.submits).toHaveLength(0);
+});
+
+test('광고 연결 실패는 기존 구글폼 주소로 돌아가며 사이트 신청을 막지 않는다', async ({ page }) => {
+  const state = await prepare(page, { attribution: true, failAttribution: true });
+  await expect.poll(() => state.attributionRequests.length).toBe(1);
+  await expect(page.locator('#jungsiGoogleForm')).toHaveAttribute('data-available', 'true');
+  await page.locator('#consultingApply').click();
+  await expect(page.locator('#jungsiEnrollmentPrice')).toContainText('200,000원');
+  await expect(page.locator('#jungsiGoogleForm')).toHaveAttribute('href', 'https://docs.google.com/forms/d/e/synthetic/viewform');
+  await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
+  expect(state.submits).toHaveLength(0);
 });
