@@ -1,0 +1,26 @@
+.home-consulting-promo { width:min(580px,calc(100% - 28px)); max-width:none; max-height:calc(100dvh - 32px); margin:auto; padding:0; border:0; border-radius:20px; overflow:hidden; background:#fff; color:var(--sc-marketing-ink); font-family:var(--sc-marketing-font); line-height:1.6; letter-spacing:-.02em; box-shadow:0 28px 90px rgba(15,23,42,.3); }
+.home-consulting-promo[open] { display:grid; grid-template-rows:minmax(0,1fr) auto; }
+.home-consulting-promo::backdrop { background:rgba(15,23,42,.62); }
+.home-consulting-promo__scroll { overflow:auto; overscroll-behavior:contain; min-height:0; }
+.home-consulting-promo__hero { position:relative; isolation:isolate; padding:28px clamp(20px,5vw,36px) 30px; background:var(--sc-marketing-navy); color:#fff; }
+.home-consulting-promo__photo { position:absolute; inset:0; z-index:-1; width:100%; height:100%; object-fit:cover; object-position:center; opacity:.18; pointer-events:none; }
+.home-consulting-promo__brand { display:flex; align-items:center; gap:8px; margin:0 48px 26px 0; font-size:15px; font-weight:700; letter-spacing:0; }
+.home-consulting-promo__brand img { width:26px; height:26px; object-fit:contain; filter:brightness(0) invert(1); }
+.home-consulting-promo__close { position:absolute; top:14px; right:14px; display:grid; place-items:center; width:44px; height:44px; padding:10px; border:1px solid rgba(255,255,255,.32); border-radius:50%; background:transparent; color:#fff; cursor:pointer; }
+.home-consulting-promo__close svg { width:20px; height:20px; }
+.home-consulting-promo__eyebrow { margin:0 0 10px; font-size:13px; font-weight:700; letter-spacing:.04em; }
+.home-consulting-promo__hero h2 { margin:0; color:inherit; font-size:clamp(28px,6vw,38px); font-weight:800; line-height:1.3; letter-spacing:-.04em; word-break:keep-all; }
+.home-consulting-promo__intro { margin:16px 0 0; max-width:30em; color:#fff; font-size:clamp(14px,3vw,16px); line-height:1.8; word-break:keep-all; }
+.home-consulting-promo__body { padding:24px clamp(20px,5vw,36px) 26px; }
+.home-consulting-promo__lead { margin:0; font-size:16px; font-weight:700; color:var(--sc-marketing-ink); }
+.home-consulting-promo__steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:14px; margin:18px 0 24px; padding:0; list-style:none; }
+.home-consulting-promo__steps li { min-width:0; padding-top:10px; border-top:1px solid var(--sc-marketing-line); font-size:13px; font-weight:700; }
+.home-consulting-promo__steps span { display:block; margin-bottom:5px; color:var(--sc-marketing-navy); font-size:11px; font-weight:700; letter-spacing:.04em; }
+.home-consulting-promo__link { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px; padding:14px 18px; border-radius:8px; background:var(--sc-marketing-navy); color:#fff; font-size:15px; font-weight:700; text-decoration:none; }
+.home-consulting-promo__link svg { width:20px; height:20px; flex:none; }
+.home-consulting-promo__link:hover { background:color-mix(in srgb,var(--sc-marketing-navy) 85%,#000); color:#fff; }
+.home-consulting-promo__actions { display:flex; justify-content:space-between; gap:8px; padding:8px 14px; border-top:1px solid var(--sc-marketing-line); background:var(--sc-marketing-wash); }
+.home-consulting-promo__actions button { min-height:44px; padding:10px 8px; border:0; border-radius:6px; background:transparent; color:var(--sc-marketing-muted); font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.home-consulting-promo__actions button:hover { color:var(--sc-marketing-ink); }
+.home-consulting-promo :is(a,button):focus-visible { outline:3px solid var(--sc-marketing-primary); outline-offset:-4px; }
+.home-consulting-promo__close:focus-visible { outline-color:#fff; }

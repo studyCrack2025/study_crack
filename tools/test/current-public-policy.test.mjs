@@ -21,6 +21,7 @@ test('current web release includes its new pages and artwork with the public fic
   const contents = new Map(policy.files.map(file => [file, Buffer.alloc(0)]));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.css', Buffer.alloc(0));
   contents.set('studycrack-mobile-app/dist/studycrack-mobile.bundle.js', Buffer.alloc(0));
+  contents.set('studycrack-mobile-app/dist/jungsi-calculator.bundle.js', Buffer.alloc(0));
   // Check the actual web sources, not only synthetic packaging fixtures.
   for (const file of policy.files.filter(file => /\.(html|css)$/.test(file) && !file.startsWith('studycrack-mobile'))) {
     contents.set(file, await readFile(new URL(`../../${file}`, import.meta.url)));
@@ -44,7 +45,8 @@ test('both verification scopes retain public artifact smoke before deployment', 
   const { e2eSuiteSelection } = await import('../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs');
   const browser = workflow.indexOf('- name: Test required browser coverage');
   const seal = workflow.indexOf('- name: Seal verified artifact identity');
-  assert.ok(browser > workflow.indexOf('- name: Install browser runtime') && seal > browser);
+  const runtime = workflow.indexOf('- name: Verify preinstalled browser runtime');
+  assert.ok(runtime >= 0 && browser > runtime && seal > browser);
   const step = workflow.slice(browser, seal);
   assert.ok(step.includes('STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site'));
   assert.ok(step.includes('--workers=1 --retries=0'));

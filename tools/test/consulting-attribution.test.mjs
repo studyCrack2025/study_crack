@@ -4,9 +4,10 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const source = fs.readFileSync(new URL('../../js/jungsi-consulting.js', import.meta.url), 'utf8');
 function setup(hash='#consulting', order=['calculator','consultingPanel']) {
-  const events=[], handlers={}, panels={}, tabs=order.map(panel=>({setAttribute(){},getAttribute(){return panel;},addEventListener(n,f){this[n]=f;},focus(){}}));
+  const events=[], handlers={}, listeners={}, panels={}, tabs=order.map(panel=>({setAttribute(){},getAttribute(){return panel;},addEventListener(n,f){this[n]=f;},focus(){}}));
   let tick;
-  const doc={visibilityState:'visible',querySelectorAll:()=>tabs,addEventListener:(n,f)=>handlers[n]=f,getElementById:id=> panels[id] ||= {contains:target=>target===panels[id]||(id==='consultingPanel'&&target===panels.consulting),hidden:false}};
+  const element=id=>panels[id] ||= {contains:target=>target===panels[id]||(id==='consultingPanel'&&target===panels.consulting),hidden:false,setAttribute(){},addEventListener(){},querySelector:selector=>element(id+selector)};
+  const doc={visibilityState:'visible',querySelectorAll:()=>tabs,addEventListener:(n,f)=>{(listeners[n] ||= []).push(f);handlers[n]=event=>listeners[n].forEach(listener=>listener(event));},getElementById:element};
   const location={hash}; const history={replaceState(a,b,h){location.hash=h;}};
   const window={SCTrack:{event:(...x)=>events.push(x)},setInterval:f=>(tick=f,1),clearInterval(){tick=()=>{};},addEventListener(){}};
   vm.runInNewContext(source,{window,document:doc,location,history,CONFIG:{api:{consultingPublic:'mock'}},fetch:async()=>({ok:false,json:async()=>null})});

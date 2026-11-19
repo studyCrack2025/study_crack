@@ -58,8 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initAdminPage(userId) {
-    // 초기 데이터 로드
-    loadAdminStats(userId);
+    if (typeof readAdminLocation === 'function') adminNavigationReady = true;
 
     // 상세 페이지에서 돌아온 경우 이전 검색 상태 복원
     const savedSearch = Store.get('lastSearch');
@@ -83,11 +82,10 @@ async function initAdminPage(userId) {
         if (joinedFromEl) joinedFromEl.value = savedSearch.joinedFrom || '';
         if (joinedToEl) joinedToEl.value = savedSearch.joinedTo || '';
     }
-    populateTutorFilter();
-    searchStudents();
     fetchUnreadNotiCount();
-
-    fetchQnaBadgeCount();
+    if (typeof startConsultingSupplementAlerts === 'function') startConsultingSupplementAlerts();
+    if (adminNavigationReady) restoreAdminNavigation();
+    else loadAdminStats(userId);
 
     // 검색창에서 엔터키 누르면 검색 실행
     const searchInput = document.getElementById('searchInput');
@@ -106,7 +104,6 @@ async function initAdminPage(userId) {
         });
     });
 
-    setTimeout(() => loadMatchingData(true), 1500);
 
     // CUSTOM 템플릿 선택 시 공지 내용 textarea와 미리보기 실시간 연동
     const noticeContentEl = document.getElementById('noticeContent');
@@ -126,18 +123,27 @@ function toggleSubmenu(id) {
     if (el) el.classList.toggle('open');
 }
 
-function showSection(sectionName) {
+function showSection(sectionName, options = {}) {
+    const allowed = ['dashboard', 'advanced-stats', 'sales-chart', 'students', 'tutors', 'notifications', 'qna', 'matching', 'consulting'];
+    if (!allowed.includes(sectionName)) sectionName = 'dashboard';
+    if (typeof writeAdminLocation === 'function') writeAdminLocation({ section: sectionName, ...(sectionName === 'consulting' ? { phase: 'all' } : {}), ...(options.sub ? { sub: options.sub } : {}) });
+    if (sectionName !== 'consulting' && typeof resetConsultingWorkspace === 'function') resetConsultingWorkspace();
     if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
+    if (sectionName !== 'consulting' && typeof resetConsultingServiceControl === 'function') resetConsultingServiceControl();
+    if (sectionName !== 'consulting' && typeof resetConsultingOperations === 'function') resetConsultingOperations();
     document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.menu-item > a').forEach(el => { el.style.backgroundColor = ''; el.style.color = '#cbd5e1'; });
+    document.querySelectorAll('.submenu.open').forEach(el => el.classList.remove('open'));
     document.querySelectorAll('.submenu li a').forEach(el => { el.style.color = '#94a3b8'; });
 
-    const clickedLink = document.querySelector(`a[onclick*="showSection('${sectionName}')"]`) ||
-                        document.querySelector(`a[onclick*="showQnaSection"]`) ||
-                        document.querySelector(`a[onclick*="showNotiMenu"]`);
+    const clickedLink = sectionName === 'qna' ? document.querySelector(`a[onclick="showQnaSection('${options.sub || 'waiting'}')"]`)
+        : sectionName === 'notifications' ? document.querySelector(`a[onclick="showNotiMenu('${options.sub || 'inbox'}')"]`)
+        : document.querySelector(`a[onclick*="showSection('${sectionName}')"]`);
 
     if (clickedLink) {
-        if (clickedLink.closest('.submenu')) {
+        const submenu = clickedLink.closest('.submenu');
+        if (submenu) {
+            submenu.classList.add('open');
             clickedLink.style.color = '#60a5fa';
             const parentMenu = clickedLink.closest('.has-submenu').querySelector('a');
             if(parentMenu) parentMenu.style.color = '#60a5fa';
@@ -161,17 +167,18 @@ function showSection(sectionName) {
         document.getElementById('section-dashboard').classList.add('active');
         const anchor = document.getElementById('chart-section-anchor');
         if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
-    } else if (sectionName === 'tutors') loadTutorStats();
-    else if (sectionName === 'notifications') { loadNotifications(); loadTutorListForNotice(); }
+    } else if (sectionName === 'students') { populateTutorFilter(); searchStudents(); }
+    else if (sectionName === 'dashboard' || sectionName === 'advanced-stats') loadAdminStats(localStorage.getItem('userId'));
+    else if (sectionName === 'tutors') loadTutorStats();
+    else if (sectionName === 'notifications' && !options.deferLoad) { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
-    else if (sectionName === 'consulting') {
-        loadConsultingPaymentReview();
-        loadConsultingMaterialReview();
-    }
+    else if (sectionName === 'consulting' && typeof activateConsultingWorkspace === 'function') activateConsultingWorkspace(readAdminLocation());
 }
 
 window.showQnaSection = function(status) {
-    showSection('qna');
+    status = ['done', 'read', 'waiting'].includes(status) ? status : 'waiting';
+    showSection('qna', { sub: status });
+    if (typeof writeAdminLocation === 'function') writeAdminLocation({ section: 'qna', sub: status }, true);
     currentQnaFilter = status;
     const titleMap = { 'done': '✅ 응답 완료', 'read': '👁️ 읽음 (미응답)', 'waiting': '🔴 읽지 않음' };
     document.getElementById('qnaStatusTitle').innerText = `- ${titleMap[status]}`;

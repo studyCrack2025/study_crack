@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { createPrivateCleanupCommands, PRIVATE_SITE_FILES, PRIVATE_SITE_PREFIXES, PRIVATE_SITE_SMOKE_PATHS } from '../private-site-paths.mjs';
 import { assertPublicReferences, assertSafePath, buildSiteRelease, cacheControlFor, createPublishCommands, IMMUTABLE, isBuildPath, loadPublicPolicy, NO_CACHE, verifySiteRelease } from '../site-release.mjs';
+import { smokeSiteRelease } from '../smoke-site-release.mjs';
 
 const commit = 'a'.repeat(40);
 const release = 'dev-aaaaaaaa';
@@ -34,6 +35,19 @@ async function fixture(t) {
   return { root, output, put, html };
 }
 
+test('shared local font imports receive the release version without changing source or external imports', async (t) => {
+  const ctx = await fixture(t);
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ ...policy, files: [...policy.files, 'css/brand-foundation.css'] }));
+  const source = '@import url("./brand-foundation.css?v=old");\n@import url("https://example.invalid/fonts.css");\n';
+  await ctx.put('css/main.css', source);
+  await ctx.put('css/brand-foundation.css', ':root{--font:Paperlogy}');
+  await buildSiteRelease({ ...ctx, commit, release });
+  const published = await readFile(path.join(ctx.output, 'site/css/main.css'), 'utf8');
+  assert.match(published, /brand-foundation\.css\?v=dev-aaaaaaaa/);
+  assert.match(published, /https:\/\/example.invalid\/fonts\.css"/);
+  assert.equal(await readFile(path.join(ctx.root, 'css/main.css'), 'utf8'), source);
+});
+
 test('only approved files are copied, versioned and sealed without changing source', async (t) => {
   const ctx = await fixture(t);
   const { digest, manifest } = await buildSiteRelease({ ...ctx, commit, release });
@@ -54,6 +68,22 @@ test('identical inputs produce identical manifest identities', async (t) => {
   const first = await buildSiteRelease({ ...ctx, commit, release });
   const second = await buildSiteRelease({ ...ctx, output: `${ctx.output}-second`, commit, release });
   assert.equal(first.digest, second.digest);
+});
+
+test('a calculator entry is sealed and published with no-cache only when present in the verified release', async t => {
+  const ctx = await fixture(t);
+  const entry = `${dist}/jungsi-calculator.bundle.js`;
+  await ctx.put(entry, 'export const calculator = true;');
+  const { manifest, digest } = await buildSiteRelease({ ...ctx, commit, release });
+  assert.ok(manifest.files.some(file => file.path === entry));
+  assert.equal(cacheControlFor(entry), NO_CACHE);
+  const previous = createPublishCommands('/artifact/site', 'static.example', policy.aliases);
+  assert.ok(!previous.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js')));
+  const entries = manifest.files.map(file => file.path).filter(file => [entry, `${dist}/studycrack-mobile.bundle.js`, `${dist}/studycrack-mobile.css`].includes(file));
+  const current = createPublishCommands('/artifact/site', 'static.example', policy.aliases, entries);
+  assert.ok(current.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js') && args.includes(NO_CACHE)));
+  assert.throws(() => createPublishCommands('/artifact/site', 'static.example', {}, ['private.js']), /Unapproved stable build entry/);
+  await verifySiteRelease({ ...ctx, commit, expectedDigest: digest });
 });
 
 test('nested clean URLs preserve both parent and child bytes without a file-directory collision', async (t) => {
@@ -78,6 +108,55 @@ test('nested clean URLs preserve both parent and child bytes without a file-dire
   const broken = { ...manifest, files: manifest.files.map(entry => entry.path === '2027-jungsi-consulting' ? { ...entry, sha256: '0'.repeat(64) } : entry) };
   await writeFile(path.join(ctx.output, 'manifest.json'), JSON.stringify(broken));
   await assert.rejects(verifySiteRelease({ ...ctx, commit }), /Artifact checksum mismatch/);
+});
+
+test('calculator publication passes the unchanged smoke with both existing and explicit URL rewrites', async (t) => {
+  const ctx = await fixture(t);
+  const route = '2027-jungsi-consulting/calculator';
+  const fallback = '2027-jungsi-consulting_calculator.html';
+  const source = 'jungsi-calculator-2027.html';
+  const files = [...policy.files, source];
+  const aliases = { ...policy.aliases, [route]: source };
+  await ctx.put(source, ctx.html.replace('</html>', '<body>calculator</body></html>'));
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ files, aliases }));
+  const previous = await buildSiteRelease({ ...ctx, commit, release });
+  const fetchPublished = (output, legacy) => async (url, options) => {
+    assert.equal(options.credentials, 'omit');
+    assert.equal(options.redirect, 'error');
+    const requested = new URL(url).pathname.slice(1);
+    if (PRIVATE_SITE_SMOKE_PATHS.includes(requested)) return new Response(null, { status: 403 });
+    const target = requested === route && legacy ? `${requested.replaceAll('/', '_')}.html`
+      : aliases[requested] || (requested === 'studycrack-mobile' ? 'studycrack-mobile.html' : requested || 'index.html');
+    let bytes;
+    try { bytes = await readFile(path.join(output, 'site', target)); }
+    catch (error) { if (error.code === 'ENOENT') return new Response(null, { status: 403 }); throw error; }
+    const extension = path.extname(target);
+    const types = { '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.webp': 'image/webp', '.png': 'image/png' };
+    return new Response(bytes, { headers: { 'content-type': types[extension] || 'text/html; charset=utf-8', 'cache-control': cacheControlFor(target) } });
+  };
+  await assert.rejects(smokeSiteRelease({ origin: 'https://dev.studycrack.co.kr', manifest: previous.manifest, aliases, fetchImpl: fetchPublished(ctx.output, true) }), /Public smoke status 403: \/2027-jungsi-consulting\/calculator/);
+
+  const current = await loadPublicPolicy();
+  assert.equal(current.aliases[fallback], source, 'The deployed rewrite target must be generated from the calculator shell');
+  const fixedAliases = { ...aliases, [fallback]: source };
+  await ctx.put('tools/public-site-files.json', JSON.stringify({ files, aliases: fixedAliases }));
+  const output = `${ctx.output}-fixed`;
+  const fixed = await buildSiteRelease({ ...ctx, output, commit, release });
+  const entries = new Map(fixed.manifest.files.map(entry => [entry.path, entry]));
+  assert.equal(entries.get(fallback).sha256, entries.get(source).sha256);
+  assert.equal(cacheControlFor(fallback), NO_CACHE);
+  const generated = await readFile(path.join(output, 'site', fallback));
+  assert.ok(generated.equals(await readFile(path.join(output, 'site', source))));
+  assert.match(generated.toString(), /studycrack-release/);
+  for (const legacy of [true, false]) {
+    await smokeSiteRelease({ origin: 'https://dev.studycrack.co.kr', manifest: fixed.manifest, aliases: fixedAliases, fetchImpl: fetchPublished(output, legacy) });
+  }
+  assert.equal((await verifySiteRelease({ ...ctx, output, commit, expectedDigest: fixed.digest })).digest, fixed.digest);
+  const commands = createPublishCommands(path.join(output, 'site'), 'test.example', fixedAliases);
+  assert.ok(commands.some(args => args[1] === 'cp' && args.includes('*.html') && args.includes('text/html; charset=utf-8') && args.includes(NO_CACHE)));
+  assert.ok(commands.at(-1)[2].endsWith('/release.json'));
+  await writeFile(path.join(output, 'site', fallback), 'stale calculator');
+  await assert.rejects(verifySiteRelease({ ...ctx, output, commit, expectedDigest: fixed.digest }), /Artifact (?:size|checksum) mismatch/);
 });
 
 test('public release identity is generated consistently without exposing the file manifest', async (t) => {
@@ -124,6 +203,22 @@ test('unsafe paths, metadata, source maps and development files fail closed', as
   await assert.rejects(loadPublicPolicy(ctx.root), /Development file/);
   await ctx.put('tools/public-site-files.json', JSON.stringify({ files: [...policy.files, 'docs/private.md'] }));
   await assert.rejects(loadPublicPolicy(ctx.root), /Non-public file/);
+});
+
+test('HTML aliases cannot overwrite sources, use directories or expose non-HTML files', async (t) => {
+  const ctx = await fixture(t);
+  for (const [alias, source] of [
+    ['index.html', 'studycrack-mobile.html'],
+    ['docs/private.html', 'index.html'],
+    ['fallback.json', 'index.html'],
+    ['fallback.test.html', 'index.html'],
+    ['fallback.html', 'js/config.js'],
+    ['fallback.html', 'docs/private.html'],
+    ['fallback.html', 'other-fallback.html']
+  ]) {
+    await ctx.put('tools/public-site-files.json', JSON.stringify({ ...policy, aliases: { [alias]: source } }));
+    await assert.rejects(loadPublicPolicy(ctx.root), /Invalid public URL alias|Invalid clean URL source/);
+  }
 });
 
 test('source directory symlinks cannot leak files into an approved path', async (t) => {
@@ -240,6 +335,6 @@ test('workflow passes the tested artifact and independent digest to a non-buildi
   assert.doesNotMatch(deploy, /npm (?:ci|install|run build)|bump_asset_version|aws s3 sync \./);
   assert.ok(deploy.indexOf('site-release.mjs verify') < deploy.indexOf('Configure AWS credentials'));
   assert.match(deploy, /site-release\.mjs publish/);
-  assert.match(workflow, /cancel-in-progress: false/);
+  assert.match(workflow, /concurrency:\n  group: static-release-\$\{\{ github\.ref \}\}\n  cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
   assert.match(verify, /if-no-files-found: error/);
 });

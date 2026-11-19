@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
 import { e2eSuiteSelection, smokeSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
 import { summarizeResults } from '../../studycrack-mobile-app/scripts/summarize-e2e-results.mjs';
@@ -21,6 +21,14 @@ test('parallel browser jobs preserve one final gate, scope, immutable bytes and 
   const verify = workflow.slice(workflow.indexOf('  verify:'), workflow.indexOf('  rollback:'));
   assert.match(workflow, /pull_request:\n    branches: \[dev, main\]/);
   assert.doesNotMatch(workflow, /pull_request_target|continue-on-error/);
+  assert.match(workflow, /^env:\n  CI_NODE_VERSION: '24'$/m);
+  const runners = [...workflow.matchAll(/^    runs-on: (.+)$/gm)].map(([, runner]) => runner);
+  const nodeVersions = [...workflow.matchAll(/^          node-version: (.+)$/gm)].map(([, version]) => version);
+  assert.equal(nodeVersions.length, runners.length);
+  assert.ok(nodeVersions.length > 0);
+  assert.ok(runners.every(runner => runner === 'ubuntu-26.04'));
+  assert.ok(nodeVersions.every(version => version === '${{ env.CI_NODE_VERSION }}'));
+  assert.doesNotMatch(workflow, /check-latest: true/);
   assert.match(prepare, /github.event_name == 'push' \|\| github.event_name == 'pull_request'/);
   assert.match(prepare, /fetch-depth: 0/);
   assert.match(prepare, /node ..\/tools\/verification-scope.mjs/);
@@ -63,4 +71,32 @@ test('timing report includes nested cases, retries and failures instead of hidin
     { file: 'two.mjs', tests: 1, duration: 2000, unexpected: 1, flaky: 0 },
     { file: 'one.mjs', tests: 1, duration: 1500, unexpected: 0, flaky: 1 }
   ]);
+});
+
+test('browser shards use a lockfile-matched immutable image without runtime downloads', async () => {
+  const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const browser = workflow.slice(workflow.indexOf('  e2e:'), workflow.indexOf('  verify:'));
+  const lock = JSON.parse(await readFile(new URL('../../studycrack-mobile-app/package-lock.json', import.meta.url), 'utf8'));
+  const image = browser.match(/image: mcr\.microsoft\.com\/playwright:v(\d+\.\d+\.\d+)-noble@sha256:([a-f0-9]{64})\n/);
+  assert.ok(image, 'Use an immutable official Playwright image');
+  assert.equal(image[1], lock.packages['node_modules/@playwright/test'].version);
+  assert.match(browser, /PLAYWRIGHT_BROWSERS_PATH: \/ms-playwright/);
+  assert.match(browser, /PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'/);
+  assert.match(browser, /shell: bash/);
+  assert.doesNotMatch(browser, /playwright install|apt-get|apt install|continue-on-error/);
+  const runtime = browser.indexOf('- name: Verify preinstalled browser runtime');
+  const tests = browser.indexOf('- name: Test required browser coverage');
+  assert.ok(runtime >= 0 && tests > runtime);
+  assert.match(browser.slice(runtime, tests), /timeout-minutes: 2\n        run: node scripts\/verify-ci-browser-runtime.mjs/);
+  assert.match(browser, /timeout-minutes: 10/);
+});
+
+test('browser screenshot paths cannot depend on a developer machine or host filesystem', async () => {
+  const root = new URL('../../studycrack-mobile-app/e2e/', import.meta.url);
+  const specs = (await readdir(root, { recursive: true })).filter(file => file.endsWith('.spec.mjs'));
+  assert.ok(specs.length > 0);
+  for (const file of specs) {
+    const source = await readFile(new URL(file, root), 'utf8');
+    assert.ok(!/\.screenshot\(\s*\{[^}]*\bpath\s*:\s*['"`](?:\/|[A-Za-z]:[\\/])/.test(source), `${file}: save browser screenshots with testInfo.outputPath()`);
+  }
 });

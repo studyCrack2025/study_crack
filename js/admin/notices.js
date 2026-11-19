@@ -59,9 +59,9 @@ async function markAllNotiAsRead() {
 }
 
 window.showNotiMenu = function(tabName) {
-    document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
-    document.getElementById('section-notifications').classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    tabName = ['inbox', 'send', 'sent'].includes(tabName) ? tabName : 'inbox';
+    showSection('notifications', { deferLoad: true, sub: tabName });
+    if (typeof writeAdminLocation === 'function') writeAdminLocation({ section: 'notifications', sub: tabName }, true);
 
     document.getElementById('notiTab-inbox').style.display = 'none';
     document.getElementById('notiTab-send').style.display = 'none';

@@ -22,13 +22,27 @@ test('공개 산출물은 등록한 웹 페이지와 모바일 파일을 검증�
   const manifestResponse = await request.get('/studycrack-mobile.webmanifest');
   expect(manifestResponse.headers()['content-type']).toContain('application/manifest+json');
   const fonts = manifest.files.filter(entry => /\/paperlogy-.*\.woff2$/.test(entry.path));
-  expect(fonts).toHaveLength(6);
-  for (const entry of fonts) {
-    const response = await request.get(`/${entry.path}`);
-    expect(response.status(), entry.path).toBe(200);
-    expect(response.headers()['content-type']).toContain('font/woff2');
-    expect(response.headers()['cache-control']).toContain('immutable');
-    expect(createHash('sha256').update(await response.body()).digest('hex'), entry.path).toBe(entry.sha256);
+  const fontGroups = [
+    { directory: 'assets/fonts/paperlogy/', cache: 'no-cache, no-store, must-revalidate' },
+    { directory: 'studycrack-mobile-app/dist/assets/', cache: 'public, max-age=31536000, immutable' }
+  ];
+  const expectedVariants = [400, 700, 800].flatMap(weight => [`${weight}-core`, `${weight}-extended`]);
+  expect(fonts.every(entry => fontGroups.some(group => entry.path.startsWith(group.directory))), 'approved font directories').toBe(true);
+  for (const { directory, cache } of fontGroups) {
+    const groupFonts = fonts.filter(entry => entry.path.startsWith(directory));
+    const variants = groupFonts.map(entry => {
+      const match = entry.path.match(/\/paperlogy-(400|700|800)-(core|extended)-[\w-]+\.woff2$/);
+      expect(match, entry.path).not.toBeNull();
+      return `${match[1]}-${match[2]}`;
+    }).sort();
+    expect(variants, directory).toEqual(expectedVariants);
+    for (const entry of groupFonts) {
+      const response = await request.get(`/${entry.path}`);
+      expect(response.status(), entry.path).toBe(200);
+      expect(response.headers()['content-type']).toContain('font/woff2');
+      expect(response.headers()['cache-control'], entry.path).toBe(cache);
+      expect(createHash('sha256').update(await response.body()).digest('hex'), entry.path).toBe(entry.sha256);
+    }
   }
   const preview = await request.get('/basic-preview');
   expect(preview.status()).toBe(200);

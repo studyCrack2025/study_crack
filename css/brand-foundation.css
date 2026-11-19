@@ -1,0 +1,7 @@
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:400; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-400-extended-694f1a76bf.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:400; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-400-core-03b5e721b1.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:700; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-700-extended-61b2f0c5a6.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:700; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-700-core-b07f17cd0e.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:800; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-800-extended-0cc434a0c9.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+@font-face { font-family:"Paperlogy"; font-style:normal; font-weight:800; font-display:swap; src:url("../assets/fonts/paperlogy/paperlogy-800-core-4588ad2ba3.woff2") format("woff2"); unicode-range:U+0-10FFFF; }
+:root { --sc-marketing-font:"Paperlogy",system-ui,-apple-system,BlinkMacSystemFont,sans-serif; --sc-marketing-primary:#4c79ee; --sc-marketing-navy:#344e8f; --sc-marketing-ink:#2c2c2c; --sc-marketing-muted:#526176; --sc-marketing-line:#dce3eb; --sc-marketing-wash:#f1f4fb; }

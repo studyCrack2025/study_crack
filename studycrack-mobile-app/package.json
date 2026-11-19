@@ -9,7 +9,7 @@
     "dev": "vite",
     "local": "npm run build && node ../tools/static-preview.mjs",
     "local:serve": "node ../tools/static-preview.mjs",
-    "build": "vite build",
+    "build": "node scripts/build-production.mjs",
     "fishdex:build": "node scripts/build-fishdex-assets.mjs",
     "fishdex:check": "node scripts/check-fishdex-assets.mjs",
     "aquarium:assets:check": "node scripts/aquarium-background-assets.mjs check",

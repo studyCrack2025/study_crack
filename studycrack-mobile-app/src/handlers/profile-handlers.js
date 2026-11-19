@@ -1,7 +1,7 @@
 import { clearMobileAuthArtifacts, verifyPassword } from '../features/session/auth-service.js';
 import { convertExamScores } from '../features/analysis/api.js';
-import { scoreExamTypeToKey } from '../features/analysis/score-model.js';
-import { getScoreStepErrors } from '../features/analysis/score-edit-validation.js';
+import { createBlankScoreState, isOfficialScoreExam, mapExamDataToScorePatch, scoreExamTypeToKey } from '../features/analysis/score-model.js';
+const loadScoreValidation = () => import('../features/analysis/score-edit-validation.js');
 import { MBTI_QUESTIONS, computeMbtiCode } from '../constants/mbti.js';
 import { getData } from './action-utils.js';
 import { withOperationLock } from '../shared/async/operation-lock.js';
@@ -166,7 +166,9 @@ function readScoreEditValues(ctx) {
     inquiry1Subject: getInputValue(ctx, 'v2e-inq1-subject', state.inquiry1?.subject || ''),
     inquiry2Subject: getInputValue(ctx, 'v2e-inq2-subject', state.inquiry2?.subject || ''),
     inquiry1Score: getInputValue(ctx, 'v2e-inq1-score', state.inquiry1?.score ?? ''),
-    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score ?? '')
+    inquiry2Score: getInputValue(ctx, 'v2e-inq2-score', state.inquiry2?.score ?? ''),
+    ...Object.fromEntries([['korean', 'korean'], ['math', 'math'], ['inq1', 'inquiry1'], ['inq2', 'inquiry2']].flatMap(([field, key]) =>
+      ['std', 'pct', 'grd'].map(metric => [`${key}${metric[0].toUpperCase()}${metric.slice(1)}`, getInputValue(ctx, `v2e-${field}-${metric}`, state[key]?.[metric] ?? '')])))
   };
 }
 
@@ -183,59 +185,28 @@ function isValidRawScore(value, max) {
   return Number.isInteger(n) && rawValidScores(max).has(n);
 }
 
+function scoreEditStateFromValues(values, state = {}) {
+  const metrics = key => Object.fromEntries(['std', 'pct', 'grd'].map(metric => [metric, values[`${key}${metric[0].toUpperCase()}${metric.slice(1)}`]])
+    .filter(([metric, value]) => value !== '' || state[key]?.[metric] !== undefined));
+  return {
+    ...state,
+    korean: { ...state.korean, type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective, ...metrics('korean') },
+    math: { ...state.math, type: values.mathType, common: values.mathCommon, elective: values.mathElective, ...metrics('math') },
+    english: values.english, history: values.history,
+    inquiry1: { ...state.inquiry1, subject: values.inquiry1Subject, score: values.inquiry1Score, ...metrics('inquiry1') },
+    inquiry2: { ...state.inquiry2, subject: values.inquiry2Subject, score: values.inquiry2Score, ...metrics('inquiry2') }
+  };
+}
+
 function updateScoreEditState(ctx, values) {
-  ctx.setScoreEditState?.((prev = {}) => ({
-    ...prev,
-    korean: { ...(prev.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective },
-    math: { ...(prev.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective },
-    english: values.english,
-    history: values.history,
-    inquiry1: { ...(prev.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score },
-    inquiry2: { ...(prev.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score }
-  }));
+  ctx.setScoreEditState?.(prev => scoreEditStateFromValues(values, prev));
 }
 
 function patchCurrentScoreStep(ctx) {
-  const step = Number(ctx.scoreEditStep || 1);
-  const state = ctx.scoreEditState || {};
   const values = readScoreEditValues(ctx);
-  if (step === 1) {
-    ctx.setScoreEditState?.((prev = {}) => ({
-      ...prev,
-      korean: { ...(prev.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective }
-    }));
-    return { ...state, korean: { ...(state.korean || {}), type: values.koreanType, common: values.koreanCommon, elective: values.koreanElective } };
-  }
-  if (step === 2) {
-    ctx.setScoreEditState?.((prev = {}) => ({
-      ...prev,
-      math: { ...(prev.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective }
-    }));
-    return { ...state, math: { ...(state.math || {}), type: values.mathType, common: values.mathCommon, elective: values.mathElective } };
-  }
-  if (step === 3) {
-    ctx.setScoreEditState?.((prev = {}) => ({ ...prev, english: values.english }));
-    return { ...state, english: values.english };
-  }
-  if (step === 4) {
-    ctx.setScoreEditState?.((prev = {}) => ({ ...prev, history: values.history }));
-    return { ...state, history: values.history };
-  }
-  if (step === 5) {
-    ctx.setScoreEditState?.((prev = {}) => ({
-      ...prev,
-      inquiry1: { ...(prev.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score }
-    }));
-    return { ...state, inquiry1: { ...(state.inquiry1 || {}), subject: values.inquiry1Subject, score: values.inquiry1Score } };
-  }
-  if (step === 6) {
-    ctx.setScoreEditState?.((prev = {}) => ({
-      ...prev,
-      inquiry2: { ...(prev.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score }
-    }));
-    return { ...state, inquiry2: { ...(state.inquiry2 || {}), subject: values.inquiry2Subject, score: values.inquiry2Score } };
-  }
-  return state;
+  const next = scoreEditStateFromValues(values, ctx.scoreEditState);
+  updateScoreEditState(ctx, values);
+  return next;
 }
 
 function isScoreStepOverLimit(step, state = {}) {
@@ -245,7 +216,8 @@ function isScoreStepOverLimit(step, state = {}) {
     || (step === 6 && !isValidRawScore(state.inquiry2?.score, 50));
 }
 
-function hasRequiredScoreMissing(values) {
+function hasRequiredScoreMissing(values, examType) {
+  if (isOfficialScoreExam(examType)) return false;
   return !String(values.koreanCommon).trim()
     || !String(values.koreanElective).trim()
     || !String(values.mathCommon).trim()
@@ -263,8 +235,12 @@ function englishGradeToScore(grade) {
   return n ? Math.max(0, Math.round(100 - (n - 1) * 12.5)) : 0;
 }
 
-function buildQuantitative(values, examType) {
+async function buildQuantitative(values, examType) {
   const examKey = scoreExamTypeToKey(examType);
+  if (isOfficialScoreExam(examType)) {
+    const { officialExamFromValues } = await import('../features/analysis/official-score-model.js');
+    return { [examKey]: officialExamFromValues(values) };
+  }
   return {
     [examKey]: {
       kor: {
@@ -293,23 +269,13 @@ function persistUser(ctx, patch) {
   return user;
 }
 
-function validateScoreSubject(step, values) {
-  return Object.values(getScoreStepErrors(step, values))[0] || '';
-}
-
 // 저장된 입력값으로 초안을 채운다.
 function seedScoreEditFromQuant(quant) {
-  const q = quant || {};
-  const history = q.hist || q.history || {};
-  const numStr = (v) => (v === 0 || v === '0' ? '0' : (Number(v) ? String(Number(v)) : ''));
-  return {
-    korean: { type: q.kor?.opt || '', common: numStr(q.kor?.common), elective: numStr(q.kor?.elective) },
-    math: { type: q.math?.opt || '', common: numStr(q.math?.common), elective: numStr(q.math?.elective) },
-    english: numStr(q.eng?.grd ?? q.eng?.grade),
-    history: numStr(history.grd ?? history.grade),
-    inquiry1: { subject: q.inq1?.name || '', score: numStr(q.inq1?.raw) },
-    inquiry2: { subject: q.inq2?.name || '', score: numStr(q.inq2?.raw) }
-  };
+  const state = mapExamDataToScorePatch(quant)?.scoreEditState || createBlankScoreState();
+  const text = value => String(value ?? '');
+  return Object.fromEntries(Object.entries(state).map(([key, value]) => [key,
+    value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([field, item]) => [field, text(item)])) : text(value)
+  ]));
 }
 
 function syncIOSSafariQualDomState(ctx, values) {
@@ -446,10 +412,12 @@ export function createProfileHandlers(ctx) {
 
     async saveScoreSubject() {
       if (ctx.scoreSubjectSaving) return false;
+      const { getScoreStepErrors } = await loadScoreValidation();
+      if (ctx.isCurrentProfile?.() === false) return false;
       const step = Number(ctx.scoreEditStep || 1);
       patchCurrentScoreStep(ctx);
       const values = readScoreEditValues(ctx);
-      const errors = getScoreStepErrors(step, values);
+      const errors = getScoreStepErrors(step, values, ctx.scoreExamType);
       setScoreEditSaveError('');
       setScoreEditErrors(errors);
       if (Object.keys(errors).length) {
@@ -464,7 +432,7 @@ export function createProfileHandlers(ctx) {
         return false;
       }
       for (let subjectStep = 1; subjectStep <= 6; subjectStep += 1) {
-        const subjectErrors = getScoreStepErrors(subjectStep, values);
+        const subjectErrors = getScoreStepErrors(subjectStep, values, ctx.scoreExamType);
         if (Object.keys(subjectErrors).length) {
           setScoreEditErrors(subjectErrors);
           setScoreEditStep(subjectStep);
@@ -476,7 +444,7 @@ export function createProfileHandlers(ctx) {
         setScoreSubjectSaving(true);
         try {
           const examKey = scoreExamTypeToKey(ctx.scoreExamType);
-          const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
+          const quantitativePatch = await buildQuantitative(values, ctx.scoreExamType);
           const converted = await convertExamScores({
             apiFetch: ctx.apiFetch,
             analysisApiUrl,
@@ -489,7 +457,7 @@ export function createProfileHandlers(ctx) {
           }
           const nextQuantitative = {
             ...(ctx.user?.quantitative || {}),
-            [examKey]: converted.data
+            [examKey]: { ...(ctx.user?.quantitative?.[examKey] || {}), ...converted.data }
           };
           if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
           const result = await persistQuantitative(nextQuantitative);
@@ -579,10 +547,11 @@ export function createProfileHandlers(ctx) {
       return true;
     },
 
-    scoreStepNext() {
+    async scoreStepNext() {
+      const { getScoreStepErrors } = await loadScoreValidation();
       const step = Number(ctx.scoreEditStep || 1);
       const nextState = patchCurrentScoreStep(ctx);
-      if (isScoreStepOverLimit(step, nextState)) {
+      if (isOfficialScoreExam(ctx.scoreExamType) ? Object.keys(getScoreStepErrors(step, readScoreEditValues(ctx), ctx.scoreExamType)).length : isScoreStepOverLimit(step, nextState)) {
         alert('성적을 정확히 입력해주세요');
         return false;
       }
@@ -592,38 +561,41 @@ export function createProfileHandlers(ctx) {
 
     async saveScoreEdit() {
       if (ctx.scoreSubjectSaving) return false;
+      const { getScoreStepErrors } = await loadScoreValidation();
+      if (ctx.isCurrentProfile?.() === false) return false;
       if (isInvalidRequiredSelectValue(ctx.scoreExamType)) {
         alert('필수 항목을 모두 선택해주세요');
         return false;
       }
       const values = readScoreEditValues(ctx);
       updateScoreEditState(ctx, values);
-      if (hasRequiredScoreMissing(values)) {
+      if (hasRequiredScoreMissing(values, ctx.scoreExamType)) {
         alert('필수 입력 사항을 모두 입력해주세요');
         return false;
       }
       for (let step = 1; step <= 6; step += 1) {
-        const subjectError = validateScoreSubject(step, values);
+        const subjectError = Object.values(getScoreStepErrors(step, values, ctx.scoreExamType))[0] || '';
         if (subjectError) {
           alert(subjectError);
           return false;
         }
       }
-      const quantitativePatch = buildQuantitative(values, ctx.scoreExamType);
-      const examKey = scoreExamTypeToKey(ctx.scoreExamType);
-      setScoreSubjectSaving(true);
-      try {
-        const converted = await convertExamScores({
-          apiFetch: ctx.apiFetch,
-          analysisApiUrl,
-          examMode: examKey,
-          examData: quantitativePatch[examKey]
+      return withOperationLock(ctx.operationLocksRef, 'profile-score', async () => {
+        const quantitativePatch = await buildQuantitative(values, ctx.scoreExamType);
+        const examKey = scoreExamTypeToKey(ctx.scoreExamType);
+        setScoreSubjectSaving(true);
+        try {
+          const converted = await convertExamScores({
+            apiFetch: ctx.apiFetch,
+            analysisApiUrl,
+            examMode: examKey,
+            examData: quantitativePatch[examKey]
         });
         if (!converted.ok) {
           alert(converted.error || '성적 환산에 실패했습니다.');
           return false;
         }
-        const nextQuantitative = { ...(ctx.user?.quantitative || {}), [examKey]: converted.data };
+        const nextQuantitative = { ...(ctx.user?.quantitative || {}), [examKey]: { ...(ctx.user?.quantitative?.[examKey] || {}), ...converted.data } };
         if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
         const result = await persistQuantitative(nextQuantitative);
         if (ctx.isCurrentProfile && !ctx.isCurrentProfile()) return false;
@@ -651,6 +623,7 @@ export function createProfileHandlers(ctx) {
       } finally {
         setScoreSubjectSaving(false);
       }
+      });
     },
 
     applyScoreExam() {

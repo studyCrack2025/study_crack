@@ -121,7 +121,10 @@ test('추천과 대학 목록 실패는 정상 빈 결과와 구분하고 재시
   await page.goto('/studycrack-mobile.html?screen=addUniversity');
   await expect(page.locator('.add-univ-page')).toContainText('추천을 불러오지 못했어요');
   await expect(page.locator('.add-univ-page')).not.toContainText('현재 조건에 맞는 추천이 없어요');
-  await page.getByRole('button', { name: '새로고침' }).click();
+  const recommendation = page.locator('.add-univ-section').filter({
+    has: page.getByRole('heading', { name: '현재 성적 기준 추천', exact: true })
+  });
+  await recommendation.getByRole('button', { name: '다시 시도', exact: true }).click();
   await expect(page.locator('.add-univ-grid')).toContainText('성균관대학교');
   await page.getByRole('button', { name: '직접 추가하기 →' }).click();
   const dialog = page.getByRole('dialog');

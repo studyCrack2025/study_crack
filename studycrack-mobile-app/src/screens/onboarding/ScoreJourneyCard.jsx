@@ -1,5 +1,5 @@
 function formatCurrent([label, value, unit]) {
-  const max = unit === '등급' ? 9 : ['국어', '수학'].includes(label) ? 100 : 50;
+  const max = unit === '등급' ? 9 : label.endsWith(' 표준') ? 200 : ['국어', '수학'].includes(label) ? 100 : 50;
   if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '미확인';
   const number = Number(value);
   return Number.isFinite(number) && number >= (unit === '등급' ? 1 : 0) && number <= max

@@ -1,3 +1,6 @@
+import { isOfficialScoreExam, scoreChoiceLabel } from './score-model.js';
+import { officialMetricError } from './official-score-model.js';
+
 const RAW_FIELDS = {
   'v2e-korean-common': { key: 'koreanCommon', max: 76, label: '공통 원점수' },
   'v2e-korean-elective': { key: 'koreanElective', max: 24, label: '선택 원점수' },
@@ -24,6 +27,8 @@ const STEP_FIELDS = [
 ];
 
 export function getScoreFieldError(field, value) {
+  const official = /^v2e-(korean|math|inq1|inq2)-(std|pct|grd)$/.exec(field);
+  if (official) return officialMetricError(official[2], value);
   const text = String(value ?? '').trim();
   const raw = RAW_FIELDS[field];
   if (raw) {
@@ -39,12 +44,24 @@ export function getScoreFieldError(field, value) {
   return '';
 }
 
-export function getScoreStepErrors(step, values = {}) {
+export function getScoreStepErrors(step, values = {}, examMode = '') {
   const errors = {};
-  for (const field of STEP_FIELDS[Number(step) - 1] || []) {
-    const key = RAW_FIELDS[field]?.key || SELECT_FIELDS[field]?.key || (field === 'v2e-english' ? 'english' : 'history');
+  const index = Number(step) - 1;
+  let fields = STEP_FIELDS[index] || [];
+  if (isOfficialScoreExam(examMode) && [0, 1, 4, 5].includes(index)) {
+    const subject = ['korean', 'math', '', '', 'inq1', 'inq2'][index];
+    fields = [fields[0], ...['std', 'pct', 'grd'].map(metric => `v2e-${subject}-${metric}`)];
+  }
+  for (const field of fields) {
+    const official = /^v2e-(korean|math|inq1|inq2)-(std|pct|grd)$/.exec(field);
+    const subjectKey = official?.[1].replace('inq', 'inquiry');
+    const key = official ? `${subjectKey}${official[2][0].toUpperCase()}${official[2].slice(1)}`
+      : RAW_FIELDS[field]?.key || SELECT_FIELDS[field]?.key || (field === 'v2e-english' ? 'english' : 'history');
     const error = getScoreFieldError(field, values[key]);
     if (error) errors[field] = error;
+  }
+  if (Number(step) === 6 && values.inquiry1Subject && scoreChoiceLabel(values.inquiry1Subject) === scoreChoiceLabel(values.inquiry2Subject)) {
+    errors['v2e-inq2-subject'] = '탐구1과 다른 과목을 선택해 주세요.';
   }
   return errors;
 }

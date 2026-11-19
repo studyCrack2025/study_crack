@@ -91,7 +91,7 @@
             </li>
 
             <li class="menu-item">
-                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅</a>
+                <a href="#" onclick="showSection('consulting')">🎓 정시 컨설팅 <span id="consultingSupplementAlertBadge" class="consulting-alert-badge" hidden>0</span></a>
             </li>
 
             <li class="menu-item logout">
@@ -101,6 +101,12 @@
     </nav>
 
     <main class="main-content">
+            <section id="consultingSupplementAlerts" class="consulting-supplement-alerts" aria-labelledby="consultingSupplementAlertTitle" hidden>
+                <div class="consulting-heading-row"><div><p class="consulting-caption">학생 보완 재제출 · 검토 대기</p><h2 id="consultingSupplementAlertTitle">확인할 보완 답변</h2></div><button id="consultingSupplementAlertRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingSupplementAlerts()">알림 목록 새로고침</button></div>
+                <ul id="consultingSupplementAlertList"></ul>
+                <p id="consultingSupplementAlertStatus" class="consulting-caption" role="status" aria-live="polite"></p>
+                <button id="consultingSupplementAlertMore" class="consulting-btn consulting-btn-secondary" type="button" onclick="loadConsultingSupplementAlerts(true)" hidden>다음 보완 알림 보기</button>
+            </section>
             
             <div id="section-dashboard" class="content-section active">
             <h1 class="page-title">📊 전체 요약 & 심층 지표</h1>
@@ -173,19 +179,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="consulting-heading-row consulting-schedule-heading">
-                <div>
-                    <h2 class="page-title">📄 보고서 검수·승인</h2>
-                    <p class="consulting-caption">검수 요청된 케이스를 전용 보고서 화면에서 확인하고 공개 시각을 예약합니다.</p>
-                </div>
-            </div>
-            <div class="consulting-lookup">
-                <label for="consultingReportCaseId">검수할 케이스 ID</label>
-                <div class="consulting-lookup-row">
-                    <input id="consultingReportCaseId" type="text" autocomplete="off" placeholder="CASE_...">
-                    <button type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingReportReview()">보고서 검수 열기</button>
-                </div>
-            </div>
+
         </div>
 
         <div id="section-students" class="content-section">
@@ -412,120 +406,461 @@
         </div>
                 
         <div id="section-consulting" class="content-section">
-            <section id="consultingIntakePanel" aria-labelledby="consultingIntakeTitle" aria-busy="false">
-            <div class="consulting-heading-row">
-                <div>
-                    <h1 id="consultingIntakeTitle" class="page-title">🎓 정시 컨설팅 접수·입금 관리</h1>
-                    <p class="consulting-caption">입금 정보가 정확히 일치하는 경우에만 승인하세요. 승인 시 초대 링크와 인증코드 발송이 예약됩니다.</p>
+            <section id="consultingDirectoryPanel" aria-labelledby="consultingDirectoryTitle" aria-busy="false">
+                <div class="consulting-heading-row"><div><p class="consulting-eyebrow">STUDYCRACK · 정시 컨설팅</p><h1 id="consultingDirectoryTitle" class="page-title">학생별 진행 관리</h1><p class="consulting-caption">단계를 선택하고 학생을 눌러 필요한 업무를 진행하세요.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingDirectory()">목록 새로고침</button></div>
+                <details id="consultingScheduleBoard" class="consulting-admin-tools" ontoggle="toggleConsultingScheduleBoard()">
+                    <summary>서면상담 전체 시간표</summary>
+                    <p class="consulting-caption">가능 시간을 제출한 학생을 한 시간표에 배치합니다. 추천은 열어둔 동안 갱신되고, 예약은 학생별로 확정합니다. 표의 시각은 한국시간입니다.</p>
+                    <div class="consulting-heading-row"><h2 class="consulting-detail-title">추천·확정 시간표</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingScheduleBoard()">지금 갱신</button></div>
+                    <div class="consulting-schedule-policies" role="group" aria-label="전체 시간표 추천 기준"><button type="button" class="consulting-btn consulting-btn-secondary" data-schedule-policy="operator_first" aria-pressed="true" onclick="selectConsultingSchedulePolicy('operator_first')">담당 우선</button><button type="button" class="consulting-btn consulting-btn-secondary" data-schedule-policy="earliest_first" aria-pressed="false" onclick="selectConsultingSchedulePolicy('earliest_first')">빠른 일정 우선</button></div>
+                    <p id="consultingScheduleBoardStatus" class="consulting-status" role="status"></p>
+                    <div class="table-responsive"><table class="student-table consulting-table"><thead><tr><th>일시</th><th>학생</th><th>담당자</th><th>상태</th><th>관리</th></tr></thead><tbody id="consultingScheduleBoardBody"></tbody></table></div>
+                    <details class="consulting-admin-tools">
+                        <summary>배정 옵션·나의 불가 시간</summary>
+                        <div class="consulting-schedule-tools">
+                            <section><h3>선택 기간과 점심 시간</h3>
+                                <form id="consultingScheduleSettings" class="consulting-schedule-form" onsubmit="event.preventDefault(); saveConsultingScheduleSettings()">
+                                    <label>시작일 <input name="startDate" type="date" required></label>
+                                    <label>종료일 <input name="endDate" type="date" required></label>
+                                    <label>점심 시작 <input name="lunchStart" type="time" required></label>
+                                    <label>점심 종료 <input name="lunchEnd" type="time" required></label>
+                                    <label>점심 배정 <select name="lunchMode"><option value="avoid">가능하면 피하기</option><option value="block">배정 제외</option><option value="allow">다른 시간과 동일</option></select></label>
+                                    <label class="consulting-schedule-check"><input name="compactDays" type="checkbox"> 가능한 한 같은 날짜에 모으기</label>
+                                    <button type="submit" class="consulting-btn consulting-btn-primary" disabled>옵션 저장</button>
+                                    <button type="button" class="consulting-btn consulting-btn-secondary" onclick="reloadConsultingScheduleSettings()">저장된 옵션 다시 보기</button>
+                                </form>
+                            </section>
+                            <section><h3>나의 상담 불가 시간</h3>
+                                <p id="consultingTeamIdentity" class="consulting-caption">로그인한 운영자 정보를 확인합니다.</p>
+                                <p class="consulting-caption">운영 시간은 매일 10:00~20:00입니다. 상담할 수 없는 시간만 선택해 저장하세요. 확정된 상담은 먼저 일정을 변경해야 합니다.</p>
+                                <form id="consultingTeamAvailability" onsubmit="event.preventDefault(); saveConsultingTeamAvailability()">
+                                    <div id="consultingTeamBlockedSlots" class="consulting-team-slots"></div>
+                                    <div class="consulting-actions"><button id="consultingTeamSave" type="submit" class="consulting-btn consulting-btn-primary" disabled>나의 불가 시간 저장</button><button type="button" class="consulting-btn consulting-btn-secondary" onclick="reloadConsultingTeamAvailability()">저장된 시간 다시 보기</button></div>
+                                </form>
+                            </section>
+                        </div>
+                        <p id="consultingScheduleSettingsStatus" class="consulting-status" role="status"></p>
+                    </details>
+                </details>
+            <details id="consultingAdminTools" class="consulting-admin-tools"><summary>운영 도구</summary>
+                <details id="consultingDataReadinessDetails"><summary>입시자료 준비 상태</summary>
+                    <section id="consultingDataReadinessPanel" aria-labelledby="consultingDataReadinessTitle" aria-busy="false">
+                        <div class="consulting-heading-row"><div><h2 id="consultingDataReadinessTitle" class="page-title">계산에 필요한 자료 확인</h2><p class="consulting-caption">승인 입시자료·가능성 기준선·계산기 연결표의 준비 상태를 확인합니다. 조회만으로 자료 승인이나 학생 전송이 진행되지는 않습니다.</p></div><button id="consultingDataReadinessRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingDataReadiness()">준비 상태 확인</button></div>
+                        <p id="consultingDataReadinessStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <ul id="consultingDataReadinessChecks" class="consulting-report-source-readiness" aria-label="입시자료 확인 항목"></ul>
+                        <p id="consultingDataReadinessMeta" class="consulting-caption"></p>
+                    </section>
+                </details>
+                            <section id="consultingOperationsPanel" aria-labelledby="consultingOperationsTitle" aria-busy="false">
+                <div class="consulting-heading-row"><div><h2 id="consultingOperationsTitle" class="page-title">운영 대기·실패 확인</h2><p class="consulting-caption">보고서 공개와 알림의 대기·실패 상태를 확인합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations()">운영 목록 새로고침</button></div>
+                <div class="consulting-lookup"><label for="consultingOperationsGroup">확인할 목록</label><select id="consultingOperationsGroup" onchange="loadConsultingOperations()"><option value="review">운영 검토·실패</option><option value="reportDue">공개 시각이 지난 보고서</option><option value="reportOutbox">보고서 알림 처리 대기</option><option value="finalOutbox">파이널 콜 알림 처리 대기</option><option value="applicationDeletion">삭제한 신청의 파일·기록 정리</option></select></div>
+                <div id="consultingOperationsStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div class="table-responsive"><table class="student-table consulting-table"><thead><tr><th>기록 시각</th><th>관리번호</th><th>확인 항목</th><th>상태</th><th>확인</th></tr></thead><tbody id="consultingOperationsBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 운영 상태를 불러옵니다.</td></tr></tbody></table></div>
+                <button id="consultingOperationsNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingOperations(true)" disabled>다음 페이지</button>
+                <section id="consultingOperationsDetail" class="consulting-detail" hidden aria-labelledby="consultingOperationsDetailTitle"><div class="consulting-detail-head"><h3 id="consultingOperationsDetailTitle">운영 상세</h3><button type="button" class="consulting-close" onclick="closeConsultingOperation()" aria-label="운영 상세 닫기">×</button></div><div id="consultingOperationsSummary" class="consulting-material-copy"></div><label class="consulting-operations-reason" for="consultingOperationsReason">복구 사유 (10자 이상)</label><textarea id="consultingOperationsReason" maxlength="1000"></textarea><div class="consulting-actions"><button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingOperationWorkspace()">관련 업무 화면 열기</button><button id="consultingRetryOutboxBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="recoverConsultingOperation('outbox')" hidden>사이트 알림 재처리 요청</button><button id="consultingRetryReportBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="recoverConsultingOperation('report')" hidden>보고서 공개 재검증</button></div></section>
+            </section>
+            </details>
+                <nav class="consulting-phases" aria-label="컨설팅 진행 단계"><button type="button" class="consulting-phase" data-phase="all" onclick="selectConsultingPhase('all')">전체</button><button type="button" class="consulting-phase" data-phase="intake" onclick="selectConsultingPhase('intake')">01 접수·입금</button><button type="button" class="consulting-phase" data-phase="onboarding" onclick="selectConsultingPhase('onboarding')">02 가입·조사서</button><button type="button" class="consulting-phase" data-phase="written" onclick="selectConsultingPhase('written')">03 서면상담</button><button type="button" class="consulting-phase" data-phase="report" onclick="selectConsultingPhase('report')">04 분석·보고서</button><button type="button" class="consulting-phase" data-phase="final" onclick="selectConsultingPhase('final')">05 파이널 콜</button><button type="button" class="consulting-phase" data-phase="completed" onclick="selectConsultingPhase('completed')">완료</button><button type="button" class="consulting-phase" data-phase="attention" onclick="selectConsultingPhase('attention')">보류·거절·초대 취소</button></nav>
+                <div id="consultingDirectoryStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <section id="consultingWrittenUnread" class="consulting-written-unread" aria-label="새 상담 메시지" hidden></section>
+                <div id="consultingDirectoryExportTools" class="consulting-export-tools" hidden>
+                    <div class="consulting-export-actions"><strong id="consultingExportCount" aria-live="polite"></strong><button id="consultingExportPageSelect" type="button" class="consulting-btn consulting-btn-secondary" onclick="toggleConsultingExportPage()">현재 페이지 선택</button><button id="consultingExportClear" type="button" class="consulting-btn consulting-btn-secondary" onclick="clearConsultingExportStudents()">선택 해제</button></div>
+                    <button id="consultingExportOpen" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingExportDialog()">CSV 내보내기</button>
                 </div>
-                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingPaymentReview()">새로고침</button>
-            </div>
+                <p id="consultingExportListStatus" class="consulting-status" role="status"></p>
+                <div class="table-responsive"><table class="student-table consulting-table consulting-directory-table"><thead><tr><th>학생</th><th>현재 상태</th><th>다음 할 일</th><th>최근 변경</th><th>상세</th></tr></thead><tbody id="consultingDirectoryBody"><tr><td colspan="5" class="empty-msg">학생 목록을 불러옵니다.</td></tr></tbody></table></div>
+                <div class="consulting-pagination"><button id="consultingDirectoryPrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="previousConsultingDirectoryPage()" disabled>이전</button><span id="consultingDirectoryPage" aria-live="polite"></span><button id="consultingDirectoryNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="nextConsultingDirectoryPage()" disabled>다음</button></div>
+                <dialog id="consultingExportDialog" class="consulting-export-dialog" aria-labelledby="consultingExportTitle" oncancel="event.preventDefault(); closeConsultingExportDialog()">
+                    <div class="consulting-heading-row"><h2 id="consultingExportTitle" class="consulting-detail-title">CSV 내보내기</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="closeConsultingExportDialog()">닫기</button></div>
+                    <details class="consulting-export-group"><summary id="consultingExportStudentSummary">선택 학생</summary><ul id="consultingExportStudentList" class="consulting-export-students"></ul></details>
+                    <fieldset id="consultingExportFields" class="consulting-export-fields" aria-label="내보낼 항목">
+                        <label class="consulting-export-search" for="consultingExportSearch">내보낼 항목 검색<input id="consultingExportSearch" type="search" placeholder="예: 전화번호, 수학, 파이널 콜" oninput="renderConsultingExportColumns()" disabled></label>
+                        <div id="consultingExportColumns" class="consulting-export-columns"></div>
+                    </fieldset>
+                    <p class="consulting-caption">전화번호의 앞자리 0을 유지하려면 Excel에서 해당 열을 텍스트로 가져오세요.</p>
+                    <p id="consultingExportStatus" class="consulting-status" role="status"></p>
+                    <div class="consulting-export-footer"><span id="consultingExportColumnCount" aria-live="polite">0개 항목 선택</span><button id="consultingExportSubmit" type="button" class="consulting-btn consulting-btn-primary" onclick="downloadConsultingExport()" disabled>CSV 다운로드</button></div>
+                </dialog>
+            </section>
+                <dialog id="consultingScheduleChoice" class="consulting-export-dialog" aria-labelledby="consultingScheduleChoiceTitle">
+                    <div class="consulting-heading-row"><h2 id="consultingScheduleChoiceTitle" class="consulting-detail-title">학생별 일정 선택</h2><button type="button" class="consulting-btn consulting-btn-secondary" onclick="document.getElementById('consultingScheduleChoice').close()">닫기</button></div>
+                    <p id="consultingScheduleChoiceStatus" class="consulting-status" role="status"></p>
+                    <form id="consultingScheduleChoiceForm" class="consulting-schedule-form" onsubmit="event.preventDefault(); submitConsultingScheduleChoice()" hidden>
+                        <label>날짜 <select name="date" aria-label="날짜" onchange="loadConsultingScheduleChoiceDate(this.value)"></select></label>
+                        <div class="consulting-schedule-picker">
+                            <label id="consultingScheduleSingleChoice">가능한 시간 <select name="slot" aria-label="가능한 시간" onchange="renderConsultingScheduleChoiceCounselors()" required></select></label>
+                            <label>담당자 <select name="counselor" aria-label="담당자" required></select></label>
+                        </div>
+                        <fieldset id="consultingScheduleProposalChoices" class="consulting-schedule-form" hidden disabled>
+                            <legend>제안할 시간 · 최대 5개</legend>
+                            <button id="consultingScheduleProposalAdd" type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingScheduleProposal()">선택한 시간을 후보에 추가</button>
+                            <div id="consultingScheduleProposalOptions" class="consulting-schedule-form"></div>
+                        </fieldset>
+                        <div id="consultingScheduleManualFields" class="consulting-schedule-form" hidden>
+                            <label class="consulting-schedule-check"><input name="contactConfirmed" type="checkbox"> 학생과 직접 연락해 이 시간에 합의했습니다.</label>
+                            <label>변경 사유 (10~500자, 개인정보 제외) <textarea name="reason" minlength="10" maxlength="500" autocomplete="off"></textarea></label>
+                        </div>
+                        <button id="consultingScheduleChoiceSubmit" type="submit" class="consulting-btn consulting-btn-primary">선택한 시간으로 처리</button>
+                    </form>
+                </dialog>
+            <section id="consultingStudentPanel" class="consulting-student" hidden aria-labelledby="consultingStudentTitle" aria-busy="false">
+                <div class="consulting-heading-row"><button type="button" class="consulting-btn consulting-btn-secondary" onclick="closeConsultingStudent()">← 학생 목록</button><button type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingWorkspaceStudent()">학생 정보 새로고침</button></div>
+                <h1 id="consultingStudentTitle" class="page-title" tabindex="-1">학생 상세</h1><p id="consultingStudentState" class="consulting-caption"></p>
+                <ol id="consultingStudentProgress" class="consulting-progress" aria-label="학생 진행 단계"></ol>
+                <div id="consultingStudentNextAction" class="consulting-next-action"></div>
+                <div id="consultingStudentStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div class="consulting-actions"><button id="consultingDeleteApplicationBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="openConsultingApplicationDeletion()" hidden>신청 영구 삭제</button></div>
+                <dialog id="consultingDeleteApplicationDialog" class="consulting-export-dialog" aria-labelledby="consultingDeleteApplicationTitle" aria-describedby="consultingDeleteApplicationScope" oncancel="event.preventDefault(); closeConsultingApplicationDeletion()">
+                    <h2 id="consultingDeleteApplicationTitle">신청 기록을 영구 삭제할까요?</h2>
+                    <p id="consultingDeleteApplicationTarget" class="consulting-caption"></p>
+                    <p id="consultingDeleteApplicationScope">이 신청의 접수·초대·조사서·분석·상담 기록과 연결된 첨부파일·보고서 PDF 원본을 영구 삭제합니다. 파일의 이전 버전도 포함하며 예약 중인 시간은 반납됩니다. 복구할 수 없습니다.</p>
+                    <p class="consulting-caption">확인하면 신청을 즉시 목록에서 제거하고 접근을 차단합니다. 파일과 남은 기록은 화면을 닫아도 서버에서 자동으로 정리합니다. 삭제 요청 이후에는 취소할 수 없습니다.</p>
+                    <p class="consulting-caption">다른 신청의 파일, 학생 회원 계정, Google Form 원본 응답, 이미 발송한 카톡·이메일은 유지됩니다. 환불이나 취소 안내는 자동으로 발송하지 않습니다.</p>
+                    <label class="consulting-caption" for="consultingDeleteApplicationConfirmation">계속하려면 ‘신청 영구 삭제’를 정확히 입력해주세요.</label>
+                    <input id="consultingDeleteApplicationConfirmation" type="text" autocomplete="off" maxlength="30" oninput="updateConsultingApplicationDeletion()">
+                    <p id="consultingDeleteApplicationStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                    <div class="consulting-actions">
+                        <button id="consultingDeleteApplicationCancel" type="button" class="consulting-btn consulting-btn-secondary" onclick="closeConsultingApplicationDeletion()">돌아가기</button>
+                        <button id="consultingDeleteApplicationRetry" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingApplicationDeletion()" hidden>삭제 상태 다시 확인</button>
+                        <button id="consultingDeleteApplicationConfirm" type="button" class="consulting-btn consulting-btn-danger" onclick="deleteConsultingApplication()" disabled>신청·원본 영구 삭제</button>
+                    </div>
+                </dialog>
+                <nav class="consulting-student-tabs" aria-label="학생 상세 업무"><button type="button" class="consulting-student-tab" data-student-tab="overview" onclick="selectConsultingStudentTab('overview')">신청·입금</button><button type="button" class="consulting-student-tab" data-student-tab="materials" onclick="selectConsultingStudentTab('materials')">조사서·성적표</button><button type="button" class="consulting-student-tab" data-student-tab="written" onclick="selectConsultingStudentTab('written')">서면상담</button><button type="button" class="consulting-student-tab" data-student-tab="report" onclick="selectConsultingStudentTab('report')">분석·보고서</button><button type="button" class="consulting-student-tab" data-student-tab="final" onclick="selectConsultingStudentTab('final')">파이널 콜</button><button type="button" class="consulting-student-tab" data-student-tab="service" onclick="selectConsultingStudentTab('service')">서비스 관리</button></nav>
+                <p id="consultingMaterialAccess" class="consulting-caption" hidden>조사서·성적표는 자료 검수 권한이 있는 계정에서 볼 수 있습니다.</p>
+                <div id="consultingWorkspaceOverview" data-workspace-pane="overview">
+            <section id="consultingIntakePanel" aria-labelledby="consultingDetailTitle" aria-busy="false">
             <div id="consultingStatus" class="consulting-status" role="status" aria-live="polite"></div>
             <div id="consultingActionStatus" class="consulting-status" role="status" aria-live="polite"></div>
-            <p class="consulting-caption">목록에는 입금 확인 대기·보류 건을 최대 100건 표시합니다. 승인·거절한 건은 신청 ID로 다시 조회하세요. 초대 발급과 실제 발송 성공은 별개입니다.</p>
-            <form class="consulting-lookup" onsubmit="event.preventDefault(); lookupConsultingApplication();">
-                <label for="consultingApplicationLookup">신청 ID로 상세 조회</label>
-                <div class="consulting-lookup-row">
-                    <input id="consultingApplicationLookup" type="text" autocomplete="off" spellcheck="false" maxlength="40" placeholder="APP_..." required>
-                    <button type="submit" class="consulting-btn consulting-btn-secondary">조회</button>
-                </div>
-            </form>
-            <div class="table-responsive">
-                <table class="student-table consulting-table">
-                    <thead><tr><th>접수</th><th>학생</th><th>입금자</th><th>예정 금액</th><th>상태</th><th>확인</th></tr></thead>
-                    <tbody id="consultingPaymentReviewBody"><tr><td colspan="6" class="empty-msg">메뉴를 열면 검수 대기 건을 불러옵니다.</td></tr></tbody>
-                </table>
-            </div>
             <section id="consultingApplicationDetail" class="consulting-detail" hidden aria-labelledby="consultingDetailTitle">
-                <div class="consulting-detail-head">
-                    <h2 id="consultingDetailTitle">신청 상세</h2>
-                    <button type="button" class="consulting-close" onclick="closeConsultingDetail()" aria-label="상세 닫기">×</button>
-                </div>
-                <div id="consultingDetailSummary" class="consulting-detail-grid"></div>
-                <p class="consulting-caption">전화번호와 이메일의 수신 대상을 확인하세요. 실제 계좌 내역의 입금액·시각을 직접 입력한 뒤 승인해야 합니다.</p>
-                <div id="consultingPaymentActions" class="consulting-actions" hidden>
-                    <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액"></label>
-                    <label>입금 시각 (기기 현지 시각)<input id="consultingPaidAt" type="datetime-local" autocomplete="off"></label>
-                    <label class="consulting-check"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
+                <h2 id="consultingDetailTitle" class="consulting-detail-title">신청·입금 정보</h2>
+                <div id="consultingDetailSummary" class="consulting-record"></div>
+                <details id="consultingOriginalDetails" class="consulting-original">
+                    <summary>구글폼 접수 원본</summary>
+                    <div id="consultingOriginalSubmission"></div>
+                </details>
+                <details id="consultingInputEdit" class="consulting-original" hidden>
+                <summary>신청 정보 확인·수정</summary>
+                <fieldset id="consultingInputEditor" class="consulting-contact-review" hidden>
+                    <legend>신청 정보 보완·확인</legend>
+                    <p id="consultingInputIssues" class="consulting-caption" role="status"></p>
+                    <div class="consulting-contact-fields">
+                        <label><span id="consultingContactNameLabel">학생 이름</span><input id="consultingContactStudentName" aria-labelledby="consultingContactNameLabel" type="text" maxlength="120" autocomplete="off"></label>
+                        <label>전화번호<input id="consultingContactPhone" type="tel" maxlength="80" autocomplete="off"></label>
+                        <label>이메일<input id="consultingContactEmail" type="email" maxlength="320" autocomplete="off"></label>
+                        <label>입금자명<input id="consultingContactPayerName" type="text" maxlength="120" autocomplete="off"></label>
+                        <label id="consultingContactPayerRelationshipField">입금자와의 관계<select id="consultingContactRelationship"><option value="self">본인</option><option value="parent">부모님</option><option value="family" hidden disabled>학부모 및 가족</option><option value="other">기타</option></select></label>
+                        <label id="consultingContactPersonRelationshipField" hidden>연락처 본인·대리인 구분<select id="consultingContactPersonRelationship"><option value="self">본인</option><option value="parent">부모님</option><option value="family">학부모 및 가족</option><option value="other">기타</option></select></label>
+                        <label id="consultingContactMethodField">연락 방법<select id="consultingContactMethod"><option value="kakao">카카오톡</option><option value="sms">문자</option><option value="phone">전화</option><option value="email">이메일</option><option value="other">기타</option></select></label>
+                        <label id="consultingContactStudentStatusField">학생 상태<select id="consultingContactStudentStatus"><option value="senior">고3</option><option value="graduate">재수 이상</option><option value="ged">검정고시</option><option value="other">기타</option></select></label>
+                    </div>
+                    <label class="consulting-contact-confirm"><input id="consultingInputConfirmed" type="checkbox"> 신청 정보를 대조했고 전화번호·이메일의 수신 대상을 확인했습니다</label>
+                    <button id="consultingSaveInputBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="saveConsultingApplicationInput()">신청 정보 확인·저장</button>
+                    <p class="consulting-caption">보완 대상 신청은 정보 확인을 마친 뒤 입금 승인을 진행할 수 있습니다. 최초 제출 원본은 보존됩니다.</p>
+                </fieldset>
+                </details>
+                <div id="consultingPaymentActions" class="consulting-payment" hidden>
+                    <h3>입금 확인</h3>
+                    <p class="consulting-caption">계좌 내역을 대조하고 초대 링크와 인증코드를 받을 연락처를 확인하세요.</p>
+                    <div class="consulting-contact-fields">
+                        <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액"></label>
+                        <label>입금 시각 (기기 현지 시각)<input id="consultingPaidAt" type="datetime-local" autocomplete="off"></label>
+                    </div>
+                    <label class="consulting-contact-confirm"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
                     <button id="consultingApproveBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingPayment()">입금 승인 및 초대 발급</button>
-                    <label>보류 사유<select id="consultingHoldReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="PAYER_NAME_MISMATCH">입금자명 불일치</option><option value="AMOUNT_MISMATCH">금액 불일치</option><option value="DUPLICATE_CANDIDATE">중복 신청 확인</option><option value="OTHER">기타</option></select></label>
-                    <button type="button" class="consulting-btn consulting-btn-warning" onclick="holdConsultingPayment()">보류</button>
-                    <label>거절 사유<select id="consultingRejectReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="DUPLICATE_APPLICATION">중복 신청</option><option value="CUSTOMER_CANCELLED">고객 취소</option><option value="OTHER">기타</option></select></label>
-                    <button type="button" class="consulting-btn consulting-btn-danger" onclick="rejectConsultingApplication()">신청 거절</button>
+                    <details id="consultingPaymentAlternatives" class="consulting-original">
+                        <summary>보류 또는 거절</summary>
+                        <p class="consulting-caption">처리 전 학생에게 보낼 문자와 수신처를 확인합니다. 아래 메모는 관리자 처리 기록에 남습니다.</p>
+                        <div class="consulting-contact-fields consulting-payment-options">
+                            <div>
+                                <label>보류 사유<select id="consultingHoldReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="PAYER_NAME_MISMATCH">입금자명 불일치</option><option value="AMOUNT_MISMATCH">금액 불일치</option><option value="DUPLICATE_CANDIDATE">중복 신청 확인</option><option value="OTHER">기타</option></select></label>
+                                <label>보류 메모<textarea id="consultingHoldNote" maxlength="500" placeholder="기타 사유는 메모를 입력해 주세요"></textarea></label>
+                                <button type="button" class="consulting-btn consulting-btn-warning" onclick="holdConsultingPayment()">보류</button>
+                            </div>
+                            <div>
+                                <label>거절 사유<select id="consultingRejectReason"><option value="PAYMENT_NOT_FOUND">입금 미확인</option><option value="DUPLICATE_APPLICATION">중복 신청</option><option value="CUSTOMER_CANCELLED">고객 취소</option><option value="OTHER">기타</option></select></label>
+                                <label>거절 메모<textarea id="consultingRejectNote" maxlength="500" placeholder="기타 사유는 메모를 입력해 주세요"></textarea></label>
+                                <button type="button" class="consulting-btn consulting-btn-danger" onclick="rejectConsultingApplication()">신청 거절</button>
+                            </div>
+                        </div>
+                    </details>
                 </div>
                 <div id="consultingInviteActions" class="consulting-actions" hidden>
+                    <button id="consultingRevokeBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="revokeConsultingInvite()" hidden>미사용 초대 취소</button>
                     <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>
                 </div>
             </section>
+                <details class="consulting-identifiers"><summary>관리 식별정보</summary><div id="consultingStudentIdentifiers" class="consulting-material-copy"></div></details>
+
             </section>
-            <div class="consulting-heading-row consulting-material-heading">
-                <div>
-                    <h2 class="page-title">📄 정시 컨설팅 자료 검수</h2>
-                    <p class="consulting-caption">학생이 제출한 조사서와 성적표를 대조한 뒤 보완 요청 또는 검수 완료를 처리합니다.</p>
-                </div>
-                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingMaterialReview()">자료 새로고침</button>
-            </div>
+</div>
+                <div id="consultingWorkspaceMaterials" data-workspace-pane="materials" hidden aria-busy="false">
             <div id="consultingMaterialStatus" class="consulting-status" role="status" aria-live="polite"></div>
-            <div class="table-responsive">
-                <table class="student-table consulting-table">
-                    <thead><tr><th>최근 변경</th><th>케이스</th><th>단계</th><th>성적 검수</th><th>확인</th></tr></thead>
-                    <tbody id="consultingMaterialReviewBody"><tr><td colspan="5" class="empty-msg">메뉴를 열면 자료 검수 대기 건을 불러옵니다.</td></tr></tbody>
-                </table>
-            </div>
+            <button id="consultingMaterialRetry" type="button" class="consulting-btn consulting-btn-secondary" onclick="showConsultingStudentTab('materials')" hidden>제출 자료 다시 불러오기</button>
             <section id="consultingMaterialDetail" class="consulting-detail" hidden aria-labelledby="consultingMaterialDetailTitle">
-                <div class="consulting-detail-head">
-                    <h2 id="consultingMaterialDetailTitle">자료 상세</h2>
-                    <button type="button" class="consulting-close" onclick="closeConsultingMaterialDetail()" aria-label="자료 상세 닫기">×</button>
+                <h2 id="consultingMaterialDetailTitle" class="consulting-detail-title">제출한 기초조사서</h2>
+                <div id="consultingSurveyVersions" class="consulting-survey-version-tools" hidden>
+                    <label>답변 버전<select id="consultingSurveyVersion" onchange="showConsultingSurveyVersion(this.value)"><option value="current">현재 답변</option><option value="original">최초 제출</option><option value="reviewed">검수한 답변</option></select></label>
+                    <p id="consultingSurveyReviewNotice" class="consulting-caption" aria-live="polite"></p>
                 </div>
-                <div id="consultingMaterialSummary" class="consulting-detail-grid"></div>
-                <div class="consulting-material-block"><h3>상담 질문과 지원 조건</h3><div id="consultingMaterialSurvey" class="consulting-material-copy"></div></div>
-                <div class="consulting-material-block"><h3>성적표 파일</h3><div id="consultingMaterialFiles" class="consulting-material-files"></div></div>
-                <div class="consulting-material-block"><h3>검수 성적</h3><div id="consultingVerifiedScores" class="consulting-score-editor"></div></div>
-                <div class="consulting-actions consulting-material-actions">
-                    <label>검수 결과<select id="consultingMaterialResult"><option value="matched">입력과 일치</option><option value="corrected">운영자 정정</option></select></label>
-                    <label class="consulting-material-reason">처리 사유<textarea id="consultingMaterialReason" maxlength="500" placeholder="검수 근거를 기록하세요"></textarea></label>
-                    <label class="consulting-material-reason">차이점(한 줄에 하나)<textarea id="consultingMaterialDifferences" maxlength="3000" placeholder="정정한 항목이 있다면 기록하세요"></textarea></label>
-                    <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="verifyConsultingMaterials()">검수 완료</button>
+                <div id="consultingMaterialSummary" class="consulting-material-meta"></div>
+                <section id="consultingSupplementResponse" class="consulting-supplement-response" aria-labelledby="consultingSupplementResponseTitle" hidden>
+                    <h3 id="consultingSupplementResponseTitle">학생 보완 답변</h3>
+                    <p id="consultingSupplementResponseSummary" class="consulting-caption"></p>
+                    <ul id="consultingSupplementResponseItems"></ul>
+                </section>
+                <details id="consultingSurveyChangesSinceReview" class="consulting-original" hidden><summary>검수 이후 변경된 항목</summary><div id="consultingSurveyReviewChanges"></div></details>
+                <details id="consultingSurveyHistory" class="consulting-original" ontoggle="openConsultingSurveyHistory(this.open)" hidden>
+                    <summary>수정 이력</summary>
+                    <p id="consultingSurveyHistoryStatus" class="consulting-status" role="status"></p>
+                    <div id="consultingSurveyHistoryEntries" class="consulting-record"></div>
+                    <button id="consultingSurveyHistoryNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingSurveyHistory()" hidden>이전 수정 더 보기</button>
+                </details>
+                <section id="consultingMaterialSupplementNotice" class="consulting-material-block" hidden></section>
+                <div class="consulting-survey-review">
+                <aside class="consulting-survey-index" aria-label="조사서 검수 안내">
+                    <p class="consulting-survey-eyebrow">기초조사서 항목</p>
+                    <div id="consultingSurveyIndex" class="consulting-survey-index-items" role="tablist" aria-label="기초조사서 항목"></div>
+                    <details id="consultingSurveyCommentDrafts" class="consulting-survey-comments" hidden>
+                        <summary>작성 중인 보완 코멘트 <span id="consultingSurveyCommentCount">0</span></summary>
+                        <ul id="consultingSurveyCommentList"></ul>
+                        <p>아직 학생에게 전송하지 않았습니다. 보완 요청 미리보기에서 확인 후 보내주세요.</p>
+                    </details>
+                </aside>
+                <div class="consulting-survey-reading">
+                <header class="consulting-survey-heading"><p id="consultingSurveyPosition" class="consulting-survey-eyebrow"></p><h3 id="consultingSurveySectionTitle" tabindex="-1"></h3><p id="consultingSurveySectionGuide"></p></header>
+                <div id="consultingMaterialSurvey" class="consulting-record"></div>
+                <section id="consultingMaterialAttachments" class="consulting-material-block" hidden><h3>성적표 첨부</h3><div id="consultingMaterialFiles"></div><div id="consultingMaterialFileNote"></div></section>
+                <div id="consultingMaterialVerification" class="consulting-record" hidden></div>
+                <section id="consultingMaterialReviewActions" class="consulting-material-block" hidden>
+                    <details id="consultingScoreEditorDetails" class="consulting-original">
+                        <summary id="consultingMaterialReviewTitle">공식 성적 확인·정정</summary>
+                        <p id="consultingMaterialScoreGuide" class="consulting-caption">성적표와 대조할 때만 펼쳐 입력하세요. 없는 점수는 조사서 승인에 필요하지 않습니다.</p>
+                        <div id="consultingVerifiedScores" class="consulting-score-editor" oninput="refreshConsultingScoreChanges()" onchange="refreshConsultingScoreChanges()"></div>
+                        <p id="consultingScoreChanges" class="consulting-caption" aria-live="polite"></p>
+                        <button id="consultingAddForeignScoreBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingForeignScore()" hidden>응시한 제2외국어·한문 추가</button>
+                        <label class="consulting-material-reason">정정 사유 (값을 바꿀 때만)<textarea id="consultingMaterialReason" maxlength="500" placeholder="정정한 이유를 적어주세요."></textarea></label>
+                        <p id="consultingScoreReviewStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <button id="consultingMaterialVerifyBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="verifyConsultingMaterials()">공식 성적 확인·저장</button>
+                    </details>
+                </section>
+                <div class="consulting-survey-pager"><button id="consultingSurveyPrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(-1)" disabled>이전 항목</button><button id="consultingSurveyNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="moveConsultingSurveySection(1)" disabled>다음 항목</button></div>
                 </div>
-                <div class="consulting-actions consulting-material-actions">
-                    <label>보완 사유<select id="consultingSupplementReason"><option value="SCORE_DOCUMENT_UNREADABLE">성적표 판독 불가</option><option value="SCORE_INPUT_MISMATCH">입력과 성적표 불일치</option><option value="MISSING_SCORE_PAGE">성적표 페이지 누락</option><option value="OTHER">기타</option></select></label>
-                    <label class="consulting-material-reason">학생 안내<textarea id="consultingSupplementText" maxlength="500" placeholder="학생이 무엇을 보완해야 하는지 구체적으로 입력하세요"></textarea></label>
-                    <button id="consultingSupplementBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="requestConsultingSupplement()">보완 요청</button>
                 </div>
+                <section id="consultingMaterialSupplementActions" class="consulting-material-block consulting-survey-decision" hidden aria-labelledby="consultingSurveyDecisionTitle">
+                    <h3 id="consultingSurveyDecisionTitle">조사서 검토</h3>
+                    <p id="consultingSurveyApprovalStatus" class="consulting-caption" aria-live="polite"></p>
+                    <p id="consultingSupplementStatus" class="consulting-status" role="status"></p>
+                    <div class="consulting-actions consulting-material-actions">
+                        <button id="consultingSurveyConfirmBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingSurvey()">조사서 승인 · 일정 선택 열기</button>
+                        <button id="consultingSupplementPreviewBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="previewConsultingSupplement()" hidden>보완 요청 미리보기</button>
+                    </div>
+                </section>
+                <dialog id="consultingSupplementPreview" class="consulting-supplement-preview" aria-labelledby="consultingSupplementPreviewTitle">
+                    <h3 id="consultingSupplementPreviewTitle">보완 요청 확인</h3>
+                    <p>학생 화면에 아래 안내가 표시됩니다. 카카오 알림톡으로 보완 요청을 알립니다.</p>
+                    <div id="consultingSupplementPreviewContent"></div>
+                    <div class="consulting-actions">
+                        <form method="dialog"><button type="submit" class="consulting-btn consulting-btn-secondary">돌아가기</button></form>
+                        <button id="consultingSupplementBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="requestConsultingSupplement()">보완 요청 보내기</button>
+                    </div>
+                </dialog>
             </section>
-            <div class="consulting-heading-row consulting-schedule-heading">
+            <details id="consultingReferenceExperiment" class="consulting-reference" ontoggle="openConsultingReference(this.open)" hidden>
+                <summary>2026 참고자료로 추천 실험</summary>
+                <p id="consultingReferenceNotice" class="consulting-reference-notice">확정 기초조사서와 2026 참고 성적으로 A/B/C안을 비교합니다. 원점수 대응자료가 없으면 실험용 표준점수를 별도로 입력할 수 있습니다.</p>
+                <p id="consultingReferenceBasis" class="consulting-caption"></p>
+                <div id="consultingReferenceStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReference(true, true)">자료 다시 불러오기</button>
+                <form id="consultingReferenceForm" class="consulting-reference-form" onsubmit="runConsultingReference(event)" hidden aria-busy="false">
+                    <h3>확정 조사서 성적</h3>
+                    <div id="consultingReferenceScores" class="consulting-reference-scores"></div>
+                    <section id="consultingReferenceStandard" class="consulting-reference-standard" aria-labelledby="consultingReferenceStandardTitle" hidden>
+                        <h3 id="consultingReferenceStandardTitle">2026 참고 표준점수로 실험</h3>
+                        <p>보유한 2026 수능표는 표준점수에 대응하는 백분위·등급 자료입니다. 원점수를 자동 변환할 자료가 없는 과목은 비교할 표준점수를 선택해주세요. 백분위·등급은 해당 과목의 2026 수능표에서 채웁니다.</p>
+                        <p class="consulting-caption">아래 점수는 이번 실험에만 적용됩니다. 학생이 제출한 원점수와 공식 확인 성적은 바뀌지 않으며, 학생을 전환하거나 자료를 다시 불러오면 초기화됩니다.</p>
+                        <div id="consultingReferenceStandardInputs" class="consulting-reference-filters"></div>
+                    </section>
+                    <div class="consulting-reference-filters">
+                        <label>희망 계열<select id="consultingReferenceStream" onchange="invalidateConsultingReference()"></select></label>
+                        <label>지원 성향<select id="consultingReferenceRisk" onchange="invalidateConsultingReference()"><option value="safe">안정 우선</option><option value="balanced">균형 있게</option><option value="challenge">도전 포함</option></select></label>
+                    </div>
+                    <div id="consultingReferenceUniversities" class="consulting-reference-filters"></div>
+                    <p class="consulting-caption">모집군 참고값은 2026 기준입니다. 군을 직접 지정하면 관리자 실험 지정으로 표시합니다. 성별·실기·학생부·통학 등 추가 조건은 별도로 확인해주세요.</p>
+                    <div id="consultingReferenceOverrides" class="consulting-reference-overrides"></div>
+                    <div class="consulting-reference-filters"><label>전체 계산 후보에서 대학·학과 찾기<input id="consultingReferenceQuery" type="search" maxlength="100" placeholder="예: 경영학과, 서울대학교" oninput="invalidateConsultingReference()"></label></div>
+                    <button id="consultingReferenceRun" type="submit" class="consulting-btn consulting-btn-primary">다시 계산</button>
+                </form>
+                <section id="consultingReferenceResults" class="consulting-reference-results" aria-label="추천 실험 결과" hidden>
+                    <h3>가·나·다군 비교</h3>
+                    <p id="consultingReferenceStats" class="consulting-caption"></p>
+                    <div id="consultingReferencePlans"></div>
+                    <details class="consulting-reference-ledger"><summary>계산 후보 전체 검색·실험용 군 지정</summary>
+                        <p class="consulting-caption">대학·학과를 입력하면 계산 후보에서 자동 검색합니다. 검색은 A/B/C안의 후보 풀을 줄이지 않습니다.</p>
+                        <div class="consulting-reference-table-wrap"><table class="consulting-reference-table"><caption>보유 자료로 계산한 후보와 모집군 기준</caption><thead><tr><th scope="col">대학·학과</th><th scope="col">환산점수</th><th scope="col">합격권 / 70% 컷</th><th scope="col">참고 분류</th><th scope="col">모집군 기준</th><th scope="col">실험용 군</th></tr></thead><tbody id="consultingReferenceCandidates"></tbody></table></div>
+                        <div class="consulting-reference-pagination"><button id="consultingReferencePrevious" type="button" class="consulting-btn consulting-btn-secondary" onclick="pageConsultingReference(-1)">이전 후보</button><span id="consultingReferencePage"></span><button id="consultingReferenceNext" type="button" class="consulting-btn consulting-btn-secondary" onclick="pageConsultingReference(1)">다음 후보</button></div>
+                    </details>
+                    <details class="consulting-reference-ledger"><summary>제외·확인 필요 사유</summary><ul id="consultingReferenceExcluded"></ul><p class="consulting-caption">참고 분류는 기존 추정컷과의 위치 비교입니다. 실제 합격 확률을 뜻하지 않습니다.</p></details>
+                </section>
+            </details>
+</div>
+                <div id="consultingWorkspaceWritten" data-workspace-pane="written" hidden>            <div class="consulting-heading-row consulting-schedule-heading">
                 <div>
                     <h2 class="page-title">🗓️ 서면상담 일정 배정</h2>
-                    <p class="consulting-caption">상담사 가능 시간을 생성한 뒤, 학생 후보를 점수 순으로 확인하고 최종 확정합니다.</p>
+                    <p class="consulting-caption">학생이 선택한 가능 시간에서 확정하세요. 예약을 변경할 때는 학생에게 새 시간을 제안할 수 있습니다.</p>
                 </div>
             </div>
             <div id="consultingScheduleStatus" class="consulting-status" role="status" aria-live="polite"></div>
+            <p><a id="consultingWrittenChatLink" class="consulting-btn consulting-btn-primary" hidden>서면상담 대화 열기 →</a></p>
             <div class="consulting-schedule-tools">
                 <section>
-                    <h3>상담사 slot 생성</h3>
+                    <h3>선택 학생의 일정 후보</h3>
                     <div class="consulting-lookup-row">
-                        <input id="consultingScheduleCounselorId" type="text" autocomplete="off" placeholder="상담사 ID">
-                        <button id="consultingGenerateSlotsBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="generateConsultingSlots()">7일 slot 생성</button>
-                    </div>
-                </section>
-                <section>
-                    <h3>케이스 배정 후보</h3>
-                    <div class="consulting-lookup-row">
-                        <input id="consultingScheduleCaseId" type="text" autocomplete="off" placeholder="CASE_...">
+                        <input id="consultingScheduleCaseId" type="hidden">
                         <button id="consultingLoadCandidatesBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingScheduleCandidates()">후보 조회</button>
                     </div>
                 </section>
             </div>
             <section id="consultingCurrentSession" class="consulting-current-session" hidden>
                 <div id="consultingCurrentSessionCopy"></div>
-                <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button>
+                <div class="consulting-actions"><button id="consultingProposeSessionBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId)">변경 시간 제안</button>
+                    <button id="consultingManualSessionBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId, true)">직접 합의 후 수동 변경</button>
+                    <button id="consultingCancelSessionBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="cancelConsultingWrittenSession()">현재 일정 취소</button></div>
             </section>
-            <div class="table-responsive">
-                <table class="student-table consulting-table">
-                    <thead><tr><th>순위</th><th>일시</th><th>상담사</th><th>학생 우선순위</th><th>점수</th><th>확정</th></tr></thead>
-                    <tbody id="consultingScheduleCandidatesBody"><tr><td colspan="6" class="empty-msg">케이스 ID로 배정 후보를 조회해주세요.</td></tr></tbody>
-                </table>
-            </div>
+            <div id="consultingScheduleCandidatesBody" class="consulting-schedule-recommendations" aria-label="추천 상담 일정"></div>
+            <details id="consultingScheduleManual" class="consulting-admin-tools">
+                <summary>직접 다른 시간 선택</summary>
+                <p class="consulting-caption">학생이 제출한 가능 시간에서 날짜·시간·담당자를 선택합니다.</p>
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingScheduleChoice(currentConsultingSchedule.caseId)">날짜와 시간 선택</button>
+            </details>
+</div>
+                <div id="consultingWorkspaceReport" class="consulting-work-card" data-workspace-pane="report" hidden aria-busy="false">
+                    <div class="consulting-heading-row"><div><p class="consulting-eyebrow">보고서 작성 준비</p><h2>상담을 보고서의 기준으로</h2><p class="consulting-caption">학생의 답변과 상담에서 확인한 내용을 함께 검토하고, 보고서에 반영할 기준을 정리합니다.</p></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="reloadConsultingReportSource()">작성 자료 새로고침</button></div>
+                    <input id="consultingReportCaseId" type="hidden">
+                    <p id="consultingReportSourceStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                    <div id="consultingReportSourceBody" hidden>
+                        <ul id="consultingReportReadiness" class="consulting-report-source-readiness" aria-label="보고서 자료 준비 상태"></ul>
+                        <div id="consultingReportSourceNotice" class="consulting-report-source-notice" role="status"></div>
+                        <div class="consulting-survey-version-tools"><label for="consultingReportSummaryVersion">상담 정리 버전<select id="consultingReportSummaryVersion" onchange="changeConsultingReportSummaryVersion()"><option value="">현재 정리</option></select></label><p id="consultingReportSummaryMeta" class="consulting-caption"></p></div>
+                        <details id="consultingReportSurveyChanges" class="consulting-original" hidden><summary>상담 정리 이후 학생이 바꾼 답변</summary><div id="consultingReportSurveyChangesBody" class="consulting-material-copy"></div></details>
+                        <form id="consultingReportSummaryForm" onsubmit="event.preventDefault(); saveConsultingReportSummary()">
+                            <fieldset id="consultingReportSummaryFields" class="consulting-report-source-fields" disabled>
+                                <section class="consulting-report-source-section"><h3>상담 완료 정보</h3><div class="consulting-report-source-grid">
+                                    <label>상담 방식<select name="channel" aria-label="상담 방식"><option value="site">사이트 서면상담</option><option value="phone">전화 상담</option><option value="video">화상 상담</option><option value="other">그 외 직접 상담</option></select></label>
+                                    <label>외부 상담 실제 완료 시각 (한국시간)<input name="completedAt" type="datetime-local"></label>
+                                    <label class="consulting-report-source-wide">직접 정리한 근거<textarea name="meetingEvidence" maxlength="1500" rows="2" placeholder="외부에서 상담했다면 방식과 확인한 내용을 간단히 남겨주세요."></textarea></label>
+                                    <label class="consulting-contact-confirm consulting-report-source-wide"><input name="meetingConfirmed" type="checkbox">외부 상담을 실제로 마쳤으며, 아래 내용은 해당 상담을 직접 정리한 것입니다.</label>
+                                </div><p id="consultingReportSessionMeta" class="consulting-caption"></p></section>
+                                <section class="consulting-report-source-section"><h3>상담 결론과 지원 조건</h3><p class="consulting-caption">실명·연락처 대신 정시 지원 판단에 필요한 내용만 작성해주세요. 입력 중에는 자동 저장하지 않습니다.</p><div class="consulting-report-source-grid">
+                                    <label class="consulting-report-source-wide">상담 결론<textarea name="conclusion" maxlength="4000" rows="4" placeholder="학생이 최종적으로 중요하게 생각하는 선택 기준과 상담 결론"></textarea></label>
+                                    <label>반드시 지킬 조건<textarea name="requiredConditions" maxlength="2500" rows="3" placeholder="없으면 ‘없음’으로 명시해주세요."></textarea></label>
+                                    <label>조정할 수 있는 조건<textarea name="flexibleConditions" maxlength="2500" rows="3"></textarea></label>
+                                    <label>상담에서 확인한 지원 성향<select name="riskTolerance" aria-label="상담에서 확인한 지원 성향"><option value="unconfirmed">조사서 성향 유지</option><option value="safe">보수적 지원</option><option value="balanced">균형 지원</option><option value="challenge">도전적 지원</option></select></label>
+                                    <label>지원 성향을 확인한 이유<textarea name="riskReason" maxlength="1500" rows="2"></textarea></label>
+                                    <label>미해결 질문 여부<select name="unresolvedStatus" aria-label="미해결 질문 여부"><option value="unconfirmed">확인 전</option><option value="none">미해결 질문 없음</option><option value="open">추가 확인 필요</option></select></label>
+                                    <label>남은 질문·확인할 내용<textarea name="unresolvedDetail" maxlength="2500" rows="2"></textarea></label>
+                                </div></section>
+                                <section class="consulting-report-source-section"><h3>학생 질문별 답변</h3><div id="consultingReportQuestions" class="consulting-report-source-stack"></div></section>
+                                <section class="consulting-report-source-section"><h3>조사서와 다르게 확인한 내용</h3><p class="consulting-caption">원래 답변은 보존합니다. 다른 내용을 확인했다면 적용할 값과 근거를 명시해주세요. 성적은 조사서·성적표 검수에서 정정합니다.</p><div id="consultingReportClarifications" class="consulting-report-source-stack"></div><button id="consultingReportAddClarification" type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingReportClarification()">변경 확인 항목 추가</button></section>
+                                <details class="consulting-original"><summary>비교 후보·다른 지원 방향</summary><div class="consulting-report-source-grid">
+                                    <label>전문대 검토<select name="planC_vocational" aria-label="전문대 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>의료계열 검토<select name="planC_medical" aria-label="의료계열 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>다른 계열 검토<select name="planC_differentTrack" aria-label="다른 계열 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                    <label>다른 지역 검토<select name="planC_differentRegion" aria-label="다른 지역 검토"><option value="confirm">확인 필요</option><option value="allow">검토 가능</option><option value="exclude">검토하지 않음</option></select></label>
+                                </div><div id="consultingReportComparisons" class="consulting-report-source-stack"></div><button type="button" class="consulting-btn consulting-btn-secondary" onclick="addConsultingReportComparison()">비교 후보 추가</button></details>
+                                <details class="consulting-original"><summary>판단 근거·내부 기록</summary><div class="consulting-report-source-grid">
+                                    <label class="consulting-report-source-wide">상담사의 판단 근거<textarea name="rationale" maxlength="3000" rows="3"></textarea></label>
+                                    <label>추가 검수 항목<textarea name="furtherChecks" maxlength="2500" rows="3"></textarea></label>
+                                    <label>직접 입력 근거 메모<textarea name="manualEvidence" maxlength="300" rows="3" placeholder="상담 정리의 확인 경로 등"></textarea></label>
+                                    <label class="consulting-report-source-wide">운영 전용 메모<textarea name="internalMemo" maxlength="4000" rows="3"></textarea><span class="consulting-caption">운영 전용 메모는 보고서 작성 기준에 포함되지 않습니다.</span></label>
+                                </div><div id="consultingReportEvidence" class="consulting-report-source-stack"></div></details>
+                            </fieldset>
+                            <div class="consulting-actions"><button id="consultingReportSaveSummary" type="submit" class="consulting-btn consulting-btn-primary" disabled>상담 정리 저장</button><span id="consultingReportDirty" class="consulting-caption"></span></div>
+                        </form>
+                        <section class="consulting-report-source-section"><h3>보고서에 반영할 내용</h3><div id="consultingReportAppliedValues" class="consulting-material-copy"></div><div class="consulting-actions"><button id="consultingReportFreezeSource" type="button" class="consulting-btn consulting-btn-primary" onclick="freezeConsultingReportSource()" disabled>이 내용으로 작성 기준 고정</button><p class="consulting-caption">현재 자료와 저장한 상담 정리를 묶습니다. 보고서 본문 작성이나 학생 전송은 시작되지 않습니다.</p></div></section>
+                        <section id="consultingReportFactsPanel" class="consulting-report-source-section" aria-labelledby="consultingReportFactsTitle" aria-busy="false">
+                            <div class="consulting-heading-row"><div><h3 id="consultingReportFactsTitle">점수 분석과 지원 플랜</h3><p class="consulting-caption">고정한 자료로 성적 기준 범위와 플랜 A·B·조건부 C를 계산합니다.</p></div><button id="consultingReportCalculateFacts" type="button" class="consulting-btn consulting-btn-primary" onclick="calculateConsultingReportFacts()" disabled>점수·지원 플랜 계산</button></div>
+                            <p id="consultingReportFactsStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            <div id="consultingReportFactsResult"></div>
+                        </section>
+                    </div>
+                    <section id="consultingReportContentPanel" class="consulting-report-source-section" aria-labelledby="consultingReportContentTitle" aria-busy="false">
+                        <div class="consulting-heading-row"><div><h3 id="consultingReportContentTitle">보고서 본문 작성</h3><p class="consulting-caption">저장한 조사서·상담 정리와 계산된 플랜으로 검수용 본문을 작성합니다.</p></div><div class="consulting-actions"><button id="consultingReportGenerateContent" class="consulting-btn consulting-btn-primary" type="button" onclick="queueConsultingReportContent()" disabled>AI 보고서 본문 생성</button><button id="consultingReportRefreshContent" class="consulting-btn consulting-btn-secondary" type="button" onclick="refreshConsultingReportContent()" disabled>생성 상태 확인</button></div></div>
+                        <p id="consultingReportContentStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                        <p class="consulting-report-source-notice">내부 검수용 본문입니다. 아래에서 CEO·CTO·CMO가 같은 본문을 확인하고 승인합니다. 학생 전송은 별도의 완성본 검수 이후에 가능합니다.</p>
+                        <section id="consultingReportRevisionPanel" class="consulting-report-revision-panel" aria-labelledby="consultingReportRevisionTitle" hidden>
+                            <div class="consulting-heading-row"><div><h4 id="consultingReportRevisionTitle">본문 수정과 확인</h4><p id="consultingReportRevisionCount" class="consulting-caption"></p></div><button id="consultingReportRevisionRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportRevisions()">수정 요청 새로고침</button></div>
+                            <p id="consultingReportRevisionStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            <details id="consultingReportRevisionComposer"><summary>본문 수정 요청 작성</summary>
+                                <form id="consultingReportRevisionForm" onsubmit="event.preventDefault();submitConsultingReportRevision()">
+                                    <p class="consulting-caption">수정 중에도 현재 본문은 유지됩니다. 조사서·상담 근거를 바탕으로 설명을 고치며, 후보·수치 변경은 원자료 검수와 재계산으로 이어집니다. 개인정보는 적지 마세요.</p>
+                                    <p id="consultingReportRevisionBase" class="consulting-caption"></p>
+                                    <button id="consultingReportRevisionRebase" type="button" class="consulting-btn consulting-btn-secondary" onclick="rebaseConsultingReportRevision()" hidden>최신 본문을 기준으로 다시 작성</button>
+                                    <fieldset id="consultingReportRevisionFields" class="consulting-report-source-fields" disabled><div class="consulting-report-source-grid">
+                                        <label>수정할 항목<select name="target"><option value="cover">전략 요약</option><option value="scoreAnalysis">점수 분석</option><option value="baseline">성적 기준 지원 범위</option><option value="planA">플랜 A</option><option value="planB">플랜 B</option><option value="planC">추가 플랜 C</option><option value="conclusion">최종 판단 기준</option><option value="unresolvedItems">추가 확인 사항</option></select></label>
+                                        <label>대상 문단<select name="paragraphIndex"><option value="">항목 전체</option></select></label>
+                                        <label>수정 종류<select name="category"><option value="consultation_reflection">상담 내용 반영</option><option value="survey_reflection">조사서 내용 반영</option><option value="wording">설명·표현 수정</option><option value="candidate_or_plan">후보·지원 플랜 변경 검토</option><option value="score_or_cutoff">성적·환산식·컷·확률 검수</option><option value="layout">서식·배치 별도 검토</option></select></label>
+                                        <label>수정 범위<select name="scope"><option value="section">선택한 항목만</option><option value="related_sections">연결되는 설명도 함께 검토</option></select></label>
+                                        <label class="consulting-report-source-wide">발견한 문제<textarea name="issue" maxlength="2000" rows="3" required placeholder="예: 상담에서 전공을 가장 우선한다고 확인했는데, 대학 인지도가 우선인 것처럼 설명돼 있습니다."></textarea></label>
+                                        <label class="consulting-report-source-wide">원하는 수정 방향<textarea name="instruction" maxlength="2500" rows="3" required placeholder="예: 상담 결론을 근거로 선정 이유를 수정하고, 통학 시간은 추가 확인할 조건으로 남겨주세요."></textarea></label>
+                                    </div><fieldset class="consulting-report-revision-evidence"><legend>참고할 조사서·상담 근거 · 최대 8개</legend><div id="consultingReportRevisionEvidence"></div></fieldset>
+                                    <button id="consultingReportRevisionSubmit" type="submit" class="consulting-btn consulting-btn-primary">수정 요청 보내기</button></fieldset>
+                                </form>
+                            </details>
+                            <ul id="consultingReportRevisionList" class="consulting-report-revision-list" aria-label="보고서 수정 요청 이력"></ul>
+                            <button id="consultingReportRevisionMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="moreConsultingReportRevisions()" hidden>이전 수정 요청 더 보기</button>
+                            <div id="consultingReportRevisionDetail" class="consulting-report-revision-detail" hidden></div>
+                        </section>
+                        <div id="consultingReportContentResult" class="consulting-report-content-pages"></div>
+                        <section id="consultingReportApprovalPanel" class="consulting-report-approval-panel" aria-labelledby="consultingReportApprovalTitle" aria-busy="false" hidden>
+                            <div class="consulting-heading-row"><div><h4 id="consultingReportApprovalTitle">본문 최종 확인 · 세 명의 승인</h4><p id="consultingReportApprovalMeta" class="consulting-caption"></p></div><button id="consultingReportApprovalRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportApprovals()">승인 상태 새로고침</button></div>
+                            <p id="consultingReportApprovalStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            <div id="consultingReportApprovalRoles" class="consulting-report-approval-roles"></div>
+                            <ul id="consultingReportApprovalBlockers" class="consulting-report-approval-blockers"></ul>
+                            <p id="consultingReportApprovalNext" class="consulting-report-source-notice"></p>
+                            <div id="consultingReportApprovalOwnActions" class="consulting-report-approval-actions" hidden>
+                                <label id="consultingReportApprovalConfirmedRow" class="consulting-report-approval-check"><input id="consultingReportApprovalConfirmed" type="checkbox" onchange="updateConsultingReportApprovalButtons()">현재 본문 전체와 조사서·상담 근거, 수치를 확인했습니다.</label>
+                                <button id="consultingReportApproveContent" type="button" class="consulting-btn consulting-btn-primary" onclick="submitConsultingReportApproval()" disabled>내 역할로 현재 본문 승인</button>
+                                <div id="consultingReportApprovalWithdrawFields" hidden><label for="consultingReportApprovalReason">승인 철회 사유</label><textarea id="consultingReportApprovalReason" maxlength="1500" rows="3" oninput="updateConsultingReportApprovalButtons()" placeholder="어느 부분을 다시 확인해야 하는지 적어주세요. 개인정보는 적지 마세요."></textarea><button id="consultingReportWithdrawApproval" type="button" class="consulting-btn consulting-btn-secondary" onclick="submitConsultingReportApproval(true)" disabled>본인 승인 철회</button></div>
+                            </div>
+                            <details class="consulting-report-approval-ledger"><summary>본문 승인 이력</summary><ul id="consultingReportApprovalHistory"></ul><button id="consultingReportApprovalMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportApprovals(true)" hidden>이전 승인 이력 더 보기</button></details>
+                        </section>
+                        <section id="consultingReportPdfPanel" class="consulting-report-pdf-panel" aria-labelledby="consultingReportPdfTitle" aria-busy="false" hidden>
+                            <div class="consulting-heading-row"><div><h4 id="consultingReportPdfTitle">승인 본문 · 6페이지 PDF</h4><p class="consulting-caption">표지 · 점수 분석 · 기준 지원 범위 · 플랜 A · 플랜 B/C · 최종 제안</p></div><button id="consultingReportPdfRefresh" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportPdf()">PDF 상태 확인</button></div>
+                            <section id="consultingReportCorrectionPanel" class="consulting-report-pdf-approval" hidden aria-labelledby="consultingReportCorrectionTitle">
+                                <h5 id="consultingReportCorrectionTitle">공개 후 보고서 정정</h5><p id="consultingReportCorrectionMeta" class="consulting-caption"></p><p id="consultingReportCorrectionReason"></p><ul id="consultingReportCorrectionChanges"></ul>
+                                <div id="consultingReportCorrectionFields"><label for="consultingReportCorrectionCategory">정정 종류</label><select id="consultingReportCorrectionCategory"><option value="text">본문 설명·표현</option><option value="source">조사서·상담 반영</option><option value="numbers">성적·지원 플랜</option><option value="layout">서식·문장 길이</option></select><label for="consultingReportCorrectionInput">정정 사유 (학생에게 공개, 10자 이상)</label><textarea id="consultingReportCorrectionInput" maxlength="1000" rows="3" oninput="updateConsultingReportPdfButtons()" placeholder="무엇을 왜 바로잡는지 학생이 이해할 수 있게 적어주세요. 개인정보는 입력하지 마세요."></textarea><button id="consultingReportCorrectionStart" type="button" class="consulting-btn consulting-btn-secondary" onclick="startConsultingReportCorrection()" disabled>정정 작업 시작</button></div>
+                                <p id="consultingReportCorrectionGuide" class="consulting-caption"></p><p id="consultingReportCorrectionStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            </section>
+                            <p id="consultingReportPdfStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                            <div id="consultingReportPdfCurrent"></div>
+                            <button id="consultingReportPdfQueue" type="button" class="consulting-btn consulting-btn-primary" onclick="queueConsultingReportPdf()" hidden disabled>승인 본문으로 PDF 제작 요청</button>
+                            <section id="consultingReportPdfApproval" class="consulting-report-pdf-approval" aria-labelledby="consultingReportPdfApprovalTitle" hidden>
+                                <h5 id="consultingReportPdfApprovalTitle">완성 PDF 최종 검수</h5><p id="consultingReportPdfApprovalMeta" class="consulting-caption"></p>
+                                <div id="consultingReportPdfApprovalRoles" class="consulting-report-approval-roles"></div>
+                                <p id="consultingReportPdfApprovalStatus" class="consulting-status" role="status" aria-live="polite"></p>
+                                <label id="consultingReportPdfConfirmedRow" class="consulting-report-approval-check"><input id="consultingReportPdfConfirmed" type="checkbox" onchange="updateConsultingReportPdfButtons()" disabled>미리보기로 이 PDF 6페이지와 성적·지원 플랜·표현을 확인했습니다.</label>
+                                <p id="consultingReportPdfViewHint" class="consulting-caption">이 파일의 미리보기를 연 뒤 본인 역할로 승인해주세요.</p>
+                                <div class="consulting-actions"><button id="consultingReportPdfApprove" type="button" class="consulting-btn consulting-btn-primary" onclick="submitConsultingReportPdfApproval()" disabled>내 역할로 PDF 승인</button><button id="consultingReportPdfPublish" type="button" class="consulting-btn consulting-btn-primary" onclick="publishConsultingReportPdf()" disabled>학생에게 보고서 전송</button></div>
+                                <div id="consultingReportPdfWithdrawFields" hidden><label for="consultingReportPdfWithdrawReason">PDF 승인 철회 사유</label><textarea id="consultingReportPdfWithdrawReason" maxlength="1500" rows="2" oninput="updateConsultingReportPdfButtons()"></textarea><button id="consultingReportPdfWithdraw" type="button" class="consulting-btn consulting-btn-secondary" onclick="submitConsultingReportPdfApproval(true)" disabled>본인 PDF 승인 철회</button></div>
+                                <p class="consulting-caption">세 명 모두 같은 PDF를 승인하면 전송할 수 있습니다. 전송 시 학생 페이지에 공개하고 카카오톡·이메일로 안내합니다.</p>
+                                <ul id="consultingReportPdfDelivery" class="consulting-report-pdf-delivery"></ul>
+                            </section>
+                            <details class="consulting-report-pdf-ledger"><summary>이전에 생성한 PDF</summary><ul id="consultingReportPdfHistory"></ul><button id="consultingReportPdfMore" type="button" class="consulting-btn consulting-btn-secondary" onclick="refreshConsultingReportPdf(true)" hidden>이전 PDF 더 보기</button></details>
+                        </section>
+                    </section>
+                    <button id="consultingStudentReport" type="button" class="consulting-btn consulting-btn-secondary" onclick="openConsultingReportReview()">기존 분석·보고서 작업 화면 열기</button>
+                </div>
+                <div id="consultingWorkspaceFinal" class="consulting-work-card" data-workspace-pane="final" hidden><h2>파이널 콜</h2><p class="consulting-caption">학생의 가능 시간과 예약·완료 기록을 확인하고 통화를 마무리합니다.</p><button id="consultingStudentFinal" type="button" class="consulting-btn consulting-btn-primary" onclick="openConsultingFinalCall()">파이널 콜 일정·완료 화면 열기</button></div>
+                <div id="consultingWorkspaceService" data-workspace-pane="service" hidden>            <section id="consultingServicePanel" aria-labelledby="consultingServiceTitle" aria-busy="false">
+                <h2 id="consultingServiceTitle" class="page-title">서비스 보류·재개</h2>
+                <p class="consulting-caption">선택한 학생의 서비스를 보류하거나 재개합니다. 확정 상담·공개 예약은 먼저 관련 업무 화면에서 취소·재검수해야 합니다.</p>
+                <input id="consultingServiceCaseId" type="hidden">
+                <button type="button" class="consulting-btn consulting-btn-secondary" onclick="loadConsultingServiceControl()">서비스 상태 조회</button>
+                <div id="consultingServiceStatus" class="consulting-status" role="status" aria-live="polite"></div>
+                <div id="consultingServiceDetail" class="consulting-detail" hidden><p id="consultingServiceSummary"></p><label class="consulting-operations-reason" for="consultingServiceReason">처리 사유 (10자 이상, 개인정보 제외)</label><textarea id="consultingServiceReason" maxlength="1000" autocomplete="off"></textarea><div class="consulting-actions"><button id="consultingServiceHoldBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="changeConsultingService('hold')">서비스 보류</button><button id="consultingServiceResumeBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="changeConsultingService('resume')">서비스 재개</button></div></div>
+            </section>
+</div>
+            </section>
         </div>
 
         <div id="section-matching" class="content-section">
@@ -710,6 +1045,7 @@
     <script src="/js/shared/api.js?v=20260602f"></script>
     <script src="/js/shared/store.js?v=20260524c"></script>
     <script src="/js/auth.js?v=20260602f"></script>
+    <script src="/js/admin/navigation.js?v=20261104a"></script>
     <script src="/js/admin_ui.js?v=20261020a"></script>
     <script src="/js/admin/stats.js?v=20260526a"></script>
     <script src="/js/admin/students.js?v=20260527d"></script>
@@ -719,9 +1055,20 @@
     <script src="/js/admin/matching.js?v=20260524c"></script>
     <script src="/js/admin/modals.js?v=20260524c"></script>
     <script src="/js/admin/consulting.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-supplements.js?v=20261114a"></script>
     <script src="/js/admin/consulting-intake.js?v=20261020a"></script>
     <script src="/js/admin/consulting-materials.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-reference.js?v=20261115a"></script>
     <script src="/js/admin/consulting-scheduling.js?v=20261008a"></script>
+    <script src="/js/admin/consulting-operations.js?v=20261028a"></script>
+    <script src="/js/admin/consulting-data-readiness.js?v=20261028a"></script>
+    <script src="/js/admin/consulting-report-facts.js?v=20261111a"></script>
+    <script src="/js/admin/consulting-report-content.js?v=20261111a"></script>
+    <script src="/js/admin/consulting-report-revision.js?v=20261111a"></script>
+    <script src="/js/admin/consulting-report-approval.js?v=20261112a"></script>
+    <script src="/js/admin/consulting-report-pdf.js?v=20261112a"></script>
+    <script src="/js/admin/consulting-report-source.js?v=20261111a"></script>
+    <script src="/js/admin/consulting-workspace.js?v=20261104a"></script>
 
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KNHVMTR5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

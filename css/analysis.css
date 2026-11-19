@@ -156,6 +156,7 @@ header#site-header .nav-links a.active-link { color: #4c79ee; }
 .selection-item-recommend strong { font-size: 0.98rem; color: #0f172a; line-height: 1.3; word-break: keep-all; }
 .selection-item-recommend em { font-style: normal; font-size: 0.84rem; color: #475569; line-height: 1.35; word-break: keep-all; }
 .recommend-rank { display: inline-flex; align-items: center; justify-content: center; min-width: 56px; padding: 3px 8px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 0.74rem; font-weight: 800; }
+.analysis-recommendation-detail { display: block; grid-column: 1 / -1; width: 100%; color: #475569; font-size: 0.78rem; line-height: 1.6; white-space: normal; overflow-wrap: anywhere; }
 .back-step-btn { background: transparent; border: none; color: #64748b; font-weight: 600; cursor: pointer; font-size: 0.9rem; padding: 8px 12px; transition: color 0.2s; }
 .back-step-btn:hover { color: #2563EB; text-decoration: underline; }
 

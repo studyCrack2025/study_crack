@@ -120,8 +120,9 @@ test('빈 값·불가능한 점수는 입력 아래에 표시하고 실제 0점�
   await expect(dialog.locator('[data-field="v2e-math-common"]')).toHaveValue('60');
 });
 
-test('전체 성적 저장 실패는 초안과 시험을 유지하고 재시도 시 한 번만 저장한다', async ({ page }) => {
-  const api = await setup(page, { failOnceTypes: ['update_quan'] });
+test('10월 전체 성적 저장 실패는 초안과 시험을 유지하고 재시도 시 9월 기록도 보존한다', async ({ page }) => {
+  const api = await setup(page, { failOnceTypes: ['update_quan'],
+    userOverrides: { quantitative: { sep: savedExam, oct: savedExam } } });
   const { dialog, trigger } = await openScore(page);
   for (let step = 1; step < 6; step++) await next(dialog);
   await expect(dialog.locator('[data-field="v2e-inq2-subject"]')).toHaveValue('사회·문화');
@@ -130,29 +131,32 @@ test('전체 성적 저장 실패는 초안과 시험을 유지하고 재시도 
   await expect(dialog.locator('.score-save-error')).toBeVisible();
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('[data-field="v2e-inq2-score"]')).toHaveValue('43');
-  await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('3월 모의고사');
+  await expect(page.locator('[data-field="scoreExamType"]')).toHaveValue('10월 모의고사');
   await expect(save).toBeEnabled();
   await save.click();
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
   const writes = api.requests.filter(item => item.payload.type === 'update_quan');
   expect(writes).toHaveLength(2);
-  expect(writes[1].payload.data.mar.kor.common).toBe(0);
+  expect(writes[1].payload.data.oct.kor.common).toBe(0);
+  expect(writes[1].payload.data.sep).toEqual(savedExam);
   const conversions = api.requests.filter(item => item.payload.type === 'convert_score');
   expect(conversions).toHaveLength(8);
+  expect(conversions.every(item => item.payload.month === 'oct')).toBe(true);
 });
 
-test('9월 추정 고지와 긴 기존 탐구 과목을 읽고 큰 글자에서도 입력과 버튼에 접근한다', async ({ page }) => {
+test('9월 성적에서 긴 기존 탐구 과목을 읽고 큰 글자에서도 입력과 버튼에 접근한다', async ({ page }) => {
   const longSubject = '윤리와 사상 (기존에 저장된 선택 과목)';
   await page.setViewportSize({ width: 320, height: 844 });
   await setup(page, { userOverrides: { quantitative: { sep: { ...savedExam, inq1: { ...savedExam.inq1, name: longSubject } } } } });
   const { dialog } = await openScore(page);
-  await expect(dialog.locator('.score-edit-estimate-notice')).toContainText('실제 성적표');
+  await expect(dialog).toContainText('9월 평가원');
+  await expect(dialog).not.toContainText('임시 추정치');
   await page.addStyleTag({ content: `
     .score-onepage-head .sc-modal-padded-title,.score-step-panel-head b{font-size:40px;}
     .score-field-line,.score-stepper-progress span,.score-inquiry-field > span:not(.score-field-error),.score-step-panel .planner-input,.score-stepper-actions .btn{font-size:32px;}
     .score-step-panel .score-direct-input,.score-grade-input{font-size:40px;}
-    .score-field-line small,.score-stepper-progress b,.score-onepage-head .sub,.score-onepage-close,.score-edit-estimate-notice{font-size:28px;}
+    .score-field-line small,.score-stepper-progress b,.score-onepage-head .sub,.score-onepage-close{font-size:28px;}
   ` });
   for (let step = 1; step < 5; step++) await next(dialog);
   const inquiry = dialog.locator('[data-field="v2e-inq1-subject"]');

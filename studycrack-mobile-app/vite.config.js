@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 const MOBILE_DIST_BASE = '/studycrack-mobile-app/dist/';
 
 // Runtime entry and output name are shared by local preview and the deployment workflow.
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: MOBILE_DIST_BASE,
   plugins: [{
     name: 'explicit-module-recovery',
@@ -24,11 +24,11 @@ export default defineConfig({
   build: {
     assetsInlineLimit: () => false,
     outDir: 'dist',
-    emptyOutDir: true,
+    emptyOutDir: mode !== 'jungsi-calculator',
     rollupOptions: {
-      input: 'src/runtime/main.js',
+      input: mode === 'jungsi-calculator' ? 'src/runtime/jungsi-calculator.js' : 'src/runtime/main.js',
       output: {
-        entryFileNames: 'studycrack-mobile.bundle.js',
+        entryFileNames: mode === 'jungsi-calculator' ? 'jungsi-calculator.bundle.js' : 'studycrack-mobile.bundle.js',
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames(assetInfo) {
           if (assetInfo.name === 'main.css') return 'studycrack-mobile.css';
@@ -45,4 +45,4 @@ export default defineConfig({
       }
     }
   }
-});
+}));

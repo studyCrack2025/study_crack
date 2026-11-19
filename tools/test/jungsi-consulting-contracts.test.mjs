@@ -19,6 +19,11 @@ test('completed home permits the backend null next action', () => {
     assert.equal(actionPathForState(home.workflowState), '');
 });
 
-test('supplement action returns directly to the editable survey', () => {
-    assert.equal(actionPathForState('SUPPLEMENT_REQUIRED'), '/2027-jungsi-consulting/survey');
+test('supplement action opens the materials page to review the requested changes', () => {
+    assert.equal(actionPathForState('SUPPLEMENT_REQUIRED'), '/2027-jungsi-consulting/materials');
+});
+
+test('서비스 보류 안내는 홈 parser에서 유지하고 자유 사유를 추가로 반환하지 않는다', () => {
+    const home = parseHomeResponse({ success: true, data: { available: true, workflowState: 'SURVEY_DRAFT', nextAction: null, nextDueAt: null, serviceHold: true, privateReason: 'MUST_NOT_RETURN', progress, session: null, report: null, alerts: [] } });
+    assert.equal(home.serviceHold, true); assert.equal(home.nextAction, null); assert.equal(Object.hasOwn(home, 'privateReason'), false);
 });

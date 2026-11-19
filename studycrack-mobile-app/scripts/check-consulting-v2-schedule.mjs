@@ -1,20 +1,36 @@
 import assert from 'node:assert/strict';
-import { listWrittenSlots } from '../src/features/consulting-v2/schedule-api.js';
-import { formatWrittenSession, groupWrittenSlots, validateWrittenSelection } from '../src/features/consulting-v2/schedule-model.js';
+import { listWrittenSlots, requestWrittenReschedule } from '../src/features/consulting-v2/schedule-api.js';
+import { formatWrittenSession, groupWrittenSlots, validateWrittenSelection, writtenCalendarGroups, writtenChangeRemaining } from '../src/features/consulting-v2/schedule-model.js';
+import { formatWrittenMessageTime } from '../src/features/consulting-v2/message-model.js';
 import { actionPathForState } from '../src/features/consulting-v2/progress-model.js';
 
 const ids = ['WST_20261009_1000', 'WST_20261009_1030', 'WST_20261010_1000', 'WST_20261010_1030', 'WST_20261011_1000', 'WST_20261011_1030'];
 const valid = validateWrittenSelection(Object.fromEntries(ids.map((id, index) => [id, index < 2 ? 1 : 2])));
 assert.equal(valid.valid, true);
 assert.equal(valid.selectedSlots.length, 6);
-assert.equal(validateWrittenSelection(Object.fromEntries(ids.slice(0, 5).map(id => [id, 1]))).valid, false);
+assert.equal(validateWrittenSelection({ [ids[0]]: 2 }).valid, true);
+assert.equal(validateWrittenSelection({}).valid, false);
 
 const slots = ids.map((slotId, index) => ({ slotId, localDate: slotId.slice(4, 8) + '-' + slotId.slice(8, 10) + '-' + slotId.slice(10, 12), localTime: index % 2 ? '10:30' : '10:00', startAt: `2026-10-${String(9 + Math.floor(index / 2)).padStart(2, '0')}T01:${index % 2 ? '30' : '00'}:00.000Z` }));
 assert.equal(groupWrittenSlots(slots).length, 3);
+const calendar = writtenCalendarGroups(slots.filter(slot => slot.localDate !== '2026-10-10'), { startDate: '2026-10-09', endDate: '2026-10-11' });
+assert.equal(calendar.length, 3);
+assert.deepEqual(calendar[1], { date: '2026-10-10', slots: [] });
+assert.equal(writtenCalendarGroups(slots, { startDate: '2026-10-11', endDate: '2026-10-09' }).length, 3);
 
 const session = { startAt: '2026-10-09T01:00:00.000Z', endAt: '2026-10-09T01:30:00.000Z', status: 'booked' };
 assert.ok(formatWrittenSession(session));
 assert.equal(formatWrittenSession({ ...session, status: 'cancelled' }), null);
+assert.equal(formatWrittenSession({ ...session, startAt: '2026-11-17T08:00:00Z', endAt: '2026-11-17T08:30:00Z' }).time, '17:00–17:30');
+assert.equal(formatWrittenMessageTime('2026-11-17T15:00:00Z'), '00:00');
+assert.equal(formatWrittenSession({ ...session, startAt: '2026-11-17T14:30:00Z', endAt: '2026-11-17T15:00:00Z' }).time, '23:30–00:00');
+const deadline = '2026-11-17T06:00:00.000Z';
+for (const offset of [-1, 0, 1]) {
+  const serverTime = new Date(Date.parse(deadline) + offset).toISOString();
+  assert.equal(writtenChangeRemaining({ session: { startAt: '2026-11-17T08:00:00Z' }, serverTime, changeRequestDeadline: deadline }, 0), offset === 0 ? 0 : -offset);
+}
+assert.equal(writtenChangeRemaining({ session: { startAt: '2026-11-17T08:00:00Z' } }, Date.parse(deadline)), 0);
+assert.ok(Number.isNaN(writtenChangeRemaining({ session: null })));
 assert.equal(actionPathForState('WRITTEN_SESSION_BOOKED'), '/2027-jungsi-consulting/written-session');
 
 let requestBody;
@@ -27,5 +43,11 @@ const result = await listWrittenSlots({
 });
 assert.equal(result.ok, true);
 assert.deepEqual(requestBody, { type: 'student_list_v2_written_slots', data: {} });
+const closed = await requestWrittenReschedule({
+  consultingApiUrl: 'https://api.example.test/consulting',
+  apiFetch: async () => new Response(JSON.stringify({ success: false, code: 'WRITTEN_CHANGE_DEADLINE_PASSED', error: '<script>server text</script>' }), { status: 409 })
+}, {});
+assert.equal(closed.code, 'WRITTEN_CHANGE_DEADLINE_PASSED');
+assert.equal(closed.error, '일정 변경 요청은 상담 시작 2시간 전까지만 가능합니다. 이후에는 운영팀에 문의해주세요.');
 
 console.log('consulting v2 schedule contracts passed');

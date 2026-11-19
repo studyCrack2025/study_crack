@@ -1,0 +1,1089 @@
+import { expect, test } from '@playwright/test';
+
+test('운영팀은 ID 입력 없이 본인의 불가 시간만 저장하고 역할별 전체 일정을 확인한다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    const first = { slotId: 'WST_20261207_1000', localDate: '2026-12-07', localTime: '10:00', startAt: '2026-12-07T01:00:00.000Z' };
+    const second = { ...first, slotId: 'WST_20261207_1030', localTime: '10:30', startAt: '2026-12-07T01:30:00.000Z' };
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 },
+        placements: [], confirmed: [{ ...first, counselorId: 'synthetic-admin', teamRole: 'CMO', caseId: 'CASE_22222222-2222-4222-8222-222222222222', studentName: '합*생', revision: 1 }], unassigned: [], hasOpenTimes: true, canManage: true,
+        team: { configured: true, revision: 4, members: [{ counselorId: 'synthetic-admin', role: 'CMO', enabled: true }],
+            self: { role: 'CMO', editable: true, blockedSlots: [], lockedSlots: [second.slotId] }, slots: [first, second] } };
+    await enterConsulting(page);
+    await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    await page.getByText('배정 옵션·나의 불가 시간', { exact: true }).click();
+    await expect(page.locator('#consultingTeamIdentity')).toContainText('CMO');
+    await expect(page.locator('#consultingScheduleBoardBody').getByRole('button', { name: '상담 열기' })).toBeVisible();
+    await expect(page.getByLabel('상담사 ID', { exact: true })).toHaveCount(0);
+    await expect(page.locator('#consultingTeamBlockedSlots').getByRole('checkbox', { name: '10:30' })).toBeDisabled();
+    await page.locator('#consultingTeamBlockedSlots').getByRole('checkbox', { name: '10:00' }).check();
+    await page.getByRole('button', { name: '나의 불가 시간 저장' }).click();
+    await expect.poll(() => state.calls.filter(item => item.type === 'admin_save_own_written_unavailability').length).toBe(1);
+    expect(state.calls.find(item => item.type === 'admin_save_own_written_unavailability').data).toEqual({ expectedRevision: 4, blockedSlots: [first.slotId] });
+    expect(await page.evaluate(() => window.__adminAncillaryCalls)).not.toEqual(expect.arrayContaining(['populateTutorFilter']));
+    expect(await page.evaluate(() => window.__adminAncillaryCalls)).not.toEqual(expect.arrayContaining(['fetchQnaBadgeCount']));
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.screenshot({ path: testInfo.outputPath('admin-team-availability-320.png'), fullPage: true });
+});
+
+test('시간표 권한 403은 자동 재조회를 멈추고 수동 재시도로 복구한다', async ({ page }) => {
+    const state = await prepare(page);
+    await page.clock.install();
+    state.boardError = 403;
+    await enterConsulting(page);
+    await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    await expect(page.locator('#consultingScheduleBoardStatus')).toContainText('자동 재조회를 중지');
+    await page.clock.runFor(65000);
+    expect(state.calls.filter(item => item.type === 'admin_get_written_schedule_board')).toHaveLength(1);
+    state.boardError = 0;
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 }, placements: [], confirmed: [], unassigned: [], hasOpenTimes: false };
+    await page.getByRole('button', { name: '지금 갱신', exact: true }).click();
+    await expect(page.locator('#consultingScheduleBoardStatus')).toContainText('추천 0건');
+});
+
+test('초대 취소 확인은 정확한 문구를 받고 취소된 신청을 별도 분류한다', async ({ page }) => {
+    const state = await prepare(page);
+    Object.assign(state.students[0], { stageVerified: true, activeInviteId: 'INVITE_synthetic' });
+    Object.assign(state.students[0].application, { applicationState: 'INVITED' });
+    await enterConsulting(page); await openStudent(page);
+    page.on('dialog', dialog => dialog.type() === 'prompt' ? dialog.accept('초대 취소') : dialog.accept());
+    await page.getByRole('button', { name: '미사용 초대 취소' }).click();
+    await expect.poll(() => state.calls.filter(item => item.type === 'admin_revoke_consulting_invite').length).toBe(1);
+    expect(state.calls.find(item => item.type === 'admin_revoke_consulting_invite').data.reason).toBe('초대 취소');
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await page.getByRole('button', { name: '보류·거절·초대 취소', exact: true }).click();
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('초대 취소');
+    await expect(page.locator('#consultingDirectoryBody')).not.toContainText('둘*생');
+});
+
+const applicationId = n => `APP_${String(n).padStart(8, '0')}-1111-4111-8111-111111111111`;
+const caseId = 'CASE_22222222-2222-4222-8222-222222222222';
+const record = n => `RESPONSE_SYNTHETIC_${n}`;
+const scripts = ['js/admin/navigation.js', 'js/admin_ui.js', 'js/admin/notices.js', 'js/admin/consulting.js', 'js/admin/consulting-supplements.js', 'js/admin/consulting-intake.js', 'js/admin/consulting-materials.js', 'js/admin/consulting-scheduling.js', 'js/admin/consulting-operations.js', 'js/admin/consulting-workspace.js'];
+async function prepare(page, hash = '', configure = () => {}) {
+    const response = await page.request.get('/admin_index.html'); expect(response.ok()).toBe(true);
+    const html = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+    const bootstrap = `<script>
+        localStorage.setItem('userId', 'synthetic-admin'); localStorage.setItem('userRole', 'admin');
+        window.CONFIG = { api: { consulting: '/synthetic-api', noti: '/synthetic-api', qna: '/synthetic-api', file: '/synthetic-api' } };
+        window.ADMIN_API_URL = '/synthetic-api'; window.Store = { get: () => null };
+        window.apiFetch = async (_url, options) => {
+            const response = await fetch('/synthetic-api', options);
+            if (!response.ok) {
+                const error = await response.json();
+                throw Object.assign(new Error(error.error || error.message || 'Synthetic API error'), { status: response.status, code: error.code });
+            }
+            return response;
+        };
+        window.__adminAncillaryCalls = [];
+        for (const name of ['loadAdminStats', 'populateTutorFilter', 'searchStudents', 'fetchUnreadNotiCount', 'fetchQnaBadgeCount', 'loadMatchingData', 'clearStudentJoinDateRange', 'loadTutorStats', 'loadAllQna']) window[name] = () => window.__adminAncillaryCalls.push(name);
+    </script>`;
+    const document = html.replace('</body>', `${bootstrap}${scripts.map(src => `<script src="/${src}"></script>`).join('')}</body>`);
+    const state = { calls: [], emptyFirst: false, deferType: null, resolve: null, failMutation: false, materialError: false, legacyMaterial: false, revisedMaterial: false, confirmed: false };
+    const contact = { studentName: '합성 학생', phone: '01000000000', email: 'synthetic@example.invalid', payerName: '합성 입금자' };
+    const detail = n => ({ application: { applicationId: applicationId(n), applicationState: n === 2 ? 'CLAIMED' : 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 300000, studentNameMask: '합*생', phoneMask: '010-****-0000' }, contact: { ...contact, studentName: n === 2 ? '둘째 합성 학생' : contact.studentName }, payerRelationship: 'self', contactMethod: 'email', studentStatus: 'senior', sourceResponseId: record(n), originalSubmission: { ...contact }, case: n === 2 ? { caseId, workflowState: 'REPORT_REVIEW', revision: 3 } : null, permissions: { materials: true, schedule: true, report: true, finalCall: true } });
+    state.students = [detail(1), detail(2)];
+    const summary = (data, n) => {
+        if (data.application.inviteRevoked) return { applicationId: applicationId(n), sourceResponseId: record(n), phase: 'attention', stateLabel: '초대 취소', nextAction: '초대 재발급', updatedAt: '2026-11-11T00:00:00.000Z' };
+        const report = data.case?.workflowState === 'REPORT_REVIEW';
+        return { applicationId: applicationId(n), sourceResponseId: record(n), caseId: data.case?.caseId || null, studentNameMask: n === 2 ? '둘*생' : '합*생', phoneMask: '010-****-0000', phase: report ? 'report' : data.case || data.application.applicationState === 'INVITED' ? 'onboarding' : 'intake', stateLabel: report ? '보고서 검수' : data.case ? '자료 검수' : data.application.applicationState === 'INVITED' ? '초대 발급·가입 대기' : data.application.inputReviewRequired ? '신청 정보 보완' : '입금 확인 대기', nextAction: report ? '보고서 검수·승인' : '신청 정보·입금 확인', updatedAt: '2026-11-04T00:00:00.000Z' };
+    };
+    const snapshot = {
+        formVersion: 4,
+        studentStatus: { graduationYear: 2027, applicantType: 'high_school_senior', schoolType: 'general', schoolName: '가상고', residenceRegion: '서울 송파구' },
+        conditions: { commuteLimit: 'over_120', commuteMaxMinutes: null, dormitoryAllowed: false, repeatStudyAllowed: true },
+        preferences: { rankedChoices: [{ region: '서울', university: '가상대학교', track: '공학' }], additionalPreference: '가상대학교 전자공학과 검토' },
+        strategy: { riskTolerance: 'safe', priorityOrder: ['major', 'region', 'brand', 'commute', 'employment'] },
+        qualitative: { strengths: '이전 답변', concerns: '합성 상담 내용\n둘째 줄', guardianOpinion: '보호자 의견 예시', specialCircumstances: '<img src=x onerror=alert(1)>', consultationQuestions: ['가군 질문', '나군 질문'] },
+        consent: { accurateInformation: true, analysisUse: true },
+        scores: { examYear: 2026, examType: 'csat', records: [
+            { area: 'korean', subject: '국어', selection: '화법과작문', commonRawScore: 76, electiveRawScore: 0, rawScore: 76 },
+            { area: 'english', subject: '영어', grade: 2 }, { area: 'inquiry', subject: '탐구 1' },
+            { area: 'foreign_language', subject: '독일어Ⅰ', grade: 4 }
+        ] }
+    };
+    await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body: document }));
+    await page.route('https://www.googletagmanager.com/**', route => route.abort());
+    await page.route('https://fonts.googleapis.com/**', route => route.abort());
+    await page.route('**/synthetic-api', async route => {
+        const request = route.request().postDataJSON(); state.calls.push(request); let data;
+        if (request.type === 'admin_list_consulting_students') {
+            const items = state.students.map((item, i) => summary(item, i + 1)).filter(item => !state.deletedApplications?.includes(item.applicationId) && (request.data.phase === 'all' || request.data.phase === item.phase));
+            const first = !request.data.cursor;
+            data = {
+                items: state.emptyFirst && first ? [] : state.splitPages ? items.slice(first ? 0 : 1, first ? 1 : 2) : items,
+                nextCursor: first && (state.emptyFirst || (state.splitPages && items.length > 1)) ? 'synthetic_cursor' : null,
+                exportLimit: state.exportLimit || null
+            };
+        } else if (request.type === 'admin_list_written_unread') {
+            data = { items: state.writtenAlerts || [], hasMore: false };
+        } else if (request.type === 'admin_get_consulting_export_columns') {
+            data = { columns: [
+                { id: 'application_id', label: '신청 ID', group: '접수·진행' },
+                { id: 'workflow_state', label: '진행 단계', group: '접수·진행' },
+                { id: 'student_name', label: '학생 이름', group: '신청자·연락처' },
+                { id: 'phone', label: '전화번호', group: '신청자·연락처' },
+                { id: 'email', label: '이메일', group: '신청자·연락처' }
+            ] };
+        } else if (request.type === 'admin_export_consulting_students') {
+            if (state.exportStatus) return route.fulfill({ status: state.exportStatus, json: { success: false } });
+            data = { csv: '\uFEFF"진행 단계","전화번호"\r\n"입금 확인 대기","01000000001"\r\n"보고서 검수","01000000002"\r\n',
+                rowCount: request.data.students.length, fileName: 'jungsi-consulting-20261110T112233Z.csv' };
+        } else if (request.type === 'admin_list_v2_material_review') {
+            if (state.alertError) return route.fulfill({ status: state.alertError, json: { success: false, code: 'FORBIDDEN' } });
+            data = { items: state.supplementAlerts || [], nextCursor: null };
+        } else if (request.type === 'admin_get_consulting_student') {
+            const index = state.students.findIndex(item => request.data.caseId ? item.case?.caseId === request.data.caseId : item.application.applicationId === request.data.applicationId);
+            data = { ...structuredClone(state.students[index]), student: summary(state.students[index], index + 1) };
+        } else if (request.type === 'admin_preview_consulting_application_delete') {
+            if (state.deletePreviewStatus) return route.fulfill({ status: state.deletePreviewStatus, json: { success: false, code: 'FORBIDDEN' } });
+            const current = state.students.find(item => item.application.applicationId === request.data.applicationId);
+            data = { applicationId: request.data.applicationId, confirmation: '신청 영구 삭제', previewToken: 'synthetic-preview-token', recordCount: state.deletionStarted ? null : 25,
+                storageIncluded: !state.oldDeletionServer, backgroundSupported: !state.oldBackgroundServer, deletedCount: state.deletionStarted ? 10 : 0, includesCase: Boolean(current.case), resume: Boolean(state.deletionStarted) };
+        } else if (request.type === 'admin_delete_consulting_application') {
+            if (state.deleteFailOnce) { state.deleteFailOnce = false; return route.fulfill({ status: 503, json: { success: false, code: 'SYNTHETIC_UNAVAILABLE' } }); }
+            state.deletionStarted = true; state.deletedApplications = [...(state.deletedApplications || []), request.data.applicationId];
+            if (state.deleteReplyLost) return route.fulfill({ status: 503, json: { success: false, code: 'SYNTHETIC_REPLY_LOST' } });
+            data = { applicationId: request.data.applicationId, accepted: true, backgroundCleanup: true, complete: false, storageComplete: false, deletedCount: 0 };
+        } else if (request.type === 'admin_revoke_consulting_invite') {
+            const current = state.students.find(item => item.application.applicationId === request.data.applicationId);
+            current.inviteRevoked = true; current.application.inviteRevoked = true; current.application.revision++;
+            data = { result: 'revoked', revision: current.application.revision };
+        } else if (request.type === 'admin_review_application_input') {
+            const current = state.students[0]; Object.assign(current.contact, request.data.input); Object.assign(current.application, { inputReviewRequired: false, intakeIssues: [], paymentReviewStatus: 'pending', revision: current.application.revision + 1 });
+            data = { applicationId: applicationId(1), revision: current.application.revision, inputReviewRequired: false };
+        } else if (request.type === 'admin_verify_manual_payment') {
+            Object.assign(state.students[0].application, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 }); state.students[0].activeInviteId = 'SYNTHETIC_INVITE';
+            data = { applicationId: applicationId(1), applicationState: 'INVITED', revision: 1 };
+        } else if (request.type === 'admin_get_v2_material_detail') {
+            if (state.materialError) return route.fulfill({ status: 503, json: { success: false } });
+            const current = state.students[1].case;
+            const pending = !state.scoreReviewed && (current.workflowState === 'MATERIAL_REVIEW' || state.surveyApproved);
+            const submission = { submittedAt: '2026-11-04T00:00:00.000Z', snapshot: state.qualificationStatus
+                ? { ...snapshot, studentStatus: { ...snapshot.studentStatus, ...state.qualificationStatus } } : snapshot };
+            data = {
+                case: current,
+                scoreReviewDigest: 'sha256:' + 'c'.repeat(64),
+                canReviewScores: !['SURVEY_DRAFT', 'REPORT_SCHEDULED', 'SERVICE_COMPLETED'].includes(current.workflowState),
+                surveyReview: { approved: Boolean(state.surveyApproved), canApprove: current.workflowState === 'MATERIAL_REVIEW', scoreChanged: false, needsReview: false },
+                submission: state.legacyMaterial || current.workflowState === 'SURVEY_DRAFT' ? null : submission,
+                originalSubmission: state.legacyMaterial ? { ...submission, snapshot: { ...snapshot, formVersion: undefined, preferences: { desiredMajors: ['국문학'], desiredTracks: ['인문'], requiredCandidates: ['가상대'] }, conditions: { commuteMaxMinutes: 90, tuitionBudgetAnnual: 3000000 } } } : null,
+                verification: pending ? { status: 'pending', studentInput: snapshot.scores } : { status: 'matched', verifiedInput: state.verifiedScores || { ...snapshot.scores, records: [{ area: 'english', subject: '영어', grade: 3 }] } },
+                files: [{ fileId: 'FILE_synthetic', status: 'linked', displayName: '제출 성적표.pdf' }, { fileId: 'FILE_waiting', status: 'quarantined', displayName: '검사 중.pdf' }]
+            };
+            if (state.revisedMaterial) {
+                const next = { ...submission, revision: 6, snapshot: { ...snapshot,
+                    studentStatus: { ...snapshot.studentStatus, residenceRegion: '부산' },
+                    conditions: { ...snapshot.conditions, repeatStudyAllowed: false },
+                    qualitative: { ...snapshot.qualitative, consultationTopics: ['group_plan', 'retake_decision'], decisionOptions: '통학과 전공을 비교' }
+                } };
+                data.submission = next;
+                data.originalSubmission = submission;
+                data.reviewedSubmission = state.confirmed ? next : submission;
+                data.surveyReview = { needsReview: !state.confirmed, scoreChanged: false, changes: state.confirmed ? [] : [
+                    { field: ['studentStatus', 'residenceRegion'], before: '서울 송파구', after: '부산' },
+                    { field: ['qualitative', 'guardianOpinion'], before: '구형 검수 답변', after: '구형 수정 답변' }
+                ] };
+            }
+            if (state.correctionScoreDigest) {
+                data.correctionScoreDigest = state.correctionScoreDigest;
+                data.submission.revision = 6;
+                data.surveyReview = { needsReview: true, scoreChanged: true, changes: [] };
+                data.reviewedSubmission = submission;
+                data.verification.verifiedInput = { ...snapshot.scores, records: [
+                    { area: 'korean', subject: '국어', selection: '화법과작문', standardScore: 126, percentile: 90, grade: 2 },
+                    { area: 'english', subject: '영어', grade: 2 }
+                ] };
+            }
+            if (state.supplementFields) {
+                data.submission.revision = 0;
+                data.supplementFields = state.supplementFields;
+                data.supplement = state.supplement;
+            }
+            if (state.supplementReview) { data.supplementReview = state.supplementReview; data.submission.revision = 1; data.submission.supplementAttempt = 1; }
+        } else if (request.type === 'admin_request_v2_supplement') {
+            const current = state.students[1].case;
+            current.workflowState = 'SUPPLEMENT_REQUIRED';
+            state.supplement = { fields: request.data.fieldNotes.map(({ field, note }) => ({
+                field, label: field === 'studentStatus.residenceRegion' ? '거주 지역' : '1지망 대학', note
+            })) };
+            data = { caseId, notificationQueued: true };
+        } else if (request.type === 'admin_approve_v2_survey') {
+            if (state.revisedMaterial) state.confirmed = true;
+            state.surveyApproved = true;
+            if (state.students[1].case.workflowState === 'MATERIAL_REVIEW') state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
+            state.supplementAlerts = [];
+            data = { caseId, workflowState: state.students[1].case.workflowState, notificationQueued: !state.revisedMaterial };
+        } else if (request.type === 'admin_review_v2_scores') {
+            state.scoreReviewed = true;
+            state.verifiedScores = request.data.verifiedInput;
+            data = { caseId, workflowState: state.students[1].case.workflowState };
+        } else if (request.type === 'admin_verify_v2_materials') {
+            state.students[1].case.workflowState = 'AVAILABILITY_REQUIRED';
+            state.supplementAlerts = [];
+            data = { caseId, notificationQueued: true };
+        } else if (request.type === 'admin_get_written_schedule_board') {
+            if (state.boardError) return route.fulfill({ status: state.boardError, contentType: 'application/json', body: JSON.stringify({ success: false, code: 'FORBIDDEN', error: 'Synthetic unavailable' }) });
+            data = state.board;
+        } else if (request.type === 'admin_save_own_written_unavailability') {
+            state.board.team.revision++;
+            state.board.team.self.blockedSlots = request.data.blockedSlots;
+            data = { revision: state.board.team.revision };
+        } else if (request.type === 'admin_list_schedule_candidates') {
+            data = { ...state.scheduleCandidates };
+            if (request.data.view === 'manual') {
+                if (state.deferScheduleDate && state.deferScheduleDate === request.data.date) await new Promise(resolve => { state.releaseScheduleDate = resolve; });
+                const choices = (request.data.includeManual ? data.manualCandidates : data.candidates) || [];
+                const day = slot => slot.localDate || new Date(Date.parse(slot.startAt) + 9 * 3600000).toISOString().slice(0, 10);
+                data.choiceDates = [...new Set(choices.map(day))].sort().map(date => ({ date }));
+                data.selectedDate = request.data.date || data.choiceDates[0]?.date;
+                const rows = choices.filter(slot => day(slot) === data.selectedDate);
+                data.candidates = request.data.includeManual ? [] : rows;
+                data.manualCandidates = request.data.includeManual ? rows : [];
+            } else data.recommendations ||= (data.candidates || []).slice(0, 2);
+        } else if (request.type === 'admin_confirm_written_assignment') {
+            state.board = { ...state.board, placements: [], confirmed: [{ ...state.board.placements[0], ...state.scheduleCandidates.candidates.find(slot => slot.slotId === request.data.slotId), revision: 1 }] };
+            data = { session: state.board.confirmed[0] };
+        } else if (request.type === 'admin_reschedule_written_session') {
+            state.scheduleCandidates.session = { ...state.scheduleCandidates.session,
+                ...state.scheduleCandidates.manualCandidates.find(slot => slot.slotId === request.data.slotId), revision: 2 };
+            data = { session: state.scheduleCandidates.session };
+        } else if (request.type === 'admin_request_written_reschedule') {
+            state.scheduleCandidates.change = { kind: 'admin', requestId: 'WCR_synthetic', revision: 1,
+                offers: state.scheduleCandidates.candidates.filter(slot => request.data.offers.some(offer => offer.slotId === slot.slotId)) };
+            state.scheduleCandidates.changeRevision = 1;
+            state.scheduleCandidates.candidates = [];
+            data = { session: state.scheduleCandidates.session, change: state.scheduleCandidates.change };
+        } else if (request.type === 'admin_save_written_schedule_settings') {
+            const { expectedRevision, ...settings } = request.data;
+            state.board.settings = { ...settings, revision: expectedRevision + 1 };
+            data = state.board.settings;
+        } else if (request.type === 'admin_list_v2_survey_changes') {
+            const before = request.data.before;
+            data = { caseId, nextBefore: before ? null : 2, entries: [{
+                revision: before ? 1 : 6, changedAt: '2026-11-06T00:00:00.000Z', changedBy: '학생',
+                changes: before ? [
+                    { field: ['qualitative', 'concerns'], before: '', after: '구형 변경 이력' },
+                    { field: ['qualitative', 'specialCircumstances'], before: '', after: '<img src=x>' }
+                ] : [
+                    { field: ['studentStatus', 'residenceRegion'], before: '서울 송파구', after: '부산' },
+                    { field: ['conditions', 'repeatStudyAllowed'], before: true, after: false },
+                    { field: ['qualitative', 'consultationTopics'], before: null, after: ['group_plan', 'retake_decision'] }
+                ]
+            }] };
+        } else if (request.type === 'admin_confirm_v2_survey_revision') {
+            state.confirmed = true;
+            data = { caseId, surveyRevision: 6 };
+        }
+        else data = { items: [], nextCursor: null };
+        if (state.deferType === request.type) await new Promise(resolve => { state.resolve = resolve; });
+        if (state.failMutation && request.type === 'admin_review_application_input') return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
+        await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ success: true, data, notifications: [], sentNotices: [], tutors: [], students: [] }) });
+    });
+    configure(state);
+    await page.goto(`/admin${hash}`);
+    return state;
+}
+async function enterConsulting(page) {
+    await page.locator('a[onclick="showSection(\'consulting\')"]').click();
+    await expect(page.locator('#consultingDirectoryStatus')).toHaveAttribute('data-state', 'success');
+}
+async function openStudent(page, index = 0) {
+    await page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' }).nth(index).click();
+    await expect(page.locator('#consultingStudentStatus')).toHaveAttribute('data-state', 'success');
+}
+
+test('신청 영구 삭제는 범위를 읽고 정확한 문구를 입력해야 하며 취소하면 쓰지 않는다', async ({ page }, testInfo) => {
+    const state = await prepare(page); state.students[0].deletion = { available: true };
+    await enterConsulting(page); await openStudent(page);
+    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 DB 기록'); await expect(dialog).toContainText('학생 회원 계정'); await expect(dialog).toContainText('첨부파일·보고서 PDF 원본');
+    const confirm = dialog.getByRole('button', { name: '신청·원본 영구 삭제' });
+    await expect(confirm).toBeDisabled(); await dialog.getByLabel('계속하려면').fill('삭제'); await expect(confirm).toBeDisabled();
+    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제'); await expect(confirm).toBeEnabled();
+    await page.setViewportSize({ width: 320, height: 900 }); await page.screenshot({ path: testInfo.outputPath('application-delete-320.png') });
+    expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+    await dialog.getByRole('button', { name: '돌아가기' }).click(); await expect(dialog).not.toBeVisible();
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
+});
+
+for (const student of [0, 1]) test(`신청 삭제 접수 즉시 목록과 CSV 선택을 정리하고 남은 기록은 자동 처리한다 (${student})`, async ({ page }) => {
+    const state = await prepare(page); state.students[student].deletion = { available: true }; state.exportLimit = 15;
+    await enterConsulting(page);
+    await page.locator('[data-export-student]').nth(student).check();
+    await openStudent(page, student); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 DB 기록');
+    if (student) await expect(dialog).toContainText('조사서와 상담·보고서도 포함');
+    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거했습니다');
+    await expect(page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' })).toHaveCount(1);
+    await expect(dialog).not.toBeVisible();
+    expect(await page.evaluate(() => consultingExportStudents.size)).toBe(0);
+    const calls = state.calls.filter(call => call.type === 'admin_delete_consulting_application'); expect(calls).toHaveLength(1);
+    expect(calls[0].data).toEqual({ applicationId: applicationId(student + 1), sourceResponseId: record(student + 1), confirmation: '신청 영구 삭제', previewToken: 'synthetic-preview-token', backgroundCleanup: true });
+});
+
+test('접수 실패는 완료로 표시하지 않고 삭제 상태를 재확인한 후 요청한다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true }; state.deleteFailOnce = true;
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 DB 기록'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(dialog).toContainText('접수 여부를 확인하지 못했습니다');
+    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
+    await dialog.getByRole('button', { name: '삭제 상태 다시 확인' }).click();
+    await expect(dialog).toContainText('약 25개 DB 기록'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거했습니다');
+});
+
+test('삭제 대상 조회 거절과 세션 종료 후 늦은 응답은 삭제를 활성화하지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[0].deletion = { available: true }; state.deletePreviewStatus = 403;
+    await enterConsulting(page); await openStudent(page); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    state.deletePreviewStatus = 0; state.deferType = 'admin_preview_consulting_application_delete';
+    await dialog.getByRole('button', { name: '삭제 상태 다시 확인' }).click();
+    await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended'))); state.resolve();
+    await expect(dialog).not.toBeVisible(); await expect(page.locator('#consultingDeleteApplicationTarget')).toBeEmpty();
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
+});
+
+test('서버가 삭제 기능을 제공하기 전에는 신청 삭제 버튼을 노출하지 않는다', async ({ page }) => {
+    await prepare(page); await enterConsulting(page); await openStudent(page);
+    await expect(page.getByRole('button', { name: '신청 영구 삭제', exact: true })).not.toBeVisible();
+});
+
+test('DB 전용 구버전 응답으로는 원본 삭제를 시작하지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true }; state.oldDeletionServer = true;
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
+});
+
+test('화면을 닫거나 새로고침해도 삭제한 신청이 돌아오지 않고 대기·반복 호출을 하지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true };
+    await enterConsulting(page); await openStudent(page, 1); await page.clock.install();
+    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('화면을 닫아도 서버에서 자동');
+    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(dialog).toBeHidden(); await expect(page.locator('#consultingDirectoryStatus')).toContainText('서버에서 자동 정리');
+    await page.clock.fastForward(20 * 60000);
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
+    expect(state.calls.filter(call => call.type === 'admin_preview_consulting_application_delete')).toHaveLength(1);
+    await page.reload();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' })).toHaveCount(1);
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
+});
+
+test('기존에 대기 중이던 삭제도 한 번 확인하면 자동 정리로 넘기고 바로 목록으로 돌아간다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true }; state.deletionStarted = true;
+    await enterConsulting(page); await openStudent(page, 1);
+    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('삭제가 진행 중');
+    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제'); await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(dialog).toBeHidden(); await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거');
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
+});
+
+test('응답 유실은 완료로 꾸미지 않으며 접수된 삭제는 목록을 다시 열면 반영된다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true }; state.deleteReplyLost = true;
+    await enterConsulting(page); await openStudent(page, 1);
+    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(dialog).toContainText('접수 여부를 확인하지 못했습니다');
+    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    await dialog.getByRole('button', { name: '돌아가기' }).click();
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' })).toHaveCount(1);
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
+});
+
+test('자동 정리를 지원하지 않는 구버전 서버에는 삭제를 보내지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].deletion = { available: true }; state.oldBackgroundServer = true;
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await expect(dialog).toContainText('삭제 대상 확인에 실패');
+    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
+});
+
+test('CSV는 여러 페이지의 선택 학생과 검색해 체크한 항목만 다운로드한다', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const state = await prepare(page);
+    state.exportLimit = 25;
+    state.splitPages = true;
+    await enterConsulting(page);
+    const toolbar = page.locator('#consultingDirectoryExportTools');
+    await expect(toolbar.getByRole('button', { name: 'CSV 내보내기' })).toBeDisabled();
+    await page.locator('#consultingDirectoryBody').getByRole('checkbox', { name: /합\*생/ }).check();
+    await page.locator('#consultingDirectoryNext').click();
+    await expect(page.locator('#consultingDirectoryPage')).toHaveText('2페이지 · 1명');
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await expect(toolbar).toContainText('2명 선택 · 최대 25명');
+    await page.locator('#consultingDirectoryPrevious').click();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('checkbox')).toBeChecked();
+    await toolbar.getByRole('button', { name: 'CSV 내보내기' }).click();
+    const dialog = page.getByRole('dialog', { name: 'CSV 내보내기' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByText('선택 학생 2명', { exact: true }).click();
+    await expect(dialog.getByRole('listitem')).toHaveCount(2);
+    const submit = dialog.getByRole('button', { name: 'CSV 다운로드' });
+    await expect(submit).toBeDisabled();
+    await dialog.getByRole('checkbox', { name: '진행 단계', exact: true }).check();
+    await dialog.getByRole('searchbox').fill('전화번호');
+    await dialog.getByRole('checkbox', { name: '신청자·연락처 검색 결과 전체 선택' }).check();
+    await expect(dialog).toContainText('2개 항목 선택');
+    expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    const received = page.waitForEvent('download');
+    await submit.click();
+    const download = await received;
+    expect(download.suggestedFilename()).toBe('jungsi-consulting-20261110T112233Z.csv');
+    const chunks = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+    expect(Buffer.concat(chunks).toString('utf8')).toBe('\uFEFF"진행 단계","전화번호"\r\n"입금 확인 대기","01000000001"\r\n"보고서 검수","01000000002"\r\n');
+    expect(state.calls.filter(call => call.type === 'admin_export_consulting_students')).toEqual([{
+        type: 'admin_export_consulting_students', data: { columnIds: ['workflow_state', 'phone'],
+            students: [1, 2].map(n => ({ applicationId: applicationId(n), sourceResponseId: record(n) })) }
+    }]);
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#consultingExportListStatus')).toHaveText('2명 CSV 다운로드를 시작했습니다.');
+});
+
+test('권한과 인원 한도, 실패와 세션 종료는 CSV 발급과 선택 노출을 막는다', async ({ page }) => {
+    const state = await prepare(page);
+    await enterConsulting(page);
+    const toolbar = page.locator('#consultingDirectoryExportTools');
+    await expect(toolbar).toBeHidden();
+    await expect(page.locator('#consultingDirectoryBody').getByRole('checkbox')).toHaveCount(0);
+    state.exportLimit = 1;
+    await page.getByRole('button', { name: '01 접수·입금', exact: true }).click();
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await page.getByRole('button', { name: '04 분석·보고서', exact: true }).click();
+    await toolbar.getByRole('button', { name: '현재 페이지 선택', exact: true }).click();
+    await expect(page.locator('#consultingExportListStatus')).toContainText('1명까지');
+    await expect(toolbar).toContainText('1명 선택 · 최대 1명');
+    await toolbar.getByRole('button', { name: 'CSV 내보내기' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('checkbox', { name: '진행 단계', exact: true }).check();
+    const downloads = [];
+    page.on('download', download => downloads.push(download));
+    state.exportStatus = 403;
+    await dialog.getByRole('button', { name: 'CSV 다운로드' }).click();
+    await expect(dialog.getByRole('status')).toHaveText('선택한 자료를 내보낼 권한을 확인해주세요.');
+    expect(downloads).toHaveLength(0);
+    state.exportStatus = null;
+    state.deferType = 'admin_export_consulting_students';
+    await dialog.getByRole('button', { name: 'CSV 다운로드' }).click();
+    await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    await expect(dialog.getByRole('searchbox')).toBeDisabled();
+    await expect(dialog.getByRole('checkbox', { name: '진행 단계', exact: true })).toBeDisabled();
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    state.resolve();
+    await expect(dialog).toBeHidden();
+    await expect(toolbar).toBeHidden();
+    await expect(page.locator('#consultingExportStudentList')).toBeEmpty();
+    await expect(page.locator('#consultingDirectoryBody')).toBeEmpty();
+    expect(downloads).toHaveLength(0);
+});
+
+test('관리자는 항목별 보완 내용을 미리 확인해 한 번에 보내고 검수 완료로 시간 선택을 연다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementFields = ['studentStatus.residenceRegion', 'preferences.rankedChoices.0.university'];
+    await enterConsulting(page);
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click();
+    await openStudent(page);
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '거주 지역 보완 메모' }).fill('구 단위로 적어주세요.');
+    await page.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.getByLabel('1지망 대학 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '1지망 대학 보완 메모' }).fill('<img src=x> 캠퍼스를 알려주세요.');
+    await page.getByRole('button', { name: '보완 요청 미리보기' }).click();
+    const preview = page.getByRole('dialog', { name: '보완 요청 확인' });
+    await expect(preview).toContainText('구 단위로 적어주세요.');
+    await expect(preview).toContainText('<img src=x> 캠퍼스를 알려주세요.');
+    await expect(preview.locator('img')).toHaveCount(0);
+    expect(state.calls.some(({ type }) => type === 'admin_request_v2_supplement')).toBe(false);
+    await preview.getByRole('button', { name: '보완 요청 보내기' }).click();
+    await expect(page.locator('#consultingMaterialSupplementNotice')).toContainText('구 단위로 적어주세요.');
+    const sent = state.calls.filter(({ type }) => type === 'admin_request_v2_supplement');
+    expect(sent).toHaveLength(1);
+    expect(sent[0].data).toMatchObject({ caseId, expectedSurveyRevision: 0, reasonCode: 'OTHER', reasonText: '', fieldNotes: [
+        { field: 'studentStatus.residenceRegion', note: '구 단위로 적어주세요.' },
+        { field: 'preferences.rankedChoices.0.university', note: '<img src=x> 캠퍼스를 알려주세요.' }
+    ] });
+
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplement = null;
+    await page.reload();
+    await page.getByRole('tab', { name: '지원 조건', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReason')).toBeHidden();
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: '조사서 승인 · 일정 선택 열기' }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toContainText('학생의 상담 가능 시간 선택을 열었습니다.');
+    const approvals = state.calls.filter(({ type }) => type === 'admin_approve_v2_survey');
+    expect(approvals).toHaveLength(1);
+    expect(approvals[0].data).toEqual({ caseId, expectedSurveyRevision: 0 });
+    expect(state.calls.some(({ type }) => type === 'admin_verify_v2_materials' || type === 'admin_review_v2_scores')).toBe(false);
+    await expect(page.locator('#consultingSurveyApprovalStatus')).toContainText('공식 성적 미확인');
+});
+
+test('관리자 메뉴·Q&A 상태·공지 하위 메뉴는 실제 새로고침 뒤에도 유지한다', async ({ page }) => {
+    await prepare(page);
+    for (const [call, section, title] of [["showSection('students')", 'students', null], ["showSection('advanced-stats')", 'advanced-stats', null], ["showQnaSection('done')", 'qna', '응답 완료'], ["showNotiMenu('sent')", 'notifications', '보낸 공지함']]) {
+        const link = page.locator(`a[onclick="${call}"]`); await link.evaluate(node => node.closest('.submenu')?.classList.add('open')); await link.click(); await page.reload();
+        await expect(page.locator(`#section-${section}`)).toBeVisible(); await expect(page.locator('#section-dashboard')).toBeHidden();
+        if (title) await expect(page.locator(section === 'qna' ? '#qnaStatusTitle' : '#notiPageTitle')).toContainText(title);
+    }
+});
+test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보고서 화면을 복원한다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].case.workflowState = 'MATERIAL_REVIEW'; await enterConsulting(page);
+    await expect(page.locator('#consultingDirectoryBody')).toContainText('합*생'); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('synthetic@example.invalid');
+    await expect(page.locator('#consultingServicePanel')).toBeHidden(); await expect(page.locator('#consultingOperationsPanel')).toBeHidden();
+    expect(state.calls.some(call => call.type === 'admin_list_consulting_operations')).toBe(false);
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click(); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('합*생'); await openStudent(page);
+    await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생'); await expect(page.locator('#consultingStudentProgress [aria-current="step"]')).toHaveText('가입·조사서');
+    await expect(page.getByRole('button', { name: '조사서·성적표', exact: true })).toHaveAttribute('aria-current', 'page');
+    const survey = page.locator('#consultingMaterialSurvey');
+    for (const value of ['고3 재학생', '가상고', '서울 송파구', '서울 · 가상대학교 · 공학', '가상대학교 전자공학과 검토', '2시간 이상도 가능', '어려움', '고려 가능', '안정 중심', '1. 전공', '나군 질문', '분석 이용 동의']) await expect(survey).toContainText(value);
+    for (const value of ['이전 답변', '합성 상담 내용', '보호자 의견 예시']) await expect(survey).not.toContainText(value);
+    await expect(survey).toContainText('<img src=x onerror=alert(1)>');
+    await expect(survey.locator('img')).toHaveCount(0);
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await expect(survey.getByRole('row', { name: /^국어 / })).toContainText('공통 76 · 선택 0 · 원점수 76');
+    await page.getByRole('tab', { name: '최종 확인', exact: true }).click();
+    await expect(page.getByRole('button', { name: '제출 성적표.pdf 열기' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '검사 중.pdf 열기' })).toBeDisabled();
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReason')).toBeHidden();
+    await page.getByText('공식 성적 확인·정정', { exact: true }).click();
+    await expect(page.locator('#consultingVerifiedScores')).toContainText('국어 · 원점수 76점 · 공통 76점 · 선택 0점');
+    await expect(page.getByRole('spinbutton', { name: '국어 표준점수' })).toHaveValue('');
+    await expect(page.getByRole('spinbutton', { name: '영어 표준점수' })).toHaveCount(0);
+    await expect(page.getByRole('spinbutton', { name: '영어 등급' })).toHaveValue('2');
+    await expect(page.locator('#consultingVerifiedScores')).toContainText('제2외국어·한문 · 학생 입력 독일어Ⅰ 4등급');
+    await expect(page.getByRole('combobox', { name: '제2외국어·한문 과목명' })).toHaveValue('독일어Ⅰ');
+    await page.getByRole('combobox', { name: '제2외국어·한문 과목명' }).selectOption('독일어Ⅰ');
+    await page.getByRole('spinbutton', { name: '제2외국어·한문 등급' }).fill('4');
+    await expect(page.getByRole('textbox', { name: '탐구 1 과목명' })).toHaveValue('');
+    await expect(page.getByLabel('검수 결과', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: '신청·입금', exact: true }).click(); await page.reload();
+    await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+    state.students[1].case.workflowState = 'REPORT_REVIEW';
+    await page.getByRole('button', { name: '분석·보고서', exact: true }).click(); await page.reload();
+    await expect(page.locator('#consultingWorkspaceReport')).toBeVisible(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
+    await page.route('**/2027-jungsi-consulting/report?*', route => route.fulfill({ body: '<html><body>합성 작업 화면</body></html>' }));
+    await page.getByRole('button', { name: '분석·보고서 작업 화면 열기' }).click(); await expect(page).toHaveURL(new RegExp(`/report\\?caseId=${caseId}`));
+    await page.goBack(); await expect(page.locator('#consultingWorkspaceReport')).toBeVisible(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
+});
+test('학생 상세의 뒤로·앞으로 이동과 직접 URL 진입은 단계·학생을 유지한다', async ({ page }) => {
+    await prepare(page, '#consulting?phase=report'); await expect(page.locator('#consultingDirectoryBody')).toContainText('둘*생'); await openStudent(page);
+    const url = page.url(); await page.goBack(); await expect(page.locator('#consultingDirectoryPanel')).toBeVisible(); await expect(page.locator('[data-phase="report"]')).toHaveAttribute('aria-current', 'page');
+    await page.goForward(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
+    await page.goto(url); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
+    expect(url).not.toContain('synthetic@example'); expect(url).not.toContain('01000000000');
+});
+test('빈 단계 페이지도 다음 페이지로 이어지며 필터 변경 시 첫 페이지로 돌아간다', async ({ page }) => {
+    const state = await prepare(page); state.emptyFirst = true; await enterConsulting(page);
+    await expect(page.locator('#consultingDirectoryNext')).toBeEnabled(); await expect(page.locator('#consultingDirectoryBody')).toContainText('다음 페이지');
+    await page.getByRole('button', { name: '다음', exact: true }).click(); await expect(page.locator('#consultingDirectoryBody')).toContainText('둘*생'); await expect(page.locator('#consultingDirectoryPrevious')).toBeEnabled();
+    state.emptyFirst = false; await page.getByRole('button', { name: '01 접수·입금', exact: true }).click(); await expect(page.locator('#consultingDirectoryPrevious')).toBeDisabled(); await expect(page.locator('#consultingDirectoryBody')).not.toContainText('둘*생');
+    expect(state.calls.filter(call => call.type === 'admin_list_consulting_students').at(-1).data.cursor).toBeNull();
+});
+test('다른 메뉴로 이동하면 늦은 상세 응답이 이름·연락처를 다시 채우지 않는다', async ({ page }) => {
+    const state = await prepare(page); await enterConsulting(page); state.deferType = 'admin_get_consulting_student';
+    await page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' }).first().click(); await expect(page.locator('#consultingStudentPanel')).toHaveAttribute('aria-busy', 'true');
+    await page.locator('a[onclick="showSection(\'students\')"]').click(); await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    const completed = page.waitForResponse(response => response.url().endsWith('/synthetic-api') && response.request().postDataJSON().type === 'admin_get_consulting_student'); state.resolve(); await completed;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(page.locator('#consultingDetailSummary')).toBeEmpty(); await expect(page.locator('#consultingStudentTitle')).toHaveText('학생 상세'); await expect(page.locator('#consultingStudentPanel')).toBeHidden();
+});
+test('학생 목록에서 선택한 같은 신청을 보완하고 별도 승인 후에도 목록에서 찾는다', async ({ page }) => {
+    const state = await prepare(page); Object.assign(state.students[0].application, { inputReviewRequired: true, paymentReviewStatus: 'input_review' }); await enterConsulting(page); await openStudent(page);
+    await expect(page.locator('#consultingApproveBtn')).toBeDisabled(); await page.locator('#consultingContactEmail').fill('corrected@example.invalid'); await page.locator('#consultingInputConfirmed').check(); await page.locator('#consultingSaveInputBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('신청 정보 확인·저장 완료'); await expect(page.locator('#consultingApproveBtn')).toBeEnabled();
+    expect(state.calls.some(call => call.type === 'admin_verify_manual_payment')).toBe(false);
+    await page.locator('#consultingPaidAmount').fill('300000'); await page.locator('#consultingPaidAt').fill('2026-11-04T10:00'); await page.locator('#consultingPayerConfirmed').check(); page.once('dialog', dialog => dialog.accept()); await page.locator('#consultingApproveBtn').click();
+    await expect(page.locator('#consultingStudentState')).toContainText('초대 발급·가입 대기'); await expect(page.locator('#consultingPaymentActions')).toBeHidden();
+    await page.getByRole('button', { name: '← 학생 목록' }).click(); await page.getByRole('button', { name: '02 가입·조사서' }).click(); await expect(page.locator('#consultingDirectoryBody')).toContainText('합*생');
+    expect(state.calls.filter(call => call.type === 'admin_verify_manual_payment')).toHaveLength(1);
+});
+test('새 학생 또는 세션 종료 시 자료·수정 원본·개인정보를 지우고 늦은 자료 응답을 버린다', async ({ page }) => {
+    const state = await prepare(page); await enterConsulting(page); state.deferType = 'admin_get_v2_material_detail';
+    await page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' }).nth(1).click(); await expect.poll(() => Boolean(state.resolve)).toBe(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    const completed = page.waitForResponse(response => response.url().endsWith('/synthetic-api') && response.request().postDataJSON().type === 'admin_get_v2_material_detail'); state.resolve(); await completed;
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    for (const id of ['consultingMaterialSummary', 'consultingMaterialSurvey', 'consultingSurveyHistoryEntries', 'consultingDetailSummary', 'consultingOriginalSubmission', 'consultingStudentIdentifiers']) await expect(page.locator(`#${id}`)).toBeEmpty();
+    await expect(page.locator('#consultingContactEmail')).toHaveValue(''); await expect(page.locator('#consultingStudentTitle')).toHaveText('학생 상세');
+});
+test('현재·최초·검수본을 전환하고 수정 이력을 확인한 뒤 최신 답변을 확인한다', async ({ page }) => {
+    const state = await prepare(page); state.revisedMaterial = true;
+    await page.setViewportSize({ width: 320, height: 900 });
+    await enterConsulting(page); await openStudent(page, 1);
+    const answers = page.locator('#consultingMaterialSurvey');
+    const versions = page.getByLabel('답변 버전');
+    const confirm = page.getByRole('button', { name: '최신 답변 확인', exact: true });
+    await expect(answers).toContainText('부산');
+    await expect(answers).toContainText('가·나·다군 조합 · 올해 진학과 재수 결정');
+    await expect(answers).toContainText('통학과 전공을 비교');
+    const retake = answers.locator('.consulting-facts > div').filter({ has: page.getByText('재수 가능성', { exact: true }) });
+    await expect(retake.locator('dd')).toHaveText('고려하지 않음');
+    await versions.selectOption('original');
+    await expect(answers).toContainText('서울 송파구');
+    await expect(answers.getByText('이전 답변', { exact: true })).toHaveCount(0);
+    await expect(confirm).toBeHidden();
+    await versions.selectOption('reviewed');
+    await expect(answers).toContainText('서울 송파구');
+    await expect(answers).not.toContainText('보호자 의견 예시');
+    await versions.selectOption('current');
+    await page.getByText('검수 이후 변경된 항목', { exact: true }).click();
+    await expect(page.locator('#consultingSurveyReviewChanges')).toContainText('이전 서울 송파구');
+    await expect(page.locator('#consultingSurveyReviewChanges')).not.toContainText('구형 검수 답변');
+    expect(state.calls.some(call => call.type === 'admin_list_v2_survey_changes')).toBe(false);
+    await page.getByText('수정 이력', { exact: true }).click();
+    const history = page.locator('#consultingSurveyHistoryEntries');
+    await expect(history).toContainText('학생 저장 6회차');
+    await expect(history).toContainText('지원 조건 · 재수 가능성');
+    await expect(history).toContainText('가·나·다군 조합 · 올해 진학과 재수 결정');
+    await page.getByRole('button', { name: '이전 수정 더 보기' }).click();
+    await expect(history).toContainText('<img src=x>');
+    await expect(history).not.toContainText('구형 변경 이력');
+    await expect(history.locator('img')).toHaveCount(0);
+    expect(state.calls.filter(call => call.type === 'admin_list_v2_survey_changes').map(call => call.data.before)).toEqual([undefined, 2]);
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    page.once('dialog', dialog => dialog.accept());
+    await confirm.click();
+    await expect(page.locator('#consultingMaterialStatus')).toContainText('최신 답변을 확인했습니다.');
+    expect(state.calls.find(call => call.type === 'admin_approve_v2_survey').data).toEqual({ caseId, expectedSurveyRevision: 6 });
+    await versions.selectOption('reviewed');
+    await expect(answers).toContainText('부산');
+});
+test('제출 전·조회 실패·권한 부족을 구분하고 기존 제출본과 검수 성적을 읽는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].case.workflowState = 'SURVEY_DRAFT'; await enterConsulting(page); await openStudent(page, 1);
+    await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toHaveAttribute('data-state', 'empty');
+    state.students[1].case.workflowState = 'REPORT_REVIEW'; state.materialError = true;
+    await page.getByRole('button', { name: '학생 정보 새로고침' }).click();
+    await expect(page.locator('#consultingMaterialStatus')).toHaveAttribute('data-state', 'error');
+    state.materialError = false; state.legacyMaterial = true;
+    await page.getByRole('button', { name: '제출 자료 다시 불러오기' }).click();
+    await expect(page.locator('#consultingMaterialSurvey')).toContainText('국문학');
+    await expect(page.locator('#consultingMaterialSurvey')).toContainText('3,000,000원');
+    await expect(page.locator('#consultingMaterialVerification')).toContainText('등급 3');
+    await expect(page.locator('#consultingMaterialReviewActions')).toBeHidden();
+    state.students[1].permissions.materials = false;
+    const requests = state.calls.filter(call => call.type === 'admin_get_v2_material_detail').length;
+    await page.getByRole('button', { name: '학생 정보 새로고침' }).click();
+    await expect(page.locator('#consultingMaterialAccess')).toBeVisible();
+    await expect(page.getByRole('button', { name: '조사서·성적표', exact: true })).toBeDisabled();
+    expect(state.calls.filter(call => call.type === 'admin_get_v2_material_detail')).toHaveLength(requests);
+});
+test('320px·390px·데스크톱에서 단계·목록·상세가 잘리지 않고 주요 버튼은44px 이상이다', async ({ page }, testInfo) => {
+    const state = await prepare(page); await enterConsulting(page);
+    for (const width of [320, 390, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.locator('#section-consulting').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
+        await page.screenshot({ path: testInfo.outputPath(`consulting-list-${width}.png`), fullPage: true });
+        await openStudent(page); expect(await page.locator('#consultingStudentPanel').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        expect(await page.locator('#consultingApproveBtn').evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+        await page.evaluate(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
+        await page.screenshot({ path: testInfo.outputPath(`consulting-student-${width}.png`), fullPage: true }); await page.getByRole('button', { name: '← 학생 목록' }).click();
+        await openStudent(page, 1);
+        await expect(page.locator('#consultingMaterialDetail')).toBeVisible();
+        expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`consulting-survey-${width}.png`), fullPage: true }); await page.getByRole('button', { name: '← 학생 목록' }).click();
+    }
+    state.students[0].contact.studentName = 'A'.repeat(120);
+    await page.setViewportSize({ width: 320, height: 900 }); await openStudent(page);
+    expect(await page.locator('#consultingStudentPanel').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+});
+
+test('전체 서면상담 추천을 자동 갱신하고 학생이 고른 다른 시간으로 개별 확정한다', async ({ page }) => {
+    await page.clock.install();
+    const state = await prepare(page);
+    const settings = { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 };
+    const slot = (time, utc) => ({ slotId: 'WST_20261207_' + time.replace(':', ''), startAt: '2026-12-07T' + utc + ':00.000Z', counselorId: 'tutor-synthetic', lunch: false });
+    const first = slot('10:00', '01:00'), updated = slot('10:30', '01:30'), alternate = slot('11:00', '02:00');
+    const student = { caseId, studentName: '합*생', availabilityRevision: 1, sessionRevision: null, changeKind: null };
+    state.board = { settings, placements: [{ ...student, ...first }], unassigned: [], confirmed: [], hasOpenTimes: true };
+    state.scheduleCandidates = { caseId, candidates: [updated, alternate], session: null, availabilityRevision: 2 };
+    await enterConsulting(page);
+    await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    const board = page.locator('#consultingScheduleBoardBody');
+    await expect(board).toContainText('10:00');
+    state.board.placements = [{ ...student, ...updated, availabilityRevision: 2 }];
+    await page.clock.runFor(20500);
+    await expect(board).toContainText('10:30');
+    await expect(board).not.toContainText('10:00');
+    expect(state.calls.filter(call => call.type === 'admin_confirm_written_assignment')).toHaveLength(0);
+    await board.getByRole('button', { name: '다른 시간 보기' }).click();
+    const choice = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await choice.getByLabel('가능한 시간').selectOption(alternate.slotId);
+    page.once('dialog', dialog => dialog.accept());
+    await choice.getByRole('button', { name: '이 시간 확정', exact: true }).click();
+    await expect(choice).not.toBeVisible();
+    await expect(board).toContainText('11:00');
+    expect(state.calls.find(call => call.type === 'admin_confirm_written_assignment').data).toEqual({
+        caseId, counselorId: 'tutor-synthetic', slotId: alternate.slotId, expectedAvailabilityRevision: 2
+    });
+    await page.getByText('배정 옵션·나의 불가 시간', { exact: true }).click();
+    await page.getByLabel('점심 배정').selectOption('block');
+    await page.getByRole('button', { name: '옵션 저장' }).click();
+    await expect(page.locator('#consultingScheduleSettingsStatus')).toContainText('배정 옵션을 저장했습니다.');
+    expect(state.calls.find(call => call.type === 'admin_save_written_schedule_settings').data).toMatchObject({
+        expectedRevision: 0, lunchMode: 'block', startDate: '2026-12-07', endDate: '2026-12-20'
+    });
+});
+
+test('학생과 직접 합의한 예외 변경은 확인과 사유를 입력한 뒤에만 전송한다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'WRITTEN_SESSION_BOOKED';
+    const session = { startAt: '2026-12-07T01:00:00.000Z', counselorId: 'tutor-synthetic', revision: 1 };
+    const manual = { slotId: 'WST_20261208_1030', startAt: '2026-12-08T01:30:00.000Z', counselorId: 'tutor-synthetic' };
+    state.scheduleCandidates = { caseId, candidates: [], session, canChange: true, changeRevision: 0, manualCandidates: [manual] };
+    await enterConsulting(page);
+    await openStudent(page, 1);
+    await page.locator('[data-student-tab="written"]').click();
+    await page.getByRole('button', { name: '직접 합의 후 수동 변경' }).click();
+    const dialog = page.getByRole('dialog', { name: '학생과 합의한 시간으로 변경' });
+    await dialog.getByLabel('가능한 시간').selectOption(manual.slotId);
+    const submit = dialog.getByRole('button', { name: '합의한 일정으로 변경 확정' });
+    await submit.click();
+    expect(state.calls.filter(call => call.type === 'admin_reschedule_written_session')).toHaveLength(0);
+    await dialog.getByRole('checkbox').check();
+    await dialog.getByLabel('변경 사유').fill('학생에게 연락해 해당 시간으로 합의했습니다.');
+    page.once('dialog', dialog => dialog.accept());
+    await submit.click();
+    await expect(dialog).not.toBeVisible();
+    expect(state.calls.find(call => call.type === 'admin_reschedule_written_session').data).toMatchObject({
+        caseId, slotId: manual.slotId, expectedSessionRevision: 1, expectedChangeRevision: 0, mode: 'manual', contactConfirmed: true
+    });
+});
+
+test('관리자는 최초 선택 중 복수 후보를 골라 한 번에 변경 제안을 보낸다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'WRITTEN_SESSION_BOOKED';
+    const candidates = Array.from({ length: 6 }, (_, index) => ({
+        slotId: 'WST_20261208_' + String(10 + index).padStart(2, '0') + '00', startAt: '2026-12-08T' + String(1 + index).padStart(2, '0') + ':00:00.000Z',
+        counselorId: 'tutor-synthetic'
+    }));
+    state.scheduleCandidates = { caseId, candidates, session: { startAt: '2026-12-07T01:00:00.000Z', counselorId: 'tutor-synthetic', revision: 2 },
+        canChange: true, changeRevision: 0 };
+    await enterConsulting(page);
+    await openStudent(page, 1);
+    await page.locator('[data-student-tab="written"]').click();
+    await page.getByRole('button', { name: '변경 시간 제안', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await expect(dialog.getByLabel('날짜', { exact: true })).toHaveCount(1);
+    for (let index = 0; index < 5; index++) {
+        await dialog.getByLabel('가능한 시간').selectOption(candidates[index].slotId);
+        await dialog.getByRole('button', { name: '선택한 시간을 후보에 추가' }).click();
+    }
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[5].slotId);
+    await dialog.getByRole('button', { name: '선택한 시간을 후보에 추가' }).click();
+    await expect(page.locator('#consultingScheduleChoiceStatus')).toContainText('최대 5개');
+    await expect(page.locator('#consultingScheduleProposalOptions').getByRole('button', { name: '삭제', exact: true })).toHaveCount(5);
+    for (let index = 4; index >= 2; index--) await page.locator('#consultingScheduleProposalOptions').getByRole('button', { name: '삭제', exact: true }).nth(index).click();
+    page.once('dialog', dialog => dialog.accept());
+    await dialog.getByRole('button', { name: '선택한 시간들 제안 보내기' }).click();
+    await expect(dialog).not.toBeVisible();
+    expect(state.calls.find(call => call.type === 'admin_request_written_reschedule').data).toEqual({
+        caseId, expectedSessionRevision: 2, expectedChangeRevision: 0,
+        offers: candidates.slice(0, 2).map(({ slotId, counselorId }) => ({ slotId, counselorId }))
+    });
+});
+
+
+test('공개 후 성적 재검수는 기존 검수값과 동시 편집 방지값을 보내고 학생 진행 단계를 유지한다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'FINAL_CALL_BOOKED';
+    state.correctionScoreDigest = 'a'.repeat(64);
+    await enterConsulting(page);
+    await openStudent(page, 1);
+    await page.getByRole('button', { name: '조사서·성적표', exact: true }).click();
+    await expect(page.locator('#consultingSurveyReviewNotice')).toContainText('기존 공개 보고서는 그대로 유지');
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await page.getByText('보고서 정정을 위한 성적 재검수', { exact: true }).click();
+    await expect(page.getByLabel('국어 표준점수', { exact: true })).toHaveValue('126');
+    await expect(page.getByLabel('영어 등급', { exact: true })).toHaveValue('2');
+    await page.getByLabel('국어 표준점수', { exact: true }).fill('127');
+    await page.locator('#consultingMaterialReason').fill('성적표를 다시 확인하여 정정합니다.');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: '정정 성적 저장', exact: true }).click();
+    await expect.poll(() => state.calls.filter(call => call.type === 'admin_confirm_v2_survey_revision').length).toBe(1);
+    const sent = state.calls.find(call => call.type === 'admin_confirm_v2_survey_revision');
+    expect(sent.data.expectedCorrectionScoreDigest).toBe('a'.repeat(64));
+    expect(sent.data.verifiedInput.records.find(row => row.area === 'korean').standardScore).toBe(127);
+    expect(state.calls.some(call => call.type === 'admin_verify_v2_materials')).toBe(false);
+    expect(state.students[1].case.workflowState).toBe('FINAL_CALL_BOOKED');
+});
+
+
+test('검정고시 관리자 상세는 합격연도를 별도로 보여주고 보존된 학교정보를 혼동하지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.qualificationStatus = { applicantType: 'qualification_exam', qualificationExamYear: 2015 };
+    await enterConsulting(page); await openStudent(page, 1);
+    const panel = page.locator('#consultingSurveyPanel-studentStatus');
+    await expect(panel).toContainText('검정고시 합격 연도 (선택)');
+    await expect(panel).toContainText('2015');
+    await expect(panel).not.toContainText('2027');
+    await expect(panel).not.toContainText('가상고');
+    await expect(panel).not.toContainText('졸업 연도');
+});
+
+test('조사서는 학생 화면과 같은7개 항목 중 하나만 보이며 키보드·이전 다음으로 이동한다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await prepare(page); await enterConsulting(page); await openStudent(page, 1);
+    const nav = page.getByRole('tablist', { name: '기초조사서 항목' });
+    await expect(nav.getByRole('tab')).toHaveCount(7);
+    await expect(nav.getByRole('tab', { name: '학생 상태', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#consultingMaterialSurvey [role="tabpanel"]:visible')).toHaveCount(1);
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('학생 상태');
+    await expect(page.locator('#consultingMaterialAttachments')).toBeHidden();
+    await nav.getByRole('tab', { name: '학생 상태', exact: true }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(nav.getByRole('tab', { name: '성적', exact: true })).toBeFocused();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('성적');
+    await page.keyboard.press('End');
+    await expect(nav.getByRole('tab', { name: '최종 확인', exact: true })).toBeFocused();
+    await expect(page.locator('#consultingMaterialAttachments')).toBeVisible();
+    await expect(page.locator('#consultingSurveyNext')).toBeDisabled();
+    await page.locator('#consultingSurveyPrevious').click();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('상담 질문');
+    await expect(page.locator('#consultingSurveySectionTitle')).toBeFocused();
+    await nav.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-sections-1440.png') });
+    for (const width of [768, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        if (width === 320) {
+            const positions = await nav.getByRole('tab').evaluateAll(nodes => nodes.slice(0, 2).map(node => ({ top: node.getBoundingClientRect().top, left: node.getBoundingClientRect().left })));
+            expect(Math.abs(positions[0].top - positions[1].top)).toBeLessThan(1);
+            expect(positions[0].left).toBeLessThan(positions[1].left);
+        }
+        for (const label of ['학생 상태', '성적', '지원 조건', '희망 지원', '지원 전략', '상담 질문', '최종 확인']) {
+            await nav.getByRole('tab', { name: label, exact: true }).click();
+            await expect(page.locator('#consultingMaterialSurvey [role="tabpanel"]:visible')).toHaveCount(1);
+            expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+        }
+    }
+    await nav.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-sections-320.png') });
+});
+
+test('보완 코멘트는 항목·버전 전환 후 유지되고 모아보기에서 원래 답변으로 돌아간다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.revisedMaterial = true;
+    state.supplementFields = ['studentStatus.residenceRegion', 'preferences.rankedChoices.0.university'];
+    await enterConsulting(page); await openStudent(page, 1);
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true }).fill('구 단위로 적어주세요.');
+    await expect(page.locator('#consultingSurveyBadge-studentStatus')).toHaveText('작성 1');
+    await page.getByRole('tab', { name: '희망 지원', exact: true }).click();
+    await page.getByLabel('1지망 대학 보완 메모 추가', { exact: true }).click();
+    await page.getByRole('textbox', { name: '1지망 대학 보완 메모', exact: true }).fill('<img src=x onerror=alert(1)> 캠퍼스 확인');
+    await expect(page.locator('#consultingSurveyCommentCount')).toHaveText('2');
+    await page.locator('#consultingSurveyVersion').selectOption('original');
+    await expect(page.locator('#consultingSurveyCommentDrafts')).toBeHidden();
+    await expect(page.locator('#consultingMaterialSurvey textarea')).toHaveCount(0);
+    await page.locator('#consultingSurveyVersion').selectOption('current');
+    await expect(page.getByRole('textbox', { name: '1지망 대학 보완 메모', exact: true })).toHaveValue('<img src=x onerror=alert(1)> 캠퍼스 확인');
+    await page.locator('#consultingSurveyCommentDrafts > summary').click();
+    await expect(page.locator('#consultingSurveyCommentList')).toContainText('<img src=x onerror=alert(1)>');
+    await expect(page.locator('#consultingSurveyCommentList img')).toHaveCount(0);
+    await page.locator('#consultingSurveyCommentList').getByRole('button', { name: '거주 지역 · 구 단위로 적어주세요.', exact: true }).click();
+    await expect(page.locator('#consultingSurveySectionTitle')).toHaveText('학생 상태');
+    await expect(page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true })).toBeFocused();
+    await expect(page.getByRole('textbox', { name: '거주 지역 보완 메모', exact: true })).toHaveValue('구 단위로 적어주세요.');
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-comments-1440.png') });
+    await page.setViewportSize({ width: 320, height: 1000 });
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await page.locator('#consultingMaterialDetail').screenshot({ path: testInfo.outputPath('admin-survey-comments-320.png') });
+    await page.getByRole('button', { name: '보완 요청 미리보기', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: '보완 요청 확인' })).toContainText('구 단위로 적어주세요.');
+    expect(state.calls.some(call => call.type === 'admin_request_v2_supplement')).toBe(false);
+});
+
+test('이미 보낸 보완 요청은 해당 답변 옆에 표시하고 읽기 상태에서는 새 코멘트를 만들지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'SUPPLEMENT_REQUIRED';
+    state.supplementFields = ['studentStatus.residenceRegion'];
+    state.supplement = { fields: [{ field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 적어주세요.' }] };
+    await enterConsulting(page); await openStudent(page, 1);
+    await expect(page.locator('#consultingSurveyBadge-studentStatus')).toHaveText('보완 요청 1');
+    const note = page.locator('#consultingMaterialSurvey .consulting-survey-requested-note');
+    await expect(note).toContainText('학생에게 요청한 보완');
+    await expect(note).toContainText('<img src=x> 구 단위로 적어주세요.');
+    await expect(note.locator('img')).toHaveCount(0);
+    await expect(page.locator('#consultingMaterialSurvey textarea')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '보완 요청 미리보기', exact: true })).toBeHidden();
+});
+
+test('관리자 첫 진입부터 보완 재제출을 알리고 알림에서 수정 전후를 바로 연다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementAlerts = [{ caseId, studentNameMask: '둘*생', attempt: 1, submittedAt: '2026-11-14T01:00:00.000Z', changedCount: 1 }];
+    state.supplementReview = { attempt: 1, submittedAt: '2026-11-14T01:00:00.000Z', comparisonBasis: 'request', fields: [
+        { field: 'studentStatus.residenceRegion', label: '거주 지역', note: '<img src=x> 구 단위로 적어주세요.', before: '서울', after: '서울 송파구', changed: true },
+        { field: 'qualitative.consultationQuestions', label: '상담에서 답을 받고 싶은 질문', note: '비교할 대학을 적어주세요.', before: ['가군 질문', '나군 질문'], after: ['가군 질문', '나군 질문'], changed: false }
+    ] };
+    await page.goto('/admin');
+    await expect(page.locator('#consultingSupplementAlerts')).toBeVisible();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toHaveText('1');
+    await expect(page.locator('#consultingSupplementAlerts')).toContainText('둘*생 · 1차 보완 답변');
+    await page.getByRole('button', { name: '둘*생 보완 수정 내역 확인' }).click();
+    await expect(page).toHaveURL(/case=CASE_22222222.*tab=materials/);
+    await expect(page.locator('#consultingSupplementResponse')).toContainText('요청 2개 · 수정 1개 · 변경 없음 1개');
+    const comparison = page.locator('#consultingSurveyPanel-studentStatus .consulting-supplement-comparison');
+    await expect(comparison).toContainText('요청 전 답변');
+    await expect(comparison).toContainText('서울 송파구');
+    await expect(comparison).toContainText('<img src=x> 구 단위로 적어주세요.');
+    await expect(comparison.locator('img')).toHaveCount(0);
+    await page.locator('#consultingSupplementResponse').getByRole('button', { name: '상담에서 답을 받고 싶은 질문 · 변경 없음' }).click();
+    await expect(page.locator('#consultingSurveyPanel-qualitative')).toBeVisible();
+    await page.reload();
+    await expect(page.locator('#consultingStudentTitle')).toHaveText('둘째 합성 학생 · 학생 상세');
+    await page.setViewportSize({ width: 320, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('admin-supplement-response-320.png'), fullPage: true });
+});
+
+test('보완 알림은 화면 복귀 때 갱신하고 조회 실패는 자동 반복하지 않는다', async ({ page }) => {
+    await page.clock.install();
+    const state = await prepare(page, '', state => { state.alertError = 403; });
+    await expect(page.locator('#consultingSupplementAlerts')).toContainText('알림을 확인하지 못했습니다');
+    expect(state.calls.filter(item => item.type === 'admin_list_v2_material_review')).toHaveLength(1);
+    await page.clock.runFor(95000);
+    expect(state.calls.filter(item => item.type === 'admin_list_v2_material_review')).toHaveLength(1);
+    state.alertError = 0;
+    state.supplementAlerts = [{ caseId, studentNameMask: '둘*생', attempt: 2, submittedAt: '2026-11-14T01:00:00.000Z', changedCount: 2 }];
+    await page.getByRole('button', { name: '알림 목록 새로고침' }).click();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toHaveText('1');
+    state.supplementAlerts = [];
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(page.locator('#consultingSupplementAlerts')).toBeHidden();
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    await page.clock.runFor(95000);
+    await expect(page.locator('#consultingSupplementAlertList')).toBeEmpty();
+    await expect(page.locator('#consultingSupplementAlertBadge')).toBeHidden();
+});
+
+
+test('조사서 승인과 성적 확인은 분리되며 보완 메모가 남으면 승인을 막는다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'MATERIAL_REVIEW';
+    state.supplementFields = ['studentStatus.residenceRegion'];
+    await enterConsulting(page);
+    await page.getByRole('button', { name: '02 가입·조사서', exact: true }).click();
+    await openStudent(page);
+    const approve = page.getByRole('button', { name: '조사서 승인 · 일정 선택 열기' });
+    await expect(approve).toBeVisible();
+    await expect(page.getByRole('heading', { name: '조사서 보완 요청', exact: true })).toHaveCount(0);
+    await page.getByLabel('거주 지역 보완 메모 추가', { exact: true }).click();
+    const note = page.getByRole('textbox', { name: '거주 지역 보완 메모' });
+    await note.fill('거주 지역을 추가 확인합니다.');
+    await expect(approve).toBeDisabled();
+    await expect(page.locator('#consultingSupplementStatus')).toContainText('보완');
+    await note.fill('');
+    await expect(approve).toBeEnabled();
+    await page.getByRole('tab', { name: '성적', exact: true }).click();
+    await expect(page.locator('#consultingMaterialReviewActions')).not.toContainText('일정 선택');
+    await page.getByText('공식 성적 확인·정정', { exact: true }).click();
+    await page.getByRole('button', { name: '공식 성적 확인·저장', exact: true }).click();
+    await expect(page.locator('#consultingScoreReviewStatus')).toContainText('국어');
+    expect(state.calls.some(call => call.type === 'admin_review_v2_scores')).toBe(false);
+    await page.setViewportSize({ width: 320, height: 720 });
+    expect(await page.locator('#consultingMaterialDetail').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+});
+
+
+test('새 상담 메시지는 목록에서 바로 열고 학생 상세에서도 대화 기록으로 연결한다', async ({ page }) => {
+    const state = await prepare(page); state.writtenAlerts = [{ caseId }]; state.students[1].case.hasWrittenSession = true;
+    await enterConsulting(page);
+    await expect(page.getByRole('region', { name: '새 상담 메시지' })).toContainText('확인할 상담 메시지');
+    await expect(page.getByRole('region', { name: '새 상담 메시지' }).getByRole('link')).toHaveAttribute('href', '/2027-jungsi-consulting/written-session?caseId=' + caseId);
+    await page.locator('#consultingDirectoryBody tr').nth(1).getByRole('button', { name: '학생 상세' }).click();
+    await page.getByRole('button', { name: '서면상담', exact: true }).click();
+    await expect(page.getByRole('link', { name: '서면상담 대화 열기 →' })).toHaveAttribute('href', '/2027-jungsi-consulting/written-session?caseId=' + caseId);
+});
+
+
+test('학생 상세는 두 기준 추천만 표시하고 수동은 날짜·시간·담당으로 접어 두며 공통 추천은 한 장이다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.students[1].case.workflowState = 'SCHEDULING';
+    const slot = (date, time, role) => ({ slotId: 'WST_' + date.replaceAll('-', '') + '_' + time.replace(':', ''), localDate: date,
+        startAt: date + 'T' + time + ':00+09:00', counselorId: role, teamRole: role });
+    const candidates = ['2026-12-07', '2026-12-08'].flatMap(date => ['10:00', '10:30'].flatMap(time => ['CMO', 'CEO', 'CTO'].map(role => slot(date, time, role))));
+    const a = { ...candidates[6], strategies: ['operator_first'] }, b = { ...candidates[1], strategies: ['earliest_first'] };
+    state.scheduleCandidates = { caseId, candidates, recommendations: [a, b], recommendationVersion: 1, availabilityRevision: 2, canManage: true, session: null };
+    await enterConsulting(page); await openStudent(page, 1); await page.locator('[data-student-tab="written"]').click();
+    const cards = page.locator('.consulting-schedule-card'); await expect(cards).toHaveCount(2);
+    await expect(cards.first()).toContainText('담당 우선'); await expect(cards.nth(1)).toContainText('빠른 일정 우선');
+    await expect(page.locator('#consultingScheduleManual')).not.toHaveAttribute('open', '');
+    await expect(page.getByRole('button', { name: '날짜와 시간 선택', exact: true })).toBeHidden();
+    for (const width of [1280, 375, 320]) {
+        await page.setViewportSize({ width, height: 900 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        await cards.first().scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath(`two-schedule-cards-${width}.png`) });
+    }
+    await page.getByText('직접 다른 시간 선택', { exact: true }).click();
+    await page.getByRole('button', { name: '날짜와 시간 선택', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await expect(dialog.getByLabel('날짜', { exact: true }).locator('option')).toHaveCount(2);
+    await expect(dialog.getByLabel('가능한 시간').locator('option')).toHaveCount(3);
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[0].slotId);
+    await expect(dialog.getByLabel('담당자', { exact: true })).toHaveValue('CMO');
+    await dialog.getByLabel('날짜', { exact: true }).selectOption('2026-12-08');
+    await expect(dialog.getByLabel('가능한 시간').locator('option').nth(1)).toHaveAttribute('value', candidates[6].slotId);
+    expect(state.calls.filter(call => /confirm|reschedule/.test(call.type))).toHaveLength(0);
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+    state.scheduleCandidates.recommendations = [{ ...a, strategies: ['operator_first', 'earliest_first'] }];
+    await page.getByRole('button', { name: '후보 조회', exact: true }).click();
+    await expect(cards).toHaveCount(1); await expect(cards.first()).toContainText('두 기준 공통 추천');
+});
+
+test('전체 시간표는 두 전체 배치안을 전환해도 학생 행을 늘리거나 추가 조회하지 않는다', async ({ page }) => {
+    const state = await prepare(page);
+    const base = { caseId, studentName: '합*생', availabilityRevision: 2, sessionRevision: null, changeKind: null, counselorId: 'CMO', teamRole: 'CMO', slotId: 'WST_20261208_1000', startAt: '2026-12-08T01:00:00Z' };
+    state.board = { settings: { startDate: '2026-12-07', endDate: '2026-12-20', lunchStart: '12:00', lunchEnd: '13:00', lunchMode: 'avoid', compactDays: true, revision: 0 },
+        placements: [base], unassigned: [], confirmed: [], plans: [{ policy: 'operator_first', placements: [base], unassigned: [] }, { policy: 'earliest_first', placements: [{ ...base, startAt: '2026-12-07T01:00:00Z', counselorId: 'CEO', teamRole: 'CEO' }], unassigned: [] }], hasOpenTimes: true };
+    await enterConsulting(page); await page.getByText('서면상담 전체 시간표', { exact: true }).click();
+    const body = page.locator('#consultingScheduleBoardBody'); await expect(body).toContainText('CMO');
+    const calls = state.calls.filter(call => call.type === 'admin_get_written_schedule_board').length;
+    await page.getByRole('button', { name: '빠른 일정 우선', exact: true }).click();
+    await expect(body).toContainText('CEO'); await expect(body).not.toContainText('CMO');
+    await expect(body.getByRole('button', { name: '다른 시간 보기' })).toHaveCount(1);
+    expect(state.calls.filter(call => call.type === 'admin_get_written_schedule_board')).toHaveLength(calls);
+});
+
+test('날짜 조회 중 확정이 잠기고 닫은 뒤 늦은 응답은 다른 학생 화면을 복원하지 않는다', async ({ page }) => {
+    const state = await prepare(page); state.students[1].case.workflowState = 'SCHEDULING';
+    const candidates = ['07', '08'].map(day => ({ slotId: `WST_202612${day}_1000`, startAt: `2026-12-${day}T01:00:00Z`, counselorId: 'CMO', teamRole: 'CMO' }));
+    state.scheduleCandidates = { caseId, candidates, recommendations: [candidates[0]], availabilityRevision: 2, session: null };
+    await enterConsulting(page); await openStudent(page, 1); await page.locator('[data-student-tab="written"]').click();
+    await page.getByText('직접 다른 시간 선택', { exact: true }).click(); await page.getByRole('button', { name: '날짜와 시간 선택', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '학생별 일정 선택' });
+    await dialog.getByLabel('가능한 시간').selectOption(candidates[0].slotId);
+    state.deferScheduleDate = '2026-12-08'; await dialog.getByLabel('날짜', { exact: true }).selectOption(state.deferScheduleDate);
+    await expect.poll(() => Boolean(state.releaseScheduleDate)).toBe(true);
+    await expect(dialog.getByRole('button', { name: '이 시간 확정', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click(); state.releaseScheduleDate();
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click(); await openStudent(page, 0);
+    await expect(dialog).not.toBeVisible();
+    expect(state.calls.filter(call => call.type === 'admin_confirm_written_assignment')).toHaveLength(0);
+});

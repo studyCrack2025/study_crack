@@ -46,7 +46,7 @@ test('Starter filter returns Starter students and excludes Basic students', asyn
     assert.match(get('studentListBody').children[0].innerHTML, /STARTER/);
     assert.doesNotMatch(get('studentListBody').children[0].innerHTML, /basic-student/);
 });
-test('pending tutor lookup does not block students or question badge; saved tutor survives', async () => {
+test('consulting entry preserves saved filters without querying unrelated tutor, student or QNA services', async () => {
     const { context, get, run } = setup();
     const calls = [];
     context.Store.get = () => ({ filterTutor: 'saved tutor' });
@@ -55,8 +55,10 @@ test('pending tutor lookup does not block students or question badge; saved tuto
     context.searchStudents = () => calls.push('students');
     context.fetchUnreadNotiCount = () => calls.push('noti');
     context.fetchQnaBadgeCount = () => calls.push('qna');
+    context.readAdminLocation = () => ({ section: 'consulting' });
+    context.restoreAdminNavigation = () => calls.push('consulting');
     await run('initAdminPage("admin-owner")');
-    assert.deepEqual(calls, ['stats', 'students', 'noti', 'qna']);
+    assert.deepEqual(calls, ['noti', 'consulting']);
     assert.equal(get('filterTutor').value, 'saved tutor');
 });
 test('tutor options use lite lookup, preserve current selection and do not duplicate', async () => {

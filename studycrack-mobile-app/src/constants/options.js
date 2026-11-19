@@ -1,26 +1,30 @@
-export const INQUIRY_SUBJECTS = [
-  '생활과 윤리',
-  '윤리와 사상',
-  '한국지리',
-  '세계지리',
-  '동아시아사',
-  '세계사',
-  '경제',
-  '정치와 법',
-  '사회·문화',
-  '물리학Ⅰ',
-  '화학Ⅰ',
-  '생명과학Ⅰ',
-  '지구과학Ⅰ',
-  '물리학Ⅱ',
-  '화학Ⅱ',
-  '생명과학Ⅱ',
-  '지구과학Ⅱ'
+export const INQUIRY_SUBJECT_GROUPS = [
+  ['사회탐구', [
+    '생활과 윤리',
+    '윤리와 사상',
+    '한국지리',
+    '세계지리',
+    '동아시아사',
+    '세계사',
+    '경제',
+    '정치와 법',
+    '사회·문화'
+  ]],
+  ['과학탐구', [
+    '물리학Ⅰ',
+    '화학Ⅰ',
+    '생명과학Ⅰ',
+    '지구과학Ⅰ',
+    '물리학Ⅱ',
+    '화학Ⅱ',
+    '생명과학Ⅱ',
+    '지구과학Ⅱ'
+  ]]
 ];
 
-export const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
+export const INQUIRY_SUBJECTS = INQUIRY_SUBJECT_GROUPS.flatMap(([, subjects]) => subjects);
 
-export const SEPTEMBER_SCORE_ESTIMATE_NOTICE = '9월 모평 환산값은 공식 성적표 발표 전 가채점 등급컷을 바탕으로 만든 임시 추정치예요. 실제 성적표의 표준점수·백분위·등급과 다를 수 있어요.';
+export const GRADE_STATUS_OPTIONS = ['고1/2 재학', '고3 재학', 'N수생', '검정고시', '기타'];
 
 export const EXAM_OPTIONS = [
   '3월 모의고사',
