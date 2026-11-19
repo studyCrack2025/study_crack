@@ -4,6 +4,14 @@ const applicationId = 'APP_123e4567-e89b-12d3-a456-426614174000';
 const bankTransfer = { bankName: '시험은행', accountNumber: '000-000-000000', accountHolder: '시험사업자' };
 async function prepare(page, options = {}) {
   const state = { submits: [], attributionRequests: [], application: null, amount: 200000, ...options };
+  await page.clock.setFixedTime(new Date('2026-11-19T09:00:00.000Z'));
+  await page.addInitScript(({ denied }) => {
+    window.enrollmentCopiedValues = [];
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => {
+      if (denied) throw new Error('Clipboard denied');
+      window.enrollmentCopiedValues.push(text);
+    } } });
+  }, { denied: Boolean(options.clipboardDenied) });
   await page.route('**/gtm.js*', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: "window.IS_LOCAL=false;window.CONFIG={api:{consultingPublic:'/__enrollment',consulting:'/__consulting',auth:'/__auth'}};" }));
   await page.route('**/__enrollment', async route => {
@@ -16,14 +24,16 @@ async function prepare(page, options = {}) {
       return route.fulfill({ json: { success: true, data: { token: 'synthetic-signed-token', expiresAt: '2030-01-01T00:00:00.000Z' } } });
     }
     if (type === 'get_site_enrollment') {
+      if (state.salesClosed) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
       if (state.unavailable) return route.fulfill({ status: 503, json: { success: false, code: 'CALCULATOR_DATA_NOT_READY' } });
       expect(data.formVersion).toBe(2);
-      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: state.amount === 200000, accessEndsAt: '2027-03-01T00:00:00.000Z', bankTransfer, formVersion: state.oldContract ? 1 : 2, consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
+      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: data.productType === 'consulting' && state.amount === 200000, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, formVersion: state.oldContract ? 1 : 2, consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
     }
     if (type === 'public_submit_site_application') {
+      if (state.closeOnSubmit) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
       state.submits.push(data);
       if (state.priceChanged) { state.amount = 300000; return route.fulfill({ status: 409, json: { success: false, code: 'PRICE_CHANGED' } }); }
-      state.application = { applicationId, productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.acceptedAmount, accessEndsAt: data.productType === 'calculator' ? '2027-03-01T00:00:00.000Z' : undefined, bankTransfer, maskedEmail: 's***@example.invalid', applicationState: 'PAYMENT_REVIEW' };
+      state.application = { applicationId, productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.acceptedAmount, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), ...(data.productType === 'consulting' && data.acceptedAmount === 200000 ? { paymentDueAt: '2026-12-18T14:59:59.999Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, maskedEmail: 's***@example.invalid', applicationState: 'PAYMENT_REVIEW' };
       if (state.loseReply) return route.abort('failed');
       return route.fulfill({ status: 202, json: { success: true, data: state.application } });
     }
@@ -55,7 +65,9 @@ test('두 상품은 사이트에서 동의·접수·입금·가입 안내로 연
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   expect(state.submits).toHaveLength(1); expect(state.submits[0].productType).toBe('consulting');
   expect(state.submits[0].formVersion).toBe(2); expect(state.submits[0].consentRevision).toBe('JUNGSI_SITE_2027_V2');
-  await expect(page.locator('#jungsiReceiptBank')).toHaveText('시험은행 000-000-000000 · 예금주 시험사업자');
+  await expect(page.locator('#jungsiReceiptBankName')).toHaveText('시험은행');
+  await expect(page.locator('#jungsiReceiptAccountNumber')).toHaveText('000-000-000000');
+  await expect(page.locator('#jungsiReceiptAccountHolder')).toHaveText('시험사업자');
   await expect(page.locator('#jungsiEnrollmentReceipt').getByRole('link', { name: '회원가입', exact: true })).toHaveAttribute('href', '/signup?returnUrl=%2F2027-jungsi-consulting%2Fstart');
   const stored = await page.evaluate(() => sessionStorage.getItem('sc_jungsi_application_v1'));
   for (const value of ['홍길동', '010-1234-5678', 'synthetic@example.invalid']) expect(stored).not.toContain(value);
@@ -245,5 +257,104 @@ test('광고 연결 실패는 기존 구글폼 주소로 돌아가며 사이트 
   await expect(page.locator('#jungsiEnrollmentPrice')).toContainText('200,000원');
   await expect(page.locator('#jungsiGoogleForm')).toHaveAttribute('href', 'https://docs.google.com/forms/d/e/synthetic/viewform');
   await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
+  expect(state.submits).toHaveLength(0);
+});
+
+test('receipt prioritizes the exact product, amount and bank while copy actions never resubmit', async ({ page }) => {
+  const state = await prepare(page);
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentTitle')).toHaveText('신청 완료 · 입금 안내');
+  await expect(page.locator('#jungsiReceiptAmount')).toHaveText('200,000원');
+  await expect(page.locator('#jungsiReceiptPaymentInstruction')).toHaveText('아래 계좌로 200,000원을 입금해주세요.');
+  await expect(page.locator('#jungsiReceiptState')).toHaveText('입금 확인 대기');
+  await expect(page.locator('#jungsiReceiptPeriod')).toBeHidden();
+  await expect(page.locator('#jungsiReceiptNumber')).toBeHidden();
+  await page.getByRole('button', { name: '계좌번호 복사', exact: true }).click();
+  await expect(page.locator('#jungsiEnrollmentCopyStatus')).toHaveText('계좌번호를 복사했습니다.');
+  expect(await page.evaluate(() => window.enrollmentCopiedValues)).toEqual([bankTransfer.accountNumber]);
+  await page.locator('.jungsi-enrollment-details summary').click();
+  await expect(page.locator('#jungsiReceiptNumber')).toHaveText(applicationId);
+  await page.getByRole('button', { name: '신청번호 복사', exact: true }).click();
+  await expect(page.locator('#jungsiEnrollmentCopyStatus')).toHaveText('신청번호를 복사했습니다.');
+  expect(await page.evaluate(() => window.enrollmentCopiedValues)).toEqual([bankTransfer.accountNumber, applicationId]);
+  expect(state.submits).toHaveLength(1);
+});
+
+test('clipboard rejection preserves the visible account and provides a manual copy fallback', async ({ page }) => {
+  const state = await prepare(page, { clipboardDenied: true });
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await page.locator('#jungsiReceiptCopyAccount').click();
+  await expect(page.locator('#jungsiEnrollmentCopyStatus')).toContainText('직접 복사');
+  await expect(page.locator('#jungsiReceiptAccountNumber')).toBeVisible();
+  expect(await page.evaluate(() => window.getSelection().toString())).toBe(bankTransfer.accountNumber);
+  expect(state.submits).toHaveLength(1);
+});
+
+test('receipt actions follow payment, claimed, rejected and expired states without requesting another transfer', async ({ page }) => {
+  const state = await prepare(page);
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  for (const [applicationState, badge] of [['INVITED', '입금 확인 완료'], ['CLAIMED', '이용 인증 완료'], ['REJECTED', '운영팀 확인 필요']]) {
+    state.application.applicationState = applicationState;
+    await page.locator('#jungsiEnrollmentRecover').click();
+    await expect(page.locator('#jungsiReceiptState')).toHaveText(badge);
+    await expect(page.locator('#jungsiReceiptPayment')).toBeHidden();
+    await expect(page.locator('#jungsiReceiptCopyAccount')).toBeHidden();
+    if (applicationState === 'CLAIMED') {
+      await expect(page.locator('#jungsiReceiptAccess')).toBeVisible();
+      await expect(page.locator('#jungsiReceiptAccess')).toHaveAttribute('href', '/2027-jungsi-consulting/home');
+      await expect(page.locator('#jungsiReceiptSignup')).toBeHidden();
+    } else await expect(page.locator('#jungsiReceiptAccess')).toBeHidden();
+  }
+  state.application.applicationState = 'PAYMENT_REVIEW'; state.application.paymentDueAt = '2026-11-18T14:59:59.999Z';
+  await page.locator('#jungsiEnrollmentRecover').click();
+  await expect(page.locator('#jungsiReceiptState')).toHaveText('입금 기한 종료');
+  await expect(page.locator('#jungsiReceiptPayment')).toBeHidden();
+  await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click(); await page.locator('#calculatorApply').click();
+  await page.locator('#jungsiEnrollmentNew').click(); await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiReceiptAmount')).toHaveText('25,000원');
+  await expect(page.locator('#jungsiReceiptPeriod')).toContainText('2027년 1월 7일');
+  await expect(page.locator('#jungsiReceiptDeadline')).toContainText('2027년 1월 6일 18:00');
+  state.application.applicationState = 'CLAIMED';
+  await page.locator('#jungsiEnrollmentRecover').click();
+  await expect(page.locator('#jungsiReceiptAccess')).toHaveAttribute('href', '/2027-jungsi-consulting/calculator');
+  state.application.accessEndsAt = '2026-11-18T14:59:59.999Z';
+  await page.locator('#jungsiEnrollmentRecover').click();
+  await expect(page.locator('#jungsiReceiptState')).toHaveText('이용 기간 종료');
+  await expect(page.locator('#jungsiReceiptAccess')).toBeHidden();
+  await expect(page.locator('#jungsiReceiptPayment')).toBeHidden();
+  expect(state.submits).toHaveLength(2);
+});
+
+test('form groups, receipt numbers and styled controls fit narrow and desktop viewports', async ({ page }, testInfo) => {
+  await prepare(page, { bankTransfer: { ...bankTransfer, accountNumber: '0123456789012345678901234567890123456789' } });
+  for (const width of [320, 390, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.locator('#consultingApply').click();
+    await expect(page.getByRole('heading', { name: '신청자 정보', exact: true })).toBeVisible();
+    expect(await page.locator('#jungsiEnrollment').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+    await expect(page.locator('#jungsiReceiptCopyAccount')).toBeVisible();
+    expect(await page.locator('#jungsiReceiptAccountNumber').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    expect(await page.locator('#jungsiEnrollment').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    expect(await page.locator('#jungsiEnrollmentNew').evaluate(node => getComputedStyle(node).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+    await page.screenshot({ path: testInfo.outputPath(`enrollment-receipt-${width}.png`) });
+    await page.locator('#jungsiEnrollmentNew').click();
+    await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  }
+});
+
+
+test('calculator closing during form entry never creates a phantom saved application or transfer instruction', async ({ page }) => {
+  const state = await prepare(page, { closeOnSubmit: true });
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
+  await page.locator('#calculatorApply').click();
+  await expect(page.locator('#jungsiEnrollmentPaymentDeadline')).toContainText('2027년 1월 6일 18:00');
+  await expect(page.locator('#jungsiEnrollmentPeriod')).toContainText('2027년 1월 7일 23:59');
+  await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentStatus')).toContainText('계산기 결제 기한이 종료');
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeHidden();
+  await expect(page.locator('#jungsiEnrollmentRecover')).toBeHidden();
+  expect(await page.evaluate(() => sessionStorage.getItem('sc_jungsi_application_v1'))).toBeNull();
   expect(state.submits).toHaveLength(0);
 });

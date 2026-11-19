@@ -438,13 +438,13 @@ test('메인 정시 링크는 서비스 안내로 연결하고 Basic 진입을 �
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${baseURL}/`);
       const entry = page.locator('.hero-main-content').getByRole('link', { name: '2027 정시컨설팅 비용·상담 안내 →', exact: true });
-      await expect(entry).toHaveAttribute('href', '/2027-jungsi-consulting');
+      await expect(entry).toHaveAttribute('href', '/2027-jungsi-consulting#consulting');
       await expect(entry).toBeInViewport();
       await expect(page.locator('.hero-main-content .basic-preview-entry')).toHaveAttribute('href', '/basic-preview');
       expect(await page.locator('.hero-main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
       await page.screenshot({ path: testInfo.outputPath(`main-service-entry-${width}.png`) });
       await entry.click();
-      await expect(page).toHaveURL(`${baseURL}/2027-jungsi-consulting`);
+      await expect(page).toHaveURL(`${baseURL}/2027-jungsi-consulting#consulting`);
       await expect(page.locator('#landingTitle')).toContainText('정시컨설팅,');
       for (const policy of ['/terms', '/refund', '/privacy']) {
         const link = page.locator('.footer').locator(`a[href="${policy}"]`);

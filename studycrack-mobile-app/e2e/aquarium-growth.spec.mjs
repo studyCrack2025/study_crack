@@ -203,3 +203,44 @@ test('다른 안내로 비활성화된 수조는 해금을 소비하지 않고 �
   await expect(page.locator('.aquarium-unlock-notice')).toHaveCount(0);
   await expect(page.locator('.aquarium-growth-caption')).not.toContainText('성장 인정 50일');
 });
+
+for (const claimMoment of ['before-persist', 'after-persist']) test(`해금 잠금 응답 중 가시성 복귀를 놓치지 않는다 (${claimMoment})`, async ({ page }) => {
+  await page.addInitScript(() => {
+    const request = navigator.locks.request.bind(navigator.locks);
+    const state = window.aquariumUnlockRace = { calls: 0, phase: 'idle' };
+    navigator.locks.request = (key, options, run) => request(key, options, async lock => {
+      if (!key.startsWith('studycrackAquariumSeen_v1:') || ++state.calls !== 1) return run(lock);
+      await new Promise(resolve => { state.before = resolve; state.phase = 'before'; });
+      const result = run(lock);
+      await new Promise(resolve => { state.after = resolve; state.phase = 'after'; });
+      return result;
+    });
+  });
+  await setup(page, 100); await page.goto('/studycrack-mobile.html?screen=aquarium'); await showCaption(page);
+  const slot = page.locator('.aquarium-unlock-slot'), scene = page.locator('.aquarium-scene-wrap');
+  await expect.poll(() => page.evaluate(() => window.aquariumUnlockRace.phase)).toBe('before');
+  if (claimMoment === 'before-persist') {
+    await scene.evaluate(el => el.setAttribute('inert', ''));
+    await expect(slot).toHaveAttribute('data-unlock-active', 'false');
+  }
+  await page.evaluate(() => window.aquariumUnlockRace.before());
+  await expect.poll(() => page.evaluate(() => window.aquariumUnlockRace.phase)).toBe('after');
+  if (claimMoment === 'before-persist') {
+    expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBeNull();
+    await scene.evaluate(el => el.removeAttribute('inert'));
+    await expect(slot).toHaveAttribute('data-unlock-active', 'true');
+  } else {
+    expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBe('day100');
+    await scene.evaluate(el => el.setAttribute('inert', ''));
+    await expect(slot).toHaveAttribute('data-unlock-active', 'false');
+  }
+  await page.evaluate(() => window.aquariumUnlockRace.after());
+  if (claimMoment === 'after-persist') {
+    await expect(page.locator('.aquarium-unlock-notice')).toHaveCount(1);
+    await scene.evaluate(el => el.removeAttribute('inert'));
+  }
+  await expect(page.locator('.aquarium-unlock-notice')).toContainText('DAY 100 배경을 열었어요');
+  expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBe('day100');
+  await page.getByRole('button', { name: '해금 안내 닫기' }).click();
+  await expect(page.locator('.aquarium-unlock-notice')).toHaveCount(0);
+});
