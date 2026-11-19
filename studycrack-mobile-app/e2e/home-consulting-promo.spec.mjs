@@ -110,6 +110,16 @@ test('소개 페이지 이동은 기존 세션을 보존하고 다른 화면에�
     expect(await page.evaluate(() => sessionStorage.getItem('promo-test-session'))).toBe('unchanged');
     await expect(promo(page)).toHaveCount(0);
     await page.goBack({ waitUntil: 'domcontentloaded' }); await page.waitForTimeout(650); await expect(promo(page)).toBeHidden();
+    await page.locator('.hero-main-content').getByRole('link', { name: '2027 정시컨설팅 비용·상담 안내 →', exact: true }).click();
+    await expect(page).toHaveURL(/\/2027-jungsi-consulting#consulting$/);
+    await expect(page.getByRole('tab', { name: '정시 컨설팅', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#consultingPanel')).toBeVisible(); await expect(page.locator('#calculator')).toBeHidden();
+    await page.reload({ waitUntil: 'domcontentloaded' }); await expect(page.locator('#consultingPanel')).toBeVisible();
+    await page.goBack({ waitUntil: 'domcontentloaded' }); await expect(promo(page)).toBeHidden();
+    await page.locator('.hero-main-content').getByRole('link', { name: '정시 합격 계산기 →', exact: true }).click();
+    await expect(page).toHaveURL(/\/2027-jungsi-consulting#calculator$/);
+    await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#calculator')).toBeVisible(); await expect(page.locator('#consultingPanel')).toBeHidden();
     for (const path of ['/login', '/service', '/2027-jungsi-consulting/start']) {
         const response = await page.request.get(path); expect(response.ok()).toBe(true);
         expect(await response.text()).not.toContain('id="homeConsultingPromo"');
