@@ -3,7 +3,9 @@ import React from 'react';
 export default function CalculatorAccess({ resource, onRefresh }) {
   const { status, data, error } = resource;
   const allowed = status === 'ready' && data.access.allowed;
+  const openingSoon = allowed && Date.now() < Date.parse('2026-11-28T00:00:00+09:00');
   return <section id="jcalc-access-status" className="jcalc-panel jcalc-access" aria-label="계산기 이용 상태" aria-busy={status === 'loading'}>
+    {openingSoon && <div className="jcalc-opening-notice" role="note" aria-label="합격 계산기 공개 일정"><strong>합격 계산기는 <time dateTime="2026-11-28">11월 28일</time> 공개 예정입니다.</strong><p>이용권이 확인되었습니다. 공개 전에도 성적과 지원 후보를 미리 입력할 수 있습니다.</p></div>}
     <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">이용 안내</p><h2>{status === 'loading' ? '이용 권한을 확인하고 있습니다.' : status === 'error' ? '이용 상태를 다시 확인해주세요.' : allowed ? data.access.source === 'manager' ? '운영자 이용 권한을 확인했습니다.' : data.access.source === 'purchase' ? '합격 계산기 이용권을 확인했습니다.' : '기존 이용권으로 조회할 수 있습니다.' : '합격 계산기 또는 Basic 이상 이용권이 필요합니다.'}</h2></div>
       <button className="jcalc-secondary" type="button" disabled={status === 'loading'} onClick={onRefresh}>이용 상태 다시 확인</button></div>
     {status === 'error' ? <p className="jcalc-error" role="alert">{error}</p> : <p className="jcalc-note" role="status">{status === 'loading' ? '입력과 검색은 계속할 수 있습니다. 확인 후 조회 버튼을 이용해주세요.' : allowed ? '성적과 후보를 입력한 뒤 조회할 수 있습니다. 모집단위별 자료·모델 검증 상태에 따라 결과를 안내합니다.' : '합격 계산기 단독 이용권 또는 Basic·Starter·Standard·Pro 이용 권한을 사용합니다. 입력과 후보 탐색은 계속할 수 있습니다.'}</p>}

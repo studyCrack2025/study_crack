@@ -46,6 +46,19 @@ for (const [width, height] of [[1440, 1000], [390, 844], [320, 568], [740, 360]]
         await scroll.evaluate(e => { e.scrollTop = 0; });
         await page.screenshot({ path: testInfo.outputPath(`homepage-consulting-${width}x${height}.png`) });
         await dismiss.click(); await expect(dialog).toBeHidden();
+        const actions = page.locator('.hero-main-actions');
+        const primaryBox = await actions.locator('.basic-preview-entry').boundingBox();
+        for (const fragment of ['consulting', 'calculator']) {
+            const link = actions.locator(`a[href="/2027-jungsi-consulting#${fragment}"]`);
+            await expect(link).toHaveCSS('text-decoration-line', 'none');
+            await expect(link).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+            const buttonBox = await link.boundingBox();
+            expect(buttonBox.height).toBeGreaterThanOrEqual(54);
+            expect(Math.abs(buttonBox.width - primaryBox.width)).toBeLessThanOrEqual(1);
+            expect(buttonBox.x).toBeGreaterThanOrEqual(0);
+            expect(buttonBox.x + buttonBox.width).toBeLessThanOrEqual(width + 1);
+        }
+        await page.screenshot({ path: testInfo.outputPath(`homepage-service-buttons-${width}x${height}.png`) });
     });
 }
 

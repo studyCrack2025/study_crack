@@ -17,6 +17,8 @@ body[data-app-surface="jungsi-calculator-2027"] :is(a, button, input, select):fo
 .jcalc-intro > p:not(.jcalc-eyebrow) { margin: 20px 0; color: var(--sc-ink-muted); font-size: 14px; line-height: 1.9; }
 .jcalc-badge { display: inline-block; padding: 6px 10px; border-radius: 4px; background: var(--sc-surface-subtle); color: var(--sc-brand-navy); font-size: 11px; font-weight: 700; }
 .jcalc-access { margin-bottom: 24px; }
+.jcalc-opening-notice { margin-bottom: 20px; padding: 16px; border: 1px solid var(--sc-brand-navy); border-radius: 6px; background: var(--sc-surface-subtle); color: var(--sc-brand-navy); font-size: 14px; line-height: 1.8; }
+.jcalc-opening-notice p { margin: 8px 0 0; color: var(--sc-ink-muted); font-size: 12px; }
 .jcalc-access-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
 .jcalc-access-preparation { padding: 16px; border-radius: 6px; background: var(--sc-surface-subtle); color: var(--sc-brand-navy); font-size: 12px; line-height: 1.85; }
 .jcalc-access-preparation p { margin: 8px 0 0; color: var(--sc-ink-muted); }

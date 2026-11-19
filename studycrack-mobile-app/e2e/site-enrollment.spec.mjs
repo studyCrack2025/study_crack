@@ -98,9 +98,30 @@ test('closing the modal during token lookup prevents a stale application submiss
   await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
   await expect.poll(() => state.attributionRequests.length).toBe(1);
   await expect(page.locator('#jungsiEnrollmentSubmit')).toBeDisabled();
-  await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  await page.locator('#jungsiEnrollment').getByRole('button', { name: '닫기', exact: true }).click();
   state.releaseAttribution(); await expect(page.locator('#jungsiEnrollment')).not.toBeVisible();
   await page.locator('#consultingApply').click(); await expect(page.locator('#jungsiEnrollmentSubmit')).toBeEnabled();
+  expect(state.submits).toHaveLength(0);
+});
+test('두 상품의 신청서 하단 닫기는 모바일·데스크톱에서 제출 없이 닫고 신청 버튼으로 돌아간다', async ({ page }, testInfo) => {
+  const state = await prepare(page);
+  for (const [width, height] of [[390, 844], [1280, 900]]) {
+    await page.setViewportSize({ width, height });
+    for (const [tab, id] of [['정시 컨설팅', 'consultingApply'], ['합격 계산기', 'calculatorApply']]) {
+      await page.getByRole('tab', { name: tab, exact: true }).click();
+      const trigger = page.locator(`#${id}`);
+      await trigger.click();
+      await expect(page.locator('#jungsiEnrollmentSubmit')).toBeEnabled();
+      const close = page.locator('#jungsiEnrollment').getByRole('button', { name: '닫기', exact: true });
+      await close.scrollIntoViewIfNeeded();
+      await expect(close).toBeInViewport();
+      expect((await close.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      await page.screenshot({ path: testInfo.outputPath(`${id}-bottom-close-${width}.png`) });
+      await close.click();
+      await expect(page.locator('#jungsiEnrollment')).toBeHidden();
+      await expect(trigger).toBeFocused();
+    }
+  }
   expect(state.submits).toHaveLength(0);
 });
 test('두 상품은 사이트에서 동의·접수·입금·가입 안내로 연결되고 중복 클릭은 한 번만 저장한다', async ({ page }, testInfo) => {
@@ -121,7 +142,7 @@ test('두 상품은 사이트에서 동의·접수·입금·가입 안내로 연
   for (const value of ['홍길동', '010-1234-5678', 'synthetic@example.invalid']) expect(stored).not.toContain(value);
   expect(await page.locator('#jungsiEnrollment').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('application-receipt.png') });
-  await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  await page.locator('#jungsiEnrollment').getByRole('button', { name: '닫기', exact: true }).click();
   await expect(page.locator('#consultingApply')).toBeFocused();
   await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
   await page.locator('#calculatorApply').click();
@@ -131,6 +152,8 @@ test('두 상품은 사이트에서 동의·접수·입금·가입 안내로 연
   await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiReceiptProduct')).toHaveText('2027 정시 합격 계산기');
   expect(state.submits).toHaveLength(2); expect(state.submits[1].acceptedAmount).toBe(25000);
+  await page.locator('#jungsiEnrollment').getByRole('button', { name: '닫기', exact: true }).click();
+  await expect(page.locator('#calculatorApply')).toBeFocused();
 });
 test('응답 유실·새로고침·로그인 시작 후에는 저장한 접수를 조회하며 다시 제출하지 않는다', async ({ page }) => {
   const state = await prepare(page, { loseReply: true });
