@@ -341,6 +341,7 @@ test('clipboard rejection preserves the visible account and provides a manual co
 test('receipt actions follow payment, claimed, rejected and expired states without requesting another transfer', async ({ page }) => {
   const state = await prepare(page);
   await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   for (const [applicationState, badge] of [['INVITED', '입금 확인 완료'], ['CLAIMED', '이용 인증 완료'], ['REJECTED', '운영팀 확인 필요']]) {
     state.application.applicationState = applicationState;
     await page.locator('#jungsiEnrollmentRecover').click();
