@@ -163,6 +163,7 @@
     "css/jungsi-consulting-app-shell.css",
     "css/jungsi-score-guide.css",
     "js/jungsi-consulting.js",
+    "js/consulting-ad-attribution.js",
     "login.html",
     "mbti_download.html",
     "mbti_survey.html",
