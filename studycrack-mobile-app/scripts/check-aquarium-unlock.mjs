@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './check-aquarium-unlock-visibility.mjs';
 import { claimAquariumUnlock } from '../src/features/gamification/unlock-ledger.js';
 
 const stages = ['day1', 'day7', 'day15', 'day30', 'day50', 'day100'];
