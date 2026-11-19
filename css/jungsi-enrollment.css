@@ -24,3 +24,5 @@
 .jungsi-enrollment-receipt dt { font-size:13px; color:#526176; }
 .jungsi-enrollment-receipt dd { margin:0 0 8px; overflow-wrap:anywhere; line-height:1.6; }
 .jungsi-enrollment-note { padding:14px; border-radius:6px; background:#f1f4fb; }
+.jungsi-enrollment-note summary { cursor:pointer; font-size:14px; font-weight:700; line-height:1.7; }
+.jungsi-enrollment-hint { margin:-8px 0 0; color:#526176; }

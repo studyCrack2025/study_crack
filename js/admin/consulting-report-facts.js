@@ -64,6 +64,7 @@ function updateConsultingReportFactsButton() {
 function reportFactCard(fact, prefix) {
     const card = reportFactElement('article', undefined, 'consulting-report-fact-card');
     card.append(reportFactElement('p', prefix || reportFactGroups[fact.admissionGroup], 'consulting-eyebrow'), reportFactElement('h4', `${fact.universityName} · ${fact.admissionUnitName}`), reportFactElement('p', fact.campusName, 'consulting-caption'));
+    if(fact.referenceComparison)return reportFactReviewedCard(card,fact);
     const indexMode = Object.hasOwn(fact, 'possibility'), indexReady = indexMode && reportFactIndexReady(fact);
     const riskLabel = indexMode ? indexReady ? reportFactBandLabels[fact.possibility.riskBand] : '판단 보류' : fact.reportRisk?.label || '판단 보류';
     const risk = reportFactElement('p', `${riskLabel}${!indexMode && fact.reportRisk?.wide ? ' · 변동 폭 큼' : ''}`, 'consulting-report-fact-risk'); risk.dataset.band = indexMode ? indexReady ? fact.possibility.riskBand : 'unknown' : fact.reportRisk?.band || 'unknown'; card.append(risk);
@@ -78,6 +79,30 @@ function reportFactCard(fact, prefix) {
     if (indexReady) card.append(reportFactElement('p', `${fact.possibility.sourceYear}학년도 입결 · ${fact.possibility.targetYear}학년도 반영 기준 · 실제 합격률이 아닌 가능성 지수`, 'consulting-caption'));
     if (!indexMode && fact.expectedCutoff) card.append(reportFactElement('p', `예상컷 범위 ${reportFactNumber(fact.expectedCutoff.low)}~${reportFactNumber(fact.expectedCutoff.high)} · 같은 환산 척도 차이 ${reportFactNumber(fact.scoreDelta)}`, 'consulting-caption'));
     if (!indexMode && fact.probability) card.append(reportFactElement('p', `컷 시나리오별 추정 범위 ${reportFactNumber(fact.probability.low)}~${reportFactNumber(fact.probability.high)}% · 합격 확률의 신뢰구간이 아닙니다.`, 'consulting-caption'));
+    return card;
+}
+function reportFactReviewedCard(card,fact) {
+    const r=fact.referenceComparison,states={current_two_references:'현행식 참고',prior_data_two_estimates:'기존자료 참고',historical70_only:'70% 단독 참고',academic_score_without_cut:'수능 점수만'};
+    const finite=n=>typeof n==='number'&&Number.isFinite(n),two=['current_two_references','prior_data_two_estimates'].includes(r?.status);
+    const valid=r?.contractVersion==='reviewed-admission-reference-v1'&&Object.hasOwn(states,r.status)
+        &&/^(?:U|SG27|R(?:0[1-9]|1[0-9]|20))_[a-f0-9]{16}$/.test(r.recordId||'')&&fact.admissionUnitId==='UNIT_REF_'+r.recordId.toUpperCase()
+        &&/^sha256:[a-f0-9]{64}$/.test(r.bundleDigest||'')&&r.convertedScore===fact.convertedScore&&r.major===(fact.sourceMajor??fact.admissionUnitName)
+        &&r.probability===null&&fact.probability===null&&fact.expectedCutoff===null&&r.empiricallyCalibrated===false&&r.personalEligibilityApproved===false&&r.publicationReady===false
+        &&finite(r.convertedScore)&&r.targetYear===2027&&(r.status==='current_two_references'?Number.isInteger(r.referenceYear)&&r.referenceYear>=2000&&r.referenceYear<=2027:r.status==='historical70_only'?r.referenceYear===2026:r.referenceYear===null)
+        &&(two?finite(r.passReference)&&finite(r.registered70Reference)&&r.passReference<r.registered70Reference&&Number.isInteger(r.referenceIndex)&&r.referenceIndex>=1&&r.referenceIndex<=99:r.passReference===null&&r.referenceIndex===null&&(r.status==='historical70_only'?finite(r.registered70Reference):r.registered70Reference===null));
+    const b=r?.referenceBounds,i=r?.indexRange,range=v=>v&&finite(v.low)&&finite(v.high)&&v.low<=v.high;
+    const boundsValid=r?.status==='current_two_references'?b?.kind==='cut_assumption_range'&&range(b.pass)&&range(b.registered70)
+        &&b.pass.low<=r.passReference+1e-7&&b.pass.high>=r.passReference-1e-7&&b.registered70.low<=r.registered70Reference+1e-7&&b.registered70.high>=r.registered70Reference-1e-7
+        &&i?.kind==='cut_assumption_range'&&range(i)&&i.low>=1&&i.high<=99:b===null&&i===null;
+    if(!valid||!boundsValid){card.append(reportFactElement('p','연결 자료의 점수·전형·기준을 확인해야 합니다. 수치를 표시하지 않습니다.','consulting-caption'));return card;}
+    const band=r.referenceIndex===null?'unknown':r.referenceIndex>=80?'stable':r.referenceIndex>=65?'appropriate':r.referenceIndex>=45?'neutral':r.referenceIndex>=25?'challenge':'risky';
+    const risk=reportFactElement('p',reportFactBandLabels[band]||'판단 보류','consulting-report-fact-risk');risk.dataset.band=band;card.append(risk);
+    const dl=reportFactElement('dl',undefined,'consulting-report-fact-metrics'),line=(value,b)=>b&&finite(b.low)&&finite(b.high)&&b.low!==b.high?`${reportFactNumber(value)} (${reportFactNumber(b.low)}~${reportFactNumber(b.high)})`:reportFactNumber(value);
+    const rows=[['수능 환산점수',reportFactNumber(r.convertedScore)],['예상 커트라인',r.passReference===null?'미제공':line(r.passReference,r.referenceBounds?.pass)],['70% 참고선',r.registered70Reference===null?'미제공':line(r.registered70Reference,r.referenceBounds?.registered70)],['참고 지수',r.referenceIndex===null?'미제공':`${r.referenceIndex} / 100`]];
+    for(const[label,value]of rows){const cell=document.createElement('div');cell.append(reportFactElement('dt',label),reportFactElement('dd',value));dl.append(cell);}card.append(dl);
+    card.append(reportFactElement('p',`${fact.trackName?fact.trackName+' · ':''}${states[r.status]} · ${r.referenceYear===null?'추정 생성연도 미확인':r.referenceYear+'학년도'+(r.referenceYear===2025?' 보완자료':' 입결 참고')} · ${fact.maximumScore===null?'기준 만점 미지정':'기준 만점 '+reportFactNumber(fact.maximumScore)}`,'consulting-caption'));
+    if(r.indexRange&&r.indexRange.low!==r.indexRange.high)card.append(reportFactElement('p',`지수 가정 범위 ${reportFactNumber(r.indexRange.low)}~${reportFactNumber(r.indexRange.high)}`,'consulting-caption'));
+    card.append(reportFactElement('p',`실제 합격 확률이 아닌 참고 지수입니다. 학생부·면접·실기·개인 지원 자격은 별도 검수합니다. 연결 번호 ${r.recordId}`,'consulting-caption'));
     return card;
 }
 function reportFactsWarnings(parent, codes) {

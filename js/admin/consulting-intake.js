@@ -6,7 +6,15 @@ let consultingApplicationDeletion = null;
 let consultingApplicationDeletionGeneration = 0;
 const consultingInputFields = { studentName: 'consultingContactStudentName', phone: 'consultingContactPhone', email: 'consultingContactEmail', payerName: 'consultingContactPayerName', payerRelationship: 'consultingContactRelationship', contactMethod: 'consultingContactMethod', studentStatus: 'consultingContactStudentStatus' };
 const consultingFormInputFields = { studentName: consultingInputFields.studentName, phone: consultingInputFields.phone, email: consultingInputFields.email, payerName: consultingInputFields.payerName, payerRelationship: consultingInputFields.payerRelationship, contactRelationship: 'consultingContactPersonRelationship' };
+const consultingCalculatorInputFields = { studentName: consultingInputFields.studentName, phone: consultingInputFields.phone, email: consultingInputFields.email, payerName: consultingInputFields.payerName };
 const consultingInputLabels = { studentName: '학생 이름', phone: '전화번호', email: '이메일', payerName: '입금자명', payerRelationship: '입금자와의 관계', contactRelationship: '연락처 본인·대리인 구분', contactMethod: '연락 방법', studentStatus: '학생 상태', payerRelationshipDetail: '입금자 관계 기타 내용', contactMethodDetail: '연락 방법 기타 내용', contactRelationshipDetail: '연락처 본인·대리인 기타 내용' };
+
+function consultingSimpleCalculatorInput(data) {
+    return data?.intakeFormVersion === 2 && data.application?.intakeSource === 'website' && data.application.productType === 'calculator';
+}
+function consultingApplicationInputFields(data) {
+    return consultingSimpleCalculatorInput(data) ? consultingCalculatorInputFields : data?.intakeFormVersion === 2 ? consultingFormInputFields : consultingInputFields;
+}
 
 function consultingInputNeedsReview(application) {
     return application?.inputReviewRequired === true || application?.paymentReviewStatus === 'input_review' || Array.isArray(application?.intakeIssues) && application.intakeIssues.length > 0;
@@ -26,7 +34,7 @@ function renderConsultingInputReview(data) {
     for (const [field, label] of Object.entries(consultingInputLabels)) {
         if (!data.originalSubmission || !Object.prototype.hasOwnProperty.call(data.originalSubmission, field)) continue;
         const raw = data.originalSubmission[field];
-        entries.push([label, raw === null || raw === '' ? '미입력' : typeof raw === 'string' ? raw : JSON.stringify(raw)]);
+        entries.push([field === 'studentName' && consultingSimpleCalculatorInput(data) ? '이용자 이름' : label, raw === null || raw === '' ? '미입력' : typeof raw === 'string' ? raw : JSON.stringify(raw)]);
     }
     original.replaceChildren();
     if (entries.length) original.appendChild(createConsultingFacts(entries));
@@ -38,12 +46,14 @@ function renderConsultingInputReview(data) {
     document.getElementById('consultingInputEditor').hidden = !editable;
     if (!editable) return;
     const formV2 = data.intakeFormVersion === 2;
-    for (const [id, hidden] of [['consultingContactPersonRelationshipField', !formV2], ['consultingContactMethodField', formV2], ['consultingContactStudentStatusField', formV2]]) {
+    const calculator = consultingSimpleCalculatorInput(data);
+    document.getElementById('consultingContactNameLabel').textContent = calculator ? '이용자 이름' : '학생 이름';
+    for (const [id, hidden] of [['consultingContactPersonRelationshipField', !formV2 || calculator], ['consultingContactPayerRelationshipField', calculator], ['consultingContactMethodField', formV2], ['consultingContactStudentStatusField', formV2]]) {
         const field = document.getElementById(id); if (field) field.hidden = hidden;
     }
     const family = document.getElementById('consultingContactRelationship')?.querySelector?.('option[value="family"]');
     if (family) { family.hidden = !formV2; family.disabled = !formV2; }
-    for (const [field, id] of Object.entries(formV2 ? consultingFormInputFields : consultingInputFields)) document.getElementById(id).value = String(data.contact[field] ?? data[field] ?? '');
+    for (const [field, id] of Object.entries(consultingApplicationInputFields(data))) document.getElementById(id).value = String(data.contact[field] ?? data[field] ?? '');
     document.getElementById('consultingInputConfirmed').checked = false;
     const fields = [...new Set((Array.isArray(data.application.intakeIssues) ? data.application.intakeIssues : []).map(issue => Object.prototype.hasOwnProperty.call(consultingInputLabels, issue?.field) ? consultingInputLabels[issue.field] : null).filter(Boolean))];
     document.getElementById('consultingInputIssues').textContent = consultingInputNeedsReview(data.application)
@@ -78,11 +88,12 @@ function renderConsultingApplication(applicationId, data) {
     closeConsultingDetail();
     const { application, contact } = data;
     if (application?.applicationId !== applicationId || !Number.isSafeInteger(application.revision) || !contact || typeof contact !== 'object') throw new Error('신청 상세 형식이 올바르지 않습니다.');
+    const calculator = consultingSimpleCalculatorInput(data);
     const summary = document.getElementById('consultingDetailSummary');
-    appendConsultingRecord(summary, '학생·연락처', createConsultingFacts([
-        ['학생 이름', contact.studentName], ['전화번호', contact.phone], ['이메일', contact.email],
+    appendConsultingRecord(summary, calculator ? '이용자·연락처' : '학생·연락처', createConsultingFacts([
+        [calculator ? '이용자 이름' : '학생 이름', contact.studentName], ['전화번호', contact.phone], ['이메일', contact.email],
         ...(data.intakeFormVersion === 2 ? [
-            ['연락처 본인·대리인 구분', [consultingOptionLabel(data.contactRelationship, { self: '본인', parent: '부모님', family: '학부모 및 가족', other: '기타' }), data.contactRelationshipDetail].filter(Boolean).join(' · ')],
+            ...(!calculator ? [['연락처 본인·대리인 구분', [consultingOptionLabel(data.contactRelationship, { self: '본인', parent: '부모님', family: '학부모 및 가족', other: '기타' }), data.contactRelationshipDetail].filter(Boolean).join(' · ')]] : []),
             ['개인정보 수집·이용 동의', data.privacyConsent === true ? '동의함' : '확인 필요']
         ] : [
             ['연락 방법', [consultingOptionLabel(data.contactMethod, { kakao: '카카오톡', sms: '문자', phone: '전화', email: '이메일', other: '기타' }), data.contactMethodDetail].filter(Boolean).join(' · ')],
@@ -93,7 +104,7 @@ function renderConsultingApplication(applicationId, data) {
         ['신청 상품', application.productName || '정시 컨설팅'],
         ['신청 경로', application.intakeSource === 'website' ? '사이트 신청' : '구글폼'],
         ['입금자명', contact.payerName],
-        ['입금자와의 관계', [consultingOptionLabel(data.payerRelationship, { self: '본인', parent: '부모님', family: '학부모 및 가족', other: '기타' }), data.payerRelationshipDetail].filter(Boolean).join(' · ')],
+        ...(!calculator ? [['입금자와의 관계', [consultingOptionLabel(data.payerRelationship, { self: '본인', parent: '부모님', family: '학부모 및 가족', other: '기타' }), data.payerRelationshipDetail].filter(Boolean).join(' · ')]] : []),
         ['예정 금액', formatConsultingMoney(application.expectedAmount)],
         ['입금 확인', consultingOptionLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', input_review: '신청 정보 확인 대기', verified: '승인', rejected: '거절' })]
     ]));
@@ -295,7 +306,7 @@ async function saveConsultingApplicationInput() {
     const current = currentConsultingApplication, application = current?.application;
     if (consultingMutationBusy || !consultingPaymentIsEditable(application)) return;
     if (!document.getElementById('consultingInputConfirmed').checked) return setConsultingStatus('신청 정보와 연락처의 수신 대상을 직접 확인해주세요.', 'error');
-    const input = Object.fromEntries(Object.entries(current.intakeFormVersion === 2 ? consultingFormInputFields : consultingInputFields).map(([field, id]) => [field, document.getElementById(id).value]));
+    const input = Object.fromEntries(Object.entries(consultingApplicationInputFields(current)).map(([field, id]) => [field, document.getElementById(id).value]));
     for (const [field, choice] of [['payerRelationshipDetail', 'payerRelationship'], ['contactMethodDetail', 'contactMethod'], ['contactRelationshipDetail', 'contactRelationship']]) if (input[choice] === 'other' && current[field]) input[field] = current[field];
     await runConsultingMutation('admin_review_application_input', { applicationId: application.applicationId, expectedRevision: application.revision, idempotencyKey: currentConsultingMutationKeys.input, inputReviewConfirmed: true, input }, '신청 정보 확인·저장 완료. 계좌 내역을 대조한 뒤 입금 승인을 진행하세요.');
 }

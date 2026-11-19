@@ -360,3 +360,28 @@ test('7문항 신청은 가족·대리인 구분을 표시·수정하고 수집�
     await expect(page.locator('#consultingContactStudentStatus')).toBeVisible();
     await expect(page.locator('#consultingDetailSummary')).toContainText('검정고시');
 });
+
+test('새 계산기 신청은 관계·학생 상태를 요구하지 않고 수집한 네 항목만 관리자에서 수정한다', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        Object.assign(window.__detail, { intakeFormVersion: 2, privacyConsent: true, contactRelationship: null, payerRelationship: null, contactMethod: null, studentStatus: null });
+        Object.assign(window.__detail.application, { productType: 'calculator', productName: '2027 정시 합격 계산기', intakeSource: 'website', expectedAmount: 25000 });
+        window.__detail.originalSubmission = { studentName: '합성 이용자', phone: '01000000000', email: 'synthetic@example.invalid', payerName: '합성 입금자' };
+    });
+    await openDetail(page);
+    await expect(page.locator('#consultingDetailSummary')).toContainText('이용자 이름');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('2027 정시 합격 계산기');
+    await expect(page.locator('#consultingDetailSummary')).not.toContainText('입금자와의 관계');
+    await expect(page.locator('#consultingDetailSummary')).not.toContainText('연락처 본인·대리인 구분');
+    await page.locator('#consultingInputEdit > summary').click();
+    await expect(page.getByRole('textbox', { name: '이용자 이름', exact: true })).toBeVisible();
+    for (const id of ['consultingContactRelationship', 'consultingContactPersonRelationship', 'consultingContactMethod', 'consultingContactStudentStatus']) await expect(page.locator(`#${id}`)).toBeHidden();
+    await page.locator('#consultingContactEmail').fill('corrected@example.invalid');
+    await page.locator('#consultingInputConfirmed').check();
+    await page.locator('#consultingSaveInputBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('신청 정보 확인·저장 완료');
+    const requests = await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_review_application_input'));
+    expect(requests).toHaveLength(1);
+    expect(Object.keys(requests[0].data.input).sort()).toEqual(['studentName', 'phone', 'email', 'payerName'].sort());
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'))).toHaveLength(0);
+});

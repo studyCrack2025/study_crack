@@ -544,11 +544,11 @@
                     <legend>신청 정보 보완·확인</legend>
                     <p id="consultingInputIssues" class="consulting-caption" role="status"></p>
                     <div class="consulting-contact-fields">
-                        <label>학생 이름<input id="consultingContactStudentName" type="text" maxlength="120" autocomplete="off"></label>
+                        <label><span id="consultingContactNameLabel">학생 이름</span><input id="consultingContactStudentName" aria-labelledby="consultingContactNameLabel" type="text" maxlength="120" autocomplete="off"></label>
                         <label>전화번호<input id="consultingContactPhone" type="tel" maxlength="80" autocomplete="off"></label>
                         <label>이메일<input id="consultingContactEmail" type="email" maxlength="320" autocomplete="off"></label>
                         <label>입금자명<input id="consultingContactPayerName" type="text" maxlength="120" autocomplete="off"></label>
-                        <label>입금자와의 관계<select id="consultingContactRelationship"><option value="self">본인</option><option value="parent">부모님</option><option value="family" hidden disabled>학부모 및 가족</option><option value="other">기타</option></select></label>
+                        <label id="consultingContactPayerRelationshipField">입금자와의 관계<select id="consultingContactRelationship"><option value="self">본인</option><option value="parent">부모님</option><option value="family" hidden disabled>학부모 및 가족</option><option value="other">기타</option></select></label>
                         <label id="consultingContactPersonRelationshipField" hidden>연락처 본인·대리인 구분<select id="consultingContactPersonRelationship"><option value="self">본인</option><option value="parent">부모님</option><option value="family">학부모 및 가족</option><option value="other">기타</option></select></label>
                         <label id="consultingContactMethodField">연락 방법<select id="consultingContactMethod"><option value="kakao">카카오톡</option><option value="sms">문자</option><option value="phone">전화</option><option value="email">이메일</option><option value="other">기타</option></select></label>
                         <label id="consultingContactStudentStatusField">학생 상태<select id="consultingContactStudentStatus"><option value="senior">고3</option><option value="graduate">재수 이상</option><option value="ged">검정고시</option><option value="other">기타</option></select></label>

@@ -12,8 +12,29 @@
     const names = { consulting: '2027 정시 컨설팅', calculator: '2027 정시 합격 계산기' };
     const key = 'sc_jungsi_application_v1';
     let productType = 'consulting', requestedProduct = 'consulting', offer = null, controller = null, trigger = null, busy = false;
+    function syncRelationshipFields() {
+        for (const name of ['contactRelationship', 'payerRelationship']) {
+            const choice = form.elements.namedItem(name);
+            const detail = form.elements.namedItem(name + 'Detail');
+            const consulting = productType === 'consulting';
+            choice.disabled = !consulting; choice.required = consulting;
+            const hasDetail = consulting && choice.value === 'other';
+            detail.disabled = !hasDetail; detail.required = hasDetail;
+            detail.closest('label').hidden = !hasDetail;
+        }
+    }
     function syncProduct() {
         dialog.dataset.productType = productType;
+        const consulting = productType === 'consulting';
+        document.getElementById('jungsiEnrollmentDescription').textContent = consulting ? '정시 컨설팅 신청과 입금 확인에 필요한 정보를 입력해주세요.' : '점수 입력과 대학·학과별 결과 조회를 위한 계산기 이용권을 신청합니다.';
+        document.getElementById('jungsiEnrollmentNameLabel').textContent = consulting ? '학생 이름' : '이용자 이름';
+        document.getElementById('jungsiEnrollmentNameHint').textContent = consulting ? '컨설팅을 받을 학생의 이름을 입력해주세요.' : '계산기를 이용할 학생의 이름을 입력해주세요.';
+        document.getElementById('jungsiEnrollmentPayerHint').textContent = `${consulting ? '학생' : '이용자'} 이름과 달라도 실제 이체 내역에 표시될 입금자명을 입력해주세요.`;
+        document.getElementById('jungsiEnrollmentCollection').textContent = consulting
+            ? '학생 이름, 연락처, 연락처의 본인·대리인 구분, 이메일, 입금자명, 입금자와의 관계, 기타 관계 입력 내용 및 동의 여부'
+            : '이용자 이름, 연락처, 이메일, 입금자명 및 동의 여부';
+        for (const field of dialog.querySelectorAll('[data-enrollment-consulting]')) field.hidden = !consulting;
+        syncRelationshipFields();
         const googleForm = document.getElementById('jungsiGoogleForm');
         googleForm.hidden = productType === 'calculator' || googleForm.dataset.available !== 'true';
     }
@@ -62,9 +83,9 @@
         for (const name of ['privacyConsent', 'termsConsent']) form.elements.namedItem(name).checked = false;
         message('신청 금액과 안내를 확인하고 있습니다.');
         try {
-            const value = await request('get_site_enrollment', { productType });
+            const value = await request('get_site_enrollment', { productType, formVersion: 2 });
             if (controller !== own || !dialog.open) return;
-            if (!valid(value) || value.consentRevision !== 'JUNGSI_SITE_2027_V1') throw new Error();
+            if (!valid(value) || value.formVersion !== 2 || value.consentRevision !== 'JUNGSI_SITE_2027_V2') throw new Error();
             offer = value;
             document.getElementById('jungsiEnrollmentPrice').textContent = `${names[productType]} · ${offer.amount.toLocaleString('ko-KR')}원${offer.earlybird ? ' (얼리버드)' : ''}${offer.accessEndsAt ? ' · 이용 기한 ' + new Date(offer.accessEndsAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' (한국시간)' : ''}`;
             message('신청 내용을 저장한 다음 입금 안내를 확인할 수 있습니다.');
@@ -94,7 +115,10 @@
     }
     async function open(type, source) {
         if (busy) return;
-        trigger = source || trigger; productType = Object.hasOwn(names, type) ? type : 'consulting'; requestedProduct = productType;
+        trigger = source || trigger;
+        const nextProduct = Object.hasOwn(names, type) ? type : 'consulting';
+        if (nextProduct !== productType) form.reset();
+        productType = nextProduct; requestedProduct = productType;
         offer = null; form.hidden = false; receipt.hidden = true;
         document.getElementById('jungsiEnrollmentTitle').textContent = names[productType] + ' 신청';
         document.getElementById('jungsiEnrollmentPrice').textContent = '';
@@ -111,7 +135,7 @@
         try { sessionStorage.setItem(key, JSON.stringify(application)); } catch { message('신청을 이어가려면 이 브라우저의 저장 기능을 허용해주세요.', true); return; }
         const own = newRequest(); lock(true); message('신청 내용을 저장하고 있습니다.'); retry.hidden = true;
         try {
-            const value = await request('public_submit_site_application', { ...values, productType, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
+            const value = await request('public_submit_site_application', { ...values, productType, formVersion: offer.formVersion, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
                 acceptedAmount: offer.amount, ...(productType === 'calculator' ? { acceptedAccessEndsAt: offer.accessEndsAt } : {}), privacyConsent: values.privacyConsent === 'on', termsConsent: values.termsConsent === 'on' });
             if (controller !== own || !dialog.open) return;
             renderReceipt(value); form.reset();
@@ -126,6 +150,7 @@
             }
         } finally { if (controller === own) lock(false); }
     });
+    for (const name of ['contactRelationship', 'payerRelationship']) form.elements.namedItem(name).addEventListener('change', syncRelationshipFields);
     document.addEventListener('click', event => {
         const target = event.target.closest('[data-jungsi-product], #jungsiSavedApplication');
         if (!target || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
