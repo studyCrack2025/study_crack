@@ -228,7 +228,7 @@
         if (!target || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault(); void open(target.dataset.jungsiProduct || saved()?.productType, target);
     });
-    dialog.querySelector('[data-enrollment-close]').addEventListener('click', () => dialog.close());
+    dialog.querySelectorAll('[data-enrollment-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
     dialog.addEventListener('close', () => { controller?.abort(); controller = null; busy = false; document.body.classList.remove('jungsi-enrollment-open'); trigger?.focus({ preventScroll: true }); });
     retry.addEventListener('click', () => { void loadOffer(); });
     recover.addEventListener('click', () => { void restore(); });

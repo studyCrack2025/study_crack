@@ -105,7 +105,7 @@ header#site-header.scrolled .nav-links a { color: var(--text); }
 .hero-title-light { font-weight: 400; display: block; }
 .hero-subtitle { font-size: 18px; color: #fff; line-height: 1.67; max-width: 680px; margin: 0 auto 48px; }
 .hero-subtitle strong { font-weight: 700; }
-.hero-main-actions { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 12px; }
+.hero-main-actions { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(100%,352px); margin: 0 auto; }
 .hero-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; width: min(100%,352px); padding: 0 20px; border-radius: 4px; background: var(--primary); color: #fff; font-size: 17px; font-weight: 800; transition: background .2s; }
 .hero-cta:hover { transform: translateY(-2px); background: #3d69da; }
 .hero-cta:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }

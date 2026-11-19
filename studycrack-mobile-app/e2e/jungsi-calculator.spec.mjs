@@ -456,6 +456,29 @@ test('가능성 지수는 양끝에서도 백분율 없이 표시하고 잘못�
   await expect(page.locator('.jcalc-probability')).toHaveCount(0); await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
 });
 
+test.describe('합격 계산기 공개 일정', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+  test('확인된 이용권에는 11월 28일 공개 예정을 표시하고 한국시간 공개일부터 안내를 숨긴다', async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-11-27T14:59:59.000Z'));
+    const control = await setup(page); control.accessSource = 'purchase';
+    await page.goto(path);
+    const notice = page.getByRole('note', { name: '합격 계산기 공개 일정' });
+    await expect(page.getByRole('heading', { name: '합격 계산기 이용권을 확인했습니다.' })).toBeVisible();
+    await expect(notice).toContainText('11월 28일 공개 예정');
+    await page.screenshot({ path: testInfo.outputPath('calculator-opening-notice.png') });
+    control.accessAllowed = false;
+    await page.getByRole('button', { name: '이용 상태 다시 확인' }).click();
+    await expect(page.getByRole('heading', { name: '합격 계산기 또는 Basic 이상 이용권이 필요합니다.' })).toBeVisible();
+    await expect(notice).toHaveCount(0);
+    control.accessAllowed = true;
+    await page.clock.setFixedTime(new Date('2026-11-27T15:00:00.000Z'));
+    await page.getByRole('button', { name: '이용 상태 다시 확인' }).click();
+    await expect(page.getByRole('heading', { name: '합격 계산기 이용권을 확인했습니다.' })).toBeVisible();
+    await expect(notice).toHaveCount(0);
+    expect(control.calls.every(call => ['get_univ_list_only', 'get_calculator_access'].includes(call.type))).toBe(true);
+  });
+});
+
 test('이용 상태 확인 중에도 입력·검색은 유지되고 결과 조회는 서버 권한 확인 뒤 열린다', async ({ page }) => {
   const control = await setup(page); control.accessMode = 'defer'; await page.goto(path);
   await expect(page.getByRole('heading', { name: '이용 권한을 확인하고 있습니다.' })).toBeVisible();
