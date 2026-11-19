@@ -396,7 +396,18 @@ test('선택한 미완료 계획만 가져오고 원본·성장값을 보존하�
   const state = await setup(page); let panel = await open(page); const before = await stored(page);
   await panel.getByRole('button', { name: '계정 기록 확인', exact: true }).click();
   await expect(panel.getByRole('button', { name: /계정으로 가져오기/ })).toHaveCount(1);
+  let releaseSave;
+  state.holdType = 'save_server_planner';
+  state.hold = new Promise(resolve => { releaseSave = resolve; });
   await panel.getByRole('button', { name: '보존할 독서 계획 계정으로 가져오기' }).click();
+  await expect.poll(() => state.requests.filter(request => request.operation === 'save_server_planner').length).toBe(1);
+  await expect(panel).toHaveAttribute('aria-busy', 'true');
+  expect(state.items).toHaveLength(0);
+  expect(state.growth.validDayCount).toBe(0);
+  expect(await stored(page)).toBe(before);
+  releaseSave();
+  await expect(panel).toHaveAttribute('aria-busy', 'false');
+  await expect(panel.getByRole('status')).toHaveText('계정 기록을 확인했어요.');
   await expect(panel.getByText('가져올 미완료 기기 계획이 없어요.')).toBeVisible();
   expect(state.growth.validDayCount).toBe(0);
   await expect(panel.getByText(/마지막 서버 확인 기준 · 성장 인정/)).toHaveCount(0);
