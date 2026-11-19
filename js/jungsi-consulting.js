@@ -88,7 +88,9 @@
             if (!campaign) return;
             // Promotional eligibility is described in the landing; a base price must not erase those terms.
             if (campaign.enrollmentStatus === 'open' && typeof campaign.applicationUrl === 'string' && /^https:\/\/docs\.google\.com\/forms\//.test(campaign.applicationUrl)) {
-                apply.href = campaign.applicationUrl;
+                apply.href = window.SCConsultingAttribution && campaign.attributionFormEntry
+                    ? await window.SCConsultingAttribution.decorate(campaign.applicationUrl, campaign.attributionFormEntry)
+                    : campaign.applicationUrl;
                 apply.textContent = '컨설팅 신청하기';
                 apply.target = '_blank';
                 apply.rel = 'noopener noreferrer';
