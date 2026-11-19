@@ -49,7 +49,7 @@ async function prepare(page) {
                 }
                 if (request.type === 'admin_review_application_input') {
                     for (const field of ['studentName', 'phone', 'email', 'payerName']) window.__detail.contact[field] = request.data.input[field];
-                    for (const field of ['payerRelationship', 'contactMethod', 'studentStatus']) window.__detail[field] = request.data.input[field];
+                    for (const field of ['payerRelationship', 'contactMethod', 'studentStatus', 'contactRelationship']) if (Object.hasOwn(request.data.input, field)) window.__detail[field] = request.data.input[field];
                     Object.assign(window.__detail.application, { inputReviewRequired: false, paymentReviewStatus: 'pending', intakeIssues: [], revision: request.data.expectedRevision + 1 });
                     data = { applicationId: id, revision: window.__detail.application.revision, inputReviewRequired: false };
                 } else data = { applicationId: id, applicationState: app.applicationState, revision: app.revision, notificationQueued: request.type === 'admin_reject_application' };
@@ -313,4 +313,50 @@ test('보완 입력은 320px에서 가로 넘침 없이 마지막 확인 버튼�
     await page.locator('#consultingSaveInputBtn').scrollIntoViewIfNeeded();
     await expect(page.locator('#consultingSaveInputBtn')).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath('consulting-input-review-320.png'), fullPage: true });
+});
+
+test('7문항 신청은 가족·대리인 구분을 표시·수정하고 수집하지 않은 항목을 요구하지 않는다', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await prepare(page);
+    await page.evaluate(() => {
+        Object.assign(window.__detail, { intakeFormVersion: 2, privacyConsent: true, contactRelationship: 'family', payerRelationship: 'family', contactMethod: null, studentStatus: null });
+        window.__detail.originalSubmission = { contactRelationship: 'family', payerRelationship: 'family' };
+        Object.assign(window.__detail.application, { inputReviewRequired: false, intakeIssues: [] });
+    });
+    await openDetail(page);
+    await expect(page.locator('#consultingDetailSummary')).toContainText('연락처 본인·대리인 구분');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('학부모 및 가족');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('동의함');
+    await expect(page.locator('#consultingDetailSummary')).not.toContainText('학생 상태');
+    await expect(page.locator('#consultingApproveBtn')).toBeEnabled();
+    await page.locator('#consultingInputEdit > summary').click();
+    await expect(page.locator('#consultingContactPersonRelationship')).toBeVisible();
+    await expect(page.locator('#consultingContactPersonRelationship')).toHaveValue('family');
+    await expect(page.locator('#consultingContactRelationship')).toHaveValue('family');
+    await expect(page.locator('#consultingContactMethod')).toBeHidden();
+    await expect(page.locator('#consultingContactStudentStatus')).toBeHidden();
+    expect(await page.locator('#consultingInputEditor').evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await page.locator('#consultingContactPersonRelationship').selectOption('self');
+    await page.locator('#consultingInputConfirmed').check();
+    await page.locator('#consultingSaveInputBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('신청 정보 확인·저장 완료');
+    const requests = await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_review_application_input'));
+    expect(requests).toHaveLength(1);
+    expect(requests[0].data.input.contactRelationship).toBe('self');
+    expect(requests[0].data.input.payerRelationship).toBe('family');
+    expect(requests[0].data.input).not.toHaveProperty('contactMethod');
+    expect(requests[0].data.input).not.toHaveProperty('studentStatus');
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'))).toHaveLength(0);
+    await page.locator('#consultingOriginalDetails > summary').click();
+    await expect(page.locator('#consultingOriginalSubmission')).toContainText('family');
+    await page.screenshot({ path: testInfo.outputPath('seven-question-intake-320.png'), fullPage: true });
+    await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+    await expect(page.locator('#consultingContactPersonRelationship')).toHaveValue('');
+    await page.evaluate(() => { delete window.__detail.intakeFormVersion; window.__detail.contactMethod = 'sms'; window.__detail.studentStatus = 'ged'; window.__detail.payerRelationship = 'self'; });
+    await openDetail(page);
+    await page.locator('#consultingInputEdit > summary').click();
+    await expect(page.locator('#consultingContactPersonRelationship')).toBeHidden();
+    await expect(page.locator('#consultingContactMethod')).toBeVisible();
+    await expect(page.locator('#consultingContactStudentStatus')).toBeVisible();
+    await expect(page.locator('#consultingDetailSummary')).toContainText('검정고시');
 });

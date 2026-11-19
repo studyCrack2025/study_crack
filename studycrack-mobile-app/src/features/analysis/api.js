@@ -72,12 +72,12 @@ export function normalizeUniversityCatalog(data) {
     .sort((a, b) => a.univName.localeCompare(b.univName, 'ko'));
 }
 
-export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch, signal } = {}) {
+export async function fetchUniversityCatalog({ analysisApiUrl, apiFetch, signal, catalogView } = {}) {
   const result = await postJson({
     apiFetch,
     signal,
     url: analysisApiUrl,
-    payload: { type: ANALYSIS_REQUEST_TYPES.GET_UNIVERSITY_CATALOG },
+    payload: { type: ANALYSIS_REQUEST_TYPES.GET_UNIVERSITY_CATALOG, ...(catalogView === 'reviewed_calculator' ? { catalogView } : {}) },
     fallbackError: '대학·학과 목록을 불러오지 못했습니다.'
   });
   if (!result.ok) return result;

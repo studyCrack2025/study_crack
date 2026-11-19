@@ -64,7 +64,7 @@ function Workspace({ owner }) {
   React.useEffect(() => {
     const controller = new AbortController();
     setResource({ status: 'loading', data: [], error: '' });
-    fetchUniversityCatalog({ ...getMobileApiBinding('analysis', 'analysisApiUrl'), signal: controller.signal }).then(result => {
+    fetchUniversityCatalog({ ...getMobileApiBinding('analysis', 'analysisApiUrl'), signal: controller.signal, catalogView: 'reviewed_calculator' }).then(result => {
       if (controller.signal.aborted) return;
       setResource(result.ok ? { status: 'ready', data: result.data, error: '' } : { status: 'error', data: [], error: [401, 403].includes(result.status) ? '로그인 상태를 다시 확인해주세요. 서비스 안내에서 로그인한 뒤 다시 이용할 수 있습니다.' : result.error });
     });

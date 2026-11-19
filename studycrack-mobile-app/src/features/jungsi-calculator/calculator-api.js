@@ -1,4 +1,5 @@
 import { apiFailure, apiInvalidResponse, postJson } from '../../shared/api/client.js';
+import { safeCalculatorReference } from './calculator-reference.js';
 
 const statuses = new Set(['available', 'unavailable', 'choice_required', 'ineligible']);
 const text = value => typeof value === 'string' && value.length > 0 && value.length <= 200;
@@ -60,8 +61,8 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
     return response;
   }
   if (!validResponse(response.data, scores, targets)) return apiInvalidResponse(response, '환산 결과를 확인하지 못했습니다. 다시 조회해주세요.');
-  return { ...response, data: { ...response.data, results: response.data.results.map(row => {
-    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data) }; delete safe.forecast; return safe;
+  return { ...response, data: { ...response.data, results: response.data.results.map((row, index) => {
+    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data), referenceComparison: safeCalculatorReference(row.referenceComparison, targets[index], scores) }; delete safe.forecast; return safe;
   }) } };
 }
 

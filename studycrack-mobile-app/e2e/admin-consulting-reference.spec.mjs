@@ -38,6 +38,12 @@ async function prepare(page) {
             return selected ? { ...row, scoreKey: keys[index], standardScore: selected[0], percentile: selected[1], grade: selected[2], scoreBasis: 'reference_standard' } : row;
         });
         const candidates = Array.from({ length: 3 }, (_, index) => ({ id: candidateId(index + 1), university: '합성대학교', program: index ? `합성학과${index}` : '<img src=x onerror=window.__injected=1>', score: 333 + index, passCut: 320, top70Cut: 340, margin: 13, position: .65, band: '적정', probability: null, group: index ? ['가', '나', '다'][index] : null, groupBasis: index ? '2026_reference' : 'unconfirmed', groupEvidence: index ? [{ page: 1 }] : null }));
+        if (state.reviewed) for (const candidate of candidates) candidate.reviewedReference = {
+            contractVersion: 'reviewed-admission-reference-v1', status: 'current_two_references', school: candidate.university, originalMajor: candidate.program,
+            convertedScore: 250, passReference: 240, registered70Reference: 260, referenceIndex: 50, referenceYear: 2025,
+            referenceBounds: { kind: 'cut_assumption_range', pass: { low: 239, high: 241 }, registered70: { low: 259, high: 261 } },
+            personalEligibilityApproved: false, publicationReady: false, probability: null, empiricallyCalibrated: false
+        };
         for (const override of request.data.input.groupOverrides) { const row = candidates.find(x => x.id === override.candidateId); if (row) Object.assign(row, { group: override.group, groupBasis: 'admin_experiment' }); }
         const plan = ['가', '나', '다'].map((group, index) => ({ group, candidate: state.empty ? null : { ...candidates[index], group, groupBasis: '2026_reference' }, reason: state.empty ? '조건에 맞는 후보가 없습니다.' : '합성 비교 근거' }));
         return { contractVersion: 'consulting-local-reference-v1', action: 'runSurvey', dataVersion: version, rawDataVersion: version, status: state.blocked || missing.length ? 'blocked' : 'ready', scoreSummary, scoreBasis: Object.keys(standards).length ? 'reference_standard' : 'survey_raw', missing: state.blocked ? [{ message: '국어: 해당 원점수의 2026 참고 대응자료가 준비되지 않았습니다.' }] : missing, sourceToken: token, caseId: request.data.caseId, plans: { A: plan, B: plan, C: plan, distinctGroups: 0 }, stats: { total: 500, calculated: 400, excluded: 100, excludedByReason: { ADMISSION_FORMULA_REVIEW_REQUIRED: 100 }, groupPending: 300 }, candidates: state.empty ? [] : candidates, matchingCandidates: state.empty ? 0 : 36, page: request.data.input.page, hasNextPage: !state.empty && request.data.input.page === 0 };
@@ -217,4 +223,17 @@ test('실험 표준점수 입력 뒤 조사서·자료 버전이 바뀌면 결�
     await expect(page.locator('#consultingReferenceStandard')).toBeHidden();
     await expect(page.locator('[data-reference-standard]')).toHaveCount(0);
     await expect(page.locator('#consultingReferenceRun')).toBeDisabled();
+});
+
+
+test('컨설팅 후보에는 연결된 현행식 참고 비교를 추가하고 원래 실험 점수와 구분한다', async ({ page }, testInfo) => {
+    const state = await prepare(page); state.reviewed = true; await open(page);
+    const card = page.locator('#consultingReferencePlans article').first();
+    await expect(card).toContainText('현행식 참고 비교'); await expect(card).toContainText('참고 환산점수');
+    await expect(card).toContainText('2025학년도 보완자료'); await expect(card).toContainText('예상컷 가정 범위 239~241');
+    await expect(card).toContainText('실제 합격 확률 아님'); await expect(card.locator('img')).toHaveCount(0);
+    await page.setViewportSize({ width: 375, height: 900 }); await card.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('consulting-reviewed-reference.png') });
+    expect(state.calls.filter(call => /save|verify|approve|publish/.test(call.type))).toHaveLength(0);
 });
