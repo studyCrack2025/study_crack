@@ -113,6 +113,7 @@
     "index.html",
     "js/admin/detail-core.js",
     "js/admin/consulting.js",
+    "js/admin/calculator.js",
     "js/admin/navigation.js",
     "js/admin/consulting-workspace.js",
     "js/admin/consulting-supplements.js",

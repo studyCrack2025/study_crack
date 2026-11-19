@@ -10,7 +10,7 @@ test('연결 확인이 필요한 신청도 접수번호와 사유를 보여주�
     await enterConsulting(page, 'error');
     const row = page.locator('#consultingDirectoryBody [data-directory-issue]');
     await expect(row).toContainText('확*생');
-    await expect(row).toContainText('계정 연결 후 생성된 컨설팅 정보를 확인해주세요.');
+    await expect(row).toContainText('신청에 연결된 이용 정보를 확인해주세요.');
     await expect(page.locator('#consultingDirectoryStatus')).toContainText('확인 필요 2건');
     await expect(page.locator('#consultingDirectoryStatus')).toContainText('개별 정보 확인 전 1건');
     await expect(row.getByRole('button')).toHaveCount(0);

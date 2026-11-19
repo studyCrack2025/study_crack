@@ -124,9 +124,10 @@ function toggleSubmenu(id) {
 }
 
 function showSection(sectionName, options = {}) {
-    const allowed = ['dashboard', 'advanced-stats', 'sales-chart', 'students', 'tutors', 'notifications', 'qna', 'matching', 'consulting'];
+    const allowed = ['dashboard', 'advanced-stats', 'sales-chart', 'students', 'tutors', 'notifications', 'qna', 'matching', 'consulting', 'calculator'];
     if (!allowed.includes(sectionName)) sectionName = 'dashboard';
-    if (typeof writeAdminLocation === 'function') writeAdminLocation({ section: sectionName, ...(sectionName === 'consulting' ? { phase: 'all' } : {}), ...(options.sub ? { sub: options.sub } : {}) });
+    if (typeof writeAdminLocation === 'function') writeAdminLocation({ section: sectionName, ...(['consulting', 'calculator'].includes(sectionName) ? { phase: 'all' } : {}), ...(options.sub ? { sub: options.sub } : {}) });
+    if (sectionName !== 'calculator' && typeof resetCalculatorAdmin === 'function') resetCalculatorAdmin();
     if (sectionName !== 'consulting' && typeof resetConsultingWorkspace === 'function') resetConsultingWorkspace();
     if (sectionName !== 'consulting' && typeof resetConsultingIntake === 'function') resetConsultingIntake();
     if (sectionName !== 'consulting' && typeof resetConsultingServiceControl === 'function') resetConsultingServiceControl();
@@ -155,7 +156,7 @@ function showSection(sectionName, options = {}) {
     const secMap = {
         'students': 'section-students', 'dashboard': 'section-dashboard', 'advanced-stats': 'section-advanced-stats',
         'tutors': 'section-tutors', 'notifications': 'section-notifications', 'qna': 'section-qna', 'matching': 'section-matching',
-        'consulting': 'section-consulting'
+        'consulting': 'section-consulting', 'calculator': 'section-calculator'
     };
 
     if (secMap[sectionName]) {
@@ -173,6 +174,7 @@ function showSection(sectionName, options = {}) {
     else if (sectionName === 'notifications' && !options.deferLoad) { loadNotifications(); loadTutorListForNotice(); }
     else if (sectionName === 'matching') loadMatchingData();
     else if (sectionName === 'consulting' && typeof activateConsultingWorkspace === 'function') activateConsultingWorkspace(readAdminLocation());
+    else if (sectionName === 'calculator' && typeof activateCalculatorAdmin === 'function') activateCalculatorAdmin(readAdminLocation());
 }
 
 window.showQnaSection = function(status) {

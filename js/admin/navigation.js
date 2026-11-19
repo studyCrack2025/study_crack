@@ -1,4 +1,5 @@
-const ADMIN_SECTIONS = ['dashboard', 'advanced-stats', 'sales-chart', 'students', 'tutors', 'notifications', 'qna', 'matching', 'consulting'];
+const ADMIN_SECTIONS = ['dashboard', 'advanced-stats', 'sales-chart', 'students', 'tutors', 'notifications', 'qna', 'matching', 'consulting', 'calculator'];
+const ADMIN_CALCULATOR_PHASES = ['all', 'intake', 'onboarding', 'completed', 'expired', 'attention'];
 const ADMIN_CONSULTING_PHASES = ['all', 'intake', 'onboarding', 'written', 'report', 'final', 'completed', 'attention'];
 const ADMIN_CONSULTING_TABS = ['overview', 'materials', 'written', 'report', 'final', 'service'];
 let adminRestoringLocation = false;
@@ -13,6 +14,14 @@ function readAdminLocation(hash = window.location.hash) {
     if ([...params.keys()].some(key => !['sub', 'phase', 'student', 'record', 'case', 'tab'].includes(key) || params.getAll(key).length !== 1)) return fallback;
     if (section === 'qna') return { section, sub: ['waiting', 'read', 'done'].includes(params.get('sub')) ? params.get('sub') : 'waiting' };
     if (section === 'notifications') return { section, sub: ['inbox', 'send', 'sent'].includes(params.get('sub')) ? params.get('sub') : 'inbox' };
+    if (section === 'calculator') {
+        const route = { section, phase: ADMIN_CALCULATOR_PHASES.includes(params.get('phase')) ? params.get('phase') : 'all' };
+        if (params.has('case') || params.has('tab')) return route;
+        if (/^APP_[0-9a-f-]{36}$/i.test(params.get('student') || '') && /^[A-Za-z0-9_-]{8,200}$/.test(params.get('record') || '')) {
+            Object.assign(route, { applicationId: params.get('student'), sourceResponseId: params.get('record') });
+        }
+        return route;
+    }
     if (section !== 'consulting') return { section };
     const route = { section, phase: ADMIN_CONSULTING_PHASES.includes(params.get('phase')) ? params.get('phase') : 'all' };
     if (params.has('case')) {

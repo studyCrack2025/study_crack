@@ -19,8 +19,8 @@ const consultingDirectoryIssueLabels = {
     APPLICATION_NOT_FOUND: '접수 기록에 연결된 신청 정보를 찾지 못했습니다.',
     DIRECTORY_APPLICATION_MISMATCH: '접수번호와 저장된 신청 정보의 연결을 확인해주세요.',
     APPLICATION_STAGE_MISMATCH: '신청이 접수된 환경을 확인해주세요.',
-    DIRECTORY_CASE_MISSING: '계정 연결 후 생성된 컨설팅 정보를 확인해주세요.',
-    DIRECTORY_CASE_MISMATCH: '신청·계정·컨설팅의 연결 정보를 대조해주세요.',
+    DIRECTORY_CASE_MISSING: '신청에 연결된 이용 정보를 확인해주세요.',
+    DIRECTORY_CASE_MISMATCH: '신청과 이용 계정의 연결 정보를 대조해주세요.',
     JOURNEY_VERSION_MISMATCH: '이전 형식의 신청입니다. 저장된 접수 내용을 확인해주세요.',
     INVALID_V2_SCHEMA: '신청 상태나 필수 정보의 형식을 확인해주세요.'
 };
@@ -182,7 +182,7 @@ async function loadConsultingDirectory() {
     renderConsultingDirectory([], '학생 목록을 불러오고 있습니다.');
     consultingWorkspaceStatus('consultingDirectoryStatus', '학생 목록을 불러오고 있습니다.');
     try {
-        const data = await requestConsultingAdmin('admin_list_consulting_students', { phase, cursor: consultingDirectoryCursor });
+        const data = await requestConsultingAdmin('admin_list_consulting_students', { phase, cursor: consultingDirectoryCursor, productType: 'consulting' });
         if (generation !== consultingWorkspaceGeneration) return;
         if (!Array.isArray(data.items) || data.items.length > 20 || data.items.some(item => !/^APP_[0-9a-f-]{36}$/i.test(item?.applicationId || '') || !/^[A-Za-z0-9_-]{8,200}$/.test(item?.sourceResponseId || '')) || data.nextCursor && (typeof data.nextCursor !== 'string' || data.nextCursor.length > 1600)) throw new Error('목록 형식을 확인할 수 없습니다.');
         const issues = consultingDirectoryIssueRows(data);
@@ -428,7 +428,7 @@ async function loadConsultingWorkspaceStudent(route) {
     panel.scrollIntoView({ block: 'start' });
     consultingWorkspaceStatus('consultingStudentStatus', '학생 정보를 불러오고 있습니다.');
     try {
-        const data = await requestConsultingAdmin('admin_get_consulting_student', consultingWorkspaceReference);
+        const data = await requestConsultingAdmin('admin_get_consulting_student', { ...consultingWorkspaceReference, productType: 'consulting' });
         if (generation !== consultingWorkspaceGeneration) return;
         if ((route.caseId ? data.case?.caseId !== route.caseId || !/^APP_[0-9a-f-]{36}$/i.test(data.application?.applicationId || '') || data.student?.applicationId !== data.application.applicationId
             : data.student?.applicationId !== route.applicationId || data.student?.sourceResponseId !== route.sourceResponseId || data.application?.applicationId !== route.applicationId)
