@@ -201,7 +201,10 @@
         try { sessionStorage.setItem(key, JSON.stringify(application)); } catch { message('신청을 이어가려면 이 브라우저의 저장 기능을 허용해주세요.', true); return; }
         const own = newRequest(); lock(true); message('신청 내용을 저장하고 있습니다.'); retry.hidden = true;
         try {
+            const attributionToken = offer.attributionVersion === 2 ? await window.SCConsultingAttribution?.getToken(productType) : null;
+            if (controller !== own || !dialog.open) return;
             const value = await request('public_submit_site_application', { ...values, productType, formVersion: offer.formVersion, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
+                ...(attributionToken ? { attributionToken } : {}),
                 acceptedAmount: offer.amount, ...(productType === 'calculator' ? { acceptedAccessEndsAt: offer.accessEndsAt } : {}), privacyConsent: values.privacyConsent === 'on', termsConsent: values.termsConsent === 'on' });
             if (controller !== own || !dialog.open) return;
             renderReceipt(value); form.reset();
