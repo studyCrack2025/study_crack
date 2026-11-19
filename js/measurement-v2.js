@@ -143,3 +143,11 @@
     if (event.key === 'userId' || event.key === null) identify(null);
   });
 })(window);
+
+// Session-only consulting attribution; independent of analytics consent and sends no data here.
+(function(){try{
+ const q=new URL(location.href).searchParams, source=q.get('utm_source');
+ if(!['naver','google','meta','facebook','instagram'].includes(source))return;
+ const id=v=>typeof v==='string'&&/^[A-Za-z0-9_.-]{1,120}$/.test(v)?v:null;
+ sessionStorage.setItem('sc_consulting_touch_v1',JSON.stringify({at:Date.now(),input:{source,campaignId:id(q.get('utm_id')||q.get('utm_campaign')),creativeId:id(q.get('utm_content'))}}));
+}catch{}})();
