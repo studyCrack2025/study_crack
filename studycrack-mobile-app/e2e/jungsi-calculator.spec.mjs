@@ -44,7 +44,7 @@ async function setup(page, { signedIn = true } = {}) {
         return await route.fulfill({ json: conversionResponse(payload, control) });
       } catch (_) { return; }
     }
-    expect(payload).toEqual({ type: 'get_univ_list_only' });
+    expect(payload).toEqual({ type: 'get_univ_list_only', catalogView: 'reviewed_calculator' });
     if (control.mode === 'defer') await new Promise(resolve => { control.release = resolve; });
     try {
       if (control.mode === 'error') return await route.fulfill({ status: 503, json: { error: 'Unavailable' } });
@@ -64,6 +64,8 @@ function conversionResponse(payload, control) {
       const row = { university: target.university, major: target.major, status: 'available', choices: [option], selected: option, reasonCodes: [], convertedScore: 743.1256, maximumScore: 1000 };
       if (['raw-points', 'missing-maximum', 'unknown-scale'].includes(mode)) Object.assign(row, { maximumScore: null,
         ...(mode !== 'missing-maximum' ? { scoreScale: mode === 'raw-points' ? 'raw_points' : 'unknown' } : {}) });
+      if (['component', 'component-exact', 'component-unknown'].includes(mode)) Object.assign(row, { scoreScope: 'csat_component',
+        precisionPolicy: mode === 'component-exact' ? 'exact_integer_domain' : mode === 'component' ? 'published' : 'unknown' });
       if (mode === 'choice') row.choices.push({ ...option, admissionUnitId: 'UNIT_BROWSER_SECOND', admissionGroup: 'da' });
       if (mode === 'choice' && !target.admissionUnitId) Object.assign(row, { status: 'choice_required', selected: null, reasonCodes: ['UNIT_SELECTION_REQUIRED'], convertedScore: null, maximumScore: null });
       if (target.admissionUnitId) row.selected = row.choices.find(choice => choice.admissionUnitId === target.admissionUnitId);
@@ -83,9 +85,37 @@ function conversionResponse(payload, control) {
           admissionUnitId: control.possibilityMode === 'mismatch' ? 'UNIT_OTHER_MAJOR' : row.selected.admissionUnitId
         });
       } else row.forecast = { status: 'available', probability: { percent: 99, qualifier: 'approximate' }, riskBand: 'stable' };
+      if (control.referenceMode) {
+        const legacy = control.referenceMode === 'prior', one = control.referenceMode === 'single70';
+        row.referenceComparison = { contractVersion: 'reviewed-admission-reference-v1', status: legacy ? 'prior_data_two_estimates' : one ? 'historical70_only' : 'current_two_references',
+          recordId: 'U_0123456789abcdef', school: target.university, major: target.major, originalMajor: target.major,
+          bundleDigest: `sha256:${'e'.repeat(64)}`, targetYear: 2027, referenceYear: legacy ? null : control.referenceMode === 'supplement' ? 2025 : 2026,
+          convertedScore: 250, passReference: one ? null : 240, registered70Reference: 260, referenceIndex: one ? null : 50,
+          referenceBounds: legacy || one ? null : { pass: { low: 239, high: 241 }, registered70: { low: 259, high: 261 }, kind: 'cut_assumption_range' },
+          indexRange: legacy || one ? null : { low: 49, high: 51, kind: 'cut_assumption_range' }, sourceIds: ['SOURCE_BROWSER_TEST'],
+          publicationReady: false, personalEligibilityApproved: false, probability: control.referenceMode === 'corrupt' ? .99 : null, empiricallyCalibrated: false, reasonCodes: [] };
+      }
       return row;
     }) };
 }
+
+test('연결된 자료는 승인 환산과 별도로 연도·두 기준선·범위를 표시하고 70% 단독에 지수를 만들지 않는다', async ({ page }, testInfo) => {
+  const control = await setup(page); control.conversionMode = 'pending'; control.referenceMode = 'current';
+  await page.goto(path); await prepareConversion(page);
+  const query = page.getByRole('button', { name: '환산점수·가능성 조회', exact: true });
+  const section = page.getByRole('region', { name: '자료 기준별 참고 비교' });
+  await query.click(); await expect(section).toContainText('현행식 기준 참고 비교');
+  await expect(section).toContainText('환산점수 250점'); await expect(section).toContainText('예상 커트라인 239~241점');
+  await expect(section).toContainText('70% 참고선 259~261점'); await expect(section).toContainText('참고 지수 50 / 100');
+  await expect(section).toContainText('2026학년도 입결'); await expect(section).toContainText('실제 합격 확률이 아닙니다');
+  await section.getByText('참고 비교 근거', { exact: true }).click(); await fits(page);
+  await page.screenshot({ path: testInfo.outputPath('reviewed-reference.png'), fullPage: true });
+  control.referenceMode = 'prior'; await query.click(); await expect(section).toContainText('기존자료 기준 참고 비교'); await expect(section).toContainText('생성연도는 확인되지 않았');
+  control.referenceMode = 'supplement'; await query.click(); await expect(section).toContainText('2025학년도 보완자료');
+  control.referenceMode = 'single70'; await query.click(); await expect(section).toContainText('70% 참고선 단독'); await expect(section.getByRole('status')).toHaveCount(0); await expect(section).not.toContainText('예상 커트라인 240');
+  control.referenceMode = 'corrupt'; await query.click(); await expect(section).toContainText('비교 보류'); await expect(section).not.toContainText('250점');
+  await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129'); await expect(section).toHaveCount(0);
+});
 
 async function fits(page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
@@ -315,6 +345,21 @@ test('복수 전형은 임의 계산하지 않고 전형·모집군을 고른 �
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
   await expect(page.locator('.jcalc-result-context')).toContainText('다군');
   expect(control.calls.at(-1).data.targets[0].admissionUnitId).toBe('UNIT_BROWSER_SECOND');
+});
+
+test('수능 성분과 미공표 소수점 정책은 최종 총점과 구분해 표시한다', async ({ page }) => {
+  const control = await setup(page); control.conversionMode = 'component';
+  await page.goto(path); await prepareConversion(page);
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.getByText('내 수능 환산점수', { exact: true })).toBeVisible();
+  await expect(page.getByText('수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.', { exact: true })).toBeVisible();
+  control.conversionMode = 'component-exact';
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.getByText('공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.', { exact: true })).toBeVisible();
+  control.conversionMode = 'component-unknown';
+  await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.locator('.jcalc-score')).toHaveCount(0);
+  await expect(page.getByText('환산 결과를 확인하지 못했습니다. 다시 조회해주세요.', { exact: true })).toBeVisible();
 });
 
 test('승인 대기·변환표 누락·가채점·권한 부족은 가짜 숫자 없이 이유를 안내한다', async ({ page }) => {

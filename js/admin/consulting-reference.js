@@ -26,6 +26,31 @@ function referenceNode(tag, text, className) {
     if (className) node.className = className;
     return node;
 }
+function renderReviewedReference(candidate) {
+    const value = candidate.reviewedReference;
+    if (!value || value.contractVersion !== 'reviewed-admission-reference-v1' || value.school !== candidate.university || value.originalMajor !== candidate.program
+        || value.probability !== null || value.empiricallyCalibrated !== false || value.personalEligibilityApproved !== false || value.publicationReady !== false) return null;
+    const labels = { current_two_references: '현행식 참고 비교', prior_data_two_estimates: '기존자료 참고 비교', historical70_only: '70% 단독 참고', academic_score_without_cut: '수능 점수만', held: '비교 보류', explicitly_excluded: '서강대 대기' };
+    if (!Object.hasOwn(labels, value.status)) return null;
+    const section = referenceNode('section', null, 'consulting-caption');
+    section.appendChild(referenceNode('strong', labels[value.status]));
+    if (Number.isFinite(value.convertedScore)) {
+        const facts = [['참고 환산점수', referenceNumber(value.convertedScore)]];
+        if (Number.isFinite(value.passReference)) facts.push(['참고 예상컷', referenceNumber(value.passReference)]);
+        if (Number.isFinite(value.registered70Reference)) facts.push(['참고 70%선', referenceNumber(value.registered70Reference)]);
+        if (Number.isInteger(value.referenceIndex) && value.referenceIndex >= 1 && value.referenceIndex <= 99) facts.push(['참고 지수', `${value.referenceIndex} / 100`]);
+        section.appendChild(createConsultingFacts(facts));
+        if (value.referenceBounds?.kind === 'cut_assumption_range' && Number.isFinite(value.referenceBounds.pass?.low) && Number.isFinite(value.referenceBounds.pass?.high)
+            && value.referenceBounds.pass.low !== value.referenceBounds.pass.high) section.appendChild(referenceNode('p', `예상컷 가정 범위 ${referenceNumber(value.referenceBounds.pass.low)}~${referenceNumber(value.referenceBounds.pass.high)}`));
+        if (value.referenceBounds?.kind === 'cut_assumption_range' && Number.isFinite(value.referenceBounds.registered70?.low) && Number.isFinite(value.referenceBounds.registered70?.high)
+            && value.referenceBounds.registered70.low !== value.referenceBounds.registered70.high) section.appendChild(referenceNode('p', `70%선 가정 범위 ${referenceNumber(value.referenceBounds.registered70.low)}~${referenceNumber(value.referenceBounds.registered70.high)}`));
+        if (value.indexRange?.kind === 'cut_assumption_range' && Number.isFinite(value.indexRange.low) && Number.isFinite(value.indexRange.high)
+            && value.indexRange.low !== value.indexRange.high) section.appendChild(referenceNode('p', `지수 가정 범위 ${referenceNumber(value.indexRange.low)}~${referenceNumber(value.indexRange.high)}`));
+    }
+    section.appendChild(referenceNode('p', `${Number.isInteger(value.referenceYear) ? `${value.referenceYear}학년도${value.referenceYear === 2025 ? ' 보완자료' : ' 입결 참고'}` : value.status === 'prior_data_two_estimates' ? '기존 추정값 생성연도 미확인' : '커트라인 비교 보류'} · 실제 합격 확률 아님 · 지원 자격 별도 확인`));
+    section.appendChild(referenceNode('p', '참고 비교를 추가로 표시하며 기존 실험 추천의 순위는 유지합니다.'));
+    return section;
+}
 function referenceSelect(options, label, value = '') {
     const select = document.createElement('select'); select.setAttribute('aria-label', label);
     for (const [key, text] of options) { const option = document.createElement('option'); option.value = key; option.textContent = text; select.appendChild(option); }
@@ -174,6 +199,7 @@ function renderReferenceResults(data) {
             if (candidate) {
                 card.append(referenceNode('h5', candidate.university), referenceNode('p', candidate.program, 'consulting-reference-program'), referenceNode('strong', `${candidate.band} · 컷 대비 참고 분류`, 'consulting-reference-band'));
                 card.appendChild(createConsultingFacts([['실험 환산점수', referenceNumber(candidate.score)], ['기존 합격권 추정컷', referenceNumber(candidate.passCut)], ['기존 70% 추정컷', referenceNumber(candidate.top70Cut)], ['합격권컷과 차이', referenceNumber(candidate.margin)]]));
+                const reviewed = renderReviewedReference(candidate); if (reviewed) card.appendChild(reviewed);
                 card.appendChild(referenceNode('p', referenceGroupLabel(candidate), 'consulting-caption'));
             } else card.appendChild(referenceNode('h5', '조건에 맞는 후보 없음'));
             card.appendChild(referenceNode('p', slot.reason, 'consulting-caption')); grid.appendChild(card);

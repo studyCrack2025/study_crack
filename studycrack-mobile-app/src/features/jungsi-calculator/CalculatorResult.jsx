@@ -1,5 +1,6 @@
 import React from 'react';
 import CalculatorForecast from './CalculatorForecast.jsx';
+import CalculatorReference from './CalculatorReference.jsx';
 
 const groups = { ga: '가군', na: '나군', da: '다군' };
 const explanations = {
@@ -24,9 +25,10 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
   return <div className="jcalc-result">
     {result.choices.length > 1 && <label className="jcalc-field"><span>캠퍼스·전형·모집군</span><select aria-label={`${result.university} ${result.major} 전형 선택`} value={selectedId || ''} onChange={event => onSelect(event.target.value)}><option value="">선택해주세요</option>{result.choices.map(option => <option key={option.admissionUnitId} value={option.admissionUnitId}>{option.campusName} · {option.unitName} · {option.trackName} · {groups[option.admissionGroup]}</option>)}</select></label>}
     {current && result.selected && <p className="jcalc-result-context">{result.selected.campusName} · {result.selected.unitName}<br />{result.selected.trackName} · {groups[result.selected.admissionGroup]}</p>}
-    {current ? result.status === 'available' ? <div className="jcalc-score"><span>내 환산점수</span><strong>{formatted(result.convertedScore)}<small>점</small></strong><small>{result.scoreScale === 'raw_points' ? '별도 기준 만점이 없는 점수입니다.' : <>기준 만점 {formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.</>}</small></div>
-      : <p className="jcalc-result-message">{result.status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
+    {current ? result.status === 'available' ? <div className="jcalc-score"><span>{result.scoreScope === 'csat_component' ? '내 수능 환산점수' : '내 환산점수'}</span><strong>{formatted(result.convertedScore)}<small>점</small></strong><small>{result.scoreScale === 'raw_points' ? '별도 기준 만점이 없는 점수입니다.' : <>기준 만점 {formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.</>}</small>{result.scoreScope === 'csat_component' && <small>{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</small>}</div>
+      : result.referenceComparison?.convertedScore != null ? null : <p className="jcalc-result-message">{result.status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
       : <p className="jcalc-result-message">입력 조건이 바뀌었습니다. 환산점수를 다시 조회해주세요.</p>}
-    {current && <CalculatorForecast possibility={result.possibility} />}
+    {current && (!result.referenceComparison || result.possibility?.status === 'available') && <CalculatorForecast possibility={result.possibility} />}
+    {current && <CalculatorReference reference={result.referenceComparison} />}
   </div>;
 }

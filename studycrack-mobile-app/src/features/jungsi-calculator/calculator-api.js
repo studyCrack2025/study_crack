@@ -1,4 +1,5 @@
 import { apiFailure, apiInvalidResponse, postJson } from '../../shared/api/client.js';
+import { safeCalculatorReference } from './calculator-reference.js';
 
 const statuses = new Set(['available', 'unavailable', 'choice_required', 'ineligible']);
 const text = value => typeof value === 'string' && value.length > 0 && value.length <= 200;
@@ -44,6 +45,7 @@ function validResponse(body, scores, targets) {
       || row.selected !== null && (!unit(row.selected) || !row.choices.some(value => ['admissionUnitId', 'campusName', 'unitName', 'trackName', 'admissionGroup'].every(key => value[key] === row.selected[key])))) return false;
     if (row.status === 'available') return body.release !== null && scores.basis === 'official' && row.selected !== null
       && (!target.admissionUnitId || row.selected.admissionUnitId === target.admissionUnitId)
+      && (row.scoreScope === undefined ? row.precisionPolicy === undefined : row.scoreScope === 'csat_component' && ['published', 'exact_integer_domain'].includes(row.precisionPolicy))
       && Number.isFinite(row.convertedScore) && (row.maximumScore === null ? row.scoreScale === 'raw_points'
         : Number.isFinite(row.maximumScore) && row.maximumScore > 0 && row.scoreScale === undefined) && row.reasonCodes.length === 0;
     return row.convertedScore === null && row.maximumScore === null && row.reasonCodes.length > 0;
@@ -59,8 +61,8 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
     return response;
   }
   if (!validResponse(response.data, scores, targets)) return apiInvalidResponse(response, '환산 결과를 확인하지 못했습니다. 다시 조회해주세요.');
-  return { ...response, data: { ...response.data, results: response.data.results.map(row => {
-    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data) }; delete safe.forecast; return safe;
+  return { ...response, data: { ...response.data, results: response.data.results.map((row, index) => {
+    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data), referenceComparison: safeCalculatorReference(row.referenceComparison, targets[index], scores) }; delete safe.forecast; return safe;
   }) } };
 }
 

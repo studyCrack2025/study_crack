@@ -371,3 +371,53 @@ test('ambiguous correction results clear PII and never retry or report success',
     assert.equal(get('consultingContactEmail').value, '');
     assert.equal(get('consultingActionStatus').dataset.state, 'error');
 });
+
+test('seven-question intake corrects the contact relationship without inventing a channel or student status', async () => {
+    const { context, open, get, run, calls } = setup();
+    const data = { ...detail(), intakeFormVersion: 2, contactRelationship: 'other', contactRelationshipDetail: '<svg onload=alert(1)>', payerRelationship: 'family', privacyConsent: true, contactMethod: null, studentStatus: null };
+    context.respond = request => {
+        if (request.type === 'admin_get_consulting_student') return data;
+        assert.equal(request.type, 'admin_review_application_input');
+        data.application.revision = 1;
+        return { applicationId, revision: 1, inputReviewRequired: false };
+    };
+    await open();
+    assert.match(get('consultingDetailSummary').textContent, /연락처 본인·대리인 구분/);
+    assert.match(get('consultingDetailSummary').textContent, /학부모 및 가족/);
+    assert.doesNotMatch(get('consultingDetailSummary').textContent, /학생 상태/);
+    assert.equal(get('consultingContactPersonRelationshipField').hidden, false);
+    assert.equal(get('consultingContactMethodField').hidden, true);
+    assert.equal(get('consultingContactStudentStatusField').hidden, true);
+    get('consultingInputConfirmed').checked = true;
+    await run('saveConsultingApplicationInput()');
+    const request = calls.find(call => call.type === 'admin_review_application_input');
+    assert.equal(request.data.input.contactRelationship, 'other');
+    assert.equal(request.data.input.contactRelationshipDetail, '<svg onload=alert(1)>');
+    assert.equal(Object.hasOwn(request.data.input, 'contactMethod'), false);
+    assert.equal(Object.hasOwn(request.data.input, 'studentStatus'), false);
+    assert.equal(calls.filter(call => call.type === 'admin_verify_manual_payment').length, 0);
+    await run('closeConsultingDetail()');
+    assert.equal(get('consultingContactPersonRelationship').value, '');
+});
+
+test('calculator purchases display and correct only the four collected fields', async () => {
+    const { context, open, get, run, calls } = setup();
+    const data = { ...detail(), intakeFormVersion: 2, privacyConsent: true };
+    Object.assign(data.application, { productType: 'calculator', intakeSource: 'website', productName: '2027 정시 합격 계산기', expectedAmount: 25000 });
+    context.respond = request => {
+        if (request.type === 'admin_get_consulting_student') return data;
+        assert.equal(request.type, 'admin_review_application_input');
+        data.application.revision = 1;
+        return { applicationId, revision: 1, inputReviewRequired: false };
+    };
+    await open();
+    assert.match(get('consultingDetailSummary').textContent, /이용자 이름/);
+    assert.doesNotMatch(get('consultingDetailSummary').textContent, /학생 상태|연락 방법|입금자와의 관계|연락처 본인·대리인 구분/);
+    for (const id of ['consultingContactMethodField', 'consultingContactStudentStatusField', 'consultingContactPersonRelationshipField', 'consultingContactPayerRelationshipField']) assert.equal(get(id).hidden, true);
+    assert.equal(get('consultingContactNameLabel').textContent, '이용자 이름');
+    get('consultingInputConfirmed').checked = true;
+    await run('saveConsultingApplicationInput()');
+    const request = calls.find(call => call.type === 'admin_review_application_input');
+    assert.deepEqual(Object.keys(request.data.input).sort(), ['studentName', 'phone', 'email', 'payerName'].sort());
+    assert.equal(calls.filter(call => call.type === 'admin_verify_manual_payment').length, 0);
+});
