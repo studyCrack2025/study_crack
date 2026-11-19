@@ -138,8 +138,10 @@ test('집계 제공 불가는 실제 0과 구분하고 재조회 실패는 마�
   const api = await installApiMock(page);
   api.state.studySummaryOverride = summaryFor('2026-10-03', 1800);
   let phase = 'unavailable';
+  let releaseError;
   await page.route('**/api/user', async route => {
     if (route.request().postDataJSON()?.type !== 'get_study_summary' || phase === 'ready') return route.fallback();
+    if (phase === 'error') await new Promise(resolve => { releaseError = resolve; });
     return route.fulfill(phase === 'unavailable' ? { status: 200, json: summaryFor('2026-10-03', 0, false) } : { status: 500, json: {} });
   });
   await page.goto('/studycrack-mobile.html?screen=timer');
@@ -156,6 +158,10 @@ test('집계 제공 불가는 실제 0과 구분하고 재조회 실패는 마�
   await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
   phase = 'error';
   await card.getByRole('button', { name: '다시 확인' }).click();
+  await expect.poll(() => typeof releaseError).toBe('function');
+  await expect(card.getByRole('button', { name: '다시 확인' })).toBeHidden();
+  await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
+  releaseError();
   await expect(card.getByRole('button', { name: '다시 확인' })).toBeVisible();
   await expect(card.locator('.sc-study-headline b')).toHaveText('00:30:00');
   phase = 'ready';
