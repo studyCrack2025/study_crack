@@ -14,6 +14,7 @@ for (const [width, height] of [[320, 700], [360, 800], [390, 844], [430, 932]]) 
     const insight = page.locator('.my-insight-details');
     await expect(insight).not.toHaveAttribute('open');
     await expect(page.locator('.my-menu-copy b').first()).toHaveCSS('font-size', '16px');
+    await expect(page.getByRole('link', { name: /^합격 계산기/ })).toHaveAttribute('href', '/2027-jungsi-consulting/calculator');
     await expect(page.locator('.my-insight-desc')).not.toBeVisible();
     await insight.locator('summary').click();
     await expect(page.locator('.my-insight-list > div')).toHaveCount(4);

@@ -1,3 +1,4 @@
+import { parseCalculatorApplicationHome } from '../jungsi-calculator/calculator-application-api.js';
 export const CONSULTING_STATES = Object.freeze([
   'ONBOARDING', 'SURVEY_DRAFT', 'MATERIAL_REVIEW', 'SUPPLEMENT_REQUIRED', 'AVAILABILITY_REQUIRED', 'SCHEDULING',
   'WRITTEN_SESSION_BOOKED', 'WRITTEN_SESSION_COMPLETED', 'REPORT_GENERATING', 'REPORT_REVIEW', 'REPORT_SCHEDULED',
@@ -18,7 +19,9 @@ function isIsoDate(value) {
 export function parseHomeResponse(body) {
   const value = body?.success === true && isRecord(body.data) ? body.data : null;
   if (!value || typeof value.available !== 'boolean') return null;
-  if (!value.available) return Object.freeze({ available: false, workflowState: null, nextAction: null, nextDueAt: null, progress: [], session: null, report: null, alerts: [] });
+  const calculator = value.calculator?.unavailable === true ? { unavailable: true } : parseCalculatorApplicationHome(value.calculator);
+  const calculatorData = calculator ? { calculator } : {};
+  if (!value.available) return Object.freeze({ available: false, ...calculatorData, workflowState: null, nextAction: null, nextDueAt: null, progress: [], session: null, report: null, alerts: [] });
   if (!CONSULTING_STATES.includes(value.workflowState) || (value.nextAction !== null && (typeof value.nextAction !== 'string' || value.nextAction.length > 80))) return null;
   if (value.nextDueAt !== null && !isIsoDate(value.nextDueAt)) return null;
   if (!Array.isArray(value.progress) || value.progress.length !== PROGRESS_KEYS.length) return null;
@@ -29,6 +32,7 @@ export function parseHomeResponse(body) {
   if (progress.some(step => !step) || value.session !== null || value.report !== null || !Array.isArray(value.alerts) || value.alerts.some(alert => typeof alert !== 'string' || alert.length > 120)) return null;
   return Object.freeze({
     available: true,
+    ...calculatorData,
     ...(value.serviceHold === true ? { serviceHold: true } : {}),
     workflowState: value.workflowState,
     ...(value.writtenChangePending === true ? { writtenChangePending: true } : {}),

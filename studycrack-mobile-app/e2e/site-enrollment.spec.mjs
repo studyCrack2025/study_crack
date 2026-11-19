@@ -386,6 +386,8 @@ test('receipt actions follow payment, claimed, rejected and expired states witho
   await page.locator('#jungsiEnrollmentNew').click(); await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiReceiptAmount')).toHaveText('25,000원');
   await expect(page.locator('#jungsiReceiptPeriod')).toContainText('2027년 1월 7일');
+  await expect(page.locator('#jungsiReceiptLogin')).toHaveAttribute('href', '/login?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
+  await expect(page.locator('#jungsiReceiptSignup')).toHaveAttribute('href', '/signup?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
   await expect(page.locator('#jungsiReceiptDeadline')).toContainText('2027년 1월 6일 18:00');
   state.application.applicationState = 'CLAIMED';
   await page.locator('#jungsiEnrollmentRecover').click();

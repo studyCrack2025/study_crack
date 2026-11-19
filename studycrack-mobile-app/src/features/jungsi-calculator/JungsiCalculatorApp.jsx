@@ -5,6 +5,7 @@ import CalculatorScoreForm from './CalculatorScoreForm.jsx';
 import CalculatorCatalog from './CalculatorCatalog.jsx';
 import CalculatorResult from './CalculatorResult.jsx';
 import CalculatorAccess from './CalculatorAccess.jsx';
+import CalculatorApplicationPanel from './CalculatorApplicationPanel.jsx';
 import useCalculatorAccess from './useCalculatorAccess.js';
 import { requestCalculatorConversion } from './calculator-api.js';
 import { CALCULATOR_PATH, candidateKey, clearCalculatorDrafts, editableScores, emptyScores, MAX_CANDIDATES, prepareCalculatorScores, readCalculatorDraft, scoresChanged, uniqueCandidates, writeCalculatorDraft } from './calculator-model.js';
@@ -84,7 +85,7 @@ function Workspace({ owner }) {
     persist(result.data, candidates);
   };
   const changeCandidates = next => { invalidate(); setCandidates(next); persist(confirmed, next); };
-  return <><CalculatorAccess resource={access} onRefresh={refreshAccess} /><div className="jcalc-layout">
+  return <><CalculatorApplicationPanel /><CalculatorAccess resource={access} onRefresh={refreshAccess} /><div className="jcalc-layout">
     <div className="jcalc-inputs"><CalculatorScoreForm scores={scores} confirmed={confirmed} changed={changed} errors={errors} onConfirm={confirm} onChange={value => { invalidate(); setScores(value); setErrors({}); }} />
       <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} /></div>
     <aside className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>

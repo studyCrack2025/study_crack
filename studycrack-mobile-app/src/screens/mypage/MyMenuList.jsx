@@ -9,6 +9,7 @@ const MENU_GROUPS = [
   {
     label: '학습 서비스',
     rows: [
+      { icon: 'target', href: '/2027-jungsi-consulting/calculator', title: '합격 계산기', subtitle: '신청 현황·이용권 확인과 성적·후보 입력' },
       { icon: 'chart', target: 'ranking', title: '공부 랭킹', subtitle: '오늘의 집중 순위 확인' },
       { icon: 'calendar', action: 'openStreakSummary', title: '연속 학습 기록', subtitle: '최근 30일 공부와 연속 학습일 확인' },
       { icon: 'chart', target: 'weekly', title: '학습 리포트', subtitle: '주간 점검과 튜터 피드백 확인' },
@@ -44,7 +45,9 @@ export function MyMenuList({ navigationAction = 'goto', compact = false }) {
         <section className="my-menu-section" key={group.label}>
           <h2>{group.label}</h2>
           <div className="my-menu-group">
-            {group.rows.map((row) => (
+            {group.rows.map((row) => row.href ? (
+              <a href={row.href} className="my-menu-row" key={row.title}><MenuIcon name={row.icon} /><span className="my-menu-copy"><b>{row.title}</b><small>{row.subtitle}</small></span><span className="my-menu-chevron" aria-hidden="true"><Icon name="chevron" /></span></a>
+            ) : (
               <button type="button" className="my-menu-row" data-action={row.action || navigationAction} data-target={row.target} key={row.title}>
                 <MenuIcon name={row.icon} />
                 <span className="my-menu-copy"><b>{row.title}</b><small>{row.subtitle}</small></span>

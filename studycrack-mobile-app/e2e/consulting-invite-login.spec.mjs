@@ -44,7 +44,7 @@ async function prepare(page) {
       const request = new URL(route.request().url());
       const callback = new URL(request.searchParams.get('redirect_uri'));
       callback.search = new URLSearchParams({ code: 'synthetic-code', state: request.searchParams.get('state') }).toString();
-      return route.fulfill({ status: 302, headers: { location: callback.href }, body: '' });
+      return route.fulfill({ contentType: 'text/html', body: '<!doctype html><script>location.replace(' + JSON.stringify(callback.href) + ')</script>' });
     });
   }
   await page.route('**/synthetic/**', async route => {
