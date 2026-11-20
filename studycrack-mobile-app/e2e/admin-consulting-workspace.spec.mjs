@@ -1,5 +1,45 @@
 import { expect, test } from '@playwright/test';
 
+test('연결 확인이 필요한 신청도 접수번호와 사유를 보여주고 승인·내보내기를 제공하지 않는다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.students = [];
+    state.exportLimit = 20;
+    state.directoryIssues = [{ applicationId: applicationId(3), sourceResponseId: record(3),
+        issueCode: 'DIRECTORY_CASE_MISSING', studentNameMask: '확*생', phoneMask: '010-****-0003', productType: 'calculator' }];
+    state.unavailableCount = 2;
+    await enterConsulting(page, 'error');
+    const row = page.locator('#consultingDirectoryBody [data-directory-issue]');
+    await expect(row).toContainText('확*생');
+    await expect(row).toContainText('신청에 연결된 이용 정보를 확인해주세요.');
+    await expect(page.locator('#consultingDirectoryStatus')).toContainText('확인 필요 2건');
+    await expect(page.locator('#consultingDirectoryStatus')).toContainText('개별 정보 확인 전 1건');
+    await expect(row.getByRole('button')).toHaveCount(0);
+    await expect(row.getByRole('checkbox')).toHaveCount(0);
+    await row.getByText('점검 정보', { exact: true }).click();
+    await expect(row).toContainText(applicationId(3));
+    await expect(row).toContainText('합격 계산기');
+    expect(state.calls.some(call => call.type === 'admin_get_consulting_student' || call.type === 'admin_verify_manual_payment')).toBe(false);
+    await page.setViewportSize({ width: 320, height: 900 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ path: testInfo.outputPath('application-issue-320.png'), fullPage: true });
+});
+
+test('신청 점검 응답의 이름은 HTML로 실행하지 않고 잘못된 식별자는 목록 오류로 처리한다', async ({ page }) => {
+    const state = await prepare(page);
+    state.students = [];
+    state.directoryIssues = [{ applicationId: applicationId(3), sourceResponseId: record(3),
+        issueCode: 'INVALID_V2_SCHEMA', studentNameMask: '<img src=x onerror=alert(1)>*', phoneMask: null, productType: null }];
+    await enterConsulting(page, 'error');
+    const row = page.locator('#consultingDirectoryBody [data-directory-issue]');
+    await expect(row.locator('strong')).toHaveText('<img src=x onerror=alert(1)>*');
+    await expect(row.locator('img')).toHaveCount(0);
+    state.directoryIssues[0].applicationId = 'private@example.invalid';
+    await page.getByRole('button', { name: '목록 새로고침', exact: true }).click();
+    await expect(page.locator('#consultingDirectoryStatus')).toContainText('학생 목록을 불러오지 못했습니다.');
+    await expect(page.locator('#consultingDirectoryBody')).not.toContainText('private@example.invalid');
+    await expect(page.locator('#consultingDirectoryBody [data-directory-issue]')).toHaveCount(0);
+});
+
 test('운영팀은 ID 입력 없이 본인의 불가 시간만 저장하고 역할별 전체 일정을 확인한다', async ({ page }, testInfo) => {
     const state = await prepare(page);
     const first = { slotId: 'WST_20261207_1000', localDate: '2026-12-07', localTime: '10:00', startAt: '2026-12-07T01:00:00.000Z' };
@@ -112,6 +152,7 @@ async function prepare(page, hash = '', configure = () => {}) {
             data = {
                 items: state.emptyFirst && first ? [] : state.splitPages ? items.slice(first ? 0 : 1, first ? 1 : 2) : items,
                 nextCursor: first && (state.emptyFirst || (state.splitPages && items.length > 1)) ? 'synthetic_cursor' : null,
+                ...(state.directoryIssues ? { issueRows: state.directoryIssues, unavailableCount: state.unavailableCount ?? state.directoryIssues.length } : {}),
                 exportLimit: state.exportLimit || null
             };
         } else if (request.type === 'admin_list_written_unread') {
@@ -283,9 +324,9 @@ async function prepare(page, hash = '', configure = () => {}) {
     await page.goto(`/admin${hash}`);
     return state;
 }
-async function enterConsulting(page) {
+async function enterConsulting(page, expectedState = 'success') {
     await page.locator('a[onclick="showSection(\'consulting\')"]').click();
-    await expect(page.locator('#consultingDirectoryStatus')).toHaveAttribute('data-state', 'success');
+    await expect(page.locator('#consultingDirectoryStatus')).toHaveAttribute('data-state', expectedState);
 }
 async function openStudent(page, index = 0) {
     await page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' }).nth(index).click();

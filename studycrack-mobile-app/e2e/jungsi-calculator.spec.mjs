@@ -17,8 +17,12 @@ async function setup(page, { signedIn = true } = {}) {
       localStorage.setItem('userRole', 'student');
     }
   }, { signedIn });
-  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__calculator-analysis',consultingPublic:'/__calculator-public',auth:'/__calculator-auth'}};` }));
+  await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__calculator-analysis',consulting:'/__calculator-core',consultingPublic:'/__calculator-public',auth:'/__calculator-auth'}};` }));
   await page.route('**/__calculator-public', route => route.fulfill({ json: { success: true, data: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'unavailable', price: null } } }));
+  await page.route('**/__calculator-core', route => {
+    expect(route.request().postDataJSON()).toEqual({ type: 'student_get_calculator_applications', data: {} });
+    return route.fulfill({ json: { success: true, data: { contractVersion: 'calculator-applications-v1', items: [], hasMore: false, needsReview: false, accountEmailMask: null } } });
+  });
   await page.route('**/__calculator-auth', route => route.fulfill({ json: { success: true } }));
   await page.route('**/__calculator-analysis', async route => {
     const payload = route.request().postDataJSON();

@@ -48,7 +48,7 @@
 .my-menu-section{display:grid;gap:7px;}
 .my-menu-section h2{margin:0;padding:0 3px;font-size:var(--sc-type-section);line-height:1.55;color:var(--sc-ink-subtle);font-weight:700;letter-spacing:0;}
 .my-menu-group{overflow:hidden;border:1px solid var(--sc-border-subtle);border-radius:var(--sc-radius-card);background:var(--sc-surface);}
-.my-menu-row{width:100%;min-height:64px;display:grid;grid-template-columns:36px minmax(0,1fr) 18px;gap:12px;align-items:center;padding:12px 14px;border:0;border-bottom:1px solid var(--sc-line-subtle);background:transparent;color:var(--sc-ink);font-family:inherit;text-align:left;}
+.my-menu-row{width:100%;min-height:64px;display:grid;grid-template-columns:36px minmax(0,1fr) 18px;gap:12px;align-items:center;padding:12px 14px;border:0;border-bottom:1px solid var(--sc-line-subtle);background:transparent;color:var(--sc-ink);font-family:inherit;text-align:left;text-decoration:none;box-sizing:border-box;}
 .my-menu-row:last-child{border-bottom:0;}
 .my-menu-icon{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--sc-radius-card);background:var(--sc-surface-subtle);color:var(--sc-brand-navy);}
 .my-menu-icon .icon{width:17px;height:17px;stroke:currentColor;}
