@@ -236,7 +236,8 @@
     "assets/fonts/paperlogy/paperlogy-800-extended-0cc434a0c9.woff2",
     "assets/fonts/paperlogy/paperlogy-400-core-03b5e721b1.woff2",
     "css/jungsi-enrollment.css",
-    "js/jungsi-enrollment.js"
+    "js/jungsi-enrollment.js",
+    "assets/images/studycrack-logo-share-20261120.jpg"
   ],
   "aliases": {
     "2027-jungsi-consulting/calculator": "jungsi-calculator-2027.html",
