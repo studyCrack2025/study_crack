@@ -58,6 +58,53 @@
 .consulting-detail-title { margin:0 0 16px; color:#0f172a; font-size:1.25rem; }
 .consulting-close { border:0; background:transparent; color:#64748b; font-size:28px; cursor:pointer; }
 .consulting-record { display:grid; min-width:0; gap:16px; }
+.calculator-admin { min-width:0; color:#0f172a; word-break:keep-all; overflow-wrap:anywhere; }
+.calculator-admin-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+.calculator-admin-head { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:20px; }
+.calculator-admin-head > div { min-width:0; flex:1 1 320px; }
+.calculator-admin-head h1 { margin:6px 0 10px; font-size:clamp(1.45rem,3vw,2rem); line-height:1.35; }
+.calculator-admin-notice { margin:0 0 20px; padding:14px 18px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e40af; line-height:1.65; }
+.calculator-admin .consulting-btn { max-width:100%; box-sizing:border-box; font:inherit; font-weight:700; line-height:1.5; white-space:normal; overflow-wrap:anywhere; }
+.calculator-admin .consulting-btn:focus-visible, .calculator-admin-disclosure summary:focus-visible { outline:3px solid #2563eb; outline-offset:3px; }
+.calculator-admin .consulting-status:empty { display:none; }
+.calculator-admin-table-wrap { min-width:0; }
+.calculator-admin-table { display:block; width:100%; border:0; border-spacing:0; text-align:left; }
+.calculator-admin-table td { display:grid; grid-template-columns:minmax(0,84px) minmax(0,1fr); gap:12px; padding:12px 0; border:0; vertical-align:middle; line-height:1.6; overflow-wrap:anywhere; }
+.calculator-admin-table .empty-msg { display:block; padding-bottom:0; text-align:center; color:#64748b; }
+.calculator-admin-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:20px; }
+.calculator-admin-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:24px 0 16px; }
+.calculator-admin-title { margin:0 0 20px; font-size:clamp(1.2rem,2.5vw,1.6rem); line-height:1.5; }
+.calculator-admin-badge { display:inline-flex; align-items:center; width:fit-content; max-width:100%; box-sizing:border-box; padding:5px 10px; border-radius:8px; background:#eff6ff; color:#1d4ed8; font-size:.85rem; font-weight:700; line-height:1.5; }
+.calculator-admin-badge:empty { display:none; }
+.calculator-admin-badge[data-phase="completed"] { background:#ecfdf5; color:#047857; }
+.calculator-admin-badge[data-phase="attention"], .calculator-admin-badge[data-phase="expired"] { background:#fff7ed; color:#9a3412; }
+.calculator-admin-content { display:grid; min-width:0; gap:20px; }
+.calculator-admin-content[hidden], .calculator-admin-detail[hidden], .calculator-admin-card[hidden] { display:none; }
+.calculator-admin-facts { display:grid; min-width:0; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); align-items:start; gap:20px; }
+.calculator-admin-card { min-width:0; margin:0; padding:clamp(16px,3vw,24px); box-sizing:border-box; border:1px solid #e2e8f0; border-radius:14px; background:#fff; box-shadow:0 2px 6px #0f172a04; }
+.calculator-admin-card h3 { margin:0 0 14px; color:#1e293b; font-size:1.05rem; line-height:1.5; }
+.calculator-admin-card > .consulting-caption { margin:0 0 16px; }
+.calculator-admin-card .consulting-facts > div:last-child { border-bottom:0; }
+.calculator-admin-disclosure summary { min-height:44px; box-sizing:border-box; padding:10px 0; color:#334155; font-weight:700; cursor:pointer; }
+.calculator-admin-fields { min-width:0; margin:0; padding:0; border:0; }
+.calculator-admin .consulting-contact-fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); }
+.calculator-admin .consulting-contact-fields input[type="datetime-local"] { display:block; max-width:100%; overflow:hidden; }
+.calculator-admin .consulting-contact-confirm input { flex:none; width:18px; height:18px; margin:4px 0 0; accent-color:#2563eb; }
+.calculator-admin-payment { border-color:#bfdbfe; }
+.calculator-admin-danger { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; border-color:#fecaca; background:#fffafa; }
+.calculator-admin-danger > div { flex:1 1 280px; min-width:0; }
+.calculator-admin-danger h3 { margin-bottom:6px; color:#991b1b; }
+.calculator-admin-delete-target { margin:16px 0; padding:12px 14px; border-radius:10px; background:#f8fafc; font-weight:700; line-height:1.6; overflow-wrap:anywhere; }
+.calculator-admin-dialog-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:20px; }
+.calculator-admin-table thead { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.calculator-admin-table tbody { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); gap:16px; }
+.calculator-admin-table tr { display:block; min-width:0; padding:6px 16px 16px; border:1px solid #e2e8f0; border-radius:14px; background:#fff; }
+.calculator-admin-table td::before { content:attr(data-label); color:#64748b; font-size:.85rem; font-weight:700; }
+.calculator-admin-table td:first-child { border-bottom:1px solid #f1f5f9; }
+.calculator-admin-table .calculator-admin-row-action { display:block; padding-bottom:0; }
+.calculator-admin-table .calculator-admin-row-action::before, .calculator-admin-table .empty-msg::before { content:none; }
+.calculator-admin-row-action .consulting-btn { width:100%; }
+.calculator-admin-row-action summary { min-height:44px; box-sizing:border-box; padding:10px 0; font-weight:700; color:#334155; cursor:pointer; }
 #consultingDetailSummary { grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); }
 .consulting-facts { margin:0; }
 .consulting-facts > div { display:grid; grid-template-columns:minmax(0,min(37%,10rem)) minmax(0,1fr); gap:12px; padding:9px 0; border-bottom:1px solid #e2e8f0; line-height:1.55; }

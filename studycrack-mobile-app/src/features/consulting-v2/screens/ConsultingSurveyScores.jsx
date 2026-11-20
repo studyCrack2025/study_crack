@@ -101,6 +101,7 @@ function ScoreCard({ row, label, field, change, lookup, pending }) {
       : lookup?.status === 'board_unavailable' ? '원점수 환산 자료를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'
         : lookup?.status && lookup.status !== 'converted' ? '해당 원점수 조합을 확인할 수 없어요. 과목과 공통·선택 점수를 확인해 주세요.'
           : '과목과 원점수를 입력하면 표준점수·백분위·등급이 자동으로 표시돼요.'}</p>}
+    {row.conversionExamType === 'csat_estimate' && <p className="consulting-score-note">임시 추정치로, 실제 성적표와 다를 수 있어요.</p>}
   </fieldset>;
 }
 

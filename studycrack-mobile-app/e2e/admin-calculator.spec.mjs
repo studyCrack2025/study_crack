@@ -18,7 +18,7 @@ async function prepare(page, options = {}) {
     const document = html.replace('</body>', bootstrap + scripts.map(src => `<script src="/js/admin/${src}"></script>`).join('') + '</body>');
     const state = { calls: [], scope: 'calculator', emptyFirst: false, defer: false, release: null, failure: false, ...options };
     const contact = { studentName: '가상 계산기 학생', phone: '01000000000', email: 'calculator@example.invalid', payerName: '가상 입금자' };
-    state.detail = { scope: 'calculator', sourceResponseId, stage: 'DEV', campaignReady: true, contact, reviewNotices: [],
+    state.detail = { scope: 'calculator', sourceResponseId, stage: 'DEV', campaignReady: true, contact, deletion: { available: options.deletionAvailable !== false }, reviewNotices: [],
         application: { applicationId, productType: 'calculator', applicationState: 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 25000 },
         calculator: { state: 'pending_payment', phase: 'intake', stateLabel: '입금 확인 대기', nextAction: '입금 확인·승인', expiresAt: '2027-01-07T14:59:59.999Z', accountLinked: false, canApprove: true, canReviewInput: true, canReviewPayment: true, canReissue: false } };
     await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body: document }));
@@ -30,14 +30,23 @@ async function prepare(page, options = {}) {
         if (type === 'admin_get_notifications') return route.fulfill({ json: { notifications: [], sentNotices: [] } });
         if (['admin_list_v2_material_review', 'admin_list_written_unread'].includes(type)) data = { items: [], hasMore: false, nextCursor: null };
         else if (type === 'admin_list_calculator_applications') data = { scope: state.scope, productType: 'calculator',
-            items: state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
-            nextCursor: state.emptyFirst && !input.cursor ? 'synthetic_cursor' : null };
+            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
+            nextCursor: state.emptyFirst && !input.cursor ? 'synthetic_cursor' : null, issueRows: state.issueRows || [], unavailableCount: state.issueRows?.length || 0 };
         else if (type === 'admin_get_calculator_application') {
             if (state.defer) await new Promise(resolve => { state.release = resolve; });
             data = { ...state.detail, scope: state.scope };
         } else if (type === 'admin_get_calculator_input') {
             data = structuredClone(state.savedInput);
             if (state.deferSaved) await new Promise(resolve => { state.release = resolve; });
+        }
+        else if (type === 'admin_preview_consulting_application_delete') {
+            if (state.deferDeletePreview) await new Promise(resolve => { state.releaseDeletePreview = resolve; });
+            data = { applicationId, confirmation: '신청 영구 삭제', previewToken: 'synthetic_delete_preview', backgroundSupported: true, storageIncluded: true, includesCase: false, resume: false, deletedCount: 0, recordCount: 5, ...state.deletePreview };
+        } else if (type === 'admin_delete_consulting_application') {
+            if (state.deferDelete) await new Promise(resolve => { state.releaseDelete = resolve; });
+            if (state.failDelete) return route.fulfill({ status: 500, json: { success: false } });
+            state.deleted = true;
+            data = { applicationId, accepted: true, backgroundCleanup: true, complete: false, ...state.deleteResult };
         }
         else if (type === 'admin_preview_calculator_review_notice') data = { applicationId, revision: state.detail.application.revision, willQueue: true, recipient: '010-****-0000', message: '[스터디크랙] 합격 계산기 신청을 보류했습니다.', previewToken: 'synthetic_preview_token' };
         else if (type === 'admin_verify_calculator_payment') {
@@ -66,19 +75,124 @@ async function fillPayment(page) {
     await page.locator('#section-calculator').getByLabel('입금 시각 (기기 현지 시각)', { exact: true }).fill('2026-11-19T22:00');
     await page.locator('#section-calculator').getByLabel('입금자명을 직접 대조했습니다', { exact: true }).check();
 }
+async function openDeletion(page) {
+    await page.getByRole('button', { name: '계산기 신청 삭제', exact: true }).click();
+    await expect(page.locator('#calculatorAdminDeleteStatus')).toContainText('확인 문구를 입력');
+}
 
-test('별도 계산기 메뉴에서 신청자·이용 상태를 확인하고 320px와 데스크톱에서 표시한다', async ({ page }, testInfo) => {
-    const state = await prepare(page); await openDetail(page);
-    await expect(page.locator('#calculatorAdminFacts')).toContainText('가상 계산기 학생');
-    await expect(page.locator('#calculatorAdminFacts')).toContainText('25,000원');
-    await expect(page.locator('#calculatorAdminFacts')).toContainText('연결 확인 전');
+test('신청 삭제는 범위 확인·정확한 문구 후 한 번 접수하고 목록과 개인정보를 정리한다', async ({ page }, testInfo) => {
+    const state = await prepare(page, { deferDelete: true }); await openDetail(page); await openDeletion(page);
+    await expect(page.locator('#calculatorAdminDeleteTarget')).toHaveText('가상 계산기 학생 · 01000000000');
+    await expect(page.locator('#calculatorAdminDeleteScope')).toContainText('회원 계정과 다른 신청은 유지');
+    await expect(page.locator('#calculatorAdminDeleteConfirm')).toBeDisabled();
+    await page.locator('#calculatorAdminDeleteConfirmation').fill('삭제');
+    await expect(page.locator('#calculatorAdminDeleteConfirm')).toBeDisabled();
+    expect(state.calls.filter(x => x.type === 'admin_delete_consulting_application')).toHaveLength(0);
+    await page.locator('#calculatorAdminDeleteConfirmation').fill('신청 영구 삭제');
+    await page.setViewportSize({ width: 320, height: 900 }); await assertLayout(page);
+    await page.screenshot({ path: testInfo.outputPath('calculator-admin-delete-320.png'), fullPage: true });
+    await page.locator('#calculatorAdminDeleteConfirm').click();
+    await expect(page.locator('#calculatorAdminDeleteConfirm')).toBeDisabled();
+    await expect(page.locator('#calculatorAdminDeleteCancel')).toBeDisabled();
+    await page.keyboard.press('Escape'); await expect(page.locator('#calculatorAdminDeleteDialog')).toBeVisible();
+    await page.evaluate(() => { deleteCalculatorAdminApplication(); refreshCalculatorAdmin(); closeCalculatorAdminDetail(); });
+    const calls = state.calls.filter(x => x.type === 'admin_delete_consulting_application'); expect(calls).toHaveLength(1);
+    expect(calls[0].data).toEqual({ ...reference, previewToken: 'synthetic_delete_preview', confirmation: '신청 영구 삭제', backgroundCleanup: true });
+    state.releaseDelete();
+    await expect(page.locator('#calculatorAdminDeleteDialog')).toBeHidden();
+    await expect(page.locator('#calculatorAdminListStatus')).toContainText('신청을 목록에서 제거');
+    await expect(page.locator('#calculatorAdminListBody')).toContainText('신청이 없습니다');
+    await expect(page.locator('#calculatorAdminFacts')).toBeEmpty();
+    await expect(page.locator('#calculatorAdminDeleteTarget')).toBeEmpty();
+    await expect(page.locator('#calculatorAdminEmail')).toHaveValue('');
+});
+test('삭제 창 취소와 권한 없는 상세에서는 삭제 요청을 보내지 않는다', async ({ page }) => {
+    const state = await prepare(page); await openDetail(page); await openDeletion(page);
+    await page.keyboard.press('Escape'); await expect(page.locator('#calculatorAdminDeleteDialog')).toBeHidden();
+    expect(state.calls.filter(x => x.type === 'admin_delete_consulting_application')).toHaveLength(0);
+    state.detail.deletion.available = false;
+    await page.getByRole('button', { name: '계산기 정보 새로고침', exact: true }).click();
+    await expect(page.locator('#calculatorAdminDetailContent')).toBeVisible();
+    await expect(page.locator('#calculatorAdminDeleteSection')).toBeHidden();
+    await page.evaluate(() => openCalculatorAdminDeletion());
+    expect(state.calls.filter(x => x.type === 'admin_preview_consulting_application_delete')).toHaveLength(1);
+});
+for (const invalid of [{ applicationId: 'APP_other' }, { includesCase: true }, { backgroundSupported: false }, { previewToken: '' }]) test('삭제 범위가 잘못되면 전송을 막는다: ' + JSON.stringify(invalid), async ({ page }) => {
+    const state = await prepare(page, { deletePreview: invalid }); await openDetail(page);
+    await page.locator('#calculatorAdminDelete').click();
+    await expect(page.locator('#calculatorAdminDeleteStatus')).toHaveAttribute('data-state', 'error');
+    await page.locator('#calculatorAdminDeleteConfirmation').fill('신청 영구 삭제');
+    await expect(page.locator('#calculatorAdminDeleteConfirm')).toBeDisabled();
+    await page.evaluate(() => deleteCalculatorAdminApplication());
+    expect(state.calls.filter(x => x.type === 'admin_delete_consulting_application')).toHaveLength(0);
+    state.deletePreview = {};
+    await page.locator('#calculatorAdminDeleteRetry').click();
+    await expect(page.locator('#calculatorAdminDeleteStatus')).toContainText('확인 문구를 입력');
+    await expect(page.locator('#calculatorAdminDeleteConfirmation')).toHaveValue('');
+});
+for (const mode of ['server-error', 'invalid-reply']) test('삭제 결과가 불확실하면 재전송을 막고 실제 목록 확인을 안내한다: ' + mode, async ({ page }) => {
+    const state = await prepare(page, mode === 'server-error' ? { failDelete: true } : { deleteResult: { applicationId: 'APP_other' } });
+    await openDetail(page); await openDeletion(page);
+    await page.locator('#calculatorAdminDeleteConfirmation').fill('신청 영구 삭제'); await page.locator('#calculatorAdminDeleteConfirm').click();
+    await expect(page.locator('#calculatorAdminDeleteStatus')).toContainText('자동 재전송하지 않습니다');
+    await expect(page.locator('#calculatorAdminDeleteConfirm')).toBeDisabled(); await expect(page.locator('#calculatorAdminDeleteRetry')).toBeHidden();
+    await page.evaluate(() => deleteCalculatorAdminApplication());
+    expect(state.calls.filter(x => x.type === 'admin_delete_consulting_application')).toHaveLength(1);
+    await page.locator('#calculatorAdminDeleteCancel').click(); await expect(page.locator('#calculatorAdminDeleteDialog')).toBeHidden();
+});
+test('세션 종료 후 늦게 도착한 삭제 대상 조회는 다시 표시하지 않는다', async ({ page }) => {
+    const state = await prepare(page, { deferDeletePreview: true }); await openDetail(page); await page.locator('#calculatorAdminDelete').click();
+    await expect.poll(() => typeof state.releaseDeletePreview).toBe('function');
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
+    state.releaseDeletePreview();
+    await expect(page.locator('#calculatorAdminDeleteDialog')).toBeHidden(); await expect(page.locator('#calculatorAdminDeleteTarget')).toBeEmpty();
+    await expect(page.locator('#calculatorAdminDeleteStatus')).toBeEmpty();
+    expect(state.calls.filter(x => x.type === 'admin_delete_consulting_application')).toHaveLength(0);
+});
+
+test('계산기 목록·상세·입력 영역은 320~1280px에서 긴 정보와 버튼을 잘리지 않게 표시한다', async ({ page }, testInfo) => {
+    const state = await prepare(page);
+    state.detail.contact.email = 'long-address-'.repeat(15) + '@example.invalid';
+    for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(page.locator('#calculatorAdminListBody tr')).toHaveCount(1);
+        await assertLayout(page);
+        if (width === 1280) await page.screenshot({ path: testInfo.outputPath('calculator-admin-list-desktop.png'), fullPage: true });
+        await openDetail(page);
+        await expect(page.locator('#calculatorAdminFacts')).toContainText('25,000원');
+        await expect(page.locator('#calculatorAdminFacts')).toContainText(state.detail.contact.email);
+        await page.locator('#calculatorAdminInput summary').click();
+        await page.locator('#calculatorAdminReview summary').click();
+        await assertLayout(page);
+        if (width === 320 || width === 1280) await page.screenshot({ path: testInfo.outputPath('calculator-admin-detail-' + width + '.png'), fullPage: true });
+        await page.getByRole('button', { name: '← 계산기 신청 목록', exact: true }).click();
+        await expect(page.locator('#calculatorAdminListStatus')).toHaveAttribute('data-state', 'success');
+    }
     expect(state.calls.some(call => call.type.includes('consulting_student') || call.type.includes('schedule'))).toBe(false);
-    await expect(page).toHaveURL(/#calculator\?phase=all&student=APP_/);
+});
+async function assertLayout(page) {
+    expect(await page.evaluate(() => {
+        const section = document.getElementById('section-calculator'), boundary = section.getBoundingClientRect();
+        const failures = [...section.querySelectorAll('button, input:not([type=checkbox]), select, textarea, .calculator-admin-card, .calculator-admin-table tr')].flatMap(node => {
+            const rect = node.getBoundingClientRect();
+            if (!rect.width || !rect.height) return [];
+            return rect.left < Math.max(0, boundary.left) - 1 || rect.right > Math.min(innerWidth, boundary.right) + 1 || node.tagName === 'BUTTON' && rect.height < 44 ? [node.id || node.className] : [];
+        });
+        if (document.documentElement.scrollWidth > innerWidth + 1) failures.push('document overflow');
+        return failures;
+    })).toEqual([]);
+}
+test('빈 목록과 연결 확인 필요 신청도 모바일 카드와 점검 정보를 정상 표시한다', async ({ page }) => {
+    const state = await prepare(page, { emptyFirst: true, issueRows: [{ ...reference, productType: 'calculator', issueCode: 'DIRECTORY_CASE_MISSING', studentNameMask: '가* 학생', phoneMask: '010-****-0000' }] });
     await page.setViewportSize({ width: 320, height: 900 });
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: testInfo.outputPath('calculator-admin-320.png'), fullPage: true });
-    await page.setViewportSize({ width: 1280, height: 900 }); await expect(page.locator('#calculatorAdminApprove')).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath('calculator-admin-desktop.png'), fullPage: true });
+    await expect(page.locator('#calculatorAdminListStatus')).toContainText('확인 필요 1건');
+    await expect(page.locator('#calculatorAdminListBody [data-directory-issue]')).toHaveCount(1);
+    await page.getByText('점검 정보', { exact: true }).click();
+    await expect(page.locator('#calculatorAdminListBody')).toContainText(applicationId); await assertLayout(page);
+    await expect(page.getByRole('button', { name: '계산기 신청 상세', exact: true })).toHaveCount(0);
+    state.issueRows = []; state.emptyFirst = false; state.deleted = true;
+    await page.getByRole('button', { name: '계산기 정보 새로고침', exact: true }).click();
+    await expect(page.locator('#calculatorAdminListBody')).toContainText('신청이 없습니다'); await assertLayout(page);
 });
 test('입금 승인은 필수 대조와 최종 확인 후 한 번만 전송하며 인증 대기로 전환한다', async ({ page }) => {
     const state = await prepare(page); await openDetail(page);
