@@ -23,13 +23,11 @@ function Header({ active }) {
   return <header className="jcalc-header"><a className="jcalc-brand" href="/" aria-label="StudyCrack 홈"><img src="/assets/figma/figma-asset-04.svg" width="30" height="30" alt="" /><span>StudyCrack</span></a><nav aria-label="합격 계산기 메뉴"><a href="/2027-jungsi-consulting">서비스 안내</a>{active && <a href="/mypage">내 계정</a>}</nav></header>;
 }
 
-function Workspace({ owner }) {
-  const { resource: access, refresh: refreshAccess, deny: denyAccess } = useCalculatorAccess();
+function Workspace({ owner, access, denyAccess, applicationHome }) {
   const [restored] = React.useState(() => readCalculatorDraft(storage(), owner));
   const [scores, setScores] = React.useState(() => restored.confirmed ? editableScores(restored.confirmed) : emptyScores());
   const [confirmed, setConfirmed] = React.useState(restored.confirmed);
   const [candidates, setCandidates] = React.useState(restored.candidates);
-  const [applicationHome, setApplicationHome] = React.useState(null);
   const [errors, setErrors] = React.useState({});
   const [saved, setSaved] = React.useState(true);
   const [resource, setResource] = React.useState({ status: 'loading', data: [], error: '' });
@@ -40,6 +38,7 @@ function Workspace({ owner }) {
   const sequence = React.useRef(0);
   const changed = scoresChanged(scores, confirmed);
   const allowed = access.status === 'ready' && access.data.access.allowed;
+  const queriesOpen = allowed && (access.data.access.source === 'manager' || Date.now() >= Date.parse('2026-11-28T00:00:00+09:00'));
 
   const invalidate = () => {
     sequence.current += 1;
@@ -51,7 +50,7 @@ function Workspace({ owner }) {
   React.useEffect(() => { invalidate(); }, [access.status, access.data]);
 
   const calculate = async () => {
-    if (!allowed || !confirmed || changed || !candidates.length || pending.current || conversion.status === 'loading') return;
+    if (!queriesOpen || !confirmed || changed || !candidates.length || pending.current || conversion.status === 'loading') return;
     pending.current?.abort();
     const controller = new AbortController(), requestId = ++sequence.current;
     pending.current = controller;
@@ -87,13 +86,13 @@ function Workspace({ owner }) {
     persist(result.data, candidates);
   };
   const changeCandidates = next => { invalidate(); setCandidates(next); persist(confirmed, next); };
-  return <><CalculatorApplicationPanel onLoaded={setApplicationHome} /><CalculatorAccess resource={access} onRefresh={refreshAccess} /><div className="jcalc-layout">
+  return <div hidden={!allowed}><div className="jcalc-layout">
     <div className="jcalc-inputs"><CalculatorScoreForm scores={scores} confirmed={confirmed} changed={changed} errors={errors} onConfirm={confirm} onChange={value => { invalidate(); setScores(value); setErrors({}); }} />
       <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} /></div>
     <aside className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>
       <p className="jcalc-note" role="status">{confirmed ? changed ? '성적 수정 중 · 입력 성적을 다시 확인해주세요.' : `${confirmed.basis === 'official' ? '성적표' : '가채점 원점수'} 기준 · 성적 입력 확인 완료` : '성적을 확인하고 비교할 후보를 담아보세요.'}</p>
-      <button className="jcalc-primary jcalc-calculate" type="button" disabled={!allowed || !confirmed || changed || !candidates.length || conversion.status === 'loading'} onClick={calculate}>{conversion.status === 'loading' ? '분석 자료 확인 중…' : '환산점수·가능성 조회'}</button>
-      <p className="jcalc-note" role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 입결 기준선 검수 상태를 확인하고 있습니다.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '조회에는 Basic 이상 이용권이 필요합니다. 이용 안내에서 현재 이용권을 확인해주세요.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</p>
+      <button className="jcalc-primary jcalc-calculate" type="button" disabled={!queriesOpen || !confirmed || changed || !candidates.length || conversion.status === 'loading'} onClick={calculate}>{conversion.status === 'loading' ? '분석 자료 확인 중…' : '환산점수·가능성 조회'}</button>
+      <p className="jcalc-note" role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 입결 기준선 검수 상태를 확인하고 있습니다.' : !queriesOpen && allowed ? '계산 결과는 11월 28일 공개 예정입니다. 성적과 지원 후보를 먼저 저장해주세요.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '입금 승인과 계산기 이용 인증을 완료해주세요.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</p>
       {!allowed && <a className="jcalc-text-button" href="#jcalc-access-status">이용 안내 확인하기</a>}
       {conversion.status === 'error' && <p className="jcalc-error" role="alert">{conversion.error}</p>}
       {candidates.length ? <ul className="jcalc-candidates">{candidates.map(item => <li key={candidateKey(item)}><strong>{item.university}</strong><span>{item.major}</span>
@@ -104,7 +103,21 @@ function Workspace({ owner }) {
       <div className="jcalc-release-note"><strong>검수 완료 자료에 한해 환산합니다.</strong><p>환산점수와 입결 기준선의 검수 상태를 각각 확인합니다. 가능성 지수와 5단계는 검수를 통과한 후보에만 표시하며, 자료가 부족하면 판단을 보류합니다. 지수는 실제 합격률이 아닙니다.</p></div>
       <p className="jcalc-note">{!owner || !saved ? '이 브라우저에서 초안을 보관할 수 없습니다. 현재 화면을 벗어나면 입력이 초기화될 수 있습니다.' : '현재 입력은 같은 계정·현재 탭의 초안입니다. 다른 기기에서 이어보려면 아래 서버 저장을 이용해주세요. 다른 화면의 저장 성적은 변경하지 않습니다.'}</p>
     </aside>
-  </div><CalculatorSavedInputs home={applicationHome} input={{ scores: confirmed, targets: candidates.map(item => ({ ...item, ...(unitSelections[candidateKey(item)] ? { admissionUnitId: unitSelections[candidateKey(item)] } : {}) })) }} changed={changed} onRestore={input => { invalidate(); setConfirmed(input.scores); setScores(editableScores(input.scores)); setCandidates(input.targets.map(({ university, major }) => ({ university, major }))); setUnitSelections(Object.fromEntries(input.targets.filter(item => item.admissionUnitId).map(item => [candidateKey(item), item.admissionUnitId]))); setErrors({}); persist(input.scores, input.targets); }} /></>;
+  </div><CalculatorSavedInputs home={applicationHome} input={{ scores: confirmed, targets: candidates.map(item => ({ ...item, ...(unitSelections[candidateKey(item)] ? { admissionUnitId: unitSelections[candidateKey(item)] } : {}) })) }} changed={changed} onRestore={input => { invalidate(); setConfirmed(input.scores); setScores(editableScores(input.scores)); setCandidates(input.targets.map(({ university, major }) => ({ university, major }))); setUnitSelections(Object.fromEntries(input.targets.filter(item => item.admissionUnitId).map(item => [candidateKey(item), item.admissionUnitId]))); setErrors({}); persist(input.scores, input.targets); }} /></div>;
+}
+
+
+function AccountCalculator({ owner }) {
+  const { resource: access, refresh, deny } = useCalculatorAccess();
+  const [home, setHome] = React.useState(null);
+  const retained = React.useRef(false);
+  const allowed = access.status === 'ready' && access.data.access.allowed;
+  if (allowed) retained.current = true;
+  if (access.status === 'ready' && !allowed || access.status === 'error') retained.current = false;
+  return <><CalculatorApplicationPanel onLoaded={setHome} /><CalculatorAccess resource={access} onRefresh={refresh} />
+    {retained.current && <Workspace owner={owner} access={access} denyAccess={deny} applicationHome={home} />}
+    {!allowed && home?.items.length > 0 && <CalculatorSavedInputs home={home} input={null} changed readOnly />}
+  </>;
 }
 
 export default function JungsiCalculatorApp() {
@@ -120,6 +133,6 @@ export default function JungsiCalculatorApp() {
     return () => { for (const name of ['pageshow', 'storage', 'focus', 'studycrack:session-ended']) globalThis.removeEventListener(name, update); };
   }, []);
   return <><Header active={current.active} /><main className="jcalc-main"><section className="jcalc-intro"><p className="jcalc-eyebrow">2027 · 정시 합격 계산기</p><h1>내 성적에서,<br /><em>다음 지원 후보까지.</em></h1><p>성적을 입력하고 목표 대학·학과를 찾아보세요.<br />검수된 자료로 대학별 환산점수를 확인합니다.</p><span className="jcalc-badge">성적·후보 입력 · 검수 자료 환산 조회</span></section>
-    {current.active ? <Workspace key={current.owner || 'current-session'} owner={current.owner} /> : <section className="jcalc-panel jcalc-login" aria-labelledby="jcalc-login-title"><h2 id="jcalc-login-title">내 계정으로 준비해주세요.</h2><p className="jcalc-note">성적과 선택 후보가 다른 학생의 입력과 섞이지 않도록 로그인 후 이용할 수 있습니다. 컨설팅 초대코드는 필요하지 않습니다.</p><div className="jcalc-login-actions"><a className="jcalc-primary" href={`/login?returnUrl=${encodeURIComponent(CALCULATOR_PATH)}`}>로그인하고 시작하기</a><a className="jcalc-secondary" href={`/signup?returnUrl=${encodeURIComponent(CALCULATOR_PATH)}`}>회원가입</a></div></section>}
+    {current.active ? <AccountCalculator key={current.owner || 'current-session'} owner={current.owner} /> : <section className="jcalc-panel jcalc-login" aria-labelledby="jcalc-login-title"><h2 id="jcalc-login-title">내 계정으로 준비해주세요.</h2><p className="jcalc-note">입금 승인 후 알림톡·문자로 받은 이용 링크에서 로그인하고, 이메일의 10자리 인증코드로 이용 인증을 완료해주세요.</p><div className="jcalc-login-actions"><a className="jcalc-primary" href={`/login?returnUrl=${encodeURIComponent(CALCULATOR_PATH)}`}>로그인하고 시작하기</a><a className="jcalc-secondary" href={`/signup?returnUrl=${encodeURIComponent(CALCULATOR_PATH)}`}>회원가입</a></div></section>}
   </main><footer className="jcalc-footer"><a href="/2027-jungsi-consulting">정시 서비스 안내</a><a href="/privacy">개인정보처리방침</a><a href="https://pf.kakao.com/_wxjxcgn" target="_blank" rel="noopener noreferrer">이용 문의</a></footer></>;
 }

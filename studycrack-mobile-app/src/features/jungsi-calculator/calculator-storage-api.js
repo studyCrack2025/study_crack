@@ -15,9 +15,10 @@ export function normalizeStoredCalculatorInput(value) {
   return { scores: score.data, targets };
 }
 export function parseCalculatorStoredInput(data, applicationId) {
-  if (!data || data.contractVersion !== 'calculator-input-v1' || data.applicationId !== applicationId || !['saved', 'empty'].includes(data.status)
+  if (!data || data.contractVersion !== 'calculator-input-v1' || data.applicationId !== applicationId || !['saved', 'empty', 'restricted'].includes(data.status)
     || !Number.isSafeInteger(data.revision) || data.revision < 0 || data.source !== 'self_reported' || data.reviewed !== false || typeof data.canSave !== 'boolean' || data.consentRevision !== CALCULATOR_STORAGE_CONSENT
     || data.updatedAt !== null && (typeof data.updatedAt !== 'string' || data.updatedAt.length > 40 || !Number.isFinite(Date.parse(data.updatedAt)))) return null;
+  if (data.status === 'restricted') return data.input === null && data.canSave === false && data.canDelete === true && data.revision > 0 && data.candidateCount === null && data.basis === null ? data : null;
   if (data.status === 'empty') return data.input === null && data.candidateCount === 0 && data.basis === null ? data : null;
   const input = normalizeStoredCalculatorInput(data.input);
   return input && data.revision > 0 && data.updatedAt !== null && data.candidateCount === input.targets.length && data.basis === input.scores.basis ? { ...data, input } : null;

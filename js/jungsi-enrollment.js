@@ -88,7 +88,8 @@
         renderedReceipt = value; form.hidden = true; receipt.hidden = false; retry.hidden = true; recover.hidden = false; newSection.hidden = false; copyStatus.textContent = '';
         receipt.querySelector('details').open = false;
         document.getElementById('jungsiReceiptProduct').textContent = value.productName;
-        document.getElementById('jungsiReceiptNumber').textContent = value.applicationId;
+        document.getElementById('jungsiReceiptNumber').textContent = productType === 'calculator' ? '' : value.applicationId;
+        document.getElementById('jungsiReceiptNumber').closest('details').hidden = productType === 'calculator';
         document.getElementById('jungsiReceiptAmount').textContent = amountText(value);
         showPeriod('jungsiReceiptPeriod', value);
         showPaymentDeadline('jungsiReceiptDeadline', value);
@@ -115,12 +116,12 @@
         document.getElementById('jungsiReceiptAccess').href = productType === 'calculator' ? '/2027-jungsi-consulting/calculator' : '/2027-jungsi-consulting/home';
         document.getElementById('jungsiReceiptAccess').textContent = productType === 'calculator' ? '합격 계산기로 이동' : '나의 컨설팅으로 이동';
         document.getElementById('jungsiReceiptNextTitle').textContent = needsHelp ? '운영팀에 확인해주세요' : claimed ? '서비스를 시작해보세요' : value.applicationState === 'INVITED' ? '이용 인증을 완료해주세요' : '입금 후 이용 안내';
-        document.getElementById('jungsiReceiptNextDescription').textContent = needsHelp ? '추가 입금 전에 070-8128-1126으로 신청 내역을 문의해주세요.' : claimed ? '처음 인증한 학생 계정으로 서비스를 이용할 수 있습니다.' : value.applicationState === 'INVITED' ? '문자로 받은 링크를 열고 이메일의 10자리 인증코드를 입력해주세요.' : '운영팀이 입금을 확인하면 문자로 이용 링크, 이메일로 인증코드를 보내드립니다.';
+        document.getElementById('jungsiReceiptNextDescription').textContent = needsHelp ? '추가 입금 전에 070-8128-1126으로 신청 내역을 문의해주세요.' : claimed ? '처음 인증한 학생 계정으로 서비스를 이용할 수 있습니다.' : value.applicationState === 'INVITED' ? '알림톡·문자로 받은 링크를 열고 이메일의 10자리 인증코드를 입력해주세요.' : '운영팀이 입금을 확인하면 알림톡·문자로 이용 링크, 이메일로 10자리 인증코드를 보내드립니다.';
         const destination = productType === 'calculator' ? '/2027-jungsi-consulting/calculator' : '/2027-jungsi-consulting/start';
         document.getElementById('jungsiReceiptSignup').href = '/signup?returnUrl=' + encodeURIComponent(destination);
         document.getElementById('jungsiReceiptLogin').href = '/login?returnUrl=' + encodeURIComponent(destination);
-        document.getElementById('jungsiReceiptAccountHint').textContent = productType === 'calculator' ? '학생 본인 계정으로 로그인한 뒤 신청 상태를 연결할 수 있습니다. 이용권 활성화는 입금 확인과 이용 인증 후 진행됩니다.' : '학생 본인 계정으로 미리 가입하거나 로그인할 수 있습니다.';
-        for (const id of ['jungsiReceiptSignup', 'jungsiReceiptLogin', 'jungsiReceiptAccountHint']) document.getElementById(id).hidden = claimed || needsHelp;
+        document.getElementById('jungsiReceiptAccountHint').textContent = productType === 'calculator' ? '입금 승인 후 받은 알림톡·문자 링크에서 학생 본인 계정으로 로그인하고 이메일의 10자리 코드로 인증해주세요.' : '학생 본인 계정으로 미리 가입하거나 로그인할 수 있습니다.';
+        for (const id of ['jungsiReceiptSignup', 'jungsiReceiptLogin', 'jungsiReceiptAccountHint']) document.getElementById(id).hidden = claimed || needsHelp || productType === 'calculator';
         const states = { PAYMENT_REVIEW: '신청이 저장됐습니다. 입금 후 운영팀 확인을 기다려주세요.', INVITED: '입금이 확인됐습니다. 문자로 받은 링크와 이메일 인증코드로 이용 인증을 완료해주세요.', CLAIMED: '계정 연결이 완료됐습니다. 처음 인증한 학생 계정으로 이용해주세요.', REJECTED: '신청 처리 내역을 운영팀에 확인해주세요. 추가로 입금하지 마세요.' };
         message(accessExpired ? '계산기 이용 기간이 종료됐습니다. 이용 내역은 운영팀에 문의해주세요.' : value.applicationState === 'PAYMENT_REVIEW' && expired ? productType === 'calculator' ? '계산기 결제 기한이 종료됐습니다. 추가로 입금하지 말고 운영팀에 문의해주세요.' : '얼리버드 입금 기한이 지났습니다. 이체 전에 운영팀에 신청 금액을 확인해주세요.' : states[value.applicationState]);
         document.getElementById('jungsiSavedApplication').hidden = false;
