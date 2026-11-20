@@ -38,7 +38,7 @@ function Workspace({ owner, access, denyAccess, applicationHome }) {
   const sequence = React.useRef(0);
   const changed = scoresChanged(scores, confirmed);
   const allowed = access.status === 'ready' && access.data.access.allowed;
-  const queriesOpen = allowed && (access.data.access.source === 'manager' || Date.now() >= Date.parse('2026-11-28T00:00:00+09:00'));
+  const queriesOpen = allowed && (access.data.access.source === 'manager' || access.data.service.earlyAccess || Date.now() >= Date.parse('2026-11-28T00:00:00+09:00'));
 
   const invalidate = () => {
     sequence.current += 1;

@@ -74,6 +74,8 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
   if (!value || value.success !== true || value.contractVersion !== 'jungsi-calculator-access-v1' || value.admissionYear !== 2027
     || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'purchase', 'none'].includes(value.access.source)
     || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
-    || !['preparing', 'candidate_check_required'].includes(value.service.state)) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
-  return { ...response, data: { access: { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };
+    || !['preparing', 'candidate_check_required'].includes(value.service.state)
+    || value.service.earlyAccess !== undefined && typeof value.service.earlyAccess !== 'boolean'
+    || value.service.earlyAccess === true && (!value.access.allowed || value.access.source !== 'purchase')) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
+  return { ...response, data: { access: { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source }, service: { state: value.service.state, purchaseAvailable: false, earlyAccess: value.service.earlyAccess === true } } };
 }
