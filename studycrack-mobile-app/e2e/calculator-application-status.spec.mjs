@@ -1,3 +1,4 @@
+import { calculatorAccessFixture, calculatorEmptyStorage } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 const calculatorPath = '/2027-jungsi-consulting/calculator';
 const appId = 'APP_11111111-1111-4111-8111-111111111111';
@@ -18,7 +19,7 @@ async function setup(page, options = {}) {
     const { type } = route.request().postDataJSON();
     if (type === 'get_univ_list_only') return route.fulfill({ json: [] });
     expect(type).toBe('get_calculator_access');
-    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: state.allowed, source: state.allowed ? state.accessSource : 'none' }, service: { state: 'preparing', purchaseAvailable: false } } });
+    return route.fulfill({ json: calculatorAccessFixture({ allowed: state.allowed, source: state.accessSource, applicationId: appId, accessEndsAt: state.application.accessEndsAt }) });
   });
   const home = () => ({ contractVersion: 'calculator-applications-v1', items: state.owner === 'student-A' && (state.linked || state.application.applicationState === 'CLAIMED') ? [{ ...state.application }] : [], hasMore: false, needsReview: false, accountEmailMask: state.owner === 'student-A' ? 'a***@example.invalid' : 'b***@example.invalid' });
   await context.route('**/__status-core', async route => {
@@ -59,12 +60,22 @@ test('승인됐어도 이메일 이용 인증 전에는 입력을 열지 않고 
   Object.assign(state.application, { applicationState: 'INVITED', paymentStatus: 'verified', state: 'activation_required' });
   await page.goto(calculatorPath); await expect(panel(page)).toContainText('10자리 인증코드를 입력'); await expect(score(page)).toHaveCount(0);
   Object.assign(state.application, { applicationState: 'CLAIMED', state: 'active', accountLinked: true, accessActive: true }); state.allowed = true;
-  await page.reload(); await expect(score(page)).toBeVisible(); await expect(panel(page)).toContainText('이용 인증을 완료했습니다');
-  await expect(panel(page)).not.toContainText(appId); expect(writes(state)).toHaveLength(0);
+  await page.reload(); await expect(score(page)).toBeVisible(); await expect(panel(page)).toHaveCount(0); await expect(page.getByRole('region', { name: '계산기 이용 상태' })).toContainText('2027. 1. 7.');
+  await expect(page.locator('main')).not.toContainText(appId); expect(writes(state)).toHaveLength(0);
 });
 test('구형 서버가 Basic membership 권한을 보내도 별도 계산기 인증 전에는 입력하지 못한다', async ({ page }) => {
   const state = await setup(page, { receipt: false, allowed: true, accessSource: 'membership' }); await page.goto(calculatorPath);
-  await expect(page.getByRole('heading', { name: '입금 승인과 이용 인증이 필요합니다.' })).toBeVisible(); await expect(score(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
+  await expect(panel(page)).toContainText('인증된 계산기 이용권이 없습니다'); await expect(score(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
+});
+
+test('활성 신청과 계산기 권한이 어긋나면 재인증 요구 대신 연결 확인 오류를 표시한다', async ({ page }) => {
+  const state = await setup(page, { receipt: false, linked: true, allowed: false });
+  Object.assign(state.application, { applicationState: 'CLAIMED', paymentStatus: 'verified', state: 'active', accountLinked: true, accessActive: true });
+  await page.goto(calculatorPath);
+  await expect(page.getByRole('heading', { name: '이용 정보를 확인하지 못했습니다.' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('인증된 이용권과 계산기 연결 상태');
+  await expect(page.getByText('입금 승인과 이용 인증이 필요합니다.', { exact: true })).toHaveCount(0);
+  await expect(score(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
 });
 test('신청 조회 지연·실패를 신청 없음으로 표시하지 않고 다시 확인으로 복구한다', async ({ page }) => {
   const state = await setup(page, { receipt: false, linked: true, defer: true }); await page.goto(calculatorPath);

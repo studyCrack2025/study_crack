@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { requestCalculatorAccess, requestCalculatorConversion } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-api.js';
 
+const entitlement = { applicationId: 'APP_123e4567-e89b-12d3-a456-426614174000', accessEndsAt: '2027-01-07T14:59:59.999Z' };
 const scores = { admissionYear: 2027, basis: 'official', exam: {} };
 const targets = [{ university: '예시대학교', major: '경영학과' }];
 const option = { admissionUnitId: 'UNIT_EXAMPLE_BUSINESS', campusName: '서울캠퍼스', unitName: '경영학과', trackName: '수능 일반', admissionGroup: 'na' };
@@ -42,9 +43,9 @@ test('unavailable data is a successful explanation; insufficient access is disti
   Object.assign(body.results[0], { status: 'unavailable', reasonCodes: ['DATA_RELEASE_NOT_READY'], selected: null, choices: [], convertedScore: null, maximumScore: null });
   assert.equal((await run(body)).ok, true);
   const denied = await run(null, { apiFetch: async () => ({ ok: false, status: 402, json: async () => ({ code: 'CALCULATOR_ACCESS_REQUIRED' }) }) });
-  assert.equal(denied.ok, false); assert.match(denied.error, /이용 인증/);
+  assert.equal(denied.ok, false); assert.match(denied.error, /이용 권한/);
   const thrown = await run(null, { apiFetch: async () => { throw Object.assign(new Error('membership needed'), { status: 402, code: 'CALCULATOR_ACCESS_REQUIRED' }); } });
-  assert.equal(thrown.ok, false); assert.match(thrown.error, /이용 인증/);
+  assert.equal(thrown.ok, false); assert.match(thrown.error, /이용 권한/);
 });
 
 test('an aborted calculation cannot return a result even if the transport resolves later', async () => {
@@ -104,10 +105,10 @@ test('access preflight sends no client identity, drops member records and never 
   const result = await requestCalculatorAccess({ analysisApiUrl: '/analysis', apiFetch: async (_, options) => {
     payload = JSON.parse(options.body);
     return { ok: true, status: 200, json: async () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
-      access: { allowed: true, source: 'purchase', student: { email: 'PRIVATE' } }, service: { state: 'preparing', purchaseAvailable: false }, userId: 'PRIVATE' }) };
+      access: { allowed: true, source: 'purchase', student: { email: 'PRIVATE' } }, entitlement, service: { state: 'preparing', purchaseAvailable: false, calculationEnabled: true, calculationMode: 'development_preview' }, userId: 'PRIVATE' }) };
   } });
   assert.deepEqual(payload, { type: 'get_calculator_access' });
-  assert.deepEqual(result.data, { access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: false } });
+  assert.deepEqual(result.data, { access: { allowed: true, source: 'purchase' }, entitlement, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: false, calculationEnabled: true, calculationMode: 'development_preview' } });
   assert.equal(JSON.stringify(result.data).includes('PRIVATE'), false);
 });
 
@@ -126,9 +127,9 @@ test('a legacy membership-only preflight does not open the calculator workspace'
   assert.equal(result.ok, true); assert.deepEqual(result.data.access, { allowed: false, source: 'none' });
 });
 
-test('early-access capability is optional for older servers and accepted only for a validated purchase', async () => {
+test('active calculator policy requires a valid entitlement and refuses contradictory grants', async () => {
   const base = () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
-    access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: true } });
+    access: { allowed: true, source: 'purchase' }, entitlement, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: true, calculationEnabled: true, calculationMode: 'development_preview' } });
   const request = body => requestCalculatorAccess({ analysisApiUrl: '/synthetic', apiFetch: async () => ({ ok: true, json: async () => body }) });
   const result = await request(base());
   assert.equal(result.data.service.earlyAccess, true);
