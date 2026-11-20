@@ -14,6 +14,7 @@ export function clearConvertedScores(row) {
 
 export function scoreConversionLabel(row) {
   if (!row.conversionAdmissionYear) return '';
+  if (row.conversionExamType === 'csat_estimate') return `${row.conversionAdmissionYear}학년도 수능 추정치`;
   return row.conversionExamType === 'september_mock' ? `${row.conversionAdmissionYear - 1}년 9월 평가원 참고`
     : `${row.conversionAdmissionYear}학년도 수능${row.conversionAdmissionYear < 2027 ? ' 참고' : ' 기준'}`;
 }
@@ -46,7 +47,8 @@ export function applyScoreConversions(records, entries, results) {
     if (input.standardScore != null && input.standardScore !== metrics.standardScore) return;
     const conversionAdmissionYear = [2026, 2027].includes(result.conversionAdmissionYear) ? result.conversionAdmissionYear : undefined;
     const conversionExamType = result.conversionExamType;
-    if (conversionExamType != null && !['csat', 'september_mock'].includes(conversionExamType)) return;
+    if (conversionExamType != null && !['csat', 'september_mock', 'csat_estimate'].includes(conversionExamType)) return;
+    if (conversionExamType === 'csat_estimate' && conversionAdmissionYear !== 2027) return;
     updated[index] = { ...row, ...metrics, convertedFromRaw: true, conversionAdmissionYear, conversionExamType, confirmed: false };
   });
   return updated.some((row, index) => row !== records[index]) ? updated : null;

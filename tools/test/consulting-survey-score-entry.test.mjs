@@ -35,6 +35,22 @@ test('invalid lookup results cannot replace raw points or display unvalidated sc
   assert.equal(applyScoreConversions(scores.records, entries, [{ status: 'converted', metrics: { standardScore: 81, percentile: 21, grade: 7 }, conversionExamType: 'unknown' }]), null);
 });
 
+test('estimated zero percentiles survive save and reload without replacing existing reference scores', () => {
+  const { scores } = createEmptySurvey();
+  Object.assign(scores.records[0], { selection: '화법과작문', commonRawScore: 0, electiveRawScore: 0 });
+  const { entries } = scoreConversionBatch(scores);
+  const result = { status: 'converted', metrics: { standardScore: 45, percentile: 0, grade: 9 }, conversionAdmissionYear: 2027, conversionExamType: 'csat_estimate' };
+  const records = applyScoreConversions(scores.records, entries, [result]);
+  const saved = normalizeSurveyDraft({ ...createEmptySurvey(), scores: { ...scores, records } });
+  assert.equal(saved.scores.records[0].percentile, 0);
+  assert.equal(saved.scores.records[0].confirmed, false);
+  assert.equal(scoreConversionLabel(saved.scores.records[0]), '2027학년도 수능 추정치');
+  assert.equal(scoreConversionBatch(saved.scores), null);
+  assert.equal(applyScoreConversions(saved.scores.records, entries, [{ ...result, metrics: { standardScore: 90, percentile: 99, grade: 1 } }]), null);
+  assert.equal(applyScoreConversions(scores.records, entries, [{ ...result, conversionAdmissionYear: 2026 }]), null);
+  assert.equal(clearConvertedScores(saved.scores.records[0]).conversionExamType, undefined);
+});
+
 test('raw edits clear all derived metrics and revision lookup requires an explicitly edited row', () => {
   const { scores } = createEmptySurvey();
   Object.assign(scores.records[0], { selection: '화법과작문', commonRawScore: 32, electiveRawScore: 4 });

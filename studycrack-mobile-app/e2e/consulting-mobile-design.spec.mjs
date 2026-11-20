@@ -155,6 +155,11 @@ async function prepare(page, { loggedIn = true } = {}) {
         if(f.failScoreOnce){f.failScoreOnce=false;return new Response(JSON.stringify({success:false,code:'SCORE_CONVERSION_UNAVAILABLE'}),{status:503});}
         data={results:input.records.map(row=>{
           if(f.scoreboardUnavailable) return {status:'board_unavailable'};
+          if(f.estimateScores){
+            const metrics=row.commonRawScore===0 && row.electiveRawScore===0
+              ? {standardScore:45,percentile:0,grade:9} : {standardScore:64,percentile:3,grade:9};
+            return {status:'converted',metrics,conversionAdmissionYear:2027,conversionExamType:'csat_estimate'};
+          }
           let metrics={standardScore:138,percentile:100,grade:1};
           if(row.area==='korean' && row.electiveRawScore===4 && [32,33].includes(row.commonRawScore)) metrics={standardScore:row.commonRawScore===32?81:82,percentile:row.commonRawScore===32?21:22,grade:7};
           if(row.area==='math' && row.commonRawScore===74 && row.electiveRawScore===0) metrics={standardScore:117,percentile:75,grade:4};
@@ -1046,6 +1051,44 @@ test('원점수만 입력하면 세 결과가 자동 표시되고 늦은 응답�
   await expect(korean.getByRole('textbox', { name: '백분위', exact: true })).toHaveValue('—');
   await expect(korean.getByRole('status')).not.toContainText('2026년 9월 평가원 참고');
   await expect(math.getByRole('textbox', { name: '표준점수', exact: true })).toHaveValue('117');
+});
+
+test('수능 추정치는 0백분위도 표시하고 저장 후 재진입에도 추정 구분을 유지한다', async ({ page }) => {
+  const fixture = await prepare(page);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto('/2027-jungsi-consulting/survey');
+  await page.evaluate(() => { window.__design.estimateScores = true; });
+  const next = page.getByRole('button', { name: '저장하고 다음' });
+  await next.click();
+  const korean = page.getByRole('group', { name: '국어', exact: true });
+  await korean.getByRole('combobox', { name: '선택과목', exact: true }).selectOption('화법과작문');
+  await korean.getByRole('spinbutton', { name: '공통 원점수' }).fill('0');
+  await korean.getByRole('spinbutton', { name: '선택 원점수' }).fill('0');
+  await expect(korean.getByRole('textbox', { name: '표준점수', exact: true })).toHaveValue('45');
+  await expect(korean.getByRole('textbox', { name: '백분위', exact: true })).toHaveValue('0');
+  await expect(korean.getByRole('textbox', { name: '등급', exact: true })).toHaveValue('9');
+  await expect(korean.getByRole('status')).toHaveText('2027학년도 수능 추정치');
+  await expect(korean).toContainText('임시 추정치로, 실제 성적표와 다를 수 있어요.');
+  await fits(page);
+  await next.click();
+  await expect(page.getByRole('heading', { name: '지원 조건', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.__design.survey.draft.snapshot.scores.records[0])).toMatchObject({
+    rawScore: 0, commonRawScore: 0, electiveRawScore: 0, standardScore: 45, percentile: 0, grade: 9,
+    conversionAdmissionYear: 2027, conversionExamType: 'csat_estimate', convertedFromRaw: true, confirmed: false
+  });
+  fixture.survey = await page.evaluate(() => window.__design.survey);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '학생 상태', exact: true })).toBeVisible();
+  await page.evaluate(() => { window.__design.estimateScores = true; });
+  await next.click();
+  await expect(korean.getByRole('status')).toHaveText('2027학년도 수능 추정치');
+  await expect(korean.getByRole('textbox', { name: '백분위', exact: true })).toHaveValue('0');
+  expect(await page.evaluate(() => window.__design.conversions.length)).toBe(0);
+  await korean.getByRole('spinbutton', { name: '공통 원점수' }).fill('6');
+  await korean.getByRole('spinbutton', { name: '선택 원점수' }).fill('18');
+  await expect(korean.getByRole('textbox', { name: '표준점수', exact: true })).toHaveValue('64');
+  await expect(korean.getByRole('textbox', { name: '백분위', exact: true })).toHaveValue('3');
+  await expect(korean.getByRole('status')).toHaveText('2027학년도 수능 추정치');
 });
 
 test('성적은 직접 입력하고 최종 확인에서 기존 첨부와 새 파일의 상태를 표시한다', async ({ page }, testInfo) => {
