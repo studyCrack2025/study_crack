@@ -1,13 +1,95 @@
 const calculatorAdminPhaseLabels = Object.freeze({ all: '전체 신청', intake: '입금 대기', onboarding: '이용 인증 대기', completed: '이용권 활성', expired: '기간 종료', attention: '보류·거절·확인 필요' });
 let calculatorAdminState = { generation: 0, phase: 'all', cursor: null, nextCursor: null, previous: [], reference: null, detail: null, keys: {}, request: null, busy: false };
 const calculatorAdminNode = id => document.getElementById(id);
+let calculatorAdminDeletion = null;
 
 function calculatorAdminStatus(id, message, state = '') {
     const node = calculatorAdminNode(id);
     if (node) { node.textContent = message; node.dataset.state = state; }
 }
+function resetCalculatorAdminDeletion() {
+    calculatorAdminDeletion?.controller.abort();
+    calculatorAdminDeletion = null;
+    calculatorAdminNode('calculatorAdminDeleteDialog')?.close();
+    const input = calculatorAdminNode('calculatorAdminDeleteConfirmation'); if (input) input.value = '';
+    calculatorAdminNode('calculatorAdminDeleteTarget')?.replaceChildren();
+    calculatorAdminStatus('calculatorAdminDeleteStatus', '');
+    const section = calculatorAdminNode('calculatorAdminDeleteSection'); if (section) section.hidden = true;
+}
+function closeCalculatorAdminDeletion() {
+    if (calculatorAdminDeletion?.busy) return;
+    resetCalculatorAdminDeletion(); updateCalculatorAdminActions();
+    calculatorAdminNode('calculatorAdminDelete')?.focus();
+}
+function updateCalculatorAdminDeletion() {
+    const state = calculatorAdminDeletion;
+    calculatorAdminNode('calculatorAdminDeleteConfirm').disabled = !state?.preview || state.busy || calculatorAdminNode('calculatorAdminDeleteConfirmation').value !== '신청 영구 삭제';
+}
+async function openCalculatorAdminDeletion() {
+    const owner = calculatorAdminState;
+    if (owner.busy || calculatorAdminDeletion?.busy || owner.detail?.deletion?.available !== true || !owner.reference) return;
+    resetCalculatorAdminDeletion();
+    owner.request?.abort(); owner.request = null; ++owner.generation;
+    const state = { owner, generation: owner.generation, reference: { ...owner.reference }, controller: new AbortController(), preview: null, busy: false };
+    calculatorAdminDeletion = state; updateCalculatorAdminActions();
+    const current = () => calculatorAdminDeletion === state && owner === calculatorAdminState && owner.generation === state.generation;
+    calculatorAdminNode('calculatorAdminDeleteTarget').textContent = owner.detail.contact.studentName + ' · ' + owner.detail.contact.phone;
+    calculatorAdminNode('calculatorAdminDeleteRetry').hidden = true;
+    calculatorAdminNode('calculatorAdminDeleteCancel').disabled = false;
+    calculatorAdminNode('calculatorAdminDeleteConfirmation').disabled = false;
+    updateCalculatorAdminDeletion(); calculatorAdminNode('calculatorAdminDeleteDialog').showModal();
+    calculatorAdminStatus('calculatorAdminDeleteStatus', '삭제 대상과 현재 상태를 확인하고 있습니다.');
+    try {
+        const preview = await requestConsultingAdmin('admin_preview_consulting_application_delete', state.reference, state.controller.signal);
+        if (!current()) return;
+        if (preview.applicationId !== state.reference.applicationId || preview.confirmation !== '신청 영구 삭제'
+            || preview.backgroundSupported !== true || preview.storageIncluded !== true || preview.includesCase !== false
+            || typeof preview.previewToken !== 'string' || !preview.previewToken || preview.previewToken.length > 2400
+            || typeof preview.resume !== 'boolean' || !Number.isSafeInteger(preview.deletedCount) || preview.deletedCount < 0
+            || preview.recordCount !== null && (!Number.isSafeInteger(preview.recordCount) || preview.recordCount < 1)) throw new Error('삭제 범위를 확인하지 못했습니다.');
+        state.preview = preview;
+        calculatorAdminStatus('calculatorAdminDeleteStatus', preview.resume ? '이미 접수된 삭제의 남은 자료를 정리합니다. 확인 문구를 입력해주세요.' : '신청에 연결된 기록과 이용권이 삭제 대상입니다. 아래 확인 문구를 입력해주세요.');
+        calculatorAdminNode('calculatorAdminDeleteConfirmation').focus();
+    } catch (_) {
+        if (!current()) return;
+        calculatorAdminStatus('calculatorAdminDeleteStatus', '삭제 대상 확인에 실패했습니다. 권한과 현재 신청 상태를 확인한 뒤 다시 확인해주세요. 삭제 요청은 보내지 않았습니다.', 'error');
+        calculatorAdminNode('calculatorAdminDeleteRetry').hidden = false;
+    }
+    if (current()) updateCalculatorAdminDeletion();
+}
+async function deleteCalculatorAdminApplication() {
+    const state = calculatorAdminDeletion, owner = calculatorAdminState;
+    if (!state?.preview || state.busy || state.owner !== owner || state.generation !== owner.generation
+        || owner.busy || calculatorAdminNode('calculatorAdminDeleteConfirmation').value !== '신청 영구 삭제') return;
+    state.busy = true; owner.busy = true; updateCalculatorAdminActions(); updateCalculatorAdminDeletion();
+    calculatorAdminNode('calculatorAdminDeleteRetry').hidden = true;
+    for (const id of ['calculatorAdminDeleteConfirmation', 'calculatorAdminDeleteCancel']) calculatorAdminNode(id).disabled = true;
+    calculatorAdminStatus('calculatorAdminDeleteStatus', '신청 삭제를 요청하고 있습니다.');
+    const current = () => calculatorAdminDeletion === state && owner === calculatorAdminState && owner.generation === state.generation;
+    try {
+        const result = await requestConsultingAdmin('admin_delete_consulting_application', { ...state.reference, previewToken: state.preview.previewToken, confirmation: '신청 영구 삭제', backgroundCleanup: true }, state.controller.signal);
+        if (!current()) return;
+        if (result.applicationId !== state.reference.applicationId || result.accepted !== true || result.backgroundCleanup !== true || result.complete !== false) throw new Error('삭제 접수 결과를 확인하지 못했습니다.');
+        owner.busy = false; resetCalculatorAdminDeletion();
+        const generation = owner.generation + 1;
+        await calculatorAdminNavigate({});
+        if (owner !== calculatorAdminState || generation !== owner.generation || readAdminLocation().section !== 'calculator') return;
+        const failed = calculatorAdminNode('calculatorAdminListStatus').dataset.state === 'error';
+        calculatorAdminStatus('calculatorAdminListStatus', failed ? '삭제는 접수했습니다. 목록을 불러오지 못했으니 새로고침해주세요. 남은 자료는 자동 정리됩니다.' : '신청을 목록에서 제거했습니다. 연결된 이용권과 남은 자료는 서버에서 자동 정리합니다.', failed ? 'error' : 'success');
+        calculatorAdminNode('calculatorAdminListStatus').focus({ preventScroll: true });
+    } catch (_) {
+        if (!current()) return;
+        state.busy = false; owner.busy = false; state.preview = null;
+        updateCalculatorAdminActions(); updateCalculatorAdminDeletion();
+        calculatorAdminStatus('calculatorAdminDeleteStatus', '삭제 접수 여부를 확인하지 못했습니다. 자동 재전송하지 않습니다. 창을 닫고 목록을 새로고침해 실제 상태를 확인해주세요. 접수된 삭제는 서버에서 계속 처리됩니다.', 'error');
+        for (const id of ['calculatorAdminDeleteConfirmation', 'calculatorAdminDeleteCancel']) calculatorAdminNode(id).disabled = false;
+        // 요청 결과가 불확실하면 목록에서 다시 선택해야 한다.
+    }
+}
 function clearCalculatorAdminDetail() {
+    resetCalculatorAdminDeletion();
     calculatorAdminState.detail = null; calculatorAdminState.keys = {};
+    calculatorAdminNode('calculatorAdminState')?.replaceChildren();
     calculatorAdminNode('calculatorAdminFacts')?.replaceChildren();
     calculatorAdminNode('calculatorAdminSavedInput')?.replaceChildren();
     calculatorAdminStatus('calculatorAdminSavedStatus', '');
@@ -84,9 +166,14 @@ async function loadCalculatorAdminList() {
         state.nextCursor = data.nextCursor || null;
         for (const item of data.items) {
             const row = document.createElement('tr'), person = createConsultingCell(''), name = document.createElement('strong'), contact = document.createElement('span');
-            name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; person.append(name, contact);
-            row.append(person, createConsultingCell(item.stateLabel), createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
+            const personContent = document.createElement('div');
+            name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; personContent.append(name, contact); person.append(personContent);
+            const status = createConsultingCell(''), badge = document.createElement('span');
+            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel;
+            badge.dataset.phase = ADMIN_CALCULATOR_PHASES.includes(item.phase) ? item.phase : ''; status.append(badge);
+            row.append(person, status, createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
             const action = createConsultingCell(''), button = document.createElement('button');
+            action.className = 'calculator-admin-row-action';
             button.type = 'button'; button.className = 'consulting-btn consulting-btn-primary'; button.textContent = '계산기 신청 상세';
             button.addEventListener('click', () => calculatorAdminNavigate({ applicationId: item.applicationId, sourceResponseId: item.sourceResponseId }));
             action.append(button); row.append(action);
@@ -94,6 +181,10 @@ async function loadCalculatorAdminList() {
             body.append(row);
         }
         appendConsultingDirectoryIssues(body, issues);
+        for (const row of body.querySelectorAll('[data-directory-issue]')) {
+            const content = document.createElement('div'); content.append(...row.firstElementChild.childNodes); row.firstElementChild.append(content);
+            row.lastElementChild.classList.add('calculator-admin-row-action');
+        }
         if (!data.items.length && !issues.length) {
             const row = document.createElement('tr'), cell = createConsultingCell('이 페이지에 해당 상태의 계산기 신청이 없습니다. 다음 페이지가 있으면 계속 확인해주세요.');
             cell.colSpan = 5; cell.className = 'empty-msg'; row.append(cell); body.append(row);
@@ -117,7 +208,8 @@ function updateCalculatorAdminActions() {
     const state = calculatorAdminState, data = state.detail, status = data?.calculator;
     calculatorAdminNode('calculatorAdminDetailContent')?.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = state.busy; });
     for (const [id, show] of [['calculatorAdminInput', status?.canReviewInput], ['calculatorAdminPayment', status?.canApprove],
-        ['calculatorAdminReview', status?.canReviewPayment], ['calculatorAdminReissue', status?.canReissue && data?.activeInviteId]]) {
+        ['calculatorAdminReview', status?.canReviewPayment], ['calculatorAdminReissue', status?.canReissue && data?.activeInviteId],
+        ['calculatorAdminDeleteSection', data?.deletion?.available === true]]) {
         const node = calculatorAdminNode(id); if (node) node.hidden = !show;
     }
     const approve = calculatorAdminNode('calculatorAdminApprove');
@@ -127,6 +219,8 @@ function renderCalculatorAdminDetail(data) {
     const application = data.application, status = data.calculator;
     const facts = calculatorAdminNode('calculatorAdminFacts'); facts.replaceChildren();
     calculatorAdminNode('calculatorAdminDetailTitle').textContent = data.contact.studentName + ' · 합격 계산기';
+    calculatorAdminNode('calculatorAdminState').textContent = status.stateLabel;
+    calculatorAdminNode('calculatorAdminState').dataset.phase = ADMIN_CALCULATOR_PHASES.includes(status.phase) ? status.phase : '';
     appendConsultingRecord(facts, '신청·이용 상태', createConsultingFacts([
         ['접수번호', application.applicationId], ['현재 상태', status.stateLabel], ['다음 할 일', status.nextAction],
         ['신청 금액', formatConsultingMoney(application.expectedAmount)], ['이용권 연결', status.accountLinked ? '인증된 계정 연결 확인' : '연결 확인 전'],
@@ -137,6 +231,7 @@ function renderCalculatorAdminDetail(data) {
         ['입금 확인', ({ pending: '대기', hold: '보류', input_review: '신청 정보 확인 필요', verified: '승인', rejected: '거절' })[application.paymentReviewStatus] || '확인 필요']
     ]));
     if (Array.isArray(data.reviewNotices) && data.reviewNotices.length) appendConsultingRecord(facts, '보류·거절 안내 이력', createConsultingFacts(data.reviewNotices.map(item => [formatConsultingDate(item.createdAt), (item.decision === 'hold' ? '보류' : '거절') + ' · ' + ({ pending: '발송 대기', sent: '발송 접수', failed: '발송 실패', superseded: '이전 안내' }[item.status] || '상태 확인 필요')])));
+    for (const card of facts.children) card.className = 'calculator-admin-card';
     for (const [field, id] of Object.entries({ studentName: 'calculatorAdminName', phone: 'calculatorAdminPhone', email: 'calculatorAdminEmail', payerName: 'calculatorAdminPayer' })) calculatorAdminNode(id).value = data.contact[field];
     calculatorAdminNode('calculatorAdminInput').open = application.inputReviewRequired === true || application.paymentReviewStatus === 'input_review';
     calculatorAdminNode('calculatorAdminDetailContent').hidden = false;
@@ -170,7 +265,7 @@ async function loadCalculatorAdminDetail(reference) {
 }
 async function runCalculatorAdminMutation(type, data, successMessage) {
     const state = calculatorAdminState, generation = state.generation;
-    if (state.busy || !state.detail || !state.reference) return;
+    if (state.busy || calculatorAdminDeletion || !state.detail || !state.reference) return;
     state.busy = true; updateCalculatorAdminActions();
     calculatorAdminStatus('calculatorAdminDetailStatus', '계산기 신청을 처리하고 있습니다.');
     try {
