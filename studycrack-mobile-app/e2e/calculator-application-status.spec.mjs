@@ -27,6 +27,8 @@ async function setup(page, options = {}) {
     if (request.type === 'student_get_calculator_applications') {
       const snapshot = home(); if (state.defer) await new Promise(resolve => { state.release = resolve; });
       if (state.failRead) return route.fulfill({ status: 503, json: { success: false } }); data = snapshot;
+    } else if (request.type === 'student_get_calculator_input') {
+      data = { contractVersion: 'calculator-input-v1', applicationId: appId, status: 'empty', revision: 0, input: null, updatedAt: null, candidateCount: 0, basis: null, source: 'self_reported', reviewed: false, canSave: true, consentRevision: 'CALCULATOR_INPUT_STORAGE_20261120_V1' };
     } else if (request.type === 'student_preview_calculator_application_link') {
       if (state.owner !== 'student-A') return route.fulfill({ status: 404, json: { success: false } });
       data = { contractVersion: 'calculator-application-link-v1', application: { ...state.application }, accountEmailMask: 'a***@example.invalid', linked: state.linked };

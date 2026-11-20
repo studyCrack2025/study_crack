@@ -6,6 +6,7 @@ import CalculatorCatalog from './CalculatorCatalog.jsx';
 import CalculatorResult from './CalculatorResult.jsx';
 import CalculatorAccess from './CalculatorAccess.jsx';
 import CalculatorApplicationPanel from './CalculatorApplicationPanel.jsx';
+import CalculatorSavedInputs from './CalculatorSavedInputs.jsx';
 import useCalculatorAccess from './useCalculatorAccess.js';
 import { requestCalculatorConversion } from './calculator-api.js';
 import { CALCULATOR_PATH, candidateKey, clearCalculatorDrafts, editableScores, emptyScores, MAX_CANDIDATES, prepareCalculatorScores, readCalculatorDraft, scoresChanged, uniqueCandidates, writeCalculatorDraft } from './calculator-model.js';
@@ -28,6 +29,7 @@ function Workspace({ owner }) {
   const [scores, setScores] = React.useState(() => restored.confirmed ? editableScores(restored.confirmed) : emptyScores());
   const [confirmed, setConfirmed] = React.useState(restored.confirmed);
   const [candidates, setCandidates] = React.useState(restored.candidates);
+  const [applicationHome, setApplicationHome] = React.useState(null);
   const [errors, setErrors] = React.useState({});
   const [saved, setSaved] = React.useState(true);
   const [resource, setResource] = React.useState({ status: 'loading', data: [], error: '' });
@@ -85,7 +87,7 @@ function Workspace({ owner }) {
     persist(result.data, candidates);
   };
   const changeCandidates = next => { invalidate(); setCandidates(next); persist(confirmed, next); };
-  return <><CalculatorApplicationPanel /><CalculatorAccess resource={access} onRefresh={refreshAccess} /><div className="jcalc-layout">
+  return <><CalculatorApplicationPanel onLoaded={setApplicationHome} /><CalculatorAccess resource={access} onRefresh={refreshAccess} /><div className="jcalc-layout">
     <div className="jcalc-inputs"><CalculatorScoreForm scores={scores} confirmed={confirmed} changed={changed} errors={errors} onConfirm={confirm} onChange={value => { invalidate(); setScores(value); setErrors({}); }} />
       <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} /></div>
     <aside className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>
@@ -100,9 +102,9 @@ function Workspace({ owner }) {
         <button className="jcalc-text-button" type="button" aria-label={`${item.university} ${item.major} 후보 삭제`} onClick={() => changeCandidates(candidates.filter(candidate => candidateKey(candidate) !== candidateKey(item)))}>후보 삭제</button></li>)}</ul> : <p className="jcalc-state">선택한 후보가 없습니다.<br />대학과 학과를 검색해 담아주세요.</p>}
       {conversion.status === 'ready' && conversion.data?.release && <details className="jcalc-result-version"><summary>적용한 자료 버전</summary><p>2027학년도 · {conversion.data.release.formulaVersion}<br />{conversion.data.release.dataReleaseId}</p></details>}
       <div className="jcalc-release-note"><strong>검수 완료 자료에 한해 환산합니다.</strong><p>환산점수와 입결 기준선의 검수 상태를 각각 확인합니다. 가능성 지수와 5단계는 검수를 통과한 후보에만 표시하며, 자료가 부족하면 판단을 보류합니다. 지수는 실제 합격률이 아닙니다.</p></div>
-      <p className="jcalc-note">{!owner || !saved ? '이 브라우저에서 초안을 보관할 수 없습니다. 현재 화면을 벗어나면 입력이 초기화될 수 있습니다.' : '확인한 성적과 선택 후보는 같은 계정·현재 탭에서만 이어집니다. 다른 화면의 저장 성적은 변경하지 않습니다.'}</p>
+      <p className="jcalc-note">{!owner || !saved ? '이 브라우저에서 초안을 보관할 수 없습니다. 현재 화면을 벗어나면 입력이 초기화될 수 있습니다.' : '현재 입력은 같은 계정·현재 탭의 초안입니다. 다른 기기에서 이어보려면 아래 서버 저장을 이용해주세요. 다른 화면의 저장 성적은 변경하지 않습니다.'}</p>
     </aside>
-  </div></>;
+  </div><CalculatorSavedInputs home={applicationHome} input={{ scores: confirmed, targets: candidates.map(item => ({ ...item, ...(unitSelections[candidateKey(item)] ? { admissionUnitId: unitSelections[candidateKey(item)] } : {}) })) }} changed={changed} onRestore={input => { invalidate(); setConfirmed(input.scores); setScores(editableScores(input.scores)); setCandidates(input.targets.map(({ university, major }) => ({ university, major }))); setUnitSelections(Object.fromEntries(input.targets.filter(item => item.admissionUnitId).map(item => [candidateKey(item), item.admissionUnitId]))); setErrors({}); persist(input.scores, input.targets); }} /></>;
 }
 
 export default function JungsiCalculatorApp() {

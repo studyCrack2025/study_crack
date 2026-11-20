@@ -35,7 +35,11 @@ async function prepare(page, options = {}) {
         else if (type === 'admin_get_calculator_application') {
             if (state.defer) await new Promise(resolve => { state.release = resolve; });
             data = { ...state.detail, scope: state.scope };
-        } else if (type === 'admin_preview_calculator_review_notice') data = { applicationId, revision: state.detail.application.revision, willQueue: true, recipient: '010-****-0000', message: '[스터디크랙] 합격 계산기 신청을 보류했습니다.', previewToken: 'synthetic_preview_token' };
+        } else if (type === 'admin_get_calculator_input') {
+            data = structuredClone(state.savedInput);
+            if (state.deferSaved) await new Promise(resolve => { state.release = resolve; });
+        }
+        else if (type === 'admin_preview_calculator_review_notice') data = { applicationId, revision: state.detail.application.revision, willQueue: true, recipient: '010-****-0000', message: '[스터디크랙] 합격 계산기 신청을 보류했습니다.', previewToken: 'synthetic_preview_token' };
         else if (type === 'admin_verify_calculator_payment') {
             if (state.failure) return route.fulfill({ status: 500, json: { success: false } });
             Object.assign(state.detail.application, { revision: 2, applicationState: 'INVITED', paymentReviewStatus: 'verified' });
@@ -152,4 +156,27 @@ test('메뉴·세션 전환 뒤 늦게 도착한 개인정보 응답을 표시�
     state.defer = false; await page.evaluate(() => showSection('calculator')); await openDetail(page);
     await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended')));
     await expect(page.locator('#calculatorAdminFacts')).toBeEmpty(); await expect(page.locator('#calculatorAdminName')).toHaveValue('');
+});
+
+
+test('관리자는 명시적으로 저장 자료를 열고 자기신고 성적·후보를 검수 점수와 구분한다', async ({ page }) => {
+    const state = await prepare(page);
+    state.savedInput = { contractVersion: 'calculator-input-v1', applicationId, revision: 3, status: 'saved', source: 'self_reported', reviewed: false, updatedAt: '2026-11-20T00:00:00.000Z',
+        input: { scores: { admissionYear: 2027, basis: 'official', exam: { kor: { opt: '언어와매체', std: 130, pct: 95, grd: 2 }, math: { opt: '미적분', std: 131, pct: 96, grd: 1 }, inq1: { name: '물리학Ⅰ', std: 65, pct: 95, grd: 2 }, inq2: { name: '화학Ⅰ', std: 64, pct: 94, grd: 2 }, eng: { grd: 2 }, hist: { grd: 1 } } }, targets: [{ university: '<img src=x onerror=alert(1)>', major: '예시학과', admissionUnitId: 'UNIT_SYNTHETIC_1' }] } };
+    await openDetail(page); expect(state.calls.some(x => x.type === 'admin_get_calculator_input')).toBe(false);
+    await page.getByRole('button', { name: '저장 성적·지원 후보 보기', exact: true }).click();
+    await expect(page.locator('#calculatorAdminSavedInput')).toContainText('표준점수 130');
+    await expect(page.locator('#calculatorAdminSavedInput')).toContainText('3판');
+    await expect(page.locator('#calculatorAdminSavedInput')).toContainText('<img src=x onerror=alert(1)>');
+    await expect(page.locator('#calculatorAdminSavedInput img')).toHaveCount(0);
+    await expect(page.locator('#calculatorAdminSavedStatus')).toContainText('검수 완료 성적으로 반영되지 않습니다');
+    state.savedInput.applicationId = 'APP_22222222-2222-4222-8222-222222222222';
+    await page.getByRole('button', { name: '저장 성적·지원 후보 보기', exact: true }).click();
+    await expect(page.locator('#calculatorAdminSavedStatus')).toHaveAttribute('data-state', 'error');
+    await expect(page.locator('#calculatorAdminSavedInput')).toBeEmpty();
+    state.savedInput.applicationId = applicationId; state.deferSaved = true; state.release = null;
+    await page.getByRole('button', { name: '저장 성적·지원 후보 보기', exact: true }).click();
+    await expect.poll(() => typeof state.release).toBe('function');
+    await page.evaluate(() => window.dispatchEvent(new Event('studycrack:session-ended'))); state.release();
+    await expect(page.locator('#calculatorAdminSavedInput')).toBeEmpty(); await expect(page.locator('#calculatorAdminSavedStatus')).toBeEmpty();
 });

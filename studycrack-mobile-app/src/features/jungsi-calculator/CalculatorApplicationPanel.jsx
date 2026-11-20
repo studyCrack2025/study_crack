@@ -16,23 +16,23 @@ function ApplicationCard({ application }) {
     {application.state === 'rejected' && <p>신청 처리 내역은 운영팀에 문의해주세요. 추가로 입금하지 마세요.</p>}
   </article>;
 }
-export default function CalculatorApplicationPanel() {
+export default function CalculatorApplicationPanel({ onLoaded }) {
   const binding = React.useMemo(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
   const [resource, setResource] = React.useState({ status: 'loading', home: null, preview: null, credentials: null, previewError: false });
   const [confirmed, setConfirmed] = React.useState(false), [busy, setBusy] = React.useState(false), [message, setMessage] = React.useState('');
   const pending = React.useRef(null), sequence = React.useRef(0);
   const refresh = React.useCallback(async () => {
     pending.current?.abort(); const controller = new AbortController(), current = ++sequence.current; pending.current = controller;
-    setConfirmed(false); setMessage(''); setBusy(false); setResource({ status: 'loading', home: null, preview: null, credentials: null, previewError: false });
+    setConfirmed(false); setMessage(''); setBusy(false); onLoaded?.(null); setResource({ status: 'loading', home: null, preview: null, credentials: null, previewError: false });
     let credentials = null; try { credentials = readCalculatorReceipt(); } catch {}
     const [home, preview] = await Promise.all([getCalculatorApplications(binding, controller.signal), credentials ? previewCalculatorApplication(binding, credentials, controller.signal) : null]);
     if (controller.signal.aborted || current !== sequence.current) return;
     setResource({ status: home.ok ? 'ready' : 'error', home: home.ok ? home.data : null, preview: preview?.ok ? preview.data : null, credentials, previewError: Boolean(preview && !preview.ok) });
-    pending.current = null;
-  }, [binding]);
+    pending.current = null; onLoaded?.(home.ok ? home.data : null);
+  }, [binding, onLoaded]);
   React.useEffect(() => {
     refresh();
-    const clear = () => { sequence.current++; pending.current?.abort(); setResource({ status: 'ended', home: null, preview: null, credentials: null }); setConfirmed(false); setBusy(false); setMessage(''); };
+    const clear = () => { sequence.current++; pending.current?.abort(); onLoaded?.(null); setResource({ status: 'ended', home: null, preview: null, credentials: null }); setConfirmed(false); setBusy(false); setMessage(''); };
     globalThis.addEventListener('studycrack:session-ended', clear);
     return () => { sequence.current++; pending.current?.abort(); globalThis.removeEventListener('studycrack:session-ended', clear); };
   }, [refresh]);

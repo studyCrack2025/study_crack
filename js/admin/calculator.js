@@ -9,6 +9,8 @@ function calculatorAdminStatus(id, message, state = '') {
 function clearCalculatorAdminDetail() {
     calculatorAdminState.detail = null; calculatorAdminState.keys = {};
     calculatorAdminNode('calculatorAdminFacts')?.replaceChildren();
+    calculatorAdminNode('calculatorAdminSavedInput')?.replaceChildren();
+    calculatorAdminStatus('calculatorAdminSavedStatus', '');
     for (const id of ['calculatorAdminName', 'calculatorAdminPhone', 'calculatorAdminEmail', 'calculatorAdminPayer', 'calculatorAdminPaidAmount', 'calculatorAdminPaidAt', 'calculatorAdminReason']) {
         const node = calculatorAdminNode(id); if (node) node.value = '';
     }
@@ -83,7 +85,7 @@ async function loadCalculatorAdminList() {
         for (const item of data.items) {
             const row = document.createElement('tr'), person = createConsultingCell(''), name = document.createElement('strong'), contact = document.createElement('span');
             name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; person.append(name, contact);
-            row.append(person, createConsultingCell(item.stateLabel), createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
+            row.append(person, createConsultingCell(item.stateLabel), createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
             const action = createConsultingCell(''), button = document.createElement('button');
             button.type = 'button'; button.className = 'consulting-btn consulting-btn-primary'; button.textContent = '계산기 신청 상세';
             button.addEventListener('click', () => calculatorAdminNavigate({ applicationId: item.applicationId, sourceResponseId: item.sourceResponseId }));
@@ -229,3 +231,40 @@ async function reissueCalculatorAdminInvite() {
 }
 window.addEventListener('studycrack:session-ended', resetCalculatorAdmin);
 window.addEventListener('pagehide', resetCalculatorAdmin);
+
+async function loadCalculatorAdminSavedInput() {
+    const state = calculatorAdminState, generation = state.generation, reference = state.reference;
+    if (!state.detail || !reference || state.busy) return;
+    state.request?.abort(); const controller = new AbortController(); state.request = controller;
+    const body = calculatorAdminNode('calculatorAdminSavedInput'); body.replaceChildren();
+    calculatorAdminStatus('calculatorAdminSavedStatus', '학생이 저장한 자료를 확인하고 있습니다.');
+    try {
+        const data = await requestConsultingAdmin('admin_get_calculator_input', reference, controller.signal);
+        if (state !== calculatorAdminState || state.generation !== generation || controller.signal.aborted) return;
+        if (data?.contractVersion !== 'calculator-input-v1' || data.applicationId !== reference.applicationId || data.source !== 'self_reported' || data.reviewed !== false
+            || !Number.isSafeInteger(data.revision) || !['saved', 'empty'].includes(data.status)) throw new Error('Invalid calculator input');
+        if (data.status === 'empty') { calculatorAdminStatus('calculatorAdminSavedStatus', '학생이 서버에 저장한 계산기 자료가 없습니다. 현재 탭 초안은 관리자에게 전송되지 않습니다.', 'success'); return; }
+        if (!data.input?.scores || data.input.scores.admissionYear !== 2027 || !['official', 'raw'].includes(data.input.scores.basis) || !Array.isArray(data.input.targets) || data.input.targets.length > 6) throw new Error('Invalid calculator input');
+        const official = data.input.scores.basis === 'official', exam = data.input.scores.exam;
+        const entries = [['저장본', data.revision + '판 · ' + formatConsultingDate(data.updatedAt)], ['입력 근거', official ? '성적표 기준 (학생 직접 입력)' : '가채점 원점수 (학생 직접 입력)']];
+        for (const [key, label] of [['kor', '국어'], ['math', '수학'], ['inq1', '탐구 1'], ['inq2', '탐구 2'], ['eng', '영어'], ['hist', '한국사'], ['foreign', '제2외국어·한문']]) {
+            const row = exam?.[key]; if (key === 'foreign' && !row) continue;
+            if (!row || typeof row !== 'object') throw new Error('Invalid calculator input');
+            const pieces = [];
+            if (row.opt || row.name) { if (typeof (row.opt || row.name) !== 'string' || (row.opt || row.name).length > 80) throw new Error('Invalid subject'); pieces.push(row.opt || row.name); }
+            for (const [metric, title] of [['std', '표준점수'], ['pct', '백분위'], ['grd', '등급'], ['common', '공통 원점수'], ['elective', '선택 원점수'], ['raw', '원점수']]) {
+                if (row[metric] !== undefined) { if (!Number.isSafeInteger(row[metric]) || row[metric] < 0 || row[metric] > 200) throw new Error('Invalid score'); pieces.push(title + ' ' + row[metric]); }
+            }
+            entries.push([label, pieces.join(' · ')]);
+        }
+        for (const [index, target] of data.input.targets.entries()) {
+            if (typeof target.university !== 'string' || target.university.length > 160 || typeof target.major !== 'string' || target.major.length > 200 || target.admissionUnitId !== undefined && !/^UNIT_[A-Z0-9][A-Z0-9_-]{2,71}$/.test(target.admissionUnitId)) throw new Error('Invalid target');
+            entries.push(['지원 후보 ' + (index + 1), target.university + ' · ' + target.major + (target.admissionUnitId ? ' · ' + target.admissionUnitId : '')]);
+        }
+        appendConsultingRecord(body, '학생이 직접 저장한 최신본', createConsultingFacts(entries));
+        calculatorAdminStatus('calculatorAdminSavedStatus', '학생 자기신고 자료 · 검수 완료 성적으로 반영되지 않습니다.', 'success');
+    } catch (_) {
+        if (state !== calculatorAdminState || state.generation !== generation || controller.signal.aborted) return;
+        body.replaceChildren(); calculatorAdminStatus('calculatorAdminSavedStatus', '저장 자료를 불러오지 못했습니다. 신청·계정 연결과 서버 적용 상태를 확인한 뒤 다시 시도해주세요.', 'error');
+    } finally { if (state === calculatorAdminState && state.request === controller) state.request = null; }
+}
