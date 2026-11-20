@@ -97,7 +97,7 @@ test('알림톡 첫 진입의 공개 조회가 늦어도 오류 문구나 코드
   await expect(page.getByText(/인증 정보를 확인하지 못했습니다/)).toHaveCount(0);
   await expect(codeInput(page)).toHaveCount(0);
   releasePublic();
-  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  await expect(page.getByRole('status')).toHaveText('신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
 });
 
 test('일시적인 조회 실패는 코드 오류로 표시하지 않고 직접 재확인 후 입력을 연다', async ({ page }) => {
@@ -106,7 +106,7 @@ test('일시적인 조회 실패는 코드 오류로 표시하지 않고 직접 
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await page.route('https://api.example.invalid/consulting-public', route => route.fulfill({ json: { success: true, data: inviteSummary } }));
   await page.getByRole('button', { name: '초대 정보 다시 확인' }).click();
-  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  await expect(page.getByRole('status')).toHaveText('신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
   expect(await claimCalls(page)).toHaveLength(0);
 });
 
@@ -138,7 +138,7 @@ for (const when of ['열 때', '인증할 때']) test(`다른 신청이 연결�
 
 test('첫 초대 진입은 사용할 학생 계정의 로그인이나 회원가입을 안내한다', async ({ page }) => {
   await prepare(page, { loggedIn: false });
-  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  await expect(page.getByRole('status')).toHaveText('신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await expect(page.getByRole('link', { name: '로그인', exact: true })).toHaveAttribute('href', /returnUrl=.*start/);
   await expect(codeInput(page)).toHaveCount(0);
@@ -174,7 +174,7 @@ test('알림톡에서 로그인 확인이 늦어도 중립 대기 화면을 유�
 
 test('남은 프로필만 있고 세션이 만료되면 초대는 보존하고 빨간 오류 없이 로그인으로 안내한다', async ({ page }) => {
   await prepare(page, { sessionResult: false });
-  await expect(page.getByRole('status')).toHaveText('컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+  await expect(page.getByRole('status')).toHaveText('신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
   await expect(page.getByRole('status')).not.toHaveAttribute('data-tone', 'error');
   await expect(page.getByRole('link', { name: '로그인', exact: true })).toBeVisible();
   await expect(codeInput(page)).toHaveCount(0);
@@ -261,7 +261,7 @@ test('로그아웃 뒤 도착한 연결 확인은 진행 화면을 열지 않는
 
 for (const role of ['admin', 'tutor']) test(`${role} 세션은 학생용 인증코드 입력 대신 계정 전환 안내를 본다`, async ({ page }) => {
   await prepare(page, { role });
-  await expect(page.getByRole('status')).toContainText('시크릿 창에서 받은 링크를 열고 컨설팅을 이용할 학생 계정으로 로그인해주세요.');
+  await expect(page.getByRole('status')).toContainText('시크릿 창에서 받은 링크를 열고 신청 상품을 이용할 학생 계정으로 로그인해주세요.');
   await expect(codeInput(page)).toHaveCount(0);
   await expect(claimButton(page)).toHaveCount(0);
   expect(await claimCalls(page)).toHaveLength(0);

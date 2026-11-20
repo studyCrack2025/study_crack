@@ -44,11 +44,4 @@ export async function previewCalculatorApplication(binding, credentials, signal)
   return value?.contractVersion === 'calculator-application-link-v1' && validCalculatorApplication(value.application) && account(value.accountEmailMask) && typeof value.linked === 'boolean'
     ? { ...result, data: value } : apiInvalidResponse(result);
 }
-export async function linkCalculatorApplication(binding, credentials, preview, signal) {
-  const result = await request(binding, 'student_link_calculator_application_view', { ...credentials, expectedRevision: preview.application.revision, confirmed: true }, signal);
-  if (!result.ok) return result;
-  const value = result.data?.success === true ? result.data.data : null;
-  return value?.applicationId === preview.application.applicationId && value.linked === true && typeof value.idempotent === 'boolean'
-    ? { ...result, data: value } : apiInvalidResponse(result);
-}
 export const calculatorApplicationLabels = Object.freeze({ pending_payment: '신청 접수 · 입금 확인 대기', activation_required: '입금 확인 완료 · 이용 인증 대기', active: '계산기 이용권 활성', expired: '이용 기간 종료', held: '입금 확인 보류', rejected: '신청 거절', input_review: '신청 정보 확인 중', check_required: '이용 정보 확인 필요', revoked: '이용 초대 재발급 필요' });

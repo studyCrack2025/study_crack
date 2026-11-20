@@ -9,9 +9,23 @@ async function routeSocialConfig(page, calculator) {
   });
 }
 
-for (const provider of ['google', 'naver']) for (const surface of ['mobile', 'calculator']) test(`built ${surface} ${provider} button resumes an ended session through the real callback page`, async ({ page, context, baseURL }) => {
-  const calculator = surface === 'calculator';
+async function routeCalculatorAccess(page, allowed) {
+  await page.route('**/api/analysis', route => {
+    if (route.request().postDataJSON().type !== 'get_calculator_access') return route.fallback();
+    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
+      access: { allowed, source: allowed ? 'purchase' : 'none' }, service: { state: 'preparing', purchaseAvailable: false } } });
+  });
+}
+
+async function expectCalculatorAccess(page, allowed) {
+  await expect(page.getByRole('heading', { name: allowed ? '2027학년도 수능 성적' : '입금 승인과 이용 인증이 필요합니다.', exact: true })).toBeVisible();
+  if (!allowed) await expect(page.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toHaveCount(0);
+}
+
+for (const provider of ['google', 'naver']) for (const surface of ['mobile', 'calculator', 'approved-calculator']) test(`built ${surface} ${provider} button resumes an ended session through the real callback page`, async ({ page, context, baseURL }) => {
+  const calculator = surface !== 'mobile', approved = surface === 'approved-calculator';
   await installApiMock(page);
+  if (calculator) await routeCalculatorAccess(page, approved);
   // OAuth navigation must not depend on a live font provider's response time.
   await page.route('https://fonts.googleapis.com/**', route => route.fulfill({ contentType: 'text/css', body: '' }));
   await page.route('https://fonts.gstatic.com/**', route => route.abort());
@@ -62,15 +76,16 @@ for (const provider of ['google', 'naver']) for (const surface of ['mobile', 'ca
   expect(await page.evaluate(() => sessionStorage.getItem('sc_social_attempt_v1'))).toBeNull();
   expect(await page.evaluate(() => sessionStorage.getItem('accessToken'))).not.toBe('must-not-restore');
   if (calculator) {
-    await expect(page.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toBeVisible();
+    await expectCalculatorAccess(page, approved);
     await context.addCookies([{ name: 'synthetic-cookie-session', value: 'active', url: baseURL, httpOnly: true }]);
     await page.reload();
-    await expect(page.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toBeVisible();
+    await expectCalculatorAccess(page, approved);
     const second = await context.newPage();
     await installApiMock(second);
+    await routeCalculatorAccess(second, approved);
     await routeSocialConfig(second, true);
     await second.goto('/2027-jungsi-consulting/calculator');
-    await expect(second.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toBeVisible();
+    await expectCalculatorAccess(second, approved);
     await page.evaluate(() => clearClientSession());
     await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
     await second.reload();

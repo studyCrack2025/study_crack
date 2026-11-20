@@ -56,7 +56,8 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
   const response = await postJson({ apiFetch, url: analysisApiUrl, signal,
     payload: { type: 'get_calculator_conversion', data: { scores, targets } }, fallbackError: '환산점수를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' });
   if (!response.ok) {
-    if (response.code === 'CALCULATOR_ACCESS_REQUIRED') return apiFailure('환산점수 조회는 Basic·Starter·Standard·Pro 이용 계정에서 가능합니다.', response);
+    if (response.code === 'CALCULATOR_ACCESS_REQUIRED') return apiFailure('입금 승인과 합격 계산기 이용 인증을 완료해주세요.', response);
+    if (response.code === 'CALCULATOR_NOT_OPEN') return apiFailure('합격 계산기는 11월 28일 공개 예정입니다. 성적과 지원 후보를 먼저 저장해주세요.', response);
     if (response.code === 'INVALID_CALCULATOR_INPUT') return apiFailure('입력 성적과 선택한 후보를 다시 확인해주세요.', response);
     return response;
   }
@@ -74,5 +75,5 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
     || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'purchase', 'none'].includes(value.access.source)
     || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
     || !['preparing', 'candidate_check_required'].includes(value.service.state)) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
-  return { ...response, data: { access: { allowed: value.access.allowed, source: value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };
+  return { ...response, data: { access: { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };
 }
