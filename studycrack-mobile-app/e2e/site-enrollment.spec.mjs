@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const applicationId = 'APP_123e4567-e89b-12d3-a456-426614174000';
 const bankTransfer = { bankName: '시험은행', accountNumber: '000-000-000000', accountHolder: '시험사업자' };
 async function prepare(page, options = {}) {
-  const state = { submits: [], attributionRequests: [], application: null, amount: 200000, ...options };
+  const state = { submits: [], attributionRequests: [], application: null, amount: 200000, attributionVersion: 2, ...options };
   await page.clock.setFixedTime(new Date('2026-11-19T09:00:00.000Z'));
   await page.addInitScript(({ denied }) => {
     window.enrollmentCopiedValues = [];
@@ -27,7 +27,7 @@ async function prepare(page, options = {}) {
       if (state.salesClosed) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
       if (state.unavailable) return route.fulfill({ status: 503, json: { success: false, code: 'CALCULATOR_DATA_NOT_READY' } });
       expect(data.formVersion).toBe(2);
-      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: data.productType === 'consulting' && state.amount === 200000, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, formVersion: state.oldContract ? 1 : 2, ...(!state.oldContract && !state.legacyTracking ? { attributionVersion: 2 } : {}), consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
+      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: data.productType === 'consulting' && state.amount === 200000, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, formVersion: state.oldContract ? 1 : 2, ...(!state.oldContract && !state.legacyTracking && state.attributionVersion === 2 ? { attributionVersion: 2 } : {}), consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
     }
     if (type === 'public_submit_site_application') {
       if (state.closeOnSubmit) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
@@ -431,4 +431,28 @@ test('calculator closing during form entry never creates a phantom saved applica
   await expect(page.locator('#jungsiEnrollmentRecover')).toBeHidden();
   expect(await page.evaluate(() => sessionStorage.getItem('sc_jungsi_application_v1'))).toBeNull();
   expect(state.submits).toHaveLength(0);
+});
+
+for (const scenario of [
+  { label: 'supported', attributionVersion: 2, expected: 'synthetic-signed-token' },
+  { label: 'older backend', attributionVersion: null, expected: undefined },
+  { label: 'issuance failure', attributionVersion: 2, failAttribution: true, expected: undefined }
+]) test(`website attribution: ${scenario.label}`, async ({ page }) => {
+  const state = await prepare(page, scenario);
+  await page.locator('#consultingApply').click(); await fill(page);
+  await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits).toHaveLength(1);
+  expect(state.submits[0].attributionToken).toBe(scenario.expected);
+  expect(state.submits[0].token).not.toBe('synthetic-signed-token');
+});
+
+test('calculator never carries consulting attribution', async ({ page }) => {
+  const state = await prepare(page, { attributionVersion: 2 });
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
+  await page.locator('#calculatorApply').click(); await fill(page, 'calculator');
+  await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits[0].attributionToken).toBe('synthetic-calculator-token');
+  expect(state.attributionRequests).toEqual([{ productType: 'calculator', source: 'unknown', campaignId: null, creativeId: null }]);
 });
