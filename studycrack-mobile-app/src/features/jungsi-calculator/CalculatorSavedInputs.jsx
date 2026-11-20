@@ -2,9 +2,9 @@ import React from 'react';
 import { getMobileApiBinding } from '../../shared/browser/mobile-runtime.js';
 import { CALCULATOR_STORAGE_CONSENT, normalizeStoredCalculatorInput, requestCalculatorStorage } from './calculator-storage-api.js';
 
-export default function CalculatorSavedInputs({ home, input, changed, onRestore, readOnly = false }) {
+export default function CalculatorSavedInputs({ home, entitlement, input, changed, onRestore, readOnly = false }) {
   const binding = React.useMemo(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
-  const applications = (home?.items || []).filter(item => readOnly || item.accessActive), [selection, setSelection] = React.useState('');
+  const applications = entitlement && !readOnly ? [entitlement] : (home?.items || []).filter(item => readOnly || item.accessActive), [selection, setSelection] = React.useState('');
   const applicationId = applications.some(item => item.applicationId === selection) ? selection : applications[0]?.applicationId || '';
   const [resource, setResource] = React.useState({ status: 'idle', data: null }), [consented, setConsented] = React.useState(false), [message, setMessage] = React.useState(''), [busy, setBusy] = React.useState(false);
   const generation = React.useRef(0), pending = React.useRef(null), failed = React.useRef(false);
@@ -44,8 +44,8 @@ export default function CalculatorSavedInputs({ home, input, changed, onRestore,
   if (readOnly && resource.status === 'ready' && !['saved', 'restricted'].includes(resource.data.status)) return null;
   return <section className="jcalc-panel jcalc-storage" aria-label="계산기 자료 서버 저장" aria-busy={busy || resource.status === 'loading'}>
     <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">{readOnly ? '기존 자료 관리' : '다른 기기에서도 이어보기'}</p><h2>{readOnly ? '이전에 저장한 자료' : '성적·지원 후보 서버 저장'}</h2></div>{applicationId && <button className="jcalc-secondary" type="button" disabled={busy || resource.status === 'loading'} onClick={load}>서버 저장 상태 다시 확인</button>}</div>
-    {!home ? <p className="jcalc-note">신청 상태를 확인한 뒤 저장할 수 있습니다. 입력 초안은 현재 탭에서 계속 사용할 수 있습니다.</p> : !applicationId ? <p className="jcalc-note">서버 저장은 입금 승인과 계산기 이용 인증을 완료한 신청에서 이용할 수 있습니다.</p> : <>
-      <label className="jcalc-storage-select">저장할 계산기 신청<select value={applicationId} disabled={busy} onChange={event => setSelection(event.target.value)}>{applications.map((item, index) => <option key={item.applicationId} value={item.applicationId}>합격 계산기 · {item.submittedAt ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium' }).format(new Date(item.submittedAt)) : '신청'}{applications.length > 1 ? ` (${index + 1})` : ''}</option>)}</select></label>
+    {!home && !entitlement ? <p className="jcalc-note">이용 정보를 확인한 뒤 저장할 수 있습니다. 입력 초안은 현재 탭에서 계속 사용할 수 있습니다.</p> : !applicationId ? <p className="jcalc-note">현재 이용권에서 저장할 수 있는 자료가 없습니다.</p> : <>
+      {applications.length > 1 && <label className="jcalc-storage-select">저장할 계산기 신청<select value={applicationId} disabled={busy} onChange={event => setSelection(event.target.value)}>{applications.map((item, index) => <option key={item.applicationId} value={item.applicationId}>합격 계산기 · {item.submittedAt ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium' }).format(new Date(item.submittedAt)) : '신청'}{applications.length > 1 ? ` (${index + 1})` : ''}</option>)}</select></label>}
       <p className="jcalc-note" role="status">{resource.status === 'loading' ? '서버 저장 자료를 확인하고 있습니다. 현재 입력은 바꾸지 않습니다.' : resource.status === 'error' ? '서버 저장 상태를 불러오지 못했습니다. 저장 여부를 확인한 뒤 다시 시도해주세요.' : resource.data?.status === 'restricted' ? '이전에 저장한 자료가 있습니다. 입금 승인과 이용 인증을 완료한 뒤 불러올 수 있으며, 지금 삭제할 수도 있습니다.' : resource.data?.status === 'saved' ? `서버 저장 ${resource.data.revision}판 · ${dirty || changed ? '현재 입력은 수정 후 미저장' : '현재 입력과 저장본이 같습니다.'}` : '서버에 저장한 자료가 없습니다. 현재 입력은 탭 초안입니다.'}</p>
       {resource.status === 'ready' && <>
         {resource.data.updatedAt && <p className="jcalc-note">마지막 변경 · {new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(resource.data.updatedAt))} (한국시간)</p>}

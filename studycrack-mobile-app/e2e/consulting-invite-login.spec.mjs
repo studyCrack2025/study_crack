@@ -1,3 +1,4 @@
+import { calculatorAccessFixture, calculatorEmptyStorage } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 
 const startPath = '/2027-jungsi-consulting/start';
@@ -70,7 +71,8 @@ async function prepare(page, { productType } = {}) {
       expect(body.data.applicationId).toBe(applicationId); expect(body.data.code).toBe('0000000042'); api.claimed = true;
       return reply({ success: true, data: { productType: 'calculator', caseId: null, applicationId } });
     }
-    if (body.type === 'get_calculator_access' && productType === 'calculator') return reply({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: api.claimed, source: api.claimed ? 'purchase' : 'none' }, service: { state: 'preparing', purchaseAvailable: false } });
+    if (body.type === 'get_calculator_access' && productType === 'calculator') return reply(calculatorAccessFixture({ allowed: api.claimed, applicationId }));
+    if (body.type === 'student_get_calculator_input' && productType === 'calculator') return reply(calculatorEmptyStorage(applicationId));
     if (body.type === 'get_univ_list_only' && productType === 'calculator') return reply([]);
     if (body.type === 'student_get_calculator_applications' && productType === 'calculator') return reply({ success: true, data: { contractVersion: 'calculator-applications-v1', items: [], hasMore: false, needsReview: false, accountEmailMask: null } });
     throw new Error('Unexpected synthetic request: ' + body.type);

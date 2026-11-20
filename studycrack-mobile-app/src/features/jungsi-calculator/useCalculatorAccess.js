@@ -23,7 +23,7 @@ export default function useCalculatorAccess() {
     return () => { sequence.current += 1; pending.current?.abort(); pending.current = null; globalThis.removeEventListener('focus', focus); };
   }, [refresh]);
   const deny = React.useCallback(() => {
-    setResource(previous => previous.status === 'ready' ? { ...previous, data: { ...previous.data, access: { allowed: false, source: 'none' } } } : previous);
+    setResource(previous => previous.status === 'ready' ? { ...previous, data: { ...previous.data, entitlement: null, access: { allowed: false, source: 'none' }, service: { ...previous.data.service, calculationEnabled: false, calculationMode: 'closed' } } } : previous);
   }, []);
   return { resource, refresh, deny };
 }

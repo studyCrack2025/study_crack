@@ -15,7 +15,7 @@ function ApplicationCard({ application }) {
     {application.state === 'rejected' && <p>신청 처리 내역은 운영팀에 문의해주세요. 추가로 입금하지 마세요.</p>}
   </article>;
 }
-export default function CalculatorApplicationPanel({ onLoaded }) {
+export default function CalculatorApplicationPanel({ onLoaded, accessDenied = false, onRetry }) {
   const binding = React.useMemo(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
   const [resource, setResource] = React.useState({ status: 'loading', home: null, receipt: null });
   const pending = React.useRef(null), sequence = React.useRef(0);
@@ -37,6 +37,10 @@ export default function CalculatorApplicationPanel({ onLoaded }) {
   if (resource.status === 'ended') return null;
   const items = [...(resource.home?.items || [])];
   if (resource.receipt && !items.some(item => item.applicationId === resource.receipt.applicationId)) items.push(resource.receipt);
+  if (accessDenied && items.some(item => item.accessActive)) return <section className="jcalc-panel jcalc-application" aria-label="계산기 이용 정보 확인">
+    <h2>이용 정보를 확인하지 못했습니다.</h2><p className="jcalc-error" role="alert">인증된 이용권과 계산기 연결 상태를 확인하지 못했습니다. 다시 시도하거나 이용 문의로 연락해주세요.</p>
+    <button className="jcalc-secondary" type="button" onClick={onRetry}>다시 시도</button>
+  </section>;
   return <section className="jcalc-panel jcalc-application" aria-label="나의 계산기 신청" aria-busy={resource.status === 'loading'}>
     <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">신청 현황</p><h2>나의 계산기 신청</h2></div><button className="jcalc-secondary" type="button" onClick={refresh} disabled={resource.status === 'loading'}>신청 상태 다시 확인</button></div>
     {resource.status === 'loading' ? <p className="jcalc-note" role="status">신청과 이용 인증 상태를 확인하고 있습니다.</p> : resource.status === 'error' ? <p className="jcalc-error" role="alert">신청 상태를 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</p> : <>

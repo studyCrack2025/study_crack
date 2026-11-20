@@ -1,3 +1,4 @@
+import { calculatorAccessFixture, calculatorEmptyStorage } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 const path = '/2027-jungsi-consulting/calculator', appId = 'APP_11111111-1111-4111-8111-111111111111', consent = 'CALCULATOR_INPUT_STORAGE_20261120_V1';
 const panel = page => page.getByRole('region', { name: '계산기 자료 서버 저장', exact: true });
@@ -15,7 +16,7 @@ async function setup(page, options = {}) {
     const body = route.request().postDataJSON();
     if (body.type === 'get_univ_list_only') return route.fulfill({ json: [{ univName: '가상대학교', majors: ['예시학과'] }] });
     expect(body.type).toBe('get_calculator_access');
-    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false } } });
+    return route.fulfill({ json: calculatorAccessFixture({ allowed: state.owner === 'student-A', applicationId: appId }) });
   });
   await context.route('**/__input-core', async route => {
     const body = route.request().postDataJSON(); state.calls.push(body); let data;
@@ -95,7 +96,29 @@ test('계정 전환 후 이전 학생의 지연 저장본을 표시하지 않는
   const state = await setup(page, { deferRead: true }); await expect.poll(() => typeof state.release).toBe('function'); const release = state.release;
   state.owner = 'student-B'; state.deferRead = false;
   await page.evaluate(() => { localStorage.setItem('userId', 'student-B'); window.dispatchEvent(new Event('studycrack:session-ended')); }); release();
-  await expect(panel(page)).toContainText('서버 저장은 입금 승인과 계산기 이용 인증을 완료한 신청에서'); await expect(save(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
+  await expect(page.getByRole('region', { name: '나의 계산기 신청' })).toContainText('인증된 계산기 이용권이 없습니다'); await expect(panel(page)).toHaveCount(0); await expect(save(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
+});
+
+test('원점수 저장·재접속·수동 복원은 원래 입력과 과목을 그대로 유지한다', async ({ page }) => {
+  const state = await setup(page); await page.getByRole('radio', { name: '가채점 원점수', exact: true }).check();
+  for (const [title, choice] of [['국어', '언어와매체'], ['수학', '미적분'], ['탐구 1', '물리학Ⅰ'], ['탐구 2', '화학Ⅰ']]) await page.getByRole('combobox', { name: `${title} 선택과목`, exact: true }).selectOption(choice);
+  for (const [title, common, elective] of [['국어', '60', '20'], ['수학', '60', '14']]) {
+    await page.getByRole('textbox', { name: `${title} 공통 원점수`, exact: true }).fill(common);
+    await page.getByRole('textbox', { name: `${title} 선택 원점수`, exact: true }).fill(elective);
+  }
+  for (const [title, value] of [['탐구 1', '44'], ['탐구 2', '45']]) await page.getByRole('textbox', { name: `${title} 원점수`, exact: true }).fill(value);
+  await page.getByRole('combobox', { name: '영어 등급', exact: true }).selectOption('2'); await page.getByRole('combobox', { name: '한국사 등급', exact: true }).selectOption('1');
+  await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click(); await candidate(page);
+  await panel(page).getByRole('checkbox').check(); await save(page).click(); await expect(panel(page)).toContainText('서버 저장을 완료했습니다');
+  expect(state.saved.input.scores.basis).toBe('raw'); expect(state.saved.input.scores.exam.kor).toEqual({ opt: '언어와매체', common: 60, elective: 20, raw: 80 });
+  const stored = structuredClone(state.saved.input);
+  await page.evaluate(() => sessionStorage.removeItem('sc_jungsi_calculator_v1:student-A')); await page.reload();
+  await expect(page.getByRole('radio', { name: '성적표 기준', exact: true })).toBeChecked();
+  page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '서버 저장본 불러오기', exact: true }).click();
+  await expect(page.getByRole('radio', { name: '가채점 원점수', exact: true })).toBeChecked();
+  await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveValue('60');
+  await expect(page.getByRole('textbox', { name: '탐구 2 원점수', exact: true })).toHaveValue('45');
+  expect(state.saved.input).toEqual(stored); expect(writes(state)).toHaveLength(1);
 });
 test('조회 실패는 저장으로 오인하지 않고 기간 종료 후 기존 자료만 확인·삭제한다', async ({ page }) => {
   const state = await setup(page, { failRead: true }); await scores(page);
