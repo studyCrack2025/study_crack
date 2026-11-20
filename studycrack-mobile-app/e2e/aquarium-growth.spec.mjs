@@ -244,3 +244,36 @@ for (const claimMoment of ['before-persist', 'after-persist']) test(`해금 잠�
   await page.getByRole('button', { name: '해금 안내 닫기' }).click();
   await expect(page.locator('.aquarium-unlock-notice')).toHaveCount(0);
 });
+
+test('요소 제거부터 관찰자 정리까지 해금 안내를 이미 본 것으로 기록하지 않는다', async ({ page }) => {
+  await page.addInitScript(() => {
+    const request = navigator.locks.request.bind(navigator.locks);
+    const state = window.detachedUnlockRace = { calls: 0, phase: 'idle' };
+    navigator.locks.request = (key, options, run) => request(key, options, async lock => {
+      if (!key.startsWith('studycrackAquariumSeen_v1:') || ++state.calls !== 1) return run(lock);
+      await new Promise(resolve => { state.before = resolve; state.phase = 'before'; });
+      const result = run(lock);
+      await new Promise(resolve => { state.after = resolve; state.phase = 'after'; });
+      return result;
+    });
+  });
+  await setup(page, 100); await page.goto('/studycrack-mobile.html?screen=aquarium'); await showCaption(page);
+  await expect.poll(() => page.evaluate(() => window.detachedUnlockRace.phase)).toBe('before');
+  await page.evaluate(() => {
+    const state = window.detachedUnlockRace;
+    state.slot = document.querySelector('.aquarium-unlock-slot');
+    state.placeholder = document.createComment('unlock slot lifecycle');
+    state.slot.replaceWith(state.placeholder);
+    state.before();
+  });
+  await expect.poll(() => page.evaluate(() => window.detachedUnlockRace.phase)).toBe('after');
+  expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBeNull();
+  await expect.poll(() => page.evaluate(() => window.detachedUnlockRace.slot.dataset.unlockActive)).toBe('false');
+  await page.evaluate(() => {
+    const state = window.detachedUnlockRace;
+    state.placeholder.replaceWith(state.slot);
+    state.after();
+  });
+  await expect(page.locator('.aquarium-unlock-notice')).toContainText('DAY 100 배경을 열었어요');
+  expect(await page.evaluate(key => localStorage.getItem(key), seenKey)).toBe('day100');
+});

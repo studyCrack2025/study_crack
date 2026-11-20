@@ -5,7 +5,7 @@ import { claimAquariumUnlock } from '../src/features/gamification/unlock-ledger.
 const settle = () => new Promise(resolve => setImmediate(resolve));
 function setup() {
   const values = new Map(), locks = [], notices = [], activity = [], events = new Map();
-  let intersection, mutation, inert = false, ownerActive = true;
+  let intersection, mutation, inert = false, ownerActive = true, connected = true;
   const browser = {
     localStorage: { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) },
     navigator: { locks: { request: (_, __, run) => new Promise(resolve => { locks.push({ run, resolve }); }) } },
@@ -13,7 +13,7 @@ function setup() {
     MutationObserver: class { constructor(callback) { mutation = callback; } observe() {} disconnect() {} }
   };
   const doc = { defaultView: browser, visibilityState: 'visible', addEventListener: (key, handler) => events.set(key, handler), removeEventListener: key => events.delete(key) };
-  const element = { ownerDocument: doc, parentElement: { parentElement: null }, closest: () => inert };
+  const element = { ownerDocument: doc, parentElement: { parentElement: null }, closest: () => inert, get isConnected() { return connected; } };
   const view = { status: 'ready', growth: { policyVersion: 'planner-days-v1', countingSince: '2026-01-01', highestUnlockedStage: 'day100' },
     claimUnlock: visible => claimAquariumUnlock({ browser, owner: 'student-a', growth: view.growth, eligible: () => ownerActive && visible() }) };
   const dispose = observeAquariumUnlock(element, view, { onActive: value => activity.push(value), onNotice: value => notices.push(value) });
@@ -22,6 +22,7 @@ function setup() {
     visibility: value => { doc.visibilityState = value; events.get('visibilitychange')?.(); },
     inert: value => { inert = value; mutation(); },
     changeOwner: () => { ownerActive = false; },
+    detach: () => { connected = false; },
     run: () => { const lock = locks.shift(); assert.ok(lock, 'a claim must be waiting for the browser lock'); const value = lock.run({}); return () => lock.resolve(value); }
   };
 }
@@ -55,6 +56,12 @@ await check('invalidation before lock acquisition prevents writing the previous 
 await check('unmount after persistence does not announce into a disposed view', async () => {
   const f = setup(); f.intersect(true); const release = f.run(); f.dispose(); release(); await settle();
   assert.deepEqual(f.notices, []); assert.equal(f.locks.length, 0);
+});
+await check('a detached slot cannot consume an unlock before observer cleanup catches up', async () => {
+  const f = setup(); f.intersect(true); f.detach();
+  f.run()(); await settle();
+  assert.equal(f.values.size, 0, 'a stale intersection must not mark a removed slot as seen');
+  assert.deepEqual(f.notices, []); f.dispose();
 });
 await check('an already seen stage does not loop or announce twice', async () => {
   const f = setup(); f.intersect(true); f.run()(); await settle();

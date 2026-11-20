@@ -2,7 +2,7 @@ export function observeAquariumUnlock(element, view, { onActive, onNotice }) {
   const doc = element?.ownerDocument, browser = doc?.defaultView;
   if (!element || !browser?.IntersectionObserver || !view.claimUnlock) return;
   let intersecting = false, cancelled = false, pending = false, recheck = false;
-  const visible = () => !cancelled && intersecting && doc.visibilityState === 'visible' && !element.closest('[inert], [aria-hidden="true"]');
+  const visible = () => !cancelled && element.isConnected && intersecting && doc.visibilityState === 'visible' && !element.closest('[inert], [aria-hidden="true"]');
   const update = () => {
     const ready = visible(); onActive(ready);
     if (!ready || view.status !== 'ready' || !view.growth?.highestUnlockedStage) return;
