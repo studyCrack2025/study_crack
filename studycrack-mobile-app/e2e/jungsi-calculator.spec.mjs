@@ -36,7 +36,7 @@ async function setup(page, { signedIn = true } = {}) {
         if (control.accessMode === 'error') return await route.fulfill({ status: 503, json: { code: 'CALCULATOR_ACCESS_UNAVAILABLE' } });
         return await route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
           access: { allowed: control.accessAllowed, source: control.accessAllowed ? control.accessSource : 'none' },
-          service: { state: 'preparing', purchaseAvailable: control.accessMode === 'invalid' } } });
+          service: { state: 'preparing', purchaseAvailable: control.accessMode === 'invalid', ...(control.earlyAccess === undefined ? {} : { earlyAccess: control.accessAllowed && control.earlyAccess }) } } });
       } catch (_) { return; }
     }
     if (payload.type === 'get_calculator_conversion') {
@@ -463,6 +463,29 @@ test('가능성 지수는 양끝에서도 백분율 없이 표시하고 잘못�
 
 test.describe('합격 계산기 공개 일정', () => {
   test.use({ timezoneId: 'America/Los_Angeles' });
+  test('DEV 조기 이용권은 공개 전 조회를 허용하고 재확인에서 예외가 없어지면 즉시 닫는다', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-20T03:00:00.000Z'));
+    const control = await setup(page); control.earlyAccess = true;
+    await page.goto(path);
+    await prepareConversion(page);
+    const calculate = page.getByRole('button', { name: '환산점수·가능성 조회', exact: true });
+    const notice = page.getByRole('note', { name: '합격 계산기 공개 일정' });
+    await expect(notice).toHaveCount(0);
+    await expect(calculate).toBeEnabled();
+    await calculate.click();
+    await expect(page.locator('.jcalc-score strong')).toContainText('743.1256');
+    expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(1);
+    control.earlyAccess = false;
+    await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+    await expect(calculate).toBeDisabled();
+    await expect(notice).toContainText('11월 28일 공개 예정');
+    await expect(page.locator('.jcalc-score')).toHaveCount(0);
+    control.earlyAccess = true; control.accessAllowed = false;
+    await page.getByRole('button', { name: '이용 상태 다시 확인', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '입금 승인과 이용 인증이 필요합니다.' })).toBeVisible();
+    await expect(calculate).toHaveCount(0);
+    expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(1);
+  });
   test('확인된 이용권에는 11월 28일 공개 예정을 표시하고 한국시간 공개일부터 안내를 숨긴다', async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-11-27T14:59:59.000Z'));
     const control = await setup(page); control.accessSource = 'purchase';

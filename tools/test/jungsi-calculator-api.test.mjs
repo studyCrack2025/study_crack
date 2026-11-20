@@ -107,7 +107,7 @@ test('access preflight sends no client identity, drops member records and never 
       access: { allowed: true, source: 'purchase', student: { email: 'PRIVATE' } }, service: { state: 'preparing', purchaseAvailable: false }, userId: 'PRIVATE' }) };
   } });
   assert.deepEqual(payload, { type: 'get_calculator_access' });
-  assert.deepEqual(result.data, { access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false } });
+  assert.deepEqual(result.data, { access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: false } });
   assert.equal(JSON.stringify(result.data).includes('PRIVATE'), false);
 });
 
@@ -124,4 +124,19 @@ test('missing or inconsistent preflight data cannot grant access or purchases', 
 test('a legacy membership-only preflight does not open the calculator workspace', async () => {
   const result = await requestCalculatorAccess({ analysisApiUrl: '/synthetic', apiFetch: async () => ({ ok: true, json: async () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } }) }) });
   assert.equal(result.ok, true); assert.deepEqual(result.data.access, { allowed: false, source: 'none' });
+});
+
+test('early-access capability is optional for older servers and accepted only for a validated purchase', async () => {
+  const base = () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
+    access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false, earlyAccess: true } });
+  const request = body => requestCalculatorAccess({ analysisApiUrl: '/synthetic', apiFetch: async () => ({ ok: true, json: async () => body }) });
+  const result = await request(base());
+  assert.equal(result.data.service.earlyAccess, true);
+  for (const mutate of [value => { value.service.earlyAccess = 'true'; }, value => { value.access.source = 'membership'; },
+    value => { value.access.source = 'manager'; }, value => { value.access = { allowed: false, source: 'none' }; }]) {
+    const body = base(); mutate(body);
+    assert.equal((await request(body)).code, 'INVALID_RESPONSE');
+  }
+  const old = base(); delete old.service.earlyAccess;
+  assert.equal((await request(old)).data.service.earlyAccess, false);
 });
