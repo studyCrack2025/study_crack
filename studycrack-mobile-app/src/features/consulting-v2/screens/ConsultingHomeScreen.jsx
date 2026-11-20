@@ -2,17 +2,20 @@ import React from 'react';
 import { ConsultingBrand } from '../ConsultingBrand.jsx';
 import { useConsultingHome } from '../use-consulting-home.js';
 import { actionPathForState, formatConsultingDueAt, HOME_GUIDANCE } from '../progress-model.js';
+import { calculatorApplicationLabels } from '../../jungsi-calculator/calculator-application-api.js';
 import { CONSULTING_ROUTES, navigateConsulting } from '../route-model.js';
 
-function HomeFrame({ children }) {
-  return <main className="consulting-v2-home"><header className="consulting-v2-home-header"><ConsultingBrand /><a className="consulting-v2-home-guide-link" href={CONSULTING_ROUTES.landing}>서비스 안내 <span aria-hidden="true">↗</span></a></header>{children}<footer className="consulting-v2-home-footer">StudyCrack · 선택에 근거를 더하는 정시 컨설팅</footer></main>;
+function HomeFrame({ children, calculator }) {
+  const application = calculator?.items?.find(item => item.accessActive) || calculator?.items?.[0];
+  const label = application ? calculatorApplicationLabels[application.state] : calculator?.unavailable ? '계산기 신청 상태 다시 확인' : '계산기를 신청하셨나요?';
+  return <main className="consulting-v2-home"><header className="consulting-v2-home-header"><ConsultingBrand /><a className="consulting-v2-home-guide-link" href={CONSULTING_ROUTES.landing}>서비스 안내 <span aria-hidden="true">↗</span></a></header><section className="consulting-v2-home-help" aria-label="합격 계산기 신청 현황"><a href="/2027-jungsi-consulting/calculator"><span><strong>{label}</strong><small>합격 계산기 신청·입금·이용 인증 상태 보기</small></span><span aria-hidden="true">→</span></a></section>{children}<footer className="consulting-v2-home-footer">StudyCrack · 선택에 근거를 더하는 정시 컨설팅</footer></main>;
 }
 
 export function ConsultingHomeScreen({ binding }) {
   const resource = useConsultingHome(binding);
-  if (resource.status === 'loading') return <HomeFrame><section className="consulting-v2-home-empty" aria-busy="true"><p className="consulting-v2-kicker">나의 컨설팅</p><h1>진행 현황을 확인하고 있어요</h1><p role="status">잠시만 기다려주세요.</p></section></HomeFrame>;
-  if (resource.status === 'error') return <HomeFrame><section className="consulting-v2-home-empty"><p className="consulting-v2-kicker">나의 컨설팅</p><h1>진행 현황을 불러오지 못했습니다</h1><p role="alert">연결 상태를 확인하고 다시 시도해주세요.</p><button className="consulting-v2-primary" type="button" onClick={resource.retry}>다시 시도</button></section></HomeFrame>;
-  if (!resource.data.available) return <HomeFrame><section className="consulting-v2-home-empty"><p className="consulting-v2-kicker">이용 인증 안내</p><h1>등록된 컨설팅이 없습니다</h1><p>알림톡·문자로 받은 초대 링크에서<br />이메일 인증코드로 이용 인증을 완료해주세요.</p><a className="consulting-v2-primary" href={CONSULTING_ROUTES.landing}>서비스 안내 보기</a></section></HomeFrame>;
+  if (resource.status === 'loading') return <HomeFrame calculator={resource.data?.calculator}><section className="consulting-v2-home-empty" aria-busy="true"><p className="consulting-v2-kicker">나의 컨설팅</p><h1>진행 현황을 확인하고 있어요</h1><p role="status">잠시만 기다려주세요.</p></section></HomeFrame>;
+  if (resource.status === 'error') return <HomeFrame calculator={resource.data?.calculator}><section className="consulting-v2-home-empty"><p className="consulting-v2-kicker">나의 컨설팅</p><h1>진행 현황을 불러오지 못했습니다</h1><p role="alert">연결 상태를 확인하고 다시 시도해주세요.</p><button className="consulting-v2-primary" type="button" onClick={resource.retry}>다시 시도</button></section></HomeFrame>;
+  if (!resource.data.available) return <HomeFrame calculator={resource.data?.calculator}><section className="consulting-v2-home-empty"><p className="consulting-v2-kicker">이용 인증 안내</p><h1>등록된 컨설팅이 없습니다</h1><p>알림톡·문자로 받은 초대 링크에서<br />이메일 인증코드로 이용 인증을 완료해주세요.</p><a className="consulting-v2-primary" href={CONSULTING_ROUTES.landing}>서비스 안내 보기</a></section></HomeFrame>;
   const { alerts, nextAction, nextDueAt, serviceHold, workflowState } = resource.data;
   const held = serviceHold === true;
   const completed = workflowState === 'SERVICE_COMPLETED';
@@ -24,7 +27,7 @@ export function ConsultingHomeScreen({ binding }) {
       ? { title: '모든 컨설팅 과정이 완료되었습니다.', description: '함께 정리한 지원 전략과 공개 보고서를 다시 확인할 수 있어요.' }
       : current || { title: '진행 상황을 확인해주세요.', description: '상담 준비나 제출 자료의 현재 상태를 확인할 수 있어요.', button: '내 진행 내용 보기' };
   const due = held || completed ? '' : formatConsultingDueAt(nextDueAt);
-  return <HomeFrame>
+  return <HomeFrame calculator={resource.data?.calculator}>
     <section className="consulting-v2-home-hero">
       <p>2027학년도 정시</p>
       <h1>나의 정시 컨설팅</h1>

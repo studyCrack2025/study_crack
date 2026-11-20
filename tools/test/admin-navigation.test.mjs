@@ -43,3 +43,12 @@ test('supplement alerts restore an authorized case detail without accepting mixe
     assert.equal(h.ctx.parse('#consulting?case=private@example.invalid').caseId, undefined);
     assert.equal(h.ctx.parse(`#consulting?case=${caseId}&student=APP_22222222-2222-4222-8222-222222222222&record=RESPONSE_SYNTHETIC`).caseId, undefined);
 });
+
+test('calculator restores independent phases and opaque application references without consulting tabs', () => {
+    const h = harness(), route = { section: 'calculator', phase: 'expired', applicationId: 'APP_11111111-1111-4111-8111-111111111111', sourceResponseId: 'RESPONSE_SYNTHETIC' };
+    h.ctx.write(route); assert.deepEqual(h.json(h.ctx.parse()), route);
+    for (const suffix of ['&case=CASE_22222222-2222-4222-8222-222222222222', '&tab=materials']) assert.equal(h.ctx.parse(h.window.location.hash + suffix).applicationId, undefined);
+    assert.equal(h.ctx.parse('#calculator?phase=report').phase, 'all');
+    assert.equal(h.ctx.parse('#calculator?student=private@example.invalid&record=RESPONSE_SYNTHETIC').applicationId, undefined);
+    vm.runInContext('adminNavigationReady = true', h.ctx); h.ctx.restore(); assert.deepEqual(h.calls.at(-1), ['section', 'calculator']);
+});

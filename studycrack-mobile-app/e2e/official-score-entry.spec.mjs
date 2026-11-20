@@ -67,7 +67,10 @@ async function openModal(page) {
   await page.getByRole('button', { name: '입력·수정', exact: true }).click();
   return page.getByRole('dialog', { name: '성적 수정', exact: true });
 }
-async function next(dialog) { await dialog.getByRole('button', { name: '다음', exact: true }).click(); }
+async function next(dialog, expectedStep) {
+  await dialog.getByRole('button', { name: '다음', exact: true }).click();
+  if (expectedStep) await expect(dialog.getByRole('progressbar', { name: '성적 입력 단계' })).toHaveAttribute('aria-valuenow', String(expectedStep));
+}
 async function fillSubject(root, key, item) {
   await root.locator(`[data-field="v2e-${key}-${key.startsWith('inq') ? 'subject' : 'type'}"]`).selectOption(item.opt || item.name);
   for (const metric of ['std', 'pct', 'grd']) await root.locator(`[data-field="v2e-${key}-${metric}"]`).fill(String(item[metric]));
@@ -128,7 +131,7 @@ test('수능 최초 입력은 원점수 환산 없이 저장하고 실패·재�
 test('수능 빈칸·범위·탐구 중복은 입력을 보존하며 저장 전에 설명한다', async ({ page }) => {
   const api = await prepare(page, { saved: true });
   await page.goto('/studycrack-mobile.html?screen=scoreInfo');
-  const dialog = await openModal(page);
+  let dialog = await openModal(page);
   await dialog.locator('[data-field="v2e-korean-pct"]').fill('');
   await next(dialog);
   await expect(dialog.locator('#v2e-korean-pct-error')).toBeVisible();
@@ -137,11 +140,17 @@ test('수능 빈칸·범위·탐구 중복은 입력을 보존하며 저장 전�
   await next(dialog);
   await expect(dialog.locator('[data-field="v2e-korean-std"]')).toHaveValue('132.5');
   await expect(dialog.locator('#v2e-korean-std-error')).toContainText('정수');
+  expect(api.writes).toHaveLength(0);
+  await dialog.getByRole('button', { name: '닫기', exact: true }).click();
+  dialog = await openModal(page);
+  await expect(dialog.locator('#v2e-korean-std-error')).toHaveCount(0);
   await dialog.locator('[data-field="v2e-korean-std"]').fill('201');
   await next(dialog);
   await expect(dialog.locator('#v2e-korean-std-error')).toContainText('0~200');
+  await expect(dialog.locator('[data-field="v2e-korean-std"]')).toHaveValue('201');
+  await expect(dialog.getByRole('progressbar', { name: '성적 입력 단계' })).toHaveAttribute('aria-valuenow', '1');
   await dialog.locator('[data-field="v2e-korean-std"]').fill('132');
-  for (let step = 1; step < 6; step++) await next(dialog);
+  for (let step = 1; step < 6; step++) await next(dialog, step + 1);
   await dialog.locator('[data-field="v2e-inq2-subject"]').selectOption('물리학Ⅰ');
   await dialog.getByRole('button', { name: '전체 성적 저장', exact: true }).click();
   await expect(dialog.locator('#v2e-inq2-subject-error')).toContainText('다른 과목');

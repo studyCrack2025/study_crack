@@ -116,6 +116,10 @@
         document.getElementById('jungsiReceiptAccess').textContent = productType === 'calculator' ? '합격 계산기로 이동' : '나의 컨설팅으로 이동';
         document.getElementById('jungsiReceiptNextTitle').textContent = needsHelp ? '운영팀에 확인해주세요' : claimed ? '서비스를 시작해보세요' : value.applicationState === 'INVITED' ? '이용 인증을 완료해주세요' : '입금 후 이용 안내';
         document.getElementById('jungsiReceiptNextDescription').textContent = needsHelp ? '추가 입금 전에 070-8128-1126으로 신청 내역을 문의해주세요.' : claimed ? '처음 인증한 학생 계정으로 서비스를 이용할 수 있습니다.' : value.applicationState === 'INVITED' ? '문자로 받은 링크를 열고 이메일의 10자리 인증코드를 입력해주세요.' : '운영팀이 입금을 확인하면 문자로 이용 링크, 이메일로 인증코드를 보내드립니다.';
+        const destination = productType === 'calculator' ? '/2027-jungsi-consulting/calculator' : '/2027-jungsi-consulting/start';
+        document.getElementById('jungsiReceiptSignup').href = '/signup?returnUrl=' + encodeURIComponent(destination);
+        document.getElementById('jungsiReceiptLogin').href = '/login?returnUrl=' + encodeURIComponent(destination);
+        document.getElementById('jungsiReceiptAccountHint').textContent = productType === 'calculator' ? '학생 본인 계정으로 로그인한 뒤 신청 상태를 연결할 수 있습니다. 이용권 활성화는 입금 확인과 이용 인증 후 진행됩니다.' : '학생 본인 계정으로 미리 가입하거나 로그인할 수 있습니다.';
         for (const id of ['jungsiReceiptSignup', 'jungsiReceiptLogin', 'jungsiReceiptAccountHint']) document.getElementById(id).hidden = claimed || needsHelp;
         const states = { PAYMENT_REVIEW: '신청이 저장됐습니다. 입금 후 운영팀 확인을 기다려주세요.', INVITED: '입금이 확인됐습니다. 문자로 받은 링크와 이메일 인증코드로 이용 인증을 완료해주세요.', CLAIMED: '계정 연결이 완료됐습니다. 처음 인증한 학생 계정으로 이용해주세요.', REJECTED: '신청 처리 내역을 운영팀에 확인해주세요. 추가로 입금하지 마세요.' };
         message(accessExpired ? '계산기 이용 기간이 종료됐습니다. 이용 내역은 운영팀에 문의해주세요.' : value.applicationState === 'PAYMENT_REVIEW' && expired ? productType === 'calculator' ? '계산기 결제 기한이 종료됐습니다. 추가로 입금하지 말고 운영팀에 문의해주세요.' : '얼리버드 입금 기한이 지났습니다. 이체 전에 운영팀에 신청 금액을 확인해주세요.' : states[value.applicationState]);
@@ -201,11 +205,11 @@
         try { sessionStorage.setItem(key, JSON.stringify(application)); } catch { message('신청을 이어가려면 이 브라우저의 저장 기능을 허용해주세요.', true); return; }
         const own = newRequest(); lock(true); message('신청 내용을 저장하고 있습니다.'); retry.hidden = true;
         try {
-            // The backend advertises support; older releases reject unknown fields.
-            const attributionToken = productType === 'consulting' && offer.attributionVersion === 2
-                ? await window.SCConsultingAttribution?.getToken?.().catch(() => null) : null;
+            let attributionToken = null;
+            if (offer.attributionVersion === 2) try { attributionToken = await window.SCConsultingAttribution?.getToken?.(productType); } catch {}
             if (controller !== own || !dialog.open) return;
-            const value = await request('public_submit_site_application', { ...values, ...(attributionToken ? { attributionToken } : {}), productType, formVersion: offer.formVersion, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
+            const value = await request('public_submit_site_application', { ...values, productType, formVersion: offer.formVersion, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
+                ...(attributionToken ? { attributionToken } : {}),
                 acceptedAmount: offer.amount, ...(productType === 'calculator' ? { acceptedAccessEndsAt: offer.accessEndsAt } : {}), privacyConsent: values.privacyConsent === 'on', termsConsent: values.termsConsent === 'on' });
             if (controller !== own || !dialog.open) return;
             renderReceipt(value); form.reset();

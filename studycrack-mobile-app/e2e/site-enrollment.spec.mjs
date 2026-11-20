@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 const applicationId = 'APP_123e4567-e89b-12d3-a456-426614174000';
 const bankTransfer = { bankName: '시험은행', accountNumber: '000-000-000000', accountHolder: '시험사업자' };
 async function prepare(page, options = {}) {
-  const state = { submits: [], attributionRequests: [], application: null, amount: 200000, ...options };
+  const state = { submits: [], attributionRequests: [], application: null, amount: 200000, attributionVersion: 2, ...options };
   await page.clock.setFixedTime(new Date('2026-11-19T09:00:00.000Z'));
   await page.addInitScript(({ denied }) => {
     window.enrollmentCopiedValues = [];
@@ -21,13 +21,13 @@ async function prepare(page, options = {}) {
       state.attributionRequests.push(data);
       if (state.deferAttribution) await new Promise(resolve => { state.releaseAttribution = resolve; });
       if (state.failAttribution) return route.fulfill({ status: 503, json: { success: false } });
-      return route.fulfill({ json: { success: true, data: { token: 'synthetic-signed-token', expiresAt: '2030-01-01T00:00:00.000Z' } } });
+      return route.fulfill({ json: { success: true, data: { token: data.productType === 'calculator' ? 'synthetic-calculator-token' : 'synthetic-signed-token', productType: data.productType, expiresAt: '2030-01-01T00:00:00.000Z' } } });
     }
     if (type === 'get_site_enrollment') {
       if (state.salesClosed) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
       if (state.unavailable) return route.fulfill({ status: 503, json: { success: false, code: 'CALCULATOR_DATA_NOT_READY' } });
       expect(data.formVersion).toBe(2);
-      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: data.productType === 'consulting' && state.amount === 200000, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, ...(state.attributionVersion ? { attributionVersion: state.attributionVersion } : {}), formVersion: state.oldContract ? 1 : 2, consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
+      return route.fulfill({ json: { success: true, data: { productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.productType === 'calculator' ? 25000 : state.amount, earlybird: data.productType === 'consulting' && state.amount === 200000, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, formVersion: state.oldContract ? 1 : 2, ...(!state.oldContract && !state.legacyTracking && state.attributionVersion === 2 ? { attributionVersion: 2 } : {}), consentRevision: state.oldContract ? 'JUNGSI_SITE_2027_V1' : 'JUNGSI_SITE_2027_V2' } } });
     }
     if (type === 'public_submit_site_application') {
       if (state.closeOnSubmit) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
@@ -40,7 +40,7 @@ async function prepare(page, options = {}) {
     if (type === 'public_get_site_application') return route.fulfill({ status: state.application ? 200 : 404, json: state.application ? { success: true, data: state.application } : { success: false, code: 'SITE_APPLICATION_NOT_FOUND' } });
     throw new Error(`Unexpected request: ${type}`);
   });
-  await page.goto('/2027-jungsi-consulting#consulting');
+  await page.goto(options.landing || '/2027-jungsi-consulting#consulting');
   return state;
 }
 async function fill(page, productType = 'consulting') {
@@ -55,6 +55,54 @@ async function fill(page, productType = 'consulting') {
   await page.locator('[name="privacyConsent"]').check();
   await page.locator('[name="termsConsent"]').check();
 }
+test('site applications receive product-specific tokens and switching products does not transfer the ad campaign', async ({ page }) => {
+  const state = await prepare(page, { landing: '/2027-jungsi-consulting?utm_source=google&utm_id=consulting1&utm_content=creative1#consulting' });
+  await page.locator('#consultingApply').click(); await fill(page);
+  await page.evaluate(() => { const form = document.getElementById('jungsiEnrollmentForm'); form.requestSubmit(); form.requestSubmit(); });
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits).toHaveLength(1); expect(state.submits[0].attributionToken).toBe('synthetic-signed-token');
+  expect(state.attributionRequests[0]).toEqual({ productType: 'consulting', source: 'google', campaignId: 'consulting1', creativeId: 'creative1' });
+  await page.getByRole('button', { name: '신청 창 닫기' }).click();
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click(); await page.locator('#calculatorApply').click();
+  await page.getByRole('button', { name: '새 신청 작성', exact: true }).click(); await fill(page, 'calculator');
+  await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiReceiptProduct')).toHaveText('2027 정시 합격 계산기');
+  expect(state.submits).toHaveLength(2); expect(state.submits[1].attributionToken).toBe('synthetic-calculator-token');
+  expect(state.attributionRequests[1]).toEqual({ productType: 'calculator', source: 'unknown', campaignId: null, creativeId: null });
+});
+
+test('Meta calculator ads stay on site and carry only the calculator campaign', async ({ page }) => {
+  const state = await prepare(page, { landing: '/2027-jungsi-consulting?utm_source=meta&utm_product=calculator&utm_id=calculator1&utm_content=calc1#calculator' });
+  await page.locator('#calculatorApply').click(); await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits[0].attributionToken).toBe('synthetic-calculator-token');
+  expect(state.attributionRequests).toEqual([{ productType: 'calculator', source: 'meta', campaignId: 'calculator1', creativeId: 'calc1' }]);
+  await expect(page.locator('#jungsiGoogleForm')).toBeHidden();
+});
+
+test('tracking outages and an older backend both preserve ordinary site submissions', async ({ page }) => {
+  const state = await prepare(page, { failAttribution: true });
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits).toHaveLength(1); expect(state.submits[0]).not.toHaveProperty('attributionToken');
+  expect(state.attributionRequests).toHaveLength(1);
+  state.legacyTracking = true;
+  await page.getByRole('button', { name: '새 신청 작성', exact: true }).click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits).toHaveLength(2); expect(state.submits[1]).not.toHaveProperty('attributionToken');
+  expect(state.attributionRequests).toHaveLength(1);
+});
+
+test('closing the modal during token lookup prevents a stale application submission', async ({ page }) => {
+  const state = await prepare(page, { deferAttribution: true });
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect.poll(() => state.attributionRequests.length).toBe(1);
+  await expect(page.locator('#jungsiEnrollmentSubmit')).toBeDisabled();
+  await page.locator('#jungsiEnrollment').getByRole('button', { name: '닫기', exact: true }).click();
+  state.releaseAttribution(); await expect(page.locator('#jungsiEnrollment')).not.toBeVisible();
+  await page.locator('#consultingApply').click(); await expect(page.locator('#jungsiEnrollmentSubmit')).toBeEnabled();
+  expect(state.submits).toHaveLength(0);
+});
 test('두 상품의 신청서 하단 닫기는 모바일·데스크톱에서 제출 없이 닫고 신청 버튼으로 돌아간다', async ({ page }, testInfo) => {
   const state = await prepare(page);
   for (const [width, height] of [[390, 844], [1280, 900]]) {
@@ -316,6 +364,7 @@ test('clipboard rejection preserves the visible account and provides a manual co
 test('receipt actions follow payment, claimed, rejected and expired states without requesting another transfer', async ({ page }) => {
   const state = await prepare(page);
   await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   for (const [applicationState, badge] of [['INVITED', '입금 확인 완료'], ['CLAIMED', '이용 인증 완료'], ['REJECTED', '운영팀 확인 필요']]) {
     state.application.applicationState = applicationState;
     await page.locator('#jungsiEnrollmentRecover').click();
@@ -337,6 +386,8 @@ test('receipt actions follow payment, claimed, rejected and expired states witho
   await page.locator('#jungsiEnrollmentNew').click(); await fill(page, 'calculator'); await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiReceiptAmount')).toHaveText('25,000원');
   await expect(page.locator('#jungsiReceiptPeriod')).toContainText('2027년 1월 7일');
+  await expect(page.locator('#jungsiReceiptLogin')).toHaveAttribute('href', '/login?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
+  await expect(page.locator('#jungsiReceiptSignup')).toHaveAttribute('href', '/signup?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
   await expect(page.locator('#jungsiReceiptDeadline')).toContainText('2027년 1월 6일 18:00');
   state.application.applicationState = 'CLAIMED';
   await page.locator('#jungsiEnrollmentRecover').click();
@@ -384,7 +435,7 @@ test('calculator closing during form entry never creates a phantom saved applica
 
 for (const scenario of [
   { label: 'supported', attributionVersion: 2, expected: 'synthetic-signed-token' },
-  { label: 'older backend', expected: undefined },
+  { label: 'older backend', attributionVersion: null, expected: undefined },
   { label: 'issuance failure', attributionVersion: 2, failAttribution: true, expected: undefined }
 ]) test(`website attribution: ${scenario.label}`, async ({ page }) => {
   const state = await prepare(page, scenario);
@@ -402,5 +453,6 @@ test('calculator never carries consulting attribution', async ({ page }) => {
   await page.locator('#calculatorApply').click(); await fill(page, 'calculator');
   await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
-  expect(state.submits[0].attributionToken).toBeUndefined();
+  expect(state.submits[0].attributionToken).toBe('synthetic-calculator-token');
+  expect(state.attributionRequests).toEqual([{ productType: 'calculator', source: 'unknown', campaignId: null, creativeId: null }]);
 });
