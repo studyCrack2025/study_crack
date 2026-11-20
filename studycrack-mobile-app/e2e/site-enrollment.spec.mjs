@@ -388,6 +388,8 @@ test('receipt actions follow payment, claimed, rejected and expired states witho
   await expect(page.locator('#jungsiReceiptPeriod')).toContainText('2027년 1월 7일');
   await expect(page.locator('#jungsiReceiptLogin')).toHaveAttribute('href', '/login?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
   await expect(page.locator('#jungsiReceiptSignup')).toHaveAttribute('href', '/signup?returnUrl=%2F2027-jungsi-consulting%2Fcalculator');
+  await expect(page.locator('#jungsiReceiptLogin')).toBeHidden(); await expect(page.locator('#jungsiReceiptSignup')).toBeHidden();
+  await expect(page.locator('#jungsiReceiptNumber')).toBeEmpty(); await expect(page.getByRole('button', { name: '신청번호 복사', exact: true })).toBeHidden();
   await expect(page.locator('#jungsiReceiptDeadline')).toContainText('2027년 1월 6일 18:00');
   state.application.applicationState = 'CLAIMED';
   await page.locator('#jungsiEnrollmentRecover').click();

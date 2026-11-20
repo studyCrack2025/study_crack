@@ -42,9 +42,9 @@ test('unavailable data is a successful explanation; insufficient access is disti
   Object.assign(body.results[0], { status: 'unavailable', reasonCodes: ['DATA_RELEASE_NOT_READY'], selected: null, choices: [], convertedScore: null, maximumScore: null });
   assert.equal((await run(body)).ok, true);
   const denied = await run(null, { apiFetch: async () => ({ ok: false, status: 402, json: async () => ({ code: 'CALCULATOR_ACCESS_REQUIRED' }) }) });
-  assert.equal(denied.ok, false); assert.match(denied.error, /Basic/);
+  assert.equal(denied.ok, false); assert.match(denied.error, /이용 인증/);
   const thrown = await run(null, { apiFetch: async () => { throw Object.assign(new Error('membership needed'), { status: 402, code: 'CALCULATOR_ACCESS_REQUIRED' }); } });
-  assert.equal(thrown.ok, false); assert.match(thrown.error, /Basic/);
+  assert.equal(thrown.ok, false); assert.match(thrown.error, /이용 인증/);
 });
 
 test('an aborted calculation cannot return a result even if the transport resolves later', async () => {
@@ -104,19 +104,24 @@ test('access preflight sends no client identity, drops member records and never 
   const result = await requestCalculatorAccess({ analysisApiUrl: '/analysis', apiFetch: async (_, options) => {
     payload = JSON.parse(options.body);
     return { ok: true, status: 200, json: async () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
-      access: { allowed: true, source: 'membership', student: { email: 'PRIVATE' } }, service: { state: 'preparing', purchaseAvailable: false }, userId: 'PRIVATE' }) };
+      access: { allowed: true, source: 'purchase', student: { email: 'PRIVATE' } }, service: { state: 'preparing', purchaseAvailable: false }, userId: 'PRIVATE' }) };
   } });
   assert.deepEqual(payload, { type: 'get_calculator_access' });
-  assert.deepEqual(result.data, { access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } });
+  assert.deepEqual(result.data, { access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false } });
   assert.equal(JSON.stringify(result.data).includes('PRIVATE'), false);
 });
 
 test('missing or inconsistent preflight data cannot grant access or purchases', async () => {
-  const base = () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } });
+  const base = () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false } });
   for (const mutate of [value => { value.admissionYear = 2026; }, value => { value.access.allowed = 'true'; }, value => { value.access.source = 'none'; },
     value => { value.service.purchaseAvailable = true; }, value => { value.service.state = 'open_for_sales'; }]) {
     const body = base(); mutate(body);
     const result = await requestCalculatorAccess({ analysisApiUrl: '/analysis', apiFetch: async () => ({ ok: true, status: 200, json: async () => body }) });
     assert.equal(result.ok, false); assert.equal(result.code, 'INVALID_RESPONSE');
   }
+});
+
+test('a legacy membership-only preflight does not open the calculator workspace', async () => {
+  const result = await requestCalculatorAccess({ analysisApiUrl: '/synthetic', apiFetch: async () => ({ ok: true, json: async () => ({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } }) }) });
+  assert.equal(result.ok, true); assert.deepEqual(result.data.access, { allowed: false, source: 'none' });
 });

@@ -14,7 +14,7 @@ function openConsultingHome(productType) {
 export function ConsultingStartScreen({ binding, hasSession }) {
   const [invite, setInvite] = React.useState(readConsultingInvite);
   const [summary, setSummary] = React.useState(null);
-  const [status, setStatus] = React.useState(invite ? '초대 정보를 확인하고 있습니다.' : '유효한 초대 정보를 찾을 수 없습니다. 문자로 받은 링크를 다시 열어주세요.');
+  const [status, setStatus] = React.useState(invite ? '초대 정보를 확인하고 있습니다.' : '유효한 초대 정보를 찾을 수 없습니다. 알림톡·문자로 받은 링크를 다시 열어주세요.');
   const [tone, setTone] = React.useState(invite ? '' : 'error');
   const [code, setCode] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
@@ -29,8 +29,8 @@ export function ConsultingStartScreen({ binding, hasSession }) {
   const staffSession = hasSession && (binding.userRole === 'admin' || binding.userRole === 'tutor');
   const showCodeForm = invite && hasSession && verifiedSession && !staffSession && canClaim && !checking;
   const readyMessage = staffSession
-    ? '관리자 또는 상담사 계정으로 로그인되어 있습니다. 시크릿 창에서 받은 링크를 열고 컨설팅을 이용할 학생 계정으로 로그인해주세요.'
-    : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 신청 상품이 연결됩니다.' : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
+    ? '관리자 또는 상담사 계정으로 로그인되어 있습니다. 시크릿 창에서 받은 링크를 열고 신청 상품을 이용할 학생 계정으로 로그인해주세요.'
+    : hasSession ? '신청 이메일로 받은 인증코드를 입력해주세요. 현재 로그인한 학생 계정에 신청 상품이 연결됩니다.' : '신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.';
 
   React.useEffect(() => {
     claimRequest.current?.abort();
@@ -84,7 +84,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       setSummary(safeSummary);
       setTone('');
       setCanClaim(true);
-      setStatus(signedInStudent || staffSession ? readyMessage : '컨설팅을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
+      setStatus(signedInStudent || staffSession ? readyMessage : '신청 상품을 이용할 학생 계정으로 로그인하거나 회원가입해주세요.');
     });
     return () => { controller.abort(); claimRequest.current?.abort(); claimRequest.current = null; };
   }, [binding, hasSession, invite, readyMessage, staffSession, checkRevision]);
@@ -100,7 +100,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
     setRetryable(false);
     setChecking(false);
     setTone('');
-    setStatus('이 브라우저에서 초대 정보를 지웠습니다. 다시 시작하려면 받은 문자 링크를 열어주세요.');
+    setStatus('이 브라우저에서 초대 정보를 지웠습니다. 다시 시작하려면 받은 알림톡·문자 링크를 열어주세요.');
   };
 
   const submit = async event => {

@@ -9,8 +9,8 @@ const encode = value => Buffer.from(JSON.stringify(value)).toString('base64');
 const fixtureToken = encode({ alg: 'none' }) + '.' + encode({ sub: 'fixture-student', exp: 4070908800 }) + '.synthetic';
 const fixtureTokens = { accessToken: fixtureToken, idToken: fixtureToken, userId: 'fixture-student' };
 
-async function prepare(page) {
-  const api = { active: false, calls: [] };
+async function prepare(page, { productType } = {}) {
+  const api = { active: false, claimed: false, calls: [] };
   await page.addInitScript(({ accessToken: token }) => {
     class Pool {
       constructor(options) { this.storage = options.Storage; }
@@ -34,7 +34,7 @@ async function prepare(page) {
   await page.route('**/js/config.js*', route => {
     const origin = new URL(route.request().url()).origin;
     return route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL = false; window.CONFIG = ${JSON.stringify({
-      api: { auth: origin + '/synthetic/auth', user: origin + '/synthetic/user', consulting: origin + '/synthetic/consulting', consultingPublic: origin + '/synthetic/consulting-public' },
+      api: { analysis: origin + '/synthetic/analysis', auth: origin + '/synthetic/auth', user: origin + '/synthetic/user', consulting: origin + '/synthetic/consulting', consultingPublic: origin + '/synthetic/consulting-public' },
       cognito: { userPoolId: 'synthetic_pool', clientId: 'synthetic-client' },
       social: { callbackUrl: origin + '/social-callback', google: { clientId: 'synthetic-google' }, naver: { clientId: 'synthetic-naver' } }
     })};` });
@@ -57,15 +57,22 @@ async function prepare(page) {
     }
     if (body.type === 'logout') { api.active = false; return reply({ success: true }); }
     if (body.type === 'public_preflight_v2_consulting_invite') {
-      return reply({ success: true, data: { maskedEmail: 's***@example.invalid', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' } });
+      return reply({ success: true, data: { ...(productType ? { productType } : {}), maskedEmail: 's***@example.invalid', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' } });
     }
     if (!api.active) return route.fulfill({ status: 401, json: { success: false, code: 'AUTH_SESSION_EXPIRED' } });
     if (body.type === 'silent_refresh') return reply({ success: true, ...fixtureTokens });
     if (body.type === 'get_login_profile') return reply({ role: 'student', name: '합성 학생', computedTier: 'standard', tutorialRewardClaimed: true });
     if (body.type === 'student_get_v2_consulting_invite_status') {
       expect(body.data.applicationId).toBe(applicationId);
-      return reply({ success: true, data: { linked: false, maskedEmail: 's***@example.invalid', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' } });
+      return reply({ success: true, data: { ...(productType ? { productType } : {}), linked: api.claimed, maskedEmail: 's***@example.invalid', maskedPhone: '010-****-0000', expiresAt: '2099-01-01T00:00:00.000Z' } });
     }
+    if (body.type === 'student_claim_v2_consulting_invite' && productType === 'calculator') {
+      expect(body.data.applicationId).toBe(applicationId); expect(body.data.code).toBe('0000000042'); api.claimed = true;
+      return reply({ success: true, data: { productType: 'calculator', caseId: null, applicationId } });
+    }
+    if (body.type === 'get_calculator_access' && productType === 'calculator') return reply({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: api.claimed, source: api.claimed ? 'purchase' : 'none' }, service: { state: 'preparing', purchaseAvailable: false } });
+    if (body.type === 'get_univ_list_only' && productType === 'calculator') return reply([]);
+    if (body.type === 'student_get_calculator_applications' && productType === 'calculator') return reply({ success: true, data: { contractVersion: 'calculator-applications-v1', items: [], hasMore: false, needsReview: false, accountEmailMask: null } });
     throw new Error('Unexpected synthetic request: ' + body.type);
   });
   page.on('dialog', dialog => dialog.accept());
@@ -129,4 +136,15 @@ test('초대 로그인 후 명시적으로 로그아웃하면 초대와 로그�
   expect(await page.evaluate(key => sessionStorage.getItem(key), inviteKey)).toBeNull();
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
   expect(api.calls.filter(call => call.type === 'logout')).toHaveLength(1);
+});
+
+test('계산기 승인 링크에서 로그인·이메일10자리 코드 인증 후 계산기로 이동하고 재접속 시 다시 인증하지 않는다', async ({ page }) => {
+  const { api } = await prepare(page, { productType: 'calculator' }); await passwordLogin(page);
+  await expect(page.getByRole('heading', { name: '합격 계산기 이용 인증' })).toBeVisible();
+  await codeInput(page).fill('0000000042'); await page.getByRole('button', { name: '유료회원 인증하고 시작하기', exact: true }).click();
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting\/calculator$/);
+  await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
+  await page.reload(); await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
 });

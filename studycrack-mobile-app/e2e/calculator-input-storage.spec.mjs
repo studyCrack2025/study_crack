@@ -15,11 +15,11 @@ async function setup(page, options = {}) {
     const body = route.request().postDataJSON();
     if (body.type === 'get_univ_list_only') return route.fulfill({ json: [{ univName: '가상대학교', majors: ['예시학과'] }] });
     expect(body.type).toBe('get_calculator_access');
-    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'membership' }, service: { state: 'preparing', purchaseAvailable: false } } });
+    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: true, source: 'purchase' }, service: { state: 'preparing', purchaseAvailable: false } } });
   });
   await context.route('**/__input-core', async route => {
     const body = route.request().postDataJSON(); state.calls.push(body); let data;
-    if (body.type === 'student_get_calculator_applications') data = { contractVersion: 'calculator-applications-v1', items: state.owner === 'student-A' ? [{ applicationId: appId, productType: 'calculator', revision: 1, applicationState: 'PAYMENT_REVIEW', paymentStatus: 'pending', state: 'pending_payment', accountLinked: false, accessActive: false, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-28T00:00:00+09:00' }] : [], hasMore: false, needsReview: false, accountEmailMask: null };
+    if (body.type === 'student_get_calculator_applications') data = { contractVersion: 'calculator-applications-v1', items: state.owner === 'student-A' ? [{ applicationId: appId, productType: 'calculator', revision: 1, applicationState: 'CLAIMED', paymentStatus: 'verified', state: 'active', accountLinked: true, accessActive: true, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-28T00:00:00+09:00' }] : [], hasMore: false, needsReview: false, accountEmailMask: null };
     else if (body.type === 'student_get_calculator_input') {
       if (state.failRead) return route.fulfill({ status: 503, json: { success: false } });
       data = structuredClone(state.saved); if (state.deferRead) await new Promise(resolve => { state.release = resolve; });
@@ -95,7 +95,7 @@ test('계정 전환 후 이전 학생의 지연 저장본을 표시하지 않는
   const state = await setup(page, { deferRead: true }); await expect.poll(() => typeof state.release).toBe('function'); const release = state.release;
   state.owner = 'student-B'; state.deferRead = false;
   await page.evaluate(() => { localStorage.setItem('userId', 'student-B'); window.dispatchEvent(new Event('studycrack:session-ended')); }); release();
-  await expect(panel(page)).toContainText('서버 저장은 계산기 신청 상태를 이 계정에 연결한 뒤'); await expect(save(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
+  await expect(panel(page)).toContainText('서버 저장은 입금 승인과 계산기 이용 인증을 완료한 신청에서'); await expect(save(page)).toHaveCount(0); expect(writes(state)).toHaveLength(0);
 });
 test('조회 실패는 저장으로 오인하지 않고 기간 종료 후 기존 자료만 확인·삭제한다', async ({ page }) => {
   const state = await setup(page, { failRead: true }); await scores(page);
