@@ -16,7 +16,7 @@ function UnitPicker({ group, targets, representatives, onClose, onAdd, denyAcces
     const timer = setTimeout(async () => {
       const result = await requestCalculatorCatalog({ ...binding, admissionGroup: group, query, cursor, signal: controller.signal });
       if (!active || controller.signal.aborted) return;
-      if (result.code === 'CALCULATOR_ACCESS_REQUIRED') { denyAccess(); return; }
+      if (result.code === 'CALCULATOR_ACCESS_REQUIRED' || [401, 403].includes(result.status)) { denyAccess(); return; }
       if (!result.ok) { setResource(previous => ({ ...previous, status: 'error', error: result.error })); return; }
       if (cursor && currentDigest.current !== result.data.catalogDigest) { setCursor(0); setResource(previous => ({ ...previous, status: 'loading', items: [], error: '' })); return; }
       currentDigest.current = result.data.catalogDigest;

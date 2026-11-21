@@ -11,14 +11,15 @@ export function normalizePlanSelection(value) {
 }
 export function normalizePlanTargets(scores, value) {
   if (!Array.isArray(value) || value.length > 6) return null;
-  const targets = [], seen = new Set();
+  const targets = [], seen = new Set(), selections = new Set();
   for (const row of value) {
     const prepared = normalizeStoredCalculatorInput({ scores, targets: [row] });
     if (!prepared) return null;
     const target = prepared.targets[0];
     if (row.selection !== undefined) {
       const selection = normalizePlanSelection(row.selection);
-      if (!selection || !target.admissionUnitId) return null;
+      if (!selection || !target.admissionUnitId || selections.has(selection.key)) return null;
+      selections.add(selection.key);
       target.selection = selection;
     }
     const key = JSON.stringify(target.selection ? [target.admissionUnitId, target.selection.trackId, target.selection.admissionGroup] : [target.university, target.major]);

@@ -26,6 +26,8 @@ test('same-named units remain distinct by unit, track and group; representatives
   assert.equal(normalizePlanTargets(scores, [ga, na]).length, 2);
   const duplicate = target(3); duplicate.admissionUnitId = ga.admissionUnitId;
   assert.equal(normalizePlanTargets(scores, [ga, duplicate]), null);
+  const repeatedKey = target(3); repeatedKey.selection.key = ga.selection.key;
+  assert.equal(normalizePlanTargets(scores, [ga, repeatedKey]), null);
   const reps = { ga: ga.selection.key, na: na.selection.key, da: null };
   assert.equal(validRepresentatives(reps, [ga, na]), true);
   for (const wrong of [{ ga: null, na: null }, { ...reps, da: ga.selection.key }, { ...reps, na: 'PICK_' + 'f'.repeat(32) }, { ...reps, extra: null }]) assert.equal(Boolean(validRepresentatives(wrong, [ga, na])), false);
@@ -35,7 +37,7 @@ test('same-named units remain distinct by unit, track and group; representatives
 test('catalog pages reject mixed groups, digests, duplicated identities and malformed pagination', async () => {
   const page = { contractVersion: 'calculator-catalog-v1', admissionYear: 2027, catalogDigest: digest, admissionGroup: 'ga', query: '', total: 1, items: [target(1)], nextCursor: null };
   assert.equal((await runCatalog(page)).ok, true);
-  for (const mutate of [v => { v.items[0].selection.admissionGroup = 'na'; }, v => { v.items[0].selection.catalogDigest = 'sha256:' + 'b'.repeat(64); }, v => { v.items.push(v.items[0]); v.total++; }, v => { v.nextCursor = 0; }, v => { v.total = 0; }, v => { v.items[0].admissionUnitId = 'legacy_unit'; }]) {
+  for (const mutate of [v => { v.items[0].selection.admissionGroup = 'na'; }, v => { v.items[0].selection.catalogDigest = 'sha256:' + 'b'.repeat(64); }, v => { v.items.push(v.items[0]); v.total++; }, v => { v.nextCursor = 0; }, v => { v.total = 0; }, v => { v.total = 2; }, v => { v.items[0] = null; }, v => { v.items[0].admissionUnitId = 'legacy_unit'; }]) {
     const wrong = structuredClone(page); mutate(wrong); assert.equal((await runCatalog(wrong)).code, 'INVALID_RESPONSE');
   }
 });

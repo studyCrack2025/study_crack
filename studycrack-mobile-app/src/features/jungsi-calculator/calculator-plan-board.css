@@ -17,7 +17,7 @@
 .jcalc-representative[aria-pressed="true"] { border-color: var(--sc-brand-navy); font-weight: 700; }
 .jcalc-unit-picker { width: min(640px, calc(100% - 24px)); max-height: calc(100dvh - 24px); margin: auto; padding: 24px 18px max(24px, env(safe-area-inset-bottom)); border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); color: var(--sc-ink); overflow-y: auto; }
 .jcalc-unit-picker::backdrop { background: var(--sc-overlay-bg); }
-.jcalc-picker-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.jcalc-picker-heading { position: sticky; top: -24px; z-index: 1; display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding: 12px 0; background: var(--sc-surface-card); }
 .jcalc-picker-heading h2 { margin: 4px 0; font-size: 22px; }
 .jcalc-picker-results { display: grid; gap: 12px; margin: 18px 0; padding: 0; list-style: none; }
 .jcalc-picker-results li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 12px; border: 1px solid var(--sc-line-subtle); border-radius: 8px; overflow-wrap: anywhere; }
