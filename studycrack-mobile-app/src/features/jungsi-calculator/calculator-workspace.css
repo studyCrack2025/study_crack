@@ -1,0 +1,14 @@
+.jcalc-workspace { display: grid; gap: 20px; }
+.jcalc-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.jcalc-steps li { padding: 14px 6px; border-bottom: 2px solid var(--sc-line-subtle); color: var(--sc-ink-muted); font-size: 12px; text-align: center; }
+.jcalc-steps [aria-current="step"] { border-color: var(--sc-brand-navy); color: var(--sc-brand-navy); font-weight: 700; }
+.jcalc-workspace-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.jcalc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.jcalc-plan-toolbar { display: grid; gap: 16px; }
+.jcalc-profile-scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 18px; margin: 20px 0; }
+.jcalc-profile-scores > div { min-width: 0; padding: 14px; border-radius: 8px; background: var(--sc-surface-subtle); }
+.jcalc-profile-scores dt { color: var(--sc-ink-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.jcalc-profile-scores dd { margin: 8px 0 0; color: var(--sc-brand-navy); font-size: 18px; font-weight: 700; }
+.jcalc-profile-scores small { display: block; margin-top: 8px; font-size: 11px; font-weight: 400; line-height: 1.8; }
+.jcalc-data-settings { padding: 8px; color: var(--sc-ink-muted); font-size: 12px; }
+.jcalc-data-settings summary { min-height: 44px; padding: 12px 0; cursor: pointer; }

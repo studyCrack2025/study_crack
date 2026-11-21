@@ -12,7 +12,7 @@ function ScoreField({ subject, metric, title, label, value, max, error, choices,
   </label>;
 }
 
-export default function CalculatorScoreForm({ scores, errors, changed, confirmed, conversion, onChange, onConfirm }) {
+export default function CalculatorScoreForm({ scores, errors, changed, confirmed, conversion, onChange, onConfirm, confirmLabel, confirmDisabled = false, onCancel, children }) {
   const validation = prepareCalculatorScores(scores);
   const setField = (subject, metric, value) => onChange({ ...scores, exam: { ...scores.exam, [subject]: { ...scores.exam[subject], [metric]: value } } });
   const field = (subject, title, metric, label, max, choices) => <ScoreField key={metric} subject={subject} metric={metric} title={title} label={label} max={max} choices={choices} value={scores.exam[subject][metric]} error={errors[`${subject}.${metric}`] || (scores.basis === 'raw' && scores.exam[subject][metric] !== '' ? validation.errors[`${subject}.${metric}`] : undefined)} onChange={value => setField(subject, metric, value)} />;
@@ -43,7 +43,8 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
           {scores.exam.foreign.name && field('foreign', '제2외국어·한문', 'grd', '등급', 9, grades)}</div>
       </fieldset>
       {Object.keys(errors).length > 0 && <p className="jcalc-error" role="alert">표시된 항목을 확인해주세요. 아직 입력 내용이 확정되지 않았습니다.</p>}
-      <div className="jcalc-confirm"><button className="jcalc-primary" type="submit" disabled={scores.basis === 'raw' && (!validation.ok || !conversion?.ready)}>{confirmed ? '입력 성적 확인' : '이 성적으로 시작하기'}</button><p className="jcalc-note" role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</p></div>
+      {children}
+      <div className="jcalc-confirm"><button className="jcalc-primary" type="submit" disabled={confirmDisabled || scores.basis === 'raw' && (!validation.ok || !conversion?.ready)}>{confirmLabel || (confirmed ? '입력 성적 확인' : '이 성적으로 시작하기')}</button>{onCancel && <button className="jcalc-secondary" type="button" onClick={onCancel}>성적 수정 취소</button>}<p className="jcalc-note" role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</p></div>
     </form>
   </section>;
 }
