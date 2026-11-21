@@ -8,6 +8,7 @@ import CalculatorAccess from './CalculatorAccess.jsx';
 import CalculatorApplicationPanel from './CalculatorApplicationPanel.jsx';
 import CalculatorSavedInputs from './CalculatorSavedInputs.jsx';
 import useCalculatorAccess from './useCalculatorAccess.js';
+import useCalculatorScoreConversion from './useCalculatorScoreConversion.js';
 import { requestCalculatorConversion } from './calculator-api.js';
 import { CALCULATOR_PATH, candidateKey, clearCalculatorDrafts, editableScores, emptyScores, MAX_CANDIDATES, prepareCalculatorScores, readCalculatorDraft, scoresChanged, uniqueCandidates, writeCalculatorDraft } from './calculator-model.js';
 import './calculator.css';
@@ -39,6 +40,7 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
   const changed = scoresChanged(scores, confirmed);
   const allowed = access.status === 'ready' && access.data.access.allowed;
   const queriesOpen = allowed && access.data.service.calculationEnabled;
+  const scoreConversion = useCalculatorScoreConversion(scores, allowed && scores.basis === 'raw', denyAccess);
 
   const invalidate = () => {
     sequence.current += 1;
@@ -75,6 +77,7 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
 
   const persist = (nextConfirmed, nextCandidates) => setSaved(writeCalculatorDraft(storage(), owner, { confirmed: nextConfirmed, candidates: nextCandidates }));
   const confirm = () => {
+    if (scores.basis === 'raw' && !scoreConversion.ready) return;
     const result = prepareCalculatorScores(scores);
     setErrors(result.errors);
     if (!result.ok) {
@@ -86,17 +89,17 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
     persist(result.data, candidates);
   };
   const changeCandidates = next => { invalidate(); setCandidates(next); persist(confirmed, next); };
-  return <div hidden={!allowed}><div className="jcalc-layout">
-    <div className="jcalc-inputs"><CalculatorScoreForm scores={scores} confirmed={confirmed} changed={changed} errors={errors} onConfirm={confirm} onChange={value => { invalidate(); setScores(value); setErrors({}); }} />
-      <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} /></div>
-    <aside className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>
+  return <div hidden={!allowed}><div className="jcalc-layout" data-score-first={!confirmed || undefined}>
+    <div className="jcalc-inputs"><CalculatorScoreForm scores={scores} confirmed={confirmed} changed={changed} errors={errors} conversion={scoreConversion} onConfirm={confirm} onChange={value => { invalidate(); setScores(value); setErrors({}); }} />
+      {confirmed && <CalculatorCatalog resource={resource} candidates={candidates} onRetry={() => setAttempt(value => value + 1)} onAdd={candidate => { if (candidates.length < MAX_CANDIDATES) changeCandidates(uniqueCandidates([...candidates, candidate])); }} />}</div>
+    <aside hidden={!confirmed} className="jcalc-panel jcalc-summary" aria-labelledby="jcalc-summary-title"><p className="jcalc-eyebrow">나의 비교 후보</p><h2 id="jcalc-summary-title">지원 후보 {candidates.length}<small> / {MAX_CANDIDATES}</small></h2>
       <p className="jcalc-note" role="status">{confirmed ? changed ? '성적 수정 중 · 입력 성적을 다시 확인해주세요.' : `${confirmed.basis === 'official' ? '성적표' : '가채점 원점수'} 기준 · 성적 입력 확인 완료` : '성적을 확인하고 비교할 후보를 담아보세요.'}</p>
       <button className="jcalc-primary jcalc-calculate" type="button" disabled={!queriesOpen || !confirmed || changed || !candidates.length || conversion.status === 'loading'} onClick={calculate}>{conversion.status === 'loading' ? '분석 자료 확인 중…' : '환산점수·가능성 조회'}</button>
       <p className="jcalc-note" role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 입결 기준선 검수 상태를 확인하고 있습니다.' : !queriesOpen && allowed ? '계산 결과는 정식 공개 후 조회할 수 있습니다. 성적과 지원 후보는 미리 저장할 수 있습니다.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '이용 정보를 확인하고 있습니다.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</p>
       {!allowed && <a className="jcalc-text-button" href="#jcalc-access-status">이용 안내 확인하기</a>}
       {conversion.status === 'error' && <p className="jcalc-error" role="alert">{conversion.error}</p>}
       {conversion.status === 'ready' && conversion.data?.execution?.scoreConversion.status === 'estimated' && <p className="jcalc-note" role="status">2027학년도 수능 추정표로 원점수를 변환해 계산했습니다. 확정 성적과 차이가 있을 수 있습니다.</p>}
-      {conversion.status === 'ready' && conversion.data?.execution?.scoreConversion.status === 'unavailable' && <p className="jcalc-error" role="alert">입력한 원점수에 맞는 2027학년도 변환 자료를 확인하지 못했습니다. 성적표 기준으로 입력하거나 점수를 확인해주세요.</p>}
+      {conversion.status === 'ready' && conversion.data?.execution?.scoreConversion.status === 'unavailable' && <p className="jcalc-error" role="alert">입력한 원점수에 맞는 2027학년도 변환 자료를 확인하지 못했습니다. 점수를 확인하고 다시 시도해주세요.</p>}
       {candidates.length ? <ul className="jcalc-candidates">{candidates.map(item => <li key={candidateKey(item)}><strong>{item.university}</strong><span>{item.major}</span>
         {resource.status === 'ready' && !resource.data.some(row => row.univName === item.university && row.majors.includes(item.major)) && <small>현재 검색 목록에서 확인할 수 없는 후보입니다.</small>}
         <CalculatorResult result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(item))} current={conversion.status === 'ready' && !changed} selectedId={unitSelections[candidateKey(item)]} onSelect={value => { invalidate(); setUnitSelections(previous => ({ ...previous, [candidateKey(item)]: value })); }} />

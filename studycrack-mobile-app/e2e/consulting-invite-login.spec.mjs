@@ -145,8 +145,8 @@ test('계산기 승인 링크에서 로그인·이메일10자리 코드 인증 �
   await expect(page.getByRole('heading', { name: '합격 계산기 이용 인증' })).toBeVisible();
   await codeInput(page).fill('0000000042'); await page.getByRole('button', { name: '유료회원 인증하고 시작하기', exact: true }).click();
   await expect(page).toHaveURL(/\/2027-jungsi-consulting\/calculator$/);
-  await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toBeVisible();
   expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
-  await page.reload(); await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toBeVisible();
   expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
 });

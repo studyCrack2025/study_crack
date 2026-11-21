@@ -42,6 +42,7 @@ export default function CalculatorSavedInputs({ home, entitlement, input, change
     onRestore(resource.data.input); setMessage('서버 저장본을 불러왔습니다. 성적과 지원 후보를 확인해주세요.');
   };
   if (readOnly && resource.status === 'ready' && !['saved', 'restricted'].includes(resource.data.status)) return null;
+  if (!readOnly && !input?.scores && (['idle', 'loading'].includes(resource.status) || resource.status === 'ready' && resource.data.status === 'empty')) return null;
   return <section className="jcalc-panel jcalc-storage" aria-label="계산기 자료 서버 저장" aria-busy={busy || resource.status === 'loading'}>
     <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">{readOnly ? '기존 자료 관리' : '다른 기기에서도 이어보기'}</p><h2>{readOnly ? '이전에 저장한 자료' : '성적·지원 후보 서버 저장'}</h2></div>{applicationId && <button className="jcalc-secondary" type="button" disabled={busy || resource.status === 'loading'} onClick={load}>서버 저장 상태 다시 확인</button>}</div>
     {!home && !entitlement ? <p className="jcalc-note">이용 정보를 확인한 뒤 저장할 수 있습니다. 입력 초안은 현재 탭에서 계속 사용할 수 있습니다.</p> : !applicationId ? <p className="jcalc-note">현재 이용권에서 저장할 수 있는 자료가 없습니다.</p> : <>

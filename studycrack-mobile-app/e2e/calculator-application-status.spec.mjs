@@ -43,7 +43,7 @@ async function setup(page, options = {}) {
   return state;
 }
 const panel = page => page.getByRole('region', { name: '나의 계산기 신청', exact: true });
-const score = page => page.getByRole('textbox', { name: '국어 표준점수', exact: true });
+const score = page => page.getByRole('textbox', { name: '국어 공통 원점수', exact: true });
 const writes = state => state.calls.filter(x => /student_(?:link|save|delete)/.test(x.type));
 
 test('신청 브라우저의 접수 상태만 표시하고 연결 버튼·접수번호·성적 입력을 노출하지 않는다', async ({ page }, testInfo) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FOREIGN_LANGUAGE_SUBJECTS, SUBJECTS } from './calculator-model.js';
+import { emptyScores, FOREIGN_LANGUAGE_SUBJECTS, prepareCalculatorScores, SUBJECTS } from './calculator-model.js';
 
 function ScoreField({ subject, metric, title, label, value, max, error, choices, onChange }) {
   const id = `jcalc-${subject}-${metric}`;
@@ -12,23 +12,30 @@ function ScoreField({ subject, metric, title, label, value, max, error, choices,
   </label>;
 }
 
-export default function CalculatorScoreForm({ scores, errors, changed, confirmed, onChange, onConfirm }) {
+export default function CalculatorScoreForm({ scores, errors, changed, confirmed, conversion, onChange, onConfirm }) {
+  const validation = prepareCalculatorScores(scores);
   const setField = (subject, metric, value) => onChange({ ...scores, exam: { ...scores.exam, [subject]: { ...scores.exam[subject], [metric]: value } } });
-  const field = (subject, title, metric, label, max, choices) => <ScoreField key={metric} subject={subject} metric={metric} title={title} label={label} max={max} choices={choices} value={scores.exam[subject][metric]} error={errors[`${subject}.${metric}`]} onChange={value => setField(subject, metric, value)} />;
+  const field = (subject, title, metric, label, max, choices) => <ScoreField key={metric} subject={subject} metric={metric} title={title} label={label} max={max} choices={choices} value={scores.exam[subject][metric]} error={errors[`${subject}.${metric}`] || (scores.basis === 'raw' && scores.exam[subject][metric] !== '' ? validation.errors[`${subject}.${metric}`] : undefined)} onChange={value => setField(subject, metric, value)} />;
   const grades = Array.from({ length: 9 }, (_, index) => String(index + 1));
   return <section className="jcalc-panel" aria-labelledby="jcalc-score-title">
-    <div className="jcalc-section-head"><div><p className="jcalc-eyebrow">01 · 내 성적</p><h2 id="jcalc-score-title">2027학년도 수능 성적</h2></div><span className="jcalc-badge">학년도 고정</span></div>
+    <div className="jcalc-section-head"><div><p className="jcalc-eyebrow">01 · 내 성적</p><h2 id="jcalc-score-title">{scores.basis === 'raw' ? '2027학년도 수능 가채점 성적' : '이전에 저장한 성적표 성적'}</h2></div><span className="jcalc-badge">{scores.basis === 'raw' ? '예상 성적' : '기존 입력'}</span></div>
     <form noValidate onSubmit={event => { event.preventDefault(); onConfirm(); }}>
-      <fieldset className="jcalc-basis"><legend>어떤 성적을 입력하시나요?</legend>{[['official', '성적표 기준'], ['raw', '가채점 원점수']].map(([value, label]) => <label key={value}><input type="radio" name="jcalc-score-basis" value={value} checked={scores.basis === value} onChange={() => onChange({ ...scores, basis: value })} /><span>{label}</span></label>)}</fieldset>
-      <p className="jcalc-note">{scores.basis === 'official' ? '성적표에 적힌 표준점수·백분위·등급을 그대로 입력해주세요.' : '국어·수학은 공통과 선택 점수를 나누어 적어주세요. 검증된 2027 수능 변환 자료가 연결되기 전에는 표준점수·백분위를 추정하지 않습니다.'}</p>
+      <p className="jcalc-note">{scores.basis === 'official' ? '이전에 입력한 성적을 유지하고 있습니다. 가채점 성적으로 새로 입력하려면 아래 버튼을 눌러주세요.' : '국어·수학은 공통과 선택 원점수를 나누어 입력해주세요. 표준점수·백분위·등급은 2027학년도 수능 추정표를 기준으로 자동 계산됩니다.'}</p>
+      {scores.basis === 'official' && <button className="jcalc-secondary" type="button" onClick={() => { if (globalThis.confirm('현재 성적 입력을 비우고 가채점 원점수를 입력할까요? 지원 후보는 유지됩니다.')) onChange(emptyScores()); }}>가채점 성적으로 새로 입력</button>}
       {errors.basis && <p className="jcalc-error" role="alert">{errors.basis}</p>}
       <div className="jcalc-subjects">{SUBJECTS.map(([key, title, options, limits]) => <fieldset key={key} className="jcalc-subject"><legend>{title}</legend>
         {field(key, title, limits ? 'opt' : 'name', '선택과목', null, options)}
-        <div className="jcalc-metrics">{scores.basis === 'official' ? <>
+        <div className="jcalc-metrics" data-split={scores.basis === 'raw' && Boolean(limits) || undefined}>{scores.basis === 'official' ? <>
           {field(key, title, 'std', '표준점수', 200)}{field(key, title, 'pct', '백분위', 100)}{field(key, title, 'grd', '등급', 9, grades)}
         </> : limits ? <>
           {field(key, title, 'common', '공통 원점수', limits[0])}{field(key, title, 'elective', '선택 원점수', limits[1])}
         </> : field(key, title, 'raw', '원점수', 50)}</div>
+        {scores.basis === 'raw' && <div className="jcalc-estimate" aria-label={`${title} 예상 성적`} aria-live="polite">
+          {limits && <p className="jcalc-raw-total">원점수 합계 <strong>{/^\d+$/.test(String(scores.exam[key].common)) && /^\d+$/.test(String(scores.exam[key].elective)) ? Number(scores.exam[key].common) + Number(scores.exam[key].elective) : '—'}</strong> / 100</p>}
+          {conversion?.results[key]?.status === 'converted' ? <><dl className="jcalc-estimate-metrics">{[['standardScore', '예상 표준점수'], ['percentile', '예상 백분위'], ['grade', '예상 등급']].map(([metric, label]) => <div key={metric}><dt>{label}</dt><dd>{conversion.results[key].metrics[metric]}{metric === 'grade' && '등급'}</dd></div>)}</dl><p className="jcalc-estimate-note">{conversion.results[key].scoreboard.estimated ? '2027학년도 수능 추정치' : '2027학년도 수능 변환표 기준'}</p></>
+            : <p className="jcalc-estimate-note">{conversion?.results[key]?.status === 'loading' ? '예상 성적 계산 중…' : ['error', 'unavailable'].includes(conversion?.results[key]?.status) ? '예상 성적을 확인하지 못했습니다.' : '과목과 원점수를 입력하면 예상 성적이 표시됩니다.'}
+              {['error', 'unavailable'].includes(conversion?.results[key]?.status) && <button type="button" className="jcalc-text-button" onClick={conversion.retry}>다시 계산</button>}</p>}
+        </div>}
       </fieldset>)}</div>
       <div className="jcalc-grades">{[['eng', '영어'], ['hist', '한국사']].map(([key, title]) => <fieldset className="jcalc-subject" key={key}><legend>{title}</legend>{field(key, title, 'grd', '등급', 9, grades)}</fieldset>)}</div>
       <fieldset className="jcalc-subject"><legend>제2외국어·한문 <small>선택 입력</small></legend>
@@ -36,7 +43,7 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
           {scores.exam.foreign.name && field('foreign', '제2외국어·한문', 'grd', '등급', 9, grades)}</div>
       </fieldset>
       {Object.keys(errors).length > 0 && <p className="jcalc-error" role="alert">표시된 항목을 확인해주세요. 아직 입력 내용이 확정되지 않았습니다.</p>}
-      <div className="jcalc-confirm"><button className="jcalc-primary" type="submit">입력 성적 확인</button><p className="jcalc-note" role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목을 입력한 뒤 확인해주세요.'}</p></div>
+      <div className="jcalc-confirm"><button className="jcalc-primary" type="submit" disabled={scores.basis === 'raw' && (!validation.ok || !conversion?.ready)}>{confirmed ? '입력 성적 확인' : '이 성적으로 시작하기'}</button><p className="jcalc-note" role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</p></div>
     </form>
   </section>;
 }
