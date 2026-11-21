@@ -19,8 +19,11 @@ async function routeCalculatorAccess(page, allowed) {
 }
 
 async function expectCalculatorAccess(page, allowed) {
-  await expect(page.getByRole('heading', { name: allowed ? '2027학년도 수능 성적' : '나의 계산기 신청', exact: true })).toBeVisible();
-  if (!allowed) await expect(page.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: allowed ? '2027학년도 수능 가채점 성적' : '나의 계산기 신청', exact: true })).toBeVisible();
+  if (!allowed) {
+    await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toHaveCount(0);
+    await expect(page.locator('form')).toHaveCount(0);
+  }
 }
 
 for (const provider of ['google', 'naver']) for (const surface of ['mobile', 'calculator', 'approved-calculator']) test(`built ${surface} ${provider} button resumes an ended session through the real callback page`, async ({ page, context, baseURL }) => {

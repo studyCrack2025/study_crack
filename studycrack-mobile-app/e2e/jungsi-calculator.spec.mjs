@@ -1,4 +1,4 @@
-import { calculatorAccessFixture, calculatorEmptyStorage, calculatorRawPreviewFixture } from './support/calculator-fixture.mjs';
+import { calculatorAccessFixture, calculatorEmptyStorage, calculatorLegacyDraft, calculatorRawPreviewFixture, calculatorScoreFixture } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 
 const path = '/2027-jungsi-consulting/calculator';
@@ -13,16 +13,18 @@ const catalog = [
   ...Array.from({ length: 15 }, (_, index) => ({ univName: `가상대학교${index + 1}`, majors: ['예시학과'] }))
 ];
 
-async function setup(page, { signedIn = true } = {}) {
+async function setup(page, { signedIn = true, fresh = false } = {}) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('https://www.googletagmanager.com/**', route => route.abort());
   const control = { calls: [], coreCalls: [], mode: 'ready', release: null, conversionMode: 'ready', conversionRelease: null, possibilityMode: 'pending', riskBand: 'stable', indexPoints: 82, accessMode: 'ready', accessAllowed: true, accessSource: 'purchase', accessRelease: null };
-  await page.addInitScript(({ signedIn }) => {
+  await page.addInitScript(({ signedIn, draft }) => {
     if (signedIn && !localStorage.getItem('userId') && localStorage.getItem('sc_session_ended') !== '1') {
       localStorage.setItem('userId', 'calculator-student-A');
       localStorage.setItem('userRole', 'student');
     }
-  }, { signedIn });
+    const key = 'sc_jungsi_calculator_v1:calculator-student-A';
+    if (signedIn && draft && localStorage.getItem('userId') === draft.owner && !sessionStorage.getItem(key)) sessionStorage.setItem(key, JSON.stringify(draft));
+  }, { signedIn, draft: fresh ? null : calculatorLegacyDraft('calculator-student-A') });
   await page.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__calculator-analysis',consulting:'/__calculator-core',consultingPublic:'/__calculator-public',auth:'/__calculator-auth'}};` }));
   await page.route('**/__calculator-public', route => route.fulfill({ json: { success: true, data: { campaignSlug: '2027-jungsi-consulting', admissionYear: 2027, enrollmentStatus: 'unavailable', price: null } } }));
   await page.route('**/__calculator-core', route => {
@@ -46,6 +48,7 @@ async function setup(page, { signedIn = true } = {}) {
         return await route.fulfill({ json: fixture });
       } catch (_) { return; }
     }
+    if (payload.type === 'get_calculator_score_conversion') return route.fulfill({ json: calculatorScoreFixture(payload.data.records) });
     if (payload.type === 'get_calculator_conversion') {
       expect(Object.keys(payload).sort()).toEqual(['data', 'type']);
       expect(Object.keys(payload.data).sort()).toEqual(['scores', 'targets']);
@@ -118,14 +121,14 @@ test('연결된 자료는 승인 환산과 별도로 연도·두 기준선·범�
   const query = page.getByRole('button', { name: '환산점수·가능성 조회', exact: true });
   const section = page.getByRole('region', { name: '자료 기준별 참고 비교' });
   await query.click(); await expect(section).toContainText('현행식 기준 참고 비교');
-  await expect(section).toContainText('환산점수 250점'); await expect(section).toContainText('예상 커트라인 239~241점');
+  await expect(section).toContainText('환산점수 250점'); await expect(section).toContainText('2026학년도 합격권 추정선 239~241점');
   await expect(section).toContainText('70% 참고선 259~261점'); await expect(section).toContainText('참고 지수 50 / 100');
   await expect(section).toContainText('2026학년도 입결'); await expect(section).toContainText('실제 합격 확률이 아닙니다');
   await section.getByText('참고 비교 근거', { exact: true }).click(); await fits(page);
   await page.screenshot({ path: testInfo.outputPath('reviewed-reference.png'), fullPage: true });
   control.referenceMode = 'prior'; await query.click(); await expect(section).toContainText('기존자료 기준 참고 비교'); await expect(section).toContainText('생성연도는 확인되지 않았');
   control.referenceMode = 'supplement'; await query.click(); await expect(section).toContainText('2025학년도 보완자료');
-  control.referenceMode = 'single70'; await query.click(); await expect(section).toContainText('70% 참고선 단독'); await expect(section.getByRole('status')).toHaveCount(0); await expect(section).not.toContainText('예상 커트라인 240');
+  control.referenceMode = 'single70'; await query.click(); await expect(section).toContainText('70% 참고선 단독'); await expect(section.getByRole('status')).toHaveCount(0); await expect(section).not.toContainText('합격권 추정선');
   control.referenceMode = 'corrupt'; await query.click(); await expect(section).toContainText('비교 보류'); await expect(section).not.toContainText('250점');
   await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129'); await expect(section).toHaveCount(0);
 });
@@ -136,7 +139,12 @@ async function fits(page) {
 }
 
 async function fillScores(page, basis = 'official') {
-  await page.getByRole('radio', { name: basis === 'official' ? '성적표 기준' : '가채점 원점수', exact: true }).check();
+  await expect(page.getByRole('combobox', { name: '국어 선택과목', exact: true })).toBeVisible();
+  if (basis === 'raw') {
+    const switchToRaw = page.getByRole('button', { name: '가채점 성적으로 새로 입력', exact: true });
+    if (await switchToRaw.count()) { page.once('dialog', dialog => dialog.accept()); await switchToRaw.click(); }
+    await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toBeVisible();
+  }
   for (const [title, subject] of [['국어', '언어와매체'], ['수학', '미적분'], ['탐구 1', '사회·문화'], ['탐구 2', '생활과 윤리']]) {
     await page.getByRole('combobox', { name: `${title} 선택과목`, exact: true }).selectOption(subject);
     if (basis === 'official') {
@@ -179,6 +187,7 @@ test('공식 성적 확인·후보 검색·수정 상태·새로고침은 기존
   const control = await setup(page);
   await context.addCookies([{ name: 'synthetic-cookie-session', value: 'active', url: baseURL, httpOnly: true }]);
   await page.goto(path);
+  await page.getByRole('combobox', { name: '국어 선택과목', exact: true }).selectOption('');
   await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
   await expect(page.getByRole('combobox', { name: '국어 선택과목', exact: true })).toHaveAttribute('aria-invalid', 'true');
   await fillScores(page);
@@ -202,11 +211,11 @@ test('공식 성적 확인·후보 검색·수정 상태·새로고침은 기존
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => /calculator|quantitative/i.test(key)))).toEqual([]);
 });
 
-test('가채점은 공통·선택 원점수와 등급만 받고 변환 값을 만들지 않는다', async ({ page }) => {
+test('가채점은 원점수에서 예상 성적을 표시하고 원래 입력만 초안에 보관한다', async ({ page }) => {
   await setup(page); await page.goto(path);
   await fillScores(page, 'raw');
   await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('77');
-  await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
+  await expect(page.getByRole('button', { name: '입력 성적 확인', exact: true })).toBeDisabled();
   await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveAttribute('aria-invalid', 'true');
   await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('60');
   await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
@@ -215,7 +224,7 @@ test('가채점은 공통·선택 원점수와 등급만 받고 변환 값을 �
   const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem('sc_jungsi_calculator_v1:calculator-student-A')));
   expect(saved.confirmed.exam.kor).toEqual({ opt: '언어와매체', common: 60, elective: 20, raw: 80 });
   await page.reload();
-  await expect(page.getByRole('radio', { name: '가채점 원점수', exact: true })).toBeChecked();
+  await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveValue('60');
 });
 
@@ -270,8 +279,8 @@ test('로그아웃·다른 계정·늦은 목록 응답은 이전 학생 성적�
     localStorage.setItem('userId', 'calculator-student-B');
     dispatchEvent(new StorageEvent('storage', { key: 'userId' }));
   });
-  await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toHaveValue('');
-  await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveValue('');
+  await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toHaveCount(0);
   expect(await page.evaluate(() => sessionStorage.getItem('sc_jungsi_calculator_v1:calculator-student-A'))).toBeNull();
   control.mode = 'defer'; await page.reload();
   await expect.poll(() => Boolean(control.release)).toBe(true);
@@ -285,7 +294,6 @@ test('로그아웃·다른 계정·늦은 목록 응답은 이전 학생 성적�
 
 test('전용 화면은 여섯 화면 크기에서 실제 폰트와 문서 스크롤·선택한 대학을 유지한다', async ({ page }, testInfo) => {
   const control = await setup(page); control.possibilityMode = 'ready';
-  await page.addInitScript(() => sessionStorage.removeItem('sc_jungsi_calculator_v1:calculator-student-A'));
   for (const width of [320, 375, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(path);
@@ -303,6 +311,7 @@ test('전용 화면은 여섯 화면 크기에서 실제 폰트와 문서 스크
     await page.locator('.jcalc-footer').scrollIntoViewIfNeeded();
     await expect(page.locator('.jcalc-footer')).toBeInViewport();
     if ([320, 1440].includes(width)) await page.screenshot({ path: testInfo.outputPath(`jungsi-calculator-${width}.png`), fullPage: true });
+    await page.evaluate(() => sessionStorage.removeItem('sc_jungsi_calculator_v1:calculator-student-A'));
   }
 });
 
@@ -331,7 +340,7 @@ test('인증 완료 계정은 이용 기한과 계산기를 바로 보고 신청
 
 test('DEV 원점수는 추정 변환 기준과 실제 반환 점수를 표시하고 수정 후 재계산한다', async ({ page }) => {
   const control = await setup(page); control.conversionMode = 'raw-preview'; await page.goto(path);
-  await fillScores(page); await page.getByRole('radio', { name: '가채점 원점수', exact: true }).check();
+  await fillScores(page, 'raw');
   for (const [title, common, elective] of [['국어', '60', '20'], ['수학', '60', '14']]) {
     await page.getByRole('textbox', { name: `${title} 공통 원점수`, exact: true }).fill(common);
     await page.getByRole('textbox', { name: `${title} 선택 원점수`, exact: true }).fill(elective);
@@ -458,14 +467,14 @@ test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린�
   await expect.poll(() => Boolean(control.conversionRelease)).toBe(true);
   await page.evaluate(() => { localStorage.setItem('userId', 'calculator-student-C'); dispatchEvent(new StorageEvent('storage', { key: 'userId' })); });
   control.conversionMode = 'ready'; control.conversionRelease();
-  await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toHaveCount(0);
   await expect(page.locator('.jcalc-score')).toHaveCount(0);
   await expect(page.locator('.jcalc-probability')).toHaveCount(0);
 });
 
 test('검수된 가능성 지수와 다섯 단계는 서버 분류를 표시하고 실제 합격률과 구분한다', async ({ page }) => {
   const control = await setup(page); control.possibilityMode = 'ready'; await page.goto(path); await prepareConversion(page);
-  for (const [riskBand, percent, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '중립'], ['challenge', 30, '도전'], ['risky', 15, '위험']]) {
+  for (const [riskBand, percent, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '소신'], ['challenge', 30, '상향'], ['risky', 15, '위험']]) {
     control.riskBand = riskBand; control.indexPoints = percent;
     await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
     await expect(page.locator('.jcalc-probability')).toHaveText(`약 ${percent}점 / 100`);

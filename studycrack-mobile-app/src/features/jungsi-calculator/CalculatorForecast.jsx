@@ -1,6 +1,7 @@
 import React from 'react';
+import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
+import CalculatorRiskScale from './CalculatorRiskScale.jsx';
 
-const bands = [['stable', '안정'], ['appropriate', '적정'], ['neutral', '중립'], ['challenge', '도전'], ['risky', '위험']];
 const messages = {
   CUT_REFERENCE_CONVERSION_UNAVAILABLE: '환산점수를 확인한 뒤 검수된 입결 기준선으로 가능성을 안내합니다.',
   CUT_REFERENCE_BACKEND_UPDATE_REQUIRED: '가능성 지수 조회를 준비하고 있습니다. 현재는 검수된 환산점수만 확인할 수 있습니다.',
@@ -14,12 +15,12 @@ const messages = {
 
 export default function CalculatorForecast({ possibility }) {
   const available = possibility?.status === 'available';
-  const label = available ? bands.find(([key]) => key === possibility.riskBand)?.[1] : '판단 보류';
+  const label = available ? CALCULATOR_RISK_BANDS.find(([key]) => key === possibility.riskBand)?.[1] : '판단 보류';
   return <section className="jcalc-forecast" aria-label="합격 가능성 지수" data-risk={available ? possibility.riskBand : 'unavailable'}>
     <div className="jcalc-forecast-head"><p>합격 가능성 지수</p><b className="jcalc-forecast-badge">{label}</b></div>
     {available ? <>
       <p className="jcalc-probability" role="status">약 {possibility.index.points}점 / 100</p>
-      <ol className="jcalc-risk-scale" aria-label="지원 가능성 5단계">{bands.map(([key, title]) => <li key={key} aria-current={key === possibility.riskBand ? 'true' : undefined}>{title}</li>)}</ol>
+      <CalculatorRiskScale band={possibility.riskBand} />
       <p className="jcalc-forecast-note">입결 기준선에 따른 100점 척도의 지수입니다. 실제 합격률이 아니며 합격을 보장하지 않습니다.</p>
       <details className="jcalc-result-version"><summary>가능성 지수 자료 기준</summary><p>{possibility.sourceYear}학년도 입결 · {possibility.targetYear}학년도 반영 기준<br />{possibility.policyVersion}<br />{possibility.publicationId}<br />검수일 {new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' }).format(new Date(possibility.validatedAt))}</p></details>
     </> : <p className="jcalc-forecast-note">{messages[possibility?.reasonCodes?.[0]] || '이 모집단위의 입결 자료 검수 상태를 확인해야 합니다. 현재는 지수와 지원 단계의 판단을 보류합니다.'}</p>}

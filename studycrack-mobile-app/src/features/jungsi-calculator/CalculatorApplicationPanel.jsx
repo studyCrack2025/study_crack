@@ -1,13 +1,14 @@
 import React from 'react';
+import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
 import { getMobileApiBinding } from '../../shared/browser/mobile-runtime.js';
 import { calculatorApplicationLabels, getCalculatorApplications, previewCalculatorApplication, readCalculatorReceipt } from './calculator-application-api.js';
 
 const formatDate = value => value ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '확인 필요';
 function ApplicationCard({ application }) {
   return <article aria-label="나의 계산기 신청 상태"><h3>{calculatorApplicationLabels[application.state]}</h3>
-    <p className="jcalc-note">신청 금액 · {application.amount === 25000 ? '25,000원' : '운영팀 확인 필요'}<br />이용 기한 · {formatDate(application.accessEndsAt)} (한국시간)</p>
+    <CalculatorNote>신청 금액 · {application.amount === 25000 ? '25,000원' : '운영팀 확인 필요'}<br />이용 기한 · {formatDate(application.accessEndsAt)} (한국시간)</CalculatorNote>
     {application.state === 'pending_payment' && <p>입금 후 운영팀 확인을 기다려주세요. 승인되면 알림톡·문자로 이용 링크, 이메일로 10자리 인증코드를 보내드립니다.</p>}
-    {application.state === 'pending_payment' && application.paymentDueAt && <p className="jcalc-note">결제 마감 · {formatDate(application.paymentDueAt)} (한국시간){Date.now() >= Date.parse(application.paymentDueAt) ? ' · 기한이 지났습니다. 추가 입금 전 운영팀에 문의해주세요.' : ''}</p>}
+    {application.state === 'pending_payment' && application.paymentDueAt && <CalculatorNote>결제 마감 · {formatDate(application.paymentDueAt)} (한국시간){Date.now() >= Date.parse(application.paymentDueAt) ? ' · 기한이 지났습니다. 추가 입금 전 운영팀에 문의해주세요.' : ''}</CalculatorNote>}
     {application.state === 'activation_required' && <p>알림톡·문자로 받은 이용 링크를 열고 학생 본인 계정으로 로그인한 뒤 이메일의 10자리 인증코드를 입력해주세요.</p>}
     {application.state === 'active' && <p>입금 승인과 이용 인증을 완료했습니다. 이 학생 계정으로 계산기를 이용할 수 있습니다.</p>}
     {['held', 'input_review', 'check_required', 'revoked'].includes(application.state) && <p>현재 신청 상태는 운영팀에 확인해주세요. 별도의 신청 상태 연결 없이, 승인 후 받은 이용 링크에서 인증하면 됩니다.</p>}
@@ -39,14 +40,14 @@ export default function CalculatorApplicationPanel({ onLoaded, accessDenied = fa
   if (resource.receipt && !items.some(item => item.applicationId === resource.receipt.applicationId)) items.push(resource.receipt);
   if (accessDenied && items.some(item => item.accessActive)) return <section className="jcalc-panel jcalc-application" aria-label="계산기 이용 정보 확인">
     <h2>이용 정보를 확인하지 못했습니다.</h2><p className="jcalc-error" role="alert">인증된 이용권과 계산기 연결 상태를 확인하지 못했습니다. 다시 시도하거나 이용 문의로 연락해주세요.</p>
-    <button className="jcalc-secondary" type="button" onClick={onRetry}>다시 시도</button>
+    <CalculatorButton onClick={onRetry}>다시 시도</CalculatorButton>
   </section>;
   return <section className="jcalc-panel jcalc-application" aria-label="나의 계산기 신청" aria-busy={resource.status === 'loading'}>
-    <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">신청 현황</p><h2>나의 계산기 신청</h2></div><button className="jcalc-secondary" type="button" onClick={refresh} disabled={resource.status === 'loading'}>신청 상태 다시 확인</button></div>
-    {resource.status === 'loading' ? <p className="jcalc-note" role="status">신청과 이용 인증 상태를 확인하고 있습니다.</p> : resource.status === 'error' ? <p className="jcalc-error" role="alert">신청 상태를 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</p> : <>
+    <div className="jcalc-access-head"><div><p className="jcalc-eyebrow">신청 현황</p><h2>나의 계산기 신청</h2></div><CalculatorButton onClick={refresh} disabled={resource.status === 'loading'}>신청 상태 다시 확인</CalculatorButton></div>
+    {resource.status === 'loading' ? <CalculatorNote role="status">신청과 이용 인증 상태를 확인하고 있습니다.</CalculatorNote> : resource.status === 'error' ? <p className="jcalc-error" role="alert">신청 상태를 불러오지 못했습니다. 잠시 후 다시 확인해주세요.</p> : <>
       {items.map(item => <ApplicationCard key={item.applicationId} application={item} />)}
-      {!items.length && <p className="jcalc-note">이 계정에 인증된 계산기 이용권이 없습니다. 신청 후 입금 승인을 기다려주세요. 승인 후 받은 알림톡·문자 링크에서 이메일의 10자리 코드로 이용 인증을 완료하면 됩니다.</p>}
-      {(resource.home.hasMore || resource.home.needsReview) && <p className="jcalc-note">확인이 필요한 신청이 있습니다. 운영팀에 문의해주세요.</p>}
+      {!items.length && <CalculatorNote>이 계정에 인증된 계산기 이용권이 없습니다. 신청 후 입금 승인을 기다려주세요. 승인 후 받은 알림톡·문자 링크에서 이메일의 10자리 코드로 이용 인증을 완료하면 됩니다.</CalculatorNote>}
+      {(resource.home.hasMore || resource.home.needsReview) && <CalculatorNote>확인이 필요한 신청이 있습니다. 운영팀에 문의해주세요.</CalculatorNote>}
     </>}
   </section>;
 }

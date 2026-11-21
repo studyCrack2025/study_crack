@@ -39,7 +39,7 @@ function validResponse(body, scores, targets) {
     || !/^eligibility-\d+\.\d+\.\d+$/.test(body.release.eligibilityRuleVersion || ''))) return false;
   return body.results.every((row, index) => {
     const target = targets[index];
-    if (!row || row.university !== target.university || row.major !== target.major || !statuses.has(row.status)
+    if (!row || row.university !== target.university || row.major !== target.major || target.selection && row.selectionKey !== target.selection.key || !statuses.has(row.status)
       || !Array.isArray(row.reasonCodes) || row.reasonCodes.length > 12 || row.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))
       || !Array.isArray(row.choices) || row.choices.length > 12 || row.choices.some(value => !unit(value))
       || new Set(row.choices.map(value => value.admissionUnitId)).size !== row.choices.length
@@ -78,6 +78,8 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
     || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'purchase', 'none'].includes(value.access.source)
     || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
     || !['preparing', 'candidate_check_required'].includes(value.service.state)
+    || value.service.workspaceVersion !== undefined && ![1, 2].includes(value.service.workspaceVersion)
+    || value.service.selectionVersion !== undefined && value.service.selectionVersion !== 1
     || value.service.earlyAccess !== undefined && typeof value.service.earlyAccess !== 'boolean'
     || value.service.earlyAccess === true && (!value.access.allowed || value.access.source !== 'purchase')) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
   const access = { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source };
@@ -91,5 +93,5 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
     || access.allowed && (value.service.calculationEnabled === undefined || value.service.calculationMode === undefined)
     || value.service.earlyAccess === true && mode !== 'development_preview') return apiInvalidResponse(response, '이용권 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
   return { ...response, data: { access, entitlement: entitlement ? { applicationId: entitlement.applicationId, accessEndsAt: entitlement.accessEndsAt } : null,
-    service: { state: value.service.state, purchaseAvailable: false, earlyAccess: value.service.earlyAccess === true, calculationEnabled: enabled, calculationMode: mode } } };
+    service: { state: value.service.state, purchaseAvailable: false, ...(value.service.workspaceVersion === undefined ? {} : { workspaceVersion: value.service.workspaceVersion }), ...(value.service.selectionVersion === undefined ? {} : { selectionVersion: value.service.selectionVersion }), earlyAccess: value.service.earlyAccess === true, calculationEnabled: enabled, calculationMode: mode } } };
 }
