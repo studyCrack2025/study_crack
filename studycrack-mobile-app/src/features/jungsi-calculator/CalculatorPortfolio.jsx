@@ -1,13 +1,19 @@
 import React from 'react';
 import CalculatorRiskScale from './CalculatorRiskScale.jsx';
+import useCalculatorPortfolioExport from './useCalculatorPortfolioExport.js';
 import './calculator-portfolio.css';
 
 export default function CalculatorPortfolio({ model, onBack }) {
   const heading = React.useRef(null);
+  const output = useCalculatorPortfolioExport(model);
   React.useEffect(() => { heading.current?.focus(); }, []);
   return <section className="jcalc-portfolio" aria-label="나의 정시 포트폴리오">
     <div className="jcalc-workspace-actions"><button type="button" className="jcalc-secondary" onClick={onBack}>지원 조합으로 돌아가기</button><span className="jcalc-note">저장한 조합 기준</span></div>
     <header className="jcalc-portfolio-hero"><p>2027 · STUDYCRACK</p><h2 ref={heading} tabIndex={-1}>{model.title}</h2><strong>{model.name}</strong><span>나의 성적에서, 다음 지원 후보까지.</span></header>
+    <div className="jcalc-export-actions" aria-label="포트폴리오 이미지 내보내기" aria-busy={output.status === 'loading' || Boolean(output.action)}>
+      <div className="jcalc-workspace-actions"><button className="jcalc-primary" type="button" disabled={!output.ready || Boolean(output.action)} onClick={() => output.deliver(true)}>이미지 복사</button><button className="jcalc-secondary" type="button" disabled={!output.ready || Boolean(output.action)} onClick={() => output.deliver(false)}>PNG 저장</button>{output.status === 'error' && <button className="jcalc-secondary" type="button" onClick={output.retry}>이미지 다시 준비</button>}</div>
+      <p className="jcalc-note" role={output.status === 'error' ? 'alert' : 'status'}>{output.action ? output.action === 'copying' ? '이미지를 복사하고 있습니다…' : 'PNG 저장을 요청하고 있습니다…' : output.message || (output.status === 'loading' ? '공유할 이미지를 준비하고 있습니다…' : '현재 조합을 이미지로 복사하거나 PNG로 저장할 수 있습니다.')}</p>
+    </div>
     <section className="jcalc-panel" aria-label="포트폴리오 성적 요약"><h2>내 성적</h2><p className="jcalc-note">{model.scoreSummary.basis}</p><dl className="jcalc-profile-scores">{model.scoreSummary.items.map(item => <div key={item.label}><dt>{item.label} · {item.subject}</dt><dd>{item.value}<small>{item.detail}</small></dd></div>)}</dl><p className="jcalc-note">{model.scoreSummary.grades}</p></section>
     <div className="jcalc-portfolio-cards">{model.cards.map(card => <article key={card.group} className="jcalc-panel jcalc-portfolio-card" aria-label={`${card.label} 대표 지원안`} data-risk={card.indicator?.band || 'unavailable'}>
       <div className="jcalc-portfolio-card-heading"><h3>{card.label}</h3><span className="jcalc-forecast-badge">{card.status === 'empty' ? '미선택' : card.indicator.label}</span></div>

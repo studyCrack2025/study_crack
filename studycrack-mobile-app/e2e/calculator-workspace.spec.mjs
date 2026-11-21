@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { calculatorAccessFixture, calculatorRawPreviewFixture, calculatorScoreFixture } from './support/calculator-fixture.mjs';
 const path = '/2027-jungsi-consulting/calculator', appId = 'APP_11111111-1111-4111-8111-111111111111', at = '2026-11-21T00:00:00.000Z';
 const raw = { admissionYear: 2027, basis: 'raw', exam: { kor: { opt: '언어와매체', common: 60, elective: 20, raw: 80 }, math: { opt: '미적분', common: 60, elective: 14, raw: 74 }, inq1: { name: '사회·문화', raw: 44 }, inq2: { name: '생활과 윤리', raw: 45 }, eng: { grd: 2 }, hist: { grd: 1 } } };
@@ -210,4 +212,65 @@ test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로
   await expect.poll(() => typeof state.conversionRelease).toBe('function'); state.deferConversion = false; state.conversionRelease();
   await expect(open).toBeEnabled(); await open.click(); await expect(portfolio.getByRole('article', { name: '가군 대표 지원안', exact: true })).toContainText('709.25점');
   expect(state.record.plans[0].targets).toHaveLength(2); expect(state.record.profile.revision).toBe(2);
+});
+
+async function openExportPortfolio(page) {
+  const state = await setup(page, { grouped: true }); await saveScores(page); await addGroupTarget(page, '가군');
+  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const region = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(region).toBeVisible(); return { state, region };
+}
+async function receivePng(download, testInfo, filename) {
+  expect(download.suggestedFilename()).toBe('StudyCrack_2027_정시_포트폴리오.png');
+  const path = testInfo.outputPath(filename); await download.saveAs(path); const bytes = await readFile(path);
+  expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]); expect(bytes.readUInt32BE(16)).toBe(1080);
+  expect(bytes.readUInt32BE(20)).toBeGreaterThan(1000); expect(bytes.readUInt32BE(20)).toBeLessThanOrEqual(8192);
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+test('실제 PNG는 모바일·데스크톱 화면 크기와 관계없이 같은1080px 이미지로 저장된다', async ({ page }, testInfo) => {
+  const { state, region } = await openExportPortfolio(page), saved = structuredClone(state.record), save = region.getByRole('button', { name: 'PNG 저장', exact: true });
+  await expect(save).toBeEnabled(); let digest;
+  for (const width of [320, 1440]) {
+    await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1);
+    const pending = page.waitForEvent('download'); await save.click(); const hash = await receivePng(await pending, testInfo, `portfolio-${width}.png`);
+    if (digest) expect(hash).toBe(digest); digest = hash;
+  }
+  expect(state.record).toEqual(saved); await expect(region).toContainText('PNG 저장을 요청했습니다.');
+});
+
+async function mockImageClipboard(page) {
+  await page.addInitScript(() => {
+    const state = { calls: 0, mode: 'defer', blob: null }; window.__imageClipboard = state;
+    window.ClipboardItem = class { constructor(values) { this.values = values; } static supports(type) { return type === 'image/png'; } };
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { write(items) {
+      state.calls++; state.blob = items[0].values['image/png'];
+      if (state.mode === 'reject') return Promise.reject(new Error('NotAllowedError'));
+      return new Promise((resolve, reject) => { state.resolve = resolve; state.reject = reject; });
+    } } });
+  });
+}
+
+test('복사는 실제 PNG 쓰기 응답 뒤에만 성공하며 거절되면 동일 Blob을 저장한다', async ({ page }, testInfo) => {
+  await mockImageClipboard(page); const { region } = await openExportPortfolio(page), copy = region.getByRole('button', { name: '이미지 복사', exact: true }); await expect(copy).toBeEnabled();
+  await copy.click(); await expect(copy).toBeDisabled(); await expect(region).toContainText('이미지를 복사하고 있습니다…'); await expect(region).not.toContainText('포트폴리오 이미지를 복사했습니다.');
+  expect(await page.evaluate(() => window.__imageClipboard.calls)).toBe(1);
+  const digest = await page.evaluate(async () => { const state = window.__imageClipboard, bytes = await state.blob.arrayBuffer(), hash = await crypto.subtle.digest('SHA-256', bytes); state.resolve(); return Array.from(new Uint8Array(hash), value => value.toString(16).padStart(2, '0')).join(''); });
+  await expect(region).toContainText('포트폴리오 이미지를 복사했습니다.'); await expect(copy).toBeEnabled();
+  await page.evaluate(() => { window.__imageClipboard.mode = 'reject'; });
+  const pending = page.waitForEvent('download'); await copy.click(); expect(await receivePng(await pending, testInfo, 'portfolio-copy-fallback.png')).toBe(digest);
+  await expect(region).toContainText('이미지를 복사할 수 없어 PNG 저장을 요청했습니다.');
+});
+
+test('복사 대기 중 화면을 나가면 늦은 거절로 이전 이미지를 자동 저장하지 않는다', async ({ page }) => {
+  await mockImageClipboard(page); const { region } = await openExportPortfolio(page), downloads = []; page.on('download', download => downloads.push(download));
+  const copy = region.getByRole('button', { name: '이미지 복사', exact: true }); await expect(copy).toBeEnabled(); await copy.click();
+  await region.getByRole('button', { name: '지원 조합으로 돌아가기', exact: true }).click();
+  await page.evaluate(async () => { window.__imageClipboard.reject(new Error('NotAllowedError')); for (let n = 0; n < 10; n++) await Promise.resolve(); });
+  await expect(region).toHaveCount(0); expect(downloads).toHaveLength(0); await expect(page.getByText('포트폴리오 이미지를 복사했습니다.', { exact: true })).toHaveCount(0);
+});
+
+test('필수 글꼴 준비 실패는 성공이나 빈 이미지로 숨기지 않고 재시도한다', async ({ page }) => {
+  await page.addInitScript(() => { window.__originalFontLoad = document.fonts.load.bind(document.fonts); document.fonts.load = () => Promise.reject(new Error('필수 글꼴을 불러오지 못했습니다.')); });
+  const { region } = await openExportPortfolio(page); await expect(region.getByRole('button', { name: '이미지 다시 준비', exact: true })).toBeVisible(); await expect(region.getByRole('button', { name: 'PNG 저장', exact: true })).toBeDisabled();
+  await page.evaluate(() => { document.fonts.load = window.__originalFontLoad; }); await region.getByRole('button', { name: '이미지 다시 준비', exact: true }).click(); await expect(region.getByRole('button', { name: 'PNG 저장', exact: true })).toBeEnabled();
 });

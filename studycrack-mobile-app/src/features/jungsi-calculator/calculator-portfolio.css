@@ -1,4 +1,6 @@
 .jcalc-portfolio { display: grid; gap: 20px; min-width: 0; }
+.jcalc-export-actions { min-width: 0; }
+.jcalc-export-actions button { flex: 1 1 140px; min-height: 48px; }
 .jcalc-portfolio-hero { display: grid; gap: 20px; padding: clamp(28px, 5vw, 64px); border-radius: 16px; background: var(--sc-brand-navy); color: var(--sc-on-brand); overflow-wrap: anywhere; }
 .jcalc-portfolio-hero p { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
 .jcalc-portfolio-hero h2 { margin: 0; font-size: clamp(26px, 4vw, 44px); line-height: 1.4; letter-spacing: -0.04em; }
