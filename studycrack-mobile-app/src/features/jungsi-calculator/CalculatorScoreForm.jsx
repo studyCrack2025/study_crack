@@ -1,4 +1,5 @@
 import React from 'react';
+import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
 import { emptyScores, FOREIGN_LANGUAGE_SUBJECTS, prepareCalculatorScores, SUBJECTS } from './calculator-model.js';
 
 function ScoreField({ subject, metric, title, label, value, max, error, choices, onChange }) {
@@ -20,8 +21,8 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
   return <section className="jcalc-panel" aria-labelledby="jcalc-score-title">
     <div className="jcalc-section-head"><div><p className="jcalc-eyebrow">01 · 내 성적</p><h2 id="jcalc-score-title">{scores.basis === 'raw' ? '2027학년도 수능 가채점 성적' : '이전에 저장한 성적표 성적'}</h2></div><span className="jcalc-badge">{scores.basis === 'raw' ? '예상 성적' : '기존 입력'}</span></div>
     <form noValidate onSubmit={event => { event.preventDefault(); onConfirm(); }}>
-      <p className="jcalc-note">{scores.basis === 'official' ? '이전에 입력한 성적을 유지하고 있습니다. 가채점 성적으로 새로 입력하려면 아래 버튼을 눌러주세요.' : '국어·수학은 공통과 선택 원점수를 나누어 입력해주세요. 표준점수·백분위·등급은 2027학년도 수능 추정표를 기준으로 자동 계산됩니다.'}</p>
-      {scores.basis === 'official' && <button className="jcalc-secondary" type="button" onClick={() => { if (globalThis.confirm('현재 성적 입력을 비우고 가채점 원점수를 입력할까요? 지원 후보는 유지됩니다.')) onChange(emptyScores()); }}>가채점 성적으로 새로 입력</button>}
+      <CalculatorNote>{scores.basis === 'official' ? '이전에 입력한 성적을 유지하고 있습니다. 가채점 성적으로 새로 입력하려면 아래 버튼을 눌러주세요.' : '국어·수학은 공통과 선택 원점수를 나누어 입력해주세요. 표준점수·백분위·등급은 2027학년도 수능 추정표를 기준으로 자동 계산됩니다.'}</CalculatorNote>
+      {scores.basis === 'official' && <CalculatorButton onClick={() => { if (globalThis.confirm('현재 성적 입력을 비우고 가채점 원점수를 입력할까요? 지원 후보는 유지됩니다.')) onChange(emptyScores()); }}>가채점 성적으로 새로 입력</CalculatorButton>}
       {errors.basis && <p className="jcalc-error" role="alert">{errors.basis}</p>}
       <div className="jcalc-subjects">{SUBJECTS.map(([key, title, options, limits]) => <fieldset key={key} className="jcalc-subject"><legend>{title}</legend>
         {field(key, title, limits ? 'opt' : 'name', '선택과목', null, options)}
@@ -34,7 +35,7 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
           {limits && <p className="jcalc-raw-total">원점수 합계 <strong>{/^\d+$/.test(String(scores.exam[key].common)) && /^\d+$/.test(String(scores.exam[key].elective)) ? Number(scores.exam[key].common) + Number(scores.exam[key].elective) : '—'}</strong> / 100</p>}
           {conversion?.results[key]?.status === 'converted' ? <><dl className="jcalc-estimate-metrics">{[['standardScore', '예상 표준점수'], ['percentile', '예상 백분위'], ['grade', '예상 등급']].map(([metric, label]) => <div key={metric}><dt>{label}</dt><dd>{conversion.results[key].metrics[metric]}{metric === 'grade' && '등급'}</dd></div>)}</dl><p className="jcalc-estimate-note">{conversion.results[key].scoreboard.estimated ? '2027학년도 수능 추정치' : '2027학년도 수능 변환표 기준'}</p></>
             : <p className="jcalc-estimate-note">{conversion?.results[key]?.status === 'loading' ? '예상 성적 계산 중…' : ['error', 'unavailable'].includes(conversion?.results[key]?.status) ? '예상 성적을 확인하지 못했습니다.' : '과목과 원점수를 입력하면 예상 성적이 표시됩니다.'}
-              {['error', 'unavailable'].includes(conversion?.results[key]?.status) && <button type="button" className="jcalc-text-button" onClick={conversion.retry}>다시 계산</button>}</p>}
+              {['error', 'unavailable'].includes(conversion?.results[key]?.status) && <CalculatorButton text onClick={conversion.retry}>다시 계산</CalculatorButton>}</p>}
         </div>}
       </fieldset>)}</div>
       <div className="jcalc-grades">{[['eng', '영어'], ['hist', '한국사']].map(([key, title]) => <fieldset className="jcalc-subject" key={key}><legend>{title}</legend>{field(key, title, 'grd', '등급', 9, grades)}</fieldset>)}</div>
@@ -44,7 +45,7 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
       </fieldset>
       {Object.keys(errors).length > 0 && <p className="jcalc-error" role="alert">표시된 항목을 확인해주세요. 아직 입력 내용이 확정되지 않았습니다.</p>}
       {children}
-      <div className="jcalc-confirm"><button className="jcalc-primary" type="submit" disabled={confirmDisabled || scores.basis === 'raw' && (!validation.ok || !conversion?.ready)}>{confirmLabel || (confirmed ? '입력 성적 확인' : '이 성적으로 시작하기')}</button>{onCancel && <button className="jcalc-secondary" type="button" onClick={onCancel}>성적 수정 취소</button>}<p className="jcalc-note" role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</p></div>
+      <div className="jcalc-confirm"><CalculatorButton primary type="submit" disabled={confirmDisabled || scores.basis === 'raw' && (!validation.ok || !conversion?.ready)}>{confirmLabel || (confirmed ? '입력 성적 확인' : '이 성적으로 시작하기')}</CalculatorButton>{onCancel && <CalculatorButton onClick={onCancel}>성적 수정 취소</CalculatorButton>}<CalculatorNote role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</CalculatorNote></div>
     </form>
   </section>;
 }
