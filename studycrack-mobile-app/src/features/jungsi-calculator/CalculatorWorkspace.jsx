@@ -5,6 +5,8 @@ import CalculatorScoreForm from './CalculatorScoreForm.jsx';
 import CalculatorCatalog from './CalculatorCatalog.jsx';
 import CalculatorResult from './CalculatorResult.jsx';
 import CalculatorPlanBoard from './CalculatorPlanBoard.jsx';
+import CalculatorPortfolio from './CalculatorPortfolio.jsx';
+import { createCalculatorPortfolio } from './calculator-portfolio-model.js';
 import { addPlanTarget, emptyRepresentatives, planTargetKey, removePlanTarget } from './calculator-plan-model.js';
 import { requestCalculatorConversion } from './calculator-api.js';
 import { candidateKey, editableScores, emptyScores, MAX_CANDIDATES, prepareCalculatorScores, scoresChanged } from './calculator-model.js';
@@ -29,6 +31,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
   const [scores, setScores] = React.useState(() => data.profile ? editableScores(data.profile.scores) : emptyScores()), [editing, setEditing] = React.useState(!data.profile);
   const [baseline, setBaseline] = React.useState(initialPlan), [name, setName] = React.useState(initialPlan?.name || '기본 조합'), [targets, setTargets] = React.useState(initialPlan?.targets || []);
   const [representatives, setRepresentatives] = React.useState(initialPlan?.representatives || emptyRepresentatives());
+  const [portfolioOpen, setPortfolioOpen] = React.useState(false);
   const [errors, setErrors] = React.useState({}), [consented, setConsented] = React.useState(data.consentAccepted), [message, setMessage] = React.useState('');
   const [catalog, setCatalog] = React.useState({ status: 'idle', data: [], error: '' }), [catalogAttempt, setCatalogAttempt] = React.useState(0);
   const [conversion, setConversion] = React.useState({ key: '', status: 'idle', data: null, error: '' }), [queryAttempt, setQueryAttempt] = React.useState(0);
@@ -39,7 +42,9 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
   const dirty = planDirty || editing && (changed || !profile);
   const queryKey = JSON.stringify({ scores: profile?.scores, profileRevision: profile?.revision, targets });
   const currentResult = !editing && conversion.key === queryKey && conversion.status === 'ready';
-  const openPlan = React.useCallback(plan => { setBaseline(plan); setName(plan?.name || '기본 조합'); setTargets(plan?.targets || []); setRepresentatives(plan?.representatives || emptyRepresentatives()); setMessage(''); }, []);
+  const portfolio = grouped && !locked && calculationEnabled && !planDirty && currentResult ? createCalculatorPortfolio({ profile, plan: baseline, conversion: conversion.data, input: conversion.input }) : null;
+  const showPortfolio = portfolioOpen && Boolean(portfolio);
+  const openPlan = React.useCallback(plan => { setBaseline(plan); setName(plan?.name || '기본 조합'); setTargets(plan?.targets || []); setRepresentatives(plan?.representatives || emptyRepresentatives()); setPortfolioOpen(false); setMessage(''); }, []);
   React.useEffect(() => {
     if (!data.profile) { setScores(emptyScores()); setEditing(true); setConsented(false); setErrors({}); openPlan(null); }
     if (!editing && data.profile) setScores(editableScores(data.profile.scores));
@@ -64,12 +69,13 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
   React.useEffect(() => {
     if (!enabled || !calculationEnabled || !profile || editing || !targets.length) return;
     const controller = new AbortController(); let active = true;
-    setConversion({ key: queryKey, status: 'loading', data: null, error: '' });
+    const input = { scores: profile.scores, targets, profileRevision: profile.revision };
+    setConversion({ key: queryKey, status: 'loading', data: null, error: '', input });
     const timer = setTimeout(async () => {
       const result = await requestCalculatorConversion({ ...binding, scores: profile.scores, targets, signal: controller.signal });
       if (!active || controller.signal.aborted) return;
       if (result.code === 'CALCULATOR_ACCESS_REQUIRED') denyAccess();
-      setConversion(result.ok ? { key: queryKey, status: 'ready', data: result.data, error: '' } : { key: queryKey, status: 'error', data: null, error: result.error });
+      setConversion(result.ok ? { key: queryKey, status: 'ready', data: result.data, error: '', input } : { key: queryKey, status: 'error', data: null, error: result.error, input });
     }, 200);
     return () => { active = false; clearTimeout(timer); controller.abort(); };
   }, [enabled, calculationEnabled, editing, queryKey, queryAttempt, binding]);
@@ -92,10 +98,10 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
   };
   if (data.status === 'restricted') return <section className="jcalc-panel" aria-label="저장 자료 관리"><h2>현재 이용 상태를 확인해주세요.</h2><p className="jcalc-note">이용 정보를 다시 확인한 뒤 저장 자료를 열 수 있습니다.</p><button className="jcalc-secondary" type="button" disabled={store.busy} onClick={store.load}>저장 상태 다시 확인</button><button className="jcalc-text-button" type="button" disabled={store.busy} onClick={async () => { if (globalThis.confirm('이전에 저장한 성적과 지원 조합을 모두 삭제할까요?')) await store.mutate('student_delete_calculator_workspace', { confirmed: true }); }}>저장 자료 전체 삭제</button></section>;
   return <div className="jcalc-workspace" aria-busy={store.busy}>
-    <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing ? 'step' : undefined}>02 지원 조합</li><li>03 포트폴리오</li></ol>
+    <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing && !showPortfolio ? 'step' : undefined}>02 지원 조합</li><li aria-current={showPortfolio ? 'step' : undefined}>03 포트폴리오</li></ol>
     {store.resource.error && <div className="jcalc-state" role="alert"><p>{store.resource.error}</p>{store.resource.status === 'error' && <button className="jcalc-secondary" type="button" onClick={store.load}>최신 저장 상태 확인</button>}</div>}
     <p className="jcalc-note" role="status">{store.busy ? '저장하고 있습니다…' : message || (dirty ? '수정한 내용이 아직 저장되지 않았습니다.' : profile ? '저장한 성적과 조합을 불러왔습니다.' : '')}</p>
-    {editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
+    {showPortfolio ? <CalculatorPortfolio model={portfolio} onBack={() => setPortfolioOpen(false)} /> : editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
       onChange={value => { setScores(value); setErrors({}); setMessage(''); }} onConfirm={confirmProfile} confirmLabel={profile ? '성적 수정 저장' : '이 성적으로 시작하기'} confirmDisabled={!consented && !data.consentAccepted || Boolean(profile) && !changed}
       onCancel={profile ? () => { setScores(editableScores(profile.scores)); setErrors({}); setEditing(false); } : undefined}>
       {!data.consentAccepted && <div className="jcalc-profile-consent"><p className="jcalc-note">입력한 성적과 지원 후보를 계정에 저장하고 운영팀이 계산기 제공·신청 관리를 위해 확인합니다. 컨설팅 검수 성적에는 반영되지 않습니다. <a href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a></p><label className="jcalc-storage-consent"><input type="checkbox" checked={consented} onChange={event => setConsented(event.currentTarget.checked)} /><span>성적·지원 후보 저장과 운영팀 열람에 동의합니다</span></label>{!consented && <p className="jcalc-note">처음 저장할 때 동의가 필요합니다.</p>}</div>}
@@ -104,8 +110,9 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
       <section className="jcalc-panel" aria-label="지원 조합 관리"><div className="jcalc-section-head"><div><p className="jcalc-eyebrow">02 · 지원 조합</p><h2>나의 지원 조합</h2></div><span className="jcalc-badge">{data.plans.length} / 10 저장</span></div>
         <fieldset className="jcalc-workspace-fields jcalc-plan-toolbar" disabled={locked}><label className="jcalc-field"><span>저장한 조합</span><select value={baseline?.planId || ''} onChange={event => { if (planDirty && !globalThis.confirm('저장하지 않은 변경을 취소하고 조합을 바꿀까요?')) return; openPlan(data.plans.find(plan => plan.planId === event.currentTarget.value) || null); }}><option value="">새 조합 만들기</option>{data.plans.map(plan => <option key={plan.planId} value={plan.planId}>{plan.name}</option>)}</select></label>
           <label className="jcalc-field"><span>조합 이름</span><input type="text" maxLength="60" value={name} onChange={event => { setName(event.currentTarget.value); setMessage(''); }} /></label>
-          <div className="jcalc-workspace-actions"><button className="jcalc-primary" type="button" disabled={!name.trim() || !planDirty || !targets.length && !baseline} onClick={() => savePlan(false)}>조합 저장</button><button className="jcalc-secondary" type="button" disabled={!name.trim() || !targets.length || data.plans.length >= 10} onClick={() => savePlan(true)}>다른 조합으로 저장</button>{baseline && <button className="jcalc-text-button" type="button" onClick={deletePlan}>조합 삭제</button>}</div>
+          <div className="jcalc-workspace-actions"><button className="jcalc-primary" type="button" disabled={!name.trim() || !planDirty || !targets.length && !baseline} onClick={() => savePlan(false)}>조합 저장</button><button className="jcalc-secondary" type="button" disabled={!name.trim() || !targets.length || data.plans.length >= 10} onClick={() => savePlan(true)}>다른 조합으로 저장</button>{baseline && <button className="jcalc-text-button" type="button" onClick={deletePlan}>조합 삭제</button>}{grouped && <button className="jcalc-primary" type="button" disabled={!portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</button>}</div>
         </fieldset>
+        {grouped && !portfolio && <p className="jcalc-note">대표 지원안을 하나 이상 선택하고 조합을 저장하면, 현재 성적의 계산이 끝난 뒤 포트폴리오를 볼 수 있습니다.</p>}
       </section>
       {grouped ? <section className="jcalc-group-area" aria-label="군별 지원 조합">
         {targets.length > 0 && !calculationEnabled && <p className="jcalc-note">정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</p>}

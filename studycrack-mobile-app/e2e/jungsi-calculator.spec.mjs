@@ -121,14 +121,14 @@ test('연결된 자료는 승인 환산과 별도로 연도·두 기준선·범�
   const query = page.getByRole('button', { name: '환산점수·가능성 조회', exact: true });
   const section = page.getByRole('region', { name: '자료 기준별 참고 비교' });
   await query.click(); await expect(section).toContainText('현행식 기준 참고 비교');
-  await expect(section).toContainText('환산점수 250점'); await expect(section).toContainText('예상 커트라인 239~241점');
+  await expect(section).toContainText('환산점수 250점'); await expect(section).toContainText('2026학년도 합격권 추정선 239~241점');
   await expect(section).toContainText('70% 참고선 259~261점'); await expect(section).toContainText('참고 지수 50 / 100');
   await expect(section).toContainText('2026학년도 입결'); await expect(section).toContainText('실제 합격 확률이 아닙니다');
   await section.getByText('참고 비교 근거', { exact: true }).click(); await fits(page);
   await page.screenshot({ path: testInfo.outputPath('reviewed-reference.png'), fullPage: true });
   control.referenceMode = 'prior'; await query.click(); await expect(section).toContainText('기존자료 기준 참고 비교'); await expect(section).toContainText('생성연도는 확인되지 않았');
   control.referenceMode = 'supplement'; await query.click(); await expect(section).toContainText('2025학년도 보완자료');
-  control.referenceMode = 'single70'; await query.click(); await expect(section).toContainText('70% 참고선 단독'); await expect(section.getByRole('status')).toHaveCount(0); await expect(section).not.toContainText('예상 커트라인 240');
+  control.referenceMode = 'single70'; await query.click(); await expect(section).toContainText('70% 참고선 단독'); await expect(section.getByRole('status')).toHaveCount(0); await expect(section).not.toContainText('합격권 추정선');
   control.referenceMode = 'corrupt'; await query.click(); await expect(section).toContainText('비교 보류'); await expect(section).not.toContainText('250점');
   await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129'); await expect(section).toHaveCount(0);
 });
@@ -471,7 +471,7 @@ test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린�
 
 test('검수된 가능성 지수와 다섯 단계는 서버 분류를 표시하고 실제 합격률과 구분한다', async ({ page }) => {
   const control = await setup(page); control.possibilityMode = 'ready'; await page.goto(path); await prepareConversion(page);
-  for (const [riskBand, percent, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '중립'], ['challenge', 30, '도전'], ['risky', 15, '위험']]) {
+  for (const [riskBand, percent, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '소신'], ['challenge', 30, '상향'], ['risky', 15, '위험']]) {
     control.riskBand = riskBand; control.indexPoints = percent;
     await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
     await expect(page.locator('.jcalc-probability')).toHaveText(`약 ${percent}점 / 100`);

@@ -17,7 +17,7 @@ async function setup(page, options = {}) {
   await context.route('https://www.googletagmanager.com/**', route => route.abort());
   await context.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__workspace-analysis',consulting:'/__workspace-core',auth:'/__workspace-auth'}};` }));
   await context.route('**/__workspace-auth', route => route.fulfill({ json: { success: true } }));
-  await context.route('**/__workspace-analysis', route => {
+  await context.route('**/__workspace-analysis', async route => {
     const body = route.request().postDataJSON();
     if (body.type === 'get_calculator_access') { const value = calculatorAccessFixture({ applicationId: appId }); value.service.workspaceVersion = 2; if (options.grouped) value.service.selectionVersion = 1; return route.fulfill({ json: value }); }
     if (body.type === 'get_calculator_score_conversion') return route.fulfill({ json: calculatorScoreFixture(body.data.records) });
@@ -28,7 +28,14 @@ async function setup(page, options = {}) {
       return route.fulfill({ json: { success: true, contractVersion: 'calculator-catalog-v1', admissionYear: 2027, catalogDigest, admissionGroup, query, total: rows.length, items: rows.slice(cursor), nextCursor: null } });
     }
     expect(body.type).toBe('get_calculator_conversion'); const converted = calculatorRawPreviewFixture(body.data.scores, body.data.targets);
-    converted.results.forEach((row, index) => { if (body.data.targets[index].selection) row.selectionKey = body.data.targets[index].selection.key; });
+    converted.results.forEach((row, index) => {
+      const target = body.data.targets[index];
+      if (!target.selection) return;
+      row.selectionKey = target.selection.key;
+      Object.assign(row.referenceComparison, { recordId: target.selection.recordId, candidateAdmissionIdentity: { admissionUnitId: target.admissionUnitId }, riskBand: 'stable' });
+      if (options.referenceMissingGroups?.includes(target.selection.admissionGroup)) Object.assign(row.referenceComparison, { status: 'held', recordId: null, convertedScore: null, passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null, reasonCodes: ['REFERENCE_DATA_UNAVAILABLE'] });
+    });
+    if (state.deferConversion) await new Promise(resolve => { state.conversionRelease = resolve; });
     return route.fulfill({ json: converted });
   });
   await context.route('**/__workspace-core', async route => {
@@ -168,4 +175,39 @@ test('기존 후보는 군 미분류로 보존하고 정확한 선택으로 교�
   await addGroupTarget(page, '가군'); await expect(page.getByRole('region', { name: '미분류 기존 후보', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   expect(state.record.plans[0].targets).toEqual([groupedTargets[0]]);
+});
+
+test('저장한 대표 지원안을 포트폴리오로 보고 돌아와도 성적·조합을 변경하지 않는다', async ({ page }, testInfo) => {
+  const state = await setup(page, { grouped: true }); await saveScores(page);
+  const open = page.getByRole('button', { name: '포트폴리오 보기', exact: true }); await expect(open).toBeDisabled();
+  await addGroupTarget(page, '가군'); await expect(open).toBeDisabled();
+  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(open).toBeEnabled();
+  const saved = structuredClone(state.record), writes = state.calls.filter(row => row.type.startsWith('student_save_')).length;
+  await open.click(); const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(portfolio).toBeVisible();
+  await expect(portfolio.getByRole('heading', { name: '나의 정시 포트폴리오', exact: true })).toBeFocused();
+  const ga = portfolio.getByRole('article', { name: '가군 대표 지원안', exact: true });
+  await expect(ga).toContainText('710.25점'); await expect(ga).toContainText('80 / 100');
+  await expect(ga.getByRole('list', { name: '지원 가능성 5단계', exact: true }).locator('[aria-current="true"]')).toHaveText('안정');
+  await expect(portfolio.getByRole('article', { name: '나군 대표 지원안', exact: true })).toContainText('미선택');
+  await expect(portfolio.getByRole('article', { name: '다군 대표 지원안', exact: true })).toContainText('미선택');
+  await expect(portfolio).toContainText('연도 미확인'); await expect(portfolio).toContainText('실제 합격 확률이 아닙니다');
+  for (const width of [320, 375, 430, 768, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1); }
+  await page.screenshot({ path: testInfo.outputPath('portfolio-partial.png'), fullPage: true });
+  await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기', exact: true }).click(); await expect(portfolio).toHaveCount(0); await expect(open).toBeEnabled();
+  expect(state.record).toEqual(saved); expect(state.calls.filter(row => row.type.startsWith('student_save_'))).toHaveLength(writes);
+});
+
+test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {
+  const state = await setup(page, { grouped: true, referenceMissingGroups: ['na'] }); await saveScores(page);
+  await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군'); await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  const open = page.getByRole('button', { name: '포트폴리오 보기', exact: true }); await expect(open).toBeEnabled(); await open.click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }), na = portfolio.getByRole('article', { name: '나군 대표 지원안', exact: true });
+  await expect(na).toContainText('판단 대기'); await expect(na.locator('[aria-current="true"]')).toHaveCount(0); await expect(na).not.toContainText('710.25');
+  await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기', exact: true }).click();
+  await page.getByRole('button', { name: '성적 수정', exact: true }).click(); await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
+  state.deferConversion = true; await page.getByRole('button', { name: '성적 수정 저장', exact: true }).click();
+  await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 79'); await expect(open).toBeDisabled();
+  await expect.poll(() => typeof state.conversionRelease).toBe('function'); state.deferConversion = false; state.conversionRelease();
+  await expect(open).toBeEnabled(); await open.click(); await expect(portfolio.getByRole('article', { name: '가군 대표 지원안', exact: true })).toContainText('709.25점');
+  expect(state.record.plans[0].targets).toHaveLength(2); expect(state.record.profile.revision).toBe(2);
 });
