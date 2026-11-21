@@ -139,8 +139,11 @@ async function fits(page) {
 }
 
 async function fillScores(page, basis = 'official') {
-  if (basis === 'raw' && await page.getByRole('button', { name: '가채점 성적으로 새로 입력', exact: true }).count()) {
-    page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '가채점 성적으로 새로 입력', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: '국어 선택과목', exact: true })).toBeVisible();
+  if (basis === 'raw') {
+    const switchToRaw = page.getByRole('button', { name: '가채점 성적으로 새로 입력', exact: true });
+    if (await switchToRaw.count()) { page.once('dialog', dialog => dialog.accept()); await switchToRaw.click(); }
+    await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toBeVisible();
   }
   for (const [title, subject] of [['국어', '언어와매체'], ['수학', '미적분'], ['탐구 1', '사회·문화'], ['탐구 2', '생활과 윤리']]) {
     await page.getByRole('combobox', { name: `${title} 선택과목`, exact: true }).selectOption(subject);

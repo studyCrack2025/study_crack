@@ -15,7 +15,7 @@ async function setup(page, options = {}) {
   const state = { record: empty(), calls: [], receipts: new Map(), committedPlans: 0, lostReply: false, deferRead: false, readRelease: null, failRead: false, ...options };
   const context = page.context();
   const token = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url') + '.' + Buffer.from(JSON.stringify({ sub: 'workspace-student', exp: 4070908800 })).toString('base64url') + '.synthetic';
-  await context.addInitScript(({ withoutOwner, token }) => { if (withoutOwner) localStorage.setItem('accessToken', token); else if (!localStorage.getItem('userId')) localStorage.setItem('userId', 'workspace-student'); localStorage.setItem('userRole', 'student'); }, { withoutOwner: options.withoutOwner === true, token });
+  await context.addInitScript(({ withoutOwner, token }) => { if (withoutOwner) sessionStorage.setItem('accessToken', token); else if (!localStorage.getItem('userId')) localStorage.setItem('userId', 'workspace-student'); localStorage.setItem('userRole', 'student'); }, { withoutOwner: options.withoutOwner === true, token });
   await context.route('https://www.googletagmanager.com/**', route => route.abort());
   await context.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__workspace-analysis',consulting:'/__workspace-core',auth:'/__workspace-auth'}};` }));
   await context.route('**/__workspace-auth', route => route.fulfill({ json: { success: true } }));
@@ -88,6 +88,8 @@ async function addTarget(page) {
 
 test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 자료를 자동으로 연다', async ({ page }, testInfo) => {
   const state = await setup(page, { withoutOwner: true });
+  await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => ({ owner: localStorage.getItem('userId'), persistentToken: localStorage.getItem('accessToken') }))).toEqual({ owner: null, persistentToken: null });
   await expect(page.getByRole('searchbox')).toHaveCount(0); await expect(page.getByText('다른 기기에서도 이어보기', { exact: true })).toHaveCount(0);
   await saveScores(page); expect(state.record.profile.scores).toEqual(raw);
   await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveCount(0);
