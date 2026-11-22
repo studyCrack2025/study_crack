@@ -9,19 +9,22 @@ import './calculator-plan-board.css';
 
 function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyAccess }) {
   const dialog = React.useRef(null), currentDigest = React.useRef(null), previous = React.useRef(null), restoring = React.useRef(false), binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
+  const searchInput = React.useRef(null);
   const [university, setUniversity] = React.useState(null), [query, setQuery] = React.useState(''), [cursor, setCursor] = React.useState(0), [attempt, setAttempt] = React.useState(0);
   const [resource, setResource] = React.useState({ status: 'loading', items: [], nextCursor: null, total: 0, digest: null, error: '' });
   const term = query.trim();
   const showResults = Boolean(university || mode === 'browse' || term);
   React.useEffect(() => {
     const node = dialog.current, overflow = document.body.style.overflow;
-    node.showModal(); document.body.style.overflow = 'hidden';
+    node.showModal();
+    document.body.style.overflow = 'hidden';
+    if (mode === 'search') searchInput.current?.focus({ preventScroll: true });
     return () => {
       if (node.open) node.close();
       document.body.style.overflow = overflow;
       if (trigger.isConnected && !trigger.disabled) trigger.focus({ preventScroll: true });
     };
-  }, [trigger]);
+  }, [mode, trigger]);
   React.useEffect(() => {
     if (restoring.current) { restoring.current = false; return; }
     if (!showResults) return;
@@ -40,7 +43,7 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
   }, [group, university, term, showResults, cursor, attempt, binding]);
   const selectUniversity = school => {
     previous.current = { query, cursor, resource, scroll: dialog.current.scrollTop, key: school.universityKey };
-    setResource(previous => ({ ...previous, status: 'loading', items: [], nextCursor: null })); setUniversity(school); setQuery(''); setCursor(0); dialog.current.scrollTop = 0; requestAnimationFrame(() => dialog.current?.querySelector('input[type=search]')?.focus());
+    setResource(previous => ({ ...previous, status: 'loading', items: [], nextCursor: null })); setUniversity(school); setQuery(''); setCursor(0); dialog.current.scrollTop = 0; requestAnimationFrame(() => searchInput.current?.focus());
   };
   const back = () => {
     const saved = previous.current, same = saved.resource.digest === currentDigest.current;
@@ -60,7 +63,7 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
   return <dialog className="jcalc-unit-picker" ref={dialog} aria-labelledby="jcalc-unit-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="jcalc-picker-heading"><h2 id="jcalc-unit-picker-title">{CALCULATOR_GROUPS.find(([key]) => key === group)[1]} {title}</h2><CalculatorButton onClick={onClose} aria-label="모집단위 선택 닫기">닫기</CalculatorButton></div>
     {university && <div className="jcalc-picker-path"><CalculatorButton text onClick={back}>대학 목록으로</CalculatorButton><strong>{university.name}</strong></div>}
-    <label className="jcalc-field"><span>{university ? '학과명 검색' : '대학명 검색'}</span><input type="search" maxLength="80" autoFocus={mode === 'search'} value={query} placeholder={university ? '학과명 또는 전형' : '대학명 또는 캠퍼스'} onChange={changeQuery} /></label>
+    <label className="jcalc-field"><span>{university ? '학과명 검색' : '대학명 검색'}</span><input ref={searchInput} type="search" maxLength="80" value={query} placeholder={university ? '학과명 또는 전형' : '대학명 또는 캠퍼스'} onChange={changeQuery} /></label>
     {!showResults ? <CalculatorNote>대학명을 입력하면 검색 결과가 표시됩니다.</CalculatorNote> : <>
     {resource.status === 'loading' && <CalculatorNote role="status">목록을 불러오고 있습니다…</CalculatorNote>}
     {resource.status === 'error' && <div role="alert"><p className="jcalc-error">{resource.error}</p><CalculatorButton onClick={() => setAttempt(value => value + 1)}>목록 다시 불러오기</CalculatorButton></div>}
