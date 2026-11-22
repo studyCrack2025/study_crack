@@ -7,11 +7,19 @@ import { requestCalculatorCatalog } from './calculator-catalog-api.js';
 import { addPlanTarget, CALCULATOR_GROUPS, planTargetKey } from './calculator-plan-model.js';
 import './calculator-plan-board.css';
 
-function UnitPicker({ group, targets, representatives, onClose, onAdd, denyAccess }) {
+function UnitPicker({ group, trigger, targets, representatives, onClose, onAdd, denyAccess }) {
   const dialog = React.useRef(null), currentDigest = React.useRef(null), previous = React.useRef(null), restoring = React.useRef(false), binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
   const [university, setUniversity] = React.useState(null), [query, setQuery] = React.useState(''), [cursor, setCursor] = React.useState(0), [attempt, setAttempt] = React.useState(0);
   const [resource, setResource] = React.useState({ status: 'loading', items: [], nextCursor: null, total: 0, digest: null, error: '' });
-  React.useEffect(() => { const node = dialog.current, overflow = document.body.style.overflow; node.showModal(); document.body.style.overflow = 'hidden'; return () => { if (node.open) node.close(); document.body.style.overflow = overflow; }; }, []);
+  React.useEffect(() => {
+    const node = dialog.current, overflow = document.body.style.overflow;
+    node.showModal(); document.body.style.overflow = 'hidden';
+    return () => {
+      if (node.open) node.close();
+      document.body.style.overflow = overflow;
+      if (trigger.isConnected && !trigger.disabled) trigger.focus({ preventScroll: true });
+    };
+  }, [trigger]);
   React.useEffect(() => {
     if (restoring.current) { restoring.current = false; return; }
     const controller = new AbortController(); let active = true;
@@ -56,6 +64,7 @@ function UnitPicker({ group, targets, representatives, onClose, onAdd, denyAcces
 
 export default function CalculatorPlanBoard({ targets, representatives, results, current, locked, onAdd, onRemove, onRepresentative, onLegacyUnit, denyAccess }) {
   const [group, setGroup] = React.useState('ga'), [picker, setPicker] = React.useState(null);
+  const openPicker = (group, event) => setPicker({ group, trigger: event.currentTarget });
   const legacy = targets.filter(target => !target.selection);
   const resultFor = target => results?.get(planTargetKey(target));
   return <div className="jcalc-group-workspace">
@@ -63,8 +72,8 @@ export default function CalculatorPlanBoard({ targets, representatives, results,
     <div className="jcalc-group-board">{CALCULATOR_GROUPS.map(([key, label]) => {
       const rows = targets.filter(target => target.selection?.admissionGroup === key);
       return <section key={key} id={`jcalc-group-${key}`} className="jcalc-panel jcalc-group-card" data-current={group === key} aria-label={`${label} 지원 후보`}><div className="jcalc-group-heading"><h2>{label}</h2><span className="jcalc-badge">{rows.length}개 후보</span></div>
-        <CalculatorButton text disabled={locked} onClick={() => setPicker(key)}>분석 가능한 대학 보기</CalculatorButton>
-        <button className="jcalc-secondary jcalc-group-add" type="button" disabled={locked} onClick={() => setPicker(key)}>{label} 후보 찾기</button>
+        <CalculatorButton text disabled={locked} onClick={event => openPicker(key, event)}>분석 가능한 대학 보기</CalculatorButton>
+        <button className="jcalc-secondary jcalc-group-add" type="button" disabled={locked} onClick={event => openPicker(key, event)}>{label} 후보 찾기</button>
         {!rows.length && <CalculatorNote>{label}에서 비교할 대학·학과를 찾아보세요.</CalculatorNote>}
         <fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-group-candidates">{rows.map(target => <li key={target.selection.key} data-representative={representatives[key] === target.selection.key}>
           <div className="jcalc-group-identity"><div className="jcalc-school-heading"><strong>{target.selection.universityName}</strong><CalculatorForecast result={resultFor(target)} current={current} /></div><h3>{target.selection.unitName}</h3><p>{target.selection.campusName} · {target.selection.trackName}</p></div>
@@ -76,6 +85,6 @@ export default function CalculatorPlanBoard({ targets, representatives, results,
     })}</div>
     <CalculatorNote>조합당 최대 6개 후보를 비교하고 가·나·다군마다 대표 지원안 하나를 선택할 수 있습니다. 현재 {targets.length} / 6개</CalculatorNote>
     {legacy.length > 0 && <section className="jcalc-panel" aria-label="미분류 기존 후보"><h2>이전에 저장한 후보</h2><CalculatorNote>모집군을 확인하기 전까지 기존 입력을 보관합니다. 군별 후보 찾기에서 같은 모집단위를 선택하면 확인한 후보로 교체됩니다.</CalculatorNote><fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-candidates">{legacy.map(target => <li key={planTargetKey(target)}><strong>{target.university}</strong><span>{target.major}</span><CalculatorResult current={current} result={resultFor(target)} selectedId={target.admissionUnitId} onSelect={id => onLegacyUnit(planTargetKey(target), id)} /><CalculatorButton text onClick={() => onRemove(planTargetKey(target))}>기존 후보 삭제</CalculatorButton></li>)}</ul></fieldset></section>}
-    {picker && !locked && <UnitPicker group={picker} targets={targets} representatives={representatives} onClose={() => setPicker(null)} denyAccess={denyAccess} onAdd={target => { setGroup(target.selection.admissionGroup); onAdd(target); }} />}
+    {picker && !locked && <UnitPicker {...picker} targets={targets} representatives={representatives} onClose={() => setPicker(null)} denyAccess={denyAccess} onAdd={target => { setGroup(target.selection.admissionGroup); onAdd(target); }} />}
   </div>;
 }

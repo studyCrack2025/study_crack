@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import test from 'node:test';
-import { e2eSuiteSelection, smokeSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
+import { browserJobs, e2eSuiteSelection, smokeSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
 import { summarizeResults } from '../../studycrack-mobile-app/scripts/summarize-e2e-results.mjs';
 
 test('smoke and regression partition all files without an opt-out or unknown suite fallback', () => {
@@ -12,6 +12,21 @@ test('smoke and regression partition all files without an opt-out or unknown sui
   assert.deepEqual(smoke.testIgnore, []);
   assert.equal(regression.testMatch, '**/*.spec.mjs');
   assert.throws(() => e2eSuiteSelection('typo'));
+});
+
+test('deployment runs calculator checks in their own job and retains the remaining coverage', () => {
+  const jobs = browserJobs('all');
+  const focus = jobs.filter(job => job.suite === 'calculator');
+  assert.deepEqual(focus.map(job => job.shard), ['1/1']);
+  assert.deepEqual(jobs.filter(job => job.suite === 'without-calculator').map(job => job.shard), ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']);
+  assert.equal(new Set(jobs.map(job => job.label)).size, jobs.length);
+  assert.equal(jobs.length, 7);
+  const calculator = e2eSuiteSelection('calculator'), rest = e2eSuiteSelection('without-calculator');
+  assert.deepEqual(calculator.testMatch, rest.testIgnore);
+  assert.deepEqual(calculator.testIgnore, []);
+  assert.equal(rest.testMatch, e2eSuiteSelection('all').testMatch);
+  assert.deepEqual(browserJobs('web-css'), [{ label: '1', suite: 'web-css', shard: '1/1' }]);
+  assert.throws(() => browserJobs('typo'));
 });
 
 test('parallel browser jobs preserve one final gate, scope, immutable bytes and failure propagation', async () => {
@@ -38,10 +53,11 @@ test('parallel browser jobs preserve one final gate, scope, immutable bytes and 
   assert.doesNotMatch(prepare, /test:e2e|playwright install/);
   assert.match(browser, /needs: prepare/);
   assert.match(browser, /fail-fast: false/);
-  assert.ok(browser.includes("fromJSON(needs.prepare.outputs.suite == 'web-css' && '[1]' || '[1,2,3,4,5,6]')"));
-  assert.ok(browser.includes("SHARD_TOTAL: ${{ needs.prepare.outputs.suite == 'web-css' && '1' || '6' }}"));
-  assert.match(browser, /PLAYWRIGHT_SUITE: \$\{\{ needs.prepare.outputs.suite \}\}/);
-  assert.ok(browser.includes('--shard="$SHARD_INDEX/$SHARD_TOTAL" --workers=1 --retries=0'));
+  assert.ok(prepare.includes('browser-matrix: ${{ steps.scope.outputs.browser-matrix }}'));
+  assert.ok(browser.includes('include: ${{ fromJSON(needs.prepare.outputs.browser-matrix) }}'));
+  assert.ok(browser.includes('PLAYWRIGHT_SUITE: ${{ matrix.suite }}'));
+  assert.ok(browser.includes('SHARD: ${{ matrix.shard }}'));
+  assert.ok(browser.includes('--shard="$SHARD" --workers=1 --retries=0'));
   const tests = browser.indexOf('- name: Test required browser coverage');
   assert.ok(browser.indexOf('- name: Verify candidate bytes before browser tests') < tests);
   assert.ok(browser.indexOf('- name: Verify candidate bytes remained unchanged during browser tests') > tests);

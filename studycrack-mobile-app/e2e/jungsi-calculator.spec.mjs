@@ -359,7 +359,7 @@ test('DEV 원점수는 추정 변환 기준과 실제 반환 점수를 표시하
   const first = control.calls.find(call => call.type === 'get_calculator_conversion');
   expect(first.data.scores.basis).toBe('raw'); expect(first.data.scores.exam.kor).toEqual({ opt: '언어와매체', common: 60, elective: 20, raw: 80 });
   await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
-  await expect(page.locator('.jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
   await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click(); await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
   await expect(page.getByRole('region', { name: '자료 기준별 참고 비교' })).toContainText('709.25점');
 });
@@ -420,6 +420,8 @@ test('수능 성분과 미공표 소수점 정책은 최종 총점과 구분해 
   await expect(page.getByText('수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.', { exact: true })).toBeVisible();
   control.conversionMode = 'component-exact';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
+  await expect(page.getByText('공개 수능식의 계산값입니다.', { exact: false })).toBeAttached();
+  await showCautions(page);
   await expect(page.getByText('공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.', { exact: true })).toBeVisible();
   control.conversionMode = 'component-unknown';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
@@ -465,7 +467,7 @@ test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린�
   await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('128');
   control.conversionMode = 'ready'; control.conversionRelease();
   await expect(page.locator('.jcalc-score')).toHaveCount(0);
-  await expect(page.locator('.jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
   await page.getByRole('button', { name: '입력 성적 확인', exact: true }).click();
   control.conversionRelease = null; control.conversionMode = 'defer';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
@@ -474,7 +476,7 @@ test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린�
   control.conversionMode = 'ready'; control.conversionRelease();
   await expect(page.getByRole('heading', { name: '지원 후보 0 / 6' })).toHaveCount(0);
   await expect(page.locator('.jcalc-score')).toHaveCount(0);
-  await expect(page.locator('.jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
 });
 
 test('5단계는 서버 분류의 색상 배지로 표시하고 숫자 지수나 합격률은 노출하지 않는다', async ({ page }) => {
@@ -588,18 +590,18 @@ test('이용권 없음·조회 실패·손상 응답은 입력 화면을 열지 
 test('권한 재확인·실제 조회 중 권한 변경은 이전 수치를 숨기고 자동 재시도하지 않는다', async ({ page }) => {
   const control = await setup(page); control.possibilityMode = 'ready'; await page.goto(path); await prepareConversion(page);
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
-  await expect(page.locator('.jcalc-probability')).toHaveText('약 82점 / 100');
+  await expect(page.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
   control.accessAllowed = false;
   await refreshAccess(page);
   await expect(page.getByRole('heading', { name: '나의 계산기 신청' })).toBeVisible();
-  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-score, .jcalc-forecast-badge')).toHaveCount(0);
   control.accessAllowed = true;
   await refreshAccess(page);
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toBeEnabled();
   control.conversionMode = 'denied';
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
   await expect(page.getByRole('heading', { name: '나의 계산기 신청' })).toBeVisible();
-  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-score, .jcalc-forecast-badge')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(2);
 });
 
@@ -616,18 +618,18 @@ test('중복 클릭과 이용 상태의 늦은 응답은 조회를 반복하거�
   await page.evaluate(() => clearClientSession());
   await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
   control.accessMode = 'ready'; control.accessRelease();
-  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-score, .jcalc-forecast-badge')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '환산점수·가능성 조회', exact: true })).toHaveCount(0);
 });
 
 test('다른 화면에서 돌아오면 이용 상태를 재확인하고 연속 focus는 요청을 반복하지 않는다', async ({ page }) => {
   const control = await setup(page); control.possibilityMode = 'ready'; await page.goto(path); await prepareConversion(page);
   await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click();
-  await expect(page.locator('.jcalc-probability')).toHaveText('약 82점 / 100');
+  await expect(page.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
   await page.clock.install({ time: new Date('2026-11-28T00:00:00+09:00') }); await page.clock.fastForward(31_000);
   control.accessAllowed = false;
   await page.evaluate(() => { dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); });
   await expect(page.getByRole('heading', { name: '나의 계산기 신청' })).toBeVisible();
-  await expect(page.locator('.jcalc-score, .jcalc-probability')).toHaveCount(0);
+  await expect(page.locator('.jcalc-score, .jcalc-forecast-badge')).toHaveCount(0);
   expect(control.calls.filter(call => call.type === 'get_calculator_access')).toHaveLength(2);
 });
