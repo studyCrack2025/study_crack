@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { browserJobs } from '../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
 
 // Expand only alongside browser coverage for every page that consumes the stylesheet.
 export const webCssFiles = ['css/tutorial.css', 'css/mypage.css', 'css/payment-history.css'];
@@ -74,7 +75,7 @@ async function main() {
       return response.json();
     }
   });
-  await appendFile(process.env.GITHUB_OUTPUT, `suite=${scope.suite}\n`);
+  await appendFile(process.env.GITHUB_OUTPUT, `browser-matrix=${JSON.stringify(browserJobs(scope.suite))}\n`);
   await appendFile(process.env.GITHUB_STEP_SUMMARY, `### Verification scope: ${scope.suite}\n${scope.reason}\n\nBaseline: ${scope.baseline || 'unavailable'}\n`);
   console.log(`${scope.suite}: ${scope.reason}`);
 }

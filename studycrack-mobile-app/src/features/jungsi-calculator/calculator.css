@@ -101,17 +101,7 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-result-version { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
 .jcalc-result-version summary { padding: 12px 0; cursor: pointer; }
 .jcalc-forecast { display: grid; gap: 12px; margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--sc-line-subtle); }
-.jcalc-forecast-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
-.jcalc-forecast-head p { margin: 0; color: var(--sc-ink); font-size: 12px; font-weight: 700; }
 .jcalc-forecast-badge { padding: 5px 8px; border: 1px solid var(--sc-line-subtle); border-radius: 4px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 12px; font-weight: 700; }
-.jcalc-forecast[data-risk="stable"] .jcalc-forecast-badge, .jcalc-forecast[data-risk="appropriate"] .jcalc-forecast-badge { background: var(--sc-surface-positive); color: var(--sc-action-positive-strong); }
-.jcalc-forecast[data-risk="neutral"] .jcalc-forecast-badge { background: var(--sc-surface-subtle); color: var(--sc-brand-navy); }
-.jcalc-forecast[data-risk="challenge"] .jcalc-forecast-badge { background: var(--sc-surface-threshold); color: var(--sc-ink); }
-.jcalc-forecast[data-risk="risky"] .jcalc-forecast-badge { background: var(--sc-surface-urgent); color: var(--sc-action-urgent-strong); }
-.jcalc-probability { margin: 0; color: var(--sc-brand-navy); font-size: 32px; font-weight: 800; line-height: 1.5; letter-spacing: -0.04em; }
-.jcalc-risk-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; margin: 0; padding: 0; list-style: none; }
-.jcalc-risk-scale li { min-width: 0; padding: 8px 2px; border-radius: 3px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); text-align: center; font-size: 10px; }
-.jcalc-risk-scale [aria-current="true"] { background: var(--sc-brand-navy); color: var(--sc-on-brand); font-weight: 700; }
 .jcalc-forecast-note { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.85; }
 .jcalc-login { max-width: 600px; }
 .jcalc-login-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
@@ -127,3 +117,20 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
   .jcalc-intro { padding-block: 56px 44px; }
   .jcalc-summary { padding: 24px; }
 }
+
+.jcalc-school-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.jcalc-school-heading > strong { flex: 1 1 100px; min-width: 0; overflow-wrap: anywhere; }
+.jcalc-forecast-badge[data-risk="stable"] { color: var(--sc-on-brand); background: var(--sc-risk-stable); border-color: var(--sc-risk-stable); }
+.jcalc-forecast-badge[data-risk="appropriate"] { color: var(--sc-on-brand); background: var(--sc-risk-appropriate); border-color: var(--sc-risk-appropriate); }
+.jcalc-forecast-badge[data-risk="neutral"] { color: var(--sc-on-brand); background: var(--sc-risk-neutral); border-color: var(--sc-risk-neutral); }
+.jcalc-forecast-badge[data-risk="challenge"] { color: var(--sc-on-brand); background: var(--sc-risk-challenge); border-color: var(--sc-risk-challenge); }
+.jcalc-forecast-badge[data-risk="risky"] { color: var(--sc-on-brand); background: var(--sc-risk-risky); border-color: var(--sc-risk-risky); }
+.jcalc-reference-score { display: grid; gap: 4px; margin: 0; color: var(--sc-brand-navy); }
+.jcalc-reference-score > span { font-size: 12px; font-weight: 400; }
+.jcalc-reference-score > strong { font-size: clamp(24px, 4vw, 30px); font-weight: 800; overflow-wrap: anywhere; }
+.jcalc-reference-score small { margin-left: 4px; font-size: 12px; font-weight: 400; }
+.jcalc-cut-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); gap: 12px; margin: 0; }
+.jcalc-cut-lines dt { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.7; }
+.jcalc-cut-lines dd { margin: 4px 0 0; color: var(--sc-ink); font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.jcalc-cautions > summary { display: flex; align-items: center; min-height: 44px; color: var(--sc-ink-muted); font-size: 11px; text-decoration: underline; cursor: pointer; }
+.jcalc-cautions > p + p { margin-top: 8px; }

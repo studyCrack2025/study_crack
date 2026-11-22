@@ -1,8 +1,7 @@
 import React from 'react';
-import { CalculatorNote } from './CalculatorUi.jsx';
 import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
 
 export default function CalculatorRiskScale({ band }) {
-  if (!CALCULATOR_RISK_BANDS.some(([key]) => key === band)) return <CalculatorNote>지원 단계 판단 대기</CalculatorNote>;
-  return <ol className="jcalc-risk-scale" aria-label="지원 가능성 5단계">{CALCULATOR_RISK_BANDS.map(([key, title]) => <li key={key} aria-current={key === band ? 'true' : undefined}>{title}</li>)}</ol>;
+  const label = CALCULATOR_RISK_BANDS.find(([key]) => key === band)?.[1];
+  return <span className="jcalc-forecast-badge" role="status" data-risk={label ? band : 'unavailable'} aria-label={`지원 단계: ${label || '판단 대기'}`}>{label || '판단 대기'}</span>;
 }

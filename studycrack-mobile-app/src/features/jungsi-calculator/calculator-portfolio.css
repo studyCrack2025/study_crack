@@ -10,20 +10,13 @@
 .jcalc-portfolio-card { display: flex; flex-direction: column; gap: 20px; overflow-wrap: anywhere; }
 .jcalc-portfolio-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .jcalc-portfolio-card-heading h3 { margin: 0; color: var(--sc-brand-navy); font-size: 24px; }
-.jcalc-portfolio-card[data-risk="stable"] .jcalc-forecast-badge { color: var(--sc-action-positive-strong); background: var(--sc-surface-positive); }
-.jcalc-portfolio-card[data-risk="appropriate"] .jcalc-forecast-badge { color: var(--sc-action-positive-strong); background: var(--sc-surface-positive); }
-.jcalc-portfolio-card[data-risk="neutral"] .jcalc-forecast-badge { color: var(--sc-brand-navy); }
-.jcalc-portfolio-card[data-risk="challenge"] .jcalc-forecast-badge { color: var(--sc-ink); background: var(--sc-surface-threshold); }
-.jcalc-portfolio-card[data-risk="risky"] .jcalc-forecast-badge { color: var(--sc-action-urgent-strong); background: var(--sc-surface-urgent); }
-.jcalc-portfolio-identity > strong { font-size: 14px; color: var(--sc-brand-navy); }
+.jcalc-portfolio-identity .jcalc-school-heading > strong { font-size: 14px; color: var(--sc-brand-navy); }
 .jcalc-portfolio-identity h4 { margin: 10px 0; color: var(--sc-ink); font-size: 22px; line-height: 1.6; }
 .jcalc-portfolio-identity p { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
 .jcalc-portfolio-score { display: grid; gap: 10px; padding: 20px 0; border-top: 1px solid var(--sc-line-subtle); border-bottom: 1px solid var(--sc-line-subtle); color: var(--sc-brand-navy); }
 .jcalc-portfolio-score > span { font-size: 12px; }
 .jcalc-portfolio-score > strong { font-size: clamp(24px, 3vw, 32px); line-height: 1.5; }
 .jcalc-portfolio-score small { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
-.jcalc-portfolio-indicator > p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin: 0 0 16px; color: var(--sc-ink-muted); font-size: 12px; line-height: 1.8; }
-.jcalc-portfolio-indicator strong { color: var(--sc-brand-navy); font-size: 16px; }
 .jcalc-portfolio-reference { margin-top: auto; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.9; }
 .jcalc-portfolio-reference > p { margin: 0; font-weight: 700; }
 .jcalc-portfolio-reference dl { display: grid; gap: 12px; margin: 16px 0; }
