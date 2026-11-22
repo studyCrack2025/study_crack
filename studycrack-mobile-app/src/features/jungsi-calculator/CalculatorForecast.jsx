@@ -17,6 +17,6 @@ export function calculatorForecastNote(possibility) {
 }
 export default function CalculatorForecast({ possibility, result, current = true }) {
   const formal = result?.status === 'available', value = result ? result.possibility : possibility;
-  const band = !current || result?.status === 'ineligible' ? null : result && !formal ? result.referenceComparison?.riskBand : value?.status === 'available' ? value.riskBand : null;
+  const band = current && (!result || formal) && value?.status === 'available' ? value.riskBand : null;
   return <CalculatorRiskScale band={band} />;
 }

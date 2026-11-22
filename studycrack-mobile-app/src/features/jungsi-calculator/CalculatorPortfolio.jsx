@@ -16,11 +16,11 @@ export default function CalculatorPortfolio({ model, onBack }) {
       <CalculatorNote role={output.status === 'error' ? 'alert' : 'status'}>{output.action ? output.action === 'copying' ? '이미지를 복사하고 있습니다…' : 'PNG 저장을 요청하고 있습니다…' : output.message || (output.status === 'loading' ? '공유할 이미지를 준비하고 있습니다…' : '현재 조합을 이미지로 복사하거나 PNG로 저장할 수 있습니다.')}</CalculatorNote>
     </div>
     <section className="jcalc-panel" aria-label="포트폴리오 성적 요약"><h2>내 성적</h2><CalculatorNote>{model.scoreSummary.basis}</CalculatorNote><dl className="jcalc-profile-scores">{model.scoreSummary.items.map(item => <div key={item.label}><dt>{item.label} · {item.subject}</dt><dd>{item.value}<small>{item.detail}</small></dd></div>)}</dl><CalculatorNote>{model.scoreSummary.grades}</CalculatorNote></section>
-    <div className="jcalc-portfolio-cards">{model.cards.map(card => <article key={card.group} className="jcalc-panel jcalc-portfolio-card" aria-label={`${card.label} 대표 지원안`} data-risk={card.indicator?.band || 'unavailable'}>
+    <div className="jcalc-portfolio-cards">{model.cards.map(card => <article key={card.group} className="jcalc-panel jcalc-portfolio-card" aria-label={`${card.label} 지원 후보`} data-risk={card.indicator?.band || 'unavailable'}>
       <div className="jcalc-portfolio-card-heading"><h3>{card.label}</h3>{card.status === 'empty' && <span>미선택</span>}</div>
       {card.identity ? <><div className="jcalc-portfolio-identity"><div className="jcalc-school-heading"><strong>{card.identity.university}</strong><CalculatorRiskScale band={card.indicator.band} /></div><h4>{card.identity.unit}</h4><p>{card.identity.campus} · {card.identity.track}</p></div>
         {card.score && <div className="jcalc-portfolio-score"><span>{card.score.label}</span><strong>{card.score.value}</strong><small>{card.score.maximum}</small></div>}
-        {card.reference && <div className="jcalc-portfolio-reference"><p>{card.reference.label}</p><dl>{card.reference.lines.map(line => <div key={line.label}><dt>{line.label}</dt><dd>{line.value}</dd></div>)}</dl><details className="jcalc-cautions"><summary>주의사항</summary><small>{card.reference.note}</small></details></div>}
+        {card.reference && <div className="jcalc-portfolio-reference"><p>{card.reference.label}</p><dl>{card.reference.lines.map(line => <div key={line.label}><dt>{line.label}</dt><dd>{line.value}</dd></div>)}</dl>{card.reference.note && <details className="jcalc-cautions"><summary>주의사항</summary><small>{card.reference.note}</small></details>}</div>}
       </> : <p className="jcalc-portfolio-empty">아직 선택하지 않은 가능성.</p>}
       {card.notes.map(note => <p key={note} className="jcalc-note">{note}</p>)}
     </article>)}</div>

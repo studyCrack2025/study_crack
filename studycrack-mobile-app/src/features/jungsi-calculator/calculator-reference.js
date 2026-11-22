@@ -34,7 +34,11 @@ export function safeCalculatorReference(value, target, scores) {
       || b.registered70.low > value.registered70Reference + 1e-7 || b.registered70.high < value.registered70Reference - 1e-7
       || !range(i) || i.kind !== 'cut_assumption_range' || i.low < 1 || i.high > 99) return invalid();
   } else if (value.referenceBounds !== null || value.indexRange !== null || (value.status === 'historical70_only' ? value.referenceYear !== 2026 : value.referenceYear !== null)) return invalid();
-  return { status: value.status, convertedScore: value.convertedScore, passReference: value.passReference, registered70Reference: value.registered70Reference,
-    referenceIndex: value.referenceIndex, referenceYear: value.referenceYear, referenceBounds: value.referenceBounds, indexRange: value.indexRange,
-    riskBand: value.riskBand ?? null, recordId: value.recordId, sourceIds: Array.isArray(value.sourceIds) ? value.sourceIds.filter(id => /^SOURCE_[A-Z0-9_-]{1,150}$/.test(id)).slice(0, 20) : [], reasonCodes: value.reasonCodes };
+  const history = value.historical70;
+  const historical70 = Number.isInteger(history?.year) && history.year >= 2000 && history.year < 2027 && finite(history.score) && history.score >= 0
+    ? { year: history.year, score: history.score }
+    : value.status === 'historical70_only' && value.registered70Reference >= 0 ? { year: value.referenceYear, score: value.registered70Reference } : null;
+  return { status: two ? 'academic_score_without_cut' : value.status, convertedScore: value.convertedScore, historical70,
+    legacyScore: value.status === 'prior_data_two_estimates' || value.identityScope === 'legacy_unit_reference_only',
+    recordId: value.recordId, sourceIds: Array.isArray(value.sourceIds) ? value.sourceIds.filter(id => /^SOURCE_[A-Z0-9_-]{1,150}$/.test(id)).slice(0, 20) : [], reasonCodes: value.reasonCodes };
 }

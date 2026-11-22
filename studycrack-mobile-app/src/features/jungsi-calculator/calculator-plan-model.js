@@ -36,14 +36,14 @@ export function samePlanTargetIdentity(a, b) {
   return a && b && ['university', 'major', 'admissionUnitId'].every(key => a[key] === b[key])
     && (a.selection || b.selection ? a.selection && b.selection && ['key', 'recordId', 'trackId', 'admissionGroup'].every(key => a.selection[key] === b.selection[key]) : true);
 }
-export function addPlanTarget(targets, representatives, target) {
-  if (!target.selection || targets.some(row => planTargetKey(row) === planTargetKey(target) && JSON.stringify(row) === JSON.stringify(target))) return { targets, representatives };
-  const next = targets.filter(row => row.selection ? row.selection.key !== target.selection.key && !(row.admissionUnitId === target.admissionUnitId && row.selection.trackId === target.selection.trackId && row.selection.admissionGroup === target.selection.admissionGroup)
-    : row.university !== target.university || row.major !== target.major);
-  if (next.length >= 6) return { targets, representatives };
-  const group = target.selection.admissionGroup;
-  return { targets: [...next, target], representatives: representatives[group] && next.some(row => row.selection?.key === representatives[group]) ? representatives : { ...representatives, [group]: target.selection.key } };
+export function groupPlanTargets(targets, representatives) {
+  return CALCULATOR_GROUPS.flatMap(([group]) => {
+    const rows = targets.filter(target => target.selection?.admissionGroup === group);
+    const selected = rows.find(row => row.selection.key === representatives?.[group]) || rows[0];
+    return selected ? [selected] : [];
+  });
 }
-export function removePlanTarget(targets, representatives, key) {
-  return { targets: targets.filter(target => planTargetKey(target) !== key), representatives: Object.fromEntries(CALCULATOR_GROUPS.map(([group]) => [group, representatives[group] === key ? null : representatives[group]])) };
+
+export function setPlanTarget(targets, target) {
+  return groupPlanTargets([...targets.filter(row => row.selection.admissionGroup !== target.selection.admissionGroup), target]);
 }

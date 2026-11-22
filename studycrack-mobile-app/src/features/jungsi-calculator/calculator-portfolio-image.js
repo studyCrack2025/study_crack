@@ -35,8 +35,8 @@ export function layoutCalculatorPortfolio(model, context) {
     y = text(`${card.label}${card.status === 'empty' ? ' · 미선택' : ''}`, y, 36, 800, 'navy');
     if (card.identity) {
       y = text(`${card.identity.university} · ${card.indicator.label}`, y, 32, 700, CALCULATOR_RISK_BANDS.some(([key]) => key === card.indicator.band) ? card.indicator.band : 'ink'); y = text(card.identity.unit, y, 32, 700, 'ink'); y = text(`${card.identity.campus} · ${card.identity.track}`, y);
-      if (card.score) { y = text(`${card.score.label}  ${card.score.value}`, y, 38, 800, 'navy'); y = text(card.score.maximum, y, 22); }
-      if (card.reference) { y = text(card.reference.label, y, 24, 700, 'ink'); for (const line of card.reference.lines) y = text(`${line.label}  ${line.value}`, y); y = text(card.reference.note, y, 22); }
+      if (card.score) { y = text(`${card.score.label}  ${card.score.value}`, y, 38, 800, 'navy'); if (card.score.maximum) y = text(card.score.maximum, y, 22); }
+      if (card.reference) { y = text(card.reference.label, y, 24, 700, 'ink'); for (const line of card.reference.lines) y = text(`${line.label}  ${line.value}`, y); if (card.reference.note) y = text(card.reference.note, y, 22); }
     }
     for (const note of card.notes) y = text(note, y, 22);
     y += 16; commands.splice(at, 0, rect(top, y - top, 'paper', 'line')); y += GAP;

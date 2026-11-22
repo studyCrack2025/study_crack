@@ -117,15 +117,13 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
 function AccountCalculator({ owner }) {
   const { resource: access, refresh, deny } = useCalculatorAccess();
   const [home, setHome] = React.useState(null);
-  const retained = React.useRef(false), lastEntitlement = React.useRef(null), lastWorkspaceVersion = React.useRef(1), lastSelectionVersion = React.useRef(0);
   const allowed = access.status === 'ready' && access.data.access.allowed;
-  if (allowed) { retained.current = true; lastEntitlement.current = access.data.entitlement; lastWorkspaceVersion.current = access.data.service.workspaceVersion || 1; lastSelectionVersion.current = access.data.service.selectionVersion || 0; }
-  if (access.status === 'ready' && !allowed || access.status === 'error') retained.current = false;
+  const entitlement = access.data?.entitlement;
   return <><CalculatorAccess resource={access} onRefresh={refresh} />
     {access.status === 'ready' && !allowed && <CalculatorApplicationPanel onLoaded={setHome} accessDenied onRetry={refresh} /> }
-    {retained.current && (lastEntitlement.current && lastWorkspaceVersion.current === 2
-      ? <CalculatorWorkspace key={lastEntitlement.current.applicationId} entitlement={lastEntitlement.current} enabled={allowed} calculationEnabled={allowed && access.data.service.calculationEnabled} denyAccess={deny} grouped={lastSelectionVersion.current === 1} />
-      : <Workspace owner={owner} access={access} denyAccess={deny} entitlement={lastEntitlement.current} />)}
+    {allowed && (entitlement && access.data.service.workspaceVersion === 2
+      ? <CalculatorWorkspace key={entitlement.applicationId} entitlement={entitlement} enabled={allowed} calculationEnabled={access.data.service.calculationEnabled} denyAccess={deny} grouped={access.data.service.selectionVersion === 1} />
+      : <Workspace owner={owner} access={access} denyAccess={deny} entitlement={entitlement} />)}
     {access.status === 'ready' && !allowed && home?.items.length > 0 && <CalculatorSavedInputs home={home} input={null} changed readOnly />}
   </>;
 }
