@@ -10,19 +10,23 @@ import CalculatorPortfolio from './CalculatorPortfolio.jsx';
 import { createCalculatorPortfolio } from './calculator-portfolio-model.js';
 import { addPlanTarget, emptyRepresentatives, planTargetKey, removePlanTarget } from './calculator-plan-model.js';
 import { requestCalculatorConversion } from './calculator-api.js';
-import { candidateKey, editableScores, emptyScores, MAX_CANDIDATES, prepareCalculatorScores, scoresChanged } from './calculator-model.js';
+import { candidateKey, editableScores, emptyScores, MAX_CANDIDATES, SUBJECTS, prepareCalculatorScores, scoresChanged } from './calculator-model.js';
 import { CALCULATOR_STORAGE_CONSENT } from './calculator-storage-api.js';
 import useCalculatorScoreConversion from './useCalculatorScoreConversion.js';
 import useCalculatorWorkspace from './useCalculatorWorkspace.js';
 import './calculator-workspace.css';
 
 function ScoreSummary({ profile, estimates, onEdit, disabled }) {
-  const scores = profile.scores;
-  return <section className="jcalc-panel jcalc-profile" aria-label="저장한 내 성적"><div className="jcalc-section-head"><div><p className="jcalc-eyebrow">01 · 내 성적</p><h2>내 성적</h2></div><CalculatorButton disabled={disabled} onClick={onEdit}>성적 수정</CalculatorButton></div>
-    <CalculatorNote>{scores.basis === 'raw' ? '2027학년도 수능 가채점 기준 · 표준점수·백분위·등급은 추정치입니다.' : '이전에 저장한 성적표 기준 성적입니다.'}</CalculatorNote>
-    <dl className="jcalc-profile-scores">{[['kor', '국어'], ['math', '수학'], ['inq1', '탐구 1'], ['inq2', '탐구 2']].map(([key, label]) => <div key={key}><dt>{label} · {scores.exam[key].opt || scores.exam[key].name}</dt><dd>{scores.basis === 'raw' ? `원점수 ${scores.exam[key].raw}` : `표준점수 ${scores.exam[key].std}`}<small>{scores.basis === 'raw' ? estimates.results[key]?.status === 'converted' ? `예상 표점 ${estimates.results[key].metrics.standardScore} · 백분위 ${estimates.results[key].metrics.percentile} · ${estimates.results[key].metrics.grade}등급` : ['error', 'unavailable'].includes(estimates.results[key]?.status) ? '예상 성적을 확인하지 못했습니다' : '예상 성적 확인 중' : `백분위 ${scores.exam[key].pct} · ${scores.exam[key].grd}등급`}</small></dd></div>)}</dl>
-    {Object.values(estimates.results).some(row => ['error', 'unavailable'].includes(row.status)) && <CalculatorButton disabled={disabled} onClick={estimates.retry}>예상 성적 다시 계산</CalculatorButton>}
+  const scores = profile.scores, raw = scores.basis === 'raw';
+  return <section className="jcalc-panel jcalc-profile" aria-label="저장한 내 성적">
+    <div className="jcalc-section-head"><h2>내 성적 <small>{raw ? '가채점 · 추정' : '성적표 기준'}</small></h2><CalculatorButton disabled={disabled} onClick={onEdit}>성적 수정</CalculatorButton></div>
+    <dl className="jcalc-profile-overview">{SUBJECTS.map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{raw ? '원점수' : '표점'} {scores.exam[key][raw ? 'raw' : 'std']}</dd></div>)}</dl>
     <CalculatorNote>영어 {scores.exam.eng.grd}등급 · 한국사 {scores.exam.hist.grd}등급{scores.exam.foreign ? ` · ${scores.exam.foreign.name} ${scores.exam.foreign.grd}등급` : ''}</CalculatorNote>
+    <details className="jcalc-score-details"><summary>성적 상세</summary><div className="jcalc-score-table"><table><caption>{raw ? '2027학년도 수능 추정 성적' : '저장한 성적표 성적'}</caption><thead><tr>{['과목', '선택과목', ...(raw ? ['원점수'] : []), '표점', '백분위', '등급'].map((text, index) => <th key={index} scope="col">{text}</th>)}</tr></thead><tbody>{SUBJECTS.map(([key, label]) => {
+      const row = scores.exam[key], estimate = estimates.results[key], metrics = raw ? estimate?.metrics : { standardScore: row.std, percentile: row.pct, grade: row.grd };
+      return <tr key={key}><th scope="row">{label}</th><td>{row.opt || row.name}</td>{raw && <td>{row.raw}</td>}{['standardScore', 'percentile', 'grade'].map(metric => <td key={metric}>{metrics?.[metric] ?? '—'}</td>)}</tr>;
+    })}</tbody></table></div>{raw && <CalculatorNote>표준점수·백분위·등급은 추정치입니다.</CalculatorNote>}</details>
+    {Object.values(estimates.results).some(row => ['error', 'unavailable'].includes(row.status)) && <CalculatorButton disabled={disabled} onClick={estimates.retry}>예상 성적 다시 계산</CalculatorButton>}
   </section>;
 }
 
@@ -108,12 +112,15 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
       {!data.consentAccepted && <div className="jcalc-profile-consent"><CalculatorNote>입력한 성적과 지원 후보를 계정에 저장하고 운영팀이 계산기 제공·신청 관리를 위해 확인합니다. 컨설팅 검수 성적에는 반영되지 않습니다. <a href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a></CalculatorNote><label className="jcalc-storage-consent"><input type="checkbox" checked={consented} onChange={event => setConsented(event.currentTarget.checked)} /><span>성적·지원 후보 저장과 운영팀 열람에 동의합니다</span></label>{!consented && <CalculatorNote>처음 저장할 때 동의가 필요합니다.</CalculatorNote>}</div>}
     </CalculatorScoreForm></fieldset> : profile && <>
       <ScoreSummary profile={profile} estimates={estimates} disabled={locked} onEdit={() => { if (planDirty && !globalThis.confirm('저장하지 않은 조합 변경을 취소하고 성적을 수정할까요?')) return; if (planDirty) openPlan(baseline); setScores(editableScores(profile.scores)); setEditing(true); }} />
-      <section className="jcalc-panel" aria-label="지원 조합 관리"><div className="jcalc-section-head"><div><p className="jcalc-eyebrow">02 · 지원 조합</p><h2>나의 지원 조합</h2></div><span className="jcalc-badge">{data.plans.length} / 10 저장</span></div>
-        <fieldset className="jcalc-workspace-fields jcalc-plan-toolbar" disabled={locked}><label className="jcalc-field"><span>저장한 조합</span><select value={baseline?.planId || ''} onChange={event => { if (planDirty && !globalThis.confirm('저장하지 않은 변경을 취소하고 조합을 바꿀까요?')) return; openPlan(data.plans.find(plan => plan.planId === event.currentTarget.value) || null); }}><option value="">새 조합 만들기</option>{data.plans.map(plan => <option key={plan.planId} value={plan.planId}>{plan.name}</option>)}</select></label>
-          <label className="jcalc-field"><span>조합 이름</span><input type="text" maxLength="60" value={name} onChange={event => { setName(event.currentTarget.value); setMessage(''); }} /></label>
-          <div className="jcalc-workspace-actions"><CalculatorButton primary disabled={!name.trim() || !planDirty || !targets.length && !baseline} onClick={() => savePlan(false)}>조합 저장</CalculatorButton><CalculatorButton disabled={!name.trim() || !targets.length || data.plans.length >= 10} onClick={() => savePlan(true)}>다른 조합으로 저장</CalculatorButton>{baseline && <CalculatorButton text onClick={deletePlan}>조합 삭제</CalculatorButton>}{grouped && <CalculatorButton primary disabled={!portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</CalculatorButton>}</div>
+      <section className="jcalc-panel jcalc-plan-manager" aria-label="지원 조합 관리">
+        <div className="jcalc-section-head"><h2>{name.trim() || '새 조합'}</h2><span className="jcalc-note">{data.plans.length}/10 저장</span></div>
+        <fieldset className="jcalc-workspace-fields jcalc-plan-toolbar" disabled={locked}>
+          <div className="jcalc-plan-selection"><label className="jcalc-field"><span>저장한 조합</span><select value={baseline?.planId || ''} onChange={event => { if (planDirty && !globalThis.confirm('저장하지 않은 변경을 취소하고 조합을 바꿀까요?')) return; openPlan(data.plans.find(plan => plan.planId === event.currentTarget.value) || null); }}><option value="">새 조합</option>{data.plans.map(plan => <option key={plan.planId} value={plan.planId}>{plan.name}</option>)}</select></label><CalculatorButton disabled={data.plans.length >= 10} onClick={() => { if (!planDirty || globalThis.confirm('저장하지 않은 변경을 취소하고 새 조합을 만들까요?')) openPlan(null); }}>＋ 새 조합</CalculatorButton></div>
+          <div className="jcalc-workspace-actions"><CalculatorButton primary disabled={!name.trim() || !planDirty || !targets.length && !baseline} onClick={() => savePlan(false)}>변경사항 저장</CalculatorButton>{grouped && <CalculatorButton disabled={!portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</CalculatorButton>}
+            <details className="jcalc-plan-options"><summary>조합 관리</summary><label className="jcalc-field"><span>조합 이름</span><input type="text" maxLength="60" value={name} onChange={event => { setName(event.currentTarget.value); setMessage(''); }} /></label><div className="jcalc-workspace-actions"><CalculatorButton disabled={!name.trim() || !targets.length || data.plans.length >= 10} onClick={() => savePlan(true)}>다른 조합으로 저장</CalculatorButton>{baseline && <CalculatorButton text onClick={deletePlan}>조합 삭제</CalculatorButton>}</div></details>
+          </div>
         </fieldset>
-        {grouped && !portfolio && <CalculatorNote>대표 지원안을 하나 이상 선택하고 조합을 저장하면, 현재 성적의 계산이 끝난 뒤 포트폴리오를 볼 수 있습니다.</CalculatorNote>}
+        {grouped && !portfolio && <CalculatorNote>{planDirty ? '변경사항을 저장하면 포트폴리오를 볼 수 있습니다.' : !Object.values(representatives).some(Boolean) ? '군별 대표 지원안을 선택해주세요.' : '현재 성적의 계산이 끝나면 포트폴리오를 볼 수 있습니다.'}</CalculatorNote>}
       </section>
       {grouped ? <section className="jcalc-group-area" aria-label="군별 지원 조합">
         {targets.length > 0 && !calculationEnabled && <CalculatorNote>정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</CalculatorNote>}

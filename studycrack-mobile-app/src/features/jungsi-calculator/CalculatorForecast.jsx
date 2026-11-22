@@ -1,5 +1,4 @@
 import React from 'react';
-import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
 import CalculatorRiskScale from './CalculatorRiskScale.jsx';
 
 const messages = {
@@ -13,16 +12,11 @@ const messages = {
   CUT_REFERENCE_TEMPORARILY_UNAVAILABLE: '입결 자료를 불러오지 못했습니다. 잠시 후 다시 조회해주세요.'
 };
 
-export default function CalculatorForecast({ possibility }) {
-  const available = possibility?.status === 'available';
-  const label = available ? CALCULATOR_RISK_BANDS.find(([key]) => key === possibility.riskBand)?.[1] : '판단 보류';
-  return <section className="jcalc-forecast" aria-label="합격 가능성 지수" data-risk={available ? possibility.riskBand : 'unavailable'}>
-    <div className="jcalc-forecast-head"><p>합격 가능성 지수</p><b className="jcalc-forecast-badge">{label}</b></div>
-    {available ? <>
-      <p className="jcalc-probability" role="status">약 {possibility.index.points}점 / 100</p>
-      <CalculatorRiskScale band={possibility.riskBand} />
-      <p className="jcalc-forecast-note">입결 기준선에 따른 100점 척도의 지수입니다. 실제 합격률이 아니며 합격을 보장하지 않습니다.</p>
-      <details className="jcalc-result-version"><summary>가능성 지수 자료 기준</summary><p>{possibility.sourceYear}학년도 입결 · {possibility.targetYear}학년도 반영 기준<br />{possibility.policyVersion}<br />{possibility.publicationId}<br />검수일 {new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul' }).format(new Date(possibility.validatedAt))}</p></details>
-    </> : <p className="jcalc-forecast-note">{messages[possibility?.reasonCodes?.[0]] || '이 모집단위의 입결 자료 검수 상태를 확인해야 합니다. 현재는 지수와 지원 단계의 판단을 보류합니다.'}</p>}
-  </section>;
+export function calculatorForecastNote(possibility) {
+  return possibility?.status === 'available' ? `${possibility.sourceYear}학년도 입결 · 지원 단계는 실제 합격률이 아닙니다.` : messages[possibility?.reasonCodes?.[0]] || '입결 자료를 확인하고 있습니다. 지원 단계는 판단 대기입니다.';
+}
+export default function CalculatorForecast({ possibility, result, current = true }) {
+  const formal = result?.status === 'available', value = result ? result.possibility : possibility;
+  const band = !current || result?.status === 'ineligible' ? null : result && !formal ? result.referenceComparison?.riskBand : value?.status === 'available' ? value.riskBand : null;
+  return <CalculatorRiskScale band={band} />;
 }

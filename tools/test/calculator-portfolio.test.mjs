@@ -12,13 +12,13 @@ function fixture() {
   return { value, reference, target };
 }
 
-test('a saved partial portfolio preserves source precision, long identity, group order, missing groups and withheld probabilities', () => {
+test('a saved partial portfolio truncates display only and preserves source precision, long identity, group order, missing groups and withheld probabilities', () => {
   const { value, target } = fixture(), model = createCalculatorPortfolio(value);
   assert.ok(model); assert.equal(model.name, '나의 조합'); assert.deepEqual(model.cards.map(row => row.label), ['가군', '나군', '다군']);
-  assert.equal(model.cards[0].identity.unit, target.selection.unitName); assert.equal(model.cards[0].score.value, '730.123457점');
-  assert.equal(model.cards[0].indicator.band, 'stable'); assert.equal(model.cards[0].indicator.points, '80 / 100');
+  assert.equal(model.cards[0].identity.unit, target.selection.unitName); assert.equal(model.cards[0].score.value, '730.12점');
+  assert.equal(model.cards[0].indicator.band, 'stable'); assert.equal(model.cards[0].indicator.points, null); assert.equal(value.conversion.results[0].referenceComparison.convertedScore, 730.1234567);
   assert.deepEqual(model.cards.slice(1).map(row => row.status), ['empty', 'empty']);
-  assert.match(model.cards[0].reference.lines[0].label, /연도 미확인/); assert.doesNotMatch(model.cards[0].reference.lines[0].label, /2027/);
+  assert.match(model.cards[0].reference.label, /연도 미확인/); assert.doesNotMatch(model.cards[0].reference.label, /2027/);
   assert.match(model.probability, /자료가 준비/); assert.equal(model.cards[0].probability, undefined);
 });
 
@@ -30,8 +30,8 @@ test('a result from other scores, profile revision, selection or result order ca
 
 test('formal CSAT component points stay distinct from another reference scale and do not publish a forged probability', () => {
   const { value } = fixture(); Object.assign(value.conversion.results[0], { status: 'available', convertedScore: 51.1234567, maximumScore: 60, scoreScope: 'csat_component', forecast: { probability: { percent: 99 } }, possibility: { status: 'available', index: { points: 66 }, riskBand: 'appropriate', sourceYear: 2026, targetYear: 2027 } });
-  const card = createCalculatorPortfolio(value).cards[0]; assert.equal(card.score.label, '내 수능 반영점수'); assert.equal(card.score.value, '51.123457점'); assert.match(card.score.maximum, /60점/);
-  assert.equal(card.indicator.points, '66 / 100'); assert.equal(card.reference.lines[0].value, '730.123457점'); assert.ok(card.reference.lines.some(line => line.value === '80 / 100'));
+  const card = createCalculatorPortfolio(value).cards[0]; assert.equal(card.score.label, '예상 환산점수'); assert.equal(card.score.value, '51.12점'); assert.match(card.score.maximum, /60.00점/);
+  assert.equal(card.indicator.points, null); assert.equal(card.indicator.band, 'appropriate'); assert.equal(card.reference.lines[0].value, '730.12점'); assert.ok(card.reference.lines.some(line => line.value === '650.00점')); assert.doesNotMatch(JSON.stringify(card), /80 \/ 100|66 \/ 100/); assert.equal(value.conversion.results[0].convertedScore, 51.1234567);
   assert.match(card.notes.join(' '), /학생부·면접·실기/); assert.doesNotMatch(JSON.stringify(card), /99%/);
 });
 
@@ -54,9 +54,9 @@ test('prior-year ranges, a single 70 percent reference and score-only data keep 
   const { value, reference, target } = fixture();
   const display = patch => { value.conversion.results[0].referenceComparison = safeCalculatorReference({ ...reference, ...patch }, target, scores); return createCalculatorPortfolio(value).cards[0]; };
   const current = display({ status: 'current_two_references', referenceYear: 2025, referenceBounds: { kind: 'cut_assumption_range', pass: { low: 649, high: 651 }, registered70: { low: 699, high: 701 } }, indexRange: { kind: 'cut_assumption_range', low: 79, high: 81 } });
-  assert.match(current.reference.lines[0].label, /2025학년도 합격권/); assert.equal(current.reference.lines[0].value, '649~651점'); assert.ok(current.reference.lines.some(line => line.value === '79~81'));
+  assert.match(current.reference.label, /2025학년도/); assert.equal(current.reference.lines[0].value, '649.00~651.00점'); assert.ok(current.reference.lines.some(line => line.label === '상위 70% 추정 합격 컷')); assert.ok(!current.reference.lines.some(line => /지수/.test(line.label)));
   const single = display({ status: 'historical70_only', referenceYear: 2026, passReference: null, referenceIndex: null, riskBand: null });
-  assert.equal(single.indicator.band, null); assert.equal(single.indicator.points, null); assert.equal(single.reference.lines.length, 1); assert.match(single.reference.lines[0].label, /2026학년도 70%/);
+  assert.equal(single.indicator.band, null); assert.equal(single.indicator.points, null); assert.equal(single.reference.lines.length, 1); assert.match(single.reference.lines[0].label, /상위 70%/);
   const scoreOnly = display({ status: 'academic_score_without_cut', passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null });
   assert.ok(scoreOnly.score); assert.equal(scoreOnly.reference.lines.length, 0); assert.equal(scoreOnly.indicator.band, null); assert.match(scoreOnly.reference.note, /기준선이 없어/);
 });

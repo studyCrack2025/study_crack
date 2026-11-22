@@ -28,3 +28,7 @@
 @media (max-width: 899px) {
   .jcalc-group-card[data-current="false"] { display: none; }
 }
+
+.jcalc-picker-path { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.jcalc-university-choice { width: 100%; min-width: 0; border: 0; background: transparent; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.jcalc-university-choice > span { font-size: 12px; color: var(--sc-brand-navy); }

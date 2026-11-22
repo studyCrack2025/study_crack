@@ -32,15 +32,10 @@ export function layoutCalculatorPortfolio(model, context) {
   y = text(model.scoreSummary.grades, y) + 16;
   for (const card of model.cards) {
     const top = y, at = commands.length; y += 24;
-    y = text(`${card.label} · ${card.status === 'empty' ? '미선택' : card.indicator.label}`, y, 36, 800, 'navy');
+    y = text(`${card.label}${card.status === 'empty' ? ' · 미선택' : ''}`, y, 36, 800, 'navy');
     if (card.identity) {
-      y = text(`${card.identity.university} · ${card.identity.unit}`, y, 32, 700, 'ink'); y = text(`${card.identity.campus} · ${card.identity.track}`, y);
+      y = text(`${card.identity.university} · ${card.indicator.label}`, y, 32, 700, CALCULATOR_RISK_BANDS.some(([key]) => key === card.indicator.band) ? card.indicator.band : 'ink'); y = text(card.identity.unit, y, 32, 700, 'ink'); y = text(`${card.identity.campus} · ${card.identity.track}`, y);
       if (card.score) { y = text(`${card.score.label}  ${card.score.value}`, y, 38, 800, 'navy'); y = text(card.score.maximum, y, 22); }
-      y = text(`${card.indicator.caption}${card.indicator.points ? '  ' + card.indicator.points : ''}`, y, 28, 700, 'navy');
-      if (CALCULATOR_RISK_BANDS.some(([key]) => key === card.indicator.band)) {
-        const slot = (width - 64) / 5;
-        CALCULATOR_RISK_BANDS.forEach(([key, label], i) => { const active = key === card.indicator.band, x = MARGIN + 24 + i * (slot + 4); commands.push({ ...rect(y, 56, active ? 'navy' : 'subtle'), x, width: slot }); text(label, y + 8, 26, active ? 700 : 400, active ? 'onBrand' : 'muted', x + 20, slot - 40); }); y += 76;
-      } else y = text('지원 단계 판단 대기', y);
       if (card.reference) { y = text(card.reference.label, y, 24, 700, 'ink'); for (const line of card.reference.lines) y = text(`${line.label}  ${line.value}`, y); y = text(card.reference.note, y, 22); }
     }
     for (const note of card.notes) y = text(note, y, 22);
@@ -73,7 +68,7 @@ export async function renderCalculatorPortfolioPng(model, { signal, document: do
   if (!context || typeof canvas.toBlob !== 'function') throw Error('이 브라우저에서 이미지를 만들 수 없습니다.');
   try {
     const scene = layoutCalculatorPortfolio(model, context), style = doc.defaultView.getComputedStyle(doc.documentElement);
-    const palette = Object.fromEntries(Object.entries({ paper: '--sc-surface-card', navy: '--sc-brand-navy', onBrand: '--sc-on-brand', ink: '--sc-ink', muted: '--sc-ink-muted', subtle: '--sc-surface-subtle', line: '--sc-line-subtle' }).map(([key, token]) => {
+    const palette = Object.fromEntries(Object.entries({ paper: '--sc-surface-card', navy: '--sc-brand-navy', onBrand: '--sc-on-brand', ink: '--sc-ink', muted: '--sc-ink-muted', subtle: '--sc-surface-subtle', line: '--sc-line-subtle', stable: '--sc-risk-stable', appropriate: '--sc-risk-appropriate', neutral: '--sc-risk-neutral', challenge: '--sc-risk-challenge', risky: '--sc-risk-risky' }).map(([key, token]) => {
       const value = style.getPropertyValue(token).trim(); if (!value) throw Error('이미지 스타일을 준비하지 못했습니다. 다시 시도해주세요.'); return [key, value];
     }));
     canvas.width = scene.width; canvas.height = scene.height; context.textBaseline = 'top'; context.fillStyle = palette.paper; context.fillRect(0, 0, canvas.width, canvas.height);

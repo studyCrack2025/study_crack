@@ -12,7 +12,7 @@ const groupedTargets = ['ga', 'na', 'da'].flatMap((group, index) => [1, 2].map(n
 const empty = () => ({ contractVersion: 'calculator-workspace-v2', applicationId: appId, workspaceId: 'WS_' + 'a'.repeat(32), revision: 0, legacyRevision: 0, updatedAt: null, status: 'empty', profile: null, plans: [], lastSavedPlanId: null,
   canSave: true, canDelete: false, consentAccepted: false, consentRevision: 'CALCULATOR_INPUT_STORAGE_20261120_V1', source: 'self_reported', reviewed: false });
 async function setup(page, options = {}) {
-  const state = { record: empty(), calls: [], receipts: new Map(), committedPlans: 0, lostReply: false, deferRead: false, readRelease: null, failRead: false, ...options };
+  const state = { record: empty(), calls: [], catalogCalls: [], receipts: new Map(), committedPlans: 0, lostReply: false, deferRead: false, readRelease: null, failRead: false, ...options };
   const context = page.context();
   const token = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url') + '.' + Buffer.from(JSON.stringify({ sub: 'workspace-student', exp: 4070908800 })).toString('base64url') + '.synthetic';
   await context.addInitScript(({ withoutOwner, token }) => { if (withoutOwner) sessionStorage.setItem('accessToken', token); else if (!localStorage.getItem('userId')) localStorage.setItem('userId', 'workspace-student'); localStorage.setItem('userRole', 'student'); }, { withoutOwner: options.withoutOwner === true, token });
@@ -25,9 +25,13 @@ async function setup(page, options = {}) {
     if (body.type === 'get_calculator_score_conversion') return route.fulfill({ json: calculatorScoreFixture(body.data.records) });
     if (body.type === 'get_univ_list_only') return route.fulfill({ json: [{ univName: '예시대학교', majors: ['예시학과'] }] });
     if (body.type === 'get_calculator_catalog') {
-      expect(options.grouped).toBe(true); const { admissionGroup, query, cursor } = body.data;
+      state.catalogCalls.push(body.data);
+      expect(options.grouped).toBe(true); const { admissionGroup, query, cursor, view, universityKey } = body.data;
+      const schoolKey = 'UNIV_' + '1'.repeat(32);
+      if (view === 'universities') return route.fulfill({ json: { success: true, contractVersion: 'calculator-universities-v1', admissionYear: 2027, catalogDigest, admissionGroup, query, total: 1, items: [{ universityKey: schoolKey, name: '예시대학교', campuses: ['서울캠퍼스'], unitCount: 2 }], nextCursor: null } });
+      expect(view).toBe('units'); expect(universityKey).toBe(schoolKey);
       const rows = groupedTargets.filter(row => row.selection.admissionGroup === admissionGroup && (!query || row.university.includes(query)));
-      return route.fulfill({ json: { success: true, contractVersion: 'calculator-catalog-v1', admissionYear: 2027, catalogDigest, admissionGroup, query, total: rows.length, items: rows.slice(cursor), nextCursor: null } });
+      return route.fulfill({ json: { success: true, contractVersion: 'calculator-catalog-v1', admissionYear: 2027, catalogDigest, admissionGroup, query, universityKey, total: rows.length, items: rows.slice(cursor), nextCursor: null } });
     }
     expect(body.type).toBe('get_calculator_conversion'); const converted = calculatorRawPreviewFixture(body.data.scores, body.data.targets);
     converted.results.forEach((row, index) => {
@@ -92,6 +96,11 @@ test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 �
   expect(await page.evaluate(() => ({ owner: localStorage.getItem('userId'), persistentToken: localStorage.getItem('accessToken') }))).toEqual({ owner: null, persistentToken: null });
   await expect(page.getByRole('searchbox')).toHaveCount(0); await expect(page.getByText('다른 기기에서도 이어보기', { exact: true })).toHaveCount(0);
   await saveScores(page); expect(state.record.profile.scores).toEqual(raw);
+  const summary = page.getByRole('region', { name: '저장한 내 성적', exact: true });
+  await expect(summary.locator('table')).toBeHidden(); await summary.getByText('성적 상세', { exact: true }).click();
+  await expect(summary.locator('table')).toContainText('언어와매체'); await expect(summary.locator('table')).toContainText('80');
+  await summary.getByText('성적 상세', { exact: true }).click(); await expect(summary.locator('table')).toBeHidden();
+  expect((await summary.boundingBox()).height).toBeLessThan(320);
   await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
   const other = await page.context().newPage(); await other.goto(path); await expect(other.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 80'); await other.close();
@@ -102,7 +111,7 @@ test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 �
 });
 
 test('성적 수정 취소는 저장값을 보존하고 저장은 후보·조합을 유지하며 결과를 갱신한다', async ({ page }) => {
-  const state = await setup(page); await saveScores(page); await addTarget(page); await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  const state = await setup(page); await saveScores(page); await addTarget(page); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '지원 조합을 저장했습니다.' })).toBeVisible(); const planId = state.record.lastSavedPlanId;
   await page.getByRole('button', { name: '성적 수정', exact: true }).click(); await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
   await page.getByRole('button', { name: '성적 수정 취소', exact: true }).click(); expect(state.record.profile.scores.exam.kor.common).toBe(60);
@@ -114,9 +123,9 @@ test('성적 수정 취소는 저장값을 보존하고 저장은 후보·조합
 });
 
 test('이름별 조합을 복제·선택·삭제해도 다른 조합과 성적은 유지한다', async ({ page }) => {
-  const state = await setup(page); await saveScores(page); await addTarget(page); await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  const state = await setup(page); await saveScores(page); await addTarget(page); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
-  await page.getByRole('textbox', { name: '조합 이름', exact: true }).fill('두 번째 조합'); await page.getByRole('button', { name: '다른 조합으로 저장', exact: true }).click();
+  await page.getByText('조합 관리', { exact: true }).click(); await page.getByRole('textbox', { name: '조합 이름', exact: true }).fill('두 번째 조합'); await page.getByRole('button', { name: '다른 조합으로 저장', exact: true }).click();
   await expect(page.getByText('새 조합으로 저장했습니다.', { exact: true })).toBeVisible(); expect(state.record.plans).toHaveLength(2);
   page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '조합 삭제', exact: true }).click();
   await expect(page.getByRole('textbox', { name: '조합 이름', exact: true })).toHaveValue('기본 조합'); expect(state.record.plans).toHaveLength(1); expect(state.record.profile.revision).toBe(1);
@@ -125,8 +134,8 @@ test('이름별 조합을 복제·선택·삭제해도 다른 조합과 성적�
 
 test('저장 응답이 끊겨도 같은 요청으로 재시도해 조합을 중복 생성하지 않는다', async ({ page }) => {
   const state = await setup(page); await saveScores(page); await addTarget(page); state.lostReply = true;
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(page.getByRole('alert')).toBeVisible();
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click(); await expect(page.getByRole('alert')).toBeVisible();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click(); await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   const writes = state.calls.filter(row => row.type === 'student_save_calculator_plan'); expect(writes).toHaveLength(2); expect(writes[0].data.requestId).toBe(writes[1].data.requestId);
   expect(state.committedPlans).toBe(1); expect(state.record.plans).toHaveLength(1);
 });
@@ -144,6 +153,7 @@ async function addGroupTarget(page, label, track = 1) {
   await page.getByRole('button', { name: `${label} 후보 찾기`, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: `${label} 후보 찾기`, exact: true });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: /예시대학교/ }).click();
   await dialog.getByRole('button', { name: `예시대학교 예시학과 일반전형${track} 후보에 추가`, exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }
@@ -154,7 +164,7 @@ test('군별로 같은 이름의 모집단위를 구별하고 대표 선택·저
   await addGroupTarget(page, '가군', 2);
   const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
   await ga.getByRole('button', { name: '가군 예시대학교 예시학과 대표 선택', exact: true }).nth(1).click();
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   expect(state.record.plans[0].targets).toHaveLength(4); expect(state.record.plans[0].representatives).toEqual({ ga: groupedTargets[1].selection.key, na: groupedTargets[2].selection.key, da: groupedTargets[4].selection.key });
   await page.reload(); await expect(page.getByRole('region', { name: '군별 지원 조합', exact: true })).toBeVisible();
@@ -166,7 +176,7 @@ test('군별로 같은 이름의 모집단위를 구별하고 대표 선택·저
   await page.screenshot({ path: testInfo.outputPath('grouped-mobile.png'), fullPage: true });
   await page.getByRole('navigation', { name: '모집군 선택', exact: true }).getByRole('button', { name: /가군/ }).click();
   await ga.getByRole('button', { name: '가군 예시대학교 예시학과 후보 삭제', exact: true }).nth(1).click();
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible(); expect(state.record.plans[0].representatives.ga).toBeNull(); expect(state.record.plans[0].targets).toHaveLength(3);
 });
 
@@ -177,7 +187,7 @@ test('기존 후보는 군 미분류로 보존하고 정확한 선택으로 교�
   await expect(page.getByRole('region', { name: '미분류 기존 후보', exact: true })).toBeVisible();
   for (const label of ['가군', '나군', '다군']) await expect(page.getByRole('region', { name: `${label} 지원 후보`, exact: true }).getByRole('listitem')).toHaveCount(0);
   await addGroupTarget(page, '가군'); await expect(page.getByRole('region', { name: '미분류 기존 후보', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click(); await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   expect(state.record.plans[0].targets).toEqual([groupedTargets[0]]);
 });
 
@@ -185,13 +195,13 @@ test('저장한 대표 지원안을 포트폴리오로 보고 돌아와도 성�
   const state = await setup(page, { grouped: true }); await saveScores(page);
   const open = page.getByRole('button', { name: '포트폴리오 보기', exact: true }); await expect(open).toBeDisabled();
   await addGroupTarget(page, '가군'); await expect(open).toBeDisabled();
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await expect(open).toBeEnabled();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click(); await expect(open).toBeEnabled();
   const saved = structuredClone(state.record), writes = state.calls.filter(row => row.type.startsWith('student_save_')).length;
   await open.click(); const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(portfolio).toBeVisible();
   await expect(portfolio.getByRole('heading', { name: '나의 정시 포트폴리오', exact: true })).toBeFocused();
   const ga = portfolio.getByRole('article', { name: '가군 대표 지원안', exact: true });
-  await expect(ga).toContainText('710.25점'); await expect(ga).toContainText('80 / 100');
-  await expect(ga.getByRole('list', { name: '지원 가능성 5단계', exact: true }).locator('[aria-current="true"]')).toHaveText('안정');
+  await expect(ga).toContainText('710.25점'); await expect(ga).not.toContainText('80 / 100'); await expect(ga.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
+  await expect(ga.locator('.jcalc-forecast-badge')).toHaveAttribute('data-risk', 'stable');
   await expect(portfolio.getByRole('article', { name: '나군 대표 지원안', exact: true })).toContainText('미선택');
   await expect(portfolio.getByRole('article', { name: '다군 대표 지원안', exact: true })).toContainText('미선택');
   await expect(portfolio).toContainText('연도 미확인'); await expect(portfolio).toContainText('실제 합격 확률이 아닙니다');
@@ -203,7 +213,7 @@ test('저장한 대표 지원안을 포트폴리오로 보고 돌아와도 성�
 
 test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {
   const state = await setup(page, { grouped: true, referenceMissingGroups: ['na'] }); await saveScores(page);
-  await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군'); await page.getByRole('button', { name: '조합 저장', exact: true }).click();
+  await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군'); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   const open = page.getByRole('button', { name: '포트폴리오 보기', exact: true }); await expect(open).toBeEnabled(); await open.click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }), na = portfolio.getByRole('article', { name: '나군 대표 지원안', exact: true });
   await expect(na).toContainText('판단 대기'); await expect(na.locator('[aria-current="true"]')).toHaveCount(0); await expect(na).not.toContainText('710.25');
@@ -218,7 +228,7 @@ test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로
 
 async function openExportPortfolio(page) {
   const state = await setup(page, { grouped: true }); await saveScores(page); await addGroupTarget(page, '가군');
-  await page.getByRole('button', { name: '조합 저장', exact: true }).click(); await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click(); await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
   const region = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(region).toBeVisible(); return { state, region };
 }
 async function receivePng(download, testInfo, filename) {
@@ -275,4 +285,21 @@ test('필수 글꼴 준비 실패는 성공이나 빈 이미지로 숨기지 않
   await page.addInitScript(() => { window.__originalFontLoad = document.fonts.load.bind(document.fonts); document.fonts.load = () => Promise.reject(new Error('필수 글꼴을 불러오지 못했습니다.')); });
   const { region } = await openExportPortfolio(page); await expect(region.getByRole('button', { name: '이미지 다시 준비', exact: true })).toBeVisible(); await expect(region.getByRole('button', { name: 'PNG 저장', exact: true })).toBeDisabled();
   await page.evaluate(() => { document.fonts.load = window.__originalFontLoad; }); await region.getByRole('button', { name: '이미지 다시 준비', exact: true }).click(); await expect(region.getByRole('button', { name: 'PNG 저장', exact: true })).toBeEnabled();
+});
+
+
+test('군별 대학 안내는 대학만 먼저 보여주고 학과 선택·뒤로·Esc는 검색과 저장 자료를 보존한다', async ({ page }) => {
+  const state = await setup(page, { grouped: true }); await saveScores(page); const saved = structuredClone(state.record);
+  const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true }), trigger = ga.getByRole('button', { name: '분석 가능한 대학 보기', exact: true });
+  await trigger.click(); const dialog = page.getByRole('dialog', { name: '가군 후보 찾기', exact: true });
+  await expect(dialog.getByRole('button', { name: /예시대학교/ })).toBeVisible();
+  expect(state.catalogCalls.every(call => call.view === 'universities')).toBe(true); await expect(dialog.getByRole('button', { name: /후보에 추가$/ })).toHaveCount(0);
+  await dialog.getByRole('searchbox', { name: '대학명 검색', exact: true }).fill('예시');
+  await dialog.getByRole('button', { name: /예시대학교/ }).click();
+  await expect(dialog.getByRole('button', { name: '예시대학교 예시학과 일반전형1 후보에 추가', exact: true })).toBeVisible();
+  expect(state.catalogCalls.at(-1)).toMatchObject({ admissionGroup: 'ga', view: 'units', universityKey: 'UNIV_' + '1'.repeat(32) });
+  await dialog.getByRole('button', { name: '대학 목록으로', exact: true }).click(); await expect(dialog.getByRole('searchbox')).toHaveValue('예시');
+  await expect(dialog.getByRole('button', { name: /예시대학교/ })).toBeFocused(); await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused(); expect(state.record).toEqual(saved);
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden');
 });
