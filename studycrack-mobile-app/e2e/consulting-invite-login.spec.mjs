@@ -1,3 +1,4 @@
+import { calculatorAccessFixture, calculatorEmptyStorage } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 
 const startPath = '/2027-jungsi-consulting/start';
@@ -70,7 +71,8 @@ async function prepare(page, { productType } = {}) {
       expect(body.data.applicationId).toBe(applicationId); expect(body.data.code).toBe('0000000042'); api.claimed = true;
       return reply({ success: true, data: { productType: 'calculator', caseId: null, applicationId } });
     }
-    if (body.type === 'get_calculator_access' && productType === 'calculator') return reply({ success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027, access: { allowed: api.claimed, source: api.claimed ? 'purchase' : 'none' }, service: { state: 'preparing', purchaseAvailable: false } });
+    if (body.type === 'get_calculator_access' && productType === 'calculator') return reply(calculatorAccessFixture({ allowed: api.claimed, applicationId }));
+    if (body.type === 'student_get_calculator_input' && productType === 'calculator') return reply(calculatorEmptyStorage(applicationId));
     if (body.type === 'get_univ_list_only' && productType === 'calculator') return reply([]);
     if (body.type === 'student_get_calculator_applications' && productType === 'calculator') return reply({ success: true, data: { contractVersion: 'calculator-applications-v1', items: [], hasMore: false, needsReview: false, accountEmailMask: null } });
     throw new Error('Unexpected synthetic request: ' + body.type);
@@ -143,8 +145,8 @@ test('계산기 승인 링크에서 로그인·이메일10자리 코드 인증 �
   await expect(page.getByRole('heading', { name: '합격 계산기 이용 인증' })).toBeVisible();
   await codeInput(page).fill('0000000042'); await page.getByRole('button', { name: '유료회원 인증하고 시작하기', exact: true }).click();
   await expect(page).toHaveURL(/\/2027-jungsi-consulting\/calculator$/);
-  await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toBeVisible();
   expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
-  await page.reload(); await expect(page.getByRole('textbox', { name: '국어 표준점수', exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toBeVisible();
   expect(api.calls.filter(x => x.type === 'student_claim_v2_consulting_invite')).toHaveLength(1);
 });

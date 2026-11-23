@@ -45,7 +45,7 @@ jobs:
       contents: read
       actions: read
     outputs:
-      suite: ${{ steps.scope.outputs.suite }}
+      browser-matrix: ${{ steps.scope.outputs.browser-matrix }}
       artifact-name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       manifest-digest: ${{ steps.candidate.outputs.manifest-digest }}
     env:
@@ -102,6 +102,7 @@ jobs:
           retention-days: 14
 
   e2e:
+    name: e2e (${{ matrix.label }})
     needs: prepare
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-26.04
@@ -115,7 +116,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.prepare.outputs.suite == 'web-css' && '[1]' || '[1,2,3,4,5,6]') }}
+        include: ${{ fromJSON(needs.prepare.outputs.browser-matrix) }}
     defaults:
       run:
         shell: bash
@@ -148,10 +149,9 @@ jobs:
       - name: Test required browser coverage
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
-          PLAYWRIGHT_SUITE: ${{ needs.prepare.outputs.suite }}
-          SHARD_INDEX: ${{ matrix.shard }}
-          SHARD_TOTAL: ${{ needs.prepare.outputs.suite == 'web-css' && '1' || '6' }}
-        run: npm run test:e2e -- --shard="$SHARD_INDEX/$SHARD_TOTAL" --workers=1 --retries=0
+          PLAYWRIGHT_SUITE: ${{ matrix.suite }}
+          SHARD: ${{ matrix.shard }}
+        run: npm run test:e2e -- --shard="$SHARD" --workers=1 --retries=0
       - name: Verify candidate bytes remained unchanged during browser tests
         if: ${{ !cancelled() }}
         env:
@@ -164,7 +164,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mobile-e2e-${{ matrix.shard }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: mobile-e2e-${{ matrix.label }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             studycrack-mobile-app/playwright-report/
             studycrack-mobile-app/test-results/

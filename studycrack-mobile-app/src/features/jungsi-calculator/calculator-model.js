@@ -14,7 +14,7 @@ export const SUBJECTS = [
   ['inq2', '탐구 2', INQUIRY_SUBJECTS]
 ];
 
-export function emptyScores(basis = 'official') {
+export function emptyScores(basis = 'raw') {
   return { admissionYear: CALCULATOR_YEAR, basis, exam: {
     kor: { opt: '', std: '', pct: '', grd: '', common: '', elective: '' },
     math: { opt: '', std: '', pct: '', grd: '', common: '', elective: '' },

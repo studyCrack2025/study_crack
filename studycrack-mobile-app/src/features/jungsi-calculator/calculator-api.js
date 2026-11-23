@@ -1,5 +1,6 @@
 import { apiFailure, apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { safeCalculatorReference } from './calculator-reference.js';
+import { calculatorComparisonScores } from './calculator-execution.js';
 
 const statuses = new Set(['available', 'unavailable', 'choice_required', 'ineligible']);
 const text = value => typeof value === 'string' && value.length > 0 && value.length <= 200;
@@ -25,7 +26,10 @@ function safePossibility(value, row, body) {
     || !/^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '') || !digest(value.publicationDigest) || !digest(value.referenceDigest)
     || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear > 2027 || value.targetYear !== 2027
     || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
+  const cutoffs = value.cutoffs;
+  const validCutoffs = Number.isFinite(cutoffs?.pass) && cutoffs.pass >= 0 && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 > cutoffs.pass;
   return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
+    ...(validCutoffs ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
 }
 
@@ -38,7 +42,7 @@ function validResponse(body, scores, targets) {
     || !/^eligibility-\d+\.\d+\.\d+$/.test(body.release.eligibilityRuleVersion || ''))) return false;
   return body.results.every((row, index) => {
     const target = targets[index];
-    if (!row || row.university !== target.university || row.major !== target.major || !statuses.has(row.status)
+    if (!row || row.university !== target.university || row.major !== target.major || target.selection && row.selectionKey !== target.selection.key || !statuses.has(row.status)
       || !Array.isArray(row.reasonCodes) || row.reasonCodes.length > 12 || row.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))
       || !Array.isArray(row.choices) || row.choices.length > 12 || row.choices.some(value => !unit(value))
       || new Set(row.choices.map(value => value.admissionUnitId)).size !== row.choices.length
@@ -56,14 +60,16 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
   const response = await postJson({ apiFetch, url: analysisApiUrl, signal,
     payload: { type: 'get_calculator_conversion', data: { scores, targets } }, fallbackError: '환산점수를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.' });
   if (!response.ok) {
-    if (response.code === 'CALCULATOR_ACCESS_REQUIRED') return apiFailure('입금 승인과 합격 계산기 이용 인증을 완료해주세요.', response);
-    if (response.code === 'CALCULATOR_NOT_OPEN') return apiFailure('합격 계산기는 11월 28일 공개 예정입니다. 성적과 지원 후보를 먼저 저장해주세요.', response);
+    if (response.code === 'CALCULATOR_ACCESS_REQUIRED') return apiFailure('이용 권한이 변경되었습니다. 이용 정보를 다시 확인해주세요.', response);
+    if (response.code === 'CALCULATOR_NOT_OPEN') return apiFailure('계산 결과는 정식 공개 후 조회할 수 있습니다. 성적과 지원 후보는 미리 저장할 수 있습니다.', response);
     if (response.code === 'INVALID_CALCULATOR_INPUT') return apiFailure('입력 성적과 선택한 후보를 다시 확인해주세요.', response);
     return response;
   }
   if (!validResponse(response.data, scores, targets)) return apiInvalidResponse(response, '환산 결과를 확인하지 못했습니다. 다시 조회해주세요.');
+  const comparisonScores = calculatorComparisonScores(response.data, scores);
+  if (!comparisonScores) return apiInvalidResponse(response, '계산에 사용한 성적 기준을 확인하지 못했습니다. 다시 조회해주세요.');
   return { ...response, data: { ...response.data, results: response.data.results.map((row, index) => {
-    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data), referenceComparison: safeCalculatorReference(row.referenceComparison, targets[index], scores) }; delete safe.forecast; return safe;
+    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data), referenceComparison: safeCalculatorReference(row.referenceComparison, targets[index], comparisonScores) }; delete safe.forecast; return safe;
   }) } };
 }
 
@@ -74,6 +80,21 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
   if (!value || value.success !== true || value.contractVersion !== 'jungsi-calculator-access-v1' || value.admissionYear !== 2027
     || !value.access || typeof value.access.allowed !== 'boolean' || !['membership', 'manager', 'purchase', 'none'].includes(value.access.source)
     || value.access.allowed !== (value.access.source !== 'none') || !value.service || value.service.purchaseAvailable !== false
-    || !['preparing', 'candidate_check_required'].includes(value.service.state)) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
-  return { ...response, data: { access: { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source }, service: { state: value.service.state, purchaseAvailable: false } } };
+    || !['preparing', 'candidate_check_required'].includes(value.service.state)
+    || value.service.workspaceVersion !== undefined && ![1, 2].includes(value.service.workspaceVersion)
+    || value.service.selectionVersion !== undefined && value.service.selectionVersion !== 1
+    || value.service.earlyAccess !== undefined && typeof value.service.earlyAccess !== 'boolean'
+    || value.service.earlyAccess === true && (!value.access.allowed || value.access.source !== 'purchase')) return apiInvalidResponse(response, '이용 상태를 확인하지 못했습니다. 다시 확인해주세요.');
+  const access = { allowed: value.access.allowed && value.access.source !== 'membership', source: value.access.source === 'membership' ? 'none' : value.access.source };
+  const entitlement = value.entitlement ?? null;
+  const mode = value.service.calculationMode ?? 'closed', enabled = value.service.calculationEnabled ?? false;
+  if (entitlement !== null && (!access.allowed || access.source !== 'purchase' || !/^APP_[0-9a-f-]{36}$/i.test(entitlement.applicationId || '')
+    || typeof entitlement.accessEndsAt !== 'string' || !Number.isFinite(Date.parse(entitlement.accessEndsAt)))
+    || access.source === 'purchase' && entitlement === null
+    || !['development_preview', 'published', 'closed'].includes(mode) || typeof enabled !== 'boolean'
+    || enabled !== (mode !== 'closed') || enabled && !access.allowed
+    || access.allowed && (value.service.calculationEnabled === undefined || value.service.calculationMode === undefined)
+    || value.service.earlyAccess === true && mode !== 'development_preview') return apiInvalidResponse(response, '이용권 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
+  return { ...response, data: { access, entitlement: entitlement ? { applicationId: entitlement.applicationId, accessEndsAt: entitlement.accessEndsAt } : null,
+    service: { state: value.service.state, purchaseAvailable: false, ...(value.service.workspaceVersion === undefined ? {} : { workspaceVersion: value.service.workspaceVersion }), ...(value.service.selectionVersion === undefined ? {} : { selectionVersion: value.service.selectionVersion }), earlyAccess: value.service.earlyAccess === true, calculationEnabled: enabled, calculationMode: mode } } };
 }

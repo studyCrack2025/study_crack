@@ -1,3 +1,5 @@
+import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
+
 const states = new Set(['current_two_references', 'prior_data_two_estimates', 'historical70_only', 'academic_score_without_cut', 'held', 'explicitly_excluded']);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const missing = code => ({ status: 'held', convertedScore: null, reasonCodes: [code] });
@@ -14,8 +16,10 @@ export function safeCalculatorReference(value, target, scores) {
   if (value.school !== target.university || value.major !== target.major || !/^(?:U|SG27|R(?:0[1-9]|1[0-9]|20))_[a-f0-9]{16}$/.test(value.recordId)
     || !/^sha256:[a-f0-9]{64}$/.test(value.bundleDigest) || value.targetYear !== 2027 || scores.basis !== 'official'
     || value.publicationReady !== false || value.personalEligibilityApproved !== false
-    || target.admissionUnitId && value.candidateAdmissionIdentity?.admissionUnitId !== target.admissionUnitId) return invalid();
+    || target.admissionUnitId && value.candidateAdmissionIdentity?.admissionUnitId !== target.admissionUnitId
+    || target.selection && value.recordId !== target.selection.recordId) return invalid();
   const two = ['current_two_references', 'prior_data_two_estimates'].includes(value.status);
+  if (value.riskBand !== undefined && (two ? !CALCULATOR_RISK_BANDS.some(([key]) => key === value.riskBand) : value.riskBand !== null)) return invalid();
   if (['held', 'explicitly_excluded'].includes(value.status)) {
     if (![value.convertedScore, value.passReference, value.registered70Reference, value.referenceIndex].every(x => x === null)) return invalid();
   } else if (!finite(value.convertedScore) || value.convertedScore < 0) return invalid();
@@ -30,7 +34,11 @@ export function safeCalculatorReference(value, target, scores) {
       || b.registered70.low > value.registered70Reference + 1e-7 || b.registered70.high < value.registered70Reference - 1e-7
       || !range(i) || i.kind !== 'cut_assumption_range' || i.low < 1 || i.high > 99) return invalid();
   } else if (value.referenceBounds !== null || value.indexRange !== null || (value.status === 'historical70_only' ? value.referenceYear !== 2026 : value.referenceYear !== null)) return invalid();
-  return { status: value.status, convertedScore: value.convertedScore, passReference: value.passReference, registered70Reference: value.registered70Reference,
-    referenceIndex: value.referenceIndex, referenceYear: value.referenceYear, referenceBounds: value.referenceBounds, indexRange: value.indexRange,
+  const history = value.historical70;
+  const historical70 = Number.isInteger(history?.year) && history.year >= 2000 && history.year < 2027 && finite(history.score) && history.score >= 0
+    ? { year: history.year, score: history.score }
+    : value.status === 'historical70_only' && value.registered70Reference >= 0 ? { year: value.referenceYear, score: value.registered70Reference } : null;
+  return { status: two ? 'academic_score_without_cut' : value.status, convertedScore: value.convertedScore, historical70,
+    legacyScore: value.status === 'prior_data_two_estimates' || value.identityScope === 'legacy_unit_reference_only',
     recordId: value.recordId, sourceIds: Array.isArray(value.sourceIds) ? value.sourceIds.filter(id => /^SOURCE_[A-Z0-9_-]{1,150}$/.test(id)).slice(0, 20) : [], reasonCodes: value.reasonCodes };
 }

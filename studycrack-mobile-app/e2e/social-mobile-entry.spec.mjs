@@ -1,3 +1,4 @@
+import { calculatorAccessFixture, calculatorEmptyStorage } from './support/calculator-fixture.mjs';
 import { expect, test } from '@playwright/test';
 import { installApiMock } from './support/mock-api.mjs';
 
@@ -10,16 +11,19 @@ async function routeSocialConfig(page, calculator) {
 }
 
 async function routeCalculatorAccess(page, allowed) {
+  await page.route('**/api/consulting', route => route.request().postDataJSON().type === 'student_get_calculator_input' ? route.fulfill({ json: calculatorEmptyStorage() }) : route.fallback());
   await page.route('**/api/analysis', route => {
     if (route.request().postDataJSON().type !== 'get_calculator_access') return route.fallback();
-    return route.fulfill({ json: { success: true, contractVersion: 'jungsi-calculator-access-v1', admissionYear: 2027,
-      access: { allowed, source: allowed ? 'purchase' : 'none' }, service: { state: 'preparing', purchaseAvailable: false } } });
+    return route.fulfill({ json: calculatorAccessFixture({ allowed }) });
   });
 }
 
 async function expectCalculatorAccess(page, allowed) {
-  await expect(page.getByRole('heading', { name: allowed ? '2027학년도 수능 성적' : '입금 승인과 이용 인증이 필요합니다.', exact: true })).toBeVisible();
-  if (!allowed) await expect(page.getByRole('heading', { name: '2027학년도 수능 성적', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: allowed ? '2027학년도 수능 가채점 성적' : '나의 계산기 신청', exact: true })).toBeVisible();
+  if (!allowed) {
+    await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toHaveCount(0);
+    await expect(page.locator('form')).toHaveCount(0);
+  }
 }
 
 for (const provider of ['google', 'naver']) for (const surface of ['mobile', 'calculator', 'approved-calculator']) test(`built ${surface} ${provider} button resumes an ended session through the real callback page`, async ({ page, context, baseURL }) => {

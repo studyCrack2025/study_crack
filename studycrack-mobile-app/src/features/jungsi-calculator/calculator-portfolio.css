@@ -1,0 +1,28 @@
+.jcalc-portfolio { display: grid; gap: 20px; min-width: 0; }
+.jcalc-export-actions { min-width: 0; }
+.jcalc-export-actions button { flex: 1 1 140px; min-height: 48px; }
+.jcalc-portfolio-hero { display: grid; gap: 20px; padding: clamp(28px, 5vw, 64px); border-radius: 16px; background: var(--sc-brand-navy); color: var(--sc-on-brand); overflow-wrap: anywhere; }
+.jcalc-portfolio-hero p { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
+.jcalc-portfolio-hero h2 { margin: 0; font-size: clamp(26px, 4vw, 44px); line-height: 1.4; letter-spacing: -0.04em; }
+.jcalc-portfolio-hero > strong { font-size: 20px; line-height: 1.6; }
+.jcalc-portfolio-hero > span { font-size: 12px; line-height: 1.8; }
+.jcalc-portfolio-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; align-items: stretch; }
+.jcalc-portfolio-card { display: flex; flex-direction: column; gap: 20px; overflow-wrap: anywhere; }
+.jcalc-portfolio-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.jcalc-portfolio-card-heading h3 { margin: 0; color: var(--sc-brand-navy); font-size: 24px; }
+.jcalc-portfolio-identity .jcalc-school-heading > strong { font-size: 14px; color: var(--sc-brand-navy); }
+.jcalc-portfolio-identity h4 { margin: 10px 0; color: var(--sc-ink); font-size: 22px; line-height: 1.6; }
+.jcalc-portfolio-identity p { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
+.jcalc-portfolio-score { display: grid; gap: 10px; padding: 20px 0; border-top: 1px solid var(--sc-line-subtle); border-bottom: 1px solid var(--sc-line-subtle); color: var(--sc-brand-navy); }
+.jcalc-portfolio-score > span { font-size: 12px; }
+.jcalc-portfolio-score > strong { font-size: clamp(24px, 3vw, 32px); line-height: 1.5; }
+.jcalc-portfolio-score small { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
+.jcalc-portfolio-reference { margin-top: auto; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.9; }
+.jcalc-portfolio-reference > p { margin: 0; font-weight: 700; }
+.jcalc-portfolio-reference dl { display: grid; gap: 12px; margin: 16px 0; }
+.jcalc-portfolio-reference dt { margin: 0 0 4px; }
+.jcalc-portfolio-reference dd { margin: 0; color: var(--sc-ink); font-size: 14px; font-weight: 700; }
+.jcalc-portfolio-reference small { font-size: inherit; }
+.jcalc-portfolio-empty { margin: 32px 0; color: var(--sc-ink-muted); font-size: 20px; line-height: 1.8; }
+.jcalc-portfolio-footer { padding: 20px; border-radius: 8px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 11px; line-height: 1.9; }
+.jcalc-portfolio-footer p { margin: 0 0 10px; }

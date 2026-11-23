@@ -9,7 +9,7 @@ export default function useCalculatorAccess() {
     if (pending.current) return;
     const controller = new AbortController(), requestId = ++sequence.current;
     pending.current = controller; checkedAt.current = Date.now();
-    setResource({ status: 'loading', data: null, error: '' });
+    setResource(previous => previous.status === 'ready' ? previous : { status: 'loading', data: null, error: '' });
     try {
       const result = await requestCalculatorAccess({ ...getMobileApiBinding('analysis', 'analysisApiUrl'), signal: controller.signal });
       if (controller.signal.aborted || requestId !== sequence.current) return;
@@ -23,7 +23,10 @@ export default function useCalculatorAccess() {
     return () => { sequence.current += 1; pending.current?.abort(); pending.current = null; globalThis.removeEventListener('focus', focus); };
   }, [refresh]);
   const deny = React.useCallback(() => {
-    setResource(previous => previous.status === 'ready' ? { ...previous, data: { ...previous.data, access: { allowed: false, source: 'none' } } } : previous);
+    sequence.current += 1;
+    pending.current?.abort();
+    pending.current = null;
+    setResource(previous => previous.status === 'ready' ? { ...previous, data: { ...previous.data, entitlement: null, access: { allowed: false, source: 'none' }, service: { ...previous.data.service, calculationEnabled: false, calculationMode: 'closed' } } } : previous);
   }, []);
   return { resource, refresh, deny };
 }
