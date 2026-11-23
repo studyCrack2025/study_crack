@@ -1,7 +1,7 @@
 import React from 'react';
 import CalculatorForecast, { calculatorForecastNote } from './CalculatorForecast.jsx';
 import { formatCalculatorScore } from './calculator-display.js';
-import CalculatorReference from './CalculatorReference.jsx';
+import CalculatorReference, { CalculatorCutoffLines } from './CalculatorReference.jsx';
 
 const groups = { ga: '가군', na: '나군', da: '다군' };
 const explanations = {
@@ -30,6 +30,6 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
       : result.referenceComparison?.convertedScore != null ? null : <p className="jcalc-result-message">{result.status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
       : <p className="jcalc-result-message">입력 조건이 바뀌었습니다. 환산점수를 다시 조회해주세요.</p>}
     {current && !exactSelection && <CalculatorForecast result={result} />}
-    {current && result.status === 'available' ? <details className="jcalc-cautions"><summary>주의사항</summary>{result.scoreScope === 'csat_component' && <small>{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</small>}<p className="jcalc-forecast-note">{calculatorForecastNote(result.possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>{result.possibility?.status === 'available' && <p className="jcalc-forecast-note">자료 기준 · {result.possibility.publicationId} · {result.possibility.policyVersion}</p>}{result.referenceComparison && <><p className="jcalc-forecast-note">아래는 별도 산식의 참고 자료입니다. 위 환산점수와 다른 점수 척도일 수 있습니다.</p><CalculatorReference reference={result.referenceComparison} /></>}</details> : current && <CalculatorReference reference={result.referenceComparison} />}
+    {current && result.status === 'available' ? <><CalculatorCutoffLines reference={result.referenceComparison} possibility={result.possibility} /><details className="jcalc-cautions"><summary>주의사항</summary>{result.scoreScope === 'csat_component' && <small>{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</small>}<p className="jcalc-forecast-note">{calculatorForecastNote(result.possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>{result.possibility?.status === 'available' && <p className="jcalc-forecast-note">자료 기준 · {result.possibility.publicationId} · {result.possibility.policyVersion}</p>}{result.referenceComparison?.convertedScore != null && <><p className="jcalc-forecast-note">아래는 별도 산식의 참고 자료입니다. 위 환산점수와 다른 점수 척도일 수 있습니다.</p><CalculatorReference reference={result.referenceComparison} showCutoffs={false} /></>}</details></> : current && <CalculatorReference reference={result.referenceComparison} />}
   </div>;
 }

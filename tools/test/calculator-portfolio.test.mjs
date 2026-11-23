@@ -16,9 +16,9 @@ test('a saved partial portfolio truncates display only and preserves source prec
   const { value, target } = fixture(), model = createCalculatorPortfolio(value);
   assert.ok(model); assert.equal(model.name, '나의 조합'); assert.deepEqual(model.cards.map(row => row.label), ['가군', '나군', '다군']);
   assert.equal(model.cards[0].identity.unit, target.selection.unitName); assert.equal(model.cards[0].score.value, '730.12점');
-  assert.equal(model.cards[0].indicator.band, 'stable'); assert.equal(model.cards[0].indicator.points, null); assert.equal(value.conversion.results[0].referenceComparison.convertedScore, 730.1234567);
+  assert.equal(model.cards[0].indicator.band, null); assert.equal(model.cards[0].indicator.points, null); assert.equal(value.conversion.results[0].referenceComparison.convertedScore, 730.1234567);
   assert.deepEqual(model.cards.slice(1).map(row => row.status), ['empty', 'empty']);
-  assert.match(model.cards[0].reference.label, /연도 미확인/); assert.doesNotMatch(model.cards[0].reference.label, /2027/);
+  assert.equal(model.cards[0].score.label, '기존 산식 환산점수'); assert.deepEqual(model.cards[0].reference.lines, [{ label: '예상 합격 컷', value: '산출 보류' }]);
   assert.match(model.probability, /자료가 준비/); assert.equal(model.cards[0].probability, undefined);
 });
 
@@ -29,9 +29,9 @@ test('a result from other scores, profile revision, selection or result order ca
 });
 
 test('formal CSAT component points stay distinct from another reference scale and do not publish a forged probability', () => {
-  const { value } = fixture(); Object.assign(value.conversion.results[0], { status: 'available', convertedScore: 51.1234567, maximumScore: 60, scoreScope: 'csat_component', forecast: { probability: { percent: 99 } }, possibility: { status: 'available', index: { points: 66 }, riskBand: 'appropriate', sourceYear: 2026, targetYear: 2027 } });
+  const { value } = fixture(); Object.assign(value.conversion.results[0], { status: 'available', convertedScore: 51.1234567, maximumScore: 60, scoreScope: 'csat_component', forecast: { probability: { percent: 99 } }, possibility: { status: 'available', index: { points: 66 }, riskBand: 'appropriate', sourceYear: 2026, targetYear: 2027, cutoffs: { pass: 49.12, registered70: 52.34 } } });
   const card = createCalculatorPortfolio(value).cards[0]; assert.equal(card.score.label, '예상 환산점수'); assert.equal(card.score.value, '51.12점'); assert.match(card.score.maximum, /60.00점/);
-  assert.equal(card.indicator.points, null); assert.equal(card.indicator.band, 'appropriate'); assert.equal(card.reference.lines[0].value, '730.12점'); assert.ok(card.reference.lines.some(line => line.value === '650.00점')); assert.doesNotMatch(JSON.stringify(card), /80 \/ 100|66 \/ 100/); assert.equal(value.conversion.results[0].convertedScore, 51.1234567);
+  assert.equal(card.indicator.points, null); assert.equal(card.indicator.band, 'appropriate'); assert.deepEqual(card.reference.lines.map(line => line.value), ['49.12점', '52.34점', '730.12점']); assert.doesNotMatch(JSON.stringify(card), /80 \/ 100|66 \/ 100/); assert.equal(value.conversion.results[0].convertedScore, 51.1234567);
   assert.match(card.notes.join(' '), /학생부·면접·실기/); assert.doesNotMatch(JSON.stringify(card), /99%/);
 });
 
@@ -50,21 +50,21 @@ test('zero raw scores remain visible when estimates are unavailable and incident
   assert.match(model.scoreSummary.grades, /영어 9등급/); assert.doesNotMatch(JSON.stringify(model), /APP_PRIVATE|private@example/);
 });
 
-test('prior-year ranges, a single 70 percent reference and score-only data keep their distinct statistical meaning', () => {
+test('conditional ranges and their grades are withheld while a published historical cut retains its year', () => {
   const { value, reference, target } = fixture();
   const display = patch => { value.conversion.results[0].referenceComparison = safeCalculatorReference({ ...reference, ...patch }, target, scores); return createCalculatorPortfolio(value).cards[0]; };
   const current = display({ status: 'current_two_references', referenceYear: 2025, referenceBounds: { kind: 'cut_assumption_range', pass: { low: 649, high: 651 }, registered70: { low: 699, high: 701 } }, indexRange: { kind: 'cut_assumption_range', low: 79, high: 81 } });
-  assert.match(current.reference.label, /2025학년도/); assert.equal(current.reference.lines[0].value, '649.00~651.00점'); assert.ok(current.reference.lines.some(line => line.label === '상위 70% 추정 합격 컷')); assert.ok(!current.reference.lines.some(line => /지수/.test(line.label)));
+  assert.deepEqual(current.reference.lines, [{ label: '예상 합격 컷', value: '산출 보류' }]); assert.equal(current.indicator.band, null);
   const single = display({ status: 'historical70_only', referenceYear: 2026, passReference: null, referenceIndex: null, riskBand: null });
-  assert.equal(single.indicator.band, null); assert.equal(single.indicator.points, null); assert.equal(single.reference.lines.length, 1); assert.match(single.reference.lines[0].label, /상위 70%/);
+  assert.equal(single.indicator.band, null); assert.equal(single.indicator.points, null); assert.deepEqual(single.reference.lines[1], { label: '2026학년도 최종등록자 70% 컷', value: '700점' });
   const scoreOnly = display({ status: 'academic_score_without_cut', passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null });
-  assert.ok(scoreOnly.score); assert.equal(scoreOnly.reference.lines.length, 0); assert.equal(scoreOnly.indicator.band, null); assert.match(scoreOnly.reference.note, /기준선이 없어/);
+  assert.ok(scoreOnly.score); assert.equal(scoreOnly.reference.lines.length, 1); assert.equal(scoreOnly.indicator.band, null);
 });
 
 test('reference stages reject malformed or mismatched records and remain pending for an older server', () => {
-  const { reference, target, value } = fixture(); assert.equal(safeCalculatorReference(reference, target, scores).riskBand, 'stable');
+  const { reference, target, value } = fixture(); assert.equal(safeCalculatorReference(reference, target, scores).status, 'academic_score_without_cut');
   for (const patch of [{ riskBand: 'unknown' }, { riskBand: null }, { probability: 0.99 }, { recordId: 'U_' + '2'.repeat(16) }]) assert.equal(safeCalculatorReference({ ...reference, ...patch }, target, scores).reasonCodes[0], 'REFERENCE_RESPONSE_INVALID');
-  delete reference.riskBand; const older = safeCalculatorReference(reference, target, scores); assert.equal(older.riskBand, null); assert.equal(older.convertedScore, reference.convertedScore);
+  delete reference.riskBand; const older = safeCalculatorReference(reference, target, scores); assert.equal(older.riskBand, undefined); assert.equal(older.convertedScore, reference.convertedScore);
   value.conversion.results[0].referenceComparison = older; assert.equal(createCalculatorPortfolio(value).cards[0].indicator.band, null);
   assert.deepEqual(CALCULATOR_RISK_BANDS.map(row => row[1]), ['안정', '적정', '소신', '상향', '위험']);
 });

@@ -17,9 +17,10 @@ export function parseCalculatorWorkspace(value, applicationId) {
   const seen = new Set(), plans = [];
   for (const plan of value.plans) {
     const targets = normalizePlanTargets(prepared.scores, plan?.targets);
+    const previousTargets = plan?.previousTargets === undefined ? [] : normalizePlanTargets(prepared.scores, plan.previousTargets);
     if (!plan || !/^PLAN_[A-Za-z0-9_-]{6,64}$/.test(plan.planId || '') || seen.has(plan.planId) || !revision(plan.revision) || plan.revision < 1 || !date(plan.updatedAt)
-      || typeof plan.name !== 'string' || !plan.name.trim() || plan.name.length > 60 || /[\u0000-\u001f\u007f]/.test(plan.name) || !targets || plan.representatives !== undefined && !validRepresentatives(plan.representatives, targets)) return null;
-    seen.add(plan.planId); plans.push({ planId: plan.planId, revision: plan.revision, name: plan.name, targets, ...(plan.representatives === undefined ? {} : { representatives: plan.representatives }), updatedAt: plan.updatedAt });
+      || typeof plan.name !== 'string' || !plan.name.trim() || plan.name.length > 60 || /[\u0000-\u001f\u007f]/.test(plan.name) || !targets || !previousTargets || plan.representatives !== undefined && !validRepresentatives(plan.representatives, targets)) return null;
+    seen.add(plan.planId); plans.push({ planId: plan.planId, revision: plan.revision, name: plan.name, targets, ...(previousTargets.length ? { previousTargets } : {}), ...(plan.representatives === undefined ? {} : { representatives: plan.representatives }), updatedAt: plan.updatedAt });
   }
   if (value.lastSavedPlanId !== null && !seen.has(value.lastSavedPlanId)) return null;
   return { ...value, profile: { revision: profile.revision, scores: prepared.scores, updatedAt: profile.updatedAt }, plans };

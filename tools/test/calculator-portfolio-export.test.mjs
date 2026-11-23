@@ -8,7 +8,8 @@ function model() {
     scoreSummary: { basis: '2027학년도 수능 가채점 기준 · 표준점수·백분위·등급은 추정치입니다.', items: ['국어', '수학', '탐구 1', '탐구 2'].map(label => ({ label, subject: '선택과목', value: '원점수 0', detail: '예상 표점 120 · 백분위 90 · 2등급' })), grades: '영어 2등급 · 한국사 1등급' },
     cards: ['가군', '나군', '다군'].map((label, index) => ({ label, status: index === 2 ? 'empty' : 'ready', identity: index === 2 ? null : { university: '예시대학교', campus: '서울캠퍼스', unit: '융합학과', track: '일반전형' },
       score: index === 2 ? null : { label: '예상 환산점수', value: '730.12점', maximum: '학생부·면접·실기는 별도입니다.' }, indicator: index === 2 ? null : { band: index === 0 ? 'stable' : null, label: index === 0 ? '안정' : '판단 대기', caption: '지원 단계', points: null },
-      reference: index === 2 ? null : { label: '2026학년도 입결 기준 추정', lines: [{ label: '예상 합격 컷', value: '649.00~651.00점' }, { label: '상위 70% 추정 합격 컷', value: '699.00~701.00점' }], note: '과거 입결과 계산 가정을 참고했습니다.' }, notes: index === 2 ? ['이 군의 대표 지원안을 선택하지 않았습니다.'] : ['개인별 지원 자격을 확인해주세요.'] })),
+      reference: index === 2 ? null : { label: '입결 기준', lines: index === 0 ? [{ label: '예상 합격 컷', value: '650.00점' }]
+        : [{ label: '예상 합격 컷', value: '산출 보류' }, { label: '2026학년도 최종등록자 70% 컷', value: '700.2점' }], note: index === 1 ? '과거 입결은 해당 학년도 반영 기준으로 대학이 공개한 점수입니다.' : null }, notes: index === 2 ? ['이 군의 지원 후보를 선택하지 않았습니다.'] : ['개인별 지원 자격을 확인해주세요.'] })),
     disclaimer: '참고 지수와 지원 단계는 실제 합격 확률이 아닙니다.', probability: '예상 합격률은 검증된 자료가 준비된 뒤 제공합니다.' };
 }
 function context() {
@@ -31,7 +32,7 @@ function browserFixture() {
 test('1080px export keeps every source value, fixed group order, non-overlapping card bounds and no incidental identifiers', () => {
   const scene = layoutCalculatorPortfolio(model(), context()); assert.equal(scene.width, 1080); assert.ok(scene.height > 1000 && scene.height < 8192);
   const text = scene.commands.filter(item => item.type === 'text').map(item => item.text).join('');
-  for (const required of ['원점수 0', '730.12점', '2026학년도', '649.00~651.00점', '699.00~701.00점', '예시대학교 · 안정', '예시대학교 · 판단 대기', '다군 · 미선택', '실제 합격 확률이 아닙니다']) assert.ok(text.includes(required), required);
+  for (const required of ['원점수 0', '730.12점', '2026학년도 최종등록자 70% 컷', '650.00점', '700.2점', '산출 보류', '예시대학교 · 안정', '예시대학교 · 판단 대기', '다군 · 미선택', '실제 합격 확률이 아닙니다']) assert.ok(text.includes(required), required);
   assert.ok(text.indexOf('가군') < text.indexOf('나군') && text.indexOf('나군') < text.indexOf('다군')); assert.doesNotMatch(text, /APP_DO_NOT_EXPORT|private@example/);
   const cards = scene.commands.filter(item => item.type === 'rect' && item.stroke === 'line'); assert.equal(cards.length, 3);
   for (let i = 1; i < cards.length; i++) assert.ok(cards[i - 1].y + cards[i - 1].height < cards[i].y);

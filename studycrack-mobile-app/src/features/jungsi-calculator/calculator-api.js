@@ -26,7 +26,10 @@ function safePossibility(value, row, body) {
     || !/^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '') || !digest(value.publicationDigest) || !digest(value.referenceDigest)
     || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear > 2027 || value.targetYear !== 2027
     || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
+  const cutoffs = value.cutoffs;
+  const validCutoffs = Number.isFinite(cutoffs?.pass) && cutoffs.pass >= 0 && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 > cutoffs.pass;
   return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
+    ...(validCutoffs ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
 }
 
