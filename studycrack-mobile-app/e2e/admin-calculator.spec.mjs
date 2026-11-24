@@ -21,6 +21,8 @@ async function prepare(page, options = {}) {
     state.detail = { scope: 'calculator', sourceResponseId, stage: 'DEV', campaignReady: true, contact, deletion: { available: options.deletionAvailable !== false }, reviewNotices: [],
         application: { applicationId, productType: 'calculator', applicationState: 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 25000 },
         calculator: { state: 'pending_payment', phase: 'intake', stateLabel: '입금 확인 대기', nextAction: '입금 확인·승인', expiresAt: '2027-01-07T14:59:59.999Z', accountLinked: false, canApprove: true, canReviewInput: true, canReviewPayment: true, canReissue: false } };
+    if (options.readOnly) Object.assign(state.detail, { readOnly: true,
+        contact: { studentName: '가* 학생', phone: '010-****-0000', email: '', payerName: '' } });
     await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body: document }));
     await page.route('https://www.googletagmanager.com/**', route => route.abort());
     await page.route('https://fonts.googleapis.com/**', route => route.abort());
@@ -30,7 +32,7 @@ async function prepare(page, options = {}) {
         if (type === 'admin_get_notifications') return route.fulfill({ json: { notifications: [], sentNotices: [] } });
         if (['admin_list_v2_material_review', 'admin_list_written_unread'].includes(type)) data = { items: [], hasMore: false, nextCursor: null };
         else if (type === 'admin_list_calculator_applications') data = { scope: state.scope, productType: 'calculator',
-            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
+            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', readOnly: state.detail.readOnly === true, phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
             nextCursor: state.emptyFirst && !input.cursor ? 'synthetic_cursor' : null, issueRows: state.issueRows || [], unavailableCount: state.issueRows?.length || 0 };
         else if (type === 'admin_get_calculator_application') {
             if (state.defer) await new Promise(resolve => { state.release = resolve; });
@@ -81,6 +83,18 @@ async function fillPayment(page) {
     await page.locator('#section-calculator').getByLabel('입금 시각 (기기 현지 시각)', { exact: true }).fill('2026-11-19T22:00');
     await page.locator('#section-calculator').getByLabel('입금자명을 직접 대조했습니다', { exact: true }).check();
 }
+
+test('다른 환경의 계산기 신청은 목록과 마스킹 상세에서 조회할 수 있다', async ({ page }) => {
+    const state = await prepare(page, { readOnly: true });
+    await expect(page.locator('#calculatorAdminListBody')).toContainText('조회 전용');
+    await openDetail(page);
+    await expect(page.locator('#calculatorAdminFacts')).toContainText('010-****-0000');
+    await expect(page.locator('#calculatorAdminDetailStatus')).toContainText('조회만 할 수 있습니다');
+    for (const id of ['calculatorAdminPayment', 'calculatorAdminReview', 'calculatorAdminDeleteSection', 'calculatorAdminSavedSection']) {
+        await expect(page.locator('#' + id)).toBeHidden();
+    }
+    expect(state.calls.some(call => call.type === 'admin_get_calculator_input' || call.type === 'admin_verify_calculator_payment')).toBe(false);
+});
 async function openDeletion(page) {
     await page.getByRole('button', { name: '계산기 신청 삭제', exact: true }).click();
     await expect(page.locator('#calculatorAdminDeleteStatus')).toContainText('확인 문구를 입력');

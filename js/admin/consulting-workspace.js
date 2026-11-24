@@ -148,14 +148,15 @@ function activateConsultingWorkspace(route) {
 }
 function renderConsultingDirectory(items, empty = '이 페이지에 해당 단계의 학생이 없습니다. 다음 페이지가 있으면 계속 확인해주세요.', issues = []) {
     const body = document.getElementById('consultingDirectoryBody'); body.replaceChildren();
-    consultingExportPage = items;
+    consultingExportPage = items.filter(item => item.readOnly !== true);
+    for (const item of items) if (item.readOnly === true) consultingExportStudents.delete(item.applicationId);
     updateConsultingExportSelection();
     if (!items.length && !issues.length) { const row = document.createElement('tr'), cell = createConsultingCell(empty); cell.colSpan = 5; cell.className = 'empty-msg'; row.appendChild(cell); body.appendChild(row); return; }
     for (const item of items) {
         const row = document.createElement('tr');
         const student = createConsultingCell(''), name = document.createElement('strong'), contact = document.createElement('span');
         name.textContent = item.studentNameMask; contact.textContent = item.phoneMask;
-        if (consultingExportLimit) {
+        if (consultingExportLimit && item.readOnly !== true) {
             const label = document.createElement('label'), checkbox = document.createElement('input'), identity = document.createElement('div');
             label.className = 'consulting-export-person';
             checkbox.type = 'checkbox';
@@ -165,7 +166,7 @@ function renderConsultingDirectory(items, empty = '이 페이지에 해당 단�
             checkbox.addEventListener('change', () => selectConsultingExportStudent(item, checkbox.checked));
             identity.append(name, contact); label.append(checkbox, identity); student.appendChild(label);
         } else student.append(name, contact);
-        row.append(student, createConsultingCell(`${item.stateLabel}${item.held ? ' · 보류' : ''}`), createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.updatedAt)));
+        row.append(student, createConsultingCell(`${item.stateLabel}${item.held ? ' · 보류' : ''}${item.readOnly ? ' · 조회 전용' : ''}`), createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.updatedAt)));
         const cell = createConsultingCell(''), button = document.createElement('button'); button.type = 'button'; button.className = 'consulting-btn consulting-btn-primary'; button.textContent = '학생 상세'; button.addEventListener('click', () => openConsultingStudent(item)); cell.appendChild(button); row.appendChild(cell);
         [...row.children].forEach((node, index) => { node.dataset.label = ['학생', '현재 상태', '다음 할 일', '최근 변경', '관리 액션'][index]; });
         body.appendChild(row);
@@ -440,15 +441,15 @@ async function loadConsultingWorkspaceStudent(route) {
         Object.entries(consultingPhaseTitles).forEach(([phase, title], index) => { const item = document.createElement('li'); item.textContent = title; item.dataset.progress = index < phaseIndex ? 'complete' : index === phaseIndex ? 'current' : 'upcoming'; if (index === phaseIndex) item.setAttribute('aria-current', 'step'); progress.appendChild(item); });
         const next = document.getElementById('consultingStudentNextAction'); next.textContent = `다음 할 일 · ${data.student.nextAction}`;
         document.getElementById('consultingStudentIdentifiers').textContent = `신청 ${data.application.applicationId}${data.case ? `\n케이스 ${data.case.caseId}` : ''}\n신청 수정 버전 ${data.application.revision}`;
-        for (const id of ['consultingScheduleCaseId', 'consultingReportCaseId', 'consultingServiceCaseId']) document.getElementById(id).value = data.case?.caseId || '';
+        for (const id of ['consultingScheduleCaseId', 'consultingReportCaseId', 'consultingServiceCaseId']) document.getElementById(id).value = data.readOnly ? '' : (data.case?.caseId || '');
         const chatLink = document.getElementById('consultingWrittenChatLink');
-        if (chatLink && data.case && (data.case.hasWrittenSession || ['WRITTEN_SESSION_BOOKED', 'WRITTEN_SESSION_COMPLETED', 'REPORT_DRAFT', 'REPORT_REVIEW', 'REPORT_PUBLISHED', 'FINAL_CALL_BOOKED', 'COMPLETED'].includes(data.case.workflowState))) {
+        if (!data.readOnly && chatLink && data.case && (data.case.hasWrittenSession || ['WRITTEN_SESSION_BOOKED', 'WRITTEN_SESSION_COMPLETED', 'REPORT_DRAFT', 'REPORT_REVIEW', 'REPORT_PUBLISHED', 'FINAL_CALL_BOOKED', 'COMPLETED'].includes(data.case.workflowState))) {
             chatLink.href = `/2027-jungsi-consulting/written-session?caseId=${encodeURIComponent(data.case.caseId)}`; chatLink.hidden = false;
         }
         renderConsultingApplication(data.application.applicationId, data);
         await showConsultingStudentTab(route.tab);
         if (generation !== consultingWorkspaceGeneration) return;
-        consultingWorkspaceStatus('consultingStudentStatus', '', 'success');
+        consultingWorkspaceStatus('consultingStudentStatus', data.readOnly ? '다른 환경의 신청입니다. 현재 화면에서는 조회만 할 수 있습니다.' : '', 'success');
         document.getElementById('consultingStudentTitle').focus({ preventScroll: true });
     } catch (_error) {
         if (generation !== consultingWorkspaceGeneration) return;
@@ -460,10 +461,12 @@ async function loadConsultingWorkspaceStudent(route) {
 async function showConsultingStudentTab(requested) {
     const data = consultingWorkspaceStudent;
     if (!data) return;
-    const allowed = { overview: true, materials: Boolean(data.case && data.permissions?.materials), written: Boolean(data.case && data.permissions?.schedule), report: Boolean(data.case && data.permissions?.report), final: Boolean(data.case && data.permissions?.finalCall), service: Boolean(data.case) };
+    const canWork = Boolean(data.case && !data.readOnly);
+    const allowed = { overview: true, materials: canWork && data.permissions?.materials === true, written: canWork && data.permissions?.schedule === true,
+        report: canWork && data.permissions?.report === true, final: canWork && data.permissions?.finalCall === true, service: canWork };
     const submitted = Boolean(data.case?.workflowState && !['ONBOARDING', 'SURVEY_DRAFT'].includes(data.case.workflowState));
     const tab = requested ? (allowed[requested] === true ? requested : 'overview') : (submitted && allowed.materials ? 'materials' : 'overview');
-    document.getElementById('consultingMaterialAccess').hidden = !data.case || allowed.materials;
+    document.getElementById('consultingMaterialAccess').hidden = !canWork || allowed.materials;
     document.querySelectorAll('[data-student-tab]').forEach(button => { button.disabled = !allowed[button.dataset.studentTab]; button.setAttribute('aria-current', button.dataset.studentTab === tab ? 'page' : 'false'); });
     document.querySelectorAll('[data-workspace-pane]').forEach(pane => { pane.hidden = pane.dataset.workspacePane !== tab; });
     if (consultingWorkspaceLoadedTabs.has(tab)) return;

@@ -113,6 +113,21 @@ test('detail renders localized values and other text without assuming payment fa
     assert.equal(get('consultingInviteActions').hidden, true);
 });
 
+test('foreign student overview shows masked contact and keeps all intake changes unavailable', async () => {
+    const { context, calls, get, run, open } = setup();
+    context.respond = request => request.type === 'admin_get_consulting_student' ? {
+        ...detail(), readOnly: true, contact: { studentName: '합*생', phone: '010-****-0000', email: '', payerName: '' },
+        deletion: { available: false }
+    } : {};
+    await open();
+    assert.equal(get('consultingApplicationDetail').hidden, false);
+    assert.match(get('consultingDetailSummary').textContent, /010-\*\*\*\*-0000/);
+    assert.match(get('consultingStudentStatus').textContent, /조회만 할 수 있습니다/);
+    for (const id of ['consultingPaymentActions', 'consultingInputEdit', 'consultingInviteActions', 'consultingDeleteApplicationBtn']) assert.equal(get(id).hidden, true, id);
+    await run('holdConsultingPayment()');
+    assert.deepEqual(calls.map(call => call.type), ['admin_get_consulting_student']);
+});
+
 test('close removes PII and ignores an outstanding detail response', async () => {
     const { context, open, run, get } = setup();
     await open();
