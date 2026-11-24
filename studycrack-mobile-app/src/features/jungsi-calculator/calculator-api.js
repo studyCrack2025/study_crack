@@ -10,7 +10,7 @@ const unit = value => value && admissionUnitId(value.admissionUnitId)
 const riskBands = new Set(['stable', 'appropriate', 'neutral', 'challenge', 'risky']);
 const possibilityUnavailable = code => ({ status: 'unavailable', index: null, riskBand: null, reasonCodes: [code] });
 const validCutoffs = cutoffs => Number.isFinite(cutoffs?.pass) && cutoffs.pass >= 0
-  && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 > cutoffs.pass;
+  && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 >= cutoffs.pass;
 const boundCutoff = (value, release, admissionUnitId) => release && value.dataReleaseId === release.dataReleaseId
   && value.admissionUnitId === admissionUnitId && /^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '')
   && digest(value.publicationDigest) && digest(value.referenceDigest)
@@ -25,14 +25,22 @@ function safePossibility(value, row, body) {
   if (value.status === 'unavailable') return value.index === null && value.riskBand === null && value.validationState === 'not_available'
     && value.reasonCodes.length && ['dataReleaseId', 'admissionUnitId', 'publicationId', 'publicationDigest', 'referenceDigest', 'sourceYear', 'targetYear', 'validatedAt'].every(key => value[key] === null)
     ? possibilityUnavailable(value.reasonCodes[0]) : invalid();
-  if (value.status !== 'available' || row.status !== 'available' || body.basis !== 'official'
+  if (row.status !== 'available' || body.basis !== 'official'
     || !boundCutoff(value, body.release, row.selected?.admissionUnitId)
-    || value.validationState !== 'passed' || value.reasonCodes.length || !riskBands.has(value.riskBand)
-    || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99
+    || value.validationState !== 'passed'
     || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
   const cutoffs = value.cutoffs;
+  if (value.status === 'reference_only') {
+    if (value.index !== null || value.riskBand !== null || value.reasonCodes.length !== 1
+      || value.reasonCodes[0] !== 'CUT_ANCHOR_SPREAD_UNRESOLVED' || !validCutoffs(cutoffs)) return invalid();
+    return { status: 'reference_only', index: null, riskBand: null, reasonCodes: value.reasonCodes,
+      cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 }, sourceYear: value.sourceYear,
+      targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
+  }
+  if (value.status !== 'available' || value.reasonCodes.length || !riskBands.has(value.riskBand)
+    || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99) return invalid();
   return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
-    ...(validCutoffs(cutoffs) ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
+    ...(validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
 }
 

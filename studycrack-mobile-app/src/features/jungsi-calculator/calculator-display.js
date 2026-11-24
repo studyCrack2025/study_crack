@@ -9,7 +9,7 @@ export function formatCalculatorScore(value) {
 export const referenceScoreLabel = reference => reference.legacyScore ? '기존 산식 환산점수' : '예상 환산점수';
 
 export function calculatorCutoffLines(reference, possibility) {
-  const approved = possibility?.status === 'available' ? possibility.cutoffs : null;
+  const approved = ['available', 'reference_only'].includes(possibility?.status) ? possibility.cutoffs : null;
   const lines = [{ label: '예상 합격 컷', value: approved ? `${formatCalculatorScore(approved.pass)}점` : '산출 보류' }];
   if (approved) lines.push({ label: '70% 참고선', value: `${formatCalculatorScore(approved.registered70)}점` });
   if (reference?.historical70) {

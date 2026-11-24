@@ -35,7 +35,7 @@ function representativeCard(group, label, target, result) {
   if ((formal ? result.scoreScope : preview?.scoreScope) === 'csat_component') notes.push('수능 반영점수입니다. 학생부·면접·실기와 최종 소수점 처리는 별도 확인이 필요합니다.');
   if (publishedIndex) notes.push(`${result.possibility.sourceYear}학년도 입결 · ${result.possibility.targetYear}학년도 반영 기준의 지수입니다.`);
   if (preview) notes.push(PREVIEW_SCORE_NOTE);
-  const lines = calculatorCutoffLines(reference, publishedIndex ? result.possibility : preview);
+  const lines = calculatorCutoffLines(reference, formal ? result.possibility : preview);
   if (formal && hasReference) lines.push({ label: '별도 산식 환산점수', value: `${format(reference.convertedScore)}점` });
   return { group, label, status: score ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score,
     indicator: { band, label: bandLabel(band), points: null, caption: '지원 단계' },
