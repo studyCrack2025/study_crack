@@ -2,6 +2,7 @@ import React from 'react';
 import CalculatorRiskScale from './CalculatorRiskScale.jsx';
 
 const messages = {
+  CUT_ANCHOR_SPREAD_UNRESOLVED: '두 기준선이 같은 점수이거나 매우 가까워 지원 단계는 판단 대기입니다.',
   CUT_REFERENCE_CONVERSION_UNAVAILABLE: '환산점수를 확인한 뒤 검수된 입결 기준선으로 가능성을 안내합니다.',
   CUT_REFERENCE_BACKEND_UPDATE_REQUIRED: '가능성 지수 조회를 준비하고 있습니다. 현재는 검수된 환산점수만 확인할 수 있습니다.',
   CUT_REFERENCE_REVIEW_REQUIRED: '입결 기준선의 검수가 완료되지 않아 지수와 지원 단계의 판단을 보류합니다.',

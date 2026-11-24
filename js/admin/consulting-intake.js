@@ -178,7 +178,7 @@ function renderConsultingApplication(applicationId, data) {
     document.getElementById('consultingRevokeBtn').hidden = data.stageVerified !== true || data.inviteRevoked === true || application.applicationState !== 'INVITED';
     document.getElementById('consultingInviteActions').hidden = application.applicationState !== 'INVITED' || !data.activeInviteId;
     document.getElementById('consultingApplicationDetail').hidden = false;
-    document.getElementById('consultingDeleteApplicationBtn').hidden = data.deletion?.available !== true;
+    showConsultingApplicationDeletion(data.deletion?.available === true);
     setConsultingStatus('', 'success');
 }
 
@@ -215,19 +215,24 @@ function closeConsultingDetail() {
     }
 }
 
+function showConsultingApplicationDeletion(visible) {
+    for (const id of ['consultingDeleteApplicationSection', 'consultingDeleteApplicationBtn']) {
+        const node = document.getElementById(id); if (node) node.hidden = !visible;
+    }
+}
 function resetConsultingApplicationDeletion() {
     consultingApplicationDeletionGeneration++;
     consultingApplicationDeletion = null;
     document.getElementById('consultingDeleteApplicationDialog')?.close();
     const input = document.getElementById('consultingDeleteApplicationConfirmation'); if (input) input.value = '';
     for (const id of ['consultingDeleteApplicationTarget', 'consultingDeleteApplicationStatus']) document.getElementById(id)?.replaceChildren();
-    const button = document.getElementById('consultingDeleteApplicationBtn'); if (button) button.hidden = true;
+    showConsultingApplicationDeletion(false);
 }
 function closeConsultingApplicationDeletion() {
     if (consultingApplicationDeletion?.busy) return;
     resetConsultingApplicationDeletion();
     const button = document.getElementById('consultingDeleteApplicationBtn');
-    if (button && currentConsultingApplication?.deletion?.available === true) { button.hidden = false; button.focus(); }
+    if (button && currentConsultingApplication?.deletion?.available === true) { showConsultingApplicationDeletion(true); button.focus(); }
 }
 function updateConsultingApplicationDeletion() {
     const state = consultingApplicationDeletion;
@@ -239,7 +244,7 @@ async function openConsultingApplicationDeletion() {
     const generation = consultingApplicationDeletionGeneration, reference = { applicationId: currentConsultingApplication.application.applicationId, sourceResponseId: consultingWorkspaceReference.sourceResponseId };
     consultingApplicationDeletion = { reference, preview: null, busy: false };
     const dialog = document.getElementById('consultingDeleteApplicationDialog'), status = document.getElementById('consultingDeleteApplicationStatus');
-    document.getElementById('consultingDeleteApplicationBtn').hidden = false;
+    showConsultingApplicationDeletion(true);
     document.getElementById('consultingDeleteApplicationTarget').textContent = `${currentConsultingApplication.contact.studentName || '선택한 학생'} · ${currentConsultingApplication.contact.phone || ''}`;
     document.getElementById('consultingDeleteApplicationRetry').hidden = true;
     document.getElementById('consultingDeleteApplicationCancel').disabled = false;
@@ -251,7 +256,7 @@ async function openConsultingApplicationDeletion() {
         if (preview.backgroundSupported !== true || preview.storageIncluded !== true || preview.applicationId !== reference.applicationId || preview.confirmation !== '신청 영구 삭제' || typeof preview.previewToken !== 'string' || !preview.previewToken || preview.previewToken.length > 2400 || typeof preview.resume !== 'boolean' || typeof preview.includesCase !== 'boolean'
             || !Number.isSafeInteger(preview.deletedCount) || preview.deletedCount < 0 || preview.recordCount !== null && (!Number.isSafeInteger(preview.recordCount) || preview.recordCount < 1)) throw new Error('삭제 범위를 확인하지 못했습니다.');
         consultingApplicationDeletion.preview = preview;
-        status.textContent = preview.resume ? `삭제가 진행 중인 신청입니다. 이미 정리한 ${preview.deletedCount}개 기록에 이어 남은 파일과 기록을 삭제합니다.` : `약 ${preview.recordCount}개 DB 기록과 이 신청에 연결된 첨부·PDF 원본이 대상입니다.${preview.includesCase ? ' 조사서와 상담·보고서도 포함됩니다.' : ' 아직 연결된 컨설팅 케이스는 없습니다.'}`;
+        status.textContent = preview.resume ? `삭제가 진행 중인 신청입니다. 이미 정리한 ${preview.deletedCount}개 기록에 이어 남은 파일과 기록을 삭제합니다.` : `약 ${preview.recordCount}개 연결 기록과 이 신청의 첨부·PDF 원본이 대상입니다.${preview.includesCase ? ' 조사서와 상담·보고서도 포함됩니다.' : ' 아직 연결된 컨설팅 케이스는 없습니다.'}`;
         status.dataset.state = ''; document.getElementById('consultingDeleteApplicationConfirmation').focus();
     } catch (_error) {
         if (generation !== consultingApplicationDeletionGeneration) return;

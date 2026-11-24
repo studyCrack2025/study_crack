@@ -74,7 +74,7 @@ function clearConsultingWorkspaceStudent() {
     if (typeof resetConsultingSchedule === 'function') resetConsultingSchedule();
     if (typeof resetConsultingServiceControl === 'function') resetConsultingServiceControl();
     if (typeof resetConsultingReportSource === 'function') resetConsultingReportSource();
-    for (const id of ['consultingStudentState', 'consultingStudentProgress', 'consultingStudentNextAction', 'consultingStudentIdentifiers']) document.getElementById(id)?.replaceChildren();
+    for (const id of ['consultingStudentState', 'consultingStudentStage', 'consultingStudentProgress', 'consultingStudentNextAction', 'consultingStudentIdentifiers']) document.getElementById(id)?.replaceChildren();
     document.getElementById('consultingMaterialAccess').hidden = true;
     document.getElementById('consultingStudentTitle').textContent = '학생 상세';
     document.getElementById('consultingStudentPanel').hidden = true;
@@ -165,9 +165,13 @@ function renderConsultingDirectory(items, empty = '이 페이지에 해당 단�
             checkbox.checked = consultingExportStudents.has(item.applicationId);
             checkbox.addEventListener('change', () => selectConsultingExportStudent(item, checkbox.checked));
             identity.append(name, contact); label.append(checkbox, identity); student.appendChild(label);
-        } else student.append(name, contact);
-        row.append(student, createConsultingCell(`${item.stateLabel}${item.held ? ' · 보류' : ''}${item.readOnly ? ' · 조회 전용' : ''}`), createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.updatedAt)));
-        const cell = createConsultingCell(''), button = document.createElement('button'); button.type = 'button'; button.className = 'consulting-btn consulting-btn-primary'; button.textContent = '학생 상세'; button.addEventListener('click', () => openConsultingStudent(item)); cell.appendChild(button); row.appendChild(cell);
+        } else { const identity = document.createElement('div'); identity.append(name, contact); student.append(identity); }
+        const stateCell = createConsultingCell(''), badge = document.createElement('span');
+        badge.className = 'consulting-admin-badge'; badge.textContent = `${item.stateLabel}${item.held ? ' · 보류' : ''}${item.readOnly ? ' · 조회 전용' : ''}`;
+        badge.dataset.phase = item.held ? 'attention' : Object.hasOwn(consultingPhaseTitles, item.phase) ? item.phase : '';
+        stateCell.append(badge);
+        row.append(student, stateCell, createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.updatedAt)));
+        const cell = createConsultingCell(''), button = document.createElement('button'); cell.className = 'consulting-admin-row-action'; button.type = 'button'; button.className = 'consulting-btn consulting-btn-primary'; button.textContent = '학생 상세'; button.addEventListener('click', () => openConsultingStudent(item)); cell.appendChild(button); row.appendChild(cell);
         [...row.children].forEach((node, index) => { node.dataset.label = ['학생', '현재 상태', '다음 할 일', '최근 변경', '관리 액션'][index]; });
         body.appendChild(row);
     }
@@ -436,6 +440,8 @@ async function loadConsultingWorkspaceStudent(route) {
             || !data.contact || data.case && !/^CASE_[0-9a-f-]{36}$/i.test(data.case.caseId || '')) throw new Error('학생 상세를 확인할 수 없습니다.');
         consultingWorkspaceStudent = data;
         document.getElementById('consultingStudentTitle').textContent = `${data.contact.studentName || data.student.studentNameMask} · 학생 상세`;
+        const stage = document.getElementById('consultingStudentStage');
+        if (stage) { stage.textContent = data.student.stateLabel; stage.dataset.phase = data.student.held ? 'attention' : Object.hasOwn(consultingPhaseTitles, data.student.phase) ? data.student.phase : ''; }
         document.getElementById('consultingStudentState').textContent = `${data.student.stateLabel}${data.student.held ? ' · 보류 중' : ''} · 최근 변경 ${formatConsultingDate(data.student.updatedAt)}`;
         const progress = document.getElementById('consultingStudentProgress'), phaseIndex = Object.keys(consultingPhaseTitles).indexOf(data.student.phase); progress.replaceChildren();
         Object.entries(consultingPhaseTitles).forEach(([phase, title], index) => { const item = document.createElement('li'); item.textContent = title; item.dataset.progress = index < phaseIndex ? 'complete' : index === phaseIndex ? 'current' : 'upcoming'; if (index === phaseIndex) item.setAttribute('aria-current', 'step'); progress.appendChild(item); });

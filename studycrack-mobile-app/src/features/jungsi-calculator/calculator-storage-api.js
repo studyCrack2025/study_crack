@@ -1,5 +1,6 @@
 import { apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { prepareCalculatorScores } from './calculator-model.js';
+import { admissionUnitId, calculatorTargetNames } from './calculator-validation.js';
 
 export const CALCULATOR_STORAGE_CONSENT = 'CALCULATOR_INPUT_STORAGE_20261120_V1';
 export function normalizeStoredCalculatorInput(value) {
@@ -7,8 +8,7 @@ export function normalizeStoredCalculatorInput(value) {
   if (!score.ok || !Array.isArray(value?.targets) || value.targets.length > 6) return null;
   const seen = new Set(), targets = [];
   for (const row of value.targets) {
-    if (!row || typeof row.university !== 'string' || !row.university.trim() || row.university.length > 160 || typeof row.major !== 'string' || !row.major.trim() || row.major.length > 200
-      || /[\u0000-\u001f\u007f]/.test(row.university + row.major) || row.admissionUnitId !== undefined && !/^UNIT_[A-Z0-9][A-Z0-9_-]{2,71}$/.test(row.admissionUnitId)) return null;
+    if (!calculatorTargetNames(row) || row.admissionUnitId !== undefined && !admissionUnitId(row.admissionUnitId)) return null;
     const pair = JSON.stringify([row.university.trim(), row.major.trim()]); if (seen.has(pair)) return null; seen.add(pair);
     targets.push({ university: row.university.trim(), major: row.major.trim(), ...(row.admissionUnitId ? { admissionUnitId: row.admissionUnitId } : {}) });
   }

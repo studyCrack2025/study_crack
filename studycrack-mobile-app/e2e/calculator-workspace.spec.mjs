@@ -47,6 +47,13 @@ async function setup(page, options = {}) {
       if (!target.selection) return;
       row.selectionKey = target.selection.key;
       Object.assign(row.referenceComparison, { recordId: target.selection.recordId, candidateAdmissionIdentity: { admissionUnitId: target.admissionUnitId }, riskBand: 'stable' });
+      if (options.approvedRawCutoff && target.selection.admissionGroup === 'ga') {
+        converted.release = { dataReleaseId: 'ADMISSION_RELEASE_2027_TEST', contentDigest: catalogDigest, formulaVersion: 'formula-1.0.0', eligibilityRuleVersion: 'eligibility-1.0.0' };
+        row.reasonCodes = ['RAW_SCOREBOARD_NOT_RELEASED'];
+        row.previewCutoff = { dataReleaseId: converted.release.dataReleaseId, admissionUnitId: target.admissionUnitId,
+          convertedScore: 720.36, cutoffs: { pass: 700, registered70: 715 }, publicationId: 'CUT_RELEASE_TEST',
+          publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027 };
+      }
       if (options.referenceMissingGroups?.includes(target.selection.admissionGroup)) Object.assign(row.referenceComparison, { status: 'held', recordId: null, convertedScore: null, passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null, reasonCodes: ['REFERENCE_DATA_UNAVAILABLE'] });
     });
     if (state.deferConversion) await new Promise(resolve => { state.conversionRelease = resolve; });
@@ -248,6 +255,22 @@ test('저장한 지원 후보를 포트폴리오로 보고 돌아와도 성적·
   await page.screenshot({ path: testInfo.outputPath('portfolio-partial.png'), fullPage: true });
   await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기', exact: true }).click(); await expect(portfolio).toHaveCount(0); await expect(open).toBeEnabled();
   expect(state.record).toEqual(saved); expect(state.calls.filter(row => row.type.startsWith('student_save_'))).toHaveLength(writes);
+});
+
+test('가채점의 승인된 두 컷과 같은 척도의 점수를 계산기와 포트폴리오에 표시한다', async ({ page }) => {
+  await setup(page, { grouped: true, approvedRawCutoff: true }); await saveScores(page);
+  await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군');
+  await expect(page.getByText('가채점 환산점수', { exact: true })).toBeVisible();
+  await expect(page.getByText('715.00점', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
+  const ga = portfolio.getByRole('article', { name: '가군 지원 후보', exact: true });
+  await expect(ga).toContainText('720.36점');
+  await expect(ga).toContainText('700.00점');
+  await expect(ga).toContainText('715.00점');
+  await expect(ga.getByLabel('지원 단계: 판단 대기', { exact: true })).toBeVisible();
+  await expect(portfolio.getByRole('article', { name: '나군 지원 후보', exact: true })).toContainText('산출 보류');
 });
 
 test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {

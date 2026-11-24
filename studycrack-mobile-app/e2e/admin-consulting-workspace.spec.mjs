@@ -333,18 +333,63 @@ async function openStudent(page, index = 0) {
     await expect(page.locator('#consultingStudentStatus')).toHaveAttribute('data-state', 'success');
 }
 
+async function expectConsultingLayout(page) {
+    expect(await page.locator('#section-consulting').evaluate(section => {
+        const edge = section.getBoundingClientRect();
+        const nodes = section.querySelectorAll('button, input:not([type=checkbox]):not([type=hidden]), select, textarea, .consulting-admin-card, #consultingDetailSummary > section, #consultingDirectoryBody > tr');
+        return [...nodes].flatMap(node => {
+            const box = node.getBoundingClientRect();
+            if (!box.width || !box.height || node.closest('dialog:not([open])')) return [];
+            return box.left < Math.max(edge.left, 0) - 1 || box.right > Math.min(edge.right, innerWidth) + 1
+                || node.tagName === 'BUTTON' && box.height < 44 ? [node.id || node.className] : [];
+        });
+    })).toEqual([]);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+}
+
+test('컨설팅 목록·상세·하단 삭제 영역은 계산기 카드와 일치하고 320~1280px에서 잘리지 않는다', async ({ page }, testInfo) => {
+    await prepare(page, '', state => {
+        state.exportLimit = 20; state.students[0].deletion = { available: true };
+        state.students[0].contact.email = 'long-address-'.repeat(14) + '@example.invalid';
+    });
+    await enterConsulting(page);
+    for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(page.locator('#consultingDirectoryBody > tr')).toHaveCount(2);
+        await expectConsultingLayout(page);
+        expect(await page.locator('#consultingDirectoryBody').evaluate(node => Boolean(node.compareDocumentPosition(document.getElementById('consultingScheduleBoard')) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+        if (width === 1280) await page.screenshot({ path: testInfo.outputPath('consulting-admin-list-desktop.png'), fullPage: true });
+        await openStudent(page);
+        await expect(page.locator('#consultingStudentStage')).toHaveText('입금 확인 대기');
+        await expect(page.locator('#consultingDeleteApplicationSection')).toBeVisible();
+        expect(await page.locator('#consultingStudentPanel').evaluate(node => node.lastElementChild.id)).toBe('consultingDeleteApplicationSection');
+        expect(await page.locator('#consultingDetailSummary > section').first().evaluate(node => {
+            const consulting = getComputedStyle(node), calculator = getComputedStyle(document.querySelector('.calculator-admin-card'));
+            return ['borderRadius', 'borderColor', 'backgroundColor', 'padding'].every(key => consulting[key] === calculator[key]);
+        })).toBe(true);
+        await page.locator('#consultingInputEdit > summary').click();
+        await page.locator('#consultingPaymentAlternatives > summary').click();
+        await expectConsultingLayout(page);
+        if (width === 320 || width === 1280) await page.screenshot({ path: testInfo.outputPath(`consulting-admin-detail-${width}.png`), fullPage: true });
+        await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
+        await expect(page.locator('#consultingDirectoryStatus')).toHaveAttribute('data-state', 'success');
+        await expect(page.locator('#consultingDeleteApplicationSection')).toBeHidden();
+    }
+});
+
 test('신청 영구 삭제는 범위를 읽고 정확한 문구를 입력해야 하며 취소하면 쓰지 않는다', async ({ page }, testInfo) => {
     const state = await prepare(page); state.students[0].deletion = { available: true };
     await enterConsulting(page); await openStudent(page);
-    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('약 25개 DB 기록'); await expect(dialog).toContainText('학생 회원 계정'); await expect(dialog).toContainText('첨부파일·보고서 PDF 원본');
-    const confirm = dialog.getByRole('button', { name: '신청·원본 영구 삭제' });
-    await expect(confirm).toBeDisabled(); await dialog.getByLabel('계속하려면').fill('삭제'); await expect(confirm).toBeDisabled();
-    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제'); await expect(confirm).toBeEnabled();
+    await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 연결 기록'); await expect(dialog).toContainText('학생 회원 계정'); await expect(dialog).toContainText('첨부파일·보고서 PDF 원본');
+    const confirm = dialog.getByRole('button', { name: '신청 영구 삭제', exact: true });
+    await expect(confirm).toBeDisabled(); await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('삭제'); await expect(confirm).toBeDisabled();
+    await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제'); await expect(confirm).toBeEnabled();
     await page.setViewportSize({ width: 320, height: 900 }); await page.screenshot({ path: testInfo.outputPath('application-delete-320.png') });
     expect(await dialog.evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
-    await dialog.getByRole('button', { name: '돌아가기' }).click(); await expect(dialog).not.toBeVisible();
+    await expectConsultingLayout(page);
+    await dialog.getByRole('button', { name: '취소', exact: true }).click(); await expect(dialog).not.toBeVisible();
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
 });
 
@@ -352,12 +397,12 @@ for (const student of [0, 1]) test(`신청 삭제 접수 즉시 목록과 CSV �
     const state = await prepare(page); state.students[student].deletion = { available: true }; state.exportLimit = 15;
     await enterConsulting(page);
     await page.locator('[data-export-student]').nth(student).check();
-    await openStudent(page, student); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('약 25개 DB 기록');
+    await openStudent(page, student); await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 연결 기록');
     if (student) await expect(dialog).toContainText('조사서와 상담·보고서도 포함');
-    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
-    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거했습니다');
     await expect(page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' })).toHaveCount(1);
     await expect(dialog).not.toBeVisible();
@@ -368,24 +413,24 @@ for (const student of [0, 1]) test(`신청 삭제 접수 즉시 목록과 CSV �
 
 test('접수 실패는 완료로 표시하지 않고 삭제 상태를 재확인한 후 요청한다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true }; state.deleteFailOnce = true;
-    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('약 25개 DB 기록'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
-    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개 연결 기록'); await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(dialog).toContainText('접수 여부를 확인하지 못했습니다');
-    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    await expect(dialog.getByRole('button', { name: '신청 영구 삭제', exact: true })).toBeDisabled();
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
     await dialog.getByRole('button', { name: '삭제 상태 다시 확인' }).click();
-    await expect(dialog).toContainText('약 25개 DB 기록'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
-    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await expect(dialog).toContainText('약 25개 연결 기록'); await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거했습니다');
 });
 
 test('삭제 대상 조회 거절과 세션 종료 후 늦은 응답은 삭제를 활성화하지 않는다', async ({ page }) => {
     const state = await prepare(page); state.students[0].deletion = { available: true }; state.deletePreviewStatus = 403;
-    await enterConsulting(page); await openStudent(page); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    await enterConsulting(page); await openStudent(page); await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청 영구 삭제', exact: true })).toBeDisabled();
     state.deletePreviewStatus = 0; state.deferType = 'admin_preview_consulting_application_delete';
     await dialog.getByRole('button', { name: '삭제 상태 다시 확인' }).click();
     await expect.poll(() => Boolean(state.resolve)).toBe(true);
@@ -396,25 +441,26 @@ test('삭제 대상 조회 거절과 세션 종료 후 늦은 응답은 삭제�
 
 test('서버가 삭제 기능을 제공하기 전에는 신청 삭제 버튼을 노출하지 않는다', async ({ page }) => {
     await prepare(page); await enterConsulting(page); await openStudent(page);
-    await expect(page.getByRole('button', { name: '신청 영구 삭제', exact: true })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true })).not.toBeVisible();
+    await expect(page.locator('#consultingDeleteApplicationSection')).toBeHidden();
 });
 
 test('DB 전용 구버전 응답으로는 원본 삭제를 시작하지 않는다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true }; state.oldDeletionServer = true;
-    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('삭제 대상 확인에 실패'); await expect(dialog.getByRole('button', { name: '신청 영구 삭제', exact: true })).toBeDisabled();
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
 });
 
 test('화면을 닫거나 새로고침해도 삭제한 신청이 돌아오지 않고 대기·반복 호출을 하지 않는다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true };
     await enterConsulting(page); await openStudent(page, 1); await page.clock.install();
-    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
     await expect(dialog).toContainText('화면을 닫아도 서버에서 자동');
-    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
-    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(dialog).toBeHidden(); await expect(page.locator('#consultingDirectoryStatus')).toContainText('서버에서 자동 정리');
     await page.clock.fastForward(20 * 60000);
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
@@ -427,10 +473,10 @@ test('화면을 닫거나 새로고침해도 삭제한 신청이 돌아오지 �
 test('기존에 대기 중이던 삭제도 한 번 확인하면 자동 정리로 넘기고 바로 목록으로 돌아간다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true }; state.deletionStarted = true;
     await enterConsulting(page); await openStudent(page, 1);
-    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
     await expect(dialog).toContainText('삭제가 진행 중');
-    await dialog.getByLabel('계속하려면').fill('신청 영구 삭제'); await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제'); await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(dialog).toBeHidden(); await expect(page.locator('#consultingDirectoryStatus')).toContainText('목록에서 제거');
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
 });
@@ -438,13 +484,13 @@ test('기존에 대기 중이던 삭제도 한 번 확인하면 자동 정리로
 test('응답 유실은 완료로 꾸미지 않으며 접수된 삭제는 목록을 다시 열면 반영된다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true }; state.deleteReplyLost = true;
     await enterConsulting(page); await openStudent(page, 1);
-    await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
-    await expect(dialog).toContainText('약 25개'); await dialog.getByLabel('계속하려면').fill('신청 영구 삭제');
-    await dialog.getByRole('button', { name: '신청·원본 영구 삭제' }).click();
+    await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
+    await expect(dialog).toContainText('약 25개'); await dialog.getByLabel('확인 문구: 신청 영구 삭제', { exact: true }).fill('신청 영구 삭제');
+    await dialog.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
     await expect(dialog).toContainText('접수 여부를 확인하지 못했습니다');
-    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
-    await dialog.getByRole('button', { name: '돌아가기' }).click();
+    await expect(dialog.getByRole('button', { name: '신청 영구 삭제', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: '취소', exact: true }).click();
     await page.getByRole('button', { name: '← 학생 목록', exact: true }).click();
     await expect(page.locator('#consultingDirectoryBody').getByRole('button', { name: '학생 상세' })).toHaveCount(1);
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(1);
@@ -452,10 +498,10 @@ test('응답 유실은 완료로 꾸미지 않으며 접수된 삭제는 목록�
 
 test('자동 정리를 지원하지 않는 구버전 서버에는 삭제를 보내지 않는다', async ({ page }) => {
     const state = await prepare(page); state.students[1].deletion = { available: true }; state.oldBackgroundServer = true;
-    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '신청 영구 삭제', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: '신청 기록을 영구 삭제할까요?' });
+    await enterConsulting(page); await openStudent(page, 1); await page.getByRole('button', { name: '컨설팅 신청 삭제', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '컨설팅 신청을 삭제할까요?' });
     await expect(dialog).toContainText('삭제 대상 확인에 실패');
-    await expect(dialog.getByRole('button', { name: '신청·원본 영구 삭제' })).toBeDisabled();
+    await expect(dialog.getByRole('button', { name: '신청 영구 삭제', exact: true })).toBeDisabled();
     expect(state.calls.filter(call => call.type === 'admin_delete_consulting_application')).toHaveLength(0);
 });
 

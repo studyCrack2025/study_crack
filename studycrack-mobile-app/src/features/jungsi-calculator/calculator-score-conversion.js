@@ -1,8 +1,12 @@
 import { apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { SUBJECTS } from './calculator-model.js';
+import { calculatorDigest as digest } from './calculator-validation.js';
+
+const OFFICIAL_SCOREBOARD = '2027_KSAT_scoreboard.json';
+const ESTIMATED_SCOREBOARD = '2027_KSAT_survey_estimated.json';
+export const calculatorScoreboardId = estimated => estimated ? ESTIMATED_SCOREBOARD : OFFICIAL_SCOREBOARD;
 
 const integer = (value, max) => (typeof value === 'number' || typeof value === 'string' && /^\d{1,3}$/.test(value.trim())) && Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= max;
-const digest = value => /^sha256:[a-f0-9]{64}$/.test(value || '');
 export const scoreRecordKey = row => JSON.stringify(row);
 
 export function calculatorScoreBatch(scores) {
@@ -25,7 +29,7 @@ export async function requestCalculatorScoreConversion({ apiFetch, analysisApiUr
   const value = response.data, board = value?.scoreboard;
   if (!value || value.success !== true || value.contractVersion !== 'calculator-score-conversion-v1' || value.admissionYear !== 2027 || !digest(value.inputDigest)
     || !Array.isArray(value.results) || value.results.length !== records.length
-    || board !== null && (!board || !['2027_KSAT_scoreboard.json', '2027_KSAT_survey_estimated.json'].includes(board.id) || !digest(board.digest) || board.estimated !== (board.id === '2027_KSAT_survey_estimated.json'))
+    || board !== null && (!board || typeof board.estimated !== 'boolean' || board.id !== calculatorScoreboardId(board.estimated) || !digest(board.digest))
     || !value.results.every((row, index) => {
       if (!row || row.key !== records[index].key || scoreRecordKey(row.input) !== scoreRecordKey(records[index]) || !Array.isArray(row.reasonCodes)) return false;
       if (row.status === 'unavailable') return row.metrics === null && row.reasonCodes.length === 1 && row.reasonCodes[0] === 'RAW_SCORE_CONVERSION_NOT_AVAILABLE';
