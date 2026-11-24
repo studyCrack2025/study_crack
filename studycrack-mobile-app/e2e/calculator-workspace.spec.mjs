@@ -260,8 +260,12 @@ test('저장한 지원 후보를 포트폴리오로 보고 돌아와도 성적·
 test('가채점의 승인된 두 컷과 같은 척도의 점수를 계산기와 포트폴리오에 표시한다', async ({ page }) => {
   await setup(page, { grouped: true, approvedRawCutoff: true }); await saveScores(page);
   await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군');
-  await expect(page.getByText('가채점 환산점수', { exact: true })).toBeVisible();
-  await expect(page.getByText('715.00점', { exact: true })).toBeVisible();
+  await page.getByRole('navigation', { name: '모집군 선택' }).getByRole('button', { name: /가군/ }).click();
+  const gaCandidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  await expect(gaCandidate.getByText('가채점 환산점수', { exact: true })).toBeVisible();
+  for (const score of ['720.36점', '700.00점', '715.00점']) {
+    await expect(gaCandidate.getByText(score, { exact: true })).toBeVisible();
+  }
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
@@ -294,7 +298,7 @@ async function openExportPortfolio(page) {
   const region = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(region).toBeVisible(); return { state, region };
 }
 async function receivePng(download, testInfo, filename) {
-  expect(download.suggestedFilename()).toBe('StudyCrack_2027_정시_포트폴리오.png');
+  expect(download.suggestedFilename().normalize('NFC')).toBe('StudyCrack_2027_정시_포트폴리오.png');
   const path = testInfo.outputPath(filename); await download.saveAs(path); const bytes = await readFile(path);
   expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]); expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBeGreaterThan(1000); expect(bytes.readUInt32BE(20)).toBeLessThanOrEqual(8192);
