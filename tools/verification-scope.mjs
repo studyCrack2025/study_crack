@@ -12,7 +12,22 @@ export function classifyChanges(files) {
   return files.length > 0 && files.every(file => webCssFiles.includes(file)) ? 'web-css' : 'all';
 }
 
-export async function resolveVerificationScope({ repository, branch, head }, { getJson, changedFiles }) {
+function preflightArea(file) {
+  if (/^(?:admin_index\.html|js\/admin_ui\.js|css\/admin_[\w-]+\.css)$/.test(file) || file.startsWith('js/admin/')) return 'admin';
+  if (/^studycrack-mobile-app\/e2e\/admin-/.test(file)) return 'admin';
+  if (/^(?:jungsi-calculator\.html|tools\/test\/jungsi-calculator-api\.test\.mjs)$/.test(file)
+    || file.startsWith('studycrack-mobile-app/src/features/jungsi-calculator/')
+    || /^studycrack-mobile-app\/e2e\/(?:[^/]*calculator[^/]*\.spec|support\/calculator-fixture)\.mjs$/.test(file)) return 'calculator';
+  return null;
+}
+
+export function classifyPreflightChanges(files) {
+  const areas = new Set(files.map(preflightArea));
+  if (areas.size === 0 || areas.has(null)) return 'all';
+  return `preflight-${[...areas].sort().join('-')}`;
+}
+
+export async function resolveVerificationScope({ repository, branch, head, preflight = false }, { getJson, changedFiles }) {
   const full = reason => ({ suite: 'all', reason, baseline: '' });
   if (branch !== 'dev') return full('Production and unknown targets require the full suite.');
   try {
@@ -42,6 +57,13 @@ export async function resolveVerificationScope({ repository, branch, head }, { g
     }
     // A failed earlier deployment must not disappear from the next change assessment.
     const files = await changedFiles(run.head_sha, head);
+    if (preflight) {
+      const suite = classifyPreflightChanges(files);
+      const reason = suite === 'all'
+        ? 'Shared, unclassified or empty changes require the full browser suite.'
+        : `Pre-PR verification covers ${suite.replace('preflight-', '')} and the public artifact in Chromium and WebKit.`;
+      return { suite, baseline: run.head_sha, reason };
+    }
     const suite = classifyChanges(files);
     return { suite, baseline: run.head_sha, reason: suite === 'web-css'
       ? 'Only covered desktop stylesheets changed since the last successful deployment.'
@@ -62,8 +84,9 @@ export function gitChangedFiles(base, head, cwd = process.cwd()) {
 async function main() {
   const scope = await resolveVerificationScope({
     repository: process.env.GITHUB_REPOSITORY,
-    branch: process.env.GITHUB_BASE_REF || process.env.GITHUB_REF_NAME,
-    head: process.env.GITHUB_SHA
+    branch: process.env.RELEASE_BRANCH || process.env.GITHUB_BASE_REF || process.env.GITHUB_REF_NAME,
+    head: process.env.GITHUB_SHA,
+    preflight: process.env.VERIFICATION_PREFLIGHT === 'true'
   }, {
     changedFiles: gitChangedFiles,
     getJson: async endpoint => {
