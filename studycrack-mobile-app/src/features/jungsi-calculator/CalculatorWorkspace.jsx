@@ -51,7 +51,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
   const planDirty = name.trim() !== (baseline?.name || '기본 조합') || JSON.stringify(targets) !== JSON.stringify(baselineTargets);
   const dirty = planDirty || editing && (changed || !profile);
   const queryKey = JSON.stringify({ scores: profile?.scores, profileRevision: profile?.revision, targets });
-  const currentResult = !editing && conversion.key === queryKey && conversion.status === 'ready';
+  const currentResult = enabled && calculationEnabled && !editing && conversion.key === queryKey && conversion.status === 'ready';
   const portfolio = grouped && baseline && !locked && calculationEnabled && !planDirty && currentResult
     ? createCalculatorPortfolio({ profile, plan: { ...baseline, targets, representatives }, conversion: conversion.data, input: conversion.input }) : null;
   const showPortfolio = portfolioOpen && Boolean(portfolio);
@@ -153,6 +153,6 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
 
 export default function CalculatorWorkspace({ entitlement, enabled, calculationEnabled, denyAccess, grouped = false }) {
   const store = useCalculatorWorkspace(entitlement.applicationId, enabled);
-  if (!store.resource.data) return <section className="jcalc-panel" aria-label="계산기 저장 자료"><CalculatorNote role={store.resource.status === 'error' ? 'alert' : 'status'}>{store.resource.status === 'error' ? store.resource.error : '저장한 성적과 조합을 불러오고 있습니다…'}</CalculatorNote>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>저장 자료 다시 불러오기</CalculatorButton>}</section>;
+  if (!store.resource.data) return enabled && <section className="jcalc-panel" aria-label="계산기 저장 자료"><CalculatorNote role={store.resource.status === 'error' ? 'alert' : 'status'}>{store.resource.status === 'error' ? store.resource.error : '저장한 성적과 조합을 불러오고 있습니다…'}</CalculatorNote>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>저장 자료 다시 불러오기</CalculatorButton>}</section>;
   return <div hidden={!enabled}><WorkspaceEditor key={store.resource.data.workspaceId} store={store} enabled={enabled} calculationEnabled={calculationEnabled} denyAccess={denyAccess} grouped={grouped} /></div>;
 }
