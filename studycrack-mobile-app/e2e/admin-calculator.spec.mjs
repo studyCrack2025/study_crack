@@ -32,7 +32,7 @@ async function prepare(page, options = {}) {
         if (type === 'admin_get_notifications') return route.fulfill({ json: { notifications: [], sentNotices: [] } });
         if (['admin_list_v2_material_review', 'admin_list_written_unread'].includes(type)) data = { items: [], hasMore: false, nextCursor: null };
         else if (type === 'admin_list_calculator_applications') data = { scope: state.scope, productType: 'calculator',
-            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', readOnly: state.detail.readOnly === true, phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
+            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', readOnly: state.crossEnvironment === true || state.detail.readOnly === true, managementAvailable: state.crossEnvironment === true, phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
             nextCursor: state.emptyFirst && !input.cursor ? 'synthetic_cursor' : null, issueRows: state.issueRows || [], unavailableCount: state.issueRows?.length || 0 };
         else if (type === 'admin_get_calculator_application') {
             if (state.defer) await new Promise(resolve => { state.release = resolve; });
@@ -94,6 +94,22 @@ test('다른 환경의 계산기 신청은 목록과 마스킹 상세에서 조�
         await expect(page.locator('#' + id)).toBeHidden();
     }
     expect(state.calls.some(call => call.type === 'admin_get_calculator_input' || call.type === 'admin_verify_calculator_payment')).toBe(false);
+});
+test('자동 연결되는 다른 환경의 계산기 신청도 상세에서 승인할 수 있다', async ({ page }) => {
+    const state = await prepare(page, { crossEnvironment: true });
+    state.detail.stage = 'PROD';
+    await expect(page.locator('#calculatorAdminListStatus')).toHaveAttribute('data-state', 'success');
+    await expect(page.locator('#calculatorAdminListBody')).not.toContainText('조회 전용');
+    await openDetail(page);
+    await expect(page.locator('#calculatorAdminDetailStatus')).not.toContainText('조회만 할 수 있습니다');
+    await expect(page.locator('#calculatorAdminPayment')).toBeVisible();
+    await expect(page.locator('#calculatorAdminDeleteSection')).toBeVisible();
+    await fillPayment(page);
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#calculatorAdminApprove').click();
+    await expect(page.locator('#calculatorAdminState')).toHaveText('이용 인증 대기');
+    expect(state.calls.filter(call => call.type === 'admin_verify_calculator_payment')).toHaveLength(1);
+    expect(state.calls.every(call => !Object.hasOwn(call.data || {}, 'stage') && !Object.hasOwn(call.data || {}, 'targetStage'))).toBe(true);
 });
 async function openDeletion(page) {
     await page.getByRole('button', { name: '계산기 신청 삭제', exact: true }).click();

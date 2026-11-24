@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
     jsx: 'automatic'
   },
   build: {
+    minify: mode === 'jungsi-calculator' ? 'terser' : 'esbuild',
     assetsInlineLimit: () => false,
     outDir: 'dist',
     emptyOutDir: mode !== 'jungsi-calculator',

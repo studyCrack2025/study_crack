@@ -169,7 +169,7 @@ async function loadCalculatorAdminList() {
             const personContent = document.createElement('div');
             name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; personContent.append(name, contact); person.append(personContent);
             const status = createConsultingCell(''), badge = document.createElement('span');
-            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel + (item.readOnly ? ' · 조회 전용' : '');
+            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel + (item.readOnly && item.managementAvailable !== true ? ' · 조회 전용' : '');
             badge.dataset.phase = ADMIN_CALCULATOR_PHASES.includes(item.phase) ? item.phase : ''; status.append(badge);
             row.append(person, status, createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
             const action = createConsultingCell(''), button = document.createElement('button');

@@ -335,6 +335,6 @@ test('workflow passes the tested artifact and independent digest to a non-buildi
   assert.doesNotMatch(deploy, /npm (?:ci|install|run build)|bump_asset_version|aws s3 sync \./);
   assert.ok(deploy.indexOf('site-release.mjs verify') < deploy.indexOf('Configure AWS credentials'));
   assert.match(deploy, /site-release\.mjs publish/);
-  assert.ok(workflow.includes("concurrency:\n  group: static-release-${{ github.ref }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/preflight/') }}"));
+  assert.ok(workflow.includes("concurrency:\n  group: static-release-${{ github.ref }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}"));
   assert.match(verify, /if-no-files-found: error/);
 });

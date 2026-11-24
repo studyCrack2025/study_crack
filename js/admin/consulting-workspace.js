@@ -129,7 +129,7 @@ function activateConsultingWorkspace(route) {
     const phase = ADMIN_CONSULTING_PHASES.includes(route.phase) ? route.phase : 'all';
     if (phase !== consultingWorkspacePhase) { consultingDirectoryCursor = null; consultingDirectoryNextCursor = null; consultingDirectoryPreviousCursors = []; }
     consultingWorkspacePhase = phase;
-    document.querySelectorAll('[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
+    document.querySelectorAll('.consulting-phases button[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
     if (route.caseId || route.applicationId && route.sourceResponseId) {
         closeConsultingExportDialog();
         document.getElementById('consultingDirectoryPanel').hidden = true;
@@ -167,7 +167,7 @@ function renderConsultingDirectory(items, empty = '이 페이지에 해당 단�
             identity.append(name, contact); label.append(checkbox, identity); student.appendChild(label);
         } else { const identity = document.createElement('div'); identity.append(name, contact); student.append(identity); }
         const stateCell = createConsultingCell(''), badge = document.createElement('span');
-        badge.className = 'consulting-admin-badge'; badge.textContent = `${item.stateLabel}${item.held ? ' · 보류' : ''}${item.readOnly ? ' · 조회 전용' : ''}`;
+        badge.className = 'consulting-admin-badge'; badge.textContent = `${item.stateLabel}${item.held ? ' · 보류' : ''}${item.readOnly && item.managementAvailable !== true ? ' · 조회 전용' : ''}`;
         badge.dataset.phase = item.held ? 'attention' : Object.hasOwn(consultingPhaseTitles, item.phase) ? item.phase : '';
         stateCell.append(badge);
         row.append(student, stateCell, createConsultingCell(item.nextAction), createConsultingCell(formatConsultingDate(item.updatedAt)));

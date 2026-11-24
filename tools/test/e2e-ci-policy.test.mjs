@@ -82,8 +82,8 @@ test('parallel browser jobs preserve one final gate, scope, immutable bytes and 
 test('pre-PR pushes use release verification without a deployment credential path', async () => {
   const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
   const deploy = workflow.slice(workflow.indexOf('  deploy:'));
-  assert.match(workflow, /push:\n    branches:\n      - main\n      - dev\n      - 'preflight\/\*\*'/);
-  assert.ok(workflow.includes("VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/preflight/') }}"));
+  assert.match(workflow, /push:\n    branches:\n      - main\n      - dev\n      - 'preflight\/\*\*'\n      - dev-jungsi-update/);
+  assert.ok(workflow.includes("VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}"));
   assert.ok(workflow.includes("PLAYWRIGHT_WEBKIT: ${{ matrix.project == 'mobile-webkit' && '1' || '0' }}"));
   assert.ok(workflow.includes('--project="$PLAYWRIGHT_PROJECT"'));
   const condition = deploy.slice(0, deploy.indexOf('    runs-on:'));
