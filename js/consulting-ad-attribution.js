@@ -1,18 +1,25 @@
 (function(root){
  'use strict';
  const pending=new Map(),products=['consulting','calculator'],sources=['naver','google','meta','facebook','instagram'];
- const page=new URL(root.location.href),q=page.searchParams;
- const landing=products.includes(q.get('utm_product'))?q.get('utm_product'):page.hash==='#consulting'?'consulting':page.hash==='#calculator'||page.pathname.startsWith('/2027-jungsi-consulting')?'calculator':'consulting';
  const id=v=>typeof v==='string'&&/^[A-Za-z0-9_.-]{1,120}$/.test(v)?v:null;
  const touchKey=product=>'sc_site_touch_v2:'+product,tokenKey=product=>'sc_site_attribution_v2:'+product;
- if(sources.includes(q.get('utm_source')))try{root.sessionStorage.setItem(touchKey(landing),JSON.stringify({at:Date.now(),input:{source:q.get('utm_source'),campaignId:id(q.get('utm_id')||q.get('utm_campaign')),creativeId:id(q.get('utm_content'))}}));}catch{}
+ let capturedSearch=null;
+ function captureTouch(){
+  const page=new URL(root.location.href),q=page.searchParams;
+  if(page.search===capturedSearch)return;
+  capturedSearch=page.search;
+  const landing=products.includes(q.get('utm_product'))?q.get('utm_product'):page.hash==='#consulting'?'consulting':page.hash==='#calculator'||page.pathname.startsWith('/2027-jungsi-consulting')?'calculator':'consulting';
+  if(sources.includes(q.get('utm_source')))try{root.sessionStorage.setItem(touchKey(landing),JSON.stringify({at:Date.now(),input:{source:q.get('utm_source'),campaignId:id(q.get('utm_id')||q.get('utm_campaign')),creativeId:id(q.get('utm_content'))}}));}catch{}
+ }
+ captureTouch();
  function inputFor(product){
   let input={source:'unknown',campaignId:null,creativeId:null};
   try{const t=JSON.parse(root.sessionStorage.getItem(touchKey(product)));if(t&&Number.isSafeInteger(t.at)&&t.at<=Date.now()&&Date.now()-t.at<7*86400000&&sources.includes(t.input?.source))input={source:t.input.source,campaignId:id(t.input.campaignId),creativeId:id(t.input.creativeId)};}catch{}
   return {...input,productType:product};
  }
- async function getToken(product){
+ async function getToken(product='consulting'){
   if(!products.includes(product)||!root.CONFIG?.api?.consultingPublic)return null;
+  captureTouch();
   const input=inputFor(product),signature=JSON.stringify(input);let saved;
   try{saved=JSON.parse(root.sessionStorage.getItem(tokenKey(product)));}catch{}
   if(saved?.signature===signature&&typeof saved.token==='string'&&saved.token.length>0&&saved.token.length<=1600&&Date.parse(saved.expiresAt)>Date.now())return saved.token;
