@@ -110,6 +110,14 @@ function renderConsultingApplication(applicationId, data) {
     if (application?.applicationId !== applicationId || !Number.isSafeInteger(application.revision) || !contact || typeof contact !== 'object') throw new Error('신청 상세 형식이 올바르지 않습니다.');
     const calculator = consultingSimpleCalculatorInput(data);
     const summary = document.getElementById('consultingDetailSummary');
+    if (data.readOnly === true) {
+        appendConsultingRecord(summary, '학생·신청 정보', createConsultingFacts([
+            ['학생 이름', contact.studentName], ['전화번호', contact.phone],
+            ['접수 시각', formatConsultingDate(application.createdAt)], ['예정 금액', formatConsultingMoney(application.expectedAmount)]
+        ]));
+        document.getElementById('consultingApplicationDetail').hidden = false;
+        return;
+    }
     appendConsultingRecord(summary, calculator ? '이용자·연락처' : '학생·연락처', createConsultingFacts([
         [calculator ? '이용자 이름' : '학생 이름', contact.studentName], ['전화번호', contact.phone], ['이메일', contact.email],
         ...(data.intakeFormVersion === 2 ? [

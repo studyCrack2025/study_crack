@@ -169,7 +169,7 @@ async function loadCalculatorAdminList() {
             const personContent = document.createElement('div');
             name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; personContent.append(name, contact); person.append(personContent);
             const status = createConsultingCell(''), badge = document.createElement('span');
-            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel;
+            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel + (item.readOnly ? ' · 조회 전용' : '');
             badge.dataset.phase = ADMIN_CALCULATOR_PHASES.includes(item.phase) ? item.phase : ''; status.append(badge);
             row.append(person, status, createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
             const action = createConsultingCell(''), button = document.createElement('button');
@@ -209,8 +209,8 @@ function updateCalculatorAdminActions() {
     calculatorAdminNode('calculatorAdminDetailContent')?.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = state.busy; });
     for (const [id, show] of [['calculatorAdminInput', status?.canReviewInput], ['calculatorAdminPayment', status?.canApprove],
         ['calculatorAdminReview', status?.canReviewPayment], ['calculatorAdminReissue', status?.canReissue && data?.activeInviteId],
-        ['calculatorAdminDeleteSection', data?.deletion?.available === true]]) {
-        const node = calculatorAdminNode(id); if (node) node.hidden = !show;
+        ['calculatorAdminDeleteSection', data?.deletion?.available === true], ['calculatorAdminSavedSection', Boolean(data)]]) {
+        const node = calculatorAdminNode(id); if (node) node.hidden = data?.readOnly === true || !show;
     }
     const approve = calculatorAdminNode('calculatorAdminApprove');
     if (approve) approve.disabled = state.busy || status?.canApprove !== true || data?.campaignReady === false;
@@ -259,7 +259,7 @@ async function loadCalculatorAdminDetail(reference) {
         state.detail = data;
         state.keys = Object.fromEntries(['payment', 'input', 'hold', 'reject', 'reissue'].map(key => [key, consultingRequestKey('calculator-' + key)]));
         renderCalculatorAdminDetail(data);
-        calculatorAdminStatus('calculatorAdminDetailStatus', '', 'success');
+        calculatorAdminStatus('calculatorAdminDetailStatus', data.readOnly ? '다른 환경의 신청입니다. 현재 화면에서는 조회만 할 수 있습니다.' : '', 'success');
         calculatorAdminNode('calculatorAdminDetailTitle').focus({ preventScroll: true });
         return true;
     } catch (_) {
@@ -348,7 +348,7 @@ window.addEventListener('pagehide', resetCalculatorAdmin);
 
 async function loadCalculatorAdminSavedInput() {
     const state = calculatorAdminState, generation = state.generation, reference = state.reference;
-    if (!state.detail || !reference || state.busy) return;
+    if (!state.detail || state.detail.readOnly || !reference || state.busy) return;
     state.request?.abort(); const controller = new AbortController(); state.request = controller;
     const body = calculatorAdminNode('calculatorAdminSavedInput'); body.replaceChildren();
     calculatorAdminStatus('calculatorAdminSavedStatus', '학생이 저장한 자료를 확인하고 있습니다.');
