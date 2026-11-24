@@ -42,7 +42,10 @@ async function prepare(page) {
             } else {
                 if (window.__mutationFailure) throw Object.assign(new Error('Synthetic mutation failure'), { status: 409 });
                 if (window.__deferMutation) await new Promise(resolve => { window.__resolveMutation = resolve; });
-                if (request.type === 'admin_verify_manual_payment') Object.assign(app, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 });
+                if (request.type === 'admin_verify_manual_payment') {
+                    Object.assign(app, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 1 });
+                    window.__detail.payment = { expectedAmount: app.expectedAmount, paidAmount: request.data.paidAmount, canCorrect: true, differenceReason: request.data.amountDifferenceReason };
+                }
                 if (request.type === 'admin_reject_application') {
                     Object.assign(app, { applicationState: 'REJECTED', paymentReviewStatus: 'rejected', revision: 1 });
                     window.__detail.reviewNotices = [{ decision: 'reject', status: 'pending', createdAt: '2026-11-10T10:00:00Z' }];
@@ -52,6 +55,11 @@ async function prepare(page) {
                     for (const field of ['payerRelationship', 'contactMethod', 'studentStatus', 'contactRelationship']) if (Object.hasOwn(request.data.input, field)) window.__detail[field] = request.data.input[field];
                     Object.assign(window.__detail.application, { inputReviewRequired: false, paymentReviewStatus: 'pending', intakeIssues: [], revision: request.data.expectedRevision + 1 });
                     data = { applicationId: id, revision: window.__detail.application.revision, inputReviewRequired: false };
+                } else if (request.type === 'admin_correct_consulting_payment_amount') {
+                    app.revision++;
+                    window.__detail.payment = { ...window.__detail.payment, paidAmount: request.data.paidAmount, confirmedQuotedAmount: request.data.confirmedQuotedAmount,
+                        correctionReason: request.data.reasonCode, correctedAt: '2026-11-24T10:00:00Z' };
+                    data = { applicationId: id, revision: app.revision, paidAmount: request.data.paidAmount };
                 } else data = { applicationId: id, applicationState: app.applicationState, revision: app.revision, notificationQueued: request.type === 'admin_reject_application' };
             }
             return { json: async () => ({ success: true, data }) };
@@ -128,6 +136,50 @@ test('입금 승인 취소는 서버 변경 없이 종료한다', async ({ page 
     await page.locator('#consultingApproveBtn').click();
     expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment').length)).toBe(0);
     await expect(page.locator('#consultingApplicationDetail')).toBeVisible();
+});
+
+test('예정액과 다른 실제 입금은 대조 사유를 선택한 뒤 실제 금액 그대로 승인한다', async ({ page }) => {
+    await prepare(page);
+    await openDetail(page);
+    await fillPayment(page);
+    await expect(page.getByLabel('금액 차이 사유')).toBeHidden();
+    await page.locator('#consultingPaidAmount').fill('200000');
+    await expect(page.locator('#consultingPaymentDifference')).toHaveText('예정 300,000원 · 실제 200,000원 · 차액 -100,000원');
+    await page.locator('#consultingApproveBtn').click();
+    await expect(page.locator('#consultingStatus')).toContainText('금액 차이 사유');
+    expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'))).toHaveLength(0);
+    await page.getByLabel('금액 차이 사유').selectOption('INDIVIDUAL_PRICE');
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#consultingApproveBtn').click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('입금 승인 및 초대 발송 예약 완료');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('200,000원');
+    const calls = await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'));
+    expect(calls).toHaveLength(1);
+    expect(calls[0].data).toMatchObject({ applicationId, paidAmount: 200000, amountDifferenceReason: 'INDIVIDUAL_PRICE', payerNameConfirmed: true });
+});
+
+test('이미 승인된 입금액을 정정하면 원래 예정액을 유지하고 승인이나 초대를 다시 요청하지 않는다', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        Object.assign(window.__detail.application, { applicationState: 'INVITED', paymentReviewStatus: 'verified', revision: 2 });
+        window.__detail.payment = { expectedAmount: 300000, paidAmount: 300000, canCorrect: true };
+    });
+    await openDetail(page);
+    await expect(page.locator('#consultingPaymentActions')).toBeHidden();
+    await page.locator('#consultingPaymentCorrection > summary').click();
+    await page.getByLabel('정정할 실제 입금액').fill('200000');
+    await page.getByLabel('확인된 안내 금액 (선택)').fill('200000');
+    await page.getByLabel('정정 사유').selectOption('AMOUNT_ENTRY_ERROR');
+    await page.getByLabel('계좌 내역에서 실제 입금액을 확인했습니다').check();
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: '입금액 정정 저장' }).click();
+    await expect(page.locator('#consultingActionStatus')).toContainText('실제 입금액을 정정했습니다');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('300,000원');
+    await expect(page.locator('#consultingDetailSummary')).toContainText('200,000원');
+    const calls = await page.evaluate(() => window.__calls.filter(call => /payment|invite/.test(call.type)));
+    expect(calls.map(call => call.type)).toEqual(['admin_correct_consulting_payment_amount']);
+    expect(calls[0].data).toMatchObject({ applicationId, expectedRevision: 2, previousPaidAmount: 300000, paidAmount: 200000,
+        confirmedQuotedAmount: 200000, bankRecordConfirmed: true, reasonCode: 'AMOUNT_ENTRY_ERROR' });
 });
 
 test('거절 메모는 펼쳐서 입력하고 최종 확인 뒤 선택한 신청에만 보낸다', async ({ page }) => {
