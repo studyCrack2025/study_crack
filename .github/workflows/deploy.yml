@@ -8,6 +8,7 @@ on:
       - main
       - dev
       - 'preflight/**'
+      - dev-jungsi-update
   workflow_dispatch:
     inputs:
       rollback_run_id:
@@ -35,7 +36,7 @@ env:
 
 concurrency:
   group: static-release-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/preflight/') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}
 
 jobs:
   prepare:
@@ -50,7 +51,7 @@ jobs:
       artifact-name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       manifest-digest: ${{ steps.candidate.outputs.manifest-digest }}
     env:
-      RELEASE_BRANCH: ${{ github.base_ref || (startsWith(github.ref, 'refs/heads/preflight/') && 'dev') || github.ref_name }}
+      RELEASE_BRANCH: ${{ github.base_ref || ((startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') && 'dev') || github.ref_name }}
     defaults:
       run:
         working-directory: studycrack-mobile-app
@@ -70,7 +71,7 @@ jobs:
         id: scope
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/preflight/') }}
+          VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}
         run: node ../tools/verification-scope.mjs
       - name: Install dependencies
         run: npm ci
