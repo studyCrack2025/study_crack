@@ -270,6 +270,29 @@ test('hold requires a reason, previews the customer notice, and mutates only aft
     assert.equal(hold.data.previewToken, 'fixture-preview');
 });
 
+test('an unpaid hold shows masked Kakao delivery and refuses an outdated SMS preview', async () => {
+    const { context, run, calls, open, get } = setup();
+    const respond = context.respond;
+    let channel = 'sms';
+    context.respond = request => request.type === 'admin_preview_application_review_notice'
+        ? { applicationId, revision: 0, willQueue: true, channel, recipient: '010-****-0000', message: '입금 내역을 확인하지 못했습니다.', previewToken: 'fixture-preview' }
+        : request.type === 'admin_hold_payment_review' ? { notificationQueued: true } : respond(request);
+    await open();
+    get('consultingHoldReason').value = 'PAYMENT_NOT_FOUND';
+    context.confirm = () => assert.fail('An SMS preview cannot confirm an unpaid hold');
+    await run('holdConsultingPayment()');
+    assert.equal(calls.filter(call => call.type === 'admin_hold_payment_review').length, 0);
+    assert.match(get('consultingActionStatus').textContent, /미입금 알림톡 설정/);
+    channel = 'kakao';
+    context.confirm = message => { assert.match(message, /알림톡 수신처 · 010-\*\*\*\*-0000/); return true; };
+    await run('holdConsultingPayment()');
+    const holds = calls.filter(call => call.type === 'admin_hold_payment_review');
+    assert.equal(holds.length, 1);
+    assert.equal(holds[0].data.reasonCode, 'PAYMENT_NOT_FOUND');
+    assert.equal(holds[0].data.previewToken, 'fixture-preview');
+    assert.match(get('consultingActionStatus').textContent, /알림톡 안내를 예약/);
+});
+
 test('invite reissue is available only on an invited application and needs confirmation', async () => {
     const { context, run, calls, open, get } = setup();
     await open();

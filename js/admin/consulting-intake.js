@@ -146,9 +146,9 @@ function renderConsultingApplication(applicationId, data) {
     if (data.invitedAt) history.push(['초대 발급 시각', formatConsultingDate(data.invitedAt)]);
     appendConsultingRecord(summary, '접수 이력', createConsultingFacts(history));
     if (Array.isArray(data.reviewNotices) && data.reviewNotices.length) {
-        const states = { pending: '발송 예약', processing: '발송 요청 중', sent: '문자 접수 확인', superseded: '이전 상태 안내 생략', dead_letter: '실패 확인' };
+        const states = { pending: '발송 예약', processing: '발송 요청 중', sent: '발송 접수 확인', superseded: '이전 상태 안내 생략', dead_letter: '실패 확인' };
         appendConsultingRecord(summary, '신청 안내 이력', createConsultingFacts(data.reviewNotices.map(notice => [
-            notice.decision === 'hold' ? '보류 문자' : '거절 문자',
+            `${notice.decision === 'hold' ? '보류' : '거절'} ${notice.channel === 'kakao' ? '알림톡' : '문자'}`,
             [
                 notice.errorCode === 'NOTIFICATION_DELIVERY_UNCERTAIN' ? '발송 결과 확인 필요' : consultingOptionLabel(notice.status, states),
                 formatConsultingDate(notice.status === 'sent' ? notice.acceptedAt : notice.createdAt),
@@ -395,13 +395,17 @@ async function reviewConsultingPayment(decision) {
     }
     if (requestId !== consultingApplicationRequest) return;
     setConsultingActionStatus('');
+    if (hold && reasonCode === 'PAYMENT_NOT_FOUND' && preview.willQueue && preview.channel !== 'kakao') {
+        return setConsultingActionStatus('미입금 알림톡 설정을 확인해주세요.', 'error');
+    }
     const title = hold ? '신청을 보류할까요?' : '신청을 거절할까요?';
-    const message = preview.willQueue ? `${title}\n\n문자 수신처 · ${preview.recipient || '전화번호 확인 필요'}\n\n${preview.message}`
+    const channel = preview.channel === 'kakao' ? '알림톡' : '문자';
+    const message = preview.willQueue ? `${title}\n\n${channel} 수신처 · ${preview.recipient || '전화번호 확인 필요'}\n\n${preview.message}`
         : `${title}\n\n이미 보류 중인 신청입니다. 기존 안내 이력을 확인할 수 있습니다.`;
     if (!confirm(message)) return;
     await runConsultingMutation(hold ? 'admin_hold_payment_review' : 'admin_reject_application', { ...data, previewToken: preview.previewToken }, result => {
         if (!result.notificationQueued) return '이미 보류 중인 신청입니다. 신청 안내 이력을 확인해 주세요.';
-        return `${hold ? '보류 처리' : '신청 거절'} 완료. 문자 안내를 예약했습니다. 접수 상태는 신청 안내 이력에서 확인해 주세요.`;
+        return `${hold ? '보류 처리' : '신청 거절'} 완료. ${channel} 안내를 예약했습니다. 접수 상태는 신청 안내 이력에서 확인해 주세요.`;
     });
 }
 
