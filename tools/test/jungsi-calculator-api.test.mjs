@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { requestCalculatorAccess, requestCalculatorConversion } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-api.js';
+import { calculatorAccessAfterRefresh } from '../../studycrack-mobile-app/src/features/jungsi-calculator/useCalculatorAccess.js';
 
 const entitlement = { applicationId: 'APP_123e4567-e89b-12d3-a456-426614174000', accessEndsAt: '2027-01-07T14:59:59.999Z' };
 const scores = { admissionYear: 2027, basis: 'official', exam: {} };
@@ -140,4 +141,18 @@ test('active calculator policy requires a valid entitlement and refuses contradi
   }
   const old = base(); delete old.service.earlyAccess;
   assert.equal((await request(old)).data.service.earlyAccess, false);
+});
+test('temporary recheck errors keep a suspended workspace but access denials discard it', () => {
+  const cached = { access: { allowed: true, source: 'purchase' } };
+  const ready = { status: 'ready', data: cached, error: '' };
+  for (const failure of [{ status: 503 }, { status: 429 }, { status: 0, code: 'OFFLINE' }, { status: 0, code: 'NETWORK_ERROR' }]) {
+    const state = calculatorAccessAfterRefresh(ready, { ...failure, error: '다시 시도' });
+    assert.equal(state.status, 'error');
+    assert.equal(state.data, cached);
+  }
+  for (const failure of [{ status: 401 }, { status: 403 }, { status: 402 }, { status: 200, code: 'INVALID_RESPONSE' }, { status: 0, code: 'REQUEST_ABORTED' }]) {
+    assert.equal(calculatorAccessAfterRefresh(ready, failure).data, null);
+  }
+  const denied = { access: { allowed: false, source: 'none' } };
+  assert.equal(calculatorAccessAfterRefresh(ready, { ok: true, data: denied }).data, denied);
 });

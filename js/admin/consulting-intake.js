@@ -8,6 +8,7 @@ const consultingInputFields = { studentName: 'consultingContactStudentName', pho
 const consultingFormInputFields = { studentName: consultingInputFields.studentName, phone: consultingInputFields.phone, email: consultingInputFields.email, payerName: consultingInputFields.payerName, payerRelationship: consultingInputFields.payerRelationship, contactRelationship: 'consultingContactPersonRelationship' };
 const consultingCalculatorInputFields = { studentName: consultingInputFields.studentName, phone: consultingInputFields.phone, email: consultingInputFields.email, payerName: consultingInputFields.payerName };
 const consultingInputLabels = { studentName: '학생 이름', phone: '전화번호', email: '이메일', payerName: '입금자명', payerRelationship: '입금자와의 관계', contactRelationship: '연락처 본인·대리인 구분', contactMethod: '연락 방법', studentStatus: '학생 상태', payerRelationshipDetail: '입금자 관계 기타 내용', contactMethodDetail: '연락 방법 기타 내용', contactRelationshipDetail: '연락처 본인·대리인 기타 내용' };
+const consultingPaymentReasonLabels = { INDIVIDUAL_PRICE: '개별 안내 금액 확인', BANK_AMOUNT_CHECKED: '실제 입금 차이 확인', AMOUNT_ENTRY_ERROR: '승인 당시 금액 입력 오류', BANK_RECORD_RECHECK: '계좌 내역 재대조' };
 
 function consultingSimpleCalculatorInput(data) {
     return data?.intakeFormVersion === 2 && data.application?.intakeSource === 'website' && data.application.productType === 'calculator';
@@ -26,6 +27,25 @@ function consultingPaymentIsEditable(application) {
 
 function consultingCampaignNeedsRecovery(data) {
     return data?.campaignReady === false || !Number.isSafeInteger(data?.application?.expectedAmount) || data.application.expectedAmount <= 0;
+}
+
+function consultingWonInput(id) {
+    const value = document.getElementById(id).value;
+    const amount = Number(value);
+    return /^[0-9]+$/.test(value) && Number.isSafeInteger(amount) && amount > 0 ? amount : null;
+}
+
+function updateConsultingPaymentDifference() {
+    const application = currentConsultingApplication?.application;
+    const actual = consultingWonInput('consultingPaidAmount');
+    const visible = Boolean(application && application.productType !== 'calculator' && !consultingCampaignNeedsRecovery(currentConsultingApplication)
+        && actual !== null && actual !== application.expectedAmount);
+    const summary = document.getElementById('consultingPaymentDifference');
+    const reason = document.getElementById('consultingPaymentDifferenceReason');
+    document.getElementById('consultingPaymentDifferenceField').hidden = !visible;
+    summary.hidden = !visible;
+    summary.textContent = visible ? `예정 ${formatConsultingMoney(application.expectedAmount)} · 실제 ${formatConsultingMoney(actual)} · 차액 ${formatConsultingMoney(actual - application.expectedAmount)}` : '';
+    if (!visible) reason.value = '';
 }
 
 function renderConsultingInputReview(data) {
@@ -86,7 +106,7 @@ function setConsultingIntakeBusy(busy) {
 
 function renderConsultingApplication(applicationId, data) {
     closeConsultingDetail();
-    const { application, contact } = data;
+    const { application, contact, payment } = data;
     if (application?.applicationId !== applicationId || !Number.isSafeInteger(application.revision) || !contact || typeof contact !== 'object') throw new Error('신청 상세 형식이 올바르지 않습니다.');
     const calculator = consultingSimpleCalculatorInput(data);
     const summary = document.getElementById('consultingDetailSummary');
@@ -105,7 +125,11 @@ function renderConsultingApplication(applicationId, data) {
         ['신청 경로', application.intakeSource === 'website' ? '사이트 신청' : '구글폼'],
         ['입금자명', contact.payerName],
         ...(!calculator ? [['입금자와의 관계', [consultingOptionLabel(data.payerRelationship, { self: '본인', parent: '부모님', family: '학부모 및 가족', other: '기타' }), data.payerRelationshipDetail].filter(Boolean).join(' · ')]] : []),
-        ['예정 금액', formatConsultingMoney(application.expectedAmount)],
+        ['예정 금액', formatConsultingMoney(payment ? payment.expectedAmount : application.expectedAmount)],
+        ...(payment ? [['실제 입금액', formatConsultingMoney(payment.paidAmount)]] : []),
+        ...(payment?.confirmedQuotedAmount ? [['확인된 안내 금액', formatConsultingMoney(payment.confirmedQuotedAmount)]] : []),
+        ...(payment?.differenceReason ? [['금액 차이 사유', consultingPaymentReasonLabels[payment.differenceReason]]] : []),
+        ...(payment?.correctionReason ? [['최근 정정', `${consultingPaymentReasonLabels[payment.correctionReason]} · ${formatConsultingDate(payment.correctedAt)}`]] : []),
         ['입금 확인', consultingOptionLabel(application.paymentReviewStatus, { pending: '대기', hold: '보류', input_review: '신청 정보 확인 대기', verified: '승인', rejected: '거절' })]
     ]));
     if (data.campaignReady === false) appendConsultingRecord(summary, '캠페인 설정 확인 필요', createConsultingFacts([
@@ -135,13 +159,14 @@ function renderConsultingApplication(applicationId, data) {
 
     currentConsultingApplication = data;
     currentConsultingMutationKeys = {
-        payment: consultingRequestKey('payment'), hold: consultingRequestKey('hold'),
+        payment: consultingRequestKey('payment'), correction: consultingRequestKey('correction'), hold: consultingRequestKey('hold'),
         reject: consultingRequestKey('reject'), reissue: consultingRequestKey('reissue'), input: consultingRequestKey('input')
     };
     renderConsultingInputReview(data);
     document.getElementById('consultingHoldReason').value = application.duplicateSuspected ? 'DUPLICATE_CANDIDATE' : 'PAYMENT_NOT_FOUND';
     document.getElementById('consultingRejectReason').value = application.duplicateSuspected ? 'DUPLICATE_APPLICATION' : 'PAYMENT_NOT_FOUND';
     document.getElementById('consultingPaymentActions').hidden = !consultingPaymentIsEditable(application);
+    document.getElementById('consultingPaymentCorrection').hidden = payment?.canCorrect !== true;
     document.getElementById('consultingRevokeBtn').hidden = data.stageVerified !== true || data.inviteRevoked === true || application.applicationState !== 'INVITED';
     document.getElementById('consultingInviteActions').hidden = application.applicationState !== 'INVITED' || !data.activeInviteId;
     document.getElementById('consultingApplicationDetail').hidden = false;
@@ -168,13 +193,15 @@ function closeConsultingDetail() {
     if (inputIssues) inputIssues.textContent = '';
     const alternatives = document.getElementById('consultingPaymentAlternatives');
     if (alternatives) alternatives.open = false;
-    for (const id of ['consultingPaidAmount', 'consultingPaidAt', 'consultingHoldNote', 'consultingRejectNote']) {
+    for (const id of ['consultingPaidAmount', 'consultingPaidAt', 'consultingHoldNote', 'consultingRejectNote',
+        'consultingCorrectedPaidAmount', 'consultingConfirmedQuotedAmount', 'consultingPaymentCorrectionReason']) {
         const field = document.getElementById(id);
         if (field) field.value = '';
     }
-    const confirmed = document.getElementById('consultingPayerConfirmed');
-    if (confirmed) confirmed.checked = false;
-    for (const id of ['consultingApplicationDetail', 'consultingPaymentActions', 'consultingInviteActions', 'consultingInputEditor']) {
+    for (const id of ['consultingPayerConfirmed', 'consultingCorrectionConfirmed']) document.getElementById(id).checked = false;
+    document.getElementById('consultingPaymentCorrection').open = false;
+    updateConsultingPaymentDifference();
+    for (const id of ['consultingApplicationDetail', 'consultingPaymentActions', 'consultingPaymentCorrection', 'consultingInviteActions', 'consultingInputEditor']) {
         const element = document.getElementById(id);
         if (element) element.hidden = true;
     }
@@ -270,6 +297,7 @@ async function runConsultingMutation(type, data, successMessage) {
     try {
         result = await requestConsultingAdmin(type, data);
         if (type === 'admin_review_application_input' && (result.applicationId !== data.applicationId || result.inputReviewRequired !== false || result.revision !== data.expectedRevision + 1)) throw new Error('신청 정보 저장 결과를 확인하지 못했습니다.');
+        if (type === 'admin_correct_consulting_payment_amount' && (result.applicationId !== data.applicationId || result.paidAmount !== data.paidAmount || result.revision !== data.expectedRevision + 1)) throw new Error('입금액 정정 결과를 확인하지 못했습니다.');
     } catch (error) {
         if (requestId === consultingApplicationRequest) {
             invalidateConsultingWorkspaceStudent();
@@ -292,14 +320,41 @@ async function approveConsultingPayment() {
     const payerNameConfirmed = document.getElementById('consultingPayerConfirmed').checked;
     const paidAtValue = document.getElementById('consultingPaidAt').value;
     const paidAt = new Date(paidAtValue);
-    const paidAmount = Number(document.getElementById('consultingPaidAmount').value);
-    if (!Number.isSafeInteger(paidAmount) || paidAmount <= 0 || !payerNameConfirmed || !paidAtValue || Number.isNaN(paidAt.getTime())) return setConsultingStatus('실제 입금액·입금 시각을 입력하고 입금자명 대조를 확인해주세요.', 'error');
-    if (!confirm(`신청 ${application.applicationId}\n실제 입금액 ${formatConsultingMoney(paidAmount)}\n입금 시각 ${formatConsultingDate(paidAt.toISOString())}\n\n계좌 내역을 대조했고 수신 연락처도 확인했습니까? 승인하면 실제 초대 링크·인증코드 발송이 예약됩니다.`)) return;
+    const paidAmount = consultingWonInput('consultingPaidAmount');
+    if (paidAmount === null || !payerNameConfirmed || !paidAtValue || Number.isNaN(paidAt.getTime())) return setConsultingStatus('실제 입금액·입금 시각을 입력하고 입금자명 대조를 확인해주세요.', 'error');
+    if (consultingCampaignNeedsRecovery(currentConsultingApplication)) return setConsultingStatus('예정 금액을 다시 확인해주세요.', 'error');
+    const differs = application.productType !== 'calculator' && paidAmount !== application.expectedAmount;
+    const amountDifferenceReason = document.getElementById('consultingPaymentDifferenceReason').value;
+    if (differs && !amountDifferenceReason) return setConsultingStatus('계좌 내역을 대조하고 금액 차이 사유를 선택해주세요.', 'error');
+    const difference = differs ? `\n차액 ${formatConsultingMoney(paidAmount - application.expectedAmount)} · ${consultingPaymentReasonLabels[amountDifferenceReason]}` : '';
+    if (!confirm(`신청 ${application.applicationId}\n예정 금액 ${formatConsultingMoney(application.expectedAmount)}\n실제 입금액 ${formatConsultingMoney(paidAmount)}${difference}\n입금 시각 ${formatConsultingDate(paidAt.toISOString())}\n\n계좌 내역을 대조했고 수신 연락처도 확인했습니까? 승인하면 실제 초대 링크·인증코드 발송이 예약됩니다.`)) return;
     await runConsultingMutation('admin_verify_manual_payment', {
         applicationId: application.applicationId, expectedRevision: application.revision,
         idempotencyKey: currentConsultingMutationKeys.payment, paidAmount,
-        paidAt: paidAt.toISOString(), payerNameConfirmed: true, reasonCode: 'MANUAL_BANK_MATCH'
+        paidAt: paidAt.toISOString(), payerNameConfirmed: true, reasonCode: 'MANUAL_BANK_MATCH',
+        ...(differs ? { amountDifferenceReason } : {})
     }, '입금 승인 및 초대 발송 예약 완료. 실제 발송·수신 성공은 별도 확인이 필요합니다.');
+}
+
+async function correctConsultingPaymentAmount() {
+    const detail = currentConsultingApplication;
+    if (consultingMutationBusy || detail?.payment?.canCorrect !== true) return;
+    const paidAmount = consultingWonInput('consultingCorrectedPaidAmount');
+    const quoteInput = document.getElementById('consultingConfirmedQuotedAmount');
+    const confirmedQuotedAmount = consultingWonInput(quoteInput.id);
+    const reasonCode = document.getElementById('consultingPaymentCorrectionReason').value;
+    const previousPaidAmount = detail.payment.paidAmount;
+    if (paidAmount === null || paidAmount === previousPaidAmount || ((quoteInput.value || quoteInput.validity.badInput) && confirmedQuotedAmount === null)
+        || !reasonCode || !document.getElementById('consultingCorrectionConfirmed').checked) {
+        return setConsultingStatus('현재 기록과 다른 실제 입금액을 입력하고 정정 사유와 계좌 내역을 확인해주세요.', 'error');
+    }
+    const quote = confirmedQuotedAmount === null ? '' : `\n확인된 안내 금액 ${formatConsultingMoney(confirmedQuotedAmount)}`;
+    if (!confirm(`신청 ${detail.application.applicationId}\n입금액 ${formatConsultingMoney(previousPaidAmount)} → ${formatConsultingMoney(paidAmount)}${quote}\n정정 사유 ${consultingPaymentReasonLabels[reasonCode]}\n\n기존 승인과 초대를 유지하고 실제 입금액을 정정할까요?`)) return;
+    await runConsultingMutation('admin_correct_consulting_payment_amount', {
+        applicationId: detail.application.applicationId, expectedRevision: detail.application.revision,
+        idempotencyKey: currentConsultingMutationKeys.correction, previousPaidAmount, paidAmount, reasonCode, bankRecordConfirmed: true,
+        ...(confirmedQuotedAmount !== null ? { confirmedQuotedAmount } : {})
+    }, '실제 입금액을 정정했습니다. 기존 승인과 초대는 유지됩니다.');
 }
 
 async function saveConsultingApplicationInput() {

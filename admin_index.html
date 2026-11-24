@@ -622,9 +622,11 @@
                     <h3>입금 확인</h3>
                     <p class="consulting-caption">계좌 내역을 대조하고 초대 링크와 인증코드를 받을 연락처를 확인하세요.</p>
                     <div class="consulting-contact-fields">
-                        <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액"></label>
+                        <label>실제 입금액<input id="consultingPaidAmount" type="number" min="1" step="1" autocomplete="off" placeholder="계좌 내역의 금액" oninput="updateConsultingPaymentDifference()"></label>
                         <label>입금 시각 (기기 현지 시각)<input id="consultingPaidAt" type="datetime-local" autocomplete="off"></label>
                     </div>
+                    <p id="consultingPaymentDifference" class="consulting-caption" role="status" hidden></p>
+                    <label id="consultingPaymentDifferenceField" hidden>금액 차이 사유<select id="consultingPaymentDifferenceReason"><option value="">사유 선택</option><option value="INDIVIDUAL_PRICE">개별 안내 금액 확인</option><option value="BANK_AMOUNT_CHECKED">실제 입금 차이 확인</option></select></label>
                     <label class="consulting-contact-confirm"><input id="consultingPayerConfirmed" type="checkbox"> 입금자명을 직접 대조했습니다</label>
                     <button id="consultingApproveBtn" type="button" class="consulting-btn consulting-btn-primary" onclick="approveConsultingPayment()">입금 승인 및 초대 발급</button>
                     <details id="consultingPaymentAlternatives" class="consulting-original">
@@ -644,6 +646,19 @@
                         </div>
                     </details>
                 </div>
+                <details id="consultingPaymentCorrection" class="consulting-original" hidden>
+                    <summary>입금액 정정</summary>
+                    <fieldset class="consulting-contact-review">
+                        <legend>승인된 입금액 정정</legend>
+                        <div class="consulting-contact-fields">
+                            <label>정정할 실제 입금액<input id="consultingCorrectedPaidAmount" type="number" min="1" step="1" autocomplete="off"></label>
+                            <label>확인된 안내 금액 (선택)<input id="consultingConfirmedQuotedAmount" type="number" min="1" step="1" autocomplete="off"></label>
+                            <label>정정 사유<select id="consultingPaymentCorrectionReason"><option value="">사유 선택</option><option value="AMOUNT_ENTRY_ERROR">승인 당시 금액 입력 오류</option><option value="BANK_RECORD_RECHECK">계좌 내역 재대조</option></select></label>
+                        </div>
+                        <label class="consulting-contact-confirm"><input id="consultingCorrectionConfirmed" type="checkbox"> 계좌 내역에서 실제 입금액을 확인했습니다</label>
+                        <button id="consultingCorrectPaymentBtn" type="button" class="consulting-btn consulting-btn-secondary" onclick="correctConsultingPaymentAmount()">입금액 정정 저장</button>
+                    </fieldset>
+                </details>
                 <div id="consultingInviteActions" class="consulting-actions" hidden>
                     <button id="consultingRevokeBtn" type="button" class="consulting-btn consulting-btn-danger" onclick="revokeConsultingInvite()" hidden>미사용 초대 취소</button>
                     <button id="consultingReissueBtn" type="button" class="consulting-btn consulting-btn-warning" onclick="reissueConsultingInvite()">초대 재발급</button>

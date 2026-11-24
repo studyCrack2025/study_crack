@@ -42,6 +42,7 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
   const changed = scoresChanged(scores, confirmed);
   const allowed = access.status === 'ready' && access.data.access.allowed;
   const queriesOpen = allowed && access.data.service.calculationEnabled;
+  const resultReady = queriesOpen && conversion.status === 'ready';
   const scoreConversion = useCalculatorScoreConversion(scores, allowed && scores.basis === 'raw', denyAccess);
 
   const invalidate = () => {
@@ -51,7 +52,9 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
     setConversion(previous => ({ ...previous, status: 'idle', error: '' }));
   };
   React.useEffect(() => () => { sequence.current += 1; pending.current?.abort(); }, []);
-  React.useEffect(() => { invalidate(); }, [access.status, access.data]);
+  React.useEffect(() => {
+    if (!queriesOpen && (access.status === 'ready' || pending.current)) invalidate();
+  }, [queriesOpen, access.status]);
 
   const calculate = async () => {
     if (!queriesOpen || !confirmed || changed || !candidates.length || pending.current || conversion.status === 'loading') return;
@@ -100,13 +103,13 @@ function Workspace({ owner, access, denyAccess, entitlement }) {
       <CalculatorNote role="status">{conversion.status === 'loading' ? '선택한 후보의 2027학년도 환산 자료와 입결 기준선 검수 상태를 확인하고 있습니다.' : !queriesOpen && allowed ? '계산 결과는 정식 공개 후 조회할 수 있습니다. 성적과 지원 후보는 미리 저장할 수 있습니다.' : !allowed ? access.status === 'loading' ? '이용 권한을 확인한 뒤 조회할 수 있습니다.' : access.status === 'error' ? '이용 상태를 확인하지 못했습니다. 이용 안내에서 다시 확인해주세요.' : '이용 정보를 확인하고 있습니다.' : '신고한 성적을 기준으로 계산합니다. 조회로 기존 저장 성적이나 변경 횟수가 바뀌지 않습니다.'}</CalculatorNote>
       {!allowed && <a className="jcalc-text-button" href="#jcalc-access-status">이용 안내 확인하기</a>}
       {conversion.status === 'error' && <p className="jcalc-error" role="alert">{conversion.error}</p>}
-      {conversion.status === 'ready' && conversion.data?.execution?.scoreConversion.status === 'estimated' && <CalculatorNote role="status">2027학년도 수능 추정표로 원점수를 변환해 계산했습니다. 확정 성적과 차이가 있을 수 있습니다.</CalculatorNote>}
-      {conversion.status === 'ready' && conversion.data?.execution?.scoreConversion.status === 'unavailable' && <p className="jcalc-error" role="alert">입력한 원점수에 맞는 2027학년도 변환 자료를 확인하지 못했습니다. 점수를 확인하고 다시 시도해주세요.</p>}
+      {resultReady && conversion.data?.execution?.scoreConversion.status === 'estimated' && <CalculatorNote role="status">2027학년도 수능 추정표로 원점수를 변환해 계산했습니다. 확정 성적과 차이가 있을 수 있습니다.</CalculatorNote>}
+      {resultReady && conversion.data?.execution?.scoreConversion.status === 'unavailable' && <p className="jcalc-error" role="alert">입력한 원점수에 맞는 2027학년도 변환 자료를 확인하지 못했습니다. 점수를 확인하고 다시 시도해주세요.</p>}
       {candidates.length ? <ul className="jcalc-candidates">{candidates.map(item => <li key={candidateKey(item)}><strong>{item.university}</strong><span>{item.major}</span>
         {resource.status === 'ready' && !resource.data.some(row => row.univName === item.university && row.majors.includes(item.major)) && <small>현재 검색 목록에서 확인할 수 없는 후보입니다.</small>}
-        <CalculatorResult result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(item))} current={conversion.status === 'ready' && !changed} selectedId={unitSelections[candidateKey(item)]} onSelect={value => { invalidate(); setUnitSelections(previous => ({ ...previous, [candidateKey(item)]: value })); }} />
+        <CalculatorResult result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(item))} current={resultReady && !changed} selectedId={unitSelections[candidateKey(item)]} onSelect={value => { invalidate(); setUnitSelections(previous => ({ ...previous, [candidateKey(item)]: value })); }} />
         <CalculatorButton text aria-label={`${item.university} ${item.major} 후보 삭제`} onClick={() => changeCandidates(candidates.filter(candidate => candidateKey(candidate) !== candidateKey(item)))}>후보 삭제</CalculatorButton></li>)}</ul> : <p className="jcalc-state">선택한 후보가 없습니다.<br />대학과 학과를 검색해 담아주세요.</p>}
-      {conversion.status === 'ready' && conversion.data?.release && <details className="jcalc-result-version"><summary>적용한 자료 버전</summary><p>2027학년도 · {conversion.data.release.formulaVersion}<br />{conversion.data.release.dataReleaseId}</p></details>}
+      {resultReady && conversion.data?.release && <details className="jcalc-result-version"><summary>적용한 자료 버전</summary><p>2027학년도 · {conversion.data.release.formulaVersion}<br />{conversion.data.release.dataReleaseId}</p></details>}
       {access.data?.service.calculationMode !== 'development_preview' && <div className="jcalc-release-note"><strong>검수 완료 자료에 한해 환산합니다.</strong><p>환산점수와 입결 기준선의 검수 상태를 각각 확인합니다. 가능성 지수와 5단계는 검수를 통과한 후보에만 표시하며, 자료가 부족하면 판단을 보류합니다. 지수는 실제 합격률이 아닙니다.</p></div>}
       <CalculatorNote>{!owner || !saved ? '이 브라우저에서 초안을 보관할 수 없습니다. 현재 화면을 벗어나면 입력이 초기화될 수 있습니다.' : '현재 입력은 같은 계정·현재 탭의 초안입니다. 다른 기기에서 이어보려면 아래 서버 저장을 이용해주세요. 다른 화면의 저장 성적은 변경하지 않습니다.'}</CalculatorNote>
     </aside>
@@ -121,9 +124,9 @@ function AccountCalculator({ owner }) {
   const entitlement = access.data?.entitlement;
   return <><CalculatorAccess resource={access} onRefresh={refresh} />
     {access.status === 'ready' && !allowed && <CalculatorApplicationPanel onLoaded={setHome} accessDenied onRetry={refresh} /> }
-    {allowed && (entitlement && access.data.service.workspaceVersion === 2
+    {access.data?.access.allowed && (entitlement && access.data.service.workspaceVersion === 2
       ? <CalculatorWorkspace key={entitlement.applicationId} entitlement={entitlement} enabled={allowed} calculationEnabled={access.data.service.calculationEnabled} denyAccess={deny} grouped={access.data.service.selectionVersion === 1} />
-      : <Workspace owner={owner} access={access} denyAccess={deny} entitlement={entitlement} />)}
+      : <Workspace key={entitlement?.applicationId || owner} owner={owner} access={access} denyAccess={deny} entitlement={entitlement} />)}
     {access.status === 'ready' && !allowed && home?.items.length > 0 && <CalculatorSavedInputs home={home} input={null} changed readOnly />}
   </>;
 }
