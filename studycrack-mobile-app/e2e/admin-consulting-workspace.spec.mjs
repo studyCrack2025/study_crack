@@ -676,7 +676,10 @@ test('단계별 최소 목록에서 학생 상세로 이동하고 선택한 보�
 });
 test('학생 상세의 뒤로·앞으로 이동과 직접 URL 진입은 단계·학생을 유지한다', async ({ page }) => {
     await prepare(page, '#consulting?phase=report'); await expect(page.locator('#consultingDirectoryBody')).toContainText('둘*생'); await openStudent(page);
-    const url = page.url(); await page.goBack(); await expect(page.locator('#consultingDirectoryPanel')).toBeVisible(); await expect(page.locator('[data-phase="report"]')).toHaveAttribute('aria-current', 'page');
+    const url = page.url(); await page.goBack(); await expect(page.locator('#consultingDirectoryPanel')).toBeVisible();
+    const phases = page.getByRole('navigation', { name: '컨설팅 진행 단계' });
+    await expect(phases.getByRole('button', { name: '04 분석·보고서', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.consulting-admin-badge[aria-current]')).toHaveCount(0);
     await page.goForward(); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
     await page.goto(url); await expect(page.locator('#consultingStudentTitle')).toContainText('둘째 합성 학생');
     expect(url).not.toContain('synthetic@example'); expect(url).not.toContain('01000000000');

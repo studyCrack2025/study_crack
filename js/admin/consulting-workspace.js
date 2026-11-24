@@ -129,7 +129,7 @@ function activateConsultingWorkspace(route) {
     const phase = ADMIN_CONSULTING_PHASES.includes(route.phase) ? route.phase : 'all';
     if (phase !== consultingWorkspacePhase) { consultingDirectoryCursor = null; consultingDirectoryNextCursor = null; consultingDirectoryPreviousCursors = []; }
     consultingWorkspacePhase = phase;
-    document.querySelectorAll('[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
+    document.querySelectorAll('.consulting-phases button[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
     if (route.caseId || route.applicationId && route.sourceResponseId) {
         closeConsultingExportDialog();
         document.getElementById('consultingDirectoryPanel').hidden = true;
