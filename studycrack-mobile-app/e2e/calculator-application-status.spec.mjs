@@ -36,7 +36,11 @@ async function setup(page, options = {}) {
     } else if (request.type === 'student_preview_calculator_application_link') {
       if (state.owner !== 'student-A') return route.fulfill({ status: 404, json: { success: false } });
       data = { contractVersion: 'calculator-application-link-v1', application: { ...state.application }, accountEmailMask: 'a***@example.invalid', linked: state.linked };
-    } else if (request.type === 'student_get_v2_consulting_home') data = { available: false, calculator: home() };
+    } else if (request.type === 'student_get_v2_consulting_home') data = state.consultingActive ? {
+      available: true, workflowState: 'SURVEY_DRAFT', nextAction: 'COMPLETE_SURVEY', nextDueAt: null,
+      progress: ['onboarding', 'survey', 'materials', 'written_consultation', 'report', 'final_call'].map((step, index) => ({ step, status: index === 0 ? 'completed' : index === 1 ? 'current' : 'upcoming' })),
+      session: null, report: null, alerts: [], calculator: home()
+    } : { available: false, calculator: home() };
     else throw new Error('Unexpected status request ' + request.type);
     try { await route.fulfill({ json: { success: true, data } }); } catch (_) {}
   });
@@ -94,6 +98,25 @@ test('나의 컨설팅에서 계산기 상태를 별도로 표시하고 신청 �
   const state = await setup(page, { receipt: false, linked: true }); await page.goto('/2027-jungsi-consulting/home');
   await expect(page.getByRole('heading', { name: '등록된 컨설팅이 없습니다' })).toBeVisible();
   const card = page.getByRole('region', { name: '합격 계산기 신청 현황' }); await expect(card).toContainText('신청 접수 · 입금 확인 대기'); await expect(card.getByRole('link')).toHaveAttribute('href', calculatorPath); expect(writes(state)).toHaveLength(0);
+});
+
+test('같은 계정의 컨설팅과 계산기 이용권을 함께 표시하고 화면을 오가도 다시 인증하지 않는다', async ({ page }) => {
+  const state = await setup(page, { receipt: false, linked: true, allowed: true, consultingActive: true });
+  Object.assign(state.application, { applicationState: 'CLAIMED', paymentStatus: 'verified', state: 'active', accountLinked: true, accessActive: true });
+  await page.goto('/2027-jungsi-consulting/home');
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅', exact: true })).toBeVisible();
+  const card = page.getByRole('region', { name: '합격 계산기 신청 현황' });
+  await expect(card).toContainText('계산기 이용권 활성');
+  await card.getByRole('link').click();
+  await expect(page).toHaveURL(new RegExp(calculatorPath + '$'));
+  await expect(page.getByRole('region', { name: '계산기 이용 상태', exact: true })).toContainText('이용 가능');
+  await expect(score(page)).toBeVisible();
+  await expect(page.getByRole('heading', { name: '컨설팅 이용 인증', exact: true })).toHaveCount(0);
+  await page.goBack();
+  await expect(page.getByRole('heading', { name: '나의 정시 컨설팅', exact: true })).toBeVisible();
+  await expect(card).toContainText('계산기 이용권 활성');
+  expect(writes(state)).toHaveLength(0);
+  expect(state.calls.some(call => call.type === 'student_claim_v2_consulting_invite')).toBe(false);
 });
 
 test('승인 전 과거 저장 자료는 원문을 노출하지 않고 본인 직접 삭제만 허용한다', async ({ page }) => {

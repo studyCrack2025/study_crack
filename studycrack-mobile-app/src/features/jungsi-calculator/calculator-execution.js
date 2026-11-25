@@ -1,3 +1,4 @@
+import { scoreChoiceLabel } from '../analysis/score-model.js';
 import { prepareCalculatorScores } from './calculator-model.js';
 import { calculatorScoreboardId } from './calculator-score-conversion.js';
 import { calculatorDigest as digest, calculatorReasonCodes } from './calculator-validation.js';
@@ -23,7 +24,7 @@ export function calculatorComparisonScores(body, scores) {
   const candidate = { ...execution.comparisonScores, exam: { ...execution.comparisonScores.exam } };
   for (const key of ['kor', 'math', 'inq1', 'inq2']) {
     const field = ['kor', 'math'].includes(key) ? 'opt' : 'name';
-    if (subject(candidate.exam[key]?.[field]) !== subject(scores.exam[key][field])) return null;
+    if (scoreChoiceLabel(candidate.exam[key]?.[field]) !== scoreChoiceLabel(scores.exam[key][field])) return null;
     candidate.exam[key] = { ...candidate.exam[key], [field]: scores.exam[key][field] };
   }
   if (scores.exam.foreign) {

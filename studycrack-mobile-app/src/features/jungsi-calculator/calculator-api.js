@@ -45,13 +45,26 @@ function safePossibility(value, row, body) {
 }
 
 function safePreviewCutoff(value, row, body, target, comparisonScores) {
-  if (!value || !target.selection || body.basis !== 'raw' || comparisonScores.basis !== 'official'
-    || row.status !== 'unavailable' || !row.reasonCodes.includes('RAW_SCOREBOARD_NOT_RELEASED')
-    || !boundCutoff(value, body.release, target.admissionUnitId)
+  if (!value || !target.selection || comparisonScores.basis !== 'official'
     || !Number.isFinite(value.convertedScore) || value.convertedScore < 0 || !validCutoffs(value.cutoffs)
     || value.scoreScope !== undefined && value.scoreScope !== 'csat_component') return null;
-  return { status: 'available', convertedScore: value.convertedScore,
+  const modeled = value.model === '2027-cohort-cut-estimate-v1';
+  if (modeled ? body.execution?.mode !== 'development_preview' || !digest(value.modelDigest)
+    || value.calculatorCatalogDigest !== target.selection.catalogDigest || value.selectionKey !== target.selection.key
+    || value.admissionUnitId !== target.admissionUnitId || value.targetYear !== 2027
+    || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear >= 2027
+    || typeof value.peerEstimate !== 'boolean' || typeof value.projectedInputs !== 'boolean'
+    || !['available', 'unavailable'].includes(row.status) || row.reasonCodes.includes('UNIT_SELECTION_CHANGED')
+    : body.basis !== 'raw' || row.status !== 'unavailable' || !row.reasonCodes.includes('RAW_SCOREBOARD_NOT_RELEASED')
+      || !boundCutoff(value, body.release, target.admissionUnitId)) return null;
+  const tied = value.cutoffs.pass === value.cutoffs.registered70;
+  const status = value.status ?? (tied ? 'reference_only' : 'available');
+  if (status === 'reference_only' ? value.riskBand != null
+    : status !== 'available' || tied || (modeled || value.riskBand !== undefined) && !riskBands.has(value.riskBand)) return null;
+  return { status, convertedScore: value.convertedScore,
     cutoffs: { pass: value.cutoffs.pass, registered70: value.cutoffs.registered70 }, sourceYear: value.sourceYear, targetYear: value.targetYear,
+    ...(modeled ? { modeled, peerEstimate: value.peerEstimate, projectedInputs: value.projectedInputs, inputBasis: body.basis } : {}),
+    ...(value.riskBand !== undefined ? { riskBand: value.riskBand } : {}),
     ...(value.scoreScope ? { scoreScope: value.scoreScope } : {}) };
 }
 

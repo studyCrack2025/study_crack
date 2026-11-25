@@ -19,6 +19,19 @@ test('estimated calculator metrics are validated while raw inputs and equivalent
   assert.deepEqual(raw, original);
 });
 
+test('social inquiry labels in the form match normalized score response labels', () => {
+  const input = structuredClone(raw), body = fixture();
+  input.exam.inq1.name = '사회·문화';
+  input.exam.inq2.name = '생활과 윤리';
+  body.execution.comparisonScores.exam.inq1.name = '사회문화';
+  body.execution.comparisonScores.exam.inq2.name = '생활과윤리';
+  const comparison = calculatorComparisonScores(body, input);
+  assert.equal(comparison.exam.inq1.name, input.exam.inq1.name);
+  assert.equal(comparison.exam.inq2.name, input.exam.inq2.name);
+  body.execution.comparisonScores.exam.inq1.name = '세계사';
+  assert.equal(calculatorComparisonScores(body, input), null);
+});
+
 test('unbound estimates, changed subjects or grades, wrong-year tables and invalid metrics cannot produce a comparison', () => {
   for (const mutate of [body => { body.execution.inputScoreDigest = `sha256:${'c'.repeat(64)}`; },
     body => { body.execution.inputBasis = 'official'; }, body => { body.execution.scoreConversion.scoreboardId = '2026_KSAT_scoreboard.json'; },
