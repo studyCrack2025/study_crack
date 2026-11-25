@@ -4,11 +4,13 @@ import { emptyScores, FOREIGN_LANGUAGE_SUBJECTS, prepareCalculatorScores, SUBJEC
 
 function ScoreField({ subject, metric, title, label, value, max, error, choices, onChange }) {
   const id = `jcalc-${subject}-${metric}`;
+  const inputProps = { id, value: value ?? '', 'aria-label': `${title} ${label}`, 'aria-invalid': error ? 'true' : undefined,
+    'aria-describedby': error ? `${id}-error` : undefined, onChange: event => onChange(event.currentTarget.value) };
   return <label className="jcalc-field" htmlFor={id}>
     <span>{label}{max && <small>{metric === 'grd' ? '1~9등급' : `0~${max}${metric === 'pct' ? '' : '점'}`}</small>}</span>
-    {choices ? <select id={id} aria-label={`${title} ${label}`} value={value ?? ''} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? `${id}-error` : undefined} onChange={event => onChange(event.currentTarget.value)}>
+    {choices ? <select {...inputProps}>
       <option value="">{metric === 'grd' ? '선택' : '선택해주세요'}</option>{choices.map(choice => <option key={choice} value={choice}>{metric === 'grd' ? `${choice}등급` : choice}</option>)}
-    </select> : <input id={id} aria-label={`${title} ${label}`} inputMode="numeric" type="text" pattern="[0-9]*" maxLength="3" autoComplete="off" placeholder={metric === 'pct' ? '백분위' : '점수'} value={value ?? ''} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? `${id}-error` : undefined} onChange={event => onChange(event.currentTarget.value)} />}
+    </select> : <input {...inputProps} inputMode="numeric" type="text" pattern="[0-9]*" maxLength="3" autoComplete="off" placeholder={metric === 'pct' ? '백분위' : '점수'} />}
     {error && <span id={`${id}-error`} className="jcalc-error">{error}</span>}
   </label>;
 }

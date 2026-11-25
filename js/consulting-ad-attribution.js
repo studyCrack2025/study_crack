@@ -8,7 +8,8 @@
   const page=new URL(root.location.href),q=page.searchParams;
   if(page.search===capturedSearch)return;
   capturedSearch=page.search;
-  const landing=products.includes(q.get('utm_product'))?q.get('utm_product'):page.hash==='#consulting'?'consulting':page.hash==='#calculator'||page.pathname.startsWith('/2027-jungsi-consulting')?'calculator':'consulting';
+  const explicitProduct=q.get('utm_product');
+  const landing=products.includes(explicitProduct) ? explicitProduct : page.hash==='#calculator' ? 'calculator' : 'consulting';
   if(sources.includes(q.get('utm_source')))try{root.sessionStorage.setItem(touchKey(landing),JSON.stringify({at:Date.now(),input:{source:q.get('utm_source'),campaignId:id(q.get('utm_id')||q.get('utm_campaign')),creativeId:id(q.get('utm_content'))}}));}catch{}
  }
  captureTouch();

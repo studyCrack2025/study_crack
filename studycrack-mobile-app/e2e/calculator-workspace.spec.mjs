@@ -54,6 +54,8 @@ async function setup(page, options = {}) {
           convertedScore: 720.36, cutoffs: { pass: 700, registered70: 715 }, riskBand: 'stable', publicationId: 'CUT_RELEASE_TEST',
           publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027 };
       }
+      const notice = options.selectionNotices?.[target.selection.admissionGroup];
+      if (notice) row.reasonCodes = [notice];
       if (options.referenceMissingGroups?.includes(target.selection.admissionGroup)) Object.assign(row.referenceComparison, { status: 'held', recordId: null, convertedScore: null, passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null, reasonCodes: ['REFERENCE_DATA_UNAVAILABLE'] });
     });
     if (state.deferConversion) await new Promise(resolve => { state.conversionRelease = resolve; });
@@ -276,6 +278,32 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
   await expect(ga).toContainText('715.00점');
   await expect(ga.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
   await expect(portfolio.getByRole('article', { name: '나군 지원 후보', exact: true })).toContainText('산출 보류');
+});
+
+test('수시 이월과 학생부 전형의 실제 수능 최저 결과를 지원 조합과 포트폴리오에 표시한다', async ({ page }) => {
+  await setup(page, { grouped: true, referenceMissingGroups: ['ga', 'da'],
+    selectionNotices: { ga: 'SELECTION_CARRYOVER_ONLY', da: 'CSAT_MINIMUM_MET' } });
+  await saveScores(page);
+  const outcomes = [
+    ['가군', '수시 이월 때 선발', /최종 정시 모집인원/],
+    ['다군', '수능 최저 충족', /학생부 100%/]
+  ];
+  for (const [group, label, note] of outcomes) {
+    await addGroupTarget(page, group);
+    const candidate = page.getByRole('region', { name: `${group} 지원 후보`, exact: true });
+    await expect(candidate.getByLabel(`지원 단계: ${label}`, { exact: true })).toBeVisible();
+    await expect(candidate).toContainText(note);
+    await expect(candidate).not.toContainText(/판단 대기|산출 보류/);
+  }
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
+  for (const [group, label, note] of outcomes) {
+    const card = portfolio.getByRole('article', { name: `${group} 지원 후보`, exact: true });
+    await expect(card.getByLabel(`지원 단계: ${label}`, { exact: true })).toBeVisible();
+    await expect(card).toContainText(note);
+    await expect(card).not.toContainText(/판단 대기|산출 보류|예상 합격 컷/);
+  }
 });
 
 test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {

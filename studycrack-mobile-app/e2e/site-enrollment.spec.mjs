@@ -56,7 +56,9 @@ async function fill(page, productType = 'consulting') {
   await page.locator('[name="termsConsent"]').check();
 }
 test('site applications receive product-specific tokens and switching products does not transfer the ad campaign', async ({ page }) => {
-  const state = await prepare(page, { landing: '/2027-jungsi-consulting?utm_source=google&utm_id=consulting1&utm_content=creative1#consulting' });
+  const state = await prepare(page, { landing: '/2027-jungsi-consulting?utm_source=google&utm_id=consulting1&utm_content=creative1' });
+  await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: '정시 컨설팅', exact: true }).click();
   await page.locator('#consultingApply').click(); await fill(page);
   await page.evaluate(() => { const form = document.getElementById('jungsiEnrollmentForm'); form.requestSubmit(); form.requestSubmit(); });
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
