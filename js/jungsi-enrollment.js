@@ -14,6 +14,18 @@
     const copyAccount = document.getElementById('jungsiReceiptCopyAccount');
     const copyNumber = document.getElementById('jungsiReceiptCopyNumber');
     const copyStatus = document.getElementById('jungsiEnrollmentCopyStatus');
+    const googleConsent = document.getElementById('jungsiGoogleConversionConsent');
+    const googleOptIn = document.getElementById('jungsiGoogleConversionOptIn');
+    const googleConsentRevision = 'JUNGSI_GOOGLE_CONVERSION_V1';
+    function googleClickForOffer() {
+        if (productType !== 'consulting' || offer?.googleConversionConsentRevision !== googleConsentRevision) return null;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('utm_source') !== 'google') return null;
+        const ids = ['gclid', 'gbraid', 'wbraid'].filter(key => params.has(key));
+        if (ids.length !== 1 || params.getAll(ids[0]).length !== 1) return null;
+        const clickType = ids[0], clickValue = params.get(clickType);
+        return /^[A-Za-z0-9_-]{1,256}$/.test(clickValue) ? { clickType, clickValue } : null;
+    }
     const names = { consulting: '2027 정시 컨설팅', calculator: '2027 정시 합격 계산기' };
     const key = 'sc_jungsi_application_v1';
     let productType = 'consulting', requestedProduct = 'consulting', offer = null, controller = null, trigger = null, busy = false, renderedReceipt = null;
@@ -149,12 +161,15 @@
     async function loadOffer() {
         const own = newRequest(); offer = null; formView(); syncProduct(); lock(true); retry.hidden = true;
         for (const name of ['privacyConsent', 'termsConsent']) form.elements.namedItem(name).checked = false;
+        if (googleConsent) googleConsent.hidden = true;
+        if (googleOptIn) googleOptIn.checked = false;
         message('신청 금액과 안내를 확인하고 있습니다.');
         try {
             const value = await request('get_site_enrollment', { productType, formVersion: 2 });
             if (controller !== own || !dialog.open) return;
             if (!valid(value) || value.formVersion !== 2 || value.consentRevision !== 'JUNGSI_SITE_2027_V2') throw new Error();
             offer = value;
+            if (googleConsent) googleConsent.hidden = !googleClickForOffer();
             document.getElementById('jungsiEnrollmentProduct').textContent = offer.productName;
             document.getElementById('jungsiEnrollmentAmount').textContent = amountText(offer);
             document.getElementById('jungsiEnrollmentOfferBadge').hidden = productType !== 'consulting' || !offer.earlybird;
@@ -209,8 +224,10 @@
             let attributionToken = null;
             if (offer.attributionVersion === 2) try { attributionToken = await window.SCConsultingAttribution?.getToken?.(productType); } catch {}
             if (controller !== own || !dialog.open) return;
+            const googleClick = googleOptIn?.checked ? googleClickForOffer() : null;
             const value = await request('public_submit_site_application', { ...values, productType, formVersion: offer.formVersion, requestKey: application.requestKey, token: application.token, consentRevision: offer.consentRevision,
                 ...(attributionToken ? { attributionToken } : {}),
+                ...(googleClick ? { googleConversionConsent: { ...googleClick, revision: googleConsentRevision, granted: true } } : {}),
                 acceptedAmount: offer.amount, ...(productType === 'calculator' ? { acceptedAccessEndsAt: offer.accessEndsAt } : {}), privacyConsent: values.privacyConsent === 'on', termsConsent: values.termsConsent === 'on' });
             if (controller !== own || !dialog.open) return;
             renderReceipt(value); form.reset();
