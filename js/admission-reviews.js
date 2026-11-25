@@ -66,7 +66,7 @@
                 .sort((a, b) => b.length - a.length);
             if (reviews.length) {
                 container.replaceChildren(...reviews.map((review, index) => reviewCard(review, index, universityNames)));
-                return;
+                return true;
             }
         } catch {
             // The same empty state is used when the public review feed is unavailable.
@@ -74,8 +74,32 @@
         const notice = document.createElement('p');
         notice.textContent = '지금은 후기를 불러올 수 없습니다.';
         container.replaceChildren(notice);
+        return false;
     };
 
     const consultingReviews = document.getElementById('consultingReviews');
-    if (consultingReviews) window.renderAdmissionReviews(consultingReviews);
+    if (consultingReviews) {
+        const entryHash = location.hash;
+        window.renderAdmissionReviews(consultingReviews).then(loaded => {
+            const popup = document.getElementById('consultingReviewsPopup');
+            if (!loaded || !popup || !['', '#consulting'].includes(entryHash)) return;
+            if (document.querySelector('dialog[open]') || location.hash === '#application') return;
+
+            const sessionKey = 'studycrack.consultingReviewsPopupSeen';
+            try {
+                if (sessionStorage.getItem(sessionKey)) return;
+            } catch {
+                // The dialog remains usable if session storage is unavailable.
+            }
+            popup.querySelector('[data-popup-reviews]').replaceChildren(
+                ...Array.from(consultingReviews.children, card => card.cloneNode(true))
+            );
+            popup.showModal();
+            try {
+                sessionStorage.setItem(sessionKey, '1');
+            } catch {
+                // Closing the dialog does not require session storage.
+            }
+        });
+    }
 })();
