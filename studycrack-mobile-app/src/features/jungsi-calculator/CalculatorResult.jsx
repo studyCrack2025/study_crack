@@ -2,6 +2,7 @@ import React from 'react';
 import CalculatorForecast, { calculatorForecastNote } from './CalculatorForecast.jsx';
 import { formatCalculatorScore } from './calculator-display.js';
 import CalculatorReference, { CalculatorCutoffLines } from './CalculatorReference.jsx';
+import { calculatorSelectionNotice } from './calculator-indicators.js';
 
 const groups = { ga: '가군', na: '나군', da: '다군' };
 const explanations = {
@@ -22,6 +23,12 @@ const formatted = formatCalculatorScore;
 
 export default function CalculatorResult({ result, current, selectedId, onSelect, exactSelection = false }) {
   if (!result) return <small>환산점수 조회 후 자료 상태를 확인할 수 있습니다.</small>;
+  const notice = current && calculatorSelectionNotice(result);
+  if (notice) return <div className="jcalc-result">
+    {!exactSelection && <CalculatorForecast result={result} />}
+    <p className="jcalc-result-message">{notice.note}</p>
+    {result.referenceComparison?.convertedScore != null && <CalculatorReference reference={result.referenceComparison} showCutoffs={false} />}
+  </div>;
   const formal = result.status === 'available' && !result.previewCutoff;
   const explanation = result.reasonCodes.map(code => explanations[code]).find(Boolean) || '이 모집단위의 산식·지원 조건을 더 확인해야 합니다. 현재는 점수를 제공하지 않습니다.';
   return <div className="jcalc-result">
