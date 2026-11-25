@@ -18,9 +18,12 @@ export default defineConfig(({ mode }) => ({
       }
     }
   }],
-  esbuild: {
-    jsx: 'automatic'
-  },
+  esbuild: mode === 'jungsi-calculator' ? {
+    jsx: 'transform',
+    jsxFactory: 'createCalculatorElement',
+    jsxFragment: 'CalculatorFragment',
+    jsxInject: "import CalculatorReact from 'react'; const { createElement: createCalculatorElement, Fragment: CalculatorFragment } = CalculatorReact;"
+  } : { jsx: 'automatic' },
   build: {
     minify: mode === 'jungsi-calculator' ? 'terser' : 'esbuild',
     assetsInlineLimit: () => false,
