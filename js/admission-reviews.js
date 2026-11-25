@@ -1,13 +1,22 @@
 (function () {
     'use strict';
 
-    const koreanInitials = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+    const universityInitials = {
+        건국: 'K', 경북: 'K', 경희: 'K', 고려: 'K',
+        광운: 'K', 중앙: 'C', 한국외: 'H', 홍익: 'H',
+    };
+    const romanInitials = ['G', 'K', 'N', 'D', 'T', 'R', 'M', 'B', 'P', 'S', 'S', '', 'J', 'J', 'C', 'K', 'T', 'P', 'H'];
+
+    const vowelInitials = ['A', 'A', 'Y', 'Y', 'E', 'E', 'Y', 'Y', 'O', 'W', 'W', 'O', 'Y', 'U', 'W', 'W', 'W', 'Y', 'E', 'U', 'I'];
 
     function universityInitial(name) {
-        const first = name.trim().charAt(0);
+        const stem = name.trim().replace(/대(?:학교)?$/, '');
+        const first = stem.charAt(0);
         const offset = first.charCodeAt(0) - 0xAC00;
-        if (offset >= 0 && offset < 11172) return koreanInitials[Math.floor(offset / 588)];
-        return /^[A-Za-z]$/.test(first) ? first.toUpperCase() : '';
+        const initial = universityInitials[stem] || (offset >= 0 && offset < 11172
+            ? romanInitials[Math.floor(offset / 588)] || vowelInitials[Math.floor(offset / 28) % 21]
+            : /^[A-Za-z]$/.test(first) ? first.toUpperCase() : '');
+        return initial ? initial + '대학교' : '';
     }
 
     function reviewCard(review, index, universityNames) {
