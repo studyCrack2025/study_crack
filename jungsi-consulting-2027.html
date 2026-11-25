@@ -180,12 +180,14 @@
 <script src="/js/config.js"></script>
 <script src="/js/shared/api.js"></script>
 <dialog id="consultingReviewsPopup" class="admission-reviews-popup" aria-labelledby="consultingReviewsPopupTitle" aria-describedby="consultingReviewsPopupNotice">
-  <header>
-    <h2 id="consultingReviewsPopupTitle">압도적 데이터로 검증된 후기</h2>
-    <form method="dialog"><button type="submit" autofocus>닫기</button></form>
+  <header class="admission-reviews-popup-header">
+    <div>
+      <h2 id="consultingReviewsPopupTitle">압도적 데이터로 검증된 후기</h2>
+      <p id="consultingReviewsPopupNotice">작성자의 공개 동의를 받은 실제 후기입니다. 대학명은 이니셜로 표기했습니다.</p>
+    </div>
+    <form method="dialog"><button type="submit" aria-label="닫기" autofocus><span aria-hidden="true">×</span></button></form>
   </header>
-  <p id="consultingReviewsPopupNotice">작성자의 공개 동의를 받은 실제 후기입니다. 대학명은 이니셜로 표기했습니다.</p>
-  <div class="admission-reviews-grid" data-popup-reviews></div>
+  <div class="admission-reviews-grid" data-popup-reviews tabindex="0" role="region" aria-label="합격 수기 목록"></div>
 </dialog>
 <script src="/js/admission-reviews.js?v=20261126-popup"></script>
 <script src="/js/consulting-ad-attribution.js"></script>

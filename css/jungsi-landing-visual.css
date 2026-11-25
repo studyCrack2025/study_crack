@@ -527,9 +527,78 @@ OTHER DEALINGS IN THE FONT SOFTWARE.*/
 .admission-reviews-grid .review-text { margin: 12px 0; line-height: 1.65; overflow-wrap: anywhere; }
 .admission-reviews-grid .review-author { color: var(--muted); font-size: 14px; }
 
-.admission-reviews-popup { box-sizing: border-box; width: min(760px, calc(100% - 24px)); max-height: 85dvh; padding: clamp(16px, 4vw, 30px); border: 1px solid var(--line); border-radius: 20px; color: inherit; background: #fff; }
-.admission-reviews-popup::backdrop { background: rgba(15, 23, 42, .64); }
-.admission-reviews-popup header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.admission-reviews-popup h2 { margin: 0; font-size: clamp(21px, 5vw, 32px); }
-.admission-reviews-popup button { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: inherit; white-space: nowrap; cursor: pointer; }
-.admission-reviews-popup > p { margin: 10px 0 20px; }
+.admission-reviews-popup {
+  width: min(800px, calc(100% - 24px));
+  max-height: min(760px, 88dvh);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  color: var(--ink);
+  background: #f6f8fc;
+  box-shadow: 0 24px 90px rgba(15, 23, 42, .28);
+}
+.admission-reviews-popup[open] { display: flex; flex-direction: column; }
+.admission-reviews-popup::backdrop { background: rgba(13, 24, 46, .62); }
+.admission-reviews-popup-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(20px, 4vw, 32px);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(120deg, #eef3fc, #fff);
+}
+.admission-reviews-popup h2 { color: var(--blue); font-size: clamp(22px, 5vw, 34px); line-height: 1.25; letter-spacing: -.045em; }
+.admission-reviews-popup-header p { margin-top: 8px; color: var(--muted); font-size: 13px; }
+.admission-reviews-popup button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--blue);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.admission-reviews-popup button:hover { background: var(--wash); }
+.admission-reviews-popup :focus-visible { outline: 2px solid var(--blue); outline-offset: -3px; }
+.admission-reviews-popup .admission-reviews-grid {
+  min-height: 0;
+  padding: clamp(14px, 3vw, 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  gap: 12px;
+}
+.admission-reviews-popup .review-card {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 3vw, 22px);
+  box-shadow: 0 3px 12px rgba(19, 43, 79, .045);
+}
+.admission-reviews-popup .review-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #edf3fc;
+  color: var(--blue);
+  font-size: 12px;
+}
+.admission-reviews-popup .review-text { font-size: 15px; line-height: 1.75; }
+.admission-reviews-popup .review-author {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .admission-reviews-popup { border-radius: 18px; }
+  .admission-reviews-popup-header { padding: 18px 16px; }
+  .admission-reviews-popup .admission-reviews-grid { grid-template-columns: minmax(0, 1fr); }
+}
