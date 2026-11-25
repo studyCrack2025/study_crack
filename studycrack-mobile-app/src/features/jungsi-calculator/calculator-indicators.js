@@ -8,12 +8,18 @@ const selectionNotices = new Map([
   ['SCIENCE_INQUIRY_REQUIRED', { label: '과탐 응시 요건 미충족', note: '과학탐구를 1과목 이상 응시해야 지원할 수 있습니다.' }],
   ['MATH_SELECTION_NOT_ALLOWED', { label: '수학 응시 요건 미충족', note: '이 모집단위에 지원하려면 대학이 지정한 수학 선택과목에 응시해야 합니다.' }],
   ['INQUIRY_TRACK_NOT_ALLOWED', { label: '탐구 응시 요건 미충족', note: '이 모집단위에 지원하려면 대학이 지정한 탐구 영역에 응시해야 합니다.' }],
+  ['INQUIRY_COUNT_NOT_MET', { label: '탐구 응시 요건 미충족', note: '이 모집단위에서 요구하는 탐구 과목 수를 확인해주세요.' }],
+  ['BIOLOGY_INQUIRY_REQUIRED', { label: '탐구 응시 요건 미충족', note: '이 모집단위에 지원하려면 생명과학Ⅰ 또는 Ⅱ에 응시해야 합니다.' }],
+  ['SNU_SCIENCE_FIELD_COMBINATION_NOT_ALLOWED', { label: '탐구 응시 요건 미충족', note: '대학이 지정한 서로 다른 과학탐구 분야의 조합을 확인해주세요.' }],
+  ['SNU_PHYSICS_OR_CHEMISTRY_REQUIRED', { label: '탐구 응시 요건 미충족', note: '이 모집단위에 지원하려면 물리학 또는 화학에 응시해야 합니다.' }],
   ['SELECTION_CARRYOVER_ONLY', { label: '수시 이월 때 선발', note: '수시 이월 인원이 발생하면 선발합니다. 대학의 최종 정시 모집인원을 확인해주세요.' }]
 ]);
+const ineligibleNotice = { label: '지원 요건 미충족', note: '입력한 성적 기준입니다. 대학 모집요강에서 이 전형의 지원 요건을 확인해주세요.' };
 
 export function calculatorSelectionNotice(result) {
   if (result?.status === 'available' || result?.previewCutoff) return null;
-  return selectionNotices.get(result?.reasonCodes?.[0]) ?? null;
+  const reason = result?.reasonCodes?.find(code => selectionNotices.has(code));
+  return selectionNotices.get(reason) ?? (result?.status === 'ineligible' ? ineligibleNotice : null);
 }
 
 export function calculatorIndicator(result) {
