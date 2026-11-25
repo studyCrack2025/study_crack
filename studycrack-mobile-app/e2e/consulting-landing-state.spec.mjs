@@ -17,7 +17,12 @@ async function prepare(page, { signedIn = false, deferAuth = false, expired = fa
   ` }));
   await page.route('**/__public', route => route.fulfill({ json: { success: false } }));
   await page.route('**/__auth', async route => {
-    authCalls.push(route.request().postDataJSON());
+    const payload = route.request().postDataJSON();
+    if (payload.type === 'get_user_reviews') {
+      expect((await route.request().allHeaders()).authorization).toBeUndefined();
+      return route.fulfill({ json: [] });
+    }
+    authCalls.push(payload);
     expect((await route.request().allHeaders()).authorization).toBeUndefined();
     if (deferAuth) await gate;
     await route.fulfill({ status: expired ? 401 : unavailable ? 503 : 200, json: expired ? { success: false, code: 'AUTH_SESSION_EXPIRED' } : { success: !unavailable } });

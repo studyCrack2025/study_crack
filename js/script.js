@@ -254,58 +254,6 @@ function initBasicPreviewEntryTracking() {
 }
 
 /* =========================================
-   3. 후기 데이터 로직 (기존 유지)
-   ========================================= */
-async function getUserReviews() {
-    try {
-        const response = await apiFetch(AUTH_API_URL, { method: 'POST', body: JSON.stringify({ type: 'get_user_reviews' }) });
-        const data = await response.json();
-        if (Array.isArray(data)) return data; 
-        if (data.body) {
-            const parsedBody = JSON.parse(data.body);
-            if (Array.isArray(parsedBody)) return parsedBody;
-        }
-        return [];
-    } catch (error) {
-        return []; 
-    }
-}
-
-async function renderReviews() {
-    const container = document.getElementById('reviewContainer');
-    if (!container) return;
-    
-    container.innerHTML = '<p style="text-align:center;">후기를 불러오는 중...</p>';
-    const fallbackReviews = [
-        { univ: '광운대 자율전공학부', name: '구*우', content: '기존에는 진학사를 보면서 감으로 기준을 잡았습니다. 컨설팅 후에는 제 점수가 어디에 유리한지 구조적으로 이해하게 됐습니다.' },
-        { univ: '경희대, 건국대, 한국외대', name: '구*우', content: '막연한 안정 지원이 아니라, 왜 안정인지 설명할 수 있는 지원을 하게 됐습니다.' },
-        { univ: '고려대, 중앙대', name: '구*우', content: '컨설팅을 통해 감정이 아닌 구조로 기준을 다시 세우고, 확신을 가지고 지원했습니다.' },
-        { univ: '광운대 자율전공학부', name: '구*우', content: '학과 정보와 실제 예상 합격률을 분석받은 순간, 불안이 확신으로 바뀌었습니다.' },
-        { univ: '광운대 자율전공학부', name: '구*우', content: '왜 이 선택이 유리한지 구조적으로 설명해주셔서 납득하고 지원할 수 있었습니다.' },
-        { univ: '광운대 자율전공학부', name: '구*우', content: '제 점수가 어디에 유리한지 구조적으로 이해하게 됐고, 대학 라인이 달라졌습니다.' }
-    ];
-    const fetchedReviews = await getUserReviews();
-    const reviews = fetchedReviews.length > 0 ? fetchedReviews : fallbackReviews;
-
-    container.innerHTML = reviews.map((review, index) => `
-        <div class="review-card${index === 0 ? ' featured' : ''}">
-            <div class="review-header">
-                <span class="review-badge">${escapeHtml(review.univ)}</span>
-                <span class="review-score">${index === 0 ? '★★★★☆' : '★★★★★'}</span>
-            </div>
-            <p class="review-text">"${escapeHtml(review.content)}"</p>
-            <div class="review-author">
-                <div class="review-info">
-                    <div>${escapeHtml(review.name)}</div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    initReviewIndicators();
-}
-
-/* =========================================
    4. 인터랙티브 데모 로직
    ========================================= */
 window.nextDemoStep = function(stepNumber) {
@@ -357,7 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateNavUI();
-    renderReviews();
+    const reviewContainer = document.getElementById('reviewContainer');
+    if (reviewContainer) window.renderAdmissionReviews(reviewContainer).then(initReviewIndicators);
     initMobileCourses();
     selectCourse('basic', true);
     window.matchMedia('(max-width: 900px)').addEventListener('change', () => {

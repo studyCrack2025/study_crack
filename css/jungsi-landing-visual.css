@@ -519,3 +519,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.*/
 .criteria-grid a{margin-top:12px}
 .criteria-sources{margin-top:28px}
 }
+
+.admission-reviews .section-intro { margin: 0 0 24px; }
+.admission-reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 16px; }
+.admission-reviews-grid .review-card { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.admission-reviews-grid .review-badge { color: var(--accent, #244c8c); font-weight: 700; }
+.admission-reviews-grid .review-text { margin: 12px 0; line-height: 1.65; overflow-wrap: anywhere; }
+.admission-reviews-grid .review-author { color: var(--muted); font-size: 14px; }

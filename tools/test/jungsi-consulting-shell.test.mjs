@@ -15,7 +15,8 @@ const shellPaths = ['start', 'login', 'home', 'survey', 'materials', 'schedule',
 test('the public landing is indexable and exposes no unverified review or outcome claims', () => {
     assert.match(landing, /<meta name="robots" content="index,follow">/);
     assert.match(landing, /<link rel="canonical" href="https:\/\/studycrack\.co\.kr\/2027-jungsi-consulting">/);
-    assert.doesNotMatch(landing, /후기|합격자 수|합격률|만족도/);
+    assert.match(landing, /작성자의 공개 동의를 받은 실제 후기입니다\. 대학명은 이니셜로 표기했습니다\./);
+    assert.doesNotMatch(landing, /합격자 수|합격률|만족도/);
     assert.match(campaignClient, /get_v2_consulting_campaign/);
     assert.match(campaignClient, /credentials: 'omit'/);
     assert.match(campaignClient, /docs\\\.google\\\.com\\\/forms/);

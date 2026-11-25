@@ -156,6 +156,7 @@
     "js/measurement-v2.js",
     "js/qna.js",
     "js/script.js",
+    "js/admission-reviews.js",
     "js/home-consulting-promo.js",
     "js/service.js",
     "js/shared/api.js",
