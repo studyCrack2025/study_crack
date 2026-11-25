@@ -149,6 +149,8 @@
  const q=new URL(location.href).searchParams, source=q.get('utm_source');
  if(!['naver','google','meta','facebook','instagram'].includes(source))return;
  const id=v=>typeof v==='string'&&/^[A-Za-z0-9_.-]{1,120}$/.test(v)?v:null;
- const product=['consulting','calculator'].includes(q.get('utm_product'))?q.get('utm_product'):location.hash==='#consulting'?'consulting':location.hash==='#calculator'||location.pathname.startsWith('/2027-jungsi-consulting')?'calculator':'consulting';
+ const explicitProduct=q.get('utm_product');
+ const calculatorPage=['/2027-jungsi-consulting/calculator','/2027-jungsi-consulting_calculator.html','/jungsi-calculator-2027.html'].includes(location.pathname.replace(/\/$/,''));
+ const product=['consulting','calculator'].includes(explicitProduct)?explicitProduct:location.hash==='#calculator'||calculatorPage?'calculator':'consulting';
  sessionStorage.setItem('sc_site_touch_v2:'+product,JSON.stringify({at:Date.now(),input:{source,campaignId:id(q.get('utm_id')||q.get('utm_campaign')),creativeId:id(q.get('utm_content'))}}));
 }catch{}})();
