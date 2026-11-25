@@ -305,7 +305,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateNavUI();
-    window.renderAdmissionReviews(document.getElementById('reviewContainer')).then(initReviewIndicators);
+    const reviewContainer = document.getElementById('reviewContainer');
+    if (reviewContainer) window.renderAdmissionReviews(reviewContainer).then(initReviewIndicators);
     initMobileCourses();
     selectCourse('basic', true);
     window.matchMedia('(max-width: 900px)').addEventListener('change', () => {
