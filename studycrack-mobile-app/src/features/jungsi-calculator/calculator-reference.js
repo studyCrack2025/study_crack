@@ -1,4 +1,5 @@
 import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
+import { calculatorDigest, calculatorReasonCodes, calculatorRecordId } from './calculator-validation.js';
 
 const states = new Set(['current_two_references', 'prior_data_two_estimates', 'historical70_only', 'academic_score_without_cut', 'held', 'explicitly_excluded']);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -9,12 +10,11 @@ export function safeCalculatorReference(value, target, scores) {
   if (value === undefined) return null;
   const invalid = () => missing('REFERENCE_RESPONSE_INVALID');
   if (!value || value.contractVersion !== 'reviewed-admission-reference-v1' || !states.has(value.status)
-    || value.probability !== null || value.empiricallyCalibrated !== false || !Array.isArray(value.reasonCodes)
-    || value.reasonCodes.length > 12 || value.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))) return invalid();
+    || value.probability !== null || value.empiricallyCalibrated !== false || !calculatorReasonCodes(value.reasonCodes)) return invalid();
   if (value.recordId === null) return value.status === 'held' && [value.convertedScore, value.passReference, value.registered70Reference, value.referenceIndex].every(x => x === null)
     && value.reasonCodes.length ? missing(value.reasonCodes[0]) : invalid();
-  if (value.school !== target.university || value.major !== target.major || !/^(?:U|SG27|R(?:0[1-9]|1[0-9]|20))_[a-f0-9]{16}$/.test(value.recordId)
-    || !/^sha256:[a-f0-9]{64}$/.test(value.bundleDigest) || value.targetYear !== 2027 || scores.basis !== 'official'
+  if (value.school !== target.university || value.major !== target.major || !calculatorRecordId(value.recordId)
+    || !calculatorDigest(value.bundleDigest) || value.targetYear !== 2027 || scores.basis !== 'official'
     || value.publicationReady !== false || value.personalEligibilityApproved !== false
     || target.admissionUnitId && value.candidateAdmissionIdentity?.admissionUnitId !== target.admissionUnitId
     || target.selection && value.recordId !== target.selection.recordId) return invalid();

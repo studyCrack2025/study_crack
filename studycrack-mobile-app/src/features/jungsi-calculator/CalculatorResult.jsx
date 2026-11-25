@@ -2,6 +2,7 @@ import React from 'react';
 import CalculatorForecast, { calculatorForecastNote } from './CalculatorForecast.jsx';
 import { formatCalculatorScore } from './calculator-display.js';
 import CalculatorReference, { CalculatorCutoffLines } from './CalculatorReference.jsx';
+import { calculatorSelectionNotice } from './calculator-indicators.js';
 
 const groups = { ga: '가군', na: '나군', da: '다군' };
 const explanations = {
@@ -22,14 +23,18 @@ const formatted = formatCalculatorScore;
 
 export default function CalculatorResult({ result, current, selectedId, onSelect, exactSelection = false }) {
   if (!result) return <small>환산점수 조회 후 자료 상태를 확인할 수 있습니다.</small>;
-  const explanation = result.reasonCodes.map(code => explanations[code]).find(Boolean) || '이 모집단위의 산식·지원 조건을 더 확인해야 합니다. 현재는 점수를 제공하지 않습니다.';
+  const notice = current && calculatorSelectionNotice(result);
+  const { referenceComparison: reference, previewCutoff, possibility, selected, status } = result;
+  const formal = status === 'available' && !previewCutoff;
+  const hasReference = reference?.convertedScore != null;
+  const explanation = notice?.note || explanations[result.reasonCodes.find(code => explanations[code])] || '이 모집단위의 산식·지원 조건을 더 확인해야 합니다. 현재는 점수를 제공하지 않습니다.';
   return <div className="jcalc-result">
-    {!exactSelection && result.choices.length > 1 && <label className="jcalc-field"><span>캠퍼스·전형·모집군</span><select aria-label={`${result.university} ${result.major} 전형 선택`} value={selectedId || ''} onChange={event => onSelect(event.target.value)}><option value="">선택해주세요</option>{result.choices.map(option => <option key={option.admissionUnitId} value={option.admissionUnitId}>{option.campusName} · {option.unitName} · {option.trackName} · {groups[option.admissionGroup]}</option>)}</select></label>}
-    {current && !exactSelection && result.selected && <p className="jcalc-result-context">{result.selected.campusName} · {result.selected.unitName}<br />{result.selected.trackName} · {groups[result.selected.admissionGroup]}</p>}
-    {current ? result.status === 'available' ? <div className="jcalc-score"><span>예상 환산점수</span><strong>{formatted(result.convertedScore)}<small>점</small></strong><small>{result.scoreScale === 'raw_points' ? '별도 기준 만점이 없는 점수입니다.' : <>기준 만점 {formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.</>}</small></div>
-      : result.referenceComparison?.convertedScore != null ? null : <p className="jcalc-result-message">{result.status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
+    {!notice && !exactSelection && result.choices.length > 1 && <label className="jcalc-field"><span>캠퍼스·전형·모집군</span><select aria-label={`${result.university} ${result.major} 전형 선택`} value={selectedId || ''} onChange={event => onSelect(event.target.value)}><option value="">선택해주세요</option>{result.choices.map(option => <option key={option.admissionUnitId} value={option.admissionUnitId}>{option.campusName} · {option.unitName} · {option.trackName} · {groups[option.admissionGroup]}</option>)}</select></label>}
+    {current && !notice && !exactSelection && selected && <p className="jcalc-result-context">{selected.campusName} · {selected.unitName}<br />{selected.trackName} · {groups[selected.admissionGroup]}</p>}
+    {current ? formal ? <div className="jcalc-score"><span>예상 환산점수</span><strong>{formatted(result.convertedScore)}<small>점</small></strong><small>{result.scoreScale === 'raw_points' ? '별도 기준 만점이 없는 점수입니다.' : <>기준 만점 {formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.</>}</small></div>
+      : (notice || !previewCutoff && !hasReference) && <p className="jcalc-result-message">{!notice && status === 'ineligible' && <b>응시 조건 확인 필요<br /></b>}{explanation}</p>
       : <p className="jcalc-result-message">입력 조건이 바뀌었습니다. 환산점수를 다시 조회해주세요.</p>}
     {current && !exactSelection && <CalculatorForecast result={result} />}
-    {current && result.status === 'available' ? <><CalculatorCutoffLines reference={result.referenceComparison} possibility={result.possibility} /><details className="jcalc-cautions"><summary>주의사항</summary>{result.scoreScope === 'csat_component' && <small>{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</small>}<p className="jcalc-forecast-note">{calculatorForecastNote(result.possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>{result.possibility?.status === 'available' && <p className="jcalc-forecast-note">자료 기준 · {result.possibility.publicationId} · {result.possibility.policyVersion}</p>}{result.referenceComparison?.convertedScore != null && <><p className="jcalc-forecast-note">아래는 별도 산식의 참고 자료입니다. 위 환산점수와 다른 점수 척도일 수 있습니다.</p><CalculatorReference reference={result.referenceComparison} showCutoffs={false} /></>}</details></> : current && <CalculatorReference reference={result.referenceComparison} />}
+    {current && (formal ? <><CalculatorCutoffLines reference={reference} possibility={possibility} /><details className="jcalc-cautions"><summary>주의사항</summary>{result.scoreScope === 'csat_component' && <small>{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</small>}<p className="jcalc-forecast-note">{calculatorForecastNote(possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>{possibility?.status === 'available' && <p className="jcalc-forecast-note">자료 기준 · {possibility.publicationId} · {possibility.policyVersion}</p>}{hasReference && <><p className="jcalc-forecast-note">아래는 별도 산식의 참고 자료입니다. 위 환산점수와 다른 점수 척도일 수 있습니다.</p><CalculatorReference reference={reference} showCutoffs={false} /></>}</details></> : (!notice || hasReference) && <CalculatorReference reference={reference} previewCutoff={previewCutoff} showCutoffs={!notice} />)}
   </div>;
 }

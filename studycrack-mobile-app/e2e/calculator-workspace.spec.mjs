@@ -21,7 +21,12 @@ async function setup(page, options = {}) {
   await context.route('**/__workspace-auth', route => route.fulfill({ json: { success: true } }));
   await context.route('**/__workspace-analysis', async route => {
     const body = route.request().postDataJSON();
-    if (body.type === 'get_calculator_access') { const value = calculatorAccessFixture({ applicationId: appId }); value.service.workspaceVersion = 2; if (options.grouped) value.service.selectionVersion = 1; return route.fulfill({ json: value }); }
+    if (body.type === 'get_calculator_access') {
+      if (state.failAccess) return route.fulfill({ status: 503, json: { success: false, code: 'CALCULATOR_ACCESS_UNAVAILABLE' } });
+      const value = calculatorAccessFixture({ applicationId: appId }); value.service.workspaceVersion = 2;
+      if (options.grouped) value.service.selectionVersion = 1;
+      return route.fulfill({ json: value });
+    }
     if (body.type === 'get_calculator_score_conversion') return route.fulfill({ json: calculatorScoreFixture(body.data.records) });
     if (body.type === 'get_univ_list_only') return route.fulfill({ json: [{ univName: '예시대학교', majors: ['예시학과'] }] });
     if (body.type === 'get_calculator_catalog') {
@@ -42,6 +47,15 @@ async function setup(page, options = {}) {
       if (!target.selection) return;
       row.selectionKey = target.selection.key;
       Object.assign(row.referenceComparison, { recordId: target.selection.recordId, candidateAdmissionIdentity: { admissionUnitId: target.admissionUnitId }, riskBand: 'stable' });
+      if (options.approvedRawCutoff && target.selection.admissionGroup === 'ga') {
+        converted.release = { dataReleaseId: 'ADMISSION_RELEASE_2027_TEST', contentDigest: catalogDigest, formulaVersion: 'formula-1.0.0', eligibilityRuleVersion: 'eligibility-1.0.0' };
+        row.reasonCodes = ['RAW_SCOREBOARD_NOT_RELEASED'];
+        row.previewCutoff = { status: 'available', dataReleaseId: converted.release.dataReleaseId, admissionUnitId: target.admissionUnitId,
+          convertedScore: 720.36, cutoffs: { pass: 700, registered70: 715 }, riskBand: 'stable', publicationId: 'CUT_RELEASE_TEST',
+          publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027 };
+      }
+      const notice = options.selectionNotices?.[target.selection.admissionGroup];
+      if (notice) row.reasonCodes = [notice];
       if (options.referenceMissingGroups?.includes(target.selection.admissionGroup)) Object.assign(row.referenceComparison, { status: 'held', recordId: null, convertedScore: null, passReference: null, registered70Reference: null, referenceIndex: null, riskBand: null, reasonCodes: ['REFERENCE_DATA_UNAVAILABLE'] });
     });
     if (state.deferConversion) await new Promise(resolve => { state.conversionRelease = resolve; });
@@ -69,7 +83,8 @@ async function setup(page, options = {}) {
       if (options.grouped) { expect(groups.every(Boolean)).toBe(true); expect(new Set(groups).size).toBe(groups.length); }
       const oldGroups = old?.targets.map(target => target.selection?.admissionGroup);
       const legacy = oldGroups && (!oldGroups.every(Boolean) || new Set(oldGroups).size !== oldGroups.length);
-      const previousTargets = old?.previousTargets || (options.grouped && legacy ? old.targets.filter(target => !data.targets.some(current => current.selection.key === target.selection?.key)) : []);
+      const displaced = options.grouped && old ? old.targets.filter(target => legacy || groups.includes(target.selection?.admissionGroup)) : [];
+      const previousTargets = [...displaced, ...(old?.previousTargets || [])].filter(target => !data.targets.some(current => current.selection?.key === target.selection?.key));
       const plan = { planId: old?.planId || 'PLAN_TEST_' + (state.record.plans.length + 1), revision: (old?.revision || 0) + 1, name: data.name, targets: data.targets, ...(previousTargets.length ? { previousTargets } : {}), ...(data.representatives ? { representatives: data.representatives } : {}), updatedAt: at };
       state.record.plans = old ? state.record.plans.map(row => row.planId === old.planId ? plan : row) : [...state.record.plans, plan]; state.record.lastSavedPlanId = plan.planId; state.committedPlans++;
     } else if (body.type === 'student_delete_calculator_plan') {
@@ -171,14 +186,18 @@ async function addGroupTarget(page, label, track = 1, replace = false) {
 test('군별로 같은 이름의 모집단위를 구별하고 한 자리씩 교체·저장·복원·삭제한다', async ({ page }, testInfo) => {
   const state = await setup(page, { grouped: true }); await saveScores(page);
   for (const label of ['가군', '나군', '다군']) await addGroupTarget(page, label);
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   await addGroupTarget(page, '가군', 2, true);
   const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
   await expect(ga.getByRole('listitem')).toHaveCount(1);
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
   expect(state.record.plans[0].targets).toHaveLength(3); expect(state.record.plans[0].representatives).toEqual({ ga: groupedTargets[1].selection.key, na: groupedTargets[2].selection.key, da: groupedTargets[4].selection.key });
+  expect(state.record.plans[0].previousTargets).toEqual([groupedTargets[0]]);
   await page.reload(); await expect(page.getByRole('region', { name: '군별 지원 조합', exact: true })).toBeVisible();
   await expect(ga.getByRole('listitem')).toHaveCount(1); await expect(ga).toContainText('일반전형2');
+  await expect(page.getByText('이전에 저장한 후보 (1)', { exact: true })).toBeVisible();
   for (const width of [320, 375, 430, 768, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1); }
   await page.setViewportSize({ width: 375, height: 812 });
   await page.getByRole('navigation', { name: '모집군 선택', exact: true }).getByRole('button', { name: /나군/ }).click();
@@ -188,6 +207,22 @@ test('군별로 같은 이름의 모집단위를 구별하고 한 자리씩 교�
   await ga.getByRole('button', { name: '가군 예시대학교 예시학과 후보 삭제', exact: true }).click();
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible(); expect(state.record.plans[0].representatives.ga).toBeNull(); expect(state.record.plans[0].targets).toHaveLength(2);
+});
+
+test('탭 복귀 이용권 조회가 일시 실패해도 재확인 후 저장 전 후보가 복원된다', async ({ page }) => {
+  const state = await setup(page, { grouped: true }); await saveScores(page); await addGroupTarget(page, '가군');
+  const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  await expect(ga).toContainText('일반전형1');
+  state.failAccess = true;
+  await page.clock.setFixedTime(new Date(await page.evaluate(() => Date.now()) + 31_000));
+  await page.evaluate(() => dispatchEvent(new Event('focus')));
+  await expect(page.getByRole('heading', { name: '이용 정보를 확인하지 못했습니다.', exact: true })).toBeVisible();
+  await expect(ga).toBeHidden();
+  state.failAccess = false;
+  await page.getByRole('button', { name: '다시 시도', exact: true }).click();
+  await expect(ga).toContainText('일반전형1');
+  await expect(page.getByRole('button', { name: '변경사항 저장', exact: true })).toBeEnabled();
+  expect(state.committedPlans).toBe(0);
 });
 
 test('기존 후보는 군 미분류로 보존하고 정확한 선택으로 교체한다', async ({ page }) => {
@@ -224,6 +259,53 @@ test('저장한 지원 후보를 포트폴리오로 보고 돌아와도 성적·
   expect(state.record).toEqual(saved); expect(state.calls.filter(row => row.type.startsWith('student_save_'))).toHaveLength(writes);
 });
 
+test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴리오에 표시한다', async ({ page }) => {
+  await setup(page, { grouped: true, approvedRawCutoff: true }); await saveScores(page);
+  await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군');
+  await page.getByRole('navigation', { name: '모집군 선택' }).getByRole('button', { name: /가군/ }).click();
+  const gaCandidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  await expect(gaCandidate.getByText('가채점 환산점수', { exact: true })).toBeVisible();
+  for (const score of ['720.36점', '700.00점', '715.00점']) {
+    await expect(gaCandidate.getByText(score, { exact: true })).toBeVisible();
+  }
+  await expect(gaCandidate.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
+  const ga = portfolio.getByRole('article', { name: '가군 지원 후보', exact: true });
+  await expect(ga).toContainText('720.36점');
+  await expect(ga).toContainText('700.00점');
+  await expect(ga).toContainText('715.00점');
+  await expect(ga.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
+  await expect(portfolio.getByRole('article', { name: '나군 지원 후보', exact: true })).toContainText('산출 보류');
+});
+
+test('수시 이월과 학생부 전형의 실제 수능 최저 결과를 지원 조합과 포트폴리오에 표시한다', async ({ page }) => {
+  await setup(page, { grouped: true, referenceMissingGroups: ['ga', 'da'],
+    selectionNotices: { ga: 'SELECTION_CARRYOVER_ONLY', da: 'CSAT_MINIMUM_MET' } });
+  await saveScores(page);
+  const outcomes = [
+    ['가군', '수시 이월 때 선발', /최종 정시 모집인원/],
+    ['다군', '수능 최저 충족', /학생부 100%/]
+  ];
+  for (const [group, label, note] of outcomes) {
+    await addGroupTarget(page, group);
+    const candidate = page.getByRole('region', { name: `${group} 지원 후보`, exact: true });
+    await expect(candidate.getByLabel(`지원 단계: ${label}`, { exact: true })).toBeVisible();
+    await expect(candidate).toContainText(note);
+    await expect(candidate).not.toContainText(/판단 대기|산출 보류/);
+  }
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
+  for (const [group, label, note] of outcomes) {
+    const card = portfolio.getByRole('article', { name: `${group} 지원 후보`, exact: true });
+    await expect(card.getByLabel(`지원 단계: ${label}`, { exact: true })).toBeVisible();
+    await expect(card).toContainText(note);
+    await expect(card).not.toContainText(/판단 대기|산출 보류|예상 합격 컷/);
+  }
+});
+
 test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {
   const state = await setup(page, { grouped: true, referenceMissingGroups: ['na'] }); await saveScores(page);
   await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군'); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
@@ -245,7 +327,7 @@ async function openExportPortfolio(page) {
   const region = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }); await expect(region).toBeVisible(); return { state, region };
 }
 async function receivePng(download, testInfo, filename) {
-  expect(download.suggestedFilename()).toBe('StudyCrack_2027_정시_포트폴리오.png');
+  expect(download.suggestedFilename().normalize('NFC')).toBe('StudyCrack_2027_정시_포트폴리오.png');
   const path = testInfo.outputPath(filename); await download.saveAs(path); const bytes = await readFile(path);
   expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]); expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBeGreaterThan(1000); expect(bytes.readUInt32BE(20)).toBeLessThanOrEqual(8192);

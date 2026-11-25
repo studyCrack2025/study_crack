@@ -169,7 +169,7 @@ async function loadCalculatorAdminList() {
             const personContent = document.createElement('div');
             name.textContent = item.studentNameMask || '이름 확인 필요'; contact.textContent = item.phoneMask || '연락처 확인 필요'; personContent.append(name, contact); person.append(personContent);
             const status = createConsultingCell(''), badge = document.createElement('span');
-            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel;
+            badge.className = 'calculator-admin-badge'; badge.textContent = item.stateLabel + (item.readOnly && item.managementAvailable !== true ? ' · 조회 전용' : '');
             badge.dataset.phase = ADMIN_CALCULATOR_PHASES.includes(item.phase) ? item.phase : ''; status.append(badge);
             row.append(person, status, createConsultingCell(item.nextAction + (item.inputSummary?.status === 'saved' ? ' · 자료 저장 ' + item.inputSummary.candidateCount + '개 후보' : '')), createConsultingCell(formatConsultingDate(item.accessEndsAt)));
             const action = createConsultingCell(''), button = document.createElement('button');
@@ -209,8 +209,8 @@ function updateCalculatorAdminActions() {
     calculatorAdminNode('calculatorAdminDetailContent')?.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = state.busy; });
     for (const [id, show] of [['calculatorAdminInput', status?.canReviewInput], ['calculatorAdminPayment', status?.canApprove],
         ['calculatorAdminReview', status?.canReviewPayment], ['calculatorAdminReissue', status?.canReissue && data?.activeInviteId],
-        ['calculatorAdminDeleteSection', data?.deletion?.available === true]]) {
-        const node = calculatorAdminNode(id); if (node) node.hidden = !show;
+        ['calculatorAdminDeleteSection', data?.deletion?.available === true], ['calculatorAdminSavedSection', Boolean(data)]]) {
+        const node = calculatorAdminNode(id); if (node) node.hidden = data?.readOnly === true || !show;
     }
     const approve = calculatorAdminNode('calculatorAdminApprove');
     if (approve) approve.disabled = state.busy || status?.canApprove !== true || data?.campaignReady === false;
@@ -230,7 +230,13 @@ function renderCalculatorAdminDetail(data) {
         ['이용자 이름', data.contact.studentName], ['전화번호', data.contact.phone], ['이메일', data.contact.email], ['입금자명', data.contact.payerName],
         ['입금 확인', ({ pending: '대기', hold: '보류', input_review: '신청 정보 확인 필요', verified: '승인', rejected: '거절' })[application.paymentReviewStatus] || '확인 필요']
     ]));
-    if (Array.isArray(data.reviewNotices) && data.reviewNotices.length) appendConsultingRecord(facts, '보류·거절 안내 이력', createConsultingFacts(data.reviewNotices.map(item => [formatConsultingDate(item.createdAt), (item.decision === 'hold' ? '보류' : '거절') + ' · ' + ({ pending: '발송 대기', sent: '발송 접수', failed: '발송 실패', superseded: '이전 안내' }[item.status] || '상태 확인 필요')])));
+    if (Array.isArray(data.reviewNotices) && data.reviewNotices.length) {
+        const states = { pending: '발송 대기', processing: '발송 요청 중', sent: '발송 접수', failed: '발송 실패', dead_letter: '발송 실패', superseded: '이전 안내' };
+        appendConsultingRecord(facts, '보류·거절 안내 이력', createConsultingFacts(data.reviewNotices.map(item => {
+            const status = item.errorCode === 'NOTIFICATION_DELIVERY_UNCERTAIN' ? '발송 결과 확인 필요' : (states[item.status] || '상태 확인 필요');
+            return [formatConsultingDate(item.createdAt), `${item.decision === 'hold' ? '보류' : '거절'} · ${status} · ${item.channel === 'kakao' ? '알림톡' : '문자'}`];
+        })));
+    }
     for (const card of facts.children) card.className = 'calculator-admin-card';
     for (const [field, id] of Object.entries({ studentName: 'calculatorAdminName', phone: 'calculatorAdminPhone', email: 'calculatorAdminEmail', payerName: 'calculatorAdminPayer' })) calculatorAdminNode(id).value = data.contact[field];
     calculatorAdminNode('calculatorAdminInput').open = application.inputReviewRequired === true || application.paymentReviewStatus === 'input_review';
@@ -253,7 +259,7 @@ async function loadCalculatorAdminDetail(reference) {
         state.detail = data;
         state.keys = Object.fromEntries(['payment', 'input', 'hold', 'reject', 'reissue'].map(key => [key, consultingRequestKey('calculator-' + key)]));
         renderCalculatorAdminDetail(data);
-        calculatorAdminStatus('calculatorAdminDetailStatus', '', 'success');
+        calculatorAdminStatus('calculatorAdminDetailStatus', data.readOnly ? '다른 환경의 신청입니다. 현재 화면에서는 조회만 할 수 있습니다.' : '', 'success');
         calculatorAdminNode('calculatorAdminDetailTitle').focus({ preventScroll: true });
         return true;
     } catch (_) {
@@ -269,11 +275,13 @@ async function runCalculatorAdminMutation(type, data, successMessage) {
     state.busy = true; updateCalculatorAdminActions();
     calculatorAdminStatus('calculatorAdminDetailStatus', '계산기 신청을 처리하고 있습니다.');
     try {
-        await requestConsultingAdmin(type, { ...state.reference, expectedRevision: state.detail.application.revision, ...data });
+        const result = await requestConsultingAdmin(type, { ...state.reference, expectedRevision: state.detail.application.revision, ...data });
         if (state !== calculatorAdminState || generation !== state.generation) return;
         state.busy = false;
         const refreshedGeneration = state.generation + 1;
-        if (await loadCalculatorAdminDetail(state.reference) && state === calculatorAdminState && state.generation === refreshedGeneration) calculatorAdminStatus('calculatorAdminDetailStatus', successMessage, 'success');
+        if (await loadCalculatorAdminDetail(state.reference) && state === calculatorAdminState && state.generation === refreshedGeneration) {
+            calculatorAdminStatus('calculatorAdminDetailStatus', typeof successMessage === 'function' ? successMessage(result) : successMessage, 'success');
+        }
     } catch (_) {
         if (state !== calculatorAdminState || generation !== state.generation) return;
         clearCalculatorAdminDetail();
@@ -300,20 +308,31 @@ async function saveCalculatorAdminInput() {
 async function reviewCalculatorAdminPayment() {
     const state = calculatorAdminState, generation = state.generation;
     if (state.busy || state.detail?.calculator?.canReviewPayment !== true || !state.reference) return;
-    const decision = calculatorAdminNode('calculatorAdminDecision').value, reasonText = calculatorAdminNode('calculatorAdminReason').value.trim();
-    if (!['hold', 'reject'].includes(decision) || !reasonText || reasonText.length > 500) return calculatorAdminStatus('calculatorAdminDetailStatus', '처리 사유를 500자 이내로 입력해주세요.', 'error');
-    const data = { ...state.reference, expectedRevision: state.detail.application.revision, idempotencyKey: state.keys[decision], reasonCode: 'OTHER', reasonText, decision };
+    const option = calculatorAdminNode('calculatorAdminDecision').value;
+    const unpaid = option === 'hold', decision = option === 'hold_other' ? 'hold' : option;
+    const reasonText = calculatorAdminNode('calculatorAdminReason').value.trim();
+    if (!['hold', 'reject'].includes(decision) || (!unpaid && !reasonText) || reasonText.length > 500) return calculatorAdminStatus('calculatorAdminDetailStatus', '기타 보류·거절은 사유가 필수이며, 메모는 500자 이내로 입력해주세요.', 'error');
+    const data = { ...state.reference, expectedRevision: state.detail.application.revision, idempotencyKey: state.keys[decision], reasonCode: unpaid ? 'PAYMENT_NOT_FOUND' : 'OTHER', reasonText, decision };
     state.busy = true; updateCalculatorAdminActions();
     try {
         const preview = await requestConsultingAdmin('admin_preview_calculator_review_notice', data);
         if (state !== calculatorAdminState || generation !== state.generation) return;
         if (preview?.applicationId !== data.applicationId || preview.revision !== data.expectedRevision || typeof preview.previewToken !== 'string' || typeof preview.willQueue !== 'boolean'
             || preview.willQueue && (typeof preview.message !== 'string' || preview.message.length > 2000)) throw new Error('안내를 확인할 수 없습니다.');
-        if (!confirm((decision === 'hold' ? '계산기 신청을 보류할까요?' : '계산기 신청을 거절할까요?') + (preview.willQueue ? '\n\n수신처 · ' + (preview.recipient || '확인 필요') + '\n' + preview.message : '\n이미 처리된 안내는 중복 발송하지 않습니다.'))) return;
+        if (unpaid && preview.willQueue && preview.channel !== 'kakao') {
+            return calculatorAdminStatus('calculatorAdminDetailStatus', '미입금 알림톡 설정을 확인해주세요.', 'error');
+        }
+        const title = decision === 'hold' ? '계산기 신청을 보류할까요?' : '계산기 신청을 거절할까요?';
+        const channel = preview.channel === 'kakao' ? '알림톡' : '문자';
+        const message = preview.willQueue ? `${title}\n\n${channel} 수신처 · ${preview.recipient || '전화번호 확인 필요'}\n\n${preview.message}`
+            : `${title}\n\n이미 처리된 안내는 중복 발송하지 않습니다.`;
+        if (!confirm(message)) return;
         state.busy = false;
         const { decision: _decision, ...request } = data;
         return await runCalculatorAdminMutation(decision === 'hold' ? 'admin_hold_calculator_payment' : 'admin_reject_calculator_application',
-            { ...request, previewToken: preview.previewToken }, '계산기 신청을 처리했습니다. 안내 이력과 실제 발송 결과를 확인해주세요.');
+            { ...request, previewToken: preview.previewToken }, result => result.notificationQueued
+                ? `계산기 신청을 처리했습니다. ${channel} 안내를 예약했습니다.`
+                : '이미 보류 중인 신청입니다. 기존 안내 이력을 확인해주세요.');
     } catch (_) {
         if (state === calculatorAdminState && generation === state.generation) calculatorAdminStatus('calculatorAdminDetailStatus', '처리 안내를 확인하지 못했습니다. 다시 확인해주세요.', 'error');
     } finally { if (state === calculatorAdminState && generation === state.generation) { state.busy = false; updateCalculatorAdminActions(); } }
@@ -329,7 +348,7 @@ window.addEventListener('pagehide', resetCalculatorAdmin);
 
 async function loadCalculatorAdminSavedInput() {
     const state = calculatorAdminState, generation = state.generation, reference = state.reference;
-    if (!state.detail || !reference || state.busy) return;
+    if (!state.detail || state.detail.readOnly || !reference || state.busy) return;
     state.request?.abort(); const controller = new AbortController(); state.request = controller;
     const body = calculatorAdminNode('calculatorAdminSavedInput'); body.replaceChildren();
     calculatorAdminStatus('calculatorAdminSavedStatus', '학생이 저장한 자료를 확인하고 있습니다.');

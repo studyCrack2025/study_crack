@@ -10,6 +10,7 @@ const MENU_GROUPS = [
     label: '학습 서비스',
     rows: [
       { icon: 'target', href: '/2027-jungsi-consulting/calculator', title: '합격 계산기', subtitle: '내 성적과 지원 후보로 환산점수 확인' },
+      { icon: 'chat', href: '/2027-jungsi-consulting/home', title: '정시 컨설팅', subtitle: '기초조사서·상담·보고서 진행 현황' },
       { icon: 'chart', target: 'ranking', title: '공부 랭킹', subtitle: '오늘의 집중 순위 확인' },
       { icon: 'calendar', action: 'openStreakSummary', title: '연속 학습 기록', subtitle: '최근 30일 공부와 연속 학습일 확인' },
       { icon: 'chart', target: 'weekly', title: '학습 리포트', subtitle: '주간 점검과 튜터 피드백 확인' },

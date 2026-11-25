@@ -1,27 +1,30 @@
+import { scoreChoiceLabel } from '../analysis/score-model.js';
 import { prepareCalculatorScores } from './calculator-model.js';
+import { calculatorScoreboardId } from './calculator-score-conversion.js';
+import { calculatorDigest as digest, calculatorReasonCodes } from './calculator-validation.js';
 
-const digest = value => /^sha256:[a-f0-9]{64}$/.test(value || '');
 const subject = value => typeof value === 'string' ? value.normalize('NFKC').replace(/II$/, '2').replace(/I$/, '1').replace(/\s/g, '') : '';
 
 export function calculatorComparisonScores(body, scores) {
-  const execution = body.execution;
+  const published = body.execution === undefined && body.publishedScoreExecution !== undefined;
+  const execution = published ? body.publishedScoreExecution : body.execution;
   if (execution === undefined) return scores;
   const conversion = execution?.scoreConversion;
-  if (execution?.contractVersion !== 'calculator-execution-v1' || execution.mode !== 'development_preview'
+  if (execution?.contractVersion !== 'calculator-execution-v1' || execution.mode !== (published ? 'published' : 'development_preview')
+    || published && scores.basis !== 'raw'
     || execution.inputBasis !== scores.basis || execution.inputScoreDigest !== body.scoreDigest || !conversion
-    || !Array.isArray(conversion.reasonCodes) || conversion.reasonCodes.length > 12
-    || conversion.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))) return null;
+    || !calculatorReasonCodes(conversion.reasonCodes)) return null;
   if (scores.basis === 'official') return execution.comparisonBasis === 'official' && execution.comparisonScores === null
     && conversion.status === 'not_required' && conversion.scoreboardId === null && conversion.scoreboardDigest === null && !conversion.reasonCodes.length ? scores : null;
   if (conversion.status === 'unavailable') return execution.comparisonBasis === null && execution.comparisonScores === null
     && conversion.scoreboardId === null && conversion.scoreboardDigest === null && conversion.reasonCodes.length ? scores : null;
   if (!['estimated', 'official'].includes(conversion.status) || execution.comparisonBasis !== conversion.status || conversion.reasonCodes.length
-    || conversion.scoreboardId !== (conversion.status === 'estimated' ? '2027_KSAT_survey_estimated.json' : '2027_KSAT_scoreboard.json')
+    || conversion.scoreboardId !== calculatorScoreboardId(conversion.status === 'estimated')
     || !digest(conversion.scoreboardDigest) || execution.comparisonScores?.basis !== 'official') return null;
   const candidate = { ...execution.comparisonScores, exam: { ...execution.comparisonScores.exam } };
   for (const key of ['kor', 'math', 'inq1', 'inq2']) {
     const field = ['kor', 'math'].includes(key) ? 'opt' : 'name';
-    if (subject(candidate.exam[key]?.[field]) !== subject(scores.exam[key][field])) return null;
+    if (scoreChoiceLabel(candidate.exam[key]?.[field]) !== scoreChoiceLabel(scores.exam[key][field])) return null;
     candidate.exam[key] = { ...candidate.exam[key], [field]: scores.exam[key][field] };
   }
   if (scores.exam.foreign) {

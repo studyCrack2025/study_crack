@@ -4,8 +4,8 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { classifyChanges, gitChangedFiles, resolveVerificationScope, webCssFiles } from '../verification-scope.mjs';
-import { e2eSuiteSelection, webCssSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
+import { classifyChanges, classifyPreflightChanges, gitChangedFiles, resolveVerificationScope, webCssFiles } from '../verification-scope.mjs';
+import { browserJobs, e2eSuiteSelection, webCssSpecs } from '../../studycrack-mobile-app/scripts/e2e-suite-policy.mjs';
 
 const repository = 'example/site', baseline = 'a'.repeat(40), head = 'b'.repeat(40);
 const run = { repository: { full_name: repository }, head_repository: { full_name: repository }, head_branch: 'dev',
@@ -29,6 +29,28 @@ test('compare with the last deployed commit, including changes left by failed de
   } }));
   assert.equal(result.suite, 'all');
   assert.equal((await resolveVerificationScope(input, deps())).suite, 'web-css');
+});
+
+test('pre-PR browser coverage follows changed screens and uses both engines; shared changes stay full', async () => {
+  const admin = 'studycrack-mobile-app/e2e/admin-consulting-intake.spec.mjs';
+  const calculator = 'studycrack-mobile-app/src/features/jungsi-calculator/CalculatorWorkspace.jsx';
+  assert.equal(classifyPreflightChanges([admin, 'admin_index.html', 'js/admin/consulting-intake.js']), 'preflight-admin');
+  assert.equal(classifyPreflightChanges([calculator]), 'preflight-calculator');
+  const mixed = classifyPreflightChanges([admin, calculator]);
+  assert.equal(mixed, 'preflight-admin-calculator');
+  assert.deepEqual(browserJobs(mixed).map(job => [job.project, job.shard]), [
+    ['mobile-chromium', '1/2'], ['mobile-chromium', '2/2'], ['mobile-webkit', '1/2'], ['mobile-webkit', '2/2']
+  ]);
+  assert.deepEqual(browserJobs('preflight-admin').map(job => job.shard), ['1/1', '1/1']);
+  assert.ok(e2eSuiteSelection(mixed).testMatch.includes('**/admin-*.spec.mjs'));
+  assert.ok(e2eSuiteSelection(mixed).testMatch.includes('**/*calculator*.spec.mjs'));
+  assert.ok(e2eSuiteSelection(mixed).testMatch.includes('**/public-artifact.spec.mjs'));
+  assert.equal(classifyPreflightChanges([admin, 'js/shared/api.js']), 'all');
+  assert.equal(classifyPreflightChanges([]), 'all');
+  const changes = deps({ changedFiles: async () => [admin, calculator] });
+  assert.equal((await resolveVerificationScope(input, changes)).suite, 'all');
+  assert.equal((await resolveVerificationScope({ ...input, preflight: true }, changes)).suite, mixed);
+  assert.equal((await resolveVerificationScope({ ...input, preflight: true }, deps({ changedFiles: async () => { throw Error('No ancestor'); } }))).suite, 'all');
 });
 
 test('production and untrusted, unavailable or non-ancestor baselines never reduce coverage', async () => {

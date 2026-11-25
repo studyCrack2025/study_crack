@@ -21,6 +21,8 @@ async function prepare(page, options = {}) {
     state.detail = { scope: 'calculator', sourceResponseId, stage: 'DEV', campaignReady: true, contact, deletion: { available: options.deletionAvailable !== false }, reviewNotices: [],
         application: { applicationId, productType: 'calculator', applicationState: 'PAYMENT_REVIEW', paymentReviewStatus: 'pending', revision: 0, expectedAmount: 25000 },
         calculator: { state: 'pending_payment', phase: 'intake', stateLabel: '입금 확인 대기', nextAction: '입금 확인·승인', expiresAt: '2027-01-07T14:59:59.999Z', accountLinked: false, canApprove: true, canReviewInput: true, canReviewPayment: true, canReissue: false } };
+    if (options.readOnly) Object.assign(state.detail, { readOnly: true,
+        contact: { studentName: '가* 학생', phone: '010-****-0000', email: '', payerName: '' } });
     await page.route(/\/admin(?:_index\.html)?(?:\?.*)?$/, route => route.fulfill({ contentType: 'text/html', body: document }));
     await page.route('https://www.googletagmanager.com/**', route => route.abort());
     await page.route('https://fonts.googleapis.com/**', route => route.abort());
@@ -30,7 +32,7 @@ async function prepare(page, options = {}) {
         if (type === 'admin_get_notifications') return route.fulfill({ json: { notifications: [], sentNotices: [] } });
         if (['admin_list_v2_material_review', 'admin_list_written_unread'].includes(type)) data = { items: [], hasMore: false, nextCursor: null };
         else if (type === 'admin_list_calculator_applications') data = { scope: state.scope, productType: 'calculator',
-            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
+            items: state.deleted || state.emptyFirst && !input.cursor || !['all', state.detail.calculator.phase].includes(input.phase) ? [] : [{ ...reference, productType: 'calculator', studentNameMask: '가* 학생', phoneMask: '010-****-0000', readOnly: state.crossEnvironment === true || state.detail.readOnly === true, managementAvailable: state.crossEnvironment === true, phase: state.detail.calculator.phase, stateLabel: state.detail.calculator.stateLabel, nextAction: state.detail.calculator.nextAction, accessEndsAt: state.detail.calculator.expiresAt }],
             nextCursor: state.emptyFirst && !input.cursor ? 'synthetic_cursor' : null, issueRows: state.issueRows || [], unavailableCount: state.issueRows?.length || 0 };
         else if (type === 'admin_get_calculator_application') {
             if (state.defer) await new Promise(resolve => { state.release = resolve; });
@@ -48,7 +50,9 @@ async function prepare(page, options = {}) {
             state.deleted = true;
             data = { applicationId, accepted: true, backgroundCleanup: true, complete: false, ...state.deleteResult };
         }
-        else if (type === 'admin_preview_calculator_review_notice') data = { applicationId, revision: state.detail.application.revision, willQueue: true, recipient: '010-****-0000', message: '[스터디크랙] 합격 계산기 신청을 보류했습니다.', previewToken: 'synthetic_preview_token' };
+        else if (type === 'admin_preview_calculator_review_notice') data = { applicationId, revision: state.detail.application.revision, willQueue: true,
+            channel: input.decision === 'hold' && input.reasonCode === 'PAYMENT_NOT_FOUND' ? 'kakao' : 'sms',
+            recipient: '010-****-0000', message: '[스터디크랙] 합격 계산기 신청을 보류했습니다.', previewToken: 'synthetic_preview_token' };
         else if (type === 'admin_verify_calculator_payment') {
             if (state.failure) return route.fulfill({ status: 500, json: { success: false } });
             Object.assign(state.detail.application, { revision: 2, applicationState: 'INVITED', paymentReviewStatus: 'verified' });
@@ -57,7 +61,11 @@ async function prepare(page, options = {}) {
             data = { applicationId };
         } else if (type === 'admin_review_calculator_input') { state.detail.application.revision++; Object.assign(state.detail.contact, input.input); data = { applicationId }; }
         else if (type === 'admin_hold_calculator_payment' || type === 'admin_reject_calculator_application') {
-            state.detail.application.revision++; state.detail.reviewNotices = [{ decision: type.includes('hold') ? 'hold' : 'reject', status: 'pending', createdAt: '2026-11-20T00:00:00.000Z' }]; data = { applicationId };
+            const decision = type.includes('hold') ? 'hold' : 'reject';
+            const channel = decision === 'hold' && input.reasonCode === 'PAYMENT_NOT_FOUND' ? 'kakao' : 'sms';
+            state.detail.application.revision++;
+            state.detail.reviewNotices = [{ decision, channel, status: 'pending', createdAt: '2026-11-20T00:00:00.000Z' }];
+            data = { applicationId, notificationQueued: true };
         } else if (type === 'admin_reissue_calculator_invite') { state.detail.application.revision++; data = { applicationId }; }
         else throw new Error('Unexpected synthetic request: ' + type);
         await route.fulfill({ json: { success: true, data } });
@@ -75,6 +83,34 @@ async function fillPayment(page) {
     await page.locator('#section-calculator').getByLabel('입금 시각 (기기 현지 시각)', { exact: true }).fill('2026-11-19T22:00');
     await page.locator('#section-calculator').getByLabel('입금자명을 직접 대조했습니다', { exact: true }).check();
 }
+
+test('다른 환경의 계산기 신청은 목록과 마스킹 상세에서 조회할 수 있다', async ({ page }) => {
+    const state = await prepare(page, { readOnly: true });
+    await expect(page.locator('#calculatorAdminListBody')).toContainText('조회 전용');
+    await openDetail(page);
+    await expect(page.locator('#calculatorAdminFacts')).toContainText('010-****-0000');
+    await expect(page.locator('#calculatorAdminDetailStatus')).toContainText('조회만 할 수 있습니다');
+    for (const id of ['calculatorAdminPayment', 'calculatorAdminReview', 'calculatorAdminDeleteSection', 'calculatorAdminSavedSection']) {
+        await expect(page.locator('#' + id)).toBeHidden();
+    }
+    expect(state.calls.some(call => call.type === 'admin_get_calculator_input' || call.type === 'admin_verify_calculator_payment')).toBe(false);
+});
+test('자동 연결되는 다른 환경의 계산기 신청도 상세에서 승인할 수 있다', async ({ page }) => {
+    const state = await prepare(page, { crossEnvironment: true });
+    state.detail.stage = 'PROD';
+    await expect(page.locator('#calculatorAdminListStatus')).toHaveAttribute('data-state', 'success');
+    await expect(page.locator('#calculatorAdminListBody')).not.toContainText('조회 전용');
+    await openDetail(page);
+    await expect(page.locator('#calculatorAdminDetailStatus')).not.toContainText('조회만 할 수 있습니다');
+    await expect(page.locator('#calculatorAdminPayment')).toBeVisible();
+    await expect(page.locator('#calculatorAdminDeleteSection')).toBeVisible();
+    await fillPayment(page);
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('#calculatorAdminApprove').click();
+    await expect(page.locator('#calculatorAdminState')).toHaveText('이용 인증 대기');
+    expect(state.calls.filter(call => call.type === 'admin_verify_calculator_payment')).toHaveLength(1);
+    expect(state.calls.every(call => !Object.hasOwn(call.data || {}, 'stage') && !Object.hasOwn(call.data || {}, 'targetStage'))).toBe(true);
+});
 async function openDeletion(page) {
     await page.getByRole('button', { name: '계산기 신청 삭제', exact: true }).click();
     await expect(page.locator('#calculatorAdminDeleteStatus')).toContainText('확인 문구를 입력');
@@ -225,19 +261,25 @@ test('계산기 연락처 네 항목만 수정하고 입금 승인은 따로 수
     expect(call.data.input.studentName).toBe('수정 학생');
     expect(state.calls.some(x => x.type === 'admin_verify_calculator_payment')).toBe(false);
 });
-test('보류·거절은 안내 미리보기와 최종 확인을 거치고 안내 이력을 표시한다', async ({ page }) => {
+test('미입금 보류는 알림톡 미리보기와 최종 확인을 거치고 안내 이력을 표시한다', async ({ page }) => {
     const state = await prepare(page); await openDetail(page);
     await page.getByText('보류·거절 처리', { exact: true }).click();
-    await page.locator('#calculatorAdminReason').fill('계좌 내역 확인 필요');
+    await page.locator('#calculatorAdminDecision').selectOption('hold');
     const dismissed = page.waitForEvent('dialog').then(dialog => dialog.dismiss());
     await page.getByRole('button', { name: '계산기 처리 안내 확인' }).click(); await dismissed;
     await expect(page.getByRole('button', { name: '계산기 처리 안내 확인' })).toBeEnabled();
     expect(state.calls.filter(x => x.type === 'admin_hold_calculator_payment')).toHaveLength(0);
-    const accepted = page.waitForEvent('dialog').then(dialog => { expect(dialog.message()).toContain('합격 계산기'); return dialog.accept(); });
+    const accepted = page.waitForEvent('dialog').then(dialog => {
+        expect(dialog.message()).toContain('합격 계산기');
+        expect(dialog.message()).toContain('알림톡 수신처 · 010-****-0000');
+        return dialog.accept();
+    });
     await page.getByRole('button', { name: '계산기 처리 안내 확인' }).click(); await accepted;
-    await expect(page.locator('#calculatorAdminDetailStatus')).toContainText('계산기 신청을 처리');
-    const call = state.calls.find(x => x.type === 'admin_hold_calculator_payment'); expect(call.data.previewToken).toBe('synthetic_preview_token');
-    await expect(page.locator('#calculatorAdminFacts')).toContainText('보류 · 발송 대기');
+    await expect(page.locator('#calculatorAdminDetailStatus')).toContainText('알림톡 안내를 예약했습니다');
+    const calls = state.calls.filter(x => x.type === 'admin_hold_calculator_payment');
+    expect(calls).toHaveLength(1);
+    expect(calls[0].data).toMatchObject({ reasonCode: 'PAYMENT_NOT_FOUND', reasonText: '', previewToken: 'synthetic_preview_token' });
+    await expect(page.locator('#calculatorAdminFacts')).toContainText('보류 · 발송 대기 · 알림톡');
 });
 test('빈 첫 페이지에서도 계속 조회하고 필터·새로고침·뒤로가기를 복원한다', async ({ page }) => {
     const state = await prepare(page, { emptyFirst: true });

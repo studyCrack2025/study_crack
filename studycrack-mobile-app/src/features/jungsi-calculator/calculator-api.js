@@ -1,36 +1,68 @@
 import { apiFailure, apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { safeCalculatorReference } from './calculator-reference.js';
 import { calculatorComparisonScores } from './calculator-execution.js';
+import { admissionUnitId, calculatorDigest as digest, calculatorReasonCodes } from './calculator-validation.js';
 
 const statuses = new Set(['available', 'unavailable', 'choice_required', 'ineligible']);
 const text = value => typeof value === 'string' && value.length > 0 && value.length <= 200;
-const unit = value => value && /^UNIT_[A-Z0-9][A-Z0-9_-]{2,71}$/.test(value.admissionUnitId)
+const unit = value => value && admissionUnitId(value.admissionUnitId)
   && ['campusName', 'unitName', 'trackName'].every(key => text(value[key])) && ['ga', 'na', 'da'].includes(value.admissionGroup);
-const digest = value => /^sha256:[a-f0-9]{64}$/.test(value || '');
 const riskBands = new Set(['stable', 'appropriate', 'neutral', 'challenge', 'risky']);
 const possibilityUnavailable = code => ({ status: 'unavailable', index: null, riskBand: null, reasonCodes: [code] });
+const validCutoffs = cutoffs => Number.isFinite(cutoffs?.pass) && cutoffs.pass >= 0
+  && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 >= cutoffs.pass;
+const boundCutoff = (value, release, admissionUnitId) => release && value.dataReleaseId === release.dataReleaseId
+  && value.admissionUnitId === admissionUnitId && /^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '')
+  && digest(value.publicationDigest) && digest(value.referenceDigest)
+  && Number.isInteger(value.sourceYear) && value.sourceYear >= 2000 && value.sourceYear <= 2027 && value.targetYear === 2027;
 
 function safePossibility(value, row, body) {
   if (value === undefined) return possibilityUnavailable('CUT_REFERENCE_BACKEND_UPDATE_REQUIRED');
   const invalid = () => possibilityUnavailable('CUT_REFERENCE_RESPONSE_INVALID');
   if (!value || value.contractVersion !== 'cut-reference-public-v1' || value.policyVersion !== 'cut-reference-possibility-1.0.0'
     || value.basis !== 'cut_reference_heuristic' || value.probability !== null || value.empiricallyCalibrated !== false
-    || !Array.isArray(value.reasonCodes) || value.reasonCodes.length > 12 || value.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))) return invalid();
+    || !calculatorReasonCodes(value.reasonCodes)) return invalid();
   if (value.status === 'unavailable') return value.index === null && value.riskBand === null && value.validationState === 'not_available'
     && value.reasonCodes.length && ['dataReleaseId', 'admissionUnitId', 'publicationId', 'publicationDigest', 'referenceDigest', 'sourceYear', 'targetYear', 'validatedAt'].every(key => value[key] === null)
     ? possibilityUnavailable(value.reasonCodes[0]) : invalid();
-  if (value.status !== 'available' || row.status !== 'available' || body.basis !== 'official' || !body.release
-    || value.dataReleaseId !== body.release.dataReleaseId || value.admissionUnitId !== row.selected?.admissionUnitId
-    || value.validationState !== 'passed' || value.reasonCodes.length || !riskBands.has(value.riskBand)
-    || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99
-    || !/^CUT_RELEASE_[A-Z0-9][A-Z0-9_-]{2,95}$/.test(value.publicationId || '') || !digest(value.publicationDigest) || !digest(value.referenceDigest)
-    || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear > 2027 || value.targetYear !== 2027
+  if (row.status !== 'available' || body.basis !== 'official'
+    || !boundCutoff(value, body.release, row.selected?.admissionUnitId)
+    || value.validationState !== 'passed'
     || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
   const cutoffs = value.cutoffs;
-  const validCutoffs = Number.isFinite(cutoffs?.pass) && cutoffs.pass >= 0 && Number.isFinite(cutoffs.registered70) && cutoffs.registered70 > cutoffs.pass;
-  return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
-    ...(validCutoffs ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
+  const referenceOnly = value.status === 'reference_only';
+  if (referenceOnly) {
+    if (value.index !== null || value.riskBand !== null || value.reasonCodes.length !== 1
+      || value.reasonCodes[0] !== 'CUT_ANCHOR_SPREAD_UNRESOLVED' || !validCutoffs(cutoffs)) return invalid();
+  } else if (value.status !== 'available' || value.reasonCodes.length || !riskBands.has(value.riskBand)
+    || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99) return invalid();
+  return { status: value.status, index: referenceOnly ? null : { points: value.index.points }, riskBand: value.riskBand, reasonCodes: value.reasonCodes,
+    ...(referenceOnly || validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
+}
+
+function safePreviewCutoff(value, row, body, target, comparisonScores) {
+  if (!value || !target.selection || comparisonScores.basis !== 'official'
+    || !Number.isFinite(value.convertedScore) || value.convertedScore < 0 || !validCutoffs(value.cutoffs)
+    || value.scoreScope !== undefined && value.scoreScope !== 'csat_component') return null;
+  const modeled = value.model === '2027-cohort-cut-estimate-v1';
+  if (modeled ? body.execution?.mode !== 'development_preview' || !digest(value.modelDigest)
+    || value.calculatorCatalogDigest !== target.selection.catalogDigest || value.selectionKey !== target.selection.key
+    || value.admissionUnitId !== target.admissionUnitId || value.targetYear !== 2027
+    || !Number.isInteger(value.sourceYear) || value.sourceYear < 2000 || value.sourceYear >= 2027
+    || typeof value.peerEstimate !== 'boolean' || typeof value.projectedInputs !== 'boolean'
+    || !['available', 'unavailable'].includes(row.status) || row.reasonCodes.includes('UNIT_SELECTION_CHANGED')
+    : body.basis !== 'raw' || row.status !== 'unavailable' || !row.reasonCodes.includes('RAW_SCOREBOARD_NOT_RELEASED')
+      || !boundCutoff(value, body.release, target.admissionUnitId)) return null;
+  const tied = value.cutoffs.pass === value.cutoffs.registered70;
+  const status = value.status ?? (tied ? 'reference_only' : 'available');
+  if (status === 'reference_only' ? value.riskBand != null
+    : status !== 'available' || tied || (modeled || value.riskBand !== undefined) && !riskBands.has(value.riskBand)) return null;
+  return { status, convertedScore: value.convertedScore,
+    cutoffs: { pass: value.cutoffs.pass, registered70: value.cutoffs.registered70 }, sourceYear: value.sourceYear, targetYear: value.targetYear,
+    ...(modeled ? { modeled, peerEstimate: value.peerEstimate, projectedInputs: value.projectedInputs, inputBasis: body.basis } : {}),
+    ...(value.riskBand !== undefined ? { riskBand: value.riskBand } : {}),
+    ...(value.scoreScope ? { scoreScope: value.scoreScope } : {}) };
 }
 
 function validResponse(body, scores, targets) {
@@ -43,7 +75,7 @@ function validResponse(body, scores, targets) {
   return body.results.every((row, index) => {
     const target = targets[index];
     if (!row || row.university !== target.university || row.major !== target.major || target.selection && row.selectionKey !== target.selection.key || !statuses.has(row.status)
-      || !Array.isArray(row.reasonCodes) || row.reasonCodes.length > 12 || row.reasonCodes.some(code => !/^[A-Z][A-Z0-9_]{1,99}$/.test(code))
+      || !calculatorReasonCodes(row.reasonCodes)
       || !Array.isArray(row.choices) || row.choices.length > 12 || row.choices.some(value => !unit(value))
       || new Set(row.choices.map(value => value.admissionUnitId)).size !== row.choices.length
       || row.selected !== null && (!unit(row.selected) || !row.choices.some(value => ['admissionUnitId', 'campusName', 'unitName', 'trackName', 'admissionGroup'].every(key => value[key] === row.selected[key])))) return false;
@@ -69,7 +101,11 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
   const comparisonScores = calculatorComparisonScores(response.data, scores);
   if (!comparisonScores) return apiInvalidResponse(response, '계산에 사용한 성적 기준을 확인하지 못했습니다. 다시 조회해주세요.');
   return { ...response, data: { ...response.data, results: response.data.results.map((row, index) => {
-    const safe = { ...row, possibility: safePossibility(row.possibility, row, response.data), referenceComparison: safeCalculatorReference(row.referenceComparison, targets[index], comparisonScores) }; delete safe.forecast; return safe;
+    const target = targets[index];
+    const { forecast, previewCutoff, ...rest } = row;
+    const preview = safePreviewCutoff(previewCutoff, row, response.data, target, comparisonScores);
+    return { ...rest, possibility: safePossibility(row.possibility, row, response.data),
+      referenceComparison: safeCalculatorReference(row.referenceComparison, target, comparisonScores), ...(preview ? { previewCutoff: preview } : {}) };
   }) } };
 }
 

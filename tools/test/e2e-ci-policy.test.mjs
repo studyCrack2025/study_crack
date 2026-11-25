@@ -72,11 +72,23 @@ test('parallel browser jobs preserve one final gate, scope, immutable bytes and 
     assert.match(job, /site-release\.mjs verify .*"\$GITHUB_SHA" "\$CANDIDATE_DIGEST"/);
     assert.doesNotMatch(job, /npm run build|site-release\.mjs build/);
   }
-  assert.match(verify, /Upload verified public artifact\n        if: github.event_name == 'push'/);
+  assert.ok(verify.includes("Upload verified public artifact\n        if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')"));
   assert.doesNotMatch(prepare + browser + verify, /configure-aws-credentials|id-token: write/);
   const config = await readFile(new URL('../../studycrack-mobile-app/playwright.config.mjs', import.meta.url), 'utf8');
   assert.match(config, /fullyParallel: Boolean\(process.env.CI\)/);
   assert.match(config, /retries: 0/);
+});
+
+test('pre-PR pushes use release verification without a deployment credential path', async () => {
+  const workflow = await readFile(new URL('../../.github/workflows/deploy.yml', import.meta.url), 'utf8');
+  const deploy = workflow.slice(workflow.indexOf('  deploy:'));
+  assert.match(workflow, /push:\n    branches:\n      - main\n      - dev\n      - 'preflight\/\*\*'\n      - dev-jungsi-update/);
+  assert.ok(workflow.includes("VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}"));
+  assert.ok(workflow.includes("PLAYWRIGHT_WEBKIT: ${{ matrix.project == 'mobile-webkit' && '1' || '0' }}"));
+  assert.ok(workflow.includes('--project="$PLAYWRIGHT_PROJECT"'));
+  const condition = deploy.slice(0, deploy.indexOf('    runs-on:'));
+  assert.ok(condition.includes("(github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&"));
+  assert.ok(deploy.indexOf('Verify downloaded bytes before obtaining deployment credentials') < deploy.indexOf('Configure AWS credentials'));
 });
 
 test('timing report includes nested cases, retries and failures instead of hiding them', () => {

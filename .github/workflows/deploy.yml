@@ -7,6 +7,8 @@ on:
     branches:
       - main
       - dev
+      - 'preflight/**'
+      - dev-jungsi-update
   workflow_dispatch:
     inputs:
       rollback_run_id:
@@ -34,7 +36,7 @@ env:
 
 concurrency:
   group: static-release-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}
 
 jobs:
   prepare:
@@ -49,7 +51,7 @@ jobs:
       artifact-name: public-site-candidate-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
       manifest-digest: ${{ steps.candidate.outputs.manifest-digest }}
     env:
-      RELEASE_BRANCH: ${{ github.base_ref || github.ref_name }}
+      RELEASE_BRANCH: ${{ github.base_ref || ((startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') && 'dev') || github.ref_name }}
     defaults:
       run:
         working-directory: studycrack-mobile-app
@@ -69,6 +71,7 @@ jobs:
         id: scope
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          VERIFICATION_PREFLIGHT: ${{ github.event_name == 'push' && (startsWith(github.ref, 'refs/heads/preflight/') || github.ref == 'refs/heads/dev-jungsi-update') }}
         run: node ../tools/verification-scope.mjs
       - name: Install dependencies
         run: npm ci
@@ -150,8 +153,10 @@ jobs:
         env:
           STUDYCRACK_PREVIEW_ROOT: ${{ github.workspace }}/release-artifact/site
           PLAYWRIGHT_SUITE: ${{ matrix.suite }}
+          PLAYWRIGHT_PROJECT: ${{ matrix.project || 'mobile-chromium' }}
+          PLAYWRIGHT_WEBKIT: ${{ matrix.project == 'mobile-webkit' && '1' || '0' }}
           SHARD: ${{ matrix.shard }}
-        run: npm run test:e2e -- --shard="$SHARD" --workers=1 --retries=0
+        run: npm run test:e2e -- --shard="$SHARD" --workers=1 --retries=0 --project="$PLAYWRIGHT_PROJECT"
       - name: Verify candidate bytes remained unchanged during browser tests
         if: ${{ !cancelled() }}
         env:
@@ -215,7 +220,7 @@ jobs:
             echo 'Retention: 14 days; restore only to the same branch.'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload verified public artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.release-info.outputs.artifact-name }}
@@ -278,6 +283,7 @@ jobs:
     needs: [verify, rollback]
     if: >-
       ${{ always() && !cancelled() &&
+          (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&
           ((github.event_name == 'push' && needs.verify.result == 'success') ||
            (github.event_name == 'workflow_dispatch' && needs.rollback.result == 'success')) }}
     runs-on: ubuntu-26.04

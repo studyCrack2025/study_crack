@@ -40,6 +40,15 @@ async function next(dialog) {
   await dialog.getByRole('button', { name: '다음', exact: true }).click();
 }
 
+async function advanceFromFirstStep(dialog, targetStep) {
+  const progress = dialog.getByRole('progressbar', { name: '성적 입력 단계' });
+  await expect(progress).toHaveAttribute('aria-valuenow', '1');
+  for (let step = 2; step <= targetStep; step++) {
+    await next(dialog);
+    await expect(progress).toHaveAttribute('aria-valuenow', String(step));
+  }
+}
+
 for (const width of [320, 360, 390, 430]) {
   for (const my of [false, true]) {
     test(`성적 입력은 큰 필드와 한 단계 진행, 키보드·초점 복귀를 유지한다 (${width}px, ${my ? 'MY' : '일반'})`, async ({ page }, info) => {
@@ -124,7 +133,7 @@ test('10월 전체 성적 저장 실패는 초안과 시험을 유지하고 재�
   const api = await setup(page, { failOnceTypes: ['update_quan'],
     userOverrides: { quantitative: { sep: savedExam, oct: savedExam } } });
   const { dialog, trigger } = await openScore(page);
-  for (let step = 1; step < 6; step++) await next(dialog);
+  await advanceFromFirstStep(dialog, 6);
   await expect(dialog.locator('[data-field="v2e-inq2-subject"]')).toHaveValue('사회·문화');
   const save = dialog.getByRole('button', { name: '전체 성적 저장', exact: true });
   await save.click();
@@ -158,7 +167,7 @@ test('9월 성적에서 긴 기존 탐구 과목을 읽고 큰 글자에서도 �
     .score-step-panel .score-direct-input,.score-grade-input{font-size:40px;}
     .score-field-line small,.score-stepper-progress b,.score-onepage-head .sub,.score-onepage-close{font-size:28px;}
   ` });
-  for (let step = 1; step < 5; step++) await next(dialog);
+  await advanceFromFirstStep(dialog, 5);
   const inquiry = dialog.locator('[data-field="v2e-inq1-subject"]');
   expect(await inquiry.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(32);
   await expect(inquiry).toHaveValue(longSubject);
