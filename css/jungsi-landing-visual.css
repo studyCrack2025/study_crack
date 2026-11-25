@@ -526,3 +526,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.*/
 .admission-reviews-grid .review-badge { color: var(--accent, #244c8c); font-weight: 700; }
 .admission-reviews-grid .review-text { margin: 12px 0; line-height: 1.65; overflow-wrap: anywhere; }
 .admission-reviews-grid .review-author { color: var(--muted); font-size: 14px; }
+
+.admission-reviews-popup { box-sizing: border-box; width: min(760px, calc(100% - 24px)); max-height: 85dvh; padding: clamp(16px, 4vw, 30px); border: 1px solid var(--line); border-radius: 20px; color: inherit; background: #fff; }
+.admission-reviews-popup::backdrop { background: rgba(15, 23, 42, .64); }
+.admission-reviews-popup header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.admission-reviews-popup h2 { margin: 0; font-size: clamp(21px, 5vw, 32px); }
+.admission-reviews-popup button { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: inherit; white-space: nowrap; cursor: pointer; }
+.admission-reviews-popup > p { margin: 10px 0 20px; }
