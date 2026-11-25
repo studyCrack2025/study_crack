@@ -496,7 +496,13 @@ test('5단계는 서버 분류의 색상 배지로 표시하고 숫자 지수나
 
 test('미검수·다른 단위·손상·구 확률 응답은 점수만 유지하고 판단 대기와 사유를 보여준다', async ({ page }) => {
   const control = await setup(page); await page.goto(path); await prepareConversion(page);
-  for (const [mode, message] of [['pending', '입결 기준선의 검수가 완료되지'], ['range', '자료 버전·척도를 확인'], ['invalid', '가능성 지수 결과를 확인하지'], ['mismatch', '가능성 지수 결과를 확인하지'], ['legacy', '가능성 지수 조회를 준비']]) {
+  for (const [mode, message] of [
+    ['pending', '입결 근거를 검수'],
+    ['range', '환산점수와 컷의 반영 기준을 확인'],
+    ['invalid', '결과를 확인하지 못했습니다. 다시 조회'],
+    ['mismatch', '결과를 확인하지 못했습니다. 다시 조회'],
+    ['legacy', '환산점수만 제공됩니다. 지원 단계 조회를 준비']
+  ]) {
     control.possibilityMode = mode; await page.getByRole('button', { name: '환산점수·가능성 조회', exact: true }).click(); await showCautions(page);
     await expect(page.locator('.jcalc-cautions').first()).toContainText(message); await expect(page.locator('.jcalc-score > strong')).toHaveText('743.12점');
     await expect(page.getByLabel('지원 단계: 판단 대기', { exact: true })).toBeVisible(); await expect(page.locator('.jcalc-result')).not.toContainText('/ 100');
