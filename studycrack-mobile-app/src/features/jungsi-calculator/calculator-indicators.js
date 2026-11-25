@@ -4,6 +4,10 @@ const teacherRule = '학생부 100% 전형입니다. 수능 최저는 국어·�
 const selectionNotices = new Map([
   ['CSAT_MINIMUM_MET', { label: '수능 최저 충족', note: teacherRule }],
   ['CSAT_MINIMUM_NOT_MET', { label: '수능 최저 미충족', note: teacherRule }],
+  ['CSAT_MINIMUM_GRADE_REQUIREMENT', { label: '수능 최저 미충족', note: '입력한 성적 기준입니다. 대학 모집요강에서 이 전형의 영역별 기준을 확인해주세요.' }],
+  ['SCIENCE_INQUIRY_REQUIRED', { label: '과탐 응시 요건 미충족', note: '과학탐구를 1과목 이상 응시해야 지원할 수 있습니다.' }],
+  ['MATH_SELECTION_NOT_ALLOWED', { label: '수학 응시 요건 미충족', note: '이 모집단위에 지원하려면 대학이 지정한 수학 선택과목에 응시해야 합니다.' }],
+  ['INQUIRY_TRACK_NOT_ALLOWED', { label: '탐구 응시 요건 미충족', note: '이 모집단위에 지원하려면 대학이 지정한 탐구 영역에 응시해야 합니다.' }],
   ['SELECTION_CARRYOVER_ONLY', { label: '수시 이월 때 선발', note: '수시 이월 인원이 발생하면 선발합니다. 대학의 최종 정시 모집인원을 확인해주세요.' }]
 ]);
 

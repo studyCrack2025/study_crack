@@ -98,7 +98,7 @@
     function renderReceipt(value) {
         if (!valid(value, true)) throw new Error();
         renderedReceipt = value; form.hidden = true; receipt.hidden = false; retry.hidden = true; recover.hidden = false; newSection.hidden = false; copyStatus.textContent = '';
-        receipt.querySelector('details').open = false;
+        receipt.querySelector('details').open = productType === 'consulting';
         document.getElementById('jungsiReceiptProduct').textContent = value.productName;
         document.getElementById('jungsiReceiptNumber').textContent = productType === 'calculator' ? '' : value.applicationId;
         document.getElementById('jungsiReceiptNumber').closest('details').hidden = productType === 'calculator';
@@ -111,15 +111,17 @@
         document.getElementById('jungsiReceiptPaymentInstruction').textContent = '아래 계좌로 ' + amountText(value) + '을 입금해주세요.';
         const expired = value.paymentDueAt && Date.parse(value.paymentDueAt) < Date.now();
         const accessExpired = productType === 'calculator' && Date.parse(value.accessEndsAt) <= Date.now();
-        const waiting = value.applicationState === 'PAYMENT_REVIEW' && !expired && !accessExpired;
+        const paymentReview = value.applicationState === 'PAYMENT_REVIEW';
+        const onHold = paymentReview && value.paymentOnHold === true;
+        const waiting = paymentReview && !onHold && !expired && !accessExpired;
         document.getElementById('jungsiReceiptPayment').hidden = !waiting;
         const promo = document.getElementById('jungsiReceiptPromo');
         promo.hidden = productType !== 'consulting' || !waiting || !Number.isFinite(Date.parse(value.paymentDueAt));
         promo.textContent = promo.hidden ? '' : '얼리버드는 ' + timeText(value.paymentDueAt) + ' (한국시간) 또는 입금 완료 순 70명 중 먼저 마감됩니다.';
         const claimed = value.applicationState === 'CLAIMED';
-        const needsHelp = value.applicationState === 'REJECTED' || waiting === false && value.applicationState === 'PAYMENT_REVIEW' || accessExpired;
+        const needsHelp = value.applicationState === 'REJECTED' || paymentReview && !waiting || accessExpired;
         const badge = document.getElementById('jungsiReceiptState');
-        badge.textContent = accessExpired ? '이용 기간 종료' : value.applicationState === 'PAYMENT_REVIEW' ? expired ? '입금 기한 종료' : '입금 확인 대기' : value.applicationState === 'INVITED' ? '입금 확인 완료' : claimed ? '이용 인증 완료' : '운영팀 확인 필요';
+        badge.textContent = accessExpired ? '이용 기간 종료' : onHold ? '입금 확인 보류' : paymentReview ? expired ? '입금 기한 종료' : '입금 확인 대기' : value.applicationState === 'INVITED' ? '입금 확인 완료' : claimed ? '이용 인증 완료' : '운영팀 확인 필요';
         badge.dataset.tone = needsHelp ? 'attention' : waiting ? 'pending' : 'complete';
         document.getElementById('jungsiReceiptAmountLabel').textContent = waiting ? '입금할 금액' : '신청 금액';
         document.getElementById('jungsiEnrollmentEyebrow').textContent = '신청 접수 내역';
@@ -135,7 +137,7 @@
         document.getElementById('jungsiReceiptAccountHint').textContent = productType === 'calculator' ? '입금 승인 후 받은 알림톡·문자 링크에서 학생 본인 계정으로 로그인하고 이메일의 10자리 코드로 인증해주세요.' : '학생 본인 계정으로 미리 가입하거나 로그인할 수 있습니다.';
         for (const id of ['jungsiReceiptSignup', 'jungsiReceiptLogin', 'jungsiReceiptAccountHint']) document.getElementById(id).hidden = claimed || needsHelp || productType === 'calculator';
         const states = { PAYMENT_REVIEW: '신청이 저장됐습니다. 입금 후 운영팀 확인을 기다려주세요.', INVITED: '입금이 확인됐습니다. 문자로 받은 링크와 이메일 인증코드로 이용 인증을 완료해주세요.', CLAIMED: '계정 연결이 완료됐습니다. 처음 인증한 학생 계정으로 이용해주세요.', REJECTED: '신청 처리 내역을 운영팀에 확인해주세요. 추가로 입금하지 마세요.' };
-        message(accessExpired ? '계산기 이용 기간이 종료됐습니다. 이용 내역은 운영팀에 문의해주세요.' : value.applicationState === 'PAYMENT_REVIEW' && expired ? productType === 'calculator' ? '계산기 결제 기한이 종료됐습니다. 추가로 입금하지 말고 운영팀에 문의해주세요.' : '얼리버드 입금 기한이 지났습니다. 이체 전에 운영팀에 신청 금액을 확인해주세요.' : states[value.applicationState]);
+        message(accessExpired ? '계산기 이용 기간이 종료됐습니다. 이용 내역은 운영팀에 문의해주세요.' : onHold ? '입금 확인을 보류했습니다. 추가 입금 전에 운영팀에 문의해주세요.' : paymentReview && expired ? productType === 'calculator' ? '계산기 결제 기한이 종료됐습니다. 추가로 입금하지 말고 운영팀에 문의해주세요.' : '얼리버드 입금 기한이 지났습니다. 이체 전에 운영팀에 신청 금액을 확인해주세요.' : states[value.applicationState]);
         document.getElementById('jungsiSavedApplication').hidden = false;
         dialog.scrollTop = 0;
     }
@@ -195,8 +197,8 @@
             renderReceipt(value);
         } catch (error) {
             if (controller !== own || !dialog.open) return;
-            if (error.status === 404) {
-                sessionStorage.removeItem(key); recover.hidden = true;
+            if (error.status === 404 && error.code === 'SITE_APPLICATION_NOT_FOUND') {
+                recover.hidden = true;
                 await loadOffer();
             } else message('저장 결과를 아직 확인하지 못했습니다. 중복 신청·추가 입금 없이 신청 상태를 다시 확인해주세요.', true);
         } finally { if (controller === own) lock(false); }
@@ -216,8 +218,12 @@
         event.preventDefault();
         if (busy || !offer || !form.reportValidity()) return;
         const values = Object.fromEntries(new FormData(form));
-        const bytes = crypto.getRandomValues(new Uint8Array(32));
-        const application = { version: 1, requestKey: 'web_' + crypto.randomUUID(), token: btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), productType, capturedAt: Date.now() };
+        let application = saved();
+        const isRetry = application?.productType === productType;
+        if (!isRetry) {
+            const bytes = crypto.getRandomValues(new Uint8Array(32));
+            application = { version: 1, requestKey: 'web_' + crypto.randomUUID(), token: btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), productType, capturedAt: Date.now() };
+        }
         try { sessionStorage.setItem(key, JSON.stringify(application)); } catch { message('신청을 이어가려면 이 브라우저의 저장 기능을 허용해주세요.', true); return; }
         const own = newRequest(); lock(true); message('신청 내용을 저장하고 있습니다.'); retry.hidden = true;
         try {
@@ -234,11 +240,13 @@
         } catch (error) {
             if (controller !== own || !dialog.open) return;
             if (error.code === 'CALCULATOR_SALES_CLOSED') {
-                sessionStorage.removeItem(key); offer = null; form.hidden = true; recover.hidden = true;
+                if (!isRetry) sessionStorage.removeItem(key);
+                offer = null; form.hidden = true; recover.hidden = !isRetry;
                 message('계산기 결제 기한이 종료됐습니다. 추가로 입금하지 말고 운영팀에 문의해주세요.', true);
             } else if (error.status >= 400 && error.status < 500 && ![408, 409, 429].includes(error.status)) {
-                sessionStorage.removeItem(key);
-                message('신청 정보를 확인해주세요. 저장되지 않았습니다.', true);
+                if (!isRetry) sessionStorage.removeItem(key);
+                recover.hidden = !isRetry;
+                message(isRetry ? '입력 정보를 확인하거나 저장된 신청 상태를 다시 확인해주세요.' : '신청 정보를 확인해주세요. 저장되지 않았습니다.', true);
             } else {
                 form.hidden = true; recover.hidden = false;
                 message(error.code === 'PRICE_CHANGED' ? '신청 금액이 변경됐습니다. 신청 상태 확인을 누른 뒤 금액을 다시 확인해주세요.' : '신청 결과를 확인하지 못했습니다. 중복 제출 없이 신청 상태 확인을 눌러주세요.', true);
