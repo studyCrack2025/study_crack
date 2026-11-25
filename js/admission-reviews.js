@@ -40,11 +40,13 @@
     window.renderAdmissionReviews = async function (container) {
         if (!container) return;
         try {
-            const response = await apiFetch(CONFIG.api.auth, {
+            const response = await fetch(CONFIG.api.auth, {
                 method: 'POST',
+                credentials: 'omit',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'get_user_reviews' }),
             });
-            const data = await response.json();
+            const data = response.ok ? await response.json() : null;
             const rows = typeof data?.body === 'string' ? JSON.parse(data.body) : data;
             const reviews = Array.isArray(rows) ? rows.filter(row => typeof row?.content === 'string' && row.content.trim()).map(row => ({
                 ...row,
