@@ -64,4 +64,7 @@
         notice.textContent = '지금은 후기를 불러올 수 없습니다.';
         container.replaceChildren(notice);
     };
+
+    const consultingReviews = document.getElementById('consultingReviews');
+    if (consultingReviews) window.renderAdmissionReviews(consultingReviews);
 })();

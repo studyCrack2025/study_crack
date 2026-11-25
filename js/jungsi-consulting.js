@@ -1,8 +1,6 @@
 (function() {
     'use strict';
 
-    window.renderAdmissionReviews(document.getElementById('consultingReviews'));
-
     // No student scores, contact details, or form contents are collected here.
     let selectedService = null;
     function track(name, entry) {
