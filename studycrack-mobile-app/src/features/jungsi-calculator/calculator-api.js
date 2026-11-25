@@ -30,17 +30,14 @@ function safePossibility(value, row, body) {
     || value.validationState !== 'passed'
     || typeof value.validatedAt !== 'string' || !Number.isFinite(Date.parse(value.validatedAt))) return invalid();
   const cutoffs = value.cutoffs;
-  if (value.status === 'reference_only') {
+  const referenceOnly = value.status === 'reference_only';
+  if (referenceOnly) {
     if (value.index !== null || value.riskBand !== null || value.reasonCodes.length !== 1
       || value.reasonCodes[0] !== 'CUT_ANCHOR_SPREAD_UNRESOLVED' || !validCutoffs(cutoffs)) return invalid();
-    return { status: 'reference_only', index: null, riskBand: null, reasonCodes: value.reasonCodes,
-      cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 }, sourceYear: value.sourceYear,
-      targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
-  }
-  if (value.status !== 'available' || value.reasonCodes.length || !riskBands.has(value.riskBand)
+  } else if (value.status !== 'available' || value.reasonCodes.length || !riskBands.has(value.riskBand)
     || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99) return invalid();
-  return { status: 'available', index: { points: value.index.points }, riskBand: value.riskBand, reasonCodes: [],
-    ...(validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
+  return { status: value.status, index: referenceOnly ? null : { points: value.index.points }, riskBand: value.riskBand, reasonCodes: value.reasonCodes,
+    ...(referenceOnly || validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
 }
 

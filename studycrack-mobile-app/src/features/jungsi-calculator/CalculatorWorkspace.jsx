@@ -108,6 +108,10 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
     if (result.ok) { openPlan(result.data.plans.find(plan => plan.planId === result.data.lastSavedPlanId) || null); setMessage('지원 조합을 삭제했습니다.'); }
   };
   if (data.status === 'restricted') return <section className="jcalc-panel" aria-label="저장 자료 관리"><h2>현재 이용 상태를 확인해주세요.</h2><CalculatorNote>이용 정보를 다시 확인한 뒤 저장 자료를 열 수 있습니다.</CalculatorNote><CalculatorButton disabled={store.busy} onClick={store.load}>저장 상태 다시 확인</CalculatorButton><CalculatorButton text disabled={store.busy} onClick={async () => { if (globalThis.confirm('이전에 저장한 성적과 지원 조합을 모두 삭제할까요?')) await store.mutate('student_delete_calculator_workspace', { confirmed: true }); }}>저장 자료 전체 삭제</CalculatorButton></section>;
+  const calculationStatus = <>
+    {targets.length > 0 && !calculationEnabled && <CalculatorNote>정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</CalculatorNote>}
+    {conversion.key === queryKey && conversion.status === 'loading' && <CalculatorNote role="status">지원 후보를 계산하고 있습니다…</CalculatorNote>}
+  </>;
   return <div className="jcalc-workspace" aria-busy={store.busy}>
     <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing && !showPortfolio ? 'step' : undefined}>02 지원 조합</li><li aria-current={showPortfolio ? 'step' : undefined}>03 포트폴리오</li></ol>
     {store.resource.error && <div className="jcalc-state" role="alert"><p>{store.resource.error}</p>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>최신 저장 상태 확인</CalculatorButton>}</div>}
@@ -129,8 +133,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
         {grouped && !portfolio && <CalculatorNote>{planDirty ? '변경사항을 저장하면 포트폴리오를 볼 수 있습니다.' : !targets.length ? '지원할 대학·학과를 선택해주세요.' : '현재 성적의 계산이 끝나면 포트폴리오를 볼 수 있습니다.'}</CalculatorNote>}
       </section>
       {grouped ? <section className="jcalc-group-area" aria-label="군별 지원 조합">
-        {targets.length > 0 && !calculationEnabled && <CalculatorNote>정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</CalculatorNote>}
-        {conversion.key === queryKey && conversion.status === 'loading' && <CalculatorNote role="status">지원 후보를 계산하고 있습니다…</CalculatorNote>}
+        {calculationStatus}
         {conversion.key === queryKey && conversion.status === 'error' && <div role="alert"><p className="jcalc-error">{conversion.error}</p><CalculatorButton disabled={locked} onClick={() => setQueryAttempt(value => value + 1)}>지원 후보 다시 계산</CalculatorButton></div>}
         <CalculatorPlanBoard targets={targets} archivedTargets={[...archived.values()]} locked={locked} current={currentResult} denyAccess={denyAccess}
           results={conversion.key === queryKey ? new Map(targets.map((target, index) => [planTargetKey(target), conversion.data?.results[index]])) : null}
@@ -140,8 +143,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, denyAccess, group
       <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorCatalog resource={catalog} candidates={targets} onRetry={() => setCatalogAttempt(value => value + 1)} onAdd={target => { if (targets.length < MAX_CANDIDATES) setTargets(previous => [...previous, target]); }} /></fieldset>
       <section className="jcalc-panel" aria-label="현재 지원 조합"><div className="jcalc-section-head"><h2>지원 후보 {targets.length} / {MAX_CANDIDATES}</h2>{targets.length > 0 && <CalculatorButton disabled={locked || !calculationEnabled || conversion.status === 'loading'} onClick={() => setQueryAttempt(value => value + 1)}>다시 계산</CalculatorButton>}</div>
         {!targets.length && <CalculatorNote>대학과 학과를 검색해 지원 후보를 담아주세요.</CalculatorNote>}
-        {targets.length > 0 && !calculationEnabled && <CalculatorNote>정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</CalculatorNote>}
-        {conversion.key === queryKey && conversion.status === 'loading' && <CalculatorNote role="status">지원 후보를 계산하고 있습니다…</CalculatorNote>}
+        {calculationStatus}
         {conversion.key === queryKey && conversion.status === 'error' && <p className="jcalc-error" role="alert">{conversion.error}</p>}
         <fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-candidates">{targets.map(target => <li key={candidateKey(target)}><strong>{target.university}</strong><span>{target.major}</span><CalculatorResult current={currentResult} result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(target))} selectedId={target.admissionUnitId} onSelect={id => setTargets(previous => previous.map(row => candidateKey(row) === candidateKey(target) ? { ...row, admissionUnitId: id } : row))} /><CalculatorButton text aria-label={`${target.university} ${target.major} 후보 삭제`} onClick={() => setTargets(previous => previous.filter(row => candidateKey(row) !== candidateKey(target)))}>후보 삭제</CalculatorButton></li>)}</ul></fieldset>
       </section>

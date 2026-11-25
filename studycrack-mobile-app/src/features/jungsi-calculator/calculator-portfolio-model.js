@@ -23,10 +23,12 @@ function representativeCard(group, label, target, result) {
   const notice = calculatorSelectionNotice(result);
   const hasReference = finite(reference?.convertedScore), publishedIndex = formal && result.possibility?.status === 'available';
 
-  const score = formal ? { label: '예상 환산점수', value: `${format(result.convertedScore)}점`,
-    maximum: finite(result.maximumScore) ? `기준 만점 ${format(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.` : '별도 기준 만점이 없는 점수입니다.' }
-    : preview ? { label: previewScoreLabel(preview), value: `${format(preview.convertedScore)}점`, maximum: null }
-    : hasReference ? { label: referenceScoreLabel(reference), value: `${format(reference.convertedScore)}점`, maximum: reference.legacyScore ? referenceCaution(reference) : null } : null;
+  const score = formal || preview || hasReference ? {
+    label: formal ? '예상 환산점수' : preview ? previewScoreLabel(preview) : referenceScoreLabel(reference),
+    value: `${format(formal ? result.convertedScore : preview ? preview.convertedScore : reference.convertedScore)}점`,
+    maximum: formal ? (finite(result.maximumScore) ? `기준 만점 ${format(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.` : '별도 기준 만점이 없는 점수입니다.')
+      : !preview && reference.legacyScore ? referenceCaution(reference) : null
+  } : null;
   const notes = [];
   if (notice) notes.push(notice.note);
   else if (result.reasonCodes?.includes('UNIT_SELECTION_CHANGED')) notes.push('모집단위 자료가 바뀌었습니다. 지원 조합에서 후보를 다시 선택해주세요.');
