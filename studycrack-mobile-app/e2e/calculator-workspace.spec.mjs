@@ -306,6 +306,34 @@ test('수시 이월과 학생부 전형의 실제 수능 최저 결과를 지원
   }
 });
 
+test('저장된 제외 전형은 재접속 후에도 계산 제외 사유를 표시한다', async ({ page }) => {
+  const target = groupedTargets[0];
+  const plan = { planId: 'PLAN_EXCLUDED_1', revision: 1, name: '기존 지원 조합', targets: [target],
+    representatives: { ga: target.selection.key, na: null, da: null }, updatedAt: at };
+  const record = { ...empty(), revision: 1, updatedAt: at, status: 'saved',
+    profile: { revision: 1, scores: raw, updatedAt: at }, plans: [plan], lastSavedPlanId: plan.planId, consentAccepted: true, canDelete: true };
+  const state = await setup(page, { record, grouped: true, referenceMissingGroups: ['ga'],
+    selectionNotices: { ga: 'SELECTION_SCORE_POLICY_UNCONFIRMED' } });
+  const candidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  const label = '지원 단계: 현재 계산 대상 제외';
+  const note = /대학의 환산 규정 확인이 남아 있습니다/;
+  await expect(candidate.getByLabel(label, { exact: true })).toBeVisible();
+  await expect(candidate).toContainText(note);
+  await expect(candidate).not.toContainText(/판단 대기|산출 보류|예상 합격 컷/);
+
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });
+  const card = portfolio.getByRole('article', { name: '가군 지원 후보', exact: true });
+  await expect(card.getByLabel(label, { exact: true })).toBeVisible();
+  await expect(card).toContainText(note);
+  await expect(card).not.toContainText(/판단 대기|산출 보류|예상 합격 컷/);
+
+  await page.reload();
+  await expect(candidate.getByLabel(label, { exact: true })).toBeVisible();
+  expect(state.record.plans[0].targets[0].selection.key).toBe(target.selection.key);
+  expect(state.calls.filter(call => call.type.startsWith('student_save_'))).toHaveLength(0);
+});
+
 test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로 포트폴리오를 열지 않는다', async ({ page }) => {
   const state = await setup(page, { grouped: true, referenceMissingGroups: ['na'] }); await saveScores(page);
   await addGroupTarget(page, '가군'); await addGroupTarget(page, '나군'); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();

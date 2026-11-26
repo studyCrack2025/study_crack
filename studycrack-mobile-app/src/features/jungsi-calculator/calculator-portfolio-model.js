@@ -39,7 +39,7 @@ function representativeCard(group, label, target, result) {
   if (preview) notes.push(previewScoreNote(preview));
   const lines = calculatorCutoffLines(reference, formal ? result.possibility : preview);
   if (formal && hasReference) lines.push({ label: '별도 산식 환산점수', value: `${format(reference.convertedScore)}점` });
-  return { group, label, status: score || notice ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score,
+  return { group, label, status: score || notice ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: result.selectionCampusName ?? target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score,
     indicator: { ...calculatorIndicator(result), points: null, caption: notice ? '전형 확인' : '지원 단계' },
     reference: score && !notice ? { label: '입결 기준', lines, note: reference?.historical70 ? HISTORICAL_CUTOFF_NOTE : null } : null, notes };
 }
