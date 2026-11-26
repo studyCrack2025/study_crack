@@ -149,6 +149,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     {targets.length > 0 && !calculationEnabled && <CalculatorNote>정식 공개 전입니다. 성적과 지원 조합은 저장할 수 있습니다.</CalculatorNote>}
     {!grouped && conversion.key === queryKey && conversion.status === 'loading' && <CalculatorNote role="status">지원 후보를 계산하고 있습니다…</CalculatorNote>}
   </>;
+  const savePlanButton = disabled => <CalculatorButton primary disabled={disabled || Boolean(nameEdit) || !planDirty || !targets.length && !baseline} onClick={() => savePlan()}>변경사항 저장</CalculatorButton>;
   return <div className="jcalc-workspace" aria-busy={store.busy}>
     <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing && !showPortfolio ? 'step' : undefined}>02 지원 조합</li><li aria-current={showPortfolio ? 'step' : undefined}>03 포트폴리오</li></ol>
     {store.resource.error && <div className="jcalc-state" role="alert"><p>{store.resource.error}</p>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>최신 저장 상태 확인</CalculatorButton>}</div>}
@@ -168,7 +169,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
         </form>}
         <fieldset className="jcalc-workspace-fields jcalc-plan-toolbar" disabled={locked}>
           <div className="jcalc-plan-selection"><label className="jcalc-field"><span>저장한 조합</span><select disabled={Boolean(nameEdit)} value={baseline?.planId || ''} onChange={event => { if (planDirty && !globalThis.confirm('저장하지 않은 변경을 취소하고 조합을 바꿀까요?')) return; openPlan(data.plans.find(plan => plan.planId === event.currentTarget.value) || null); }}><option value="">새 조합</option>{data.plans.map(plan => <option key={plan.planId} value={plan.planId}>{plan.name}</option>)}</select></label><CalculatorButton disabled={Boolean(nameEdit) || data.plans.length >= 10} onClick={() => { if (!planDirty || globalThis.confirm('저장하지 않은 변경을 취소하고 새 조합을 만들까요?')) openPlan(null); }}>＋ 새 조합</CalculatorButton></div>
-          <div className="jcalc-workspace-actions"><CalculatorButton primary disabled={Boolean(nameEdit) || !planDirty || !targets.length && !baseline} onClick={() => savePlan()}>변경사항 저장</CalculatorButton>{grouped && <CalculatorButton disabled={Boolean(nameEdit) || !portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</CalculatorButton>}
+          <div className="jcalc-workspace-actions"><div className={grouped ? 'jcalc-plan-save-desktop' : undefined}>{savePlanButton(false)}</div>{grouped && <CalculatorButton disabled={Boolean(nameEdit) || !portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</CalculatorButton>}
             <details className="jcalc-plan-options"><summary>조합 관리</summary><div className="jcalc-workspace-actions"><CalculatorButton disabled={Boolean(nameEdit) || !targets.length || data.plans.length >= 10} onClick={() => { setNameEdit({ mode: 'copy', value: name }); setMessage(''); }}>다른 조합으로 저장</CalculatorButton>{baseline && <CalculatorButton text disabled={Boolean(nameEdit)} onClick={deletePlan}>조합 삭제</CalculatorButton>}</div></details>
           </div>
         </fieldset>
@@ -181,6 +182,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
           recommendation={calculationEnabled && showRecommendations ? { scores: profile.scores, preferences, saveStrategy: saveRecommendationStrategy } : null}
           onAdd={target => setTargets(previous => setPlanTarget(previous, target))}
           onRemove={key => setTargets(previous => previous.filter(target => planTargetKey(target) !== key))} />
+        <div className="jcalc-plan-save-mobile">{savePlanButton(locked)}</div>
       </section> : <>
       <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorCatalog resource={catalog} candidates={targets} onRetry={() => setCatalogAttempt(value => value + 1)} onAdd={target => { if (targets.length < MAX_CANDIDATES) setTargets(previous => [...previous, target]); }} /></fieldset>
       <section className="jcalc-panel" aria-label="현재 지원 조합"><div className="jcalc-section-head"><h2>지원 후보 {targets.length} / {MAX_CANDIDATES}</h2>{targets.length > 0 && <CalculatorButton disabled={locked || !calculationEnabled || conversion.status === 'loading'} onClick={() => setQueryAttempt(value => value + 1)}>다시 계산</CalculatorButton>}</div>

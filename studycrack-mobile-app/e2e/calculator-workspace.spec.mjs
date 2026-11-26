@@ -167,7 +167,10 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await expect(picker).toBeHidden();
   await expect(page.getByRole('region', { name: '가군 지원 후보', exact: true })).toContainText('새서울대');
   expect(state.record.plans).toHaveLength(0);
-  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  const save = page.getByRole('button', { name: '변경사항 저장', exact: true });
+  const candidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  expect((await save.boundingBox()).y).toBeGreaterThan((await candidate.boundingBox()).y + (await candidate.boundingBox()).height);
+  await save.click();
   await expect(page.getByRole('status').filter({ hasText: '지원 조합을 저장했습니다.' })).toBeVisible();
   expect(state.record.plans[0].targets[0].selection.universityName).toBe('새서울대');
   await page.reload();

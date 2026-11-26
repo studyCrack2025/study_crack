@@ -35,6 +35,13 @@
 .jcalc-plan-options { min-width: 0; flex: 0 0 auto; }
 .jcalc-plan-options[open] { flex-basis: 100%; padding-bottom: 8px; }
 .jcalc-plan-options .jcalc-workspace-actions { margin-top: 10px; }
+@media (max-width: 899px) {
+  .jcalc-plan-save-desktop { display: none; }
+  .jcalc-plan-save-mobile > button { width: 100%; margin-top: 16px; }
+}
+@media (min-width: 900px) {
+  .jcalc-plan-save-mobile { display: none; }
+}
 @media (max-width: 359px) {
   .jcalc-profile-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
