@@ -28,14 +28,17 @@ export function validReplyEvidence(value) {
   const sources = rows => Array.isArray(rows) && rows.length > 0 && rows.length <= 12 && rows.every(id => docs.has(id));
   for (const unit of value.units) {
     const proof = unit.proof, lines = unit.referenceLines, index = unit.possibilityIndex;
+    const fromComparison = unit.admissionTrackName !== undefined;
+    if (fromComparison && (!name(unit.admissionTrackName) || !['admission_score', 'csat_component'].includes(unit.scoreScope)
+        || ![null, 1, 2, 3].includes(unit.preferenceRank) || ['projectedInputs', 'peerEstimate', 'scoreInputEstimated'].some(key => typeof unit[key] !== 'boolean'))) return false;
     if (!/^UNIT_[A-Z0-9_-]{3,72}$/.test(unit.admissionUnitId) || ![unit.universityName, unit.campusName, unit.admissionUnitName].every(name)
-        || !evidenceGroup(unit.admissionGroup) || unit.admissionYear !== 2027 || !number(unit.convertedScore) || !number(unit.maximumScore) || unit.maximumScore <= 0
+        || !evidenceGroup(unit.admissionGroup) || unit.admissionYear !== 2027 || !number(unit.convertedScore) || !(fromComparison && unit.maximumScore === null || number(unit.maximumScore) && unit.maximumScore > 0)
         || !proof || !/^FORMULA_[A-Z0-9_-]{3,100}$/.test(proof.formulaId) || !/^CANONICAL_[A-F0-9]{64}$/.test(proof.scaleId)
         || !/^sha256:[a-f0-9]{64}$/.test(proof.bindingDigest) || !sources(proof.scoreSourceIds)) return false;
     if (lines === null) { if (proof.cut !== null || index !== null || unit.riskBand !== 'unknown') return false; }
     else {
       const cut = proof.cut;
-      if (!lines || !number(lines.passLine) || !number(lines.registered70Line) || lines.passLine >= lines.registered70Line || lines.targetYear !== 2027
+      if (!lines || !number(lines.passLine) || !number(lines.registered70Line) || (fromComparison ? lines.passLine > lines.registered70Line : lines.passLine >= lines.registered70Line) || lines.targetYear !== 2027
           || !Number.isInteger(lines.sourceYear) || lines.sourceYear < 2000 || lines.sourceYear > 2027 || !cut || cut.scaleId !== proof.scaleId
           || !['admission_line_estimate', 'final_admission_minimum'].includes(cut.passStatistic)
           || !['registered_70pct', 'registered_70pct_estimate'].includes(cut.registered70Statistic) || !sources(cut.passSourceIds) || !sources(cut.registered70SourceIds)) return false;

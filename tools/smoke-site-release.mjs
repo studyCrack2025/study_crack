@@ -11,6 +11,8 @@ function contentTypeFor(file) {
   if (file.endsWith('.css')) return /^text\/css(?:;|$)/i;
   if (file.endsWith('.webmanifest')) return /^application\/manifest\+json(?:;|$)/i;
   if (file.endsWith('.json')) return /^application\/json(?:;|$)/i;
+  if (file.endsWith('.txt')) return /^text\/plain(?:;|$)/i;
+  if (file.endsWith('.xml')) return /^(?:application|text)\/xml(?:;|$)/i;
   if (file.endsWith('.webp')) return /^image\/webp(?:;|$)/i;
   if (file.endsWith('.png')) return /^image\/png(?:;|$)/i;
   return /^text\/html(?:;|$)/i;
@@ -22,7 +24,7 @@ export async function smokeSiteRelease({ origin, manifest, aliases, fetchImpl = 
   assert.ok(['https://dev.studycrack.co.kr', 'https://studycrack.co.kr'].includes(origin)
     || (base.protocol === 'http:' && base.hostname === '127.0.0.1'), 'Unapproved smoke origin');
   const entries = new Map(manifest.files.map((entry) => [entry.path, entry]));
-  const fixed = ['release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/client-diagnostics.js', 'js/config.js', 'js/shared/api.js', 'js/shared/account-recovery.js'];
+  const fixed = ['release.json', 'studycrack-mobile.webmanifest', 'robots.txt', 'sitemap.xml', 'js/release.js', 'js/client-diagnostics.js', 'js/config.js', 'js/shared/api.js', 'js/shared/account-recovery.js'];
   const samples = manifest.files.filter(({ path: file }) => file.endsWith('.html') || fixed.includes(file)
     || /^studycrack-mobile-app\/dist\/.+\.(?:js|css)$/.test(file) || file.startsWith('assets/pwa/'));
   const artwork = manifest.files.find(({ path: file }) => /^studycrack-mobile-app\/dist\/assets\/.+\.webp$/.test(file));

@@ -712,6 +712,7 @@ test('정식 보고서도 현행식·기존자료·70% 단독의 기준과 범�
             fact.referenceComparison={contractVersion:'reviewed-admission-reference-v1',recordId:id,bundleDigest:'sha256:'+'e'.repeat(64),status:prior?'prior_data_two_estimates':one?'historical70_only':'current_two_references',
                 school:fact.universityName,major:fact.admissionUnitName,convertedScore:250,passReference:one?null:240,registered70Reference:260,referenceIndex:one?null:50,referenceYear:prior?null:one?2026:2025,targetYear:2027,
                 probability:null,empiricallyCalibrated:false,personalEligibilityApproved:false,publicationReady:false,
+                ...(i===0?{offerEstimate:{policy:'consulting-offer-estimate-1.1.0',scope:'csat_component',low:69,percent:72,high:75}}:{}),
                 referenceBounds:prior||one?null:{kind:'cut_assumption_range',pass:{low:239,high:241},registered70:{low:259,high:261}},indexRange:prior||one?null:{kind:'cut_assumption_range',low:49,high:51}};
         });
         for(const plan of [ws.record.result.planA,ws.record.result.planB])plan.slots.forEach((s,i)=>{s.factId=ws.record.result.facts[i].admissionUnitId;});
@@ -719,10 +720,15 @@ test('정식 보고서도 현행식·기존자료·70% 단독의 기준과 범�
     });
     const cards=page.locator('#consultingReportFactsResult .consulting-report-fact-card');
     await expect(cards.first()).toContainText('현행식 참고');await expect(cards.first()).toContainText('2025학년도 보완자료');await expect(cards.first()).toContainText('239~241');await expect(cards.first()).toContainText('50 / 100');
+    await expect(cards.first()).toContainText('수능 기준 추정 합격 가능성');await expect(cards.first()).toContainText('약 72% (69~75%)');
     await expect(cards.nth(1)).toContainText('기존자료 참고');await expect(cards.nth(1)).toContainText('추정 생성연도 미확인');
+    await expect(cards.nth(1)).not.toContainText('수능 기준 추정 합격 가능성');
     await expect(cards.nth(2)).toContainText('70% 단독 참고');await expect(cards.nth(2).locator('dl > div').nth(3)).toContainText('미제공');
+    await expect(cards.nth(2)).not.toContainText('수능 기준 추정 합격 가능성');
     await expect(cards.first().locator('svg')).toHaveCount(0);await expect(cards.first()).toContainText('실제 합격 확률이 아닌 참고 지수');
     for(const width of [375,1440]){await page.setViewportSize({width,height:1000});await cards.first().scrollIntoViewIfNeeded();expect(await cards.first().evaluate(node=>node.scrollWidth<=node.clientWidth+1)).toBe(true);await page.screenshot({path:testInfo.outputPath(`formal-reviewed-${width}.png`)});}
     await page.evaluate(()=>{const ws=window.__reportSource.ws.reportFacts;ws.record.result.facts[0].referenceComparison.probability=.95;renderConsultingReportFacts(ws);});
     await expect(cards.first()).toContainText('수치를 표시하지 않습니다');await expect(cards.first()).not.toContainText('250');
+    await page.evaluate(()=>{const ws=window.__reportSource.ws.reportFacts;const r=ws.record.result.facts[0].referenceComparison;r.probability=null;r.offerEstimate.high=76;renderConsultingReportFacts(ws);});
+    await expect(cards.first()).toContainText('수치를 표시하지 않습니다');await expect(cards.first()).not.toContainText('약 72%');
 });

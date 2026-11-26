@@ -139,13 +139,14 @@ function sitemapLocations(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => match[1]);
 }
 
-const [sitemap, robots, login, signup, home, notFound, workflow, sharedApi, successPage, homeScript, surveyScript] = await Promise.all([
+const [sitemap, robots, login, signup, home, notFound, calculator, workflow, sharedApi, successPage, homeScript, surveyScript] = await Promise.all([
   read('sitemap.xml'),
   read('robots.txt'),
   read('login.html'),
   read('signup.html'),
   read('index.html'),
   read('404.html'),
+  read('jungsi-calculator-2027.html'),
   read('.github/workflows/deploy.yml'),
   read('js/shared/api.js'),
   read('success.html'),
@@ -159,10 +160,20 @@ assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, 'sitemap.xml contain
 assert.match(robots, /^Sitemap:\s*https:\/\/studycrack\.co\.kr\/sitemap\.xml\s*$/m, 'robots.txt must declare the production sitemap');
 assert.doesNotMatch(robots, /^Disallow:\s*\/(?:login|signup)\/?\s*$/mi, 'login and signup must remain crawlable for noindex');
 
-for (const [fileName, html] of [['login.html', login], ['signup.html', signup]]) {
+const verificationTags = findMeta(headSource(home), 'naver-site-verification');
+assert.equal(verificationTags.length, 1, 'the homepage must have exactly one Naver site verification tag');
+assert.ok(verificationTags[0].content?.trim(), 'the Naver site verification tag must have a value');
+
+const excludedPages = [
+  ['login.html', login, 'noindex,follow'],
+  ['signup.html', signup, 'noindex,follow'],
+  ['404.html', notFound, 'noindex,follow'],
+  ['jungsi-calculator-2027.html', calculator, 'noindex,nofollow']
+];
+for (const [fileName, html, directive] of excludedPages) {
   const tags = findMeta(headSource(html), 'robots');
   assert.equal(tags.length, 1, `${fileName} must have exactly one robots meta tag`);
-  assert.equal(String(tags[0].content || '').toLowerCase().replace(/\s+/g, ''), 'noindex,follow', `${fileName} must use noindex,follow`);
+  assert.equal(String(tags[0].content || '').toLowerCase().replace(/\s+/g, ''), directive, `${fileName} must use ${directive}`);
 }
 
 const descriptions = [];
@@ -177,6 +188,9 @@ for (const [fileName, canonicalUrl] of indexedPages) {
   assert.ok(String(descriptionTags[0].content || '').trim(), `${fileName} must have a non-empty meta description`);
   assert.equal(canonicalTags.length, 1, `${fileName} must have exactly one canonical link`);
   assert.equal(canonicalTags[0].href, canonicalUrl, `${fileName} canonical URL is incorrect`);
+  for (const tag of [...findMeta(head, 'robots'), ...findMeta(head, 'yeti')]) {
+    assert.doesNotMatch(tag.content || '', /(?:^|[\s,])(?:noindex|none)(?:$|[\s,])/i, `${fileName} must remain indexable`);
+  }
   descriptions.push(descriptionTags[0].content.trim());
 }
 assert.equal(new Set(descriptions).size, descriptions.length, 'indexed pages must use unique meta descriptions');
@@ -198,7 +212,6 @@ for (const file of ['promotion_kcc01.html', 'css/promotion-kcc01.css', 'js/promo
 }
 assert.doesNotMatch(home + homeScript, /\/promotion\/kcc01|StudyCrack\s*X\s*KCC/, 'home must not restore the retired promotion');
 assert.ok(publicPolicy.files.includes('404.html') && publicPolicy.files.includes('css/not-found.css'), 'not-found page must be published');
-assert.equal(findMeta(headSource(notFound), 'robots')[0]?.content, 'noindex,follow', 'not-found page must remain noindex');
 assert.equal(publicPolicy.aliases['basic-preview'], 'basic-preview.html', 'preview clean URL must be published');
 const publishCommands = createPublishCommands('/artifact/site', 'example.test', publicPolicy.aliases);
 assert.ok(workflow.includes('site-release.mjs publish'), 'deploy workflow must use the verified public artifact publisher');
@@ -211,4 +224,4 @@ assert.match(successController, /종료된 프로모션입니다/, 'legacy KCC s
 assert.doesNotMatch(successPage, /(?:연세대|고려대) 팀<br>신청이 완료되었습니다!/, 'legacy KCC success URLs must not claim a successful application');
 assert.match(successController, /if \(retiredPromo\) \{[\s\S]*?replaceState\(\{\}, '', location\.pathname\);[\s\S]*?return;/, 'retired promotion must clear payment-looking query and stop before API lookup');
 
-console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexed pages, 2 noindex pages.`);
+console.log(`SEO contracts passed: ${sitemapUrls.length} sitemap URLs, ${indexedPages.length} indexable pages, ${excludedPages.length} noindex pages.`);

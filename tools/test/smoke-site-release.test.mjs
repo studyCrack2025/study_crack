@@ -6,7 +6,8 @@ import { smokeSiteRelease } from '../smoke-site-release.mjs';
 import { PRIVATE_SITE_SMOKE_PATHS } from '../private-site-paths.mjs';
 
 const origin = 'https://dev.studycrack.co.kr';
-const publicFiles = ['index.html', 'studycrack-mobile.html', 'release.json', 'studycrack-mobile.webmanifest', 'js/release.js', 'js/config.js', 'js/shared/api.js', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'studycrack-mobile-app/dist/studycrack-mobile.css', 'studycrack-mobile-app/dist/chunks/app-12345678.js', 'studycrack-mobile-app/dist/chunks/app-12345678.css', 'studycrack-mobile-app/dist/assets/fish-12345678.webp', 'basic-preview'];
+const publicFiles = ['index.html', 'studycrack-mobile.html', 'release.json', 'studycrack-mobile.webmanifest', 'robots.txt', 'sitemap.xml', 'js/release.js', 'js/config.js', 'js/shared/api.js', 'studycrack-mobile-app/dist/studycrack-mobile.bundle.js', 'studycrack-mobile-app/dist/studycrack-mobile.css', 'studycrack-mobile-app/dist/chunks/app-12345678.js', 'studycrack-mobile-app/dist/chunks/app-12345678.css', 'studycrack-mobile-app/dist/assets/fish-12345678.webp', 'basic-preview'];
+const seoContentTypes = { 'robots.txt': 'text/plain; charset=utf-8', 'sitemap.xml': 'application/xml' };
 const manifest = { commit: 'a'.repeat(40), release: 'dev-aaaaaaaa', files: publicFiles.map((file) => ({ path: file, bytes: 7, sha256: createHash('sha256').update('fixture').digest('hex') })) };
 const aliases = { 'basic-preview': 'index.html' };
 function mockFetch(mutate = () => {}) {
@@ -18,7 +19,7 @@ function mockFetch(mutate = () => {}) {
     const file = new URL(url).pathname.slice(1);
     const target = file === 'studycrack-mobile' ? 'studycrack-mobile.html' : file || 'index.html';
     const known = publicFiles.includes(target);
-    const mime = target.endsWith('.js') ? 'text/javascript' : target.endsWith('.css') ? 'text/css' : target.endsWith('.webmanifest') ? 'application/manifest+json' : target.endsWith('.json') ? 'application/json' : target.endsWith('.webp') ? 'image/webp' : 'text/html';
+    const mime = seoContentTypes[target] || (target.endsWith('.js') ? 'text/javascript' : target.endsWith('.css') ? 'text/css' : target.endsWith('.webmanifest') ? 'application/manifest+json' : target.endsWith('.json') ? 'application/json' : target.endsWith('.webp') ? 'image/webp' : 'text/html');
     const result = { status: known ? 200 : 404, headers: { 'content-type': mime, 'cache-control': cacheControlFor(target) }, body: known ? 'fixture' : 'Not found' };
     mutate(result, file, url);
     return new Response(result.body, result);
@@ -32,6 +33,9 @@ test('deployment smoke verifies public bytes, cache/MIME, clean URL and private-
   assert.ok(paths.some(([file, url]) => file === 'js/config.js' && url.includes('?v=dev-aaaaaaaa')));
   assert.ok(paths.some(([file]) => file === 'studycrack-mobile'));
   assert.ok(paths.some(([file]) => file === 'manifest.json'));
+  for (const file of Object.keys(seoContentTypes)) {
+    assert.deepEqual(paths.filter(([target]) => target === file), [[file, `${origin}/${file}`]]);
+  }
 });
 
 test('parallel smoke bounds read-only requests and cancels every private body without reading it', async () => {
@@ -57,6 +61,8 @@ test('parallel smoke bounds read-only requests and cancels every private body wi
 
 for (const [label, mutate] of [
   ['stale bytes', (r, file) => { if (file === 'release.json') r.body = 'oldfile'; }],
+  ['stale sitemap', (r, file) => { if (file === 'sitemap.xml') r.body = 'oldfile'; }],
+  ['HTML robots fallback', (r, file) => { if (file === 'robots.txt') r.headers['content-type'] = 'text/html'; }],
   ['missing entry', (r, file) => { if (file.endsWith('bundle.js')) r.status = 404; }],
   ['wrong MIME', (r, file) => { if (file.endsWith('.js')) r.headers['content-type'] = 'text/html'; }],
   ['immutable HTML', (r, file) => { if (file.endsWith('.html')) r.headers['cache-control'] = 'max-age=31536000, immutable'; }],
