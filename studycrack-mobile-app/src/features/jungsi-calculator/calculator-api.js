@@ -16,6 +16,19 @@ const boundCutoff = (value, release, admissionUnitId) => release && value.dataRe
   && digest(value.publicationDigest) && digest(value.referenceDigest)
   && Number.isInteger(value.sourceYear) && value.sourceYear >= 2000 && value.sourceYear <= 2027 && value.targetYear === 2027;
 
+function safeOfferEstimate(estimate, scope) {
+  if (!estimate || Object.keys(estimate).length !== 5
+    || estimate.scope !== (scope ?? 'converted_score')) return null;
+  const { policy, percent, low, high } = estimate;
+  const legacy = policy === 'consulting-offer-estimate-1.0.0';
+  if (!legacy && policy !== 'consulting-offer-estimate-1.1.0') return null;
+  if (![percent, low, high].every(value => Number.isInteger(value) && value >= 2 && value <= 98)
+    || low > percent || percent > high) return null;
+  const displayLow = Math.max(low, percent - 3), displayHigh = Math.min(high, percent + 3);
+  if (!legacy && (low !== displayLow || high !== displayHigh)) return null;
+  return { policy, scope: estimate.scope, percent, low: displayLow, high: displayHigh };
+}
+
 function safePossibility(value, row, body) {
   if (value === undefined) return possibilityUnavailable('CUT_REFERENCE_BACKEND_UPDATE_REQUIRED');
   const invalid = () => possibilityUnavailable('CUT_REFERENCE_RESPONSE_INVALID');
@@ -36,8 +49,11 @@ function safePossibility(value, row, body) {
       || value.reasonCodes[0] !== 'CUT_ANCHOR_SPREAD_UNRESOLVED' || !validCutoffs(cutoffs)) return invalid();
   } else if (value.status !== 'available' || value.reasonCodes.length || !riskBands.has(value.riskBand)
     || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99) return invalid();
+  const hasCutoffs = validCutoffs(cutoffs) && (referenceOnly || cutoffs.registered70 > cutoffs.pass);
+  const estimate = hasCutoffs ? safeOfferEstimate(value.offerEstimate, row.scoreScope) : null;
   return { status: value.status, index: referenceOnly ? null : { points: value.index.points }, riskBand: value.riskBand, reasonCodes: value.reasonCodes,
-    ...(referenceOnly || validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
+    ...(hasCutoffs ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
+    ...(estimate ? { offerEstimate: estimate } : {}),
     sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, publicationDigest: value.publicationDigest, validatedAt: value.validatedAt };
 }
 
@@ -58,11 +74,13 @@ function safePreviewCutoff(value, row, body, target, comparisonScores) {
   const status = value.status ?? (tied ? 'reference_only' : 'available');
   if (status === 'reference_only' ? value.riskBand != null
     : status !== 'available' || tied || (modeled || value.riskBand !== undefined) && !riskBands.has(value.riskBand)) return null;
+  const estimate = safeOfferEstimate(value.offerEstimate, value.scoreScope);
   return { status, convertedScore: value.convertedScore,
     cutoffs: { pass: value.cutoffs.pass, registered70: value.cutoffs.registered70 }, sourceYear: value.sourceYear, targetYear: value.targetYear,
     ...(modeled ? { modeled, modelDigest: value.modelDigest, peerEstimate: value.peerEstimate, projectedInputs: value.projectedInputs, inputBasis: body.basis }
       : { publicationDigest: value.publicationDigest }),
     ...(value.riskBand !== undefined ? { riskBand: value.riskBand } : {}),
+    ...(estimate ? { offerEstimate: estimate } : {}),
     ...(value.scoreScope ? { scoreScope: value.scoreScope } : {}) };
 }
 
@@ -104,7 +122,7 @@ export async function requestCalculatorConversion({ apiFetch, analysisApiUrl, sc
   if (!comparisonScores) return apiInvalidResponse(response, '계산에 사용한 성적 기준을 확인하지 못했습니다. 다시 조회해주세요.');
   return { ...response, data: { ...response.data, results: response.data.results.map((row, index) => {
     const target = targets[index];
-    const { forecast, previewCutoff, ...rest } = row;
+    const { forecast, previewCutoff, offerEstimate, ...rest } = row;
     const preview = safePreviewCutoff(previewCutoff, row, response.data, target, comparisonScores);
     return { ...rest, possibility: safePossibility(row.possibility, row, response.data),
       referenceComparison: safeCalculatorReference(row.referenceComparison, target, comparisonScores), ...(preview ? { previewCutoff: preview } : {}) };
