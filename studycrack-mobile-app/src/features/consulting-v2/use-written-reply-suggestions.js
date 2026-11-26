@@ -4,13 +4,15 @@ import { cancelWrittenReply, createWrittenReply, getActiveWrittenReply, getWritt
 import { replyFailureMessage, replyRangeIssue, selectedReplyMessages, validReplyJob, WRITTEN_REPLY_LIMITS } from './written-reply-model.js';
 
 const empty = { phase: 'idle', reply: null, error: '' };
-const terminal = { failed: '추천을 만들지 못했습니다.', cancelled: '추천 생성을 취소했습니다.', expired: '대기 시간이 끝났습니다. 직접 답변을 작성하거나 다시 추천해주세요.', stale: '기초조사서나 상담 상태가 변경됐습니다. 최신 자료를 확인하고 다시 추천해주세요.' };
+const terminal = { failed: '추천을 만들지 못했습니다.', cancelled: '추천 생성을 취소했습니다.', expired: '대기 시간이 끝났습니다. 직접 답변을 작성하거나 다시 추천해주세요.', stale: '상담 상태나 답변에 사용한 자료가 변경됐습니다. 최신 자료로 다시 추천해주세요.' };
 const duration = (value, max) => Number.isFinite(value) && value >= 0 && value <= max ? value : 0;
 
 export function useWrittenReplySuggestions(binding, session, messages, enabled) {
   const [range, setRange] = React.useState(null), [selecting, setSelecting] = React.useState(false), [state, setState] = React.useState(empty);
   const [retryUntil, setRetryUntil] = React.useState(0), [retrySeconds, setRetrySeconds] = React.useState(0), [waiting, setWaiting] = React.useState(false);
+  const [checkingApply, setCheckingApply] = React.useState(false);
   const active = React.useRef(null), probe = React.useRef(null), live = React.useRef(true), revision = React.useRef(0);
+  const applyCheck = React.useRef(null);
   const selected = selectedReplyMessages(messages, range), issue = replyRangeIssue(selected);
   const abortProbe = () => { probe.current?.abort(); probe.current = null; };
   const cancelActive = React.useCallback(() => {
@@ -81,7 +83,7 @@ export function useWrittenReplySuggestions(binding, session, messages, enabled) 
     setState({ ...empty, error: info.reason === 'running' ? '진행 중인 추천이 있습니다. 상태를 다시 확인하거나 완료 후 다시 추천해주세요.' : info.lastFailureCode ? replyFailureMessage(info.lastFailureCode) : '' });
   }
 
-  React.useEffect(() => { live.current = true; return () => { live.current = false; revision.current++; abortProbe(); cancelActive(); }; }, [cancelActive]);
+  React.useEffect(() => { live.current = true; return () => { live.current = false; revision.current++; abortProbe(); cancelActive(); applyCheck.current?.abort(); }; }, [cancelActive]);
   React.useEffect(() => {
     revision.current++; abortProbe(); cancelActive(); setRange(null); setSelecting(false); setRetryUntil(0); setWaiting(false); setState(empty);
     if (enabled) void checkActive();
@@ -114,7 +116,30 @@ export function useWrittenReplySuggestions(binding, session, messages, enabled) 
     if (task.accept(result)) task.pollLater();
   };
   const cancel = () => { revision.current++; abortProbe(); cancelActive(); setState({ ...empty, error: terminal.cancelled }); };
-  return { ...state, range, selected, issue, selecting, choose, recent, generate, cancel, retrySeconds,
+  const confirmForApply = async body => {
+    const reply = state.reply;
+    if (!enabled || !reply?.drafts.some(draft => draft.body === body) || applyCheck.current) return false;
+    if (!reply.evidence?.units.some(unit => unit.admissionTrackName)) return true;
+    const controller = new AbortController(), ticket = revision.current;
+    applyCheck.current = controller;
+    setCheckingApply(true);
+    try {
+      const result = await getWrittenReply(binding, { caseId: session.caseId, expectedSessionId: session.sessionId, jobId: reply.jobId }, controller.signal);
+      if (!live.current || controller.signal.aborted || ticket !== revision.current) return false;
+      if (!result.ok) { setState(previous => ({ ...previous, error: result.error })); return false; }
+      const latest = result.data;
+      if (!validReplyJob(latest, { range, jobId: reply.jobId }) || latest.status !== 'succeeded' || !latest.drafts.some(draft => draft.body === body)) {
+        setState({ ...empty, phase: 'error', error: terminal.stale });
+        return false;
+      }
+      setState(previous => ({ ...previous, error: '' }));
+      return true;
+    } finally {
+      applyCheck.current = null;
+      if (live.current) setCheckingApply(false);
+    }
+  };
+  return { ...state, range, selected, issue, selecting, choose, recent, generate, cancel, retrySeconds, confirmForApply, checkingApply,
     canRecheck: waiting || retrySeconds > 0, recheck: () => checkActive({ expectedRange: range?.end ? range : undefined }),
     beginSelection: () => { changeRange(null); setSelecting(true); }, clear: () => { changeRange(null); setSelecting(false); },
     hasNewMessages: Boolean(range?.end && messages.at(-1)?.messageId > range.end) };

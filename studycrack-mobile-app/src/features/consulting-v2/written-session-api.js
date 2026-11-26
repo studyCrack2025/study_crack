@@ -17,3 +17,4 @@ export const saveCounselorSessionNote = (binding, data) => request(binding, 'cou
 export const completeCounselorWrittenSession = (binding, data) => request(binding, 'counselor_complete_written_session', data, '상담을 완료하지 못했습니다.');
 export const markWrittenRead = (binding, data, manager, signal) => request(binding, manager ? 'counselor_mark_written_read' : 'student_mark_written_read', data, '읽은 위치를 확인하지 못했습니다.', signal);
 export const getWrittenPreparation = (binding, caseId, signal) => request(binding, 'counselor_get_written_preparation', { caseId }, '기초조사서를 불러오지 못했습니다.', signal);
+export const getWrittenAdmissionComparison = (binding, caseId, signal) => request(binding, 'counselor_get_written_preparation', { caseId, includeComparison: true }, '지망별 컷 비교를 불러오지 못했습니다.', signal);

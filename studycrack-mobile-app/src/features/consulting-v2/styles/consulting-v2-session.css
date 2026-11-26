@@ -58,6 +58,20 @@ html.jungsi-app-root[data-written-chat="open"] { --consulting-page-height:100%; 
 .consulting-chat-preparation p,.consulting-chat-preparation li { margin:6px 0; color:var(--sc-ink-muted); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65; }
 .consulting-chat-preparation ul,.consulting-chat-preparation ol { margin:0; padding-left:18px; }
 .consulting-chat-preparation li span { display:block; font-size:.76rem; }
+.consulting-written-comparison { margin-top:16px; color:var(--sc-ink); }
+.consulting-written-comparison-rank { min-width:0; margin:8px 0; padding:10px; border:1px solid var(--sc-line-subtle); border-radius:10px; background:var(--sc-surface-subtle); }
+.consulting-written-comparison-rank > h4 { margin:0; color:var(--sc-brand-navy-deep); overflow-wrap:anywhere; }
+.consulting-written-comparison-rank summary { padding-top:4px; cursor:pointer; font-weight:700; overflow-wrap:anywhere; }
+.consulting-written-comparison-counts { display:grid; gap:5px; margin:8px 0; }
+.consulting-written-comparison-counts div { display:flex; justify-content:space-between; gap:8px; font-size:.76rem; }
+.consulting-written-comparison-counts dd { margin:0; font-weight:700; white-space:nowrap; }
+.consulting-written-comparison-rows { display:grid; gap:8px; margin-top:10px; }
+.consulting-written-comparison-unit { min-width:0; border-radius:8px; padding:9px; background:var(--sc-surface-card); overflow-wrap:anywhere; }
+.consulting-written-comparison-unit small { display:block; margin-top:4px; color:var(--sc-ink-muted); line-height:1.5; }
+.consulting-written-comparison-unit dl { margin:6px 0; display:grid; gap:4px; font-size:.76rem; }
+.consulting-written-comparison-unit dl div { display:flex; justify-content:space-between; gap:6px; }
+.consulting-written-comparison-unit dd { margin:0; font-variant-numeric:tabular-nums; text-align:right; }
+.consulting-written-tools .consulting-written-comparison-refresh { min-height:36px; margin-top:4px; padding:5px 8px; background:transparent; color:var(--sc-brand-navy); border-color:var(--sc-line-subtle); font-size:.75rem; }
 .consulting-chat-report-link { color:var(--sc-brand-navy); line-height:1.65; }
 .consulting-chat-uploads { max-height:var(--consulting-chat-uploads-max,180px); overflow-y:auto; padding:0; margin:6px 0; display:grid; gap:8px; list-style:none; }
 .consulting-chat-uploads li { min-width:0; padding:8px; display:flex; gap:10px; border:1px solid var(--sc-line-subtle); border-radius:8px; }
