@@ -76,6 +76,7 @@ function validResponse(body, scores, targets) {
     const target = targets[index];
     if (!row || row.university !== target.university || row.major !== target.major || target.selection && row.selectionKey !== target.selection.key || !statuses.has(row.status)
       || !calculatorReasonCodes(row.reasonCodes)
+      || row.selectionCampusName !== undefined && (!target.selection || !text(row.selectionCampusName))
       || !Array.isArray(row.choices) || row.choices.length > 12 || row.choices.some(value => !unit(value))
       || new Set(row.choices.map(value => value.admissionUnitId)).size !== row.choices.length
       || row.selected !== null && (!unit(row.selected) || !row.choices.some(value => ['admissionUnitId', 'campusName', 'unitName', 'trackName', 'admissionGroup'].every(key => value[key] === row.selected[key])))) return false;
