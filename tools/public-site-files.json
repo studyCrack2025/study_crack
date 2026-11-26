@@ -1,6 +1,10 @@
 {
   "files": [
     "404.html",
+    "consulting-contact-recovery.html",
+    "css/consulting-contact-recovery.css",
+    "js/consulting-contact-recovery.js",
+    "js/admin/contact-recovery.js",
     "basic-preview.html",
     "basic-preview-example.html",
     "css/basic-preview.css",

@@ -112,7 +112,7 @@ function renderConsultingApplication(applicationId, data) {
     const summary = document.getElementById('consultingDetailSummary');
     if (data.readOnly === true) {
         appendConsultingRecord(summary, '학생·신청 정보', createConsultingFacts([
-            ['학생 이름', contact.studentName], ['전화번호', contact.phone],
+            ['접수번호', application.applicationId], ['학생 이름', contact.studentName], ['전화번호', contact.phone],
             ['접수 시각', formatConsultingDate(application.createdAt)], ['예정 금액', formatConsultingMoney(application.expectedAmount)]
         ]));
         document.getElementById('consultingApplicationDetail').hidden = false;
@@ -145,6 +145,7 @@ function renderConsultingApplication(applicationId, data) {
         ['입금 승인', '캠페인 기본 설정과 금액을 복구한 뒤 상세를 새로고침해주세요. 복구 전에는 승인할 수 없습니다.']
     ]));
     const history = [
+        ['접수번호', application.applicationId],
         ['접수 시각', formatConsultingDate(application.submittedAt || application.createdAt)],
         ['신청 상태', consultingOptionLabel(application.applicationState, { PAYMENT_REVIEW: '입금 검수', INVITED: '초대 발급', REJECTED: '거절', CLAIMED: '가입 연결 완료', CASE_ACTIVE: '상담 진행' })],
         ['중복 가능성', application.duplicateSuspected ? '확인 필요' : '없음'],

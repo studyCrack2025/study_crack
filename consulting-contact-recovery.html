@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>연락처 정정 요청 | 스터디크랙</title><link rel="stylesheet" href="/css/consulting-contact-recovery.css"></head>
+<body class="contact-recovery"><main><a href="/2027-jungsi-consulting#consulting">← 정시 컨설팅</a>
+<h1>입금했는데 초대를 못 받았어요</h1><p>구글폼과 사이트 신청 모두 이용할 수 있습니다. 운영팀이 입금 내역을 대조한 뒤 초대를 다시 보내드립니다.</p>
+<form id="recovery"><fieldset><legend>입금 내역</legend>
+<label>학생 이름<input name="studentName" maxlength="60" required></label><label>실제 입금자명<input name="payerName" maxlength="60" required></label>
+<label>입금 일시 (한국시간)<input name="paidAt" type="datetime-local" required></label><label>입금액 (원)<input name="amount" type="number" min="1" max="10000000" required></label>
+<label>신청번호 (선택)<input name="applicationId" placeholder="APP_…" maxlength="40"></label></fieldset>
+<fieldset><legend>새로 안내받을 연락처</legend><p>정정할 연락처만 입력하세요. 둘 다 바꾸려면 각각 인증해주세요.</p>
+<label>휴대전화<input name="phone" type="tel" autocomplete="tel-national" placeholder="010-1234-5678"></label><button type="button" data-send="phone">문자 인증번호 받기</button>
+<label hidden id="phone-code">문자 인증번호<input name="phoneCode" inputmode="numeric" maxlength="6"></label>
+<label>이메일<input name="email" type="email" autocomplete="email" maxlength="254"></label><button type="button" data-send="email">이메일 인증번호 받기</button>
+<label hidden id="email-code">이메일 인증번호<input name="emailCode" inputmode="numeric" maxlength="6"></label></fieldset>
+<label><input type="checkbox" name="consent" required> 입금 대조와 초대 재발송을 위해 입력한 정보를 사용하는 데 동의합니다. 정정 요청 내용은 처리 시 삭제하며 미처리 요청은 30일 후 만료됩니다.</label>
+<button type="submit">연락처 정정 요청</button></form><p id="result" role="status" aria-live="polite"></p><p>이미 계정에 연결했거나 입금 내역을 구분하기 어려운 경우 <a href="https://pf.kakao.com/_wxjxcgn" rel="noreferrer">스터디크랙에 문의하기</a></p></main>
+<script src="/js/config.js"></script><script src="/js/consulting-contact-recovery.js"></script></body></html>

@@ -173,6 +173,7 @@ export function ConsultingStartScreen({ binding, hasSession }) {
       <button className="consulting-v2-secondary" type="button" onClick={() => { if (globalThis.confirm('새 신청을 연결하지 않고, 이 계정에 이전에 연결한 컨설팅으로 이동할까요?')) openConsultingHome(); }}>이전에 연결한 나의 컨설팅 보기</button>
     </div> : null}
     {hasSession && !staffSession && !invite ? <button className="consulting-v2-primary consulting-v2-wide" type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>나의 컨설팅</button> : null}
+    {summary && summary.productType !== 'calculator' ? <a className="consulting-v2-link" href="/consulting-contact-recovery.html" referrerPolicy="no-referrer">인증 메일을 못 받았어요</a> : null}
     <button className="consulting-v2-link" type="button" onClick={clearInvite}>이 초대 정보 지우기</button>
   </section></main>;
 }

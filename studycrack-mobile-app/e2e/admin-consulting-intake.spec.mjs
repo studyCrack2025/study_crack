@@ -438,3 +438,36 @@ test('새 계산기 신청은 관계·학생 상태를 요구하지 않고 수�
     expect(Object.keys(requests[0].data.input).sort()).toEqual(['studentName', 'phone', 'email', 'payerName'].sort());
     expect(await page.evaluate(() => window.__calls.filter(call => call.type === 'admin_verify_manual_payment'))).toHaveLength(0);
 });
+
+test('contact corrections require a separate preview and explicit payment confirmation', async ({page}) => {
+    await prepare(page);
+    await page.addScriptTag({content:await source(page,'js/admin/contact-recovery.js')});
+    await page.evaluate(id => {
+        const api = window.apiFetch;
+        window.__recoveryDecisions = [];
+        window.apiFetch = async (url,options) => {
+            const {type,data} = JSON.parse(options.body);
+            const reply = value => ({json:async()=>({success:true,data:value})});
+            if (type === 'admin_list_contact_recovery') return reply({items:window.__recoveryDecisions.includes('approve') ? [] : [{
+                requestId:'synthetic',studentName:'학생',payerName:'보호자',amount:200000,paidAt:'2026-11-23T09:12+09:00',contact:{email:'student@example.invalid'},applicationId:id
+            }],cursor:null});
+            if (type !== 'admin_review_contact_recovery') return api(url,options);
+            window.__recoveryDecisions.push(data.decision);
+            if (data.decision === 'preview') return reply({eligible:true,revision:4,studentName:'학생',payerName:'보호자',paidAmount:200000,paidAt:'2026-11-23T00:12:00Z'});
+            if (!data.confirmed || data.expectedRevision !== 4 || data.applicationId !== id) throw new Error('검토한 신청만 처리할 수 있습니다.');
+            return reply({closed:true});
+        };
+    },applicationId);
+    const panel = page.locator('#contactRecoveryPanel');
+    await panel.locator('summary').click();
+    await expect(panel).toContainText('student@example.invalid');
+    await panel.getByRole('button',{name:'신청·입금 대조'}).click();
+    const approve = panel.getByRole('button',{name:'대조 완료 · 정정 및 초대 재발송'});
+    page.once('dialog',dialog=>dialog.dismiss());
+    await approve.click();
+    expect(await page.evaluate(()=>window.__recoveryDecisions)).toEqual(['preview']);
+    page.once('dialog',dialog=>dialog.accept());
+    await approve.click();
+    await expect(panel).toContainText('대기 요청이 없습니다.');
+    expect(await page.evaluate(()=>window.__recoveryDecisions)).toEqual(['preview','approve']);
+});

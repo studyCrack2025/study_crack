@@ -71,7 +71,10 @@ function setup() {
     for (const id of html.matchAll(/id="(consulting[^"]+)"/g)) get(id[1]);
     const calls = [];
     const context = vm.createContext({
-        document: { getElementById: get, createElement: element, querySelectorAll: () => [] },
+        document: {
+            getElementById: get, createElement: element, querySelectorAll: () => [],
+            querySelector: selector => selector === '#contactRecoveryPanel summary' ? get('contactRecoveryPanelSummary') : null
+        },
         CONFIG: { api: { consulting: '/synthetic/consulting' } },
         ADMIN_CONSULTING_PHASES: ['all', 'intake', 'onboarding'],
         Intl, Date, console, setTimeout, clearTimeout,
@@ -104,6 +107,7 @@ test('detail renders localized values and other text without assuming payment fa
     const { open, get } = setup();
     await open();
     assert.equal(get('consultingApplicationDetail').hidden, false);
+    assert.match(get('consultingDetailSummary').textContent, new RegExp(`접수번호\\s+${applicationId}`));
     assert.match(get('consultingDetailSummary').textContent, /이메일/);
     assert.match(get('consultingDetailSummary').textContent, /고3/);
     assert.match(get('consultingDetailSummary').textContent, /<img src=x onerror=alert\(1\)>/);
@@ -121,6 +125,7 @@ test('foreign student overview shows masked contact and keeps all intake changes
     } : {};
     await open();
     assert.equal(get('consultingApplicationDetail').hidden, false);
+    assert.match(get('consultingDetailSummary').textContent, new RegExp(`접수번호\\s+${applicationId}`));
     assert.match(get('consultingDetailSummary').textContent, /010-\*\*\*\*-0000/);
     assert.match(get('consultingStudentStatus').textContent, /조회만 할 수 있습니다/);
     for (const id of ['consultingPaymentActions', 'consultingInputEdit', 'consultingInviteActions', 'consultingDeleteApplicationBtn']) assert.equal(get(id).hidden, true, id);

@@ -33,7 +33,15 @@ async function prepare(page, options = {}) {
       if (state.closeOnSubmit) return route.fulfill({ status: 409, json: { success: false, code: 'CALCULATOR_SALES_CLOSED' } });
       state.submits.push(data);
       if (state.priceChanged) { state.amount = 300000; return route.fulfill({ status: 409, json: { success: false, code: 'PRICE_CHANGED' } }); }
-      state.application = { applicationId, productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.acceptedAmount, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), ...(data.productType === 'consulting' && data.acceptedAmount === 200000 ? { paymentDueAt: '2026-12-18T14:59:59.999Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, maskedEmail: 's***@example.invalid', applicationState: 'PAYMENT_REVIEW' };
+      const application = { applicationId, productType: data.productType, productName: data.productType === 'calculator' ? '2027 정시 합격 계산기' : '2027 정시 컨설팅', amount: data.acceptedAmount, ...(data.productType === 'calculator' ? { accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2027-01-06T09:00:00.000Z' } : {}), ...(data.productType === 'consulting' && data.acceptedAmount === 200000 ? { paymentDueAt: '2026-12-18T14:59:59.999Z' } : {}), bankTransfer: state.bankTransfer || bankTransfer, maskedEmail: 's***@example.invalid', applicationState: 'PAYMENT_REVIEW' };
+      if (state.commitAfterLookup && state.submits.length === 1) {
+        state.commitFirst = () => { state.application = application; };
+        return route.abort('failed');
+      }
+      if (state.commitAfterLookup && state.application && data.requestKey === state.submits[0].requestKey && data.token === state.submits[0].token) {
+        return route.fulfill({ json: { success: true, data: state.application } });
+      }
+      state.application = application;
       if (state.loseReply) return route.abort('failed');
       return route.fulfill({ status: 202, json: { success: true, data: state.application } });
     }
@@ -167,6 +175,19 @@ test('응답 유실·새로고침·로그인 시작 후에는 저장한 접수�
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   await page.reload(); await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   expect(state.submits).toHaveLength(1);
+});
+test('저장 직전 조회가 404여도 재시도는 같은 요청으로 늦게 저장된 접수를 복구한다', async ({ page }) => {
+  const state = await prepare(page, { commitAfterLookup: true });
+  await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentStatus')).toContainText('신청 결과를 확인하지 못했습니다.');
+  await page.locator('#jungsiEnrollmentRecover').click();
+  await expect(page.locator('#jungsiEnrollmentPrice')).toContainText('200,000원');
+  expect(state.application).toBeNull();
+  state.commitFirst();
+  await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
+  await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  expect(state.submits).toHaveLength(2);
+  expect(state.submits[1]).toMatchObject({ requestKey: state.submits[0].requestKey, token: state.submits[0].token });
 });
 test('자료·운영 설정을 확인하지 못하면 입력과 입금 안내를 열지 않고 재시도를 제공한다', async ({ page }) => {
   const state = await prepare(page, { unavailable: true });
@@ -341,11 +362,11 @@ test('receipt prioritizes the exact product, amount and bank while copy actions 
   await expect(page.locator('#jungsiReceiptPaymentInstruction')).toHaveText('아래 계좌로 200,000원을 입금해주세요.');
   await expect(page.locator('#jungsiReceiptState')).toHaveText('입금 확인 대기');
   await expect(page.locator('#jungsiReceiptPeriod')).toBeHidden();
-  await expect(page.locator('#jungsiReceiptNumber')).toBeHidden();
+  await expect(page.locator('#jungsiReceiptNumber')).toBeVisible();
   await page.getByRole('button', { name: '계좌번호 복사', exact: true }).click();
   await expect(page.locator('#jungsiEnrollmentCopyStatus')).toHaveText('계좌번호를 복사했습니다.');
   expect(await page.evaluate(() => window.enrollmentCopiedValues)).toEqual([bankTransfer.accountNumber]);
-  await page.locator('.jungsi-enrollment-details summary').click();
+  await expect(page.locator('.jungsi-enrollment-details').getByRole('link', {name:'입금했는데 초대를 못 받았어요'})).toHaveAttribute('href','/consulting-contact-recovery.html');
   await expect(page.locator('#jungsiReceiptNumber')).toHaveText(applicationId);
   await page.getByRole('button', { name: '신청번호 복사', exact: true }).click();
   await expect(page.locator('#jungsiEnrollmentCopyStatus')).toHaveText('신청번호를 복사했습니다.');
@@ -367,6 +388,13 @@ test('receipt actions follow payment, claimed, rejected and expired states witho
   const state = await prepare(page);
   await page.locator('#consultingApply').click(); await fill(page); await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
+  state.application.paymentOnHold = true;
+  await page.locator('#jungsiEnrollmentRecover').click();
+  await expect(page.locator('#jungsiReceiptState')).toHaveText('입금 확인 보류');
+  await expect(page.locator('#jungsiReceiptPayment')).toBeHidden();
+  await expect(page.locator('#jungsiReceiptCopyAccount')).toBeHidden();
+  await expect(page.locator('#jungsiEnrollmentStatus')).toContainText('추가 입금 전에 운영팀에 문의');
+  delete state.application.paymentOnHold;
   for (const [applicationState, badge] of [['INVITED', '입금 확인 완료'], ['CLAIMED', '이용 인증 완료'], ['REJECTED', '운영팀 확인 필요']]) {
     state.application.applicationState = applicationState;
     await page.locator('#jungsiEnrollmentRecover').click();
@@ -459,4 +487,42 @@ test('calculator never carries consulting attribution', async ({ page }) => {
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   expect(state.submits[0].attributionToken).toBe('synthetic-calculator-token');
   expect(state.attributionRequests).toEqual([{ productType: 'calculator', source: 'unknown', campaignId: null, creativeId: null }]);
+});
+
+test('paid applicants can verify a replacement contact without an application number', async ({ page }) => {
+  const calls = [];
+  const proof = 'a'.repeat(64);
+  await page.route('**/js/config.js*', route => route.fulfill({
+    contentType: 'application/javascript', body: "window.CONFIG={api:{auth:'/__auth',consultingPublic:'/__enrollment'}};"
+  }));
+  await page.route('**/__auth', async route => {
+    const data = route.request().postDataJSON();
+    expect(data.purpose).toBe('consulting-contact');
+    expect(data.email).toBe('student@example.invalid');
+    calls.push(data.type);
+    await route.fulfill({ json: data.type === 'verify_code' ? {success:true, proof} : {message:'Email sent'} });
+  });
+  await page.route('**/__enrollment', async route => {
+    const {type,data} = route.request().postDataJSON();
+    expect(data.email).toEqual({value:'student@example.invalid',proof});
+    expect(data.applicationId).toBe('');
+    expect(data.paidAt).toBe('2026-11-23T09:12+09:00');
+    calls.push(type);
+    await route.fulfill({status:202,json:{success:true,data:{accepted:true}}});
+  });
+  await page.goto('/consulting-contact-recovery.html');
+  await page.getByLabel('학생 이름').fill('홍길동');
+  await page.getByLabel('실제 입금자명').fill('이부모');
+  await page.getByLabel('입금 일시').fill('2026-11-23T09:12');
+  await page.getByLabel('입금액').fill('200000');
+  await page.getByLabel('이메일',{exact:true}).fill('student@example.invalid');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'연락처 정정 요청'}).click();
+  await expect(page.getByRole('status')).toContainText('6자리 인증번호가 필요');
+  expect(calls).toEqual([]);
+  await page.getByRole('button',{name:'이메일 인증번호 받기'}).click();
+  await page.getByLabel('이메일 인증번호',{exact:true}).fill('123456');
+  await page.getByRole('button',{name:'연락처 정정 요청'}).click();
+  await expect(page.getByRole('status')).toContainText('정정 요청을 접수했습니다');
+  expect(calls).toEqual(['send_email_auth','verify_code','public_submit_contact_recovery']);
 });

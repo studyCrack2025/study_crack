@@ -85,6 +85,7 @@ function clearConsultingWorkspaceStudent() {
     consultingWorkspaceStatus('consultingStudentStatus', '');
 }
 function resetConsultingWorkspace() {
+    document.getElementById('contactRecoveryPanel').open = false;
     consultingWorkspaceGeneration++;
     resetConsultingExport();
     clearConsultingWorkspaceStudent();
@@ -131,6 +132,7 @@ function activateConsultingWorkspace(route) {
     consultingWorkspacePhase = phase;
     document.querySelectorAll('.consulting-phases button[data-phase]').forEach(button => { button.setAttribute('aria-current', button.dataset.phase === phase ? 'page' : 'false'); });
     if (route.caseId || route.applicationId && route.sourceResponseId) {
+        document.getElementById('contactRecoveryPanel').open = false;
         closeConsultingExportDialog();
         document.getElementById('consultingDirectoryPanel').hidden = true;
         document.getElementById('consultingAdminTools').open = false;
@@ -190,6 +192,8 @@ async function loadConsultingDirectory() {
         const data = await requestConsultingAdmin('admin_list_consulting_students', { phase, cursor: consultingDirectoryCursor, productType: 'consulting' });
         if (generation !== consultingWorkspaceGeneration) return;
         if (!Array.isArray(data.items) || data.items.length > 20 || data.items.some(item => !/^APP_[0-9a-f-]{36}$/i.test(item?.applicationId || '') || !/^[A-Za-z0-9_-]{8,200}$/.test(item?.sourceResponseId || '')) || data.nextCursor && (typeof data.nextCursor !== 'string' || data.nextCursor.length > 1600)) throw new Error('목록 형식을 확인할 수 없습니다.');
+        const recoveryLabel = document.querySelector('#contactRecoveryPanel summary');
+        if (recoveryLabel) recoveryLabel.textContent = data.recoveryPending ? '연락처 정정 대기 · 확인하기' : '연락처 정정 요청';
         const issues = consultingDirectoryIssueRows(data);
         consultingExportLimit = Number.isSafeInteger(data.exportLimit) && data.exportLimit > 0 ? data.exportLimit : 0;
         if (!consultingExportLimit) resetConsultingExport();
