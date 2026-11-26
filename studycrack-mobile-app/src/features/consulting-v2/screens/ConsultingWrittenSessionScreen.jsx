@@ -21,6 +21,8 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
   const { resource, messages, outbox, connection } = chat, session = resource.session;
   const photos = useWrittenPhotos(binding, session?.caseId || caseId);
   const [draft, setDraft] = React.useState(''), [feedback, setFeedback] = React.useState(''), [tab, setTab] = React.useState('chat');
+  const currentDraft = React.useRef(draft);
+  currentDraft.current = draft;
   const replyUnavailable = writtenReplyUnavailableReason(session, connection);
   const replyAllowed = manager && !replyUnavailable;
   const suggestion = useWrittenReplySuggestions(binding, session, messages, replyAllowed);
@@ -79,9 +81,10 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
   const openReply = () => { setTab('reply'); tools.current?.scrollTo({ top: 0 }); };
   const selectReplyRange = () => { if (replyAllowed) { suggestion.beginSelection(); setTab('chat'); } };
   const generateReply = () => { void suggestion.generate(); setTab('reply'); };
-  const applyReply = (body, mode) => {
-    if (!replyAllowed) return false;
-    const next = mergeReplyDraft(draft, body, mode);
+  const applyReply = async (body, mode) => {
+    const initialDraft = currentDraft.current;
+    if (!replyAllowed || !await suggestion.confirmForApply(body) || currentDraft.current !== initialDraft) return false;
+    const next = mergeReplyDraft(initialDraft, body, mode);
     if (next === null) return false;
     setDraft(next); setTab('chat');
     browser.requestAnimationFrame(() => document.getElementById('written-message')?.focus());
@@ -129,7 +132,7 @@ function ChatRoom({ binding, caseId, manager, sessions, onChoose }) {
       {feedback ? <p className="consulting-written-feedback" role="status">{feedback}</p> : null}
       {finished && !manager ? <div className="consulting-chat-finished"><strong>상담을 마쳤어요</strong><p>이 대화는 언제든 다시 볼 수 있어요. 확인한 내용을 바탕으로 보고서를 준비하겠습니다.</p><button type="button" onClick={() => navigateConsulting(CONSULTING_ROUTES.home)}>나의 컨설팅</button></div> : null}
     </section>
-    {manager ? <aside ref={tools} className="consulting-written-tools"><WrittenReplySuggestions suggestion={suggestion} draft={draft} onSelectRange={selectReplyRange} onApply={applyReply} unavailable={replyUnavailable} onReconnect={chat.refresh} /><section className="consulting-chat-materials"><h2>상담 자료</h2><WrittenPreparation binding={binding} caseId={session.caseId} /></section><section className="consulting-chat-notes"><h2>상담사 전용</h2>{session.observer ? <p>담당자가 작성한 메모를 확인하는 검수 화면입니다.</p> : null}<label>내부 메모<textarea maxLength="4000" value={note || ''} disabled={!canManage || session.serviceHold || finished || working} onChange={event => setNote(event.target.value)} /></label><button type="button" disabled={!canManage || session.serviceHold || finished || working || note === savedNote} onClick={saveNote}>내부 메모 저장</button><fieldset disabled={!canManage || session.serviceHold || finished || working}><legend>완료 체크리스트</legend>{WRITTEN_CHECKLIST.map(([key, label]) => <label key={key}><input type="checkbox" checked={checklist[key]} onChange={event => setChecklist(value => ({ ...value, [key]: event.target.checked }))} />{label}</label>)}</fieldset><button className="consulting-written-complete" type="button" disabled={!canManage || session.serviceHold || finished || working || unsaved || serverTime < Date.parse(session.endAt) || !Object.values(checklist).every(Boolean)} onClick={complete}>상담 완료 및 기록 고정</button><p>종료 시각 이후, 미전송 메시지·사진과 메모를 정리한 뒤 완료해주세요.</p><p>내부 메모는 학생과 보고서 본문에 노출되지 않습니다.</p>{finished ? <a className="consulting-chat-report-link" href={binding.userRole === 'admin' ? `/admin#consulting?case=${encodeURIComponent(session.caseId)}&tab=report` : `${CONSULTING_ROUTES.report}?caseId=${encodeURIComponent(session.caseId)}`}>보고서 반영 내용 정리하기 →</a> : null}</section>{feedback ? <p className="consulting-written-feedback" role="status">{feedback}</p> : null}</aside> : null}</div>
+    {manager ? <aside ref={tools} className="consulting-written-tools"><WrittenReplySuggestions suggestion={suggestion} draft={draft} onSelectRange={selectReplyRange} onApply={applyReply} unavailable={replyUnavailable} onReconnect={chat.refresh} /><section className="consulting-chat-materials"><h2>상담 자료</h2><WrittenPreparation binding={binding} caseId={session.caseId} revision={session.preparationRevision} /></section><section className="consulting-chat-notes"><h2>상담사 전용</h2>{session.observer ? <p>담당자가 작성한 메모를 확인하는 검수 화면입니다.</p> : null}<label>내부 메모<textarea maxLength="4000" value={note || ''} disabled={!canManage || session.serviceHold || finished || working} onChange={event => setNote(event.target.value)} /></label><button type="button" disabled={!canManage || session.serviceHold || finished || working || note === savedNote} onClick={saveNote}>내부 메모 저장</button><fieldset disabled={!canManage || session.serviceHold || finished || working}><legend>완료 체크리스트</legend>{WRITTEN_CHECKLIST.map(([key, label]) => <label key={key}><input type="checkbox" checked={checklist[key]} onChange={event => setChecklist(value => ({ ...value, [key]: event.target.checked }))} />{label}</label>)}</fieldset><button className="consulting-written-complete" type="button" disabled={!canManage || session.serviceHold || finished || working || unsaved || serverTime < Date.parse(session.endAt) || !Object.values(checklist).every(Boolean)} onClick={complete}>상담 완료 및 기록 고정</button><p>종료 시각 이후, 미전송 메시지·사진과 메모를 정리한 뒤 완료해주세요.</p><p>내부 메모는 학생과 보고서 본문에 노출되지 않습니다.</p>{finished ? <a className="consulting-chat-report-link" href={binding.userRole === 'admin' ? `/admin#consulting?case=${encodeURIComponent(session.caseId)}&tab=report` : `${CONSULTING_ROUTES.report}?caseId=${encodeURIComponent(session.caseId)}`}>보고서 반영 내용 정리하기 →</a> : null}</section>{feedback ? <p className="consulting-written-feedback" role="status">{feedback}</p> : null}</aside> : null}</div>
   </main>;
 }
 
