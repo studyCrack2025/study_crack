@@ -16,7 +16,7 @@ const boundCutoff = (value, release, admissionUnitId) => release && value.dataRe
   && digest(value.publicationDigest) && digest(value.referenceDigest)
   && Number.isInteger(value.sourceYear) && value.sourceYear >= 2000 && value.sourceYear <= 2027 && value.targetYear === 2027;
 
-function safeOfferEstimate(estimate, scope) {
+export function safeOfferEstimate(estimate, scope) {
   if (!estimate || Object.keys(estimate).length !== 5
     || estimate.scope !== (scope ?? 'converted_score')) return null;
   const { policy, percent, low, high } = estimate;
@@ -152,5 +152,7 @@ export async function requestCalculatorAccess({ apiFetch, analysisApiUrl, signal
     || access.allowed && (value.service.calculationEnabled === undefined || value.service.calculationMode === undefined)
     || value.service.earlyAccess === true && mode !== 'development_preview') return apiInvalidResponse(response, '이용권 정보를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
   return { ...response, data: { access, entitlement: entitlement ? { applicationId: entitlement.applicationId, accessEndsAt: entitlement.accessEndsAt } : null,
-    service: { state: value.service.state, purchaseAvailable: false, ...(value.service.workspaceVersion === undefined ? {} : { workspaceVersion: value.service.workspaceVersion }), ...(value.service.selectionVersion === undefined ? {} : { selectionVersion: value.service.selectionVersion }), earlyAccess: value.service.earlyAccess === true, calculationEnabled: enabled, calculationMode: mode } } };
+    service: { state: value.service.state, purchaseAvailable: false, ...(value.service.workspaceVersion === undefined ? {} : { workspaceVersion: value.service.workspaceVersion }),
+      ...(value.service.selectionVersion === undefined ? {} : { selectionVersion: value.service.selectionVersion }),
+      ...(value.service.recommendationVersion === 1 ? { recommendationVersion: 1 } : {}), earlyAccess: value.service.earlyAccess === true, calculationEnabled: enabled, calculationMode: mode } } };
 }

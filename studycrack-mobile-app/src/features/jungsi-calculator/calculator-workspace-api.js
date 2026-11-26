@@ -1,6 +1,7 @@
 import { apiInvalidResponse, postJson } from '../../shared/api/client.js';
 import { CALCULATOR_STORAGE_CONSENT, normalizeStoredCalculatorInput } from './calculator-storage-api.js';
 import { emptyRepresentatives, normalizePlanTargets, samePlanTargetIdentity, validRepresentatives } from './calculator-plan-model.js';
+import { parseRecommendationPreferences } from './calculator-recommendation-preferences.js';
 
 const revision = n => Number.isSafeInteger(n) && n >= 0;
 const date = s => typeof s === 'string' && s.length <= 40 && Number.isFinite(Date.parse(s));
@@ -12,7 +13,8 @@ export function parseCalculatorWorkspace(value, applicationId) {
   if (value.status !== 'saved') return value.profile === null && value.plans.length === 0 && value.lastSavedPlanId === null
     && (value.status !== 'restricted' || value.canSave === false && value.canDelete) ? value : null;
   const profile = value.profile, prepared = normalizeStoredCalculatorInput({ scores: profile?.scores, targets: [] });
-  if (!profile || !prepared || !revision(profile.revision) || profile.revision < 1 || !date(profile.updatedAt) || !value.consentAccepted || value.updatedAt === null) return null;
+  const preferences = parseRecommendationPreferences(profile?.recommendationPreferences);
+  if (!profile || !prepared || !preferences || !revision(profile.revision) || profile.revision < 1 || !date(profile.updatedAt) || !value.consentAccepted || value.updatedAt === null) return null;
   if (profile.scores.basis === 'raw' && ['kor', 'math'].some(key => profile.scores.exam[key].raw !== prepared.scores.exam[key].raw)) return null;
   const seen = new Set(), plans = [];
   for (const plan of value.plans) {
@@ -23,7 +25,8 @@ export function parseCalculatorWorkspace(value, applicationId) {
     seen.add(plan.planId); plans.push({ planId: plan.planId, revision: plan.revision, name: plan.name, targets, ...(previousTargets.length ? { previousTargets } : {}), ...(plan.representatives === undefined ? {} : { representatives: plan.representatives }), updatedAt: plan.updatedAt });
   }
   if (value.lastSavedPlanId !== null && !seen.has(value.lastSavedPlanId)) return null;
-  return { ...value, profile: { revision: profile.revision, scores: prepared.scores, updatedAt: profile.updatedAt }, plans };
+  return { ...value, profile: { revision: profile.revision, scores: prepared.scores, updatedAt: profile.updatedAt,
+    ...(profile.recommendationPreferences === undefined ? {} : { recommendationPreferences: preferences }) }, plans };
 }
 
 export async function requestCalculatorWorkspace(binding, { applicationId, type = 'student_get_calculator_workspace', data = {}, signal }) {
@@ -34,7 +37,8 @@ export async function requestCalculatorWorkspace(binding, { applicationId, type 
   if (!result.ok) return result;
   const value = result.data?.success === true ? parseCalculatorWorkspace(result.data.data, applicationId) : null;
   if (!value || !read && value.revision !== data.expectedWorkspaceRevision + 1
-    || type === 'student_save_calculator_profile' && JSON.stringify(value.profile?.scores) !== JSON.stringify(data.scores)
+    || type === 'student_save_calculator_profile' && (JSON.stringify(value.profile?.scores) !== JSON.stringify(data.scores)
+      || data.recommendationPreferences !== undefined && JSON.stringify(value.profile?.recommendationPreferences) !== JSON.stringify(parseRecommendationPreferences(data.recommendationPreferences)))
     || type === 'student_save_calculator_plan' && !value.plans.some(plan => plan.planId === value.lastSavedPlanId && (data.planId === null || plan.planId === data.planId) && plan.name === data.name.trim()
       && plan.targets.length === data.targets.length && plan.targets.every((target, index) => samePlanTargetIdentity(target, data.targets[index]))
       && (data.representatives === undefined || JSON.stringify(plan.representatives || emptyRepresentatives()) === JSON.stringify(data.representatives)))

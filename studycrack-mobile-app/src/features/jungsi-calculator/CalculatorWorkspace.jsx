@@ -6,16 +6,19 @@ import CalculatorScoreForm from './CalculatorScoreForm.jsx';
 import CalculatorCatalog from './CalculatorCatalog.jsx';
 import CalculatorResult from './CalculatorResult.jsx';
 import CalculatorPlanBoard from './CalculatorPlanBoard.jsx';
-import CalculatorPortfolio from './CalculatorPortfolio.jsx';
 import { createCalculatorPortfolio } from './calculator-portfolio-model.js';
 import { emptyRepresentatives, groupPlanTargets, planTargetKey, setPlanTarget } from './calculator-plan-model.js';
 import { requestCalculatorConversion } from './calculator-api.js';
 import { candidateKey, editableScores, emptyScores, MAX_CANDIDATES, SUBJECTS, prepareCalculatorScores, scoresChanged } from './calculator-model.js';
 import { CALCULATOR_STORAGE_CONSENT } from './calculator-storage-api.js';
+import { parseRecommendationPreferences } from './calculator-recommendation-preferences.js';
 import useCalculatorScoreConversion from './useCalculatorScoreConversion.js';
 import useCalculatorGroupConversion from './useCalculatorGroupConversion.js';
 import useCalculatorWorkspace from './useCalculatorWorkspace.js';
 import './calculator-workspace.css';
+
+const CalculatorRecommendationPreferences = React.lazy(() => import('./CalculatorRecommendationPreferences.jsx'));
+const CalculatorPortfolio = React.lazy(() => import('./CalculatorPortfolio.jsx'));
 
 function ScoreSummary({ profile, estimates, onEdit, disabled }) {
   const scores = profile.scores, raw = scores.basis === 'raw';
@@ -31,10 +34,11 @@ function ScoreSummary({ profile, estimates, onEdit, disabled }) {
   </section>;
 }
 
-function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, denyAccess, grouped }) {
+function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, denyAccess, grouped, recommendations }) {
   const data = store.resource.data, binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
   const initialPlan = data.plans.find(plan => plan.planId === data.lastSavedPlanId) || null;
   const [scores, setScores] = React.useState(() => data.profile ? editableScores(data.profile.scores) : emptyScores()), [editing, setEditing] = React.useState(!data.profile);
+  const [preferenceDraft, setPreferenceDraft] = React.useState(() => parseRecommendationPreferences(data.profile?.recommendationPreferences));
   const [baseline, setBaseline] = React.useState(initialPlan), [name, setName] = React.useState(initialPlan?.name || '기본 조합');
   const [nameEdit, setNameEdit] = React.useState(null);
   const nameTrigger = React.useRef(null);
@@ -45,6 +49,9 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
   const [conversion, setConversion] = React.useState({ key: '', status: 'idle', data: null, error: '' }), [queryAttempt, setQueryAttempt] = React.useState(0);
   const locked = !enabled || store.busy || store.resource.status !== 'ready' || !data.canSave;
   const profile = data.profile, changed = scoresChanged(scores, profile?.scores);
+  const preferences = parseRecommendationPreferences(profile?.recommendationPreferences);
+  const showRecommendations = grouped && recommendations && data.recommendationPreferencesVersion === 1;
+  const preferencesChanged = showRecommendations && JSON.stringify(preferenceDraft) !== JSON.stringify(preferences);
   const estimates = useCalculatorScoreConversion(scores, enabled && scores.basis === 'raw', denyAccess);
   const baselineTargets = grouped ? groupPlanTargets(baseline?.targets || [], baseline?.representatives) : baseline?.targets || [];
   const overflow = (baseline?.targets || []).filter(target => !baselineTargets.includes(target));
@@ -52,7 +59,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
   for (const target of targets) archived.delete(planTargetKey(target));
   const representatives = Object.assign(emptyRepresentatives(), Object.fromEntries(targets.filter(target => target.selection).map(target => [target.selection.admissionGroup, target.selection.key])));
   const planDirty = name.trim() !== (baseline?.name || '기본 조합') || JSON.stringify(targets) !== JSON.stringify(baselineTargets);
-  const dirty = planDirty || Boolean(nameEdit && nameEdit.value.trim() !== name.trim()) || editing && (changed || !profile);
+  const dirty = planDirty || Boolean(nameEdit && nameEdit.value.trim() !== name.trim()) || editing && (changed || preferencesChanged || !profile);
   const queryKey = JSON.stringify({ scores: profile?.scores, profileRevision: profile?.revision, targets });
   const currentResult = enabled && calculationEnabled && !editing && conversion.key === queryKey && conversion.status === 'ready';
   const groupConversion = useCalculatorGroupConversion({ active: grouped && enabled && calculationEnabled && !editing, mode: calculationMode,
@@ -63,7 +70,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
   const showPortfolio = portfolioOpen && Boolean(portfolio);
   const openPlan = React.useCallback(plan => { setBaseline(plan); setName(plan?.name || '기본 조합'); setNameEdit(null); setTargets(grouped ? groupPlanTargets(plan?.targets || [], plan?.representatives) : plan?.targets || []); setPortfolioOpen(false); setMessage(''); }, [grouped]);
   React.useEffect(() => {
-    if (!data.profile) { setScores(emptyScores()); setEditing(true); setConsented(false); setErrors({}); openPlan(null); }
+    if (!data.profile) { setScores(emptyScores()); setPreferenceDraft(parseRecommendationPreferences()); setEditing(true); setConsented(false); setErrors({}); openPlan(null); }
     if (!editing && data.profile) setScores(editableScores(data.profile.scores));
     if (!planDirty && !nameEdit) {
       const next = data.plans.find(plan => plan.planId === baseline?.planId) || data.plans.find(plan => plan.planId === data.lastSavedPlanId) || null;
@@ -96,11 +103,17 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     return () => { active = false; clearTimeout(timer); controller.abort(); };
   }, [grouped, enabled, calculationEnabled, editing, queryKey, queryAttempt, binding]);
   const confirmProfile = async () => {
-    if (locked || scores.basis === 'raw' && !estimates.ready) return;
+    if (locked || scores.basis === 'raw' && (!profile || changed) && !estimates.ready) return;
     const prepared = prepareCalculatorScores(scores); setErrors(prepared.errors);
     if (!prepared.ok || !consented && !data.consentAccepted) return;
-    const result = await store.mutate('student_save_calculator_profile', { scores: prepared.data, consented, consentRevision: CALCULATOR_STORAGE_CONSENT });
-    if (result.ok) { setScores(editableScores(result.data.profile.scores)); setEditing(false); setMessage('성적을 저장했습니다.'); }
+    const result = await store.mutate('student_save_calculator_profile', { scores: prepared.data, consented, consentRevision: CALCULATOR_STORAGE_CONSENT,
+      ...(preferencesChanged ? { recommendationPreferences: preferenceDraft } : {}) });
+    if (result.ok) { setScores(editableScores(result.data.profile.scores)); setEditing(false); setMessage(profile && !changed ? '추천 조건을 저장했습니다.' : '성적을 저장했습니다.'); }
+  };
+  const saveRecommendationStrategy = async strategy => {
+    if (strategy === preferences.strategy) return { ok: true };
+    return store.mutate('student_save_calculator_profile', { scores: profile.scores, consented: data.consentAccepted,
+      consentRevision: CALCULATOR_STORAGE_CONSENT, recommendationPreferences: { ...preferences, strategy } });
   };
   const savePlan = async (mode = 'save', planName = name.trim()) => {
     if (locked || !profile || !planName || !targets.length && !baseline) return;
@@ -140,12 +153,13 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing && !showPortfolio ? 'step' : undefined}>02 지원 조합</li><li aria-current={showPortfolio ? 'step' : undefined}>03 포트폴리오</li></ol>
     {store.resource.error && <div className="jcalc-state" role="alert"><p>{store.resource.error}</p>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>최신 저장 상태 확인</CalculatorButton>}</div>}
     <CalculatorNote role="status">{store.busy ? '저장하고 있습니다…' : message || (dirty ? '수정한 내용이 아직 저장되지 않았습니다.' : profile ? '저장한 성적과 조합을 불러왔습니다.' : '')}</CalculatorNote>
-    {showPortfolio ? <CalculatorPortfolio model={portfolio} onBack={() => setPortfolioOpen(false)} /> : editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
-      onChange={value => { setScores(value); setErrors({}); setMessage(''); }} onConfirm={confirmProfile} confirmLabel={profile ? '성적 수정 저장' : '이 성적으로 시작하기'} confirmDisabled={!consented && !data.consentAccepted || Boolean(profile) && !changed}
+    {showPortfolio ? <React.Suspense fallback={<CalculatorNote role="status">포트폴리오를 준비하고 있습니다…</CalculatorNote>}><CalculatorPortfolio model={portfolio} onBack={() => setPortfolioOpen(false)} /></React.Suspense> : editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
+      onChange={value => { setScores(value); setErrors({}); setMessage(''); }} onConfirm={confirmProfile} confirmLabel={profile ? preferencesChanged && !changed ? '추천 조건 저장' : '성적 수정 저장' : '이 성적으로 시작하기'} confirmDisabled={!consented && !data.consentAccepted || Boolean(profile) && !changed && !preferencesChanged}
       onCancel={profile ? () => { setScores(editableScores(profile.scores)); setErrors({}); setEditing(false); } : undefined}>
-      {!data.consentAccepted && <div className="jcalc-profile-consent"><CalculatorNote>입력한 성적과 지원 후보를 계정에 저장하고 운영팀이 계산기 제공·신청 관리를 위해 확인합니다. 컨설팅 검수 성적에는 반영되지 않습니다. <a href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a></CalculatorNote><label className="jcalc-storage-consent"><input type="checkbox" checked={consented} onChange={event => setConsented(event.currentTarget.checked)} /><span>성적·지원 후보 저장과 운영팀 열람에 동의합니다</span></label>{!consented && <CalculatorNote>처음 저장할 때 동의가 필요합니다.</CalculatorNote>}</div>}
+      {showRecommendations && <React.Suspense fallback={null}><CalculatorRecommendationPreferences value={preferenceDraft} onChange={setPreferenceDraft} /></React.Suspense>}
+      {!data.consentAccepted && <div className="jcalc-profile-consent"><CalculatorNote>{showRecommendations ? '입력한 성적·추천 조건·지원 후보를 계정에 저장하고' : '입력한 성적과 지원 후보를 계정에 저장하고'} 운영팀이 계산기 제공·신청 관리를 위해 확인합니다. 컨설팅 검수 성적에는 반영되지 않습니다. <a href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a></CalculatorNote><label className="jcalc-storage-consent"><input type="checkbox" checked={consented} onChange={event => setConsented(event.currentTarget.checked)} /><span>성적·지원 후보 저장과 운영팀 열람에 동의합니다</span></label>{!consented && <CalculatorNote>처음 저장할 때 동의가 필요합니다.</CalculatorNote>}</div>}
     </CalculatorScoreForm></fieldset> : profile && <>
-      <ScoreSummary profile={profile} estimates={estimates} disabled={locked || Boolean(nameEdit)} onEdit={() => { if (planDirty && !globalThis.confirm('저장하지 않은 조합 변경을 취소하고 성적을 수정할까요?')) return; if (planDirty) openPlan(baseline); setScores(editableScores(profile.scores)); setEditing(true); }} />
+      <ScoreSummary profile={profile} estimates={estimates} disabled={locked || Boolean(nameEdit)} onEdit={() => { if (planDirty && !globalThis.confirm('저장하지 않은 조합 변경을 취소하고 성적을 수정할까요?')) return; if (planDirty) openPlan(baseline); setScores(editableScores(profile.scores)); setPreferenceDraft(preferences); setEditing(true); }} />
       <section className="jcalc-panel jcalc-plan-manager" aria-label="지원 조합 관리">
         <div className="jcalc-section-head"><div className="jcalc-plan-title"><h2>{name}</h2><button ref={nameTrigger} type="button" className="jcalc-text-button" disabled={locked || Boolean(nameEdit)} onClick={() => { setNameEdit({ mode: 'rename', value: name }); setMessage(''); }}>이름 변경</button></div><span className="jcalc-note">{data.plans.length}/10 저장</span></div>
         {nameEdit && <form className="jcalc-plan-name-form" onSubmit={confirmName} onKeyDown={event => { if (event.key === 'Escape' && !store.busy) closeNameEdit(); }}>
@@ -162,8 +176,9 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
       </section>
       {grouped ? <section className="jcalc-group-area" aria-label="군별 지원 조합">
         {calculationStatus}
-        <CalculatorPlanBoard targets={targets} archivedTargets={[...archived.values()]} locked={locked} denyAccess={denyAccess}
+        <CalculatorPlanBoard targets={targets} archivedTargets={[...archived.values()]} locked={locked} saving={enabled && data.canSave && store.busy} denyAccess={denyAccess}
           conversions={groupConversion.byGroup} onRetry={groupConversion.retry}
+          recommendation={calculationEnabled && showRecommendations ? { scores: profile.scores, preferences, saveStrategy: saveRecommendationStrategy } : null}
           onAdd={target => setTargets(previous => setPlanTarget(previous, target))}
           onRemove={key => setTargets(previous => previous.filter(target => planTargetKey(target) !== key))} />
       </section> : <>
@@ -180,8 +195,8 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
   </div>;
 }
 
-export default function CalculatorWorkspace({ entitlement, enabled, calculationEnabled, calculationMode, denyAccess, grouped = false }) {
+export default function CalculatorWorkspace({ entitlement, enabled, calculationEnabled, calculationMode, denyAccess, grouped = false, recommendations = false }) {
   const store = useCalculatorWorkspace(entitlement.applicationId, enabled);
   if (!store.resource.data) return enabled && <section className="jcalc-panel" aria-label="계산기 저장 자료"><CalculatorNote role={store.resource.status === 'error' ? 'alert' : 'status'}>{store.resource.status === 'error' ? store.resource.error : '저장한 성적과 조합을 불러오고 있습니다…'}</CalculatorNote>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>저장 자료 다시 불러오기</CalculatorButton>}</section>;
-  return <div hidden={!enabled}><WorkspaceEditor key={store.resource.data.workspaceId} store={store} enabled={enabled} calculationEnabled={calculationEnabled} calculationMode={calculationMode} denyAccess={denyAccess} grouped={grouped} /></div>;
+  return <div hidden={!enabled}><WorkspaceEditor key={store.resource.data.workspaceId} store={store} enabled={enabled} calculationEnabled={calculationEnabled} calculationMode={calculationMode} denyAccess={denyAccess} grouped={grouped} recommendations={recommendations} /></div>;
 }

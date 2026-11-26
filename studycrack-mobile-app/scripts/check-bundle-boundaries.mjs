@@ -34,13 +34,13 @@ assert.ok(
 );
 
 const initialFiles = new Set();
-function collectStaticImports(fileName) {
-  if (initialFiles.has(fileName)) return;
-  initialFiles.add(fileName);
-  const chunk = chunks.find((candidate) => candidate.fileName === fileName);
-  for (const importedFile of chunk?.imports || []) collectStaticImports(importedFile);
+function collectStaticImports(fileName, graph, visited) {
+  if (visited.has(fileName)) return;
+  visited.add(fileName);
+  const chunk = graph.find((candidate) => candidate.fileName === fileName);
+  for (const importedFile of chunk?.imports || []) collectStaticImports(importedFile, graph, visited);
 }
-collectStaticImports(entryChunk.fileName);
+collectStaticImports(entryChunk.fileName, chunks, initialFiles);
 
 const initialModules = new Set(
   chunks
@@ -156,11 +156,24 @@ const calculatorBuild = await build({ root: appRoot, mode: 'jungsi-calculator', 
 const calculatorChunks = (calculatorBuild.output || calculatorBuild[0]?.output || []).filter(item => item.type === 'chunk');
 assert.ok(calculatorChunks.some(chunk => chunk.isEntry && chunk.fileName === 'jungsi-calculator.bundle.js'), 'calculator needs its own entry');
 assert.ok(calculatorChunks.every(chunk => !Object.keys(chunk.modules).some(id => /\/src\/(?:app\/MobileApp\.js|features\/consulting-v2\/ConsultingApp\.jsx)$/.test(id))), 'calculator must not boot the main app or consulting journey');
-const calculatorBytes = calculatorChunks.reduce((sum, chunk) => sum + chunk.code.length, 0);
-assert.ok(calculatorBytes < 250 * 1024, `calculator JS must remain below 250 KiB: ${formatKiB(calculatorBytes)} (${calculatorBytes} code units)`);
+const calculatorEntry = calculatorChunks.find(chunk => chunk.isEntry);
+const calculatorApp = calculatorChunks.find(chunk => Object.keys(chunk.modules).some(id => id.endsWith('/JungsiCalculatorApp.jsx')));
+assert.ok(calculatorEntry.dynamicImports.includes(calculatorApp?.fileName), 'calculator entry must open the independent calculator app');
+const calculatorStartup = new Set();
+collectStaticImports(calculatorEntry.fileName, calculatorChunks, calculatorStartup);
+collectStaticImports(calculatorApp.fileName, calculatorChunks, calculatorStartup);
+const calculatorBytes = calculatorChunks.filter(chunk => calculatorStartup.has(chunk.fileName)).reduce((sum, chunk) => sum + chunk.code.length, 0);
+const calculatorDeferred = calculatorChunks.filter(chunk => !calculatorStartup.has(chunk.fileName));
+for (const view of ['CalculatorRecommendationPanel.jsx', 'CalculatorRecommendationPreferences.jsx', 'CalculatorPortfolio.jsx']) {
+  assert.ok(calculatorDeferred.some(chunk => Object.keys(chunk.modules).some(id => id.endsWith('/' + view))),
+    `${view} must stay outside the calculator startup graph`);
+}
+const calculatorDeferredBytes = calculatorDeferred.reduce((sum, chunk) => sum + chunk.code.length, 0);
+assert.ok(calculatorBytes < 250 * 1024, `calculator startup JS must remain below 250 KiB: ${formatKiB(calculatorBytes)}`);
+assert.ok(calculatorDeferredBytes < 17 * 1024, `calculator deferred views must remain below 17 KiB: ${formatKiB(calculatorDeferredBytes)}`);
 assert.equal(cacheControlFor('studycrack-mobile-app/dist/jungsi-calculator.bundle.js'), NO_CACHE);
 const calculatorPublication = createPublishCommands('/artifact/site', 'static.example', {}, ['studycrack-mobile-app/dist/jungsi-calculator.bundle.js']);
 assert.ok(calculatorPublication.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js') && args.includes(NO_CACHE)), 'calculator entry must be published with entry caching');
 console.log(
-  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks, calculator JS ${formatKiB(calculatorBytes)}`
+  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks, calculator startup JS ${formatKiB(calculatorBytes)}, deferred views ${formatKiB(calculatorDeferredBytes)}`
 );
