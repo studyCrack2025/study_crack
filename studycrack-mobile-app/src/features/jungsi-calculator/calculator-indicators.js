@@ -2,6 +2,7 @@ export const CALCULATOR_RISK_BANDS = [['stable', '안정'], ['appropriate', '적
 
 const teacherRule = '학생부 100% 전형입니다. 수능 최저는 국어·수학·영어·탐구 중 상위 3개 영역 등급 합 6 이내입니다. 가채점은 예상 등급을 적용합니다.';
 const selectionNotices = new Map([
+  ['SELECTION_NON_CSAT_TRACK', { label: '현재 계산 대상 제외', note: '수능위주 전형만 계산할 수 있습니다. 지원 조합에서 다른 후보를 선택할 수 있습니다.' }],
   ['SELECTION_SCORE_POLICY_UNCONFIRMED', { label: '현재 계산 대상 제외', note: '대학의 환산 규정 확인이 남아 있습니다. 지원 조합에서 다른 후보를 선택할 수 있습니다.' }],
   ['CSAT_MINIMUM_MET', { label: '수능 최저 충족', note: teacherRule }],
   ['CSAT_MINIMUM_NOT_MET', { label: '수능 최저 미충족', note: teacherRule }],

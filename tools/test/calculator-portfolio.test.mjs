@@ -19,7 +19,7 @@ test('a saved partial portfolio truncates display only and preserves source prec
   assert.equal(model.cards[0].indicator.band, null); assert.equal(model.cards[0].indicator.points, null); assert.equal(value.conversion.results[0].referenceComparison.convertedScore, 730.1234567);
   assert.deepEqual(model.cards.slice(1).map(row => row.status), ['empty', 'empty']);
   assert.equal(model.cards[0].score.label, '기존 산식 환산점수'); assert.deepEqual(model.cards[0].reference.lines, [{ label: '예상 합격 컷', value: '산출 보류' }]);
-  assert.match(model.probability, /자료가 준비/); assert.equal(model.cards[0].probability, undefined);
+  assert.equal(model.basisLabel, '성적표 기준'); assert.equal(model.cards[0].cutoff, '산출 보류'); assert.equal(model.cards[0].probability, undefined);
 });
 
 test('a result from other scores, profile revision, selection or result order cannot become the current portfolio', () => {
@@ -32,6 +32,7 @@ test('formal CSAT component points stay distinct from another reference scale an
   const { value } = fixture(); Object.assign(value.conversion.results[0], { status: 'available', convertedScore: 51.1234567, maximumScore: 60, scoreScope: 'csat_component', forecast: { probability: { percent: 99 } }, possibility: { status: 'available', index: { points: 66 }, riskBand: 'appropriate', sourceYear: 2026, targetYear: 2027, cutoffs: { pass: 49.12, registered70: 52.34 } } });
   const card = createCalculatorPortfolio(value).cards[0]; assert.equal(card.score.label, '예상 환산점수'); assert.equal(card.score.value, '51.12점'); assert.match(card.score.maximum, /60.00점/);
   assert.equal(card.indicator.points, null); assert.equal(card.indicator.band, 'appropriate'); assert.deepEqual(card.reference.lines.map(line => line.value), ['49.12점', '52.34점', '730.12점']); assert.doesNotMatch(JSON.stringify(card), /80 \/ 100|66 \/ 100/); assert.equal(value.conversion.results[0].convertedScore, 51.1234567);
+  assert.equal(card.cutoff, '49.12점');
   assert.match(card.notes.join(' '), /학생부·면접·실기/); assert.doesNotMatch(JSON.stringify(card), /99%/);
 });
 

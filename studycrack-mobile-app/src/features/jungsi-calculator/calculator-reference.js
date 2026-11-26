@@ -40,5 +40,5 @@ export function safeCalculatorReference(value, target, scores) {
     : value.status === 'historical70_only' && value.registered70Reference >= 0 ? { year: value.referenceYear, score: value.registered70Reference } : null;
   return { status: two ? 'academic_score_without_cut' : value.status, convertedScore: value.convertedScore, historical70,
     legacyScore: value.status === 'prior_data_two_estimates' || value.identityScope === 'legacy_unit_reference_only',
-    recordId: value.recordId, sourceIds: Array.isArray(value.sourceIds) ? value.sourceIds.filter(id => /^SOURCE_[A-Z0-9_-]{1,150}$/.test(id)).slice(0, 20) : [], reasonCodes: value.reasonCodes };
+    recordId: value.recordId, bundleDigest: value.bundleDigest, sourceIds: Array.isArray(value.sourceIds) ? value.sourceIds.filter(id => /^SOURCE_[A-Z0-9_-]{1,150}$/.test(id)).slice(0, 20) : [], reasonCodes: value.reasonCodes };
 }

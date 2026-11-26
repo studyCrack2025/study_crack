@@ -1,28 +1,38 @@
-.jcalc-portfolio { display: grid; gap: 20px; min-width: 0; }
-.jcalc-export-actions { min-width: 0; }
-.jcalc-export-actions button { flex: 1 1 140px; min-height: 48px; }
-.jcalc-portfolio-hero { display: grid; gap: 20px; padding: clamp(28px, 5vw, 64px); border-radius: 16px; background: var(--sc-brand-navy); color: var(--sc-on-brand); overflow-wrap: anywhere; }
-.jcalc-portfolio-hero p { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; }
-.jcalc-portfolio-hero h2 { margin: 0; font-size: clamp(26px, 4vw, 44px); line-height: 1.4; letter-spacing: -0.04em; }
-.jcalc-portfolio-hero > strong { font-size: 20px; line-height: 1.6; }
-.jcalc-portfolio-hero > span { font-size: 12px; line-height: 1.8; }
-.jcalc-portfolio-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; align-items: stretch; }
-.jcalc-portfolio-card { display: flex; flex-direction: column; gap: 20px; overflow-wrap: anywhere; }
-.jcalc-portfolio-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-.jcalc-portfolio-card-heading h3 { margin: 0; color: var(--sc-brand-navy); font-size: 24px; }
-.jcalc-portfolio-identity .jcalc-school-heading > strong { font-size: 14px; color: var(--sc-brand-navy); }
-.jcalc-portfolio-identity h4 { margin: 10px 0; color: var(--sc-ink); font-size: 22px; line-height: 1.6; }
-.jcalc-portfolio-identity p { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
-.jcalc-portfolio-score { display: grid; gap: 10px; padding: 20px 0; border-top: 1px solid var(--sc-line-subtle); border-bottom: 1px solid var(--sc-line-subtle); color: var(--sc-brand-navy); }
-.jcalc-portfolio-score > span { font-size: 12px; }
-.jcalc-portfolio-score > strong { font-size: clamp(24px, 3vw, 32px); line-height: 1.5; }
-.jcalc-portfolio-score small { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
-.jcalc-portfolio-reference { margin-top: auto; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.9; }
-.jcalc-portfolio-reference > p { margin: 0; font-weight: 700; }
-.jcalc-portfolio-reference dl { display: grid; gap: 12px; margin: 16px 0; }
-.jcalc-portfolio-reference dt { margin: 0 0 4px; }
-.jcalc-portfolio-reference dd { margin: 0; color: var(--sc-ink); font-size: 14px; font-weight: 700; }
-.jcalc-portfolio-reference small { font-size: inherit; }
-.jcalc-portfolio-empty { margin: 32px 0; color: var(--sc-ink-muted); font-size: 20px; line-height: 1.8; }
-.jcalc-portfolio-footer { padding: 20px; border-radius: 8px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 11px; line-height: 1.9; }
-.jcalc-portfolio-footer p { margin: 0 0 10px; }
+.jcalc-portfolio { display: grid; gap: 12px; min-width: 0; }
+.jcalc-portfolio-hero { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; padding: 0 0 8px; overflow-wrap: anywhere; }
+.jcalc-portfolio-hero > div { min-width: 0; }
+.jcalc-portfolio-hero h2 { margin: 0 0 8px; color: var(--sc-brand-navy); font-size: clamp(24px, 3vw, 34px); line-height: 1.3; }
+.jcalc-portfolio-hero p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; }
+.jcalc-portfolio-hero p span { color: var(--sc-ink-muted); font-size: 12px; }
+.jcalc-export-actions .jcalc-note:not(:empty) { margin-top: 6px; }
+.jcalc-portfolio-comparison { overflow: hidden; border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); }
+.jcalc-portfolio-row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, minmax(96px, .42fr)) minmax(110px, .45fr); align-items: center; gap: 10px 16px; padding: 14px 18px; }
+.jcalc-portfolio-column-head { background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 12px; font-weight: 700; }
+.jcalc-portfolio-column-head > :nth-child(n+2), .jcalc-portfolio-metric, .jcalc-portfolio-stage { text-align: right; }
+.jcalc-portfolio-card { border-top: 1px solid var(--sc-line-subtle); overflow-wrap: anywhere; }
+.jcalc-portfolio-candidate { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.jcalc-portfolio-candidate h3 { flex: none; margin: 0; padding: 3px 6px; border-radius: 4px; background: var(--sc-surface-subtle); color: var(--sc-brand-navy); font-size: 13px; }
+.jcalc-portfolio-candidate p { margin: 0; color: var(--sc-ink-muted); }
+.jcalc-portfolio-candidate strong { display: block; color: var(--sc-ink); font-size: 16px; line-height: 1.4; }
+.jcalc-portfolio-candidate small, .jcalc-portfolio-metric small { display: block; margin-top: 3px; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.5; }
+.jcalc-portfolio-metric { position: relative; min-width: 0; }
+.jcalc-portfolio-metric span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.jcalc-portfolio-metric strong { color: var(--sc-ink); font-size: clamp(15px, 2vw, 23px); font-variant-numeric: tabular-nums; line-height: 1.25; }
+.jcalc-portfolio-metric:nth-child(2) strong { color: var(--sc-brand-navy); }
+.jcalc-portfolio-stage { min-width: 0; color: var(--sc-ink-muted); }
+.jcalc-portfolio-stage .jcalc-forecast-badge { max-width: 100%; white-space: normal; }
+.jcalc-portfolio-details { padding: 0 18px 6px; color: var(--sc-ink-muted); font-size: 12px; overflow-wrap: anywhere; }
+.jcalc-portfolio-details summary { display: flex; align-items: center; width: fit-content; min-height: 36px; color: var(--sc-brand-navy); text-decoration: underline; cursor: pointer; }
+.jcalc-portfolio-details dl { margin: 0 0 8px; }
+.jcalc-portfolio-details dl div { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; }
+.jcalc-portfolio-details dd { margin: 0; color: var(--sc-ink); font-weight: 700; }
+@media (max-width: 680px) {
+  .jcalc-portfolio-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; padding: 12px; }
+  .jcalc-portfolio-column-head { display: none; }
+  .jcalc-portfolio-card:first-of-type { border-top: 0; }
+  .jcalc-portfolio-candidate { grid-column: 1 / -1; }
+  .jcalc-portfolio-metric { padding: 6px 8px; border-radius: 4px; background: var(--sc-surface-subtle); text-align: left; }
+  .jcalc-portfolio-metric span { position: static; display: block; width: auto; height: auto; margin-bottom: 3px; clip-path: none; color: var(--sc-ink-muted); font-size: 11px; }
+  .jcalc-portfolio-stage { grid-column: 1 / -1; text-align: left; }
+  .jcalc-portfolio-details { padding-left: 12px; padding-right: 12px; }
+}
