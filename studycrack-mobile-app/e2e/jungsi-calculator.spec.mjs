@@ -303,8 +303,15 @@ test('전용 화면은 여섯 화면 크기에서 실제 폰트와 문서 스크
   for (const width of [320, 375, 430, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(path);
-    await page.evaluate(() => document.fonts.ready);
-    expect(await page.evaluate(() => Array.from(document.fonts).some(font => font.family === 'Paperlogy' && font.status === 'loaded'))).toBe(true);
+    const title = page.getByRole('heading', { name: '합격 계산기', exact: true });
+    await expect(title).toBeVisible();
+    await expect(title).toHaveCSS('font-family', /^"?Paperlogy"?(?:,|$)/);
+    const loadedPaperlogy = await title.evaluate(async heading => {
+      const { fontWeight, fontSize } = getComputedStyle(heading);
+      const faces = await document.fonts.load(`${fontWeight} ${fontSize} "Paperlogy"`, heading.textContent);
+      return faces.some(face => face.family === 'Paperlogy' && face.status === 'loaded');
+    });
+    expect(loadedPaperlogy, `Paperlogy loads with the heading at ${width}px`).toBe(true);
     await fits(page);
     await selectGlobal(page);
     await page.getByRole('searchbox', { name: '학과명 검색', exact: true }).fill('컴퓨터');
