@@ -3,6 +3,9 @@
 .jcalc-steps li { padding: 14px 6px; border-bottom: 2px solid var(--sc-line-subtle); color: var(--sc-ink-muted); font-size: 12px; text-align: center; }
 .jcalc-steps [aria-current="step"] { border-color: var(--sc-brand-navy); color: var(--sc-brand-navy); font-weight: 700; }
 .jcalc-workspace-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.jcalc-preference-options { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }
+.jcalc-preference-options > div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.jcalc-preference-options label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; font-size: 13px; }
 .jcalc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .jcalc-plan-toolbar { display: grid; gap: 10px; }
 .jcalc-data-settings { padding: 8px; color: var(--sc-ink-muted); font-size: 12px; }
