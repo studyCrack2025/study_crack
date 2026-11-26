@@ -1,8 +1,9 @@
 import React from 'react';
-import { CALCULATOR_STAGE_NOTE, calculatorCutoffLines, formatCalculatorScore as format, HISTORICAL_CUTOFF_NOTE, previewScoreLabel, previewScoreNote, referenceCaution, referenceScoreLabel } from './calculator-display.js';
+import { CALCULATOR_STAGE_NOTE, calculatorCutoffLines, formatCalculatorScore as format, HISTORICAL_CUTOFF_NOTE, OFFER_ESTIMATE_NOTE, previewScoreLabel, previewScoreNote, referenceCaution, referenceScoreLabel } from './calculator-display.js';
 
 export function CalculatorCutoffLines({ reference, possibility }) {
   return <><dl className="jcalc-cut-lines">{calculatorCutoffLines(reference, possibility).map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+    {possibility?.offerEstimate && <small className="jcalc-forecast-note">{OFFER_ESTIMATE_NOTE}</small>}
     {reference?.historical70 && <small className="jcalc-forecast-note">{HISTORICAL_CUTOFF_NOTE}</small>}</>;
 }
 

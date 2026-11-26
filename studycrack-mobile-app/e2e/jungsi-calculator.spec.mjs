@@ -100,6 +100,9 @@ function conversionResponse(payload, control) {
           validationState: control.possibilityMode === 'invalid' ? 'failed' : 'passed', dataReleaseId: release.dataReleaseId,
           admissionUnitId: control.possibilityMode === 'mismatch' ? 'UNIT_OTHER_MAJOR' : row.selected.admissionUnitId
         });
+        if (control.offerEstimate) Object.assign(row.possibility, {
+          cutoffs: { pass: 735, registered70: 749 }, offerEstimate: control.offerEstimate
+        });
       } else row.forecast = { status: 'available', probability: { percent: 99, qualifier: 'approximate' }, riskBand: 'stable' };
       if (control.referenceMode) {
         const legacy = control.referenceMode === 'prior', one = control.referenceMode === 'single70';
@@ -487,7 +490,7 @@ test('진행 중 성적 수정·계정 변경은 늦은 환산 응답을 버린�
   await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
 });
 
-test('5단계는 서버 분류의 색상 배지로 표시하고 숫자 지수나 합격률은 노출하지 않는다', async ({ page }) => {
+test('5단계는 색상 배지로 표시하고 검증된 두 컷에 연결된 추정치만 보여준다', async ({ page }) => {
   const control = await setup(page); control.possibilityMode = 'ready'; await page.goto(path); await prepareConversion(page);
   for (const [riskBand, points, label] of [['stable', 82, '안정'], ['appropriate', 70, '적정'], ['neutral', 50, '소신'], ['challenge', 30, '상향'], ['risky', 15, '위험']]) {
     control.riskBand = riskBand; control.indexPoints = points;
@@ -496,8 +499,17 @@ test('5단계는 서버 분류의 색상 배지로 표시하고 숫자 지수나
     await expect(page.locator('.jcalc-result')).not.toContainText('/ 100'); await showCautions(page);
     await expect(page.getByText(/지원 단계는 실제 합격률이 아닙니다/)).toBeVisible(); await expect(page.getByText(/CUT_RELEASE_BROWSER_TEST/)).toBeVisible();
   }
+  control.offerEstimate = { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 74, low: 71, high: 77 };
+  const calculate = page.getByRole('button', { name: '환산점수·가능성 조회', exact: true });
+  await calculate.click();
+  const result = page.locator('.jcalc-result');
+  await expect(result).toContainText('추정 합격 가능성');
+  await expect(result).toContainText('약 74% (71~77%)');
   const draft = await page.evaluate(() => sessionStorage.getItem('sc_jungsi_calculator_v1:calculator-student-A'));
-  for (const key of ['probability', 'forecast', 'possibility']) expect(draft).not.toContain(key);
+  for (const key of ['probability', 'forecast', 'possibility', 'offerEstimate']) expect(draft).not.toContain(key);
+  control.offerEstimate.high = 78; await calculate.click();
+  await expect(result).not.toContainText('추정 합격 가능성');
+  await expect(result).toContainText('735.00점');
   await page.getByRole('textbox', { name: '국어 표준점수', exact: true }).fill('129'); await expect(page.locator('.jcalc-forecast-badge')).toHaveCount(0);
 });
 

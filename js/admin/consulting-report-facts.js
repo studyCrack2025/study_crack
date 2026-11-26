@@ -84,6 +84,13 @@ function reportFactCard(fact, prefix) {
 function reportFactReviewedCard(card,fact) {
     const r=fact.referenceComparison,states={current_two_references:'현행식 참고',prior_data_two_estimates:'기존자료 참고',historical70_only:'70% 단독 참고',academic_score_without_cut:'수능 점수만'};
     const finite=n=>typeof n==='number'&&Number.isFinite(n),two=['current_two_references','prior_data_two_estimates'].includes(r?.status);
+    const estimate=r?.offerEstimate;
+    const estimateValid=!Object.hasOwn(r||{},'offerEstimate')||(two&&estimate&&Object.keys(estimate).length===5
+        &&estimate.scope==='csat_component'
+        &&[estimate.low,estimate.percent,estimate.high].every(n=>Number.isInteger(n)&&n>=2&&n<=98)
+        &&estimate.low<=estimate.percent&&estimate.percent<=estimate.high
+        &&(estimate.policy==='consulting-offer-estimate-1.0.0'||estimate.policy==='consulting-offer-estimate-1.1.0'
+            &&estimate.low>=estimate.percent-3&&estimate.high<=estimate.percent+3));
     const valid=r?.contractVersion==='reviewed-admission-reference-v1'&&Object.hasOwn(states,r.status)
         &&/^(?:U|SG27|R(?:0[1-9]|1[0-9]|20))_[a-f0-9]{16}$/.test(r.recordId||'')&&fact.admissionUnitId==='UNIT_REF_'+r.recordId.toUpperCase()
         &&/^sha256:[a-f0-9]{64}$/.test(r.bundleDigest||'')&&r.convertedScore===fact.convertedScore&&r.major===(fact.sourceMajor??fact.admissionUnitName)
@@ -94,14 +101,19 @@ function reportFactReviewedCard(card,fact) {
     const boundsValid=r?.status==='current_two_references'?b?.kind==='cut_assumption_range'&&range(b.pass)&&range(b.registered70)
         &&b.pass.low<=r.passReference+1e-7&&b.pass.high>=r.passReference-1e-7&&b.registered70.low<=r.registered70Reference+1e-7&&b.registered70.high>=r.registered70Reference-1e-7
         &&i?.kind==='cut_assumption_range'&&range(i)&&i.low>=1&&i.high<=99:b===null&&i===null;
-    if(!valid||!boundsValid){card.append(reportFactElement('p','연결 자료의 점수·전형·기준을 확인해야 합니다. 수치를 표시하지 않습니다.','consulting-caption'));return card;}
+    if(!valid||!boundsValid||!estimateValid){card.append(reportFactElement('p','연결 자료의 점수·전형·기준을 확인해야 합니다. 수치를 표시하지 않습니다.','consulting-caption'));return card;}
     const band=r.referenceIndex===null?'unknown':r.referenceIndex>=80?'stable':r.referenceIndex>=65?'appropriate':r.referenceIndex>=45?'neutral':r.referenceIndex>=25?'challenge':'risky';
     const risk=reportFactElement('p',reportFactBandLabels[band]||'판단 보류','consulting-report-fact-risk');risk.dataset.band=band;card.append(risk);
     const dl=reportFactElement('dl',undefined,'consulting-report-fact-metrics'),line=(value,b)=>b&&finite(b.low)&&finite(b.high)&&b.low!==b.high?`${reportFactNumber(value)} (${reportFactNumber(b.low)}~${reportFactNumber(b.high)})`:reportFactNumber(value);
     const rows=[['수능 환산점수',reportFactNumber(r.convertedScore)],['예상 커트라인',r.passReference===null?'미제공':line(r.passReference,r.referenceBounds?.pass)],['70% 참고선',r.registered70Reference===null?'미제공':line(r.registered70Reference,r.referenceBounds?.registered70)],['참고 지수',r.referenceIndex===null?'미제공':`${r.referenceIndex} / 100`]];
+    if(estimate){
+        const {percent,low,high}=estimate;
+        rows.push(['수능 기준 추정 합격 가능성',`약 ${percent}% (${Math.max(low,percent-3)}~${Math.min(high,percent+3)}%)`]);
+    }
     for(const[label,value]of rows){const cell=document.createElement('div');cell.append(reportFactElement('dt',label),reportFactElement('dd',value));dl.append(cell);}card.append(dl);
     card.append(reportFactElement('p',`${fact.trackName?fact.trackName+' · ':''}${states[r.status]} · ${r.referenceYear===null?'추정 생성연도 미확인':r.referenceYear+'학년도'+(r.referenceYear===2025?' 보완자료':' 입결 참고')} · ${fact.maximumScore===null?'기준 만점 미지정':'기준 만점 '+reportFactNumber(fact.maximumScore)}`,'consulting-caption'));
     if(r.indexRange&&r.indexRange.low!==r.indexRange.high)card.append(reportFactElement('p',`지수 가정 범위 ${reportFactNumber(r.indexRange.low)}~${reportFactNumber(r.indexRange.high)}`,'consulting-caption'));
+    if(estimate)card.append(reportFactElement('p','입결과 모집인원을 반영한 추정치입니다. 표시 폭은 최대 6%p입니다.','consulting-caption'));
     card.append(reportFactElement('p',`실제 합격 확률이 아닌 참고 지수입니다. 학생부·면접·실기·개인 지원 자격은 별도 검수합니다. 연결 번호 ${r.recordId}`,'consulting-caption'));
     return card;
 }

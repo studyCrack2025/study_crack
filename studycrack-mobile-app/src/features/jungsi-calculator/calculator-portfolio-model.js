@@ -2,7 +2,7 @@ import { SUBJECTS } from './calculator-model.js';
 import { calculatorComparisonScores } from './calculator-execution.js';
 import { calculatorIndicator, calculatorSelectionNotice } from './calculator-indicators.js';
 import { CALCULATOR_GROUPS, validRepresentatives } from './calculator-plan-model.js';
-import { CALCULATOR_STAGE_NOTE, calculatorCutoffLines, formatCalculatorScore as format, HISTORICAL_CUTOFF_NOTE, previewScoreLabel, previewScoreNote, referenceCaution, referenceScoreLabel } from './calculator-display.js';
+import { CALCULATOR_STAGE_NOTE, calculatorCutoffLines, formatCalculatorScore as format, HISTORICAL_CUTOFF_NOTE, OFFER_ESTIMATE_NOTE, previewScoreLabel, previewScoreNote, referenceCaution, referenceScoreLabel } from './calculator-display.js';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
@@ -37,7 +37,9 @@ function representativeCard(group, label, target, result) {
   if ((formal ? result.scoreScope : preview?.scoreScope) === 'csat_component') notes.push('수능 반영점수입니다. 학생부·면접·실기와 최종 소수점 처리는 별도 확인이 필요합니다.');
   if (publishedIndex) notes.push(`${result.possibility.sourceYear}학년도 입결 · ${result.possibility.targetYear}학년도 반영 기준의 지수입니다.`);
   if (preview) notes.push(previewScoreNote(preview));
-  const lines = calculatorCutoffLines(reference, formal ? result.possibility : preview);
+  const cutoff = formal ? result.possibility : preview;
+  if (cutoff?.offerEstimate) notes.push(OFFER_ESTIMATE_NOTE);
+  const lines = calculatorCutoffLines(reference, cutoff);
   if (formal && hasReference) lines.push({ label: '별도 산식 환산점수', value: `${format(reference.convertedScore)}점` });
   return { group, label, status: score || notice ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: result.selectionCampusName ?? target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score, cutoff: notice ? null : lines[0].value,
     indicator: { ...calculatorIndicator(result), points: null, caption: notice ? '전형 확인' : '지원 단계' },

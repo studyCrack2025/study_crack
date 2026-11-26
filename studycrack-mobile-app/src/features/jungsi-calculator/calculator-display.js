@@ -12,6 +12,11 @@ export function calculatorCutoffLines(reference, possibility) {
   const approved = ['available', 'reference_only'].includes(possibility?.status) ? possibility.cutoffs : null;
   const lines = [{ label: '예상 합격 컷', value: approved ? `${formatCalculatorScore(approved.pass)}점` : '산출 보류' }];
   if (approved) lines.push({ label: possibility.modeled ? '예상 최종등록자 70% 컷' : '70% 참고선', value: `${formatCalculatorScore(approved.registered70)}점` });
+  const estimate = approved && possibility.offerEstimate;
+  if (estimate) lines.push({
+    label: estimate.scope === 'csat_component' ? '수능 반영분 추정 합격 가능성' : '추정 합격 가능성',
+    value: `약 ${estimate.percent}% (${estimate.low}~${estimate.high}%)`
+  });
   if (reference?.historical70) {
     const { year, score } = reference.historical70;
     lines.push({ label: `${year}학년도 최종등록자 70% 컷`, value: `${score.toLocaleString('ko-KR', { maximumFractionDigits: 10 })}점` });
@@ -25,6 +30,7 @@ export function referenceCaution(reference) {
 }
 
 export const HISTORICAL_CUTOFF_NOTE = '과거 입결은 해당 학년도 반영 기준으로 대학이 공개한 점수입니다.';
+export const OFFER_ESTIMATE_NOTE = '환산점수, 예상 컷, 확인된 모집인원과 입결을 반영한 추정치입니다. 표시 폭은 최대 6%p입니다.';
 export const previewScoreLabel = cutoff => cutoff.inputBasis === 'official' ? '예상 환산점수' : '가채점 환산점수';
 export function previewScoreNote(cutoff) {
   if (!cutoff.modeled) return '가채점 성적을 반영한 예상 환산점수입니다.';
