@@ -17,7 +17,7 @@ function summarizeScores(scores, compared) {
 }
 
 function representativeCard(group, label, target, result) {
-  if (!target) return { group, label, status: 'empty', identity: null, score: null, indicator: null, reference: null, notes: ['이 군의 지원 후보를 선택하지 않았습니다.'] };
+  if (!target) return { group, label, status: 'empty', identity: null, score: null, cutoff: null, indicator: null, reference: null, notes: [] };
   const preview = result.previewCutoff;
   const formal = !preview && result.status === 'available' && finite(result.convertedScore), reference = result.referenceComparison;
   const notice = calculatorSelectionNotice(result);
@@ -39,7 +39,7 @@ function representativeCard(group, label, target, result) {
   if (preview) notes.push(previewScoreNote(preview));
   const lines = calculatorCutoffLines(reference, formal ? result.possibility : preview);
   if (formal && hasReference) lines.push({ label: '별도 산식 환산점수', value: `${format(reference.convertedScore)}점` });
-  return { group, label, status: score || notice ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: result.selectionCampusName ?? target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score,
+  return { group, label, status: score || notice ? 'ready' : 'held', identity: { university: target.selection.universityName, campus: result.selectionCampusName ?? target.selection.campusName, unit: target.selection.unitName, track: target.selection.trackName }, score, cutoff: notice ? null : lines[0].value,
     indicator: { ...calculatorIndicator(result), points: null, caption: notice ? '전형 확인' : '지원 단계' },
     reference: score && !notice ? { label: '입결 기준', lines, note: reference?.historical70 ? HISTORICAL_CUTOFF_NOTE : null } : null, notes };
 }
@@ -52,10 +52,10 @@ export function createCalculatorPortfolio({ profile, plan, conversion, input }) 
   if (!compared || !conversion.results.every((row, index) => row && row.university === plan.targets[index].university && row.major === plan.targets[index].major
     && (!plan.targets[index].selection || row.selectionKey === plan.targets[index].selection.key))) return null;
   return { title: '나의 정시 포트폴리오', name: plan.name, scoreSummary: summarizeScores(profile.scores, compared),
+    basisLabel: profile.scores.basis === 'raw' ? '가채점 기준' : '성적표 기준',
     cards: CALCULATOR_GROUPS.map(([group, label]) => {
       const index = plan.targets.findIndex(target => target.selection?.key === plan.representatives[group]);
       return representativeCard(group, label, index === -1 ? null : plan.targets[index], conversion.results[index]);
     }),
-    disclaimer: CALCULATOR_STAGE_NOTE,
-    probability: '예상 합격률은 검증된 자료가 준비된 뒤 제공합니다.' };
+    disclaimer: CALCULATOR_STAGE_NOTE };
 }

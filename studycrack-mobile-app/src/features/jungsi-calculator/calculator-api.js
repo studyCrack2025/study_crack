@@ -38,7 +38,7 @@ function safePossibility(value, row, body) {
     || !value.index || Object.keys(value.index).length !== 1 || !Number.isInteger(value.index.points) || value.index.points < 1 || value.index.points > 99) return invalid();
   return { status: value.status, index: referenceOnly ? null : { points: value.index.points }, riskBand: value.riskBand, reasonCodes: value.reasonCodes,
     ...(referenceOnly || validCutoffs(cutoffs) && cutoffs.registered70 > cutoffs.pass ? { cutoffs: { pass: cutoffs.pass, registered70: cutoffs.registered70 } } : {}),
-    sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, validatedAt: value.validatedAt };
+    sourceYear: value.sourceYear, targetYear: value.targetYear, policyVersion: value.policyVersion, publicationId: value.publicationId, publicationDigest: value.publicationDigest, validatedAt: value.validatedAt };
 }
 
 function safePreviewCutoff(value, row, body, target, comparisonScores) {
@@ -60,7 +60,8 @@ function safePreviewCutoff(value, row, body, target, comparisonScores) {
     : status !== 'available' || tied || (modeled || value.riskBand !== undefined) && !riskBands.has(value.riskBand)) return null;
   return { status, convertedScore: value.convertedScore,
     cutoffs: { pass: value.cutoffs.pass, registered70: value.cutoffs.registered70 }, sourceYear: value.sourceYear, targetYear: value.targetYear,
-    ...(modeled ? { modeled, peerEstimate: value.peerEstimate, projectedInputs: value.projectedInputs, inputBasis: body.basis } : {}),
+    ...(modeled ? { modeled, modelDigest: value.modelDigest, peerEstimate: value.peerEstimate, projectedInputs: value.projectedInputs, inputBasis: body.basis }
+      : { publicationDigest: value.publicationDigest }),
     ...(value.riskBand !== undefined ? { riskBand: value.riskBand } : {}),
     ...(value.scoreScope ? { scoreScope: value.scoreScope } : {}) };
 }

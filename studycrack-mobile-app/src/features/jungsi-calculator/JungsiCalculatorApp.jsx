@@ -125,7 +125,7 @@ function AccountCalculator({ owner }) {
   return <><CalculatorAccess resource={access} onRefresh={refresh} />
     {access.status === 'ready' && !allowed && <CalculatorApplicationPanel onLoaded={setHome} accessDenied onRetry={refresh} /> }
     {access.data?.access.allowed && (entitlement && access.data.service.workspaceVersion === 2
-      ? <CalculatorWorkspace key={entitlement.applicationId} entitlement={entitlement} enabled={allowed} calculationEnabled={access.data.service.calculationEnabled} denyAccess={deny} grouped={access.data.service.selectionVersion === 1} />
+      ? <CalculatorWorkspace key={entitlement.applicationId} entitlement={entitlement} enabled={allowed} calculationEnabled={access.data.service.calculationEnabled} calculationMode={access.data.service.calculationMode} denyAccess={deny} grouped={access.data.service.selectionVersion === 1} />
       : <Workspace key={entitlement?.applicationId || owner} owner={owner} access={access} denyAccess={deny} entitlement={entitlement} />)}
     {access.status === 'ready' && !allowed && home?.items.length > 0 && <CalculatorSavedInputs home={home} input={null} changed readOnly />}
   </>;
