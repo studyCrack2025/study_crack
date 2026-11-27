@@ -21,12 +21,13 @@ const explanations = {
 };
 const formatted = formatCalculatorScore;
 
-export default function CalculatorResult({ result, current, selectedId, onSelect, exactSelection = false, actions }) {
+export default function CalculatorResult({ result, current, selectedId, onSelect, exactSelection = false, actions, offerInDetails = false }) {
   if (!result) return <small>환산점수 조회 후 자료 상태를 확인할 수 있습니다.</small>;
   const notice = current && calculatorSelectionNotice(result);
   const { referenceComparison: reference, previewCutoff, possibility, selected, status } = result;
   const formal = status === 'available' && !previewCutoff;
   const hasReference = reference?.convertedScore != null;
+  const offer = exactSelection && calculatorOfferLine(possibility);
   const explanation = notice?.note || explanations[result.reasonCodes.find(code => explanations[code])] || '이 모집단위의 산식·지원 조건을 더 확인해야 합니다. 현재는 점수를 제공하지 않습니다.';
   const maximumNote = formal && (result.scoreScale === 'raw_points' ? '별도 기준 만점이 없는 점수입니다.' : `기준 만점 ${formatted(result.maximumScore)}점 · 가산점에 따라 초과할 수 있습니다.`);
   return <div className="jcalc-result" data-card={exactSelection || undefined}>
@@ -37,11 +38,11 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
       : <p className="jcalc-result-message">입력 조건이 바뀌었습니다. 환산점수를 다시 조회해주세요.</p>}
     {current && !exactSelection && <CalculatorForecast result={result} />}
     {current && (formal ? <>
-      <CalculatorCutoffLines reference={reference} possibility={possibility} score={result.convertedScore} compact={exactSelection} />
+      <CalculatorCutoffLines reference={reference} possibility={possibility} score={result.convertedScore} compact={exactSelection} offerInDetails={offerInDetails} />
       <CalculatorCautions actions={actions}>
         {exactSelection && <p className="jcalc-forecast-note">{maximumNote}</p>}
         {exactSelection && calculatorCardScoreComparison(result.convertedScore, possibility) && <p className="jcalc-forecast-note">{CARD_SCORE_COMPARISON_NOTE}</p>}
-        {exactSelection && calculatorOfferLine(possibility) && <p className="jcalc-forecast-note">{OFFER_ESTIMATE_NOTE}</p>}
+        {offer && <p className="jcalc-forecast-note">{offerInDetails && <>{offer.label} {offer.value}<br /></>}{OFFER_ESTIMATE_NOTE}</p>}
         {result.scoreScope === 'csat_component' && <p className="jcalc-forecast-note">{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</p>}
         <p className="jcalc-forecast-note">{calculatorForecastNote(possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>
         {possibility?.status === 'available' && <p className="jcalc-forecast-note">자료 기준 · {possibility.publicationId} · {possibility.policyVersion}</p>}
@@ -51,7 +52,7 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
         </> : <><p className="jcalc-forecast-note">아래는 별도 산식의 참고 자료입니다. 위 환산점수와 다른 점수 척도일 수 있습니다.</p><CalculatorReference reference={reference} showCutoffs={false} /></>)}
       </CalculatorCautions>
     </> : !notice || hasReference
-      ? <CalculatorReference reference={reference} previewCutoff={previewCutoff} showCutoffs={!notice} compact={exactSelection} actions={actions} />
+      ? <CalculatorReference reference={reference} previewCutoff={previewCutoff} showCutoffs={!notice} compact={exactSelection} actions={actions} offerInDetails={offerInDetails} />
       : <CalculatorCautions actions={actions} />)}
   </div>;
 }

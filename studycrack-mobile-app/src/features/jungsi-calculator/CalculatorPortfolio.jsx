@@ -2,9 +2,9 @@ import React from 'react';
 import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
 import CalculatorRiskScale from './CalculatorRiskScale.jsx';
 import useCalculatorPortfolioExport from './useCalculatorPortfolioExport.js';
-import CalculatorCandidate from './CalculatorCandidate.jsx';
-import { CalculatorRepresentativeSummary } from './CalculatorPlanBoard.jsx';
-import { CALCULATOR_GROUPS } from './calculator-plan-model.js';
+import CalculatorResult from './CalculatorResult.jsx';
+import { calculatorIndicator } from './calculator-indicators.js';
+import { calculatorOfferLine } from './calculator-display.js';
 import './calculator-portfolio.css';
 
 function PortfolioCandidate({ card }) {
@@ -24,6 +24,26 @@ function PortfolioCandidate({ card }) {
   </article>;
 }
 
+function PortfolioRepresentative({ label, entry, onRetry }) {
+  if (!entry) return <article className="jcalc-portfolio-empty" aria-label={`${label} 지원 후보`}><h3>{label}</h3><CalculatorNote>대표 미선택</CalculatorNote></article>;
+  const { target, result, status, error } = entry;
+  const { universityName, unitName, campusName, trackName } = target.selection;
+  const indicator = result && calculatorIndicator(result);
+  const offer = result && calculatorOfferLine(result.previewCutoff ?? result.possibility);
+  return <article className="jcalc-portfolio-representative" data-risk={indicator?.band} aria-label={`${label} 지원 후보`}>
+    <details open>
+      <summary className="jcalc-portfolio-representative-head">
+        <div><small>{label}</small><strong>{universityName}</strong><span>{unitName}</span></div>
+        {offer ? <strong className="jcalc-candidate-estimate" aria-label={`${offer.label} ${offer.value}`}>{offer.value.split(' (')[0]}</strong>
+          : indicator && <CalculatorRiskScale band={indicator.band} label={indicator.label} />}
+      </summary>
+      <p className="jcalc-portfolio-campus">{result?.selectionCampusName ?? campusName} · {trackName}</p>
+      {result ? <CalculatorResult exactSelection current result={result} offerInDetails />
+        : <div className="jcalc-group-result-state">{status === 'error' ? <><CalculatorNote role="alert">{error}</CalculatorNote>{onRetry && <CalculatorButton text onClick={() => onRetry(target)}>후보 다시 계산</CalculatorButton>}</> : <CalculatorNote role="status">{status === 'idle' ? '계산 대기' : '계산 중…'}</CalculatorNote>}</div>}
+    </details>
+  </article>;
+}
+
 export default function CalculatorPortfolio({ model, onBack, onRetry }) {
   const heading = React.useRef(null);
   const { candidates, representatives, exportMessage, ...summary } = model;
@@ -32,23 +52,16 @@ export default function CalculatorPortfolio({ model, onBack, onRetry }) {
   return <section className="jcalc-portfolio" aria-label="나의 정시 포트폴리오">
     <CalculatorButton text onClick={onBack}>지원 조합으로 돌아가기</CalculatorButton>
     <header className="jcalc-portfolio-hero">
-      <div><h2 ref={heading} tabIndex={-1}>{model.title}</h2><p><strong>{model.name}</strong><span>{model.basisLabel}</span></p></div>
+      <div><h2 ref={heading} tabIndex={-1}>{model.title}</h2><p>{!candidates && <strong>{model.name}</strong>}<span>{model.basisLabel}</span></p></div>
       <div className="jcalc-export-actions" aria-label="포트폴리오 이미지 내보내기" aria-busy={output.status === 'loading' || Boolean(output.action)}>
         <div className="jcalc-workspace-actions"><CalculatorButton primary disabled={!output.ready || Boolean(output.action)} onClick={() => output.deliver(true)}>이미지 복사</CalculatorButton><CalculatorButton disabled={!output.ready || Boolean(output.action)} onClick={() => output.deliver(false)}>PNG 저장</CalculatorButton>{output.status === 'error' && <CalculatorButton onClick={output.retry}>이미지 다시 준비</CalculatorButton>}</div>
         <CalculatorNote role={output.status === 'error' && !exportMessage ? 'alert' : 'status'}>{exportMessage || (output.action ? output.action === 'copying' ? '이미지를 복사하고 있습니다…' : 'PNG 저장을 요청하고 있습니다…' : output.message || (output.status === 'loading' ? '공유할 이미지를 준비하고 있습니다…' : ''))}</CalculatorNote>
       </div>
     </header>
-    {candidates ? <>
-      <CalculatorRepresentativeSummary targets={candidates.map(candidate => candidate.target)} representatives={representatives} />
-      <div className="jcalc-group-board jcalc-portfolio-groups" aria-label="모집군별 환산점수 비교">{CALCULATOR_GROUPS.map(([group, label]) => {
-        const rows = candidates.filter(candidate => candidate.target.selection.admissionGroup === group);
-        return <section className="jcalc-panel jcalc-group-card" key={group} aria-label={`${label} 지원 후보`}><div className="jcalc-group-heading"><h3>{label}</h3></div>
-          {rows.length ? <ul className="jcalc-group-candidates">{rows.map(candidate =>
-            <CalculatorCandidate key={candidate.target.selection.key} target={candidate.target} entry={candidate}
-              representative={representatives[group] === candidate.target.selection.key} onRetry={onRetry} />)}</ul> : <CalculatorNote>미선택</CalculatorNote>}
-        </section>;
-      })}</div>
-    </> : <div className="jcalc-portfolio-comparison" aria-label="모집군별 환산점수 비교">
+    {candidates ? <div className="jcalc-group-board jcalc-portfolio-groups" aria-label="모집군별 환산점수 비교">{model.cards.map(({ group, label }) => {
+      const entry = candidates.find(candidate => candidate.target.selection.admissionGroup === group && candidate.target.selection.key === representatives[group]);
+      return <PortfolioRepresentative key={group} label={label} entry={entry} onRetry={onRetry} />;
+    })}</div> : <div className="jcalc-portfolio-comparison" aria-label="모집군별 환산점수 비교">
       <div className="jcalc-portfolio-row jcalc-portfolio-column-head" aria-hidden="true"><span>지원 후보</span><span>내 환산점수</span><span>예상 합격 컷</span><span>지원 단계</span></div>
       {model.cards.map(card => <PortfolioCandidate key={card.group} card={card} />)}
     </div>}

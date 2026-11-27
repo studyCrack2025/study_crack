@@ -25,12 +25,14 @@ async function setup(page, options = {}) {
   const recommend = (route, recommendation) => {
     const { admissionGroup, preferences, previousUniversities } = recommendation;
     state.recommendationCalls ??= []; state.recommendationCalls.push(recommendation);
-    const names = previousUniversities.length ? ['새서울대', '새경기대'] : ['예시서울대', '예시경기대'];
+    const rounds = [['예시서울대', '예시경기대'], ['새서울대', '새경기대'], ['다른서울대', '다른경기대']];
+    const round = Math.min(2, previousUniversities.length / 2);
+    const names = rounds[round];
     return route.fulfill({ json: { success: true, contractVersion: 'calculator-recommendations-v1', admissionYear: 2027,
       admissionGroup, strategy: preferences.strategy, scoreBasis: 'estimated', repeatedUniversities: 0,
       items: groupedTargets.filter(row => row.selection.admissionGroup === admissionGroup).map((row, index) => ({
         target: { ...row, university: names[index], selection: { ...row.selection, universityName: names[index] } },
-        universityKey: 'UNIV_' + String(index + (previousUniversities.length ? 3 : 1)).repeat(32),
+        universityKey: 'UNIV_' + String(index + round * 2 + 1).repeat(32),
         tier: index, riskBand: index ? 'appropriate' : preferences.strategy === 'safe' ? 'stable' : 'neutral',
         convertedScore: 725, cutoffs: { pass: 700, registered70: 735 },
         offerEstimate: { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 75, low: 72, high: 78 }
@@ -110,6 +112,7 @@ async function setup(page, options = {}) {
       state.record.profile = { revision: (state.record.profile?.revision || 0) + 1, scores: data.scores, updatedAt: at,
         ...(recommendationPreferences ? { recommendationPreferences } : {}), ...(applicantGender ? { applicantGender } : {}) };
     } else if (body.type === 'student_save_calculator_plan') {
+      if (state.deferPlan) await new Promise(resolve => { state.planRelease = resolve; });
       const old = state.record.plans.find(plan => plan.planId === data.planId);
       const groups = data.targets.map(target => target.selection?.admissionGroup);
       if (options.grouped) {
@@ -196,10 +199,11 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await page.getByRole('button', { name: '가군 후보 찾기', exact: true }).click();
   const picker = page.getByRole('dialog');
   await expect(picker.getByRole('combobox', { name: '지원 성향' })).toHaveCount(0);
-  await expect(picker).toContainText('저장한 지원 성향 · 도전 우선');
+  await expect(picker).not.toContainText('저장한 지원 성향');
+  await expect(picker).not.toContainText('가채점 추정 성적 기준');
   await expect(picker).toContainText('예시서울대 · 소신');
   await expect(picker).toContainText('예시경기대 · 적정');
-  await expect(picker).toContainText('같은 권역까지 확대');
+  await expect(picker).not.toContainText('같은 권역까지 확대');
   await expect(picker).toContainText('추정 합격 가능성 72~78%');
   expect(state.record.profile.recommendationPreferences).toEqual({
     streams: ['business', 'humanities', 'natural'], regions: ['REGION_INCHEON', 'REGION_SEOUL'], strategy: 'ambitious'
@@ -208,19 +212,22 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await expect(picker).toContainText('새서울대 · 소신');
   await expect(picker).toContainText('새경기대 · 적정');
   expect(state.recommendationCalls[1].previousUniversities).toEqual(['UNIV_' + '1'.repeat(32), 'UNIV_' + '2'.repeat(32)]);
-  await picker.getByRole('button', { name: '새서울대 예시학과 이 후보 담기' }).click();
+  await picker.getByRole('button', { name: '다시 추천받기' }).click();
+  await expect(picker).toContainText('다른서울대 · 소신');
+  expect(state.recommendationCalls[2].previousUniversities).toEqual([3, 4, 1, 2].map(n => 'UNIV_' + String(n).repeat(32)));
+  await picker.getByRole('button', { name: '다른서울대 예시학과 이 후보 담기' }).click();
   await expect(picker).toBeHidden();
-  await expect(page.getByRole('region', { name: '가군 지원 후보', exact: true })).toContainText('새서울대');
+  await expect(page.getByRole('region', { name: '가군 지원 후보', exact: true })).toContainText('다른서울대');
   expect(state.record.plans).toHaveLength(0);
   const save = page.getByRole('button', { name: '변경사항 저장', exact: true });
   const candidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
   expect((await save.boundingBox()).y).toBeGreaterThan((await candidate.boundingBox()).y + (await candidate.boundingBox()).height);
   await save.click();
   await expect(page.getByRole('status').filter({ hasText: '지원 조합을 저장했습니다.' })).toBeVisible();
-  expect(state.record.plans[0].targets[0].selection.universityName).toBe('새서울대');
+  expect(state.record.plans[0].targets[0].selection.universityName).toBe('다른서울대');
   await page.reload();
   await page.getByRole('button', { name: '가군 후보 바꾸기', exact: true }).click();
-  await expect(picker).toContainText('저장한 지원 성향 · 도전 우선');
+  await expect(picker).toContainText('예시서울대 · 소신');
   expect(state.calls.filter(call => call.type === 'student_save_calculator_profile')).toHaveLength(2);
 });
 
@@ -301,10 +308,14 @@ test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·
   await page.setViewportSize({ width: 320, height: 850 });
   const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
   const readRepresentative = () => page.getByRole('region', { name: '대표 조합', exact: true }).getByRole('listitem').first();
+  await expect(page.getByRole('region', { name: '지원 조합 관리' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '변경사항 저장' })).toHaveCount(0);
   await expect(page.getByRole('region', { name: '다군 지원 후보', exact: true })).toBeVisible();
   await ga.getByRole('searchbox', { name: '대학명 검색' }).fill('예시대학교');
   await ga.getByRole('button', { name: /예시대학교/ }).click();
+  state.deferPlan = true;
   await ga.getByRole('button', { name: /일반전형1 후보에 추가$/ }).click();
+  await expect.poll(() => typeof state.planRelease).toBe('function');
   await ga.getByRole('button', { name: /일반전형2 후보에 추가$/ }).click();
   const cards = ga.locator('.jcalc-group-candidates > li');
   await expect(cards).toHaveCount(2);
@@ -317,8 +328,9 @@ test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·
   await cards.nth(1).getByRole('button', { name: /대표로 선택$/ }).click();
   await expect(cards.nth(1).getByText('대표', { exact: true })).toBeVisible();
   expect(state.conversionCalls).toHaveLength(calculations);
-  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
-  await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
+  state.deferPlan = false; state.planRelease();
+  await expect.poll(() => state.record.plans[0]?.representatives.ga).toBe(groupedTargets[1].selection.key);
+  await expect(page.getByRole('button', { name: '포트폴리오 보기' })).toBeEnabled();
   expect(state.record.plans[0].targets).toHaveLength(2);
   expect(state.record.plans[0].representatives.ga).toBe(groupedTargets[1].selection.key);
   await page.reload();
@@ -326,13 +338,36 @@ test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·
   await expect(readRepresentative()).toContainText('예시대학교');
   await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오' });
-  for (const label of ['가군', '나군', '다군']) await expect(portfolio.getByRole('region', { name: `${label} 지원 후보`, exact: true })).toBeVisible();
-  await expect(portfolio.locator('.jcalc-group-candidates > li')).toHaveCount(2);
+  for (const label of ['가군', '나군', '다군']) await expect(portfolio.getByRole('article', { name: `${label} 지원 후보`, exact: true })).toBeVisible();
+  await expect(portfolio.locator('.jcalc-portfolio-representative')).toHaveCount(1);
+  await expect(portfolio.getByText('726.50점', { exact: true })).toBeVisible();
+  await expect(portfolio.getByText('720.36점', { exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기' }).click();
   await cards.nth(1).getByRole('button', { name: /후보 삭제$/ }).click();
   await expect(cards).toHaveCount(1);
   await expect(readRepresentative()).toContainText('대표 미선택');
+});
+
+test('자동 저장의 응답이 끊겨도 같은 요청을 복구한 뒤 새 후보를 이어서 저장한다', async ({ page }) => {
+  const state = await setup(page, { grouped: true, multiCandidate: true });
+  await saveScores(page);
+  const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  await ga.getByRole('searchbox', { name: '대학명 검색' }).fill('예시');
+  await ga.getByRole('button', { name: /예시대학교/ }).click();
+  state.lostReply = true;
+  await ga.getByRole('button', { name: /일반전형1 후보에 추가$/ }).click();
+  const retry = page.getByRole('button', { name: '저장 다시 시도' });
+  await expect(retry).toBeVisible();
+  await ga.getByRole('button', { name: /일반전형2 후보에 추가$/ }).click();
+  await retry.click();
+  await expect(page.getByRole('button', { name: '포트폴리오 보기' })).toBeEnabled();
+  const saves = state.calls.filter(call => call.type === 'student_save_calculator_plan');
+  expect(saves).toHaveLength(3);
+  expect(saves[1].data).toEqual(saves[0].data);
+  expect(saves[2].data.expectedPlanRevision).toBe(1);
+  expect(state.record.plans).toHaveLength(1);
+  expect(state.record.plans[0].targets).toEqual(groupedTargets.slice(0, 2));
 });
 
 test('조합 선택과 새 조합의 높이가 일치하고 이름만 저장해도 후보 초안이 유지된다', async ({ page }) => {
@@ -658,18 +693,23 @@ test('필수 글꼴 준비 실패는 성공이나 빈 이미지로 숨기지 않
 });
 
 
-test('군별 대학 안내는 대학만 먼저 보여주고 학과 선택·뒤로·Esc는 검색과 저장 자료를 보존한다', async ({ page }) => {
-  const state = await setup(page, { grouped: true }); await saveScores(page); const saved = structuredClone(state.record);
+test('군별 대학 안내는 두 열 모달에서 현재 군 학과만 보여준다', async ({ page }) => {
+  const state = await setup(page, { grouped: true, multiCandidate: true, recommendations: true }); await saveScores(page); const saved = structuredClone(state.record);
+  await page.setViewportSize({ width: 320, height: 800 });
   const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true }), trigger = ga.getByRole('button', { name: '분석 가능한 대학 보기', exact: true });
   await trigger.click(); const dialog = page.getByRole('dialog', { name: '가군 분석 가능한 대학', exact: true });
-  await expect(dialog.getByRole('button', { name: /예시대학교/ })).toBeVisible();
-  expect(state.catalogCalls.every(call => call.view === 'universities')).toBe(true); await expect(dialog.getByRole('button', { name: /후보에 추가$/ })).toHaveCount(0);
-  await dialog.getByRole('searchbox', { name: '대학명 검색', exact: true }).fill('예시');
-  await dialog.getByRole('button', { name: /예시대학교/ }).click();
-  await expect(dialog.getByRole('button', { name: '예시대학교 예시학과 일반전형1 후보에 추가', exact: true })).toBeVisible();
+  const schools = dialog.getByRole('region', { name: '대학 목록' }), units = dialog.getByRole('region', { name: '학과 목록' });
+  await expect(schools.getByRole('button', { name: '예시대학교' })).toBeVisible();
+  expect(state.catalogCalls.every(call => call.view === 'universities')).toBe(true);
+  await expect(units).toContainText('대학을 선택해주세요.');
+  await schools.getByRole('button', { name: '예시대학교' }).click();
+  await expect(units.getByRole('listitem')).toHaveCount(2);
+  await expect(units.getByRole('listitem').first()).toContainText('예시학과');
+  await expect(units.getByRole('button')).toHaveCount(0);
+  expect((await schools.boundingBox()).x).toBeLessThan((await units.boundingBox()).x);
   expect(state.catalogCalls.at(-1)).toMatchObject({ admissionGroup: 'ga', view: 'units', universityKey: 'UNIV_' + '1'.repeat(32) });
-  await dialog.getByRole('button', { name: '대학 목록으로', exact: true }).click(); await expect(dialog.getByRole('searchbox')).toHaveValue('예시');
-  await expect(dialog.getByRole('button', { name: /예시대학교/ })).toBeFocused(); await page.keyboard.press('Escape');
+  expect(state.recommendationCalls).toBeUndefined();
+  await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0); await expect(trigger).toBeFocused(); expect(state.record).toEqual(saved);
   expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden');
 });

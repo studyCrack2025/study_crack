@@ -23,7 +23,7 @@ function CardScoreChart({ points: [own, pass, registered], offscale }) {
   </>;
 }
 
-export function CalculatorCutoffLines({ reference, possibility, score, compact = false }) {
+export function CalculatorCutoffLines({ reference, possibility, score, compact = false, offerInDetails = false }) {
   const position = compact ? calculatorCardScoreComparison(score, possibility) : calculatorScorePosition(score, possibility);
   const lines = calculatorCutoffLines(compact ? null : reference, possibility, { showOffer: !compact });
   const offer = compact && calculatorOfferLine(possibility);
@@ -42,7 +42,7 @@ export function CalculatorCutoffLines({ reference, possibility, score, compact =
         <span aria-hidden="true" className="jcalc-score-legend"><b>● 내 점수</b><span>│ 합격 컷</span><span>╎ 70% 컷</span></span>
       </>}
     </div>}
-    {offer && <p className="jcalc-card-offer"><span>{offer.label}</span> <strong>{offer.value}</strong></p>}
+    {offer && !offerInDetails && <p className="jcalc-card-offer"><span>{offer.label}</span> <strong>{offer.value}</strong></p>}
     <dl className="jcalc-cut-lines">{lines.map(({ label, value }, index) => <div key={label}>
       <dt>{label}</dt><dd>{compact ? <span>{value}</span> : value}{compact && position?.differences[index] && <small className="jcalc-card-cut-difference" aria-label={`내 점수 차이 ${position.differences[index]}`}>({position.differences[index]})</small>}</dd>
       {!compact && position?.differences[index] && <dd className="jcalc-cut-difference"><span>내 점수 차이</span> {position.differences[index]}</dd>}
@@ -58,18 +58,19 @@ export function CalculatorCautions({ actions, children }) {
 
 export const CARD_SCORE_COMPARISON_NOTE = '그래프는 같은 환산 척도의 컷과 내 점수를 비교합니다. 화살표는 내 점수가 그래프의 표시 범위를 벗어났음을 뜻합니다.';
 
-export default function CalculatorReference({ reference, previewCutoff, showCutoffs = true, compact = false, actions }) {
+export default function CalculatorReference({ reference, previewCutoff, showCutoffs = true, compact = false, actions, offerInDetails = false }) {
   if (!reference && !previewCutoff) return <CalculatorCautions actions={actions} />;
   const convertedScore = previewCutoff?.convertedScore ?? reference?.convertedScore;
   const available = convertedScore != null;
+  const offer = compact && calculatorOfferLine(previewCutoff);
   return <section className="jcalc-forecast" aria-label="자료 기준별 참고 비교">
     {available ? <><p className="jcalc-reference-score"><span>{previewCutoff ? previewScoreLabel(previewCutoff) : referenceScoreLabel(reference)}</span><strong>{format(convertedScore)}<small>점</small></strong></p>
-      {showCutoffs && <CalculatorCutoffLines reference={reference} possibility={previewCutoff} score={convertedScore} compact={compact} />}
+      {showCutoffs && <CalculatorCutoffLines reference={reference} possibility={previewCutoff} score={convertedScore} compact={compact} offerInDetails={offerInDetails} />}
     </> : <p className="jcalc-forecast-note">비교 보류 · 이 입력과 전형의 자료를 확인하고 있습니다.</p>}
     <CalculatorCautions actions={actions}>
       <p className="jcalc-forecast-note">{previewCutoff ? previewScoreNote(previewCutoff) : available ? referenceCaution(reference) : '산식·지원 조건·기준선이 확인된 자료만 제공합니다.'}</p>
       {compact && calculatorCardScoreComparison(convertedScore, previewCutoff) && <p className="jcalc-forecast-note">{CARD_SCORE_COMPARISON_NOTE}</p>}
-      {compact && calculatorOfferLine(previewCutoff) && <p className="jcalc-forecast-note">{OFFER_ESTIMATE_NOTE}</p>}
+      {offer && <p className="jcalc-forecast-note">{offerInDetails && <>{offer.label} {offer.value}<br /></>}{OFFER_ESTIMATE_NOTE}</p>}
       {previewCutoff?.scoreScope === 'csat_component' && <p className="jcalc-forecast-note">환산점수와 예상 컷은 수능 반영분 기준입니다.</p>}
       <p className="jcalc-forecast-note">{CALCULATOR_STAGE_NOTE}</p>
       {reference?.recordId && <p className="jcalc-forecast-note">자료 출처 · {reference.recordId}<br />{reference.sourceIds.join(' · ')}</p>}
