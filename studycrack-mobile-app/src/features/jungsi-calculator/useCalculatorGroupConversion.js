@@ -1,5 +1,6 @@
 import React from 'react';
 import { requestCalculatorConversion } from './calculator-api.js';
+import { planTargetKey } from './calculator-plan-model.js';
 
 const empty = new Map();
 const targetKey = target => JSON.stringify(target);
@@ -67,9 +68,9 @@ export default function useCalculatorGroupConversion({ active, mode, profile, ta
   }, [scope, targetListKey, attempt, binding, denyAccess]);
 
   const entries = resource.scope === scope && scope ? resource.entries : empty;
-  const byGroup = new Map(targets.map(target => [target.selection.admissionGroup,
+  const byTarget = new Map(targets.map(target => [planTargetKey(target),
     entries.get(targetKey(target)) ?? { status: scope ? 'loading' : 'idle' }]));
-  const ordered = Array.from(byGroup.values());
+  const ordered = Array.from(byTarget.values());
   const complete = ordered.length > 0 && ordered.every(entry => entry.status === 'ready');
   const conversion = complete ? { ...ordered[0].response, results: ordered.map(entry => entry.result) } : null;
   function retry(target) {
@@ -79,5 +80,5 @@ export default function useCalculatorGroupConversion({ active, mode, profile, ta
     setResource(cache.current);
     retryRequest();
   }
-  return { byGroup, conversion, retry };
+  return { byTarget, conversion, retry };
 }

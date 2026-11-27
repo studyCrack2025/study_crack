@@ -15,6 +15,22 @@
 .jcalc-group-identity p { margin: 0; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.55; }
 .jcalc-group-result-state { padding: 0 12px; }
 .jcalc-group-candidates > li > .jcalc-text-button { display: block; margin-inline: auto 12px; }
+.jcalc-representative-summary h2 { margin: 0 0 12px; }
+.jcalc-representative-summary ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr)); gap: 8px; padding: 0; margin: 0; list-style: none; }
+.jcalc-representative-summary li { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px; border-radius: 8px; background: var(--sc-surface-subtle); overflow-wrap: anywhere; }
+.jcalc-representative-summary li strong { flex: none; color: var(--sc-brand-navy); }
+.jcalc-representative-summary small { display: block; color: var(--sc-ink-muted); }
+.jcalc-inline-picker { display: grid; gap: 8px; margin-bottom: 12px; }
+.jcalc-inline-picker > .jcalc-note:empty { position: absolute; }
+.jcalc-candidate-summary { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px; background: color-mix(in srgb, var(--jcalc-position-color, var(--sc-brand-navy)) 9%, var(--sc-surface-card)); }
+.jcalc-candidate-summary div { display: flex; gap: 4px 8px; flex-wrap: wrap; min-width: 0; }
+.jcalc-candidate-summary small { color: var(--sc-ink-muted); }
+.jcalc-candidate-estimate { flex: none; color: var(--jcalc-position-color, var(--sc-brand-navy)); font-variant-numeric: tabular-nums; }
+.jcalc-candidate-details > summary { display: flex; align-items: center; min-height: 44px; padding-inline: 12px; color: var(--sc-brand-navy); cursor: pointer; }
+.jcalc-candidate-details > summary::after { content: '▾'; margin-inline-start: 6px; }
+.jcalc-candidate-details[open] > summary::after { transform: rotate(180deg); }
+.jcalc-candidate-details > p { margin: 0; padding-inline: 12px; color: var(--sc-ink-muted); font-size: 12px; }
+.jcalc-candidate-actions { display: flex; flex-wrap: wrap; justify-content: end; padding-inline: 12px; gap: 12px; border-top: 1px solid var(--sc-line-subtle); }
 .jcalc-unit-picker { width: min(640px, calc(100% - 24px)); max-height: calc(100dvh - 24px); margin: auto; padding: 24px 18px max(24px, env(safe-area-inset-bottom)); border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); color: var(--sc-ink); overflow-y: auto; }
 .jcalc-unit-picker::backdrop { background: var(--sc-overlay-bg); }
 .jcalc-picker-heading { position: sticky; top: -24px; z-index: 1; display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding: 12px 0; background: var(--sc-surface-card); }
@@ -28,6 +44,7 @@
 .jcalc-picker-results small { display: block; margin-top: 6px; color: var(--sc-ink-muted); font-size: 11px; line-height: 1.8; }
 @media (max-width: 899px) {
   .jcalc-group-card[data-current="false"] { display: none; }
+  .jcalc-group-workspace[data-multi] .jcalc-group-board, .jcalc-portfolio-groups, .jcalc-representative-summary ul { grid-template-columns: minmax(0, 1fr); }
 }
 
 .jcalc-picker-path { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }

@@ -15,6 +15,7 @@ async function setup(page, options = {}) {
   const state = { record: empty(), calls: [], catalogCalls: [], conversionCalls: [], receipts: new Map(), committedPlans: 0, lostReply: false, deferRead: false, readRelease: null, failRead: false, ...options };
   if (options.recommendations) state.record.recommendationPreferencesVersion = 1;
   if (options.eligibility) state.record.recommendationEligibilityVersion = 1;
+  if (options.multiCandidate) state.record.planSelectionVersion = 2;
   const context = page.context();
   const token = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url') + '.' + Buffer.from(JSON.stringify({ sub: 'workspace-student', exp: 4070908800 })).toString('base64url') + '.synthetic';
   await context.addInitScript(({ withoutOwner, token }) => { if (withoutOwner) sessionStorage.setItem('accessToken', token); else if (!localStorage.getItem('userId')) localStorage.setItem('userId', 'workspace-student'); localStorage.setItem('userRole', 'student'); }, { withoutOwner: options.withoutOwner === true, token });
@@ -71,7 +72,8 @@ async function setup(page, options = {}) {
         row.reasonCodes = ['RAW_SCOREBOARD_NOT_RELEASED'];
         row.referenceComparison.historical70 = { year: 2026, score: 704.2 };
         row.previewCutoff = { status: 'available', dataReleaseId: converted.release.dataReleaseId, admissionUnitId: target.admissionUnitId,
-          convertedScore: 720.36, cutoffs: { pass: 700, registered70: 715 }, riskBand: 'stable', publicationId: 'CUT_RELEASE_TEST',
+          convertedScore: options.multiCandidate && target.selection.trackId === 'TRACK_TEST_2' ? 726.50 : 720.36,
+          cutoffs: { pass: 700, registered70: 715 }, riskBand: 'stable', publicationId: 'CUT_RELEASE_TEST',
           publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027,
           offerEstimate: { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 75, low: 72, high: 78 } };
       }
@@ -110,10 +112,14 @@ async function setup(page, options = {}) {
     } else if (body.type === 'student_save_calculator_plan') {
       const old = state.record.plans.find(plan => plan.planId === data.planId);
       const groups = data.targets.map(target => target.selection?.admissionGroup);
-      if (options.grouped) { expect(groups.every(Boolean)).toBe(true); expect(new Set(groups).size).toBe(groups.length); }
+      if (options.grouped) {
+        expect(groups.every(Boolean)).toBe(true);
+        if (options.multiCandidate) { expect(data.planSelectionVersion).toBe(2); expect(groups.length).toBeLessThanOrEqual(6); }
+        else expect(new Set(groups).size).toBe(groups.length);
+      }
       const oldGroups = old?.targets.map(target => target.selection?.admissionGroup);
       const legacy = oldGroups && (!oldGroups.every(Boolean) || new Set(oldGroups).size !== oldGroups.length);
-      const displaced = options.grouped && old ? old.targets.filter(target => legacy || groups.includes(target.selection?.admissionGroup)) : [];
+      const displaced = options.grouped && old ? old.targets.filter(target => options.multiCandidate ? !target.selection : legacy || groups.includes(target.selection?.admissionGroup)) : [];
       const previousTargets = [...displaced, ...(old?.previousTargets || [])].filter(target => !data.targets.some(current => current.selection?.key === target.selection?.key));
       const plan = { planId: old?.planId || 'PLAN_TEST_' + (state.record.plans.length + 1), revision: (old?.revision || 0) + 1, name: data.name, targets: data.targets, ...(previousTargets.length ? { previousTargets } : {}), ...(data.representatives ? { representatives: data.representatives } : {}), updatedAt: at };
       state.record.plans = old ? state.record.plans.map(row => row.planId === old.planId ? plan : row) : [...state.record.plans, plan]; state.record.lastSavedPlanId = plan.planId; state.committedPlans++;
@@ -288,6 +294,46 @@ async function addGroupTarget(page, label, track = 1, replace = false) {
   await dialog.getByRole('button', { name: `예시대학교 예시학과 일반전형${track} ${replace ? '후보로 바꾸기' : '후보에 추가'}`, exact: true }).click();
   await expect(dialog).toHaveCount(0);
 }
+
+test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·포트폴리오를 확인한다', async ({ page }) => {
+  const state = await setup(page, { grouped: true, multiCandidate: true, approvedRawCutoff: true });
+  await saveScores(page);
+  await page.setViewportSize({ width: 320, height: 850 });
+  const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  const readRepresentative = () => page.getByRole('region', { name: '대표 조합', exact: true }).getByRole('listitem').first();
+  await expect(page.getByRole('region', { name: '다군 지원 후보', exact: true })).toBeVisible();
+  await ga.getByRole('searchbox', { name: '대학명 검색' }).fill('예시대학교');
+  await ga.getByRole('button', { name: /예시대학교/ }).click();
+  await ga.getByRole('button', { name: /일반전형1 후보에 추가$/ }).click();
+  await ga.getByRole('button', { name: /일반전형2 후보에 추가$/ }).click();
+  const cards = ga.locator('.jcalc-group-candidates > li');
+  await expect(cards).toHaveCount(2);
+  await expect(cards.first().getByText('약 75%', { exact: true })).toBeVisible();
+  await expect(cards.nth(1).getByText('약 75%', { exact: true })).toBeVisible();
+  await expect(cards.first().getByText('720.36점', { exact: true })).toBeHidden();
+  await cards.nth(1).getByText('펼쳐보기', { exact: true }).click();
+  await expect(cards.nth(1).getByText('726.50점', { exact: true })).toBeVisible();
+  const calculations = state.conversionCalls.length;
+  await cards.nth(1).getByRole('button', { name: /대표로 선택$/ }).click();
+  await expect(cards.nth(1).getByText('대표', { exact: true })).toBeVisible();
+  expect(state.conversionCalls).toHaveLength(calculations);
+  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  await expect(page.getByText('지원 조합을 저장했습니다.', { exact: true })).toBeVisible();
+  expect(state.record.plans[0].targets).toHaveLength(2);
+  expect(state.record.plans[0].representatives.ga).toBe(groupedTargets[1].selection.key);
+  await page.reload();
+  await expect(cards.nth(1).getByText('대표', { exact: true })).toBeVisible();
+  await expect(readRepresentative()).toContainText('예시대학교');
+  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오' });
+  for (const label of ['가군', '나군', '다군']) await expect(portfolio.getByRole('region', { name: `${label} 지원 후보`, exact: true })).toBeVisible();
+  await expect(portfolio.locator('.jcalc-group-candidates > li')).toHaveCount(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기' }).click();
+  await cards.nth(1).getByRole('button', { name: /후보 삭제$/ }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(readRepresentative()).toContainText('대표 미선택');
+});
 
 test('조합 선택과 새 조합의 높이가 일치하고 이름만 저장해도 후보 초안이 유지된다', async ({ page }) => {
   const state = await setup(page, { grouped: true });

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupPlanTargets, normalizePlanTargets, setPlanTarget, validRepresentatives } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-plan-model.js';
+import { addCalculatorPlanCandidate, calculatorPlanDraft, groupPlanTargets, normalizePlanTargets, removeCalculatorPlanCandidate, setPlanTarget, validRepresentatives } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-plan-model.js';
+import { createCalculatorComparisonPortfolio } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-portfolio-model.js';
 import { requestCalculatorCatalog } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-catalog-api.js';
 import { parseCalculatorWorkspace, requestCalculatorWorkspace } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-workspace-api.js';
 const digest = 'sha256:' + 'a'.repeat(64), appId = 'APP_11111111-1111-4111-8111-111111111111';
@@ -27,6 +28,31 @@ test('same-named units remain distinct by unit, track and group; representatives
   const reps = { ga: ga.selection.key, na: na.selection.key, da: null };
   assert.equal(validRepresentatives(reps, [ga, na]), true);
   for (const wrong of [{ ga: null, na: null }, { ...reps, da: ga.selection.key }, { ...reps, na: 'PICK_' + 'f'.repeat(32) }, { ...reps, extra: null }]) assert.equal(Boolean(validRepresentatives(wrong, [ga, na])), false);
+});
+
+test('multi-candidate drafts retain all selections, cap at six, and clear a removed representative', () => {
+  const targets = Array.from({ length: 7 }, (_, index) => target(index + 1));
+  const draft = targets.reduce(addCalculatorPlanCandidate, calculatorPlanDraft(null, true, true));
+  assert.deepEqual(draft.targets, targets.slice(0, 6));
+  assert.equal(draft.representatives.ga, targets[0].selection.key);
+  const changed = removeCalculatorPlanCandidate(draft, targets[0].selection.key);
+  assert.equal(changed.representatives.ga, null);
+  assert.equal(addCalculatorPlanCandidate(changed, structuredClone(targets[1])), changed);
+  assert.deepEqual(calculatorPlanDraft(changed, true, true), changed);
+  assert.equal(calculatorPlanDraft(changed, true, false).targets.length, 1);
+});
+
+test('comparison portfolio keeps failed alternatives and exports only available representatives', () => {
+  const first = target(1), second = target(2);
+  const representatives = { ga: first.selection.key, na: null, da: null };
+  const result = { selectionKey: first.selection.key, university: first.university, major: first.major, status: 'available', convertedScore: 720 };
+  const entries = new Map([[first.selection.key, { status: 'ready', result, response: { basis: 'raw' } }], [second.selection.key, { status: 'error', error: '잠시 후 시도' }]]);
+  const view = reps => createCalculatorComparisonPortfolio({ profile: { scores }, plan: { name: '예시', targets: [first, second], representatives: reps }, entries });
+  assert.deepEqual(view(representatives).candidates.map(row => row.status), ['ready', 'error']);
+  assert.equal(view(representatives).cards[0].score.value, '720.00점');
+  assert.equal(view(representatives).exportMessage, '');
+  assert.match(view({ ...representatives, ga: second.selection.key }).exportMessage, /계산 결과/);
+  assert.match(view({ ...representatives, ga: null }).exportMessage, /대표 후보/);
 });
 
 test('catalog pages reject mixed groups, digests, duplicated identities and malformed pagination', async () => {
