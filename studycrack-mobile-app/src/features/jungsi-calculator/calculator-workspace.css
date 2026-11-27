@@ -4,8 +4,13 @@
 .jcalc-steps [aria-current="step"] { border-color: var(--sc-brand-navy); color: var(--sc-brand-navy); font-weight: 700; }
 .jcalc-workspace-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .jcalc-preference-options { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }
-.jcalc-preference-options > div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.jcalc-preference-options label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; font-size: 13px; }
+.jcalc-preference-options > div { display: flex; flex-wrap: wrap; gap: 6px; max-width: 540px; }
+.jcalc-preference-options label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 4px 9px; border: 1px solid var(--sc-line-subtle); border-radius: 6px; font-size: 13px; cursor: pointer; }
+.jcalc-preference-options label:has(input:checked) { border-color: var(--sc-brand-navy); background: var(--sc-surface-subtle); color: var(--sc-brand-navy); }
+.jcalc-preference-options label:has(input:disabled) { color: var(--sc-ink-muted); cursor: default; }
+.jcalc-preference-options input { margin: 0; accent-color: var(--sc-brand-navy); }
+.jcalc-preference-selects { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 10px; max-width: 360px; }
+.jcalc-preference-note { display: block; margin-top: 8px; color: var(--sc-ink-muted); font-size: 11px; }
 .jcalc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .jcalc-plan-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
 .jcalc-data-settings { padding: 8px; color: var(--sc-ink-muted); font-size: 12px; }

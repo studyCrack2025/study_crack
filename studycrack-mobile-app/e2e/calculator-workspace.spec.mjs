@@ -147,6 +147,33 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await saveScores(page, 'male');
   expect(state.record.profile.applicantGender).toBe('male');
   await page.getByRole('button', { name: '성적 수정', exact: true }).click();
+  const originalViewport = page.viewportSize();
+  const gender = page.getByRole('combobox', { name: '성별', exact: true });
+  const strategy = page.getByRole('combobox', { name: '지원 성향', exact: true });
+  await expect(gender).toBeVisible();
+  await expect(strategy).toBeVisible();
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [left, right] of [
+      [gender, strategy],
+      [page.getByRole('button', { name: '성적 수정 저장', exact: true }), page.getByRole('button', { name: '성적 수정 취소', exact: true })]
+    ]) {
+      const [first, second] = await Promise.all([left.boundingBox(), right.boundingBox()]);
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      expect(Math.abs(first.y - second.y)).toBeLessThanOrEqual(1);
+      expect(first.x + first.width).toBeLessThan(second.x);
+      expect(second.x + second.width).toBeLessThanOrEqual(width + 1);
+      expect(Math.abs(first.width - second.width)).toBeLessThanOrEqual(1);
+      expect(first.width).toBeLessThanOrEqual(180);
+    }
+  }
+  const [firstRegion, lastRegion] = await Promise.all([
+    page.getByRole('checkbox', { name: '서울', exact: true }).boundingBox(),
+    page.getByRole('checkbox', { name: '제주', exact: true }).boundingBox()
+  ]);
+  expect(lastRegion.y).toBeGreaterThan(firstRegion.y);
+  await page.setViewportSize(originalViewport);
   await page.getByRole('checkbox', { name: '인문사회', exact: true }).check();
   await page.getByRole('checkbox', { name: '상경', exact: true }).check();
   await page.getByRole('checkbox', { name: '자연·공학', exact: true }).check();
