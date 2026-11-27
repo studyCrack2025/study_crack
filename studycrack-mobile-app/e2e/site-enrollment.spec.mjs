@@ -71,6 +71,8 @@ test('site applications receive product-specific tokens and switching products d
   await page.evaluate(() => { const form = document.getElementById('jungsiEnrollmentForm'); form.requestSubmit(); form.requestSubmit(); });
   await expect(page.locator('#jungsiEnrollmentReceipt')).toBeVisible();
   expect(state.submits).toHaveLength(1); expect(state.submits[0].attributionToken).toBe('synthetic-signed-token');
+  const completedEvents = () => page.evaluate(() => window.dataLayer.filter(entry => entry.event === 'sc_consulting_application_completed'));
+  expect(await completedEvents()).toEqual([{ event: 'sc_consulting_application_completed' }]);
   expect(state.attributionRequests[0]).toEqual({ productType: 'consulting', source: 'google', campaignId: 'consulting1', creativeId: 'creative1' });
   await page.getByRole('button', { name: '신청 창 닫기' }).click();
   await page.getByRole('tab', { name: '합격 계산기', exact: true }).click(); await page.locator('#calculatorApply').click();
@@ -78,6 +80,7 @@ test('site applications receive product-specific tokens and switching products d
   await page.locator('#jungsiEnrollmentSubmit').click();
   await expect(page.locator('#jungsiReceiptProduct')).toHaveText('2027 정시 합격 계산기');
   expect(state.submits).toHaveLength(2); expect(state.submits[1].attributionToken).toBe('synthetic-calculator-token');
+  expect(await completedEvents()).toHaveLength(1);
   expect(state.attributionRequests[1]).toEqual({ productType: 'calculator', source: 'unknown', campaignId: null, creativeId: null });
 });
 

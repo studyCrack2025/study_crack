@@ -237,6 +237,15 @@
                 acceptedAmount: offer.amount, ...(productType === 'calculator' ? { acceptedAccessEndsAt: offer.accessEndsAt } : {}), privacyConsent: values.privacyConsent === 'on', termsConsent: values.termsConsent === 'on' });
             if (controller !== own || !dialog.open) return;
             renderReceipt(value); form.reset();
+            if (value.productType === 'consulting' && value.applicationState === 'PAYMENT_REVIEW' && !application.completionReported) {
+                try {
+                    sessionStorage.setItem(key, JSON.stringify({ ...application, completionReported: true }));
+                    window.dataLayer = window.dataLayer || [];
+                    window.dataLayer.push({ event: 'sc_consulting_application_completed' });
+                } catch {
+                    // Measurement must not interrupt the saved application receipt.
+                }
+            }
         } catch (error) {
             if (controller !== own || !dialog.open) return;
             if (error.code === 'CALCULATOR_SALES_CLOSED') {
