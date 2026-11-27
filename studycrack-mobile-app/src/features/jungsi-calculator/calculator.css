@@ -150,7 +150,13 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-score-track [data-marker="pass"] { top: 3px; height: 13px; border-right: 2px solid var(--sc-ink-muted); }
 .jcalc-score-track [data-marker="registered"] { top: 16px; height: 13px; border-right: 2px dashed var(--sc-ink-muted); }
 .jcalc-score-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--sc-ink-muted); font-size: 11px; }
-.jcalc-card-score-curve { display: block; width: 100%; height: clamp(92px, 10vw, 116px); color: var(--jcalc-position-color); }
+.jcalc-card-score-chart { position: relative; height: 52px; }
+.jcalc-card-score-baseline { position: absolute; inset: calc(50% - 1px) 8% auto; height: 2px; border-radius: 2px; background: var(--sc-line-subtle); }
+.jcalc-card-score-band { position: absolute; inset-block: 10px; background: color-mix(in srgb, var(--jcalc-position-color) 12%, transparent); }
+.jcalc-card-score-cut { position: absolute; inset-block: 7px; border-inline-start: 2px solid var(--jcalc-position-color); transform: translateX(-50%); }
+.jcalc-card-score-cut[data-marker="registered"] { border-inline-start-style: dashed; }
+.jcalc-card-own-score { position: absolute; top: 50%; display: grid; place-items: center; width: 15px; height: 15px; border: 2px solid var(--sc-surface-card); border-radius: 50%; background: var(--jcalc-position-color); box-shadow: 0 0 0 1px var(--jcalc-position-color); color: var(--sc-surface-card); font-size: 14px; font-weight: 700; line-height: 1; transform: translate(-50%, -50%); }
+.jcalc-card-own-score[data-offscale] { width: 21px; height: 21px; }
 .jcalc-result[data-card] .jcalc-score-legend { justify-content: center; }
 .jcalc-result[data-card] .jcalc-score-legend b { color: var(--jcalc-position-color); }
 .jcalc-card-offer { margin: 0; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--jcalc-position-color, var(--sc-brand-navy)) 10%, var(--sc-surface-card)); color: var(--sc-ink-strong); font-size: 12px; font-weight: 700; line-height: 1.5; text-align: center; }
