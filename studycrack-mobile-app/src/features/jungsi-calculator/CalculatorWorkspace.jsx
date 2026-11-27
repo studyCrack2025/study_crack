@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
+import { CalculatorButton, CalculatorNote, CalculatorTabs } from './CalculatorUi.jsx';
 import { getMobileApiBinding } from '../../shared/browser/mobile-runtime.js';
 import { fetchUniversityCatalog } from '../analysis/api.js';
 import CalculatorScoreForm from './CalculatorScoreForm.jsx';
@@ -19,6 +19,7 @@ import './calculator-workspace.css';
 
 const CalculatorRecommendationPreferences = React.lazy(() => import('./CalculatorRecommendationPreferences.jsx'));
 const CalculatorPortfolio = React.lazy(() => import('./CalculatorPortfolio.jsx'));
+const workspaceTabs = [['score', '내 성적'], ['plan', '지원 조합'], ['portfolio', '포트폴리오']];
 
 function ScoreSummary({ profile, estimates, onEdit, disabled }) {
   const scores = profile.scores, raw = scores.basis === 'raw';
@@ -45,12 +46,14 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
   const [baseline, setBaseline] = React.useState(initialPlan), [name, setName] = React.useState(initialPlan?.name || '기본 조합');
   const [nameEdit, setNameEdit] = React.useState(null);
   const [planFailure, setPlanFailure] = React.useState(null);
+  const tabsId = React.useId();
   const nameTrigger = React.useRef(null);
   const portfolioTrigger = React.useRef(null);
   const [draft, setDraft] = React.useState(() => calculatorPlanDraft(initialPlan, grouped, multiCandidate));
   const { targets, representatives } = draft;
   const setTargets = update => setDraft(previous => calculatorPlanDraft({ targets: update(previous.targets) }, grouped, false));
-  const [portfolioOpen, setPortfolioOpen] = React.useState(false);
+  const [view, setView] = React.useState(() => data.profile ? 'plan' : 'score');
+  const editingScore = editing && view === 'score';
   const [errors, setErrors] = React.useState({}), [consented, setConsented] = React.useState(data.consentAccepted), [message, setMessage] = React.useState('');
   const [catalog, setCatalog] = React.useState({ status: 'idle', data: [], error: '' }), [catalogAttempt, setCatalogAttempt] = React.useState(0);
   const [conversion, setConversion] = React.useState({ key: '', status: 'idle', data: null, error: '' }), [queryAttempt, setQueryAttempt] = React.useState(0);
@@ -72,17 +75,16 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     || multiCandidate && JSON.stringify(representatives) !== JSON.stringify(storedDraft.representatives);
   const dirty = planDirty || Boolean(planFailure) || Boolean(nameEdit && nameEdit.value.trim() !== name.trim()) || editing && (changed || preferencesChanged || !profile);
   const queryKey = JSON.stringify({ scores: profile?.scores, profileRevision: profile?.revision, targets });
-  const currentResult = enabled && calculationEnabled && !editing && conversion.key === queryKey && conversion.status === 'ready';
-  const groupConversion = useCalculatorGroupConversion({ active: grouped && enabled && calculationEnabled && !editing, mode: calculationMode,
+  const currentResult = enabled && calculationEnabled && !editingScore && conversion.key === queryKey && conversion.status === 'ready';
+  const groupConversion = useCalculatorGroupConversion({ active: grouped && enabled && calculationEnabled && !editingScore, mode: calculationMode,
     profile, targets: grouped ? targets : [], binding, denyAccess });
-  const portfolio = grouped && baseline && !locked && !planDirty && !planFailure && (multiCandidate
+  const portfolio = grouped && profile && baseline && !locked && !planDirty && !planFailure && (multiCandidate
     ? Object.values(representatives).some(Boolean) && createCalculatorComparisonPortfolio({ profile, plan: { ...baseline, targets, representatives }, entries: groupConversion.byTarget })
     : createCalculatorPortfolio({ profile, plan: { ...baseline, targets, representatives }, conversion: groupConversion.conversion,
       input: { scores: profile.scores, targets, profileRevision: profile.revision } }));
-  const showPortfolio = portfolioOpen && Boolean(portfolio);
-  const openPlan = React.useCallback(plan => { setBaseline(plan); setName(plan?.name || '기본 조합'); setNameEdit(null); setDraft(calculatorPlanDraft(plan, grouped, multiCandidate)); setPortfolioOpen(false); setMessage(''); }, [grouped, multiCandidate]);
+  const openPlan = React.useCallback(plan => { setBaseline(plan); setName(plan?.name || '기본 조합'); setNameEdit(null); setDraft(calculatorPlanDraft(plan, grouped, multiCandidate)); setMessage(''); }, [grouped, multiCandidate]);
   React.useEffect(() => {
-    if (!data.profile) { setScores(emptyScores()); setPreferenceDraft(parseRecommendationPreferences()); setGenderDraft(''); setEditing(true); setConsented(false); setErrors({}); setPlanFailure(null); openPlan(null); }
+    if (!data.profile) { setScores(emptyScores()); setPreferenceDraft(parseRecommendationPreferences()); setGenderDraft(''); setEditing(true); setView('score'); setConsented(false); setErrors({}); setPlanFailure(null); openPlan(null); }
     if (!editing && data.profile) setScores(editableScores(data.profile.scores));
     if (!planDirty && !planFailure && !nameEdit && (baseline || multiCandidate)) {
       const next = data.plans.find(plan => plan.planId === baseline?.planId) || initialPlan;
@@ -108,10 +110,10 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     setMessage('지원 조합을 저장했습니다.');
   };
   React.useEffect(() => {
-    if (!multiCandidate || !profile || editing || locked || !planDirty || planFailure || !baseline && !targets.length) return;
+    if (!multiCandidate || !profile || locked || !planDirty || planFailure || !baseline && !targets.length) return;
     const timer = setTimeout(() => { void saveComparison(comparisonInput(baseline)); }, 400);
     return () => clearTimeout(timer);
-  }, [multiCandidate, profile, editing, locked, planDirty, planFailure, baseline, draft]);
+  }, [multiCandidate, profile, locked, planDirty, planFailure, baseline, draft]);
   const latestPlan = planFailure?.conflict && baseline ? data.plans.find(plan => plan.planId === baseline.planId) : initialPlan;
   const retryPlan = () => {
     if (locked || !planFailure) return;
@@ -119,25 +121,30 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     if (!planFailure.input && !planFailure.conflict && !planDirty) { setPlanFailure(null); return; }
     void saveComparison(planFailure.input ?? comparisonInput(planFailure.conflict ? latestPlan : baseline));
   };
+  const selectView = next => { portfolioTrigger.current = null; setView(next); };
+  const openPortfolio = event => { portfolioTrigger.current = event.currentTarget; setView('portfolio'); };
   const closePortfolio = () => {
-    setPortfolioOpen(false);
-    requestAnimationFrame(() => portfolioTrigger.current?.focus({ preventScroll: true }));
+    setView('plan');
+    requestAnimationFrame(() => {
+      const trigger = portfolioTrigger.current;
+      (trigger?.isConnected && !trigger.disabled ? trigger : document.getElementById(`${tabsId}-tab-plan`))?.focus({ preventScroll: true });
+    });
   };
   React.useEffect(() => {
     const warn = event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } };
     globalThis.addEventListener('beforeunload', warn); return () => globalThis.removeEventListener('beforeunload', warn);
   }, [dirty]);
   React.useEffect(() => {
-    if (!enabled || !profile || editing || grouped) return;
+    if (!enabled || !profile || editingScore || grouped) return;
     const controller = new AbortController();
     setCatalog(previous => ({ ...previous, status: 'loading', error: '' }));
     fetchUniversityCatalog({ ...binding, catalogView: 'reviewed_calculator', signal: controller.signal }).then(result => {
       if (!controller.signal.aborted) setCatalog(result.ok ? { status: 'ready', data: result.data, error: '' } : { status: 'error', data: [], error: result.error });
     });
     return () => controller.abort();
-  }, [enabled, Boolean(profile), editing, catalogAttempt, binding, grouped]);
+  }, [enabled, Boolean(profile), editingScore, catalogAttempt, binding, grouped]);
   React.useEffect(() => {
-    if (grouped || !enabled || !calculationEnabled || !profile || editing || !targets.length) return;
+    if (grouped || !enabled || !calculationEnabled || !profile || editingScore || !targets.length) return;
     const controller = new AbortController(); let active = true;
     setConversion({ key: queryKey, status: 'loading', data: null, error: '' });
     const timer = setTimeout(async () => {
@@ -147,14 +154,25 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
       setConversion(result.ok ? { key: queryKey, status: 'ready', data: result.data, error: '' } : { key: queryKey, status: 'error', data: null, error: result.error });
     }, 200);
     return () => { active = false; clearTimeout(timer); controller.abort(); };
-  }, [grouped, enabled, calculationEnabled, editing, queryKey, queryAttempt, binding]);
+  }, [grouped, enabled, calculationEnabled, editingScore, queryKey, queryAttempt, binding]);
   const confirmProfile = async () => {
     if (locked || eligibilityEnabled && !profile && !genderDraft || scores.basis === 'raw' && (!profile || changed) && !estimates.ready) return;
     const prepared = prepareCalculatorScores(scores); setErrors(prepared.errors);
     if (!prepared.ok || !consented && !data.consentAccepted) return;
     const result = await store.mutate('student_save_calculator_profile', { scores: prepared.data, consented, consentRevision: CALCULATOR_STORAGE_CONSENT,
       ...(preferencesChanged ? { recommendationPreferences: preferenceDraft } : {}), ...(genderChanged ? { applicantGender: genderDraft } : {}) });
-    if (result.ok) { setScores(editableScores(result.data.profile.scores)); setEditing(false); setMessage(profile && !changed ? '추천 조건을 저장했습니다.' : '성적을 저장했습니다.'); }
+    if (result.ok) {
+      setScores(editableScores(result.data.profile.scores));
+      setEditing(false);
+      setMessage(profile && !changed ? '추천 조건을 저장했습니다.' : '성적을 저장했습니다.');
+      if (!profile) {
+        setView(current => current === 'score' ? 'plan' : current);
+        requestAnimationFrame(() => {
+          const tab = document.getElementById(`${tabsId}-tab-plan`);
+          if (tab?.getAttribute('aria-selected') === 'true' && document.activeElement === document.body) tab.focus();
+        });
+      }
+    }
   };
   const editScoreProfile = () => {
     if (planDirty && !globalThis.confirm('저장하지 않은 조합 변경을 취소하고 성적을 수정할까요?')) return false;
@@ -163,6 +181,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     setPreferenceDraft(preferences);
     setGenderDraft(profile.applicantGender ?? '');
     setEditing(true);
+    selectView('score');
     return true;
   };
   const savePlan = async (mode = 'save', planName = name.trim()) => {
@@ -201,17 +220,24 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
     {!grouped && conversion.key === queryKey && conversion.status === 'loading' && <CalculatorNote role="status">지원 후보를 계산하고 있습니다…</CalculatorNote>}
   </>;
   const savePlanButton = disabled => <CalculatorButton primary disabled={disabled || Boolean(nameEdit) || !planDirty || !targets.length && !baseline} onClick={() => savePlan()}>변경사항 저장</CalculatorButton>;
+  const tabPanel = key => ({ role: 'tabpanel', id: `${tabsId}-panel-${key}`, 'aria-labelledby': `${tabsId}-tab-${key}`, hidden: view !== key });
+  const portfolioStatus = !profile ? '성적을 저장하고 지원 후보를 담아주세요.' : store.busy ? '대표 조합을 저장하고 있습니다…'
+    : planDirty || planFailure ? '지원 조합을 저장하면 포트폴리오를 볼 수 있습니다.'
+      : !Object.values(representatives).some(Boolean) ? '지원 조합에서 군별 대표를 선택해주세요.' : '대표 후보의 계산을 기다리고 있습니다.';
   return <div className="jcalc-workspace" aria-busy={store.busy}>
-    <ol className="jcalc-steps" aria-label="계산기 이용 단계"><li aria-current={editing ? 'step' : undefined}>01 내 성적</li><li aria-current={!editing && !showPortfolio ? 'step' : undefined}>02 지원 조합</li><li aria-current={showPortfolio ? 'step' : undefined}>03 포트폴리오</li></ol>
+    <CalculatorTabs id={tabsId} tabs={grouped ? workspaceTabs : workspaceTabs.slice(0, 2)} selected={view} onSelect={selectView} label="계산기 이용 단계" className="jcalc-steps" />
     {store.resource.error && <div className="jcalc-state" role="alert"><p>{store.resource.error}</p>{store.resource.status === 'error' && <CalculatorButton onClick={store.load}>최신 저장 상태 확인</CalculatorButton>}</div>}
-    {(!multiCandidate || editing || showPortfolio) && <CalculatorNote role="status">{store.busy ? '저장하고 있습니다…' : message || (dirty ? '수정한 내용이 아직 저장되지 않았습니다.' : profile ? '저장한 성적과 조합을 불러왔습니다.' : '')}</CalculatorNote>}
-    {showPortfolio ? <React.Suspense fallback={<CalculatorNote role="status">포트폴리오를 준비하고 있습니다…</CalculatorNote>}><CalculatorPortfolio model={portfolio} onBack={closePortfolio} onRetry={calculationEnabled ? groupConversion.retry : undefined} /></React.Suspense> : editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
+    {(!multiCandidate || view !== 'plan') && <CalculatorNote role="status">{store.busy ? '저장하고 있습니다…' : message || (dirty ? '수정한 내용이 아직 저장되지 않았습니다.' : profile ? '저장한 성적과 조합을 불러왔습니다.' : '')}</CalculatorNote>}
+    <div {...tabPanel('score')}>
+    {editing ? <fieldset className="jcalc-workspace-fields" disabled={locked}><CalculatorScoreForm scores={scores} errors={errors} changed={changed} confirmed={profile?.scores} conversion={estimates}
       onChange={value => { setScores(value); setErrors({}); setMessage(''); }} onConfirm={confirmProfile} confirmLabel={profile ? preferencesChanged && !changed ? '추천 조건 저장' : '성적 수정 저장' : '이 성적으로 시작하기'} confirmDisabled={!consented && !data.consentAccepted || eligibilityEnabled && !profile && !genderDraft || Boolean(profile) && !changed && !preferencesChanged}
       onCancel={profile ? () => { setScores(editableScores(profile.scores)); setErrors({}); setEditing(false); } : undefined}>
       {showRecommendations && <React.Suspense fallback={null}><CalculatorRecommendationPreferences value={preferenceDraft} onChange={setPreferenceDraft} gender={genderDraft} onGenderChange={eligibilityEnabled ? setGenderDraft : undefined} /></React.Suspense>}
       {!data.consentAccepted && <div className="jcalc-profile-consent"><CalculatorNote>{showRecommendations ? '입력한 성적·추천 조건·지원 후보를 계정에 저장하고' : '입력한 성적과 지원 후보를 계정에 저장하고'} 운영팀이 계산기 제공·신청 관리를 위해 확인합니다. 컨설팅 검수 성적에는 반영되지 않습니다. <a href="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</a></CalculatorNote><label className="jcalc-storage-consent"><input type="checkbox" checked={consented} onChange={event => setConsented(event.currentTarget.checked)} /><span>성적·지원 후보 저장과 운영팀 열람에 동의합니다</span></label>{!consented && <CalculatorNote>처음 저장할 때 동의가 필요합니다.</CalculatorNote>}</div>}
-    </CalculatorScoreForm></fieldset> : profile && <>
-      <ScoreSummary profile={profile} estimates={estimates} disabled={locked || Boolean(nameEdit) || multiCandidate && dirty} onEdit={editScoreProfile} />
+    </CalculatorScoreForm></fieldset> : profile && <ScoreSummary profile={profile} estimates={estimates} disabled={locked || Boolean(nameEdit) || multiCandidate && dirty} onEdit={editScoreProfile} />}
+    </div>
+    <div className="jcalc-plan-panel" {...tabPanel('plan')}>
+    {profile ? <>
       {!multiCandidate && <section className="jcalc-panel jcalc-plan-manager" aria-label="지원 조합 관리">
         <div className="jcalc-section-head"><div className="jcalc-plan-title"><h2>{name}</h2><button ref={nameTrigger} type="button" className="jcalc-text-button" disabled={locked || Boolean(nameEdit)} onClick={() => { setNameEdit({ mode: 'rename', value: name }); setMessage(''); }}>이름 변경</button></div><span className="jcalc-note">{data.plans.length}/10 저장</span></div>
         {nameEdit && <form className="jcalc-plan-name-form" onSubmit={confirmName} onKeyDown={event => { if (event.key === 'Escape' && !store.busy) closeNameEdit(); }}>
@@ -233,7 +259,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
               if (!planDirty || globalThis.confirm('저장하지 않은 변경을 취소하고 새 조합을 만들까요?')) openPlan(null);
             }}>＋ 새 조합</CalculatorButton>
           </div>
-          <div className="jcalc-workspace-actions"><div className={grouped ? 'jcalc-plan-save-desktop' : undefined}>{savePlanButton(false)}</div>{grouped && <CalculatorButton disabled={Boolean(nameEdit) || !portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</CalculatorButton>}
+          <div className="jcalc-workspace-actions"><div className={grouped ? 'jcalc-plan-save-desktop' : undefined}>{savePlanButton(false)}</div>{grouped && <CalculatorButton disabled={Boolean(nameEdit) || !portfolio} onClick={openPortfolio}>포트폴리오 보기</CalculatorButton>}
             <details className="jcalc-plan-options"><summary>조합 관리</summary><div className="jcalc-workspace-actions"><CalculatorButton disabled={Boolean(nameEdit) || !targets.length || data.plans.length >= 10} onClick={() => { setNameEdit({ mode: 'copy', value: name }); setMessage(''); }}>다른 조합으로 저장</CalculatorButton>{baseline && <CalculatorButton text disabled={Boolean(nameEdit)} onClick={deletePlan}>조합 삭제</CalculatorButton>}</div></details>
           </div>
         </fieldset>
@@ -241,7 +267,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
       </section>}
       {grouped ? <section className="jcalc-group-area" aria-label="군별 지원 조합">
         {calculationStatus}
-        <CalculatorPlanBoard key={multiCandidate ? 'comparison' : 'legacy'} targets={targets} archivedTargets={[...archived.values()]} locked={multiCandidate ? boardLocked : locked} saving={enabled && data.canSave && store.busy} denyAccess={denyAccess}
+        <CalculatorPlanBoard key={multiCandidate ? 'comparison' : 'legacy'} visible={view === 'plan' && enabled} targets={targets} archivedTargets={[...archived.values()]} locked={multiCandidate ? boardLocked : locked} saving={enabled && data.canSave && store.busy} denyAccess={denyAccess}
           conversions={groupConversion.byTarget} onRetry={groupConversion.retry} multiCandidate={multiCandidate} representatives={representatives}
           representativeToolbar={multiCandidate && <div className="jcalc-workspace-actions">
             <CalculatorNote role="status">{store.busy || planDirty && !planFailure ? '자동 저장 중…' : planFailure ? '아직 저장되지 않았습니다.' : message}</CalculatorNote>
@@ -249,7 +275,7 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
               {(!planFailure.conflict || latestPlan) && <CalculatorButton text disabled={locked} onClick={retryPlan}>저장 다시 시도</CalculatorButton>}
               {planFailure.conflict && <CalculatorButton text disabled={locked} onClick={() => { setPlanFailure(null); openPlan(initialPlan); }}>최신 저장 내용 사용</CalculatorButton>}
             </>}
-            <button ref={portfolioTrigger} type="button" className="jcalc-secondary" disabled={!portfolio} onClick={() => setPortfolioOpen(true)}>포트폴리오 보기</button>
+            <CalculatorButton disabled={!portfolio} onClick={openPortfolio}>포트폴리오 보기</CalculatorButton>
           </div>}
           onRepresentative={target => setDraft(previous => ({ ...previous, representatives: { ...previous.representatives, [target.selection.admissionGroup]: target.selection.key } }))}
           recommendation={calculationEnabled && showRecommendations ? { scores: profile.scores, preferences, revision: profile.revision, eligibilityEnabled, applicantGender: profile.applicantGender, applicationId: data.applicationId, onEditPreferences: () => (!multiCandidate || !dirty) && editScoreProfile() } : null}
@@ -265,7 +291,12 @@ function WorkspaceEditor({ store, enabled, calculationEnabled, calculationMode, 
         <fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-candidates">{targets.map(target => <li key={candidateKey(target)}><strong>{target.university}</strong><span>{target.major}</span><CalculatorResult current={currentResult} result={conversion.data?.results.find(row => candidateKey(row) === candidateKey(target))} selectedId={target.admissionUnitId} onSelect={id => setTargets(previous => previous.map(row => candidateKey(row) === candidateKey(target) ? { ...row, admissionUnitId: id } : row))} /><CalculatorButton text aria-label={`${target.university} ${target.major} 후보 삭제`} onClick={() => setTargets(previous => previous.filter(row => candidateKey(row) !== candidateKey(target)))}>후보 삭제</CalculatorButton></li>)}</ul></fieldset>
       </section>
       </>}
-    </>}
+    </> : <section className="jcalc-panel"><CalculatorNote>성적을 저장하면 지원 후보를 담을 수 있습니다.</CalculatorNote><CalculatorButton onClick={() => selectView('score')}>내 성적 입력</CalculatorButton></section>}
+    </div>
+    {grouped && <div {...tabPanel('portfolio')}>{view === 'portfolio' && (portfolio
+      ? <React.Suspense fallback={<CalculatorNote role="status">포트폴리오를 준비하고 있습니다…</CalculatorNote>}><CalculatorPortfolio model={portfolio} onBack={closePortfolio} onRetry={calculationEnabled ? groupConversion.retry : undefined} focusOnMount={Boolean(portfolioTrigger.current)} /></React.Suspense>
+      : <section className="jcalc-panel"><h2>나의 정시 포트폴리오</h2><CalculatorNote role="status">{portfolioStatus}</CalculatorNote><CalculatorButton onClick={profile ? closePortfolio : () => selectView('score')}>{profile ? '지원 조합으로 돌아가기' : '내 성적 입력'}</CalculatorButton></section>)}
+    </div>}
     {data.canDelete && <details className="jcalc-data-settings"><summary>저장 자료 관리</summary><CalculatorNote>저장한 성적과 모든 지원 조합을 삭제할 수 있습니다.</CalculatorNote><CalculatorButton text disabled={!enabled || store.busy} onClick={async () => { if (!globalThis.confirm('저장한 성적과 모든 지원 조합을 삭제할까요?')) return; await store.mutate('student_delete_calculator_workspace', { confirmed: true }); }}>저장 자료 전체 삭제</CalculatorButton></details>}
   </div>;
 }

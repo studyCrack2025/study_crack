@@ -1,7 +1,8 @@
 .jcalc-workspace { display: grid; gap: 20px; }
-.jcalc-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-.jcalc-steps li { padding: 14px 6px; border-bottom: 2px solid var(--sc-line-subtle); color: var(--sc-ink-muted); font-size: 12px; text-align: center; }
-.jcalc-steps [aria-current="step"] { border-color: var(--sc-brand-navy); color: var(--sc-brand-navy); font-weight: 700; }
+.jcalc-steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.jcalc-steps button { min-height: 44px; padding: 10px 4px; border: 0; border-bottom: 2px solid var(--sc-line-subtle); background: transparent; color: var(--sc-ink-muted); font: inherit; font-size: 13px; text-align: center; cursor: pointer; }
+.jcalc-steps [aria-selected="true"] { border-color: var(--sc-brand-navy); color: var(--sc-brand-navy); font-weight: 700; }
+.jcalc-plan-panel:not([hidden]) { display: grid; gap: 20px; min-width: 0; }
 .jcalc-workspace-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
 .jcalc-preference-options { min-width: 0; margin: 0 0 12px; padding: 0; border: 0; }
 .jcalc-preference-options > div { display: flex; flex-wrap: wrap; gap: 6px; max-width: 540px; }
