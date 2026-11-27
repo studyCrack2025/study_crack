@@ -12,30 +12,79 @@ import './calculator-plan-board.css';
 
 const CalculatorRecommendationPanel = React.lazy(() => import('./CalculatorRecommendationPanel.jsx'));
 
-function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyAccess, locked, recommendation, savedRecommendation, onRecommendation,
-  inline = false, active = true, onActivate, onDeactivate, targets = [] }) {
-  const dialog = React.useRef(null), currentDigest = React.useRef(null), previous = React.useRef(null), restoring = React.useRef(false), binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
-  const searchInput = React.useRef(null);
-  const [university, setUniversity] = React.useState(null), [query, setQuery] = React.useState(''), [cursor, setCursor] = React.useState(0), [attempt, setAttempt] = React.useState(0);
-  const [browse, setBrowse] = React.useState(mode === 'browse'), [composing, setComposing] = React.useState(false);
-  const [lastAdded, setLastAdded] = React.useState('');
-  const [resource, setResource] = React.useState({ status: 'loading', items: [], nextCursor: null, total: 0, digest: null, error: '' });
-  const term = query.trim();
-  const showResults = active && !composing && Boolean(university || browse || term);
-  const full = inline && targets.length >= MAX_CANDIDATES;
-  const alreadyAdded = target => targets.some(row => samePlanSelection(row, target));
+function PickerDialog({ title, trigger, onClose, dialog, initialFocus, children }) {
+  const titleId = React.useId();
   React.useEffect(() => {
-    if (inline) return;
     const node = dialog.current, overflow = document.body.style.overflow;
     node.showModal();
     document.body.style.overflow = 'hidden';
-    if (mode === 'search') searchInput.current?.focus({ preventScroll: true });
+    initialFocus?.current?.focus({ preventScroll: true });
     return () => {
       if (node.open) node.close();
       document.body.style.overflow = overflow;
       if (trigger.isConnected && !trigger.disabled) trigger.focus({ preventScroll: true });
     };
-  }, [mode, trigger, inline]);
+  }, [dialog, initialFocus, trigger]);
+  return <dialog className="jcalc-unit-picker" ref={dialog} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose(); }}>
+    <div className="jcalc-picker-heading"><h2 id={titleId}>{title}</h2><CalculatorButton onClick={onClose} aria-label="모집단위 선택 닫기">닫기</CalculatorButton></div>
+    {children}
+  </dialog>;
+}
+
+function CatalogList({ group, school, binding, denyAccess, label, renderRow }) {
+  const [cursor, setCursor] = React.useState(0), [attempt, setAttempt] = React.useState(0);
+  const [page, setPage] = React.useState({ items: [], nextCursor: null, status: 'loading' });
+  React.useEffect(() => {
+    const controller = new AbortController();
+    setPage(previous => ({ ...previous, status: 'loading' }));
+    requestCalculatorCatalog({ ...binding, admissionGroup: group, universities: !school, universityKey: school?.universityKey,
+      universityName: school?.name, cursor, signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return;
+      if (result.code === 'CALCULATOR_ACCESS_REQUIRED' || [401, 403].includes(result.status)) { denyAccess(); return; }
+      if (!result.ok) { setPage(previous => ({ ...previous, status: 'error', error: result.error })); return; }
+      const { items, nextCursor, catalogDigest } = result.data;
+      setPage(previous => {
+        if (cursor && previous.catalogDigest !== catalogDigest) return { items: [], nextCursor: null, status: 'error', error: '목록이 갱신되었습니다. 처음부터 다시 불러와 주세요.' };
+        return { items: cursor ? [...previous.items, ...items] : items, nextCursor, catalogDigest, status: 'ready' };
+      });
+    });
+    return () => controller.abort();
+  }, [group, school, binding, denyAccess, cursor, attempt]);
+  return <>
+    {page.items.length > 0 && <ul aria-label={label}>{page.items.map(row => renderRow(row, page.items))}</ul>}
+    {page.status === 'loading' && <CalculatorNote role="status">불러오는 중…</CalculatorNote>}
+    {page.status === 'error' && <><CalculatorNote role="alert">{page.error}</CalculatorNote><CalculatorButton text onClick={() => { if (!page.items.length) setCursor(0); setAttempt(value => value + 1); }}>다시 불러오기</CalculatorButton></>}
+    {page.status === 'ready' && (page.items.length ? page.nextCursor !== null && <CalculatorButton text onClick={() => setCursor(page.nextCursor)}>{label} 더 보기</CalculatorButton> : <CalculatorNote>표시할 항목이 없습니다.</CalculatorNote>)}
+  </>;
+}
+
+function CalculatorCatalogDialog({ group, trigger, onClose, denyAccess }) {
+  const dialog = React.useRef(null);
+  const binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
+  const [school, selectSchool] = React.useState(null);
+  return <PickerDialog title={`${CALCULATOR_GROUPS.find(([key]) => key === group)[1]} 분석 가능한 대학`} dialog={dialog} trigger={trigger} onClose={onClose}>
+    <div className="jcalc-catalog-columns">
+      <section aria-label="대학 목록" tabIndex={0}><h3>대학</h3><CatalogList group={group} binding={binding} denyAccess={denyAccess} label="대학"
+        renderRow={row => <li key={row.universityKey}><button type="button" aria-pressed={school?.universityKey === row.universityKey} onClick={() => selectSchool(row)}>{row.name}</button></li>} /></section>
+      <section aria-label="학과 목록" tabIndex={0}><h3>{school?.name ?? '학과'}</h3>{school ? <CatalogList key={school.universityKey} group={group} school={school} binding={binding} denyAccess={denyAccess} label="학과"
+        renderRow={({ selection: unit }, rows) => <li key={unit.key}>{unit.unitName}{rows.some(({ selection }) => selection.key !== unit.key && selection.unitName === unit.unitName)
+          && <small>{unit.campusName} · {unit.trackName}</small>}</li>} /> : <CalculatorNote>대학을 선택해주세요.</CalculatorNote>}</section>
+    </div>
+  </PickerDialog>;
+}
+
+function UnitPicker({ group, trigger, currentTarget, onClose, onAdd, denyAccess, locked, recommendation, savedRecommendation, onRecommendation,
+  inline = false, active = true, onActivate, onDeactivate, onBrowse, targets = [] }) {
+  const dialog = React.useRef(null), currentDigest = React.useRef(null), previous = React.useRef(null), restoring = React.useRef(false), binding = React.useMemo(() => getMobileApiBinding('analysis', 'analysisApiUrl'), []);
+  const searchInput = React.useRef(null);
+  const [university, setUniversity] = React.useState(null), [query, setQuery] = React.useState(''), [cursor, setCursor] = React.useState(0), [attempt, setAttempt] = React.useState(0);
+  const [composing, setComposing] = React.useState(false);
+  const [lastAdded, setLastAdded] = React.useState('');
+  const [resource, setResource] = React.useState({ status: 'loading', items: [], nextCursor: null, total: 0, digest: null, error: '' });
+  const term = query.trim();
+  const showResults = active && !composing && Boolean(university || term);
+  const full = inline && targets.length >= MAX_CANDIDATES;
+  const alreadyAdded = target => targets.some(row => samePlanSelection(row, target));
   React.useEffect(() => {
     if (restoring.current) { restoring.current = false; return; }
     if (!showResults || locked) return;
@@ -72,7 +121,7 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
     }
     setQuery(next);
   };
-  const title = mode === 'browse' ? '분석 가능한 대학' : currentTarget ? '후보 바꾸기' : '후보 찾기';
+  const title = currentTarget ? '후보 바꾸기' : '후보 찾기';
   const add = target => {
     onAdd(target);
     if (inline) setLastAdded(`${target.selection.universityName} ${target.selection.unitName} ${target.selection.trackName} 후보를 담았습니다.`);
@@ -83,11 +132,11 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
     <label className="jcalc-field"><span>{active && university ? '학과명 검색' : '대학명 검색'}</span><input ref={searchInput} type="search" maxLength="80" value={active || !university ? query : ''} disabled={locked}
       placeholder={active && university ? '학과명 또는 전형' : '대학명 또는 캠퍼스'} onFocus={onActivate} onChange={changeQuery}
       onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} /></label>
-    {inline && !browse && !university && <CalculatorButton text disabled={locked} onClick={() => { onActivate(); setBrowse(true); }}>분석 가능한 대학 보기</CalculatorButton>}
+    {inline && <CalculatorButton text disabled={locked} onClick={onBrowse}>분석 가능한 대학 보기</CalculatorButton>}
     {inline && active && <CalculatorButton text onClick={onDeactivate}>검색 접기</CalculatorButton>}
     {inline && <CalculatorNote role="status">{lastAdded}</CalculatorNote>}
     {full && <CalculatorNote>한 조합에는 후보를 최대 {MAX_CANDIDATES}개 담을 수 있습니다.</CalculatorNote>}
-    {active && (inline ? !showResults : mode === 'search' && !university) && recommendation && <React.Suspense fallback={<CalculatorNote role="status">추천 화면을 준비하고 있습니다…</CalculatorNote>}><CalculatorRecommendationPanel group={group} binding={binding}
+    {active && !university && !term && !composing && recommendation && <React.Suspense fallback={<CalculatorNote role="status">추천 화면을 준비하고 있습니다…</CalculatorNote>}><CalculatorRecommendationPanel group={group} binding={binding}
       recommendation={{ ...recommendation, onEditPreferences: () => { if (recommendation.onEditPreferences() && !inline) onClose(); } }} disabled={locked} saved={savedRecommendation} onResults={onRecommendation} currentTarget={currentTarget} denyAccess={denyAccess}
       canAdd={!full} alreadyAdded={inline ? alreadyAdded : undefined}
       onPick={target => { if (currentTarget && !globalThis.confirm('현재 군의 지원 후보를 바꿀까요?')) return; add(target); }} /></React.Suspense>}
@@ -110,42 +159,41 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
   if (inline) return <div className="jcalc-inline-picker" ref={dialog} onKeyDown={event => {
     if (active && event.key === 'Escape' && !event.nativeEvent.isComposing) onDeactivate();
   }}>{content}</div>;
-  return <dialog className="jcalc-unit-picker" ref={dialog} aria-labelledby="jcalc-unit-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}>
-    <div className="jcalc-picker-heading"><h2 id="jcalc-unit-picker-title">{CALCULATOR_GROUPS.find(([key]) => key === group)[1]} {title}</h2><CalculatorButton onClick={onClose} aria-label="모집단위 선택 닫기">닫기</CalculatorButton></div>
+  return <PickerDialog title={`${CALCULATOR_GROUPS.find(([key]) => key === group)[1]} ${title}`} dialog={dialog} initialFocus={searchInput} trigger={trigger} onClose={onClose}>
     {content}
-  </dialog>;
+  </PickerDialog>;
 }
 
-export function CalculatorRepresentativeSummary({ targets, representatives }) {
+function CalculatorRepresentativeSummary({ targets, representatives, toolbar }) {
   return <section className="jcalc-panel jcalc-representative-summary" aria-label="대표 조합">
-    <h2>대표 조합</h2>
+    <header><h2>대표 조합</h2>{toolbar}</header>
     <ul>{CALCULATOR_GROUPS.map(([group, label]) => {
       const selection = targets.find(target => target.selection.key === representatives[group])?.selection;
-      return <li key={group}><strong>{label}</strong><span>{selection ? <>{selection.universityName} · {selection.unitName}<small>{selection.campusName} · {selection.trackName}</small></> : '대표 미선택'}</span></li>;
+      return <li key={group}><button type="button" aria-controls={`jcalc-group-${group}`} onClick={() => document.getElementById(`jcalc-group-title-${group}`)?.focus()}>
+        <span>{label}</span><div>{selection ? <><strong>{selection.universityName}</strong><small>{selection.unitName}</small></> : <small>대표 미선택</small>}</div>
+      </button></li>;
     })}</ul>
   </section>;
 }
 
 export default function CalculatorPlanBoard({ targets, archivedTargets, conversions, locked, saving, onAdd, onRemove, onRetry, denyAccess, recommendation,
-  multiCandidate, representatives, onRepresentative }) {
+  multiCandidate, representatives, onRepresentative, representativeToolbar }) {
   const [group, setGroup] = React.useState('ga'), [picker, setPicker] = React.useState(null);
   const [activeSearch, setActiveSearch] = React.useState(null);
   const [recommendations, setRecommendations] = React.useState({});
   const openPicker = (group, mode, event) => setPicker({ group, mode, trigger: event.currentTarget });
   const targetFor = groupKey => targets.find(target => target.selection.admissionGroup === groupKey);
   return <div className="jcalc-group-workspace" data-multi={multiCandidate || undefined}>
-    {multiCandidate && <CalculatorRepresentativeSummary targets={targets} representatives={representatives} />}
-    <nav className="jcalc-group-tabs" aria-label={multiCandidate ? '모집군 바로가기' : '모집군 선택'}>{CALCULATOR_GROUPS.map(([key, label]) =>
-      <button key={key} type="button" aria-controls={`jcalc-group-${key}`} aria-pressed={multiCandidate ? undefined : group === key} onClick={() => {
-        setGroup(key);
-        if (multiCandidate) document.getElementById(`jcalc-group-title-${key}`)?.focus();
-      }}>{label}<small>{multiCandidate ? `${targets.filter(target => target.selection.admissionGroup === key).length}개` : targetFor(key) ? '선택 완료' : '미선택'}</small></button>)}</nav>
+    {multiCandidate ? <CalculatorRepresentativeSummary targets={targets} representatives={representatives} toolbar={representativeToolbar} />
+      : <nav className="jcalc-group-tabs" aria-label="모집군 선택">{CALCULATOR_GROUPS.map(([key, label]) =>
+        <button key={key} type="button" aria-controls={`jcalc-group-${key}`} aria-pressed={group === key} onClick={() => setGroup(key)}>{label}<small>{targetFor(key) ? '선택 완료' : '미선택'}</small></button>)}</nav>}
     <div className="jcalc-group-board">{CALCULATOR_GROUPS.map(([key, label]) => {
       if (multiCandidate) {
         const candidates = targets.filter(target => target.selection.admissionGroup === key);
         return <section key={key} id={`jcalc-group-${key}`} className="jcalc-panel jcalc-group-card" aria-label={`${label} 지원 후보`}>
           <div className="jcalc-group-heading"><h2 id={`jcalc-group-title-${key}`} tabIndex={-1}>{label}</h2></div>
           <UnitPicker group={key} inline active={activeSearch === key} onActivate={() => setActiveSearch(key)}
+            onBrowse={event => openPicker(key, 'browse', event)}
             onDeactivate={() => { setActiveSearch(null); document.getElementById(`jcalc-group-title-${key}`)?.focus({ preventScroll: true }); }} targets={targets} onAdd={onAdd}
             locked={locked} denyAccess={denyAccess} recommendation={recommendation} savedRecommendation={recommendations[key]}
             onRecommendation={value => setRecommendations(previous => ({ ...previous, [key]: value }))} />
@@ -175,9 +223,10 @@ export default function CalculatorPlanBoard({ targets, archivedTargets, conversi
     {archivedTargets.length > 0 && <details className="jcalc-panel"><summary>이전에 저장한 후보 ({archivedTargets.length})</summary><fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-candidates">{archivedTargets.map(target => <li key={planTargetKey(target)}><strong>{target.selection?.universityName || target.university}</strong><span>{target.selection?.unitName || target.major}</span>{target.selection
       ? <><small>{target.selection.campusName} · {target.selection.trackName}</small><CalculatorButton text disabled={multiCandidate && targets.length >= MAX_CANDIDATES} onClick={() => { setGroup(target.selection.admissionGroup); onAdd(target); }}>{CALCULATOR_GROUPS.find(([key]) => key === target.selection.admissionGroup)[1]} 후보로 선택</CalculatorButton></>
       : <small>모집군을 확인하려면 군별 검색에서 다시 찾아보세요.</small>}</li>)}</ul></fieldset></details>}
-    {picker && (!locked || saving) && <UnitPicker {...picker} locked={locked} recommendation={recommendation} savedRecommendation={recommendations[picker.group]}
+    {picker && (!locked || saving) && (picker.mode === 'browse' ? <CalculatorCatalogDialog {...picker} onClose={() => setPicker(null)} denyAccess={denyAccess} />
+      : <UnitPicker {...picker} locked={locked} recommendation={recommendation} savedRecommendation={recommendations[picker.group]}
       onRecommendation={value => setRecommendations(previous => ({ ...previous, [picker.group]: value }))}
       currentTarget={targetFor(picker.group)} onClose={() => setPicker(null)} denyAccess={denyAccess}
-      onAdd={target => { setGroup(target.selection.admissionGroup); onAdd(target); }} />}
+      onAdd={target => { setGroup(target.selection.admissionGroup); onAdd(target); }} />)}
   </div>;
 }

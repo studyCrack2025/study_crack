@@ -138,11 +138,11 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-reference-score > strong { font-size: clamp(24px, 4vw, 30px); font-weight: 800; overflow-wrap: anywhere; }
 .jcalc-reference-score small { margin-left: 4px; font-size: 12px; font-weight: 400; }
 .jcalc-score-position { --jcalc-position-color: var(--sc-brand-navy); display: grid; gap: 5px; min-width: 0; }
-.jcalc-score-position[data-risk="stable"], .jcalc-group-candidates > li[data-risk="stable"] { --jcalc-position-color: var(--sc-risk-stable); }
-.jcalc-score-position[data-risk="appropriate"], .jcalc-group-candidates > li[data-risk="appropriate"] { --jcalc-position-color: var(--sc-risk-appropriate); }
-.jcalc-score-position[data-risk="neutral"], .jcalc-group-candidates > li[data-risk="neutral"] { --jcalc-position-color: var(--sc-risk-neutral); }
-.jcalc-score-position[data-risk="challenge"], .jcalc-group-candidates > li[data-risk="challenge"] { --jcalc-position-color: var(--sc-risk-challenge); }
-.jcalc-score-position[data-risk="risky"], .jcalc-group-candidates > li[data-risk="risky"] { --jcalc-position-color: var(--sc-risk-risky); }
+.jcalc-score-position[data-risk="stable"], .jcalc-group-candidates > li[data-risk="stable"], .jcalc-portfolio-representative[data-risk="stable"] { --jcalc-position-color: var(--sc-risk-stable); }
+.jcalc-score-position[data-risk="appropriate"], .jcalc-group-candidates > li[data-risk="appropriate"], .jcalc-portfolio-representative[data-risk="appropriate"] { --jcalc-position-color: var(--sc-risk-appropriate); }
+.jcalc-score-position[data-risk="neutral"], .jcalc-group-candidates > li[data-risk="neutral"], .jcalc-portfolio-representative[data-risk="neutral"] { --jcalc-position-color: var(--sc-risk-neutral); }
+.jcalc-score-position[data-risk="challenge"], .jcalc-group-candidates > li[data-risk="challenge"], .jcalc-portfolio-representative[data-risk="challenge"] { --jcalc-position-color: var(--sc-risk-challenge); }
+.jcalc-score-position[data-risk="risky"], .jcalc-group-candidates > li[data-risk="risky"], .jcalc-portfolio-representative[data-risk="risky"] { --jcalc-position-color: var(--sc-risk-risky); }
 .jcalc-score-track { position: relative; height: 32px; margin: 0 8px; }
 .jcalc-score-track::before { position: absolute; inset: 14px 0 auto; height: 4px; border-radius: 4px; background: var(--sc-line-subtle); content: ''; }
 .jcalc-score-track span { position: absolute; width: 0; transform: translateX(-50%); }
