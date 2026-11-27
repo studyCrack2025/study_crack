@@ -6,7 +6,7 @@ async function refreshAccess(page) {
   await page.clock.setFixedTime(new Date(await page.evaluate(() => Date.now()) + 31_000));
   await page.evaluate(() => dispatchEvent(new Event('focus')));
 }
-test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(new Date('2026-11-28T00:00:00+09:00')); });
+test.beforeEach(async ({ page }) => { await page.clock.setFixedTime(new Date('2026-11-29T18:00:00+09:00')); });
 const catalog = [
   { univName: '한국외국어대학교(서울)', majors: ['경영학부', '경제학부'] },
   { univName: '한국외국어대학교(글로벌)', majors: ['경영학과', '컴퓨터공학부', ...Array.from({ length: 16 }, (_, index) => `가상학과${index + 1}`)] },
@@ -564,7 +564,7 @@ test.describe('합격 계산기 공개 일정', () => {
     expect(control.calls.filter(call => call.type === 'get_calculator_conversion')).toHaveLength(1);
   });
   test('확인된 이용권은 날짜가 지나도 서버 공개 승인 전에는 닫혀 있고 공개 후 조회를 연다', async ({ page }, testInfo) => {
-    await page.clock.setFixedTime(new Date('2026-11-27T14:59:59.000Z'));
+    await page.clock.setFixedTime(new Date('2026-11-29T17:59:59+09:00'));
     const control = await setup(page); control.accessSource = 'purchase'; control.calculationEnabled = false;
     await page.goto(path);
     const notice = page.getByRole('note', { name: '합격 계산기 공개 일정' });
@@ -577,7 +577,7 @@ test.describe('합격 계산기 공개 일정', () => {
     await expect(page.getByRole('heading', { name: '나의 계산기 신청' })).toBeVisible();
     await expect(notice).toHaveCount(0);
     control.accessAllowed = true;
-    await page.clock.setFixedTime(new Date('2026-11-27T15:01:00.000Z'));
+    await page.clock.setFixedTime(new Date('2026-11-29T18:01:00+09:00'));
     await refreshAccess(page);
     await expect(page.getByRole('region', { name: '계산기 이용 상태' })).toContainText('이용 가능');
     await expect(notice).toBeVisible();
@@ -654,7 +654,7 @@ test('다른 탭에서 돌아오면 기존 화면을 유지하면서 이용 상�
   await expect(page.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
   const mainFrame = page.mainFrame(), navigations = [];
   page.on('framenavigated', frame => { if (frame === mainFrame) navigations.push(frame.url()); });
-  await page.clock.install({ time: new Date('2026-11-28T00:00:00+09:00') }); await page.clock.fastForward(31_000);
+  await page.clock.install({ time: new Date('2026-11-29T18:00:00+09:00') }); await page.clock.fastForward(31_000);
   control.accessAllowed = false; control.accessMode = 'defer';
   await page.evaluate(() => { dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); dispatchEvent(new Event('focus')); });
   await expect.poll(() => Boolean(control.accessRelease)).toBe(true);

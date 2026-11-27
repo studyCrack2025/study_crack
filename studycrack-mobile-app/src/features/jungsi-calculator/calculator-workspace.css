@@ -7,7 +7,7 @@
 .jcalc-preference-options > div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .jcalc-preference-options label { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; font-size: 13px; }
 .jcalc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.jcalc-plan-toolbar { display: grid; gap: 10px; }
+.jcalc-plan-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
 .jcalc-data-settings { padding: 8px; color: var(--sc-ink-muted); font-size: 12px; }
 .jcalc-data-settings summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
 
@@ -23,7 +23,7 @@
 .jcalc-score-table table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
 .jcalc-score-table caption { padding: 8px 0; text-align: left; color: var(--sc-ink-muted); }
 .jcalc-score-table th, .jcalc-score-table td { padding: 8px 4px; border-bottom: 1px solid var(--sc-line-subtle); overflow-wrap: anywhere; }
-.jcalc-plan-selection { display: flex; align-items: end; gap: 10px; }
+.jcalc-plan-selection { display: flex; align-items: end; gap: 10px; width: min(100%, 370px); }
 .jcalc-plan-selection label { position: relative; flex: 1; min-width: 0; }
 .jcalc-plan-selection label::after { position: absolute; right: 16px; bottom: 22px; width: 7px; height: 7px; border: solid var(--sc-ink-muted); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none; content: ''; }
 .jcalc-plan-selection select, .jcalc-plan-selection > button { box-sizing: border-box; height: 48px; }

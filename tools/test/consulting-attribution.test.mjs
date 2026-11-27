@@ -6,7 +6,19 @@ const source = fs.readFileSync(new URL('../../js/jungsi-consulting.js', import.m
 function setup(hash='#consulting', order=['calculator','consultingPanel']) {
   const events=[], handlers={}, listeners={}, panels={}, tabs=order.map(panel=>({setAttribute(){},getAttribute(){return panel;},addEventListener(n,f){this[n]=f;},focus(){}}));
   let tick;
-  const element=id=>panels[id] ||= {contains:target=>target===panels[id]||(id==='consultingPanel'&&target===panels.consulting),hidden:false,setAttribute(){},addEventListener(){},querySelector:selector=>element(id+selector)};
+  const element = id => {
+    if (panels[id]) return panels[id];
+    const attributes = new Map();
+    return panels[id] = {
+      id, hidden: false, dataset: {}, firstChild: { textContent: '' },
+      contains: target => target === panels[id] || id === 'consultingPanel' && target === panels.consulting,
+      getAttribute: name => name === 'href' ? panels[id].href ?? null : attributes.get(name) ?? null,
+      setAttribute: (name, value) => attributes.set(name, String(value)),
+      removeAttribute: name => attributes.delete(name),
+      addEventListener() {},
+      querySelector: selector => element(id + selector)
+    };
+  };
   const doc={visibilityState:'visible',querySelectorAll:()=>tabs,addEventListener:(n,f)=>{(listeners[n] ||= []).push(f);handlers[n]=event=>listeners[n].forEach(listener=>listener(event));},getElementById:element};
   const location={hash}; const history={replaceState(a,b,h){location.hash=h;}};
   const window={SCTrack:{event:(...x)=>events.push(x)},setInterval:f=>(tick=f,1),clearInterval(){tick=()=>{};},addEventListener(){}};
@@ -33,6 +45,19 @@ test('consulting-first navigation preserves calculator anchors and event identit
  assert.ok(s.events.every(e=>e[0]!=='page_view'));
 });
 test('disabled application does not emit; open form is click only',()=>{
- const s=setup();const link={id:'consultingApply',href:'https://docs.google.com/forms/d/example',getAttribute:n=>n==='aria-disabled'?'true':null};const event={target:{closest:()=>link}};
- s.handlers.click(event);assert.equal(s.events.length,1);link.getAttribute=()=>null;s.handlers.click(event);assert.equal(s.events[1][0],'consulting_apply_click');assert.ok(!s.events.some(e=>/purchase|lead|sign_up/.test(e[0])));
+ const s = setup(), link = s.doc.getElementById('consultingApply');
+ const event = { target: { closest: () => link } };
+ assert.equal(link.href, '#application');
+ assert.equal(link.dataset.jungsiProduct, 'consulting');
+ link.setAttribute('aria-disabled', 'true');
+ s.handlers.click(event);
+ assert.equal(s.events.length, 1);
+ link.removeAttribute('aria-disabled');
+ s.handlers.click(event);
+ assert.equal(s.events[1][0], 'consulting_apply_click');
+ delete link.dataset.jungsiProduct;
+ link.href = '/2027-jungsi-consulting/home';
+ s.handlers.click(event);
+ assert.equal(s.events.length, 2);
+ assert.ok(!s.events.some(e => /purchase|lead|sign_up/.test(e[0])));
 });

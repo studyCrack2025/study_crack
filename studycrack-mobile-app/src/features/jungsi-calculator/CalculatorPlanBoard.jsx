@@ -65,7 +65,7 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
   return <dialog className="jcalc-unit-picker" ref={dialog} aria-labelledby="jcalc-unit-picker-title" onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="jcalc-picker-heading"><h2 id="jcalc-unit-picker-title">{CALCULATOR_GROUPS.find(([key]) => key === group)[1]} {title}</h2><CalculatorButton onClick={onClose} aria-label="모집단위 선택 닫기">닫기</CalculatorButton></div>
     {mode === 'search' && !university && recommendation && <React.Suspense fallback={<CalculatorNote role="status">추천 화면을 준비하고 있습니다…</CalculatorNote>}><CalculatorRecommendationPanel group={group} binding={binding}
-      recommendation={recommendation} disabled={locked} saved={savedRecommendation} onResults={onRecommendation} currentTarget={currentTarget} denyAccess={denyAccess}
+      recommendation={{ ...recommendation, onEditPreferences: () => { if (recommendation.onEditPreferences()) onClose(); } }} disabled={locked} saved={savedRecommendation} onResults={onRecommendation} currentTarget={currentTarget} denyAccess={denyAccess}
       onPick={target => { if (currentTarget && !globalThis.confirm('현재 군의 지원 후보를 바꿀까요?')) return; onAdd(target); onClose(); }} /></React.Suspense>}
     {university && <div className="jcalc-picker-path"><CalculatorButton text onClick={back}>대학 목록으로</CalculatorButton><strong>{university.name}</strong></div>}
     <label className="jcalc-field"><span>{university ? '학과명 검색' : '대학명 검색'}</span><input ref={searchInput} type="search" maxLength="80" value={query} placeholder={university ? '학과명 또는 전형' : '대학명 또는 캠퍼스'} onChange={changeQuery} /></label>
@@ -77,7 +77,10 @@ function UnitPicker({ group, mode, trigger, currentTarget, onClose, onAdd, denyA
       if (!university) return <li key={target.universityKey}><button className="jcalc-university-choice" type="button" data-university={target.universityKey} onClick={() => selectUniversity(target)}><strong>{target.name}</strong><small>{target.unitCount}개 모집단위·전형 · {target.campuses.join(' · ')}</small><span aria-hidden="true">학과 보기 →</span></button></li>;
       const selected = currentTarget?.selection.key === target.selection.key && currentTarget.selection.catalogDigest === target.selection.catalogDigest;
       const action = currentTarget ? '후보로 바꾸기' : '후보에 추가';
-      return <li key={target.selection.key}><div><span>{target.selection.unitName}</span><small>{target.selection.campusName} · {target.selection.trackName}</small></div><CalculatorButton disabled={selected || locked} aria-label={`${target.selection.universityName} ${target.selection.unitName} ${target.selection.trackName} ${action}`} onClick={() => { onAdd(target); onClose(); }}>{selected ? '선택됨' : currentTarget ? '이 후보로 바꾸기' : '후보 추가'}</CalculatorButton></li>;
+      const { recommendationEligibility, ...candidate } = target;
+      const eligibilityNote = recommendationEligibility === 'review' ? '지원 자격 확인 필요'
+        : recommendationEligibility === 'female' && recommendation?.applicantGender !== 'female' ? '여성 지원 자격 확인 필요' : '';
+      return <li key={target.selection.key}><div><span>{target.selection.unitName}</span><small>{target.selection.campusName} · {target.selection.trackName}</small>{eligibilityNote && <small>{eligibilityNote}</small>}</div><CalculatorButton disabled={selected || locked} aria-label={`${target.selection.universityName} ${target.selection.unitName} ${target.selection.trackName} ${action}`} onClick={() => { onAdd(candidate); onClose(); }}>{selected ? '선택됨' : currentTarget ? '이 후보로 바꾸기' : '후보 추가'}</CalculatorButton></li>;
     })}</ul>
     {resource.nextCursor !== null && <CalculatorButton disabled={resource.status !== 'ready'} onClick={() => setCursor(resource.nextCursor)}>{university ? '학과 더 보기' : '대학 더 보기'}</CalculatorButton>}
     </>}

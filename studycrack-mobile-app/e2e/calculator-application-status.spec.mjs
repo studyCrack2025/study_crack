@@ -6,7 +6,7 @@ const credentials = { version: 1, productType: 'calculator', requestKey: 'web_11
 async function setup(page, options = {}) {
   await page.clock.setFixedTime('2026-11-20T01:00:00.000Z');
   const context = page.context(), state = { calls: [], owner: 'student-A', linked: false, allowed: false, accessSource: 'purchase', receipt: true, failRead: false, failLink: false, defer: false, release: null, ...options };
-  state.application = { applicationId: appId, productType: 'calculator', revision: 0, applicationState: 'PAYMENT_REVIEW', paymentStatus: 'pending', state: 'pending_payment', accountLinked: false, accessActive: false, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2026-11-27T14:59:59.999Z', openingAt: '2026-11-28T00:00:00+09:00' };
+  state.application = { applicationId: appId, productType: 'calculator', revision: 0, applicationState: 'PAYMENT_REVIEW', paymentStatus: 'pending', state: 'pending_payment', accountLinked: false, accessActive: false, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: '2026-11-27T14:59:59.999Z', openingAt: '2026-11-29T18:00:00+09:00' };
   await context.addInitScript(({ receipt, credentials }) => {
     if (!localStorage.getItem('userId')) { localStorage.setItem('userId', 'student-A'); localStorage.setItem('userRole', 'student'); }
     if (receipt && localStorage.getItem('syntheticNoReceipt') !== '1' && !sessionStorage.getItem('sc_jungsi_application_v1')) sessionStorage.setItem('sc_jungsi_application_v1', JSON.stringify(credentials));

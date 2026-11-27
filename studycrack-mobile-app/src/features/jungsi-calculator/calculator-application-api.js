@@ -9,7 +9,7 @@ export function validCalculatorApplication(value) {
     && ['PAYMENT_REVIEW', 'INVITED', 'CLAIMED', 'REJECTED'].includes(value.applicationState) && ['pending', 'hold', 'input_review', 'verified', 'rejected', 'unknown'].includes(value.paymentStatus)
     && CALCULATOR_APPLICATION_STATES.includes(value.state) && typeof value.accountLinked === 'boolean' && typeof value.accessActive === 'boolean'
     && (!value.accessActive || value.state === 'active' && value.accountLinked && value.applicationState === 'CLAIMED' && value.paymentStatus === 'verified') && [null, 25000].includes(value.amount)
-    && ['submittedAt', 'accessEndsAt', 'paymentDueAt'].every(key => date(value[key])) && value.openingAt === '2026-11-28T00:00:00+09:00';
+    && ['submittedAt', 'accessEndsAt', 'paymentDueAt'].every(key => date(value[key])) && typeof value.openingAt === 'string' && date(value.openingAt);
 }
 export function parseCalculatorApplicationHome(value) {
   if (!value || value.contractVersion !== 'calculator-applications-v1' || !Array.isArray(value.items) || value.items.length > 21

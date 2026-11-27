@@ -1,6 +1,7 @@
 import React from 'react';
+import { getMobileApiBinding } from '../../shared/browser/mobile-runtime.js';
 import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
-import { CalculatorStrategySelect } from './CalculatorRecommendationPreferences.jsx';
+import { RECOMMENDATION_STRATEGIES } from './calculator-recommendation-preferences.js';
 import { CALCULATOR_RISK_BANDS } from './calculator-indicators.js';
 import { requestCalculatorRecommendations } from './calculator-recommendation-api.js';
 
@@ -9,25 +10,37 @@ const relaxations = ['', '같은 권역까지 확대', '전국으로 확대', '�
 const points = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 3 });
 
 export default function CalculatorRecommendationPanel({ group, binding, recommendation, saved, onResults, currentTarget, onPick, denyAccess, disabled }) {
-  const { scores, preferences, saveStrategy } = recommendation;
-  const [strategy, setStrategy] = React.useState(preferences.strategy);
+  const { scores, preferences, revision, eligibilityEnabled, applicationId, onEditPreferences } = recommendation;
+  const consulting = React.useMemo(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
+  const strategy = preferences.strategy;
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState('');
   const controller = React.useRef(null);
-  const requestKey = JSON.stringify([scores, preferences.streams, preferences.regions, strategy]);
+  const requestKey = JSON.stringify([applicationId, group, revision, scores, preferences]);
   const shown = saved?.key === requestKey ? saved.data : null;
-  React.useEffect(() => () => controller.current?.abort(), []);
 
-  async function recommend() {
+  React.useEffect(() => {
+    let active = true;
+    setPending(false);
+    setError('');
+    if (!shown) queueMicrotask(() => { if (active) void recommend(); });
+    return () => {
+      active = false;
+      controller.current?.abort();
+      controller.current = null;
+    };
+  }, [requestKey, disabled]);
+
+  async function recommend(excludePrevious = false) {
     if (!strategy || disabled || controller.current) return;
-    const request = new AbortController(); controller.current = request;
-    setPending(true); setError('');
+    const request = new AbortController();
+    controller.current = request;
+    setPending(true);
+    setError('');
     try {
-      const savedStrategy = await saveStrategy(strategy);
-      if (request.signal.aborted) return;
-      if (!savedStrategy.ok) { setError(savedStrategy.error || '지원 성향을 저장하지 못했습니다. 다시 시도해주세요.'); return; }
-      const result = await requestCalculatorRecommendations(binding, { scores, admissionGroup: group,
-        preferences: { ...preferences, strategy }, previousUniversities: saved?.data.items.map(item => item.universityKey) ?? [], signal: request.signal });
+      const result = await requestCalculatorRecommendations(eligibilityEnabled ? consulting : binding, { scores, admissionGroup: group, preferences,
+        profile: eligibilityEnabled ? { applicationId, profileRevision: revision } : null,
+        previousUniversities: excludePrevious ? shown?.items.map(item => item.universityKey) ?? [] : [], signal: request.signal });
       if (request.signal.aborted) return;
       if (result.code === 'CALCULATOR_ACCESS_REQUIRED' || [401, 403].includes(result.status)) { denyAccess(); return; }
       if (result.ok) onResults({ key: requestKey, data: result.data });
@@ -42,8 +55,10 @@ export default function CalculatorRecommendationPanel({ group, binding, recommen
 
   return <section className="jcalc-picker-recommendations" aria-label="군별 지원 추천">
     <div className="jcalc-workspace-actions">
-      <CalculatorStrategySelect value={strategy} disabled={pending || disabled} onChange={value => { setStrategy(value); setError(''); }} />
-      <CalculatorButton primary disabled={!strategy || pending || disabled} onClick={recommend}>{saved ? '다시 추천받기' : '지원 추천받기'}</CalculatorButton>
+      {strategy ? <CalculatorNote>저장한 지원 성향 · {RECOMMENDATION_STRATEGIES.find(([value]) => value === strategy)?.[1]}</CalculatorNote>
+        : <><CalculatorNote>성적 수정에서 지원 성향을 저장하면 추천을 볼 수 있습니다.</CalculatorNote><CalculatorButton disabled={disabled} onClick={onEditPreferences}>지원 성향 입력</CalculatorButton></>}
+      {shown && <CalculatorButton disabled={disabled || pending} onClick={() => recommend(true)}>다시 추천받기</CalculatorButton>}
+      {error && <CalculatorButton disabled={disabled || pending} onClick={() => recommend(Boolean(shown))}>추천 다시 시도</CalculatorButton>}
     </div>
     {pending && <CalculatorNote role="status">지원 후보를 찾고 있습니다…</CalculatorNote>}
     {error && <p className="jcalc-error" role="alert">{error}</p>}

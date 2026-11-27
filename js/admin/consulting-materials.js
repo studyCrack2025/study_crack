@@ -78,6 +78,7 @@ function renderConsultingSurvey(target, snapshot, decorate) {
     const yesNo = (value, yes, no) => typeof value === 'boolean' ? (value ? yes : no) : null;
     group('studentStatus', [
         ['지원자 구분', consultingOptionLabel(studentStatus.applicantType, { high_school_senior: '고3 재학생', graduate: '졸업생', qualification_exam: '검정고시' }), 'studentStatus.applicantType'],
+        ['성별', consultingOptionLabel(studentStatus.applicantGender, { male: '남성', female: '여성' }), 'studentStatus.applicantGender'],
         ...(studentStatus.applicantType === 'qualification_exam'
             ? [['검정고시 합격 연도 (선택)', studentStatus.qualificationExamYear ?? '입력하지 않음', 'studentStatus.qualificationExamYear']]
             : [[studentStatus.applicantType === 'high_school_senior' ? '졸업 예정 연도' : '졸업 연도', studentStatus.graduationYear, 'studentStatus.graduationYear'],
@@ -203,7 +204,7 @@ function renderConsultingMaterialFiles(caseId, files) {
 
 const consultingSurveySections = { studentStatus: '학생 상태', scores: '학생 입력 성적', conditions: '지원 조건', preferences: '희망 지원', strategy: '지원 전략', qualitative: '상담 질문', consent: '최종 확인' };
 const consultingSurveyFieldNames = {
-    applicantType: '지원자 구분', graduationYear: '졸업 연도', qualificationExamYear: '검정고시 합격 연도', schoolType: '학교 유형', schoolName: '학교명', residenceRegion: '거주 지역',
+    applicantType: '지원자 구분', applicantGender: '성별', graduationYear: '졸업 연도', qualificationExamYear: '검정고시 합격 연도', schoolType: '학교 유형', schoolName: '학교명', residenceRegion: '거주 지역',
     examYear: '시험 연도', examType: '시험 종류', area: '영역', subject: '과목명', selection: '선택과목', commonRawScore: '공통 원점수',
     electiveRawScore: '선택 원점수', rawScore: '원점수', standardScore: '표준점수', percentile: '백분위', grade: '등급', confirmed: '입력 확인',
     convertedFromRaw: '원점수 환산', commuteLimit: '최대 편도 통학 시간', commuteMaxMinutes: '편도 통학(분)', dormitoryAllowed: '기숙사 생활',
@@ -215,6 +216,7 @@ const consultingSurveyFieldNames = {
     accurateInformation: '입력 내용 확인', analysisUse: '분석 이용 동의', formVersion: '양식 버전'
 };
 const consultingSurveyAnswerLabels = {
+    male: '남성', female: '여성',
     high_school_senior: '고3 재학생', graduate: '졸업생', qualification_exam: '검정고시', general: '일반고', specialized: '특목·특성화고',
     autonomous: '자율고', other: '기타', safe: '안정 중심', balanced: '균형', challenge: '도전 중심', over_120: '2시간 이상도 가능',
     region: '지역', major: '전공', brand: '대학 인지도', employment: '취업', commute: '통학', ...consultingScoreAreas

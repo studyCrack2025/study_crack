@@ -21,7 +21,7 @@ async function setup(page, options = {}) {
   });
   await context.route('**/__input-core', async route => {
     const body = route.request().postDataJSON(); state.calls.push(body); let data;
-    if (body.type === 'student_get_calculator_applications') data = { contractVersion: 'calculator-applications-v1', items: state.owner === 'student-A' ? [{ applicationId: appId, productType: 'calculator', revision: 1, applicationState: 'CLAIMED', paymentStatus: 'verified', state: 'active', accountLinked: true, accessActive: true, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-28T00:00:00+09:00' }] : [], hasMore: false, needsReview: false, accountEmailMask: null };
+    if (body.type === 'student_get_calculator_applications') data = { contractVersion: 'calculator-applications-v1', items: state.owner === 'student-A' ? [{ applicationId: appId, productType: 'calculator', revision: 1, applicationState: 'CLAIMED', paymentStatus: 'verified', state: 'active', accountLinked: true, accessActive: true, amount: 25000, submittedAt: '2026-11-20T00:00:00.000Z', accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-29T18:00:00+09:00' }] : [], hasMore: false, needsReview: false, accountEmailMask: null };
     else if (body.type === 'student_get_calculator_input') {
       if (state.failRead) return route.fulfill({ status: 503, json: { success: false } });
       data = structuredClone(state.saved); if (state.deferRead) await new Promise(resolve => { state.release = resolve; });
