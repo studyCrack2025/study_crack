@@ -47,7 +47,13 @@ export default function CalculatorScoreForm({ scores, errors, changed, confirmed
       </fieldset>
       {Object.keys(errors).length > 0 && <p className="jcalc-error" role="alert">표시된 항목을 확인해주세요. 아직 입력 내용이 확정되지 않았습니다.</p>}
       {children}
-      <div className="jcalc-confirm"><CalculatorButton primary type="submit" disabled={confirmDisabled || scores.basis === 'raw' && (!validation.ok || (!confirmed || changed) && !conversion?.ready)}>{confirmLabel || (confirmed ? '입력 성적 확인' : '이 성적으로 시작하기')}</CalculatorButton>{onCancel && <CalculatorButton onClick={onCancel}>성적 수정 취소</CalculatorButton>}<CalculatorNote role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</CalculatorNote></div>
+      <div className="jcalc-confirm">
+        <div className="jcalc-confirm-actions" data-editing={onCancel ? true : undefined}>
+          <CalculatorButton primary type="submit" disabled={confirmDisabled || scores.basis === 'raw' && (!validation.ok || (!confirmed || changed) && !conversion?.ready)}>{confirmLabel || (confirmed ? '입력 성적 확인' : '이 성적으로 시작하기')}</CalculatorButton>
+          {onCancel && <CalculatorButton onClick={onCancel}>성적 수정 취소</CalculatorButton>}
+        </div>
+        <CalculatorNote role="status">{confirmed ? changed ? '성적이 바뀌었어요. 입력 성적을 다시 확인해주세요.' : '입력한 성적을 확인했습니다.' : '모든 필수 항목과 예상 성적을 확인한 뒤 시작해주세요.'}</CalculatorNote>
+      </div>
     </form>
   </section>;
 }
