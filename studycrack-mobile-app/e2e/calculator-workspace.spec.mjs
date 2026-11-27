@@ -435,6 +435,10 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
   await expect(graph).toBeVisible();
   await expect(graph).toHaveAccessibleName(/내 점수 720\.36점.*\+20\.36점.*\+5\.36점/);
   await expect(graph).toHaveAttribute('data-risk', 'stable');
+  const chart = graph.locator('.jcalc-card-score-chart');
+  const markers = ['pass', 'registered', 'own'].map(name => chart.locator(`[data-marker="${name}"]`));
+  await expect(graph.getByText('● 내 점수', { exact: true })).toBeVisible();
+  await expect(markers[2]).not.toHaveAttribute('data-offscale');
   await expect(gaCandidate.getByText('약 75% (72~78%)', { exact: true })).toBeVisible();
   await expect(gaCandidate.getByText('2026학년도 최종등록자 70% 컷', { exact: true })).toHaveCount(0);
   const notes = gaCandidate.getByText(/확인된 모집인원과 입결을 반영한 추정치/);
@@ -445,6 +449,13 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
   const initialViewport = page.viewportSize();
   for (const width of [320, 1280]) {
     await page.setViewportSize({ width, height: 900 });
+    const chartBox = await chart.boundingBox();
+    expect(chartBox.width).toBeGreaterThan(0);
+    const actualPositions = await Promise.all(markers.map(async marker => {
+      const box = await marker.boundingBox();
+      return (box.x + box.width / 2 - chartBox.x) / chartBox.width * 100;
+    }));
+    [36, 64, 74.0053].forEach((expected, index) => expect(Math.abs(actualPositions[index] - expected)).toBeLessThan(0.6));
     const [cautionBox, removeBox] = await Promise.all([cautions.boundingBox(), remove.boundingBox()]);
     expect(Math.abs(cautionBox.y - removeBox.y)).toBeLessThanOrEqual(1);
     expect(cautionBox.x + cautionBox.width).toBeLessThan(removeBox.x);

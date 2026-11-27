@@ -1,7 +1,7 @@
 import React from 'react';
 import CalculatorForecast, { calculatorForecastNote } from './CalculatorForecast.jsx';
-import { calculatorOfferLine, calculatorScorePosition, formatCalculatorScore, OFFER_ESTIMATE_NOTE, referenceScoreLabel } from './calculator-display.js';
-import CalculatorReference, { CalculatorCautions, CalculatorCutoffLines, CARD_SCORE_CURVE_NOTE } from './CalculatorReference.jsx';
+import { calculatorCardScoreComparison, calculatorOfferLine, formatCalculatorScore, OFFER_ESTIMATE_NOTE, referenceScoreLabel } from './calculator-display.js';
+import CalculatorReference, { CalculatorCautions, CalculatorCutoffLines, CARD_SCORE_COMPARISON_NOTE } from './CalculatorReference.jsx';
 import { calculatorSelectionNotice } from './calculator-indicators.js';
 
 const groups = { ga: '가군', na: '나군', da: '다군' };
@@ -40,7 +40,7 @@ export default function CalculatorResult({ result, current, selectedId, onSelect
       <CalculatorCutoffLines reference={reference} possibility={possibility} score={result.convertedScore} compact={exactSelection} />
       <CalculatorCautions actions={actions}>
         {exactSelection && <p className="jcalc-forecast-note">{maximumNote}</p>}
-        {exactSelection && calculatorScorePosition(result.convertedScore, possibility) && <p className="jcalc-forecast-note">{CARD_SCORE_CURVE_NOTE}</p>}
+        {exactSelection && calculatorCardScoreComparison(result.convertedScore, possibility) && <p className="jcalc-forecast-note">{CARD_SCORE_COMPARISON_NOTE}</p>}
         {exactSelection && calculatorOfferLine(possibility) && <p className="jcalc-forecast-note">{OFFER_ESTIMATE_NOTE}</p>}
         {result.scoreScope === 'csat_component' && <p className="jcalc-forecast-note">{result.precisionPolicy === 'exact_integer_domain' ? '공개 수능식의 계산값입니다. 최종 소수점 처리와 학생부·면접·실기 반영은 별도 확인이 필요합니다.' : '수능 반영 점수입니다. 학생부·면접·실기 점수는 별도입니다.'}</p>}
         <p className="jcalc-forecast-note">{calculatorForecastNote(possibility)} 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.</p>
