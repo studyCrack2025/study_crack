@@ -46,6 +46,29 @@ function representativeCard(group, label, target, result) {
     reference: score && !notice ? { label: '입결 기준', lines, note: reference?.historical70 ? HISTORICAL_CUTOFF_NOTE : null } : null, notes };
 }
 
+export function createCalculatorComparisonPortfolio({ profile, plan, entries }) {
+  if (!profile || !plan?.targets.length || !validRepresentatives(plan.representatives, plan.targets)) return null;
+  const candidates = plan.targets.map(target => {
+    const entry = entries.get(target.selection.key);
+    const result = entry?.result;
+    const current = result?.selectionKey === target.selection.key && result.university === target.university && result.major === target.major;
+    return { target, status: current ? 'ready' : entry?.status === 'error' ? 'error' : entry?.status === 'idle' ? 'idle' : 'loading',
+      error: entry?.error, result: current ? result : null, response: current ? entry.response : null };
+  });
+  const response = candidates.find(candidate => candidate.response)?.response;
+  const compared = response && calculatorComparisonScores(response, profile.scores) || profile.scores;
+  const selected = Object.values(plan.representatives).filter(Boolean);
+  const cards = CALCULATOR_GROUPS.map(([group, label]) => {
+    const candidate = candidates.find(row => row.target.selection.key === plan.representatives[group]);
+    return representativeCard(group, label, candidate && candidate.result ? candidate.target : null, candidate?.result);
+  });
+  return { title: '나의 정시 포트폴리오', name: plan.name, scoreSummary: summarizeScores(profile.scores, compared),
+    basisLabel: profile.scores.basis === 'raw' ? '가채점 기준' : '성적표 기준', cards, disclaimer: CALCULATOR_STAGE_NOTE,
+    candidates: candidates.map(({ response, ...candidate }) => candidate), representatives: plan.representatives,
+    exportMessage: !selected.length ? '대표 후보를 선택해주세요.'
+      : selected.every(key => candidates.some(candidate => candidate.target.selection.key === key && candidate.result)) ? '' : '대표 후보의 계산 결과를 확인하고 있습니다.' };
+}
+
 export function createCalculatorPortfolio({ profile, plan, conversion, input }) {
   if (!profile || !plan || !conversion || !Array.isArray(plan.targets) || !validRepresentatives(plan.representatives, plan.targets) || !Object.values(plan.representatives).some(Boolean)
     || input?.profileRevision !== profile.revision || JSON.stringify(input.scores) !== JSON.stringify(profile.scores) || JSON.stringify(input.targets) !== JSON.stringify(plan.targets)

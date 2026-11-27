@@ -9,7 +9,7 @@ const labels = new Map(CALCULATOR_RISK_BANDS);
 const relaxations = ['', '같은 권역까지 확대', '전국으로 확대', '유사 계열로 확대', '유사 계열 · 같은 권역까지 확대', '유사 계열 · 전국으로 확대'];
 const points = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 3 });
 
-export default function CalculatorRecommendationPanel({ group, binding, recommendation, saved, onResults, currentTarget, onPick, denyAccess, disabled }) {
+export default function CalculatorRecommendationPanel({ group, binding, recommendation, saved, onResults, currentTarget, onPick, denyAccess, disabled, canAdd = true, alreadyAdded }) {
   const { scores, preferences, revision, eligibilityEnabled, applicationId, onEditPreferences } = recommendation;
   const consulting = React.useMemo(() => getMobileApiBinding('consulting', 'consultingApiUrl'), []);
   const strategy = preferences.strategy;
@@ -67,7 +67,7 @@ export default function CalculatorRecommendationPanel({ group, binding, recommen
         {shown.scoreBasis === 'estimated' && <CalculatorNote>가채점 추정 성적 기준</CalculatorNote>}
         <ul className="jcalc-picker-results">{shown.items.map(item => {
           const { target, riskBand, tier, convertedScore, cutoffs, offerEstimate, scoreScope } = item;
-          const { selection } = target, selected = currentTarget?.selection.key === selection.key;
+          const { selection } = target, selected = alreadyAdded ? alreadyAdded(target) : currentTarget?.selection.key === selection.key;
           return <li key={selection.key}><div>
             <strong>{selection.universityName} · {labels.get(riskBand)}</strong>
             <span>{selection.unitName}</span>
@@ -75,8 +75,8 @@ export default function CalculatorRecommendationPanel({ group, binding, recommen
             <small>{scoreScope === 'csat_component' ? '수능 반영점수' : '내 환산점수'} {points.format(convertedScore)}점 · 예상 합격 컷 {points.format(cutoffs.pass)}점</small>
             {offerEstimate && <small>추정 합격 가능성 {offerEstimate.low}~{offerEstimate.high}%</small>}
             {tier > 0 ? <small>{relaxations[tier]}</small> : (preferences.streams.length > 0 || preferences.regions.length > 0) && <small>희망 조건 일치</small>}
-          </div><CalculatorButton disabled={selected || pending || disabled} aria-label={selected ? undefined : `${selection.universityName} ${selection.unitName} 이 후보 담기`}
-            onClick={() => onPick(target)}>{selected ? '선택됨' : '이 후보 담기'}</CalculatorButton></li>;
+          </div><CalculatorButton disabled={selected || pending || disabled || !canAdd} aria-label={selected ? undefined : `${selection.universityName} ${selection.unitName} 이 후보 담기`}
+            onClick={() => onPick(target)}>{selected ? alreadyAdded ? '담은 후보' : '선택됨' : '이 후보 담기'}</CalculatorButton></li>;
         })}</ul>
         {shown.items.length === 1 && <CalculatorNote>다른 대학에서 해당 지원 단계의 후보를 찾지 못했습니다.</CalculatorNote>}
         {shown.repeatedUniversities > 0 && <CalculatorNote>조건에 맞는 다른 대학이 부족해 직전 추천 대학 {shown.repeatedUniversities}곳이 포함됐습니다.</CalculatorNote>}

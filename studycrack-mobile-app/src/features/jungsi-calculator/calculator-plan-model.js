@@ -1,5 +1,6 @@
 import { normalizeStoredCalculatorInput } from './calculator-storage-api.js';
 import { calculatorDigest, calculatorLabel, calculatorRecordId, calculatorSelectionKey } from './calculator-validation.js';
+import { MAX_CANDIDATES } from './calculator-model.js';
 
 export const CALCULATOR_GROUPS = [['ga', '가군'], ['na', '나군'], ['da', '다군']];
 export const emptyRepresentatives = () => ({ ga: null, na: null, da: null });
@@ -47,4 +48,33 @@ export function groupPlanTargets(targets, representatives) {
 
 export function setPlanTarget(targets, target) {
   return groupPlanTargets([...targets.filter(row => row.selection.admissionGroup !== target.selection.admissionGroup), target]);
+}
+
+export function calculatorPlanDraft(plan, grouped, multiCandidate) {
+  const saved = plan?.targets || [];
+  const targets = !grouped ? saved : multiCandidate ? saved.filter(target => target.selection) : groupPlanTargets(saved, plan?.representatives);
+  const representatives = multiCandidate && plan?.representatives
+    ? plan.representatives : Object.assign(emptyRepresentatives(), Object.fromEntries(groupPlanTargets(targets).map(target => [target.selection.admissionGroup, target.selection.key])));
+  return { targets, representatives };
+}
+
+export function samePlanSelection(a, b) {
+  return a.selection.key === b.selection.key || a.admissionUnitId === b.admissionUnitId
+    && a.selection.trackId === b.selection.trackId && a.selection.admissionGroup === b.selection.admissionGroup;
+}
+
+export function addCalculatorPlanCandidate(draft, target) {
+  if (draft.targets.length >= MAX_CANDIDATES || draft.targets.some(row => samePlanSelection(row, target))) return draft;
+  const group = target.selection.admissionGroup;
+  const representatives = draft.targets.some(row => row.selection.admissionGroup === group)
+    ? draft.representatives : { ...draft.representatives, [group]: target.selection.key };
+  return { targets: [...draft.targets, target], representatives };
+}
+
+export function removeCalculatorPlanCandidate(draft, key) {
+  const target = draft.targets.find(row => planTargetKey(row) === key);
+  if (!target) return draft;
+  const group = target.selection?.admissionGroup;
+  const representatives = group && draft.representatives[group] === key ? { ...draft.representatives, [group]: null } : draft.representatives;
+  return { targets: draft.targets.filter(row => row !== target), representatives };
 }

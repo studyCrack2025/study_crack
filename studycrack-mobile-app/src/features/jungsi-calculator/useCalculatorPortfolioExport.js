@@ -9,7 +9,7 @@ export default function useCalculatorPortfolioExport(model) {
   React.useEffect(() => {
     const controller = new AbortController(), token = { key, controller }; lifecycle.current = token; busy.current = null;
     setResource({ key, status: 'loading', blob: null, message: '', action: '' });
-    renderCalculatorPortfolioPng(model, { signal: controller.signal }).then(blob => {
+    if (model) renderCalculatorPortfolioPng(model, { signal: controller.signal }).then(blob => {
       if (!controller.signal.aborted && renderedKey.current === key) setResource({ key, status: 'ready', blob, message: '', action: '' });
     }).catch(error => {
       if (!controller.signal.aborted && renderedKey.current === key) setResource({ key, status: 'error', blob: null, message: error.message || '이미지를 준비하지 못했습니다. 다시 시도해주세요.', action: '' });

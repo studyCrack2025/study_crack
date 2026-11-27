@@ -41,7 +41,7 @@ export default function useCalculatorWorkspace(applicationId, enabled) {
       if ([401, 403].includes(result.status)) { retryRequest.current = null; setResource({ status: 'error', data: null, error: result.error, code: result.code }); return result; }
       const conflict = ['REVISION_CONFLICT', 'IDEMPOTENCY_CONFLICT'].includes(result.code);
       if (conflict) retryRequest.current = null;
-      const specific = { CALCULATOR_PLAN_LIMIT: '저장할 수 있는 조합은 최대 10개입니다. 기존 조합을 정리해주세요.', CALCULATOR_PLAN_GROUP_LIMIT: '가·나·다군에서 한 곳씩 선택해주세요.', CALCULATOR_WORKSPACE_TOO_LARGE: '저장 용량을 초과했습니다. 조합이나 후보를 줄여주세요.', CALCULATOR_SELECTION_CHANGED: '모집단위 정보가 바뀌었습니다. 해당 후보를 군별 후보 찾기에서 다시 선택해주세요.' };
+      const specific = { CALCULATOR_PLAN_LIMIT: '저장할 수 있는 조합은 최대 10개입니다. 기존 조합을 정리해주세요.', CALCULATOR_PLAN_GROUP_LIMIT: '가·나·다군에서 한 곳씩 선택해주세요.', CALCULATOR_WORKSPACE_UPDATE_REQUIRED: '저장한 후보를 보호하기 위해 최신 계산기 화면에서 다시 열어주세요.', CALCULATOR_WORKSPACE_TOO_LARGE: '저장 용량을 초과했습니다. 조합이나 후보를 줄여주세요.', CALCULATOR_SELECTION_CHANGED: '모집단위 정보가 바뀌었습니다. 해당 후보를 군별 검색에서 다시 선택해주세요.' };
       setResource(previous => ({ ...previous, status: conflict ? 'error' : 'ready', error: conflict ? '다른 화면에서 저장 내용이 바뀌었습니다. 최신 저장 상태를 확인한 뒤 다시 저장해주세요. 현재 편집은 유지됩니다.' : specific[result.code] || result.error, code: result.code }));
     }
     return result;

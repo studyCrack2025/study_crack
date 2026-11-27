@@ -73,7 +73,7 @@
     const homePath = '/2027-jungsi-consulting/home';
     const productLinks = [
         { link: document.getElementById('consultingApply'), product: 'consulting', applyLabel: '컨설팅 신청하기' },
-        { link: document.getElementById('calculatorApply'), product: 'calculator', applyLabel: '계산기 신청하기' }
+        { link: document.getElementById('calculatorApply'), product: 'calculator', applyLabel: '계산기 이용하기' }
     ];
     function updateProductLinks(home, checking = false) {
         const calculatorItems = home?.calculator?.contractVersion === 'calculator-applications-v1' && Array.isArray(home.calculator.items)

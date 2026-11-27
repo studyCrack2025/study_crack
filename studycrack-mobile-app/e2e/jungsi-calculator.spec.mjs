@@ -181,7 +181,7 @@ test('비로그인 진입은 코드 요구 없이 로그인 복귀를 안내하�
   const control = await setup(page, { signedIn: false });
   await page.goto('/2027-jungsi-consulting#calculator');
   await expect(page.getByRole('tab', { name: '합격 계산기', exact: true })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByRole('link', { name: '계산기 신청하기', exact: true })).toHaveAttribute('href', '#application');
+  await expect(page.getByRole('link', { name: '계산기 이용하기', exact: true })).toHaveAttribute('href', '#application');
   await page.goto(path);
   await expect(page).toHaveURL(new RegExp(path + '$'));
   await expect(page.getByRole('heading', { name: '내 계정으로 준비해주세요.' })).toBeVisible();
