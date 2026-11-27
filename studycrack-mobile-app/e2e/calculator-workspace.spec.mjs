@@ -69,9 +69,11 @@ async function setup(page, options = {}) {
       Object.assign(row.referenceComparison, { recordId: target.selection.recordId, candidateAdmissionIdentity: { admissionUnitId: target.admissionUnitId }, riskBand: 'stable' });
       if (options.approvedRawCutoff && target.selection.admissionGroup === 'ga') {
         row.reasonCodes = ['RAW_SCOREBOARD_NOT_RELEASED'];
+        row.referenceComparison.historical70 = { year: 2026, score: 704.2 };
         row.previewCutoff = { status: 'available', dataReleaseId: converted.release.dataReleaseId, admissionUnitId: target.admissionUnitId,
           convertedScore: 720.36, cutoffs: { pass: 700, registered70: 715 }, riskBand: 'stable', publicationId: 'CUT_RELEASE_TEST',
-          publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027 };
+          publicationDigest: catalogDigest, referenceDigest: catalogDigest, sourceYear: 2026, targetYear: 2027,
+          offerEstimate: { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 75, low: 72, high: 78 } };
       }
       const notice = options.selectionNotices?.[target.selection.admissionGroup];
       if (notice) row.reasonCodes = [notice];
@@ -433,6 +435,25 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
   await expect(graph).toBeVisible();
   await expect(graph).toHaveAccessibleName(/내 점수 720\.36점.*\+20\.36점.*\+5\.36점/);
   await expect(graph).toHaveAttribute('data-risk', 'stable');
+  await expect(gaCandidate.getByText('약 75% (72~78%)', { exact: true })).toBeVisible();
+  await expect(gaCandidate.getByText('2026학년도 최종등록자 70% 컷', { exact: true })).toHaveCount(0);
+  const notes = gaCandidate.getByText(/확인된 모집인원과 입결을 반영한 추정치/);
+  await expect(notes).toHaveCount(1);
+  await expect(notes).toBeHidden();
+  const cautions = gaCandidate.getByText('주의사항', { exact: true });
+  const remove = gaCandidate.getByRole('button', { name: /후보 삭제$/ });
+  const initialViewport = page.viewportSize();
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    const [cautionBox, removeBox] = await Promise.all([cautions.boundingBox(), remove.boundingBox()]);
+    expect(Math.abs(cautionBox.y - removeBox.y)).toBeLessThanOrEqual(1);
+    expect(cautionBox.x + cautionBox.width).toBeLessThan(removeBox.x);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  }
+  await page.setViewportSize(initialViewport);
+  await cautions.click();
+  await expect(notes).toBeVisible();
+  await cautions.click();
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });

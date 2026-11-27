@@ -2,8 +2,9 @@ import React from 'react';
 import { CalculatorButton, CalculatorNote } from './CalculatorUi.jsx';
 import { getMobileApiBinding } from '../../shared/browser/mobile-runtime.js';
 import CalculatorResult from './CalculatorResult.jsx';
-import CalculatorForecast from './CalculatorForecast.jsx';
+import CalculatorRiskScale from './CalculatorRiskScale.jsx';
 import { requestCalculatorCatalog } from './calculator-catalog-api.js';
+import { calculatorIndicator } from './calculator-indicators.js';
 import { CALCULATOR_GROUPS, planTargetKey } from './calculator-plan-model.js';
 import './calculator-plan-board.css';
 
@@ -97,16 +98,17 @@ export default function CalculatorPlanBoard({ targets, archivedTargets, conversi
     <div className="jcalc-group-board">{CALCULATOR_GROUPS.map(([key, label]) => {
       const target = targetFor(key);
       const conversion = conversions.get(key), result = conversion?.result;
+      const indicator = result && calculatorIndicator(result);
+      const remove = target && <CalculatorButton text aria-label={`${label} ${target.selection.universityName} ${target.selection.unitName} 후보 삭제`} onClick={() => onRemove(target.selection.key)}>후보 삭제</CalculatorButton>;
       return <section key={key} id={`jcalc-group-${key}`} className="jcalc-panel jcalc-group-card" data-current={group === key} aria-label={`${label} 지원 후보`}><div className="jcalc-group-heading"><h2>{label}</h2></div>
         <CalculatorButton text disabled={locked} onClick={event => openPicker(key, 'browse', event)}>분석 가능한 대학 보기</CalculatorButton>
         <button className="jcalc-secondary jcalc-group-add" type="button" disabled={locked} onClick={event => openPicker(key, 'search', event)}>{label} 후보 {target ? '바꾸기' : '찾기'}</button>
         {!target && <CalculatorNote>{label}에서 지원할 대학·학과를 찾아보세요.</CalculatorNote>}
-        {target && <fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-group-candidates"><li key={target.selection.key}>
-          <div className="jcalc-group-identity"><div className="jcalc-school-heading"><strong>{target.selection.universityName}</strong>{result && <CalculatorForecast result={result} />}</div><h3>{target.selection.unitName}</h3><p>{result?.selectionCampusName ?? target.selection.campusName} · {target.selection.trackName}</p></div>
-          {conversion?.status === 'loading' && <CalculatorNote role="status">{label} 후보를 계산하고 있습니다…</CalculatorNote>}
-          {conversion?.status === 'error' && <div role="alert"><p className="jcalc-error">{conversion.error}</p><CalculatorButton onClick={() => onRetry(target)}>{label} 후보 다시 계산</CalculatorButton></div>}
-          {result && <CalculatorResult exactSelection current result={result} selectedId={target.admissionUnitId} />}
-          <CalculatorButton text aria-label={`${label} ${target.selection.universityName} ${target.selection.unitName} 후보 삭제`} onClick={() => onRemove(target.selection.key)}>후보 삭제</CalculatorButton>
+        {target && <fieldset className="jcalc-workspace-fields" disabled={locked}><ul className="jcalc-group-candidates"><li key={target.selection.key} data-risk={indicator?.band || undefined}>
+          <div className="jcalc-group-identity"><div className="jcalc-school-heading"><strong>{target.selection.universityName}</strong>{indicator && <CalculatorRiskScale {...indicator} />}</div><h3>{target.selection.unitName}</h3><p>{result?.selectionCampusName ?? target.selection.campusName} · {target.selection.trackName}</p></div>
+          {conversion?.status === 'loading' && <div className="jcalc-group-result-state"><CalculatorNote role="status">{label} 후보를 계산하고 있습니다…</CalculatorNote></div>}
+          {conversion?.status === 'error' && <div className="jcalc-group-result-state" role="alert"><p className="jcalc-error">{conversion.error}</p><CalculatorButton onClick={() => onRetry(target)}>{label} 후보 다시 계산</CalculatorButton></div>}
+          {result ? <CalculatorResult exactSelection current result={result} actions={remove} /> : remove}
         </li></ul></fieldset>}
       </section>;
     })}</div>
