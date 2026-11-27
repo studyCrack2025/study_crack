@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
 import { cacheControlFor, createPublishCommands, IMMUTABLE, NO_CACHE } from '../../tools/site-release.mjs';
+import { checkCalculatorBundle, collectStaticImports, formatKiB } from './check-calculator-bundle.mjs';
 
 const appRootUrl = new URL('../', import.meta.url);
 const appRoot = fileURLToPath(appRootUrl);
@@ -34,12 +35,6 @@ assert.ok(
 );
 
 const initialFiles = new Set();
-function collectStaticImports(fileName, graph, visited) {
-  if (visited.has(fileName)) return;
-  visited.add(fileName);
-  const chunk = graph.find((candidate) => candidate.fileName === fileName);
-  for (const importedFile of chunk?.imports || []) collectStaticImports(importedFile, graph, visited);
-}
 collectStaticImports(entryChunk.fileName, chunks, initialFiles);
 
 const initialModules = new Set(
@@ -144,7 +139,6 @@ for (const file of [entryChunk.fileName, cssAsset.fileName]) {
     && args.includes(NO_CACHE)), `stable entry ${file} must not use immutable caching`);
 }
 
-const formatKiB = (bytes) => `${(bytes / 1024).toFixed(1)} KiB`;
 const initialBytes = chunks
   .filter((chunk) => initialFiles.has(chunk.fileName))
   .reduce((sum, chunk) => sum + chunk.code.length, 0);
@@ -152,28 +146,7 @@ const initialBytes = chunks
 assert.ok(initialBytes <= Math.floor(531 * 1024), `Initial JS grew above the 531 KiB readability budget: ${formatKiB(initialBytes)}`);
 // VP7 adds the public auth brand, service note, and real signup progress styles.
 assert.ok(bootstrapCss.length <= Math.floor(76.8 * 1024), `VP7 bootstrap CSS grew above the 76.8 KiB baseline: ${formatKiB(bootstrapCss.length)}`);
-const calculatorBuild = await build({ root: appRoot, mode: 'jungsi-calculator', logLevel: 'silent', build: { write: false } });
-const calculatorChunks = (calculatorBuild.output || calculatorBuild[0]?.output || []).filter(item => item.type === 'chunk');
-assert.ok(calculatorChunks.some(chunk => chunk.isEntry && chunk.fileName === 'jungsi-calculator.bundle.js'), 'calculator needs its own entry');
-assert.ok(calculatorChunks.every(chunk => !Object.keys(chunk.modules).some(id => /\/src\/(?:app\/MobileApp\.js|features\/consulting-v2\/ConsultingApp\.jsx)$/.test(id))), 'calculator must not boot the main app or consulting journey');
-const calculatorEntry = calculatorChunks.find(chunk => chunk.isEntry);
-const calculatorApp = calculatorChunks.find(chunk => Object.keys(chunk.modules).some(id => id.endsWith('/JungsiCalculatorApp.jsx')));
-assert.ok(calculatorEntry.dynamicImports.includes(calculatorApp?.fileName), 'calculator entry must open the independent calculator app');
-const calculatorStartup = new Set();
-collectStaticImports(calculatorEntry.fileName, calculatorChunks, calculatorStartup);
-collectStaticImports(calculatorApp.fileName, calculatorChunks, calculatorStartup);
-const calculatorBytes = calculatorChunks.filter(chunk => calculatorStartup.has(chunk.fileName)).reduce((sum, chunk) => sum + chunk.code.length, 0);
-const calculatorDeferred = calculatorChunks.filter(chunk => !calculatorStartup.has(chunk.fileName));
-for (const view of ['CalculatorRecommendationPanel.jsx', 'CalculatorRecommendationPreferences.jsx', 'CalculatorPortfolio.jsx']) {
-  assert.ok(calculatorDeferred.some(chunk => Object.keys(chunk.modules).some(id => id.endsWith('/' + view))),
-    `${view} must stay outside the calculator startup graph`);
-}
-const calculatorDeferredBytes = calculatorDeferred.reduce((sum, chunk) => sum + chunk.code.length, 0);
-assert.ok(calculatorBytes < 250 * 1024, `calculator startup JS must remain below 250 KiB: ${formatKiB(calculatorBytes)}`);
-assert.ok(calculatorDeferredBytes < 17 * 1024, `calculator deferred views must remain below 17 KiB: ${formatKiB(calculatorDeferredBytes)}`);
-assert.equal(cacheControlFor('studycrack-mobile-app/dist/jungsi-calculator.bundle.js'), NO_CACHE);
-const calculatorPublication = createPublishCommands('/artifact/site', 'static.example', {}, ['studycrack-mobile-app/dist/jungsi-calculator.bundle.js']);
-assert.ok(calculatorPublication.some(args => args[1] === 'cp' && args[2].endsWith('/jungsi-calculator.bundle.js') && args.includes(NO_CACHE)), 'calculator entry must be published with entry caching');
+const calculatorSummary = await checkCalculatorBundle();
 console.log(
-  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks, calculator startup JS ${formatKiB(calculatorBytes)}, deferred views ${formatKiB(calculatorDeferredBytes)}`
+  `bundle boundary ok: initial JS ${formatKiB(initialBytes)}, bootstrap CSS ${formatKiB(bootstrapCss.length)}, deferred app ${formatKiB(appRegistryChunk.code.length)}, deferred CSS ${formatKiB(deferredCss.length)}, ${chunks.length} JS chunks, ${calculatorSummary}`
 );
