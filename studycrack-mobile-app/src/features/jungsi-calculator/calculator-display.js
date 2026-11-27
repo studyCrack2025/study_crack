@@ -8,15 +8,22 @@ export function formatCalculatorScore(value) {
 }
 export const referenceScoreLabel = reference => reference.legacyScore ? '기존 산식 환산점수' : '예상 환산점수';
 
-export function calculatorCutoffLines(reference, possibility) {
-  const approved = ['available', 'reference_only'].includes(possibility?.status) ? possibility.cutoffs : null;
-  const lines = [{ label: '예상 합격 컷', value: approved ? `${formatCalculatorScore(approved.pass)}점` : '산출 보류' }];
-  if (approved) lines.push({ label: possibility.modeled ? '예상 최종등록자 70% 컷' : '70% 참고선', value: `${formatCalculatorScore(approved.registered70)}점` });
-  const estimate = approved && possibility.offerEstimate;
-  if (estimate) lines.push({
+const displayedCutoffs = possibility => ['available', 'reference_only'].includes(possibility?.status) ? possibility.cutoffs : null;
+
+export function calculatorOfferLine(possibility) {
+  const estimate = displayedCutoffs(possibility) && possibility.offerEstimate;
+  return estimate ? {
     label: estimate.scope === 'csat_component' ? '수능 반영분 추정 합격 가능성' : '추정 합격 가능성',
     value: `약 ${estimate.percent}% (${estimate.low}~${estimate.high}%)`
-  });
+  } : null;
+}
+
+export function calculatorCutoffLines(reference, possibility, { showOffer = true } = {}) {
+  const approved = displayedCutoffs(possibility);
+  const lines = [{ label: '예상 합격 컷', value: approved ? `${formatCalculatorScore(approved.pass)}점` : '산출 보류' }];
+  if (approved) lines.push({ label: possibility.modeled ? '예상 최종등록자 70% 컷' : '70% 참고선', value: `${formatCalculatorScore(approved.registered70)}점` });
+  const offer = showOffer && calculatorOfferLine(possibility);
+  if (offer) lines.push(offer);
   if (reference?.historical70) {
     const { year, score } = reference.historical70;
     lines.push({ label: `${year}학년도 최종등록자 70% 컷`, value: `${score.toLocaleString('ko-KR', { maximumFractionDigits: 10 })}점` });
