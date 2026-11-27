@@ -5,19 +5,18 @@ function CardScoreChart({ points: [own, pass, registered], offscale }) {
   const combined = pass !== null && pass === registered;
   return <>
     <div className="jcalc-card-score-chart" aria-hidden="true">
-      <span className="jcalc-card-score-baseline" />
-      {pass !== null && registered !== null && !combined && <span className="jcalc-card-score-band" style={{ left: `${pass}%`, width: `${registered - pass}%` }} />}
+      {own !== null && <span className="jcalc-card-score-fill" style={{ width: `${own}%` }} />}
       {pass !== null && <span className="jcalc-card-score-cut" data-marker={combined ? 'combined' : 'pass'} style={{ left: `${pass}%` }} />}
       {registered !== null && !combined && <span className="jcalc-card-score-cut" data-marker="registered" style={{ left: `${registered}%` }} />}
       {own !== null && <span className="jcalc-card-own-score" data-marker="own" data-offscale={offscale} style={{ left: `${own}%` }}>
         {offscale && (offscale === 'left' ? '←' : '→')}
       </span>}
     </div>
-    <span aria-hidden="true" className="jcalc-score-legend">
-      {own !== null && <b>{offscale ? '↔' : '●'} 내 점수</b>}
-      {combined ? <span>│ 두 컷 동일</span> : <>
-        {pass !== null && <span>│ 합격 컷</span>}
-        {registered !== null && <span>╎ 70% 컷</span>}
+    <span aria-hidden="true" className="jcalc-score-legend jcalc-card-score-legend">
+      {own !== null && <b data-marker="own">내 점수</b>}
+      {combined ? <span data-marker="combined">두 컷 동일</span> : <>
+        {pass !== null && <span data-marker="pass">합격 컷</span>}
+        {registered !== null && <span data-marker="registered">70% 컷</span>}
       </>}
     </span>
   </>;

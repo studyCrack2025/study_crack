@@ -95,10 +95,10 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-result { display: grid; gap: 12px; padding-top: 8px; }
 .jcalc-result[data-card] { gap: 10px; padding: 12px 12px 0; }
 .jcalc-result[data-card] .jcalc-forecast { gap: 10px; margin: 0; padding: 0; border: 0; }
-.jcalc-result[data-card] .jcalc-score, .jcalc-result[data-card] .jcalc-reference-score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 7px; padding: 0; border: 0; background: transparent; color: var(--sc-ink-strong); }
-.jcalc-result[data-card] .jcalc-score > span, .jcalc-result[data-card] .jcalc-reference-score > span { color: inherit; font-size: 14px; font-weight: 700; }
-.jcalc-result[data-card] .jcalc-score > strong, .jcalc-result[data-card] .jcalc-reference-score > strong { color: inherit; font-size: clamp(19px, 2.1vw, 23px); }
-.jcalc-result[data-card] .jcalc-score > strong > small, .jcalc-result[data-card] .jcalc-reference-score > strong > small { margin-inline-start: 1px; font-size: .85em; font-weight: inherit; }
+.jcalc-result[data-card] .jcalc-score, .jcalc-result[data-card] .jcalc-reference-score { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 3px 7px; padding: 0; border: 0; background: transparent; }
+.jcalc-result[data-card] .jcalc-score > span, .jcalc-result[data-card] .jcalc-reference-score > span { color: var(--sc-ink-muted); font-size: 14px; font-weight: 600; }
+.jcalc-result[data-card] .jcalc-score > strong, .jcalc-result[data-card] .jcalc-reference-score > strong { color: var(--jcalc-card-ink, var(--sc-brand-navy)); font-size: clamp(21px, 2.1vw, 24px); font-variant-numeric: tabular-nums; }
+.jcalc-result[data-card] .jcalc-score > strong > small, .jcalc-result[data-card] .jcalc-reference-score > strong > small { margin-inline-start: 1px; color: var(--sc-ink-muted); font-size: .68em; font-weight: 600; }
 .jcalc-result-context { margin: 0; color: var(--sc-ink-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
 .jcalc-result-message { margin: 0; padding: 12px; border-radius: 6px; background: var(--sc-surface-subtle); color: var(--sc-ink-muted); font-size: 12px; line-height: 1.85; }
 .jcalc-score { display: grid; gap: 8px; padding: 16px 12px; border: 1px solid var(--sc-line-subtle); border-radius: 8px; background: var(--sc-surface-subtle); }
@@ -137,12 +137,19 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-reference-score > span { font-size: 12px; font-weight: 400; }
 .jcalc-reference-score > strong { font-size: clamp(24px, 4vw, 30px); font-weight: 800; overflow-wrap: anywhere; }
 .jcalc-reference-score small { margin-left: 4px; font-size: 12px; font-weight: 400; }
+.jcalc-basic-result-card { min-width: 0; border: 1px solid #d8e1ee; border-inline-start: 5px solid var(--jcalc-card-accent, #c5d2e6); border-radius: 12px; background: var(--sc-surface-card); box-shadow: 0 4px 12px rgba(15, 23, 42, .07), 0 1px 3px rgba(15, 23, 42, .04); }
+.jcalc-basic-result-card[data-risk="stable"] { --jcalc-card-accent: #10b981; --jcalc-card-ink: #047857; }
+.jcalc-basic-result-card[data-risk="appropriate"] { --jcalc-card-accent: #3b82f6; --jcalc-card-ink: #1d4ed8; }
+.jcalc-basic-result-card[data-risk="neutral"] { --jcalc-card-accent: #f59e0b; --jcalc-card-ink: #92400e; }
+.jcalc-basic-result-card[data-risk="challenge"] { --jcalc-card-accent: #f97316; --jcalc-card-ink: #9a3412; }
+.jcalc-basic-result-card[data-risk="risky"] { --jcalc-card-accent: #ef4444; --jcalc-card-ink: #b91c1c; }
+.jcalc-basic-result-card .jcalc-forecast-badge[data-risk] { color: var(--jcalc-card-ink); background: color-mix(in srgb, var(--jcalc-card-accent) 12%, var(--sc-surface-card)); border-color: transparent; white-space: normal; }
 .jcalc-score-position { --jcalc-position-color: var(--sc-brand-navy); display: grid; gap: 5px; min-width: 0; }
-.jcalc-score-position[data-risk="stable"], .jcalc-group-candidates > li[data-risk="stable"], .jcalc-portfolio-representative[data-risk="stable"] { --jcalc-position-color: var(--sc-risk-stable); }
-.jcalc-score-position[data-risk="appropriate"], .jcalc-group-candidates > li[data-risk="appropriate"], .jcalc-portfolio-representative[data-risk="appropriate"] { --jcalc-position-color: var(--sc-risk-appropriate); }
-.jcalc-score-position[data-risk="neutral"], .jcalc-group-candidates > li[data-risk="neutral"], .jcalc-portfolio-representative[data-risk="neutral"] { --jcalc-position-color: var(--sc-risk-neutral); }
-.jcalc-score-position[data-risk="challenge"], .jcalc-group-candidates > li[data-risk="challenge"], .jcalc-portfolio-representative[data-risk="challenge"] { --jcalc-position-color: var(--sc-risk-challenge); }
-.jcalc-score-position[data-risk="risky"], .jcalc-group-candidates > li[data-risk="risky"], .jcalc-portfolio-representative[data-risk="risky"] { --jcalc-position-color: var(--sc-risk-risky); }
+.jcalc-score-position[data-risk="stable"] { --jcalc-position-color: var(--sc-risk-stable); }
+.jcalc-score-position[data-risk="appropriate"] { --jcalc-position-color: var(--sc-risk-appropriate); }
+.jcalc-score-position[data-risk="neutral"] { --jcalc-position-color: var(--sc-risk-neutral); }
+.jcalc-score-position[data-risk="challenge"] { --jcalc-position-color: var(--sc-risk-challenge); }
+.jcalc-score-position[data-risk="risky"] { --jcalc-position-color: var(--sc-risk-risky); }
 .jcalc-score-track { position: relative; height: 32px; margin: 0 8px; }
 .jcalc-score-track::before { position: absolute; inset: 14px 0 auto; height: 4px; border-radius: 4px; background: var(--sc-line-subtle); content: ''; }
 .jcalc-score-track span { position: absolute; width: 0; transform: translateX(-50%); }
@@ -150,16 +157,22 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-score-track [data-marker="pass"] { top: 3px; height: 13px; border-right: 2px solid var(--sc-ink-muted); }
 .jcalc-score-track [data-marker="registered"] { top: 16px; height: 13px; border-right: 2px dashed var(--sc-ink-muted); }
 .jcalc-score-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--sc-ink-muted); font-size: 11px; }
-.jcalc-card-score-chart { position: relative; height: 52px; }
-.jcalc-card-score-baseline { position: absolute; inset: calc(50% - 1px) 8% auto; height: 2px; border-radius: 2px; background: var(--sc-line-subtle); }
-.jcalc-card-score-band { position: absolute; inset-block: 10px; background: color-mix(in srgb, var(--jcalc-position-color) 12%, transparent); }
-.jcalc-card-score-cut { position: absolute; inset-block: 7px; border-inline-start: 2px solid var(--jcalc-position-color); transform: translateX(-50%); }
-.jcalc-card-score-cut[data-marker="registered"] { border-inline-start-style: dashed; }
-.jcalc-card-own-score { position: absolute; top: 50%; display: grid; place-items: center; width: 15px; height: 15px; border: 2px solid var(--sc-surface-card); border-radius: 50%; background: var(--jcalc-position-color); box-shadow: 0 0 0 1px var(--jcalc-position-color); color: var(--sc-surface-card); font-size: 14px; font-weight: 700; line-height: 1; transform: translate(-50%, -50%); }
-.jcalc-card-own-score[data-offscale] { width: 21px; height: 21px; }
-.jcalc-result[data-card] .jcalc-score-legend { justify-content: center; }
-.jcalc-result[data-card] .jcalc-score-legend b { color: var(--jcalc-position-color); }
-.jcalc-card-offer { margin: 0; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--jcalc-position-color, var(--sc-brand-navy)) 10%, var(--sc-surface-card)); color: var(--sc-ink-strong); font-size: 12px; font-weight: 700; line-height: 1.5; text-align: center; }
+.jcalc-card-score-chart { position: relative; height: 10px; margin: 9px 0 5px; border-radius: 999px; background: #eaeaea; }
+.jcalc-card-score-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--jcalc-card-accent, var(--sc-brand-navy)); box-shadow: 0 2px 4px rgba(0, 0, 0, .06); }
+.jcalc-card-score-cut { position: absolute; inset-block: -2px; z-index: 2; width: 2px; border-radius: 1px; background: var(--jcalc-cut-color); transform: translateX(-50%); }
+.jcalc-score-position [data-marker="pass"] { --jcalc-cut-color: #3b82f6; }
+.jcalc-score-position [data-marker="registered"] { --jcalc-cut-color: #10b981; }
+.jcalc-score-position [data-marker="combined"] { --jcalc-cut-color: linear-gradient(90deg, #3b82f6 50%, #10b981 50%); }
+.jcalc-card-score-cut[data-marker="combined"] { width: 4px; }
+.jcalc-card-own-score { position: absolute; top: 50%; z-index: 1; width: 12px; height: 12px; border: 2px solid var(--sc-surface-card); border-radius: 50%; background: var(--jcalc-card-ink, var(--sc-brand-navy)); transform: translate(-50%, -50%); }
+.jcalc-card-own-score[data-offscale] { display: grid; place-items: center; width: 19px; height: 19px; color: var(--sc-surface-card); font-size: 12px; line-height: 1; }
+.jcalc-card-score-legend { justify-content: center; }
+.jcalc-card-score-legend > [data-marker] { display: inline-flex; align-items: center; gap: 4px; }
+.jcalc-card-score-legend > [data-marker]::before { width: 2px; height: 9px; border-radius: 1px; background: var(--jcalc-cut-color); content: ''; }
+.jcalc-card-score-legend > [data-marker="own"] { color: var(--jcalc-card-ink, var(--sc-brand-navy)); }
+.jcalc-card-score-legend > [data-marker="own"]::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.jcalc-card-score-legend > [data-marker="combined"]::before { width: 4px; }
+.jcalc-card-offer { margin: 0; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--jcalc-card-accent, var(--sc-brand-navy)) 10%, var(--sc-surface-card)); color: var(--sc-ink-strong); font-size: 12px; font-weight: 700; line-height: 1.5; text-align: center; }
 .jcalc-card-offer strong { white-space: nowrap; }
 .jcalc-cut-lines .jcalc-cut-difference { font-size: 12px; }
 .jcalc-cut-difference span { margin-right: 2px; color: var(--sc-ink-muted); font-weight: 400; }

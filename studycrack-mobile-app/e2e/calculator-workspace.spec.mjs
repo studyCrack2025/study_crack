@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { calculatorAccessFixture, calculatorRawPreviewFixture, calculatorScoreFixture } from './support/calculator-fixture.mjs';
 const path = '/2027-jungsi-consulting/calculator', appId = 'APP_11111111-1111-4111-8111-111111111111', at = '2026-11-21T00:00:00.000Z';
+const workspaceTab = (page, name) => page.getByRole('tablist', { name: '계산기 이용 단계' }).getByRole('tab', { name, exact: true });
 const raw = { admissionYear: 2027, basis: 'raw', exam: { kor: { opt: '언어와매체', common: 60, elective: 20, raw: 80 }, math: { opt: '미적분', common: 60, elective: 14, raw: 74 }, inq1: { name: '사회·문화', raw: 44 }, inq2: { name: '생활과 윤리', raw: 45 }, eng: { grd: 2 }, hist: { grd: 1 } } };
 const catalogDigest = 'sha256:' + 'e'.repeat(64);
 const groupedTargets = ['ga', 'na', 'da'].flatMap((group, index) => [1, 2].map(n => ({ university: '예시대학교', major: '예시학과', admissionUnitId: `UNIT_TEST_${group.toUpperCase()}_${n}`, selection: {
@@ -146,7 +147,7 @@ async function saveScores(page, applicantGender) {
   if (applicantGender) await page.getByRole('combobox', { name: /^성별/ }).selectOption(applicantGender);
   await page.getByRole('checkbox', { name: '성적·지원 후보 저장과 운영팀 열람에 동의합니다', exact: true }).check();
   await page.getByRole('button', { name: '이 성적으로 시작하기', exact: true }).click();
-  await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
+  await expect(workspaceTab(page, '지원 조합')).toHaveAttribute('aria-selected', 'true');
 }
 async function addTarget(page) {
   await page.getByRole('searchbox', { name: '대학명 검색', exact: true }).fill('예시대학교'); await page.getByRole('button', { name: /예시대학교/ }).click();
@@ -157,6 +158,7 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   const state = await setup(page, { grouped: true, recommendations: true, eligibility: true });
   await saveScores(page, 'male');
   expect(state.record.profile.applicantGender).toBe('male');
+  await workspaceTab(page, '내 성적').click();
   await page.getByRole('button', { name: '성적 수정', exact: true }).click();
   const originalViewport = page.viewportSize();
   const gender = page.getByRole('combobox', { name: '성별', exact: true });
@@ -196,6 +198,7 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await page.getByRole('button', { name: '추천 조건 저장', exact: true }).click();
   await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
   expect(state.record.profile.scores).toEqual(raw);
+  await workspaceTab(page, '지원 조합').click();
   await page.getByRole('button', { name: '가군 후보 찾기', exact: true }).click();
   const picker = page.getByRole('dialog');
   await expect(picker.getByRole('combobox', { name: '지원 성향' })).toHaveCount(0);
@@ -231,12 +234,13 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   expect(state.calls.filter(call => call.type === 'student_save_calculator_profile')).toHaveLength(2);
 });
 
-test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 자료를 자동으로 연다', async ({ page }, testInfo) => {
+test('내 성적 탭에서 새 탭·재접속 후에도 저장한 성적을 확인한다', async ({ page }, testInfo) => {
   const state = await setup(page, { withoutOwner: true });
   await expect(page.getByRole('heading', { name: '2027학년도 수능 가채점 성적', exact: true })).toBeVisible();
   expect(await page.evaluate(() => ({ owner: localStorage.getItem('userId'), persistentToken: localStorage.getItem('accessToken') }))).toEqual({ owner: null, persistentToken: null });
   await expect(page.getByRole('searchbox')).toHaveCount(0); await expect(page.getByText('다른 기기에서도 이어보기', { exact: true })).toHaveCount(0);
   await saveScores(page); expect(state.record.profile.scores).toEqual(raw);
+  await workspaceTab(page, '내 성적').click();
   const summary = page.getByRole('region', { name: '저장한 내 성적', exact: true });
   await expect(summary.locator('table')).toBeHidden(); await summary.getByText('성적 상세', { exact: true }).click();
   await expect(summary.locator('table')).toContainText('언어와매체'); await expect(summary.locator('table')).toContainText('80');
@@ -244,8 +248,8 @@ test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 �
   expect((await summary.boundingBox()).height).toBeLessThan(320);
   await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('userId'))).toBeNull();
-  const other = await page.context().newPage(); await other.goto(path); await expect(other.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 80'); await other.close();
-  await page.reload(); await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
+  const other = await page.context().newPage(); await other.goto(path); await workspaceTab(other, '내 성적').click(); await expect(other.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 80'); await other.close();
+  await page.reload(); await workspaceTab(page, '내 성적').click(); await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
   expect(state.calls.filter(row => row.type === 'student_save_calculator_profile')).toHaveLength(1);
   for (const width of [320, 375, 390, 430, 768, 1440]) { await page.setViewportSize({ width, height: 900 }); expect(await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth)).toBeLessThanOrEqual(1); }
   await page.screenshot({ path: testInfo.outputPath('workspace-saved-summary.png'), fullPage: true });
@@ -254,12 +258,18 @@ test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 �
 test('성적 수정 취소는 저장값을 보존하고 저장은 후보·조합을 유지하며 결과를 갱신한다', async ({ page }) => {
   const state = await setup(page); await saveScores(page); await addTarget(page); await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '지원 조합을 저장했습니다.' })).toBeVisible(); const planId = state.record.lastSavedPlanId;
+  await workspaceTab(page, '내 성적').click();
   await page.getByRole('button', { name: '성적 수정', exact: true }).click(); await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
+  await workspaceTab(page, '지원 조합').click();
+  expect(state.record.profile.scores.exam.kor.common).toBe(60);
+  await workspaceTab(page, '내 성적').click();
+  await expect(page.getByRole('textbox', { name: '국어 공통 원점수', exact: true })).toHaveValue('59');
   await page.getByRole('button', { name: '성적 수정 취소', exact: true }).click(); expect(state.record.profile.scores.exam.kor.common).toBe(60);
   await page.getByRole('button', { name: '성적 수정', exact: true }).click(); await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
   await page.getByRole('button', { name: '성적 수정 저장', exact: true }).click();
   await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 79');
   expect(state.record.lastSavedPlanId).toBe(planId); expect(state.record.plans[0].targets).toHaveLength(1);
+  await workspaceTab(page, '지원 조합').click();
   await expect(page.getByRole('region', { name: '자료 기준별 참고 비교', exact: true })).toContainText('709.25');
 });
 
@@ -304,13 +314,31 @@ async function addGroupTarget(page, label, track = 1, replace = false) {
 
 test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·포트폴리오를 확인한다', async ({ page }) => {
   const state = await setup(page, { grouped: true, multiCandidate: true, approvedRawCutoff: true });
+  await expect(workspaceTab(page, '내 성적')).toHaveAttribute('aria-selected', 'true');
+  await workspaceTab(page, '포트폴리오').click();
+  await expect(page.getByText('성적을 저장하고 지원 후보를 담아주세요.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '내 성적 입력' }).click();
   await saveScores(page);
   await page.setViewportSize({ width: 320, height: 850 });
   const ga = page.getByRole('region', { name: '가군 지원 후보', exact: true });
   const readRepresentative = () => page.getByRole('region', { name: '대표 조합', exact: true }).getByRole('listitem').first();
   await expect(page.getByRole('region', { name: '지원 조합 관리' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '변경사항 저장' })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: '다군 지원 후보', exact: true })).toBeVisible();
+  const groups = page.getByRole('tablist', { name: '모집군 선택' });
+  const gaTab = groups.getByRole('tab', { name: '가군', exact: true }), naTab = groups.getByRole('tab', { name: '나군', exact: true });
+  await expect(gaTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('region', { name: '다군 지원 후보', exact: true })).toHaveCount(0);
+  await gaTab.press('ArrowRight');
+  await expect(naTab).toBeFocused();
+  await expect(naTab).toHaveAttribute('aria-selected', 'true');
+  await expect(ga).toHaveCount(0);
+  await expect(page.getByRole('region', { name: '나군 지원 후보', exact: true })).toBeVisible();
+  await naTab.press('Home');
+  await page.setViewportSize({ width: 1280, height: 850 });
+  await expect(ga).toBeVisible();
+  await expect(page.getByRole('region', { name: '나군 지원 후보', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 320, height: 850 });
+  expect(state.catalogCalls).toHaveLength(0);
   await ga.getByRole('searchbox', { name: '대학명 검색' }).fill('예시대학교');
   await ga.getByRole('button', { name: /예시대학교/ }).click();
   state.deferPlan = true;
@@ -322,28 +350,43 @@ test('모바일에서 같은 군 후보를 직접 담고 대표 변경·저장·
   await expect(cards.first().getByText('약 75%', { exact: true })).toBeVisible();
   await expect(cards.nth(1).getByText('약 75%', { exact: true })).toBeVisible();
   await expect(cards.first().getByText('720.36점', { exact: true })).toBeHidden();
-  await cards.nth(1).getByText('펼쳐보기', { exact: true }).click();
+  const details = cards.nth(1).locator('details.jcalc-candidate-details');
+  const disclosure = details.locator('summary').first();
+  await expect(disclosure).toHaveAccessibleName(/^펼쳐보기/);
+  await disclosure.press('Enter');
+  await expect(disclosure).toHaveAccessibleName(/^접기/);
   await expect(cards.nth(1).getByText('726.50점', { exact: true })).toBeVisible();
   const calculations = state.conversionCalls.length;
   await cards.nth(1).getByRole('button', { name: /대표로 선택$/ }).click();
   await expect(cards.nth(1).getByText('대표', { exact: true })).toBeVisible();
+  await expect(details).toHaveAttribute('open', '');
   expect(state.conversionCalls).toHaveLength(calculations);
   state.deferPlan = false; state.planRelease();
   await expect.poll(() => state.record.plans[0]?.representatives.ga).toBe(groupedTargets[1].selection.key);
   await expect(page.getByRole('button', { name: '포트폴리오 보기' })).toBeEnabled();
   expect(state.record.plans[0].targets).toHaveLength(2);
   expect(state.record.plans[0].representatives.ga).toBe(groupedTargets[1].selection.key);
+  await expect(disclosure).toHaveAccessibleName(/^접기/);
   await page.reload();
   await expect(cards.nth(1).getByText('대표', { exact: true })).toBeVisible();
   await expect(readRepresentative()).toContainText('예시대학교');
-  await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
+  await naTab.click();
+  await workspaceTab(page, '포트폴리오').click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오' });
   for (const label of ['가군', '나군', '다군']) await expect(portfolio.getByRole('article', { name: `${label} 지원 후보`, exact: true })).toBeVisible();
   await expect(portfolio.locator('.jcalc-portfolio-representative')).toHaveCount(1);
   await expect(portfolio.getByText('726.50점', { exact: true })).toBeVisible();
   await expect(portfolio.getByText('720.36점', { exact: true })).toHaveCount(0);
+  const portfolioToggle = portfolio.locator('.jcalc-candidate-details > summary');
+  await expect(portfolioToggle).toHaveAccessibleName(/^접기/);
+  await portfolioToggle.press('Space');
+  await expect(portfolioToggle).toHaveAccessibleName(/^펼쳐보기/);
+  await expect(portfolio.getByText('726.50점', { exact: true })).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기' }).click();
+  await expect(workspaceTab(page, '지원 조합')).toBeFocused();
+  await expect(naTab).toHaveAttribute('aria-selected', 'true');
+  await gaTab.click();
   await cards.nth(1).getByRole('button', { name: /후보 삭제$/ }).click();
   await expect(cards).toHaveCount(1);
   await expect(readRepresentative()).toContainText('대표 미선택');
@@ -518,7 +561,12 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
   await expect(graph).toHaveAttribute('data-risk', 'stable');
   const chart = graph.locator('.jcalc-card-score-chart');
   const markers = ['pass', 'registered', 'own'].map(name => chart.locator(`[data-marker="${name}"]`));
-  await expect(graph.getByText('● 내 점수', { exact: true })).toBeVisible();
+  await expect(graph.getByText('내 점수', { exact: true })).toBeVisible();
+  await expect(gaCandidate.locator('.jcalc-basic-result-card')).toHaveCSS('border-left-width', '5px');
+  await expect(chart).toHaveCSS('height', '10px');
+  await expect(markers[0]).toHaveCSS('background-color', 'rgb(59, 130, 246)');
+  await expect(markers[1]).toHaveCSS('background-color', 'rgb(16, 185, 129)');
+  await expect(chart.locator('.jcalc-card-score-fill')).toHaveCSS('background-color', 'rgb(16, 185, 129)');
   await expect(markers[2]).not.toHaveAttribute('data-offscale');
   await expect(gaCandidate.getByText('약 75% (72~78%)', { exact: true })).toBeVisible();
   await expect(gaCandidate.getByText('2026학년도 최종등록자 70% 컷', { exact: true })).toHaveCount(0);
@@ -623,9 +671,14 @@ test('비교 보류인 군도 보존하며 성적 수정 후 이전 계산으로
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true }), na = portfolio.getByRole('article', { name: '나군 지원 후보', exact: true });
   await expect(na).toContainText('판단 대기'); await expect(na.locator('[aria-current="true"]')).toHaveCount(0); await expect(na).not.toContainText('710.25');
   await portfolio.getByRole('button', { name: '지원 조합으로 돌아가기', exact: true }).click();
+  await workspaceTab(page, '내 성적').click();
   await page.getByRole('button', { name: '성적 수정', exact: true }).click(); await page.getByRole('textbox', { name: '국어 공통 원점수', exact: true }).fill('59');
   state.deferConversion = true; await page.getByRole('button', { name: '성적 수정 저장', exact: true }).click();
-  await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 79'); await expect(open).toBeDisabled();
+  await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toContainText('원점수 79');
+  await workspaceTab(page, '포트폴리오').click();
+  await expect(page.getByText('대표 후보의 계산을 기다리고 있습니다.', { exact: true })).toBeVisible();
+  await expect(portfolio).toHaveCount(0);
+  await workspaceTab(page, '지원 조합').click(); await expect(open).toBeDisabled();
   await expect.poll(() => typeof state.conversionRelease).toBe('function'); state.deferConversion = false; state.conversionRelease();
   await expect(open).toBeEnabled(); await open.click(); await expect(portfolio.getByRole('article', { name: '가군 지원 후보', exact: true })).toContainText('709.25점');
   expect(state.record.plans[0].targets).toHaveLength(2); expect(state.record.profile.revision).toBe(2);

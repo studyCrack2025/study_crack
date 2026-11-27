@@ -5,17 +5,7 @@
 .jcalc-portfolio-hero p { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; }
 .jcalc-portfolio-hero p span { color: var(--sc-ink-muted); font-size: 12px; }
 .jcalc-export-actions .jcalc-note:not(:empty) { margin-top: 6px; }
-.jcalc-portfolio-groups > article { min-width: 0; overflow: hidden; border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); }
-.jcalc-portfolio-groups > .jcalc-portfolio-representative { border-top: 3px solid var(--jcalc-position-color, var(--sc-brand-navy)); }
-.jcalc-portfolio-representative-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px 10px; min-block-size: 96px; padding: 12px; background: color-mix(in srgb, var(--jcalc-position-color, var(--sc-brand-navy)) 9%, var(--sc-surface-card)); cursor: pointer; overflow-wrap: anywhere; }
-.jcalc-portfolio-representative-head::after { grid-column: 1 / -1; color: var(--sc-ink-muted); font-size: 12px; content: '펼쳐보기 ▾'; }
-.jcalc-portfolio-representative [open] > summary::after { content: '접기 ▴'; }
-.jcalc-portfolio-representative-head > div > * { display: block; }
-.jcalc-portfolio-representative-head small { margin-bottom: 2px; color: var(--sc-ink-muted); font-size: 11px; }
-.jcalc-portfolio-representative-head > div strong { color: var(--sc-ink-strong); font-size: 17px; }
-.jcalc-portfolio-representative-head span { font-size: 13px; }
-.jcalc-portfolio-campus { margin: 0; padding: 10px 12px 0; color: var(--sc-ink-muted); font-size: 11px; overflow-wrap: anywhere; }
-.jcalc-portfolio-empty { padding: 12px; }
+.jcalc-portfolio-empty { min-width: 0; padding: 12px; border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); }
 .jcalc-portfolio-empty h3 { margin: 0 0 4px; color: var(--sc-brand-navy); font-size: 13px; }
 .jcalc-portfolio-comparison { overflow: hidden; border: 1px solid var(--sc-line-subtle); border-radius: 12px; background: var(--sc-surface-card); }
 .jcalc-portfolio-row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, minmax(96px, .42fr)) minmax(110px, .45fr); align-items: center; gap: 10px 16px; padding: 14px 18px; }
