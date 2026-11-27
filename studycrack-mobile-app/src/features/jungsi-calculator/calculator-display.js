@@ -30,7 +30,7 @@ export function referenceCaution(reference) {
 }
 
 export const HISTORICAL_CUTOFF_NOTE = '과거 입결은 해당 학년도 반영 기준으로 대학이 공개한 점수입니다.';
-export const OFFER_ESTIMATE_NOTE = '환산점수, 예상 컷, 확인된 모집인원과 입결을 반영한 추정치입니다. 표시 폭은 최대 6%p입니다.';
+export const OFFER_ESTIMATE_NOTE = '환산점수, 예상 컷, 확인된 모집인원과 입결을 반영한 추정치입니다.';
 export const previewScoreLabel = cutoff => cutoff.inputBasis === 'official' ? '예상 환산점수' : '가채점 환산점수';
 export function previewScoreNote(cutoff) {
   if (!cutoff.modeled) return '가채점 성적을 반영한 예상 환산점수입니다.';
@@ -38,3 +38,21 @@ export function previewScoreNote(cutoff) {
   return cutoff.projectedInputs ? source + ' 올해 환산에 필요한 일부 값도 추정치를 사용했습니다.' : source;
 }
 export const CALCULATOR_STAGE_NOTE = '지원 단계는 실제 합격 확률이 아닙니다. 개인별 지원 자격과 학생부·면접·실기 반영은 별도 확인이 필요합니다.';
+
+
+export function calculatorScorePosition(score, possibility) {
+  if (!['available', 'reference_only'].includes(possibility?.status)) return null;
+  const values = [score, possibility.cutoffs?.pass, possibility.cutoffs?.registered70];
+  if (values.some(value => !Number.isFinite(value) || value < 0)) return null;
+  const [own, pass, registered] = values;
+  const min = Math.min(...values), max = Math.max(...values);
+  const padding = Math.max((max - min) * 0.12, 0.05);
+  const position = value => 100 * (value - min + padding) / (max - min + 2 * padding);
+  const number = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const difference = value => {
+    const delta = own - value;
+    if (Math.abs(delta) < 0.005) return '0점';
+    return `${delta > 0 ? '+' : '−'}${number.format(Math.abs(delta))}점`;
+  };
+  return { points: values.map(position), differences: [difference(pass), difference(registered)] };
+}

@@ -22,7 +22,7 @@ function Field({ children, label, field }) {
   return <label className="consulting-survey-field" data-survey-field={field}><span>{label}</span>{children}</label>;
 }
 
-function StudentStatusStep({ snapshot, update }) {
+function StudentStatusStep({ snapshot, update, genderEnabled }) {
   const value = snapshot.studentStatus;
   const scope = React.useContext(SurveyFieldContext);
   const qualification = value.applicantType === 'qualification_exam';
@@ -44,6 +44,9 @@ function StudentStatusStep({ snapshot, update }) {
         <Field label="학교명" field="studentStatus.schoolName"><input maxLength="80" value={value.schoolName} onChange={event => update({ schoolName: event.target.value })} /></Field>
         {scope && <SurveyFieldScope field="studentStatus.qualificationExamYear"><p className="consulting-score-note">검정고시 합격 연도는 검정고시 지원자만 입력해요.</p></SurveyFieldScope>}
       </>}
+      {genderEnabled && <Field label="성별" field="studentStatus.applicantGender"><select value={value.applicantGender || ''} onChange={event => update({ applicantGender: event.target.value || undefined })}>
+        <option value="" disabled>성별 선택</option><option value="male">남성</option><option value="female">여성</option>
+      </select><small>지원 가능한 전형을 추천하는 데 사용합니다.</small></Field>}
       <Field label="거주 지역" field="studentStatus.residenceRegion"><input maxLength="40" placeholder="예: 서울 송파구" value={value.residenceRegion} onChange={event => update({ residenceRegion: event.target.value })} /></Field>
     </div>
   </div>;
@@ -231,6 +234,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     const initial = loadSnapshot(current?.snapshot, Boolean(supplement) || revisionEditing && legacySubmission(submission));
     Object.assign(session, {
       caseId: result.data.caseId,
+      genderEnabled: schema.data.schema?.studentStatus?.applicantGenderVersion === 1,
       workflowState: result.data.workflowState,
       submission,
       supplement,
@@ -376,7 +380,8 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
     const keepFiles = supplement && session.supplement?.fields?.length && !session.supplement.fields.some(({ field }) => field === 'files');
     const readyFiles = keepFiles ? files.filter(file => session.submission?.fileIds?.includes(file.fileId)) : files.filter(file => file.status === 'ready' || (supplement && file.status === 'linked'
       && session.submission?.fileIds?.includes(file.fileId) && !excludedFileIds.includes(file.fileId)));
-    const validation = supplement ? null : clientSurveyError(session.snapshot, readyFiles);
+    const validation = supplement ? null : session.genderEnabled && !session.snapshot.studentStatus.applicantGender
+      ? { section: 'studentStatus', message: '성별을 선택해주세요.' } : clientSurveyError(session.snapshot, readyFiles);
     if (supplement && (readyFiles.length < 1 || readyFiles.length > 3)) return showNotice('보안 검사를 통과한 성적표를 1~3개 선택해 주세요. 교체할 기존 첨부는 이번 제출에서 제외할 수 있어요.', true);
     if (validation) {
       setStep(SURVEY_STEPS.findIndex(item => item.key === validation.section));
@@ -463,7 +468,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
       : submission?.fileIds || [];
     const renderField = field => {
       const section = supplementSection(field), update = patch => updateSection(section, patch);
-      if (section === 'studentStatus') return <StudentStatusStep snapshot={snapshot} update={update} />;
+      if (section === 'studentStatus') return <StudentStatusStep snapshot={snapshot} update={update} genderEnabled={session.genderEnabled} />;
       if (section === 'conditions') return <ConditionsStep snapshot={snapshot} update={update} legacy={false} />;
       if (section === 'preferences') return <ConsultingSurveyPreferences value={snapshot.preferences} update={update} />;
       if (section === 'strategy') return <StrategyStep snapshot={snapshot} update={update} />;
@@ -502,7 +507,7 @@ export function ConsultingSurveyScreen({ binding, leaveGuard }) {
         <SurveyAnswerView section={key} value={submission?.snapshot?.[key]} />
         {key === 'consent' && <SurveyScoreFiles files={submittedFiles} readOnly />}
       </> : <fieldset className="consulting-survey-fields" ref={fields} disabled={actionBusy || held} aria-labelledby="survey-title">
-        {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} />}
+        {key === 'studentStatus' && <StudentStatusStep snapshot={snapshot} update={update} genderEnabled={session.genderEnabled} />}
         {key === 'scores' && (legacy ? <LegacyScoresStep value={snapshot.scores} update={updateScores} raw={snapshot.formVersion === 3} />
           : <ConsultingSurveyScores value={snapshot.scores} update={updateScores} binding={binding} actionBusy={actionBusy}
             autoConvertRaw={!revisionEditing} previousExamScores={!revisionEditing && session.previousExamScores} />)}

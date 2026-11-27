@@ -17,8 +17,6 @@
 .jcalc-picker-heading { position: sticky; top: -24px; z-index: 1; display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 24px; padding: 12px 0; background: var(--sc-surface-card); }
 .jcalc-picker-heading h2 { margin: 4px 0; font-size: 22px; }
 .jcalc-picker-recommendations { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--sc-line-subtle); }
-.jcalc-picker-recommendations > .jcalc-workspace-actions { align-items: end; }
-.jcalc-picker-recommendations .jcalc-field { flex: 1 1 145px; }
 .jcalc-picker-results { display: grid; gap: 12px; margin: 18px 0; padding: 0; list-style: none; }
 .jcalc-picker-results li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 12px; border: 1px solid var(--sc-line-subtle); border-radius: 8px; overflow-wrap: anywhere; }
 .jcalc-picker-results li > div { flex: 1 1 180px; min-width: 0; }

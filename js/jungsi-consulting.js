@@ -22,7 +22,7 @@
     document.addEventListener('click', event => {
         const link = event.target.closest('a');
         if (!link || link.getAttribute('aria-disabled') === 'true') return;
-        if (link.id === 'consultingApply' || link.id === 'jungsiGoogleForm') {
+        if (link.dataset.jungsiProduct === 'consulting' || link.id === 'jungsiGoogleForm') {
             track('consulting_apply_click', 'application_form');
         } else if (link.getAttribute('href') === '/2027-jungsi-consulting/login') {
             track('consulting_login_click', 'existing_applicant');
@@ -70,6 +70,34 @@
     }
 
     const accountLink = document.getElementById('consultingAccountLink');
+    const homePath = '/2027-jungsi-consulting/home';
+    const productLinks = [
+        { link: document.getElementById('consultingApply'), product: 'consulting', applyLabel: '컨설팅 신청하기' },
+        { link: document.getElementById('calculatorApply'), product: 'calculator', applyLabel: '계산기 신청하기' }
+    ];
+    function updateProductLinks(home, checking = false) {
+        const calculatorItems = home?.calculator?.contractVersion === 'calculator-applications-v1' && Array.isArray(home.calculator.items)
+            ? home.calculator.items : [];
+        const calculatorLabel = calculatorItems.some(item => item?.productType === 'calculator' && item.state === 'active' && item.accessActive === true)
+            ? '내 합격 계산기' : calculatorItems.some(item => item?.productType === 'calculator' && item.state === 'activation_required' && item.paymentStatus === 'verified')
+                ? '내 계산기 이용 상태' : null;
+        for (const { link, product, applyLabel } of productLinks) {
+            if (!link) continue;
+            const label = product === 'calculator' ? calculatorLabel : home?.available === true ? '나의 컨설팅' : null;
+            link.firstChild.textContent = label || applyLabel;
+            link.href = label ? product === 'calculator' ? '/2027-jungsi-consulting/calculator' : homePath : '#application';
+            if (label) delete link.dataset.jungsiProduct;
+            else link.dataset.jungsiProduct = product;
+            if (checking) {
+                link.setAttribute('aria-busy', 'true');
+                link.setAttribute('aria-disabled', 'true');
+            } else {
+                link.removeAttribute('aria-busy');
+                link.removeAttribute('aria-disabled');
+            }
+        }
+    }
+
     let accountCheck = 0;
     async function updateAccountLink() {
         if (!accountLink) return;
@@ -80,16 +108,27 @@
             accountLink.setAttribute('aria-busy', String(busy));
         };
         const loginPath = '/2027-jungsi-consulting/login';
-        if (!window.hasClientSession?.()) { render('이용자 로그인 ↗', loginPath); return; }
+        if (!window.hasClientSession?.()) { updateProductLinks(); render('이용자 로그인 ↗', loginPath); return; }
+        updateProductLinks(null, true);
         render('로그인 확인 중…', loginPath, true);
         const scope = window.captureClientSession?.();
+        const current = () => revision === accountCheck && (!scope || window.isClientSessionCurrent(scope));
+        let home;
         try {
             const verified = typeof window.tryRefreshToken === 'function' && await window.tryRefreshToken({ preserveTransientErrors: true });
             if (revision !== accountCheck) return;
             if (scope && !window.isClientSessionCurrent(scope)) { render('이용자 로그인 ↗', loginPath); return; }
-            render(verified ? '나의 컨설팅 ↗' : '이용자 로그인 ↗', verified ? '/2027-jungsi-consulting/home' : loginPath);
+            render(verified ? '나의 컨설팅 ↗' : '이용자 로그인 ↗', verified ? homePath : loginPath);
+            if (!verified || !CONFIG.api.consulting) return;
+            const response = await window.apiFetch(CONFIG.api.consulting, {
+                method: 'POST', body: JSON.stringify({ type: 'student_get_v2_consulting_home', data: {} })
+            }).catch(() => null);
+            const body = response?.ok ? await response.json().catch(() => null) : null;
+            if (body?.success === true) home = body.data;
         } catch (_) {
             if (revision === accountCheck) render('컨설팅으로 이동 ↗', loginPath);
+        } finally {
+            if (revision === accountCheck) updateProductLinks(current() ? home : null);
         }
     }
     window.addEventListener('pageshow', event => { if (event.persisted) void updateAccountLink(); });

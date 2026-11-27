@@ -14,12 +14,27 @@ const empty = () => ({ contractVersion: 'calculator-workspace-v2', applicationId
 async function setup(page, options = {}) {
   const state = { record: empty(), calls: [], catalogCalls: [], conversionCalls: [], receipts: new Map(), committedPlans: 0, lostReply: false, deferRead: false, readRelease: null, failRead: false, ...options };
   if (options.recommendations) state.record.recommendationPreferencesVersion = 1;
+  if (options.eligibility) state.record.recommendationEligibilityVersion = 1;
   const context = page.context();
   const token = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url') + '.' + Buffer.from(JSON.stringify({ sub: 'workspace-student', exp: 4070908800 })).toString('base64url') + '.synthetic';
   await context.addInitScript(({ withoutOwner, token }) => { if (withoutOwner) sessionStorage.setItem('accessToken', token); else if (!localStorage.getItem('userId')) localStorage.setItem('userId', 'workspace-student'); localStorage.setItem('userRole', 'student'); }, { withoutOwner: options.withoutOwner === true, token });
   await context.route('https://www.googletagmanager.com/**', route => route.abort());
   await context.route('**/js/config.js*', route => route.fulfill({ contentType: 'application/javascript', body: `window.IS_LOCAL=false;window.CONFIG={api:{analysis:'/__workspace-analysis',consulting:'/__workspace-core',auth:'/__workspace-auth'}};` }));
   await context.route('**/__workspace-auth', route => route.fulfill({ json: { success: true } }));
+  const recommend = (route, recommendation) => {
+    const { admissionGroup, preferences, previousUniversities } = recommendation;
+    state.recommendationCalls ??= []; state.recommendationCalls.push(recommendation);
+    const names = previousUniversities.length ? ['새서울대', '새경기대'] : ['예시서울대', '예시경기대'];
+    return route.fulfill({ json: { success: true, contractVersion: 'calculator-recommendations-v1', admissionYear: 2027,
+      admissionGroup, strategy: preferences.strategy, scoreBasis: 'estimated', repeatedUniversities: 0,
+      items: groupedTargets.filter(row => row.selection.admissionGroup === admissionGroup).map((row, index) => ({
+        target: { ...row, university: names[index], selection: { ...row.selection, universityName: names[index] } },
+        universityKey: 'UNIV_' + String(index + (previousUniversities.length ? 3 : 1)).repeat(32),
+        tier: index, riskBand: index ? 'appropriate' : preferences.strategy === 'safe' ? 'stable' : 'neutral',
+        convertedScore: 725, cutoffs: { pass: 700, registered70: 735 },
+        offerEstimate: { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 75, low: 72, high: 78 }
+      })) } });
+  };
   await context.route('**/__workspace-analysis', async route => {
     const body = route.request().postDataJSON();
     if (body.type === 'get_calculator_access') {
@@ -29,20 +44,7 @@ async function setup(page, options = {}) {
       if (options.recommendations) value.service.recommendationVersion = 1;
       return route.fulfill({ json: value });
     }
-    if (body.type === 'get_calculator_recommendations') {
-      const { admissionGroup, preferences, previousUniversities } = body.data;
-      state.recommendationCalls ??= []; state.recommendationCalls.push(body.data);
-      const names = previousUniversities.length ? ['새서울대', '새경기대'] : ['예시서울대', '예시경기대'];
-      return route.fulfill({ json: { success: true, contractVersion: 'calculator-recommendations-v1', admissionYear: 2027,
-        admissionGroup, strategy: preferences.strategy, scoreBasis: 'estimated', repeatedUniversities: 0,
-        items: groupedTargets.filter(row => row.selection.admissionGroup === admissionGroup).map((row, index) => ({
-          target: { ...row, university: names[index], selection: { ...row.selection, universityName: names[index] } },
-          universityKey: 'UNIV_' + String(index + (previousUniversities.length ? 3 : 1)).repeat(32),
-          tier: index, riskBand: index ? 'appropriate' : preferences.strategy === 'safe' ? 'stable' : 'neutral',
-          convertedScore: 725, cutoffs: { pass: 700, registered70: 735 },
-          offerEstimate: { policy: 'consulting-offer-estimate-1.1.0', scope: 'converted_score', percent: 75, low: 72, high: 78 }
-        })) } });
-    }
+    if (body.type === 'get_calculator_recommendations') return recommend(route, body.data);
     if (body.type === 'get_calculator_score_conversion') return route.fulfill({ json: calculatorScoreFixture(body.data.records) });
     if (body.type === 'get_univ_list_only') return route.fulfill({ json: [{ univName: '예시대학교', majors: ['예시학과'] }] });
     if (body.type === 'get_calculator_catalog') {
@@ -88,6 +90,11 @@ async function setup(page, options = {}) {
       if (state.failRead) return route.fulfill({ status: 503, json: { success: false } });
       try { return await route.fulfill({ json: { success: true, data: snapshot } }); } catch (_) { return; }
     }
+    if (body.type === 'student_get_calculator_profile_recommendations') {
+      expect(Object.keys(data).sort()).toEqual(['admissionGroup', 'applicationId', 'previousUniversities', 'profileRevision']);
+      expect(data.profileRevision).toBe(state.record.profile.revision);
+      return recommend(route, { ...data, preferences: state.record.profile.recommendationPreferences });
+    }
     const prior = state.receipts.get(data.requestId);
     if (prior) return route.fulfill({ json: { success: true, data: { ...prior, idempotent: true } } });
     if (data.expectedWorkspaceRevision !== state.record.revision) return route.fulfill({ status: 409, json: { success: false, code: 'REVISION_CONFLICT' } });
@@ -95,8 +102,9 @@ async function setup(page, options = {}) {
     if (body.type === 'student_save_calculator_profile') {
       if (!state.record.consentAccepted) expect(data.consented).toBe(true);
       const recommendationPreferences = data.recommendationPreferences ?? state.record.profile?.recommendationPreferences;
+      const applicantGender = data.applicantGender ?? state.record.profile?.applicantGender;
       state.record.profile = { revision: (state.record.profile?.revision || 0) + 1, scores: data.scores, updatedAt: at,
-        ...(recommendationPreferences ? { recommendationPreferences } : {}) };
+        ...(recommendationPreferences ? { recommendationPreferences } : {}), ...(applicantGender ? { applicantGender } : {}) };
     } else if (body.type === 'student_save_calculator_plan') {
       const old = state.record.plans.find(plan => plan.planId === data.planId);
       const groups = data.targets.map(target => target.selection?.admissionGroup);
@@ -117,13 +125,14 @@ async function setup(page, options = {}) {
   });
   await page.goto(path); return state;
 }
-async function saveScores(page) {
+async function saveScores(page, applicantGender) {
   for (const [title, option] of [['국어', '언어와매체'], ['수학', '미적분'], ['탐구 1', '사회·문화'], ['탐구 2', '생활과 윤리']]) {
     await page.getByRole('combobox', { name: `${title} 선택과목`, exact: true }).selectOption(option);
     if (title.startsWith('탐구')) await page.getByRole('textbox', { name: `${title} 원점수`, exact: true }).fill(title === '탐구 1' ? '44' : '45');
     else { await page.getByRole('textbox', { name: `${title} 공통 원점수`, exact: true }).fill('60'); await page.getByRole('textbox', { name: `${title} 선택 원점수`, exact: true }).fill(title === '국어' ? '20' : '14'); }
   }
   await page.getByRole('combobox', { name: '영어 등급', exact: true }).selectOption('2'); await page.getByRole('combobox', { name: '한국사 등급', exact: true }).selectOption('1');
+  if (applicantGender) await page.getByRole('combobox', { name: /^성별/ }).selectOption(applicantGender);
   await page.getByRole('checkbox', { name: '성적·지원 후보 저장과 운영팀 열람에 동의합니다', exact: true }).check();
   await page.getByRole('button', { name: '이 성적으로 시작하기', exact: true }).click();
   await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
@@ -134,8 +143,9 @@ async function addTarget(page) {
 }
 
 test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 학과만 조합에 담는다', async ({ page }) => {
-  const state = await setup(page, { grouped: true, recommendations: true });
-  await saveScores(page);
+  const state = await setup(page, { grouped: true, recommendations: true, eligibility: true });
+  await saveScores(page, 'male');
+  expect(state.record.profile.applicantGender).toBe('male');
   await page.getByRole('button', { name: '성적 수정', exact: true }).click();
   await page.getByRole('checkbox', { name: '인문사회', exact: true }).check();
   await page.getByRole('checkbox', { name: '상경', exact: true }).check();
@@ -144,14 +154,14 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await page.getByRole('checkbox', { name: '서울', exact: true }).check();
   await page.getByRole('checkbox', { name: '인천', exact: true }).check();
   await expect(page.getByRole('checkbox', { name: '경기', exact: true })).toBeDisabled();
+  await page.getByRole('combobox', { name: '지원 성향' }).selectOption('ambitious');
   await page.getByRole('button', { name: '추천 조건 저장', exact: true }).click();
   await expect(page.getByRole('region', { name: '저장한 내 성적', exact: true })).toBeVisible();
   expect(state.record.profile.scores).toEqual(raw);
   await page.getByRole('button', { name: '가군 후보 찾기', exact: true }).click();
   const picker = page.getByRole('dialog');
-  await expect(picker.getByRole('button', { name: '지원 추천받기' })).toBeDisabled();
-  await picker.getByRole('combobox', { name: '지원 성향' }).selectOption('ambitious');
-  await picker.getByRole('button', { name: '지원 추천받기' }).click();
+  await expect(picker.getByRole('combobox', { name: '지원 성향' })).toHaveCount(0);
+  await expect(picker).toContainText('저장한 지원 성향 · 도전 우선');
   await expect(picker).toContainText('예시서울대 · 소신');
   await expect(picker).toContainText('예시경기대 · 적정');
   await expect(picker).toContainText('같은 권역까지 확대');
@@ -167,12 +177,16 @@ test('군별 추천은 저장한 조건을 사용하고 재추천 후 선택한 
   await expect(picker).toBeHidden();
   await expect(page.getByRole('region', { name: '가군 지원 후보', exact: true })).toContainText('새서울대');
   expect(state.record.plans).toHaveLength(0);
-  await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
+  const save = page.getByRole('button', { name: '변경사항 저장', exact: true });
+  const candidate = page.getByRole('region', { name: '가군 지원 후보', exact: true });
+  expect((await save.boundingBox()).y).toBeGreaterThan((await candidate.boundingBox()).y + (await candidate.boundingBox()).height);
+  await save.click();
   await expect(page.getByRole('status').filter({ hasText: '지원 조합을 저장했습니다.' })).toBeVisible();
   expect(state.record.plans[0].targets[0].selection.universityName).toBe('새서울대');
   await page.reload();
   await page.getByRole('button', { name: '가군 후보 바꾸기', exact: true }).click();
-  await expect(picker.getByRole('combobox', { name: '지원 성향' })).toHaveValue('ambitious');
+  await expect(picker).toContainText('저장한 지원 성향 · 도전 우선');
+  expect(state.calls.filter(call => call.type === 'student_save_calculator_profile')).toHaveLength(2);
 });
 
 test('성적 저장 후 요약으로 이동하고 새 탭·재접속은 서버 자료를 자동으로 연다', async ({ page }, testInfo) => {
@@ -249,6 +263,9 @@ async function addGroupTarget(page, label, track = 1, replace = false) {
 test('조합 선택과 새 조합의 높이가 일치하고 이름만 저장해도 후보 초안이 유지된다', async ({ page }) => {
   const state = await setup(page, { grouped: true });
   await saveScores(page);
+  const emptyToolbar = page.getByRole('region', { name: '지원 조합 관리' });
+  await expect(emptyToolbar.getByText('저장한 조합 없음')).toBeVisible();
+  await expect(emptyToolbar.getByRole('combobox', { name: '저장한 조합' })).toHaveCount(0);
   await addGroupTarget(page, '가군');
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await expect(page.getByRole('button', { name: '포트폴리오 보기' })).toBeEnabled();
@@ -385,6 +402,10 @@ test('가채점의 승인된 두 컷과 지원 단계를 계산기와 포트폴�
     await expect(gaCandidate.getByText(score, { exact: true })).toBeVisible();
   }
   await expect(gaCandidate.getByLabel('지원 단계: 안정', { exact: true })).toBeVisible();
+  const graph = gaCandidate.getByRole('img', { name: /^점수 위치 비교/ });
+  await expect(graph).toBeVisible();
+  await expect(graph).toHaveAccessibleName(/내 점수 720\.36점.*\+20\.36점.*\+5\.36점/);
+  await expect(graph).toHaveAttribute('data-risk', 'stable');
   await page.getByRole('button', { name: '변경사항 저장', exact: true }).click();
   await page.getByRole('button', { name: '포트폴리오 보기', exact: true }).click();
   const portfolio = page.getByRole('region', { name: '나의 정시 포트폴리오', exact: true });

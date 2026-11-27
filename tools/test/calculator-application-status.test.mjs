@@ -2,10 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getCalculatorApplications, previewCalculatorApplication, parseCalculatorApplicationHome, readCalculatorReceipt } from '../../studycrack-mobile-app/src/features/jungsi-calculator/calculator-application-api.js';
 const at = Date.parse('2026-11-20T00:00:00.000Z');
-const application = { applicationId: 'APP_11111111-1111-4111-8111-111111111111', productType: 'calculator', revision: 0, applicationState: 'PAYMENT_REVIEW', paymentStatus: 'pending', state: 'pending_payment', accountLinked: false, accessActive: false, amount: 25000, submittedAt: new Date(at).toISOString(), accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-28T00:00:00+09:00' };
+const application = { applicationId: 'APP_11111111-1111-4111-8111-111111111111', productType: 'calculator', revision: 0, applicationState: 'PAYMENT_REVIEW', paymentStatus: 'pending', state: 'pending_payment', accountLinked: false, accessActive: false, amount: 25000, submittedAt: new Date(at).toISOString(), accessEndsAt: '2027-01-07T14:59:59.999Z', paymentDueAt: null, openingAt: '2026-11-29T18:00:00+09:00' };
 const home = { contractVersion: 'calculator-applications-v1', items: [application], hasMore: false, needsReview: false, accountEmailMask: 's***@example.invalid' };
 test('student calculator data is bounded and a pending application cannot claim active access', () => {
   assert.ok(parseCalculatorApplicationHome(home));
+  assert.ok(parseCalculatorApplicationHome({ ...home, items: [{ ...application, openingAt: '2026-11-28T00:00:00+09:00' }] }));
+  for (const openingAt of [null, undefined, 'invalid date']) {
+    assert.equal(parseCalculatorApplicationHome({ ...home, items: [{ ...application, openingAt }] }), null);
+  }
   for (const patch of [{ items: [application, application] }, { accountEmailMask: 'private@example.invalid' }, { items: [{ ...application, accessActive: true }] }, { items: [{ ...application, productType: 'consulting' }] }, { items: [{ ...application, amount: 1 }] }]) assert.equal(parseCalculatorApplicationHome({ ...home, ...patch }), null);
 });
 test('receipt recovery stays calculator-only, same-tab and time-bounded without writing storage', () => {

@@ -14,7 +14,7 @@ export function parseCalculatorWorkspace(value, applicationId) {
     && (value.status !== 'restricted' || value.canSave === false && value.canDelete) ? value : null;
   const profile = value.profile, prepared = normalizeStoredCalculatorInput({ scores: profile?.scores, targets: [] });
   const preferences = parseRecommendationPreferences(profile?.recommendationPreferences);
-  if (!profile || !prepared || !preferences || !revision(profile.revision) || profile.revision < 1 || !date(profile.updatedAt) || !value.consentAccepted || value.updatedAt === null) return null;
+  if (!profile || !prepared || !preferences || profile.applicantGender !== undefined && !['male', 'female'].includes(profile.applicantGender) || !revision(profile.revision) || profile.revision < 1 || !date(profile.updatedAt) || !value.consentAccepted || value.updatedAt === null) return null;
   if (profile.scores.basis === 'raw' && ['kor', 'math'].some(key => profile.scores.exam[key].raw !== prepared.scores.exam[key].raw)) return null;
   const seen = new Set(), plans = [];
   for (const plan of value.plans) {
@@ -26,6 +26,7 @@ export function parseCalculatorWorkspace(value, applicationId) {
   }
   if (value.lastSavedPlanId !== null && !seen.has(value.lastSavedPlanId)) return null;
   return { ...value, profile: { revision: profile.revision, scores: prepared.scores, updatedAt: profile.updatedAt,
+    ...(profile.applicantGender === undefined ? {} : { applicantGender: profile.applicantGender }),
     ...(profile.recommendationPreferences === undefined ? {} : { recommendationPreferences: preferences }) }, plans };
 }
 
@@ -38,6 +39,7 @@ export async function requestCalculatorWorkspace(binding, { applicationId, type 
   const value = result.data?.success === true ? parseCalculatorWorkspace(result.data.data, applicationId) : null;
   if (!value || !read && value.revision !== data.expectedWorkspaceRevision + 1
     || type === 'student_save_calculator_profile' && (JSON.stringify(value.profile?.scores) !== JSON.stringify(data.scores)
+      || data.applicantGender !== undefined && value.profile?.applicantGender !== data.applicantGender
       || data.recommendationPreferences !== undefined && JSON.stringify(value.profile?.recommendationPreferences) !== JSON.stringify(parseRecommendationPreferences(data.recommendationPreferences)))
     || type === 'student_save_calculator_plan' && !value.plans.some(plan => plan.planId === value.lastSavedPlanId && (data.planId === null || plan.planId === data.planId) && plan.name === data.name.trim()
       && plan.targets.length === data.targets.length && plan.targets.every((target, index) => samePlanTargetIdentity(target, data.targets[index]))

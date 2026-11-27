@@ -133,7 +133,7 @@ function activateCalculatorAdmin(route) {
     if (state.phase !== phase) { state.cursor = null; state.nextCursor = null; state.previous = []; }
     state.phase = phase;
     document.querySelectorAll('[data-calculator-phase]').forEach(button => button.setAttribute('aria-current', button.dataset.calculatorPhase === phase ? 'page' : 'false'));
-    const notice = calculatorAdminNode('calculatorAdminOpeningNotice'); if (notice) notice.hidden = Date.now() >= Date.parse('2026-11-28T00:00:00+09:00');
+    const notice = calculatorAdminNode('calculatorAdminOpeningNotice'); if (notice) notice.hidden = Date.now() >= Date.parse('2026-11-29T18:00:00+09:00');
     if (route.applicationId && route.sourceResponseId) return loadCalculatorAdminDetail({ applicationId: route.applicationId, sourceResponseId: route.sourceResponseId });
     return loadCalculatorAdminList();
 }

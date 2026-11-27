@@ -256,8 +256,11 @@
     for (const name of ['contactRelationship', 'payerRelationship']) form.elements.namedItem(name).addEventListener('change', syncRelationshipFields);
     document.addEventListener('click', event => {
         const target = event.target.closest('[data-jungsi-product], #jungsiSavedApplication');
-        if (!target || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        event.preventDefault(); void open(target.dataset.jungsiProduct || saved()?.productType, target);
+        if (!target) return;
+        if (target.getAttribute('aria-disabled') === 'true') { event.preventDefault(); return; }
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        void open(target.dataset.jungsiProduct || saved()?.productType, target);
     });
     dialog.querySelectorAll('[data-enrollment-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
     dialog.addEventListener('close', () => { controller?.abort(); controller = null; busy = false; document.body.classList.remove('jungsi-enrollment-open'); trigger?.focus({ preventScroll: true }); });

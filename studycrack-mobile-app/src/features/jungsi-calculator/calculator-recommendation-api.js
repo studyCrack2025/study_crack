@@ -3,9 +3,11 @@ import { safeOfferEstimate } from './calculator-api.js';
 import { normalizePlanSelection } from './calculator-plan-model.js';
 import { admissionUnitId, calculatorTargetNames } from './calculator-validation.js';
 
-export async function requestCalculatorRecommendations(binding, { scores, admissionGroup, preferences, previousUniversities, signal }) {
-  const result = await postJson({ apiFetch: binding.apiFetch, url: binding.analysisApiUrl, signal,
-    payload: { type: 'get_calculator_recommendations', data: { scores, admissionGroup, preferences, previousUniversities } },
+export async function requestCalculatorRecommendations(binding, { scores, admissionGroup, preferences, previousUniversities, profile, signal }) {
+  const result = await postJson({ apiFetch: binding.apiFetch, url: profile ? binding.consultingApiUrl : binding.analysisApiUrl, signal,
+    payload: profile
+      ? { type: 'student_get_calculator_profile_recommendations', data: { ...profile, admissionGroup, previousUniversities } }
+      : { type: 'get_calculator_recommendations', data: { scores, admissionGroup, preferences, previousUniversities } },
     fallbackError: '추천을 불러오지 못했습니다. 다시 시도해주세요.' });
   if (!result.ok) return result;
   const value = result.data, bands = preferences.strategy === 'safe' ? ['stable', 'appropriate'] : ['neutral', 'challenge', 'appropriate'];

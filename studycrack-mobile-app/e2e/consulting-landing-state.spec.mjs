@@ -70,6 +70,41 @@ test('로그아웃 후 늦게 도착한 확인 응답은 소개 페이지의 로
   await expect(page.locator('#consultingAccountLink')).toHaveAttribute('aria-busy', 'false');
 });
 
+test('승인된 학생은 신청 대신 각 서비스 화면으로 이동하고 로그아웃하면 신청 버튼을 돌려받는다', async ({ page }) => {
+  await page.route('**/__consulting', route => {
+    expect(route.request().postDataJSON()).toEqual({ type: 'student_get_v2_consulting_home', data: {} });
+    return route.fulfill({ json: { success: true, data: { available: true, calculator: {
+      contractVersion: 'calculator-applications-v1', items: [{ productType: 'calculator', state: 'active', accessActive: true }]
+    } } } });
+  });
+  await prepare(page, { signedIn: true });
+  const consulting = page.locator('#consultingApply'), calculator = page.locator('#calculatorApply');
+  await expect(consulting).toHaveText('나의 컨설팅↗');
+  await expect(consulting).toHaveAttribute('href', '/2027-jungsi-consulting/home');
+  await expect(calculator).toHaveAttribute('href', '/2027-jungsi-consulting/calculator');
+  await page.getByRole('tab', { name: '합격 계산기', exact: true }).click();
+  await expect(calculator).toHaveText('내 합격 계산기↗');
+  await page.route('**/2027-jungsi-consulting/calculator', route => route.fulfill({ body: 'calculator', contentType: 'text/plain' }));
+  await calculator.click();
+  await expect(page).toHaveURL(/\/2027-jungsi-consulting\/calculator$/);
+  await page.goBack();
+  await expect(calculator).toHaveAttribute('href', '/2027-jungsi-consulting/calculator');
+  await page.evaluate(() => window.clearClientSession());
+  await expect(calculator).toHaveAttribute('href', '#application');
+  await expect(consulting).toHaveAttribute('href', '#application');
+});
+
+test('입금 승인 후 인증 대기인 계산기만 이용 상태로 연결하고 미승인 서비스는 신청을 유지한다', async ({ page }) => {
+  await page.route('**/__consulting', route => route.fulfill({ json: { success: true, data: {
+    available: false, calculator: { contractVersion: 'calculator-applications-v1',
+      items: [{ productType: 'calculator', state: 'activation_required', paymentStatus: 'verified', accessActive: false }] }
+  } } }));
+  await prepare(page, { signedIn: true, path: '/2027-jungsi-consulting#calculator' });
+  await expect(page.locator('#calculatorApply')).toHaveText('내 계산기 이용 상태↗');
+  await expect(page.locator('#calculatorApply')).toHaveAttribute('href', '/2027-jungsi-consulting/calculator');
+  await expect(page.locator('#consultingApply')).toHaveAttribute('href', '#application');
+});
+
 for (const mode of ['signedOut', 'expired', 'unavailable']) test(`소개 페이지 로그인 표시: ${mode}`, async ({ page }) => {
   const { authCalls } = await prepare(page, { signedIn: mode !== 'signedOut', expired: mode === 'expired', unavailable: mode === 'unavailable' });
   const link = page.locator('#consultingAccountLink');

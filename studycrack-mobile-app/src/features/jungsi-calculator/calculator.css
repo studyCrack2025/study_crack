@@ -129,6 +129,21 @@ body[data-app-surface="jungsi-calculator-2027"] .jcalc-primary { background: var
 .jcalc-reference-score > span { font-size: 12px; font-weight: 400; }
 .jcalc-reference-score > strong { font-size: clamp(24px, 4vw, 30px); font-weight: 800; overflow-wrap: anywhere; }
 .jcalc-reference-score small { margin-left: 4px; font-size: 12px; font-weight: 400; }
+.jcalc-score-position { --jcalc-position-color: var(--sc-brand-navy); display: grid; gap: 5px; min-width: 0; }
+.jcalc-score-position[data-risk="stable"] { --jcalc-position-color: var(--sc-risk-stable); }
+.jcalc-score-position[data-risk="appropriate"] { --jcalc-position-color: var(--sc-risk-appropriate); }
+.jcalc-score-position[data-risk="neutral"] { --jcalc-position-color: var(--sc-risk-neutral); }
+.jcalc-score-position[data-risk="challenge"] { --jcalc-position-color: var(--sc-risk-challenge); }
+.jcalc-score-position[data-risk="risky"] { --jcalc-position-color: var(--sc-risk-risky); }
+.jcalc-score-track { position: relative; height: 32px; margin: 0 8px; }
+.jcalc-score-track::before { position: absolute; inset: 14px 0 auto; height: 4px; border-radius: 4px; background: var(--sc-line-subtle); content: ''; }
+.jcalc-score-track span { position: absolute; width: 0; transform: translateX(-50%); }
+.jcalc-score-track [data-marker="own"] { z-index: 1; top: 9px; width: 14px; height: 14px; border: 2px solid var(--sc-surface); border-radius: 50%; background: var(--jcalc-position-color); box-shadow: 0 0 0 1px var(--jcalc-position-color); }
+.jcalc-score-track [data-marker="pass"] { top: 3px; height: 13px; border-right: 2px solid var(--sc-ink-muted); }
+.jcalc-score-track [data-marker="registered"] { top: 16px; height: 13px; border-right: 2px dashed var(--sc-ink-muted); }
+.jcalc-score-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--sc-ink-muted); font-size: 11px; }
+.jcalc-cut-lines .jcalc-cut-difference { font-size: 12px; }
+.jcalc-cut-difference span { margin-right: 2px; color: var(--sc-ink-muted); font-weight: 400; }
 .jcalc-cut-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr)); gap: 12px; margin: 0; }
 .jcalc-cut-lines dt { color: var(--sc-ink-muted); font-size: 11px; line-height: 1.7; }
 .jcalc-cut-lines dd { margin: 4px 0 0; color: var(--sc-ink); font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }

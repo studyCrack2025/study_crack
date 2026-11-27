@@ -12,7 +12,7 @@ const scoreFields = { commonRawScore: '공통', electiveRawScore: '선택', rawS
 const examNames = { csat: '수능', june_mock: '6월 모의평가', september_mock: '9월 모의평가', other: '기타 시험' };
 export const legacyPreferences = { desiredRegions: '희망 지역', desiredUniversities: '희망 대학', desiredMajors: '희망 학과', desiredTracks: '희망 계열', requiredCandidates: '필수 후보', excludedCandidates: '제외 후보' };
 const names = {
-  studentStatus: { applicantType: '지원자 구분', graduationYear: '졸업 연도', schoolType: '학교 유형', schoolName: '학교명', residenceRegion: '거주 지역' },
+  studentStatus: { applicantType: '지원자 구분', applicantGender: '성별', graduationYear: '졸업 연도', schoolType: '학교 유형', schoolName: '학교명', residenceRegion: '거주 지역' },
   conditions: { dormitoryAllowed: '기숙사 생활 가능', repeatStudyAllowed: '재수 가능성', tuitionBudgetAnnual: '연간 등록금 상한' },
   strategy: { riskTolerance: '지원 위험 선호', priorityOrder: '대학 선택 우선순위' },
   qualitative: { consultationTopics: '상담 주제', decisionOptions: '비교 중인 선택지와 기준', consultationQuestions: '상담에서 답을 받고 싶은 질문',
@@ -21,6 +21,7 @@ const names = {
 };
 const numberOrDash = value => value === true ? '예' : value === false ? '아니요' : value ?? '—';
 function display(key, value) {
+  if (key === 'applicantGender') return { male: '남성', female: '여성' }[value] ?? '입력하지 않음';
   if (Array.isArray(value)) {
     const labels = key === 'priorityOrder' ? PRIORITY_LABELS : key === 'consultationTopics' ? CONSULTATION_TOPIC_LABELS : {};
     return value.map(item => Object.hasOwn(labels, item) ? labels[item] : item).join('\n');
@@ -32,6 +33,7 @@ function display(key, value) {
 function entries(section, value) {
   if (section === 'studentStatus') return [
     ['지원자 구분', display('applicantType', value.applicantType)],
+    ...(value.applicantGender ? [['성별', display('applicantGender', value.applicantGender)]] : []),
     ...(value.applicantType === 'qualification_exam' ? [['검정고시 합격 연도 (선택)', value.qualificationExamYear ?? '입력하지 않음']]
       : [[value.applicantType === 'high_school_senior' ? '졸업 예정 연도' : '졸업 연도', value.graduationYear], ['학교 유형', display('schoolType', value.schoolType)], ['학교명', value.schoolName]]),
     ['거주 지역', value.residenceRegion]
